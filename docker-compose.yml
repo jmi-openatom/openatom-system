@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: openatom-mysql
+    environment:
+      MYSQL_DATABASE: openatom-system
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root123456}
+      MYSQL_USER: ${DB_USERNAME:-openatom-system}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-5JS7XaFfJGhXBH2j}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/create_table.sql:/docker-entrypoint-initdb.d/create_table.sql
+    networks:
+      - openatom-network
+    restart: always
+
+  backend:
+    build: .
+    container_name: openatom-backend
+    environment:
+      - DB_URL=jdbc:mysql://mysql:3306/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      - DB_USERNAME=${DB_USERNAME:-openatom-system}
+      - DB_PASSWORD=${DB_PASSWORD:-5JS7XaFfJGhXBH2j}
+    ports:
+      - "8921:8921"
+    depends_on:
+      - mysql
+    networks:
+      - openatom-network
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: openatom-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - openatom-network
+    restart: always
+
+networks:
+  openatom-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

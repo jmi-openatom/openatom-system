@@ -1,0 +1,2414 @@
+openapi: 3.0.3
+info:
+  title: Club Management System API
+  version: 1.0.0
+  description: |
+    社团管理系统 OpenAPI 文档，覆盖认证、用户、社团、部门、岗位、招新、申请、审核、面试、成员、退社、RBAC、通知与日志模块。
+servers:
+  - url: /api/v1
+tags:
+  - name: Auth
+  - name: Users
+  - name: Clubs
+  - name: Departments
+  - name: Positions
+  - name: Recruitment Campaigns
+  - name: Applications
+  - name: Approvals
+  - name: Interviews
+  - name: Memberships
+  - name: Exit Applications
+  - name: Roles
+  - name: Permissions
+  - name: Notifications
+  - name: Logs
+security:
+  - bearerAuth: []
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: 用户注册
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 用户登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+  /auth/refresh-token:
+    post:
+      tags: [Auth]
+      summary: 刷新 token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: 退出登录
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: 获取当前登录用户信息
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CurrentUserResponse'
+  /users:
+    get:
+      tags: [Users]
+      summary: 查询用户列表
+      parameters:
+        - $ref: '#/components/parameters/Keyword'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserStatus'
+        - name: clubId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PagedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/PageData'
+                          - type: object
+                            properties:
+                              list:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/User'
+    post:
+      tags: [Users]
+      summary: 后台创建用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /users/{userId}:
+    get:
+      tags: [Users]
+      summary: 获取用户详情
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+    patch:
+      tags: [Users]
+      summary: 更新用户信息
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /users/{userId}/status:
+    patch:
+      tags: [Users]
+      summary: 更新用户状态
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/UserStatus'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /users/{userId}/reset-password:
+    post:
+      tags: [Users]
+      summary: 重置用户密码
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPassword]
+              properties:
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /users/{userId}/memberships:
+    get:
+      tags: [Users]
+      summary: 获取用户社团关系
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Membership'
+  /clubs:
+    get:
+      tags: [Clubs]
+      summary: 查询社团列表
+      parameters:
+        - $ref: '#/components/parameters/Keyword'
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ClubStatus'
+        - name: recruitmentStatus
+          in: query
+          schema:
+            $ref: '#/components/schemas/RecruitmentStatus'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Club'
+    post:
+      tags: [Clubs]
+      summary: 创建社团
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClubRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /clubs/{clubId}:
+    get:
+      tags: [Clubs]
+      summary: 获取社团详情
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Club'
+    patch:
+      tags: [Clubs]
+      summary: 更新社团
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClubRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /clubs/{clubId}/status:
+    patch:
+      tags: [Clubs]
+      summary: 更新社团状态
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/ClubStatus'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /clubs/{clubId}/recruitment-status:
+    patch:
+      tags: [Clubs]
+      summary: 更新社团招新状态
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recruitmentStatus]
+              properties:
+                recruitmentStatus:
+                  $ref: '#/components/schemas/RecruitmentStatus'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /clubs/{clubId}/departments:
+    get:
+      tags: [Departments]
+      summary: 查询社团部门列表
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Department'
+    post:
+      tags: [Departments]
+      summary: 创建部门
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDepartmentRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /departments/{departmentId}:
+    get:
+      tags: [Departments]
+      summary: 获取部门详情
+      parameters:
+        - $ref: '#/components/parameters/DepartmentId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Department'
+    patch:
+      tags: [Departments]
+      summary: 更新部门
+      parameters:
+        - $ref: '#/components/parameters/DepartmentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDepartmentRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags: [Departments]
+      summary: 删除部门
+      parameters:
+        - $ref: '#/components/parameters/DepartmentId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /clubs/{clubId}/positions:
+    get:
+      tags: [Positions]
+      summary: 查询岗位列表
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Position'
+    post:
+      tags: [Positions]
+      summary: 创建岗位
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePositionRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /positions/{positionId}:
+    get:
+      tags: [Positions]
+      summary: 获取岗位详情
+      parameters:
+        - $ref: '#/components/parameters/PositionId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Position'
+    patch:
+      tags: [Positions]
+      summary: 更新岗位
+      parameters:
+        - $ref: '#/components/parameters/PositionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePositionRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags: [Positions]
+      summary: 删除岗位
+      parameters:
+        - $ref: '#/components/parameters/PositionId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /clubs/{clubId}/recruitment-campaigns:
+    get:
+      tags: [Recruitment Campaigns]
+      summary: 查询招新计划列表
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RecruitmentCampaign'
+    post:
+      tags: [Recruitment Campaigns]
+      summary: 创建招新计划
+      parameters:
+        - $ref: '#/components/parameters/ClubId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecruitmentCampaignRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /recruitment-campaigns/{campaignId}:
+    get:
+      tags: [Recruitment Campaigns]
+      summary: 获取招新计划详情
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RecruitmentCampaign'
+    patch:
+      tags: [Recruitment Campaigns]
+      summary: 更新招新计划
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRecruitmentCampaignRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /recruitment-campaigns/{campaignId}/publish:
+    post:
+      tags: [Recruitment Campaigns]
+      summary: 发布招新计划
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /recruitment-campaigns/{campaignId}/close:
+    post:
+      tags: [Recruitment Campaigns]
+      summary: 关闭招新计划
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /applications:
+    get:
+      tags: [Applications]
+      summary: 查询申请列表
+      parameters:
+        - name: campaignId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: clubId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ApplicationStatus'
+        - name: departmentId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/Keyword'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PagedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/PageData'
+                          - type: object
+                            properties:
+                              list:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/Application'
+    post:
+      tags: [Applications]
+      summary: 提交入会申请
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApplicationRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /applications/{applicationId}:
+    get:
+      tags: [Applications]
+      summary: 获取申请详情
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Application'
+    patch:
+      tags: [Applications]
+      summary: 修改申请
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateApplicationRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /applications/{applicationId}/submit:
+    post:
+      tags: [Applications]
+      summary: 提交草稿申请
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /applications/{applicationId}/withdraw:
+    post:
+      tags: [Applications]
+      summary: 撤回申请
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /applications/{applicationId}/approval-records:
+    get:
+      tags: [Approvals]
+      summary: 查询审批记录
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ApprovalRecord'
+  /applications/{applicationId}/approvals:
+    post:
+      tags: [Approvals]
+      summary: 执行审批动作
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalActionRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /applications/batch-approvals:
+    post:
+      tags: [Approvals]
+      summary: 批量审批
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchApprovalRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /interviews:
+    get:
+      tags: [Interviews]
+      summary: 查询面试列表
+      parameters:
+        - name: campaignId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: applicationId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: interviewerId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InterviewStatus'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Interview'
+    post:
+      tags: [Interviews]
+      summary: 创建面试安排
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInterviewRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /interviews/{interviewId}:
+    get:
+      tags: [Interviews]
+      summary: 获取面试详情
+      parameters:
+        - $ref: '#/components/parameters/InterviewId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Interview'
+    patch:
+      tags: [Interviews]
+      summary: 更新面试安排
+      parameters:
+        - $ref: '#/components/parameters/InterviewId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInterviewRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /interviews/{interviewId}/confirm:
+    post:
+      tags: [Interviews]
+      summary: 候选人确认面试
+      parameters:
+        - $ref: '#/components/parameters/InterviewId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /interviews/{interviewId}/feedback:
+    post:
+      tags: [Interviews]
+      summary: 提交面试反馈
+      parameters:
+        - $ref: '#/components/parameters/InterviewId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewFeedbackRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /interviews/{interviewId}/complete:
+    post:
+      tags: [Interviews]
+      summary: 标记面试完成
+      parameters:
+        - $ref: '#/components/parameters/InterviewId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /applications/{applicationId}/final-decisions:
+    post:
+      tags: [Memberships]
+      summary: 终审决策
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalDecisionRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /memberships:
+    get:
+      tags: [Memberships]
+      summary: 查询成员列表
+      parameters:
+        - name: clubId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: departmentId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: positionId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/MembershipStatus'
+        - $ref: '#/components/parameters/Keyword'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Membership'
+    post:
+      tags: [Memberships]
+      summary: 手动新增成员
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMembershipRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /memberships/{membershipId}:
+    get:
+      tags: [Memberships]
+      summary: 获取成员详情
+      parameters:
+        - $ref: '#/components/parameters/MembershipId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Membership'
+    patch:
+      tags: [Memberships]
+      summary: 更新成员信息
+      parameters:
+        - $ref: '#/components/parameters/MembershipId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMembershipRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /memberships/{membershipId}/assign-position:
+    post:
+      tags: [Memberships]
+      summary: 分配岗位
+      parameters:
+        - $ref: '#/components/parameters/MembershipId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPositionRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /memberships/{membershipId}/change-status:
+    post:
+      tags: [Memberships]
+      summary: 修改成员状态
+      parameters:
+        - $ref: '#/components/parameters/MembershipId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/MembershipStatus'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /exit-applications:
+    get:
+      tags: [Exit Applications]
+      summary: 查询退社申请列表
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExitApplication'
+    post:
+      tags: [Exit Applications]
+      summary: 发起退社申请
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExitApplicationRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /exit-applications/{exitApplicationId}:
+    get:
+      tags: [Exit Applications]
+      summary: 获取退社申请详情
+      parameters:
+        - $ref: '#/components/parameters/ExitApplicationId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ExitApplication'
+  /exit-applications/{exitApplicationId}/approve:
+    post:
+      tags: [Exit Applications]
+      summary: 审核通过退社
+      parameters:
+        - $ref: '#/components/parameters/ExitApplicationId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /exit-applications/{exitApplicationId}/reject:
+    post:
+      tags: [Exit Applications]
+      summary: 驳回退社
+      parameters:
+        - $ref: '#/components/parameters/ExitApplicationId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /memberships/{membershipId}/force-exit:
+    post:
+      tags: [Exit Applications]
+      summary: 强制退社
+      parameters:
+        - $ref: '#/components/parameters/MembershipId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /roles:
+    get:
+      tags: [Roles]
+      summary: 查询角色列表
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Role'
+    post:
+      tags: [Roles]
+      summary: 创建角色
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /roles/{roleId}:
+    get:
+      tags: [Roles]
+      summary: 获取角色详情
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Role'
+    patch:
+      tags: [Roles]
+      summary: 更新角色
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags: [Roles]
+      summary: 删除角色
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /permissions:
+    get:
+      tags: [Permissions]
+      summary: 查询权限点列表
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Permission'
+    post:
+      tags: [Permissions]
+      summary: 创建权限点
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePermissionRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /roles/{roleId}/permissions:
+    post:
+      tags: [Permissions]
+      summary: 分配角色权限
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [permissionIds]
+              properties:
+                permissionIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /users/{userId}/roles:
+    post:
+      tags: [Roles]
+      summary: 分配用户角色
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roleIds]
+              properties:
+                roleIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: 查询当前用户通知列表
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+    post:
+      tags: [Notifications]
+      summary: 发送通知
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /notifications/{notificationId}/read:
+    post:
+      tags: [Notifications]
+      summary: 标记通知已读
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /operation-logs:
+    get:
+      tags: [Logs]
+      summary: 查询操作日志
+      parameters:
+        - name: operatorId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: module
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: startAt
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endAt
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/OperationLog'
+  /login-logs:
+    get:
+      tags: [Logs]
+      summary: 查询登录日志
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LoginLog'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ClubId:
+      name: clubId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    DepartmentId:
+      name: departmentId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    PositionId:
+      name: positionId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    CampaignId:
+      name: campaignId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    InterviewId:
+      name: interviewId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    MembershipId:
+      name: membershipId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ExitApplicationId:
+      name: exitApplicationId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    RoleId:
+      name: roleId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    Keyword:
+      name: keyword
+      in: query
+      schema:
+        type: string
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: success
+        data:
+          nullable: true
+        traceId:
+          type: string
+    PagedResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PageData'
+        traceId:
+          type: string
+    PageData:
+      type: object
+      properties:
+        list:
+          type: array
+          items: {}
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+    RegisterRequest:
+      type: object
+      required: [username, password, realName, phone, email]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        realName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+    CurrentUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        roles:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        realName:
+          type: string
+        gender:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        studentNo:
+          type: string
+        college:
+          type: string
+        major:
+          type: string
+        grade:
+          type: string
+        avatar:
+          type: string
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        lastLoginAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    CreateUserRequest:
+      allOf:
+        - $ref: '#/components/schemas/RegisterRequest'
+        - type: object
+          properties:
+            status:
+              $ref: '#/components/schemas/UserStatus'
+    UpdateUserRequest:
+      type: object
+      properties:
+        realName:
+          type: string
+        gender:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        studentNo:
+          type: string
+        college:
+          type: string
+        major:
+          type: string
+        grade:
+          type: string
+        avatar:
+          type: string
+    Club:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        code:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        logoUrl:
+          type: string
+        presidentUserId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/ClubStatus'
+        recruitmentStatus:
+          $ref: '#/components/schemas/RecruitmentStatus'
+        createdAt:
+          type: string
+          format: date-time
+    CreateClubRequest:
+      type: object
+      required: [name, code]
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        logoUrl:
+          type: string
+        presidentUserId:
+          type: integer
+          format: int64
+    UpdateClubRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        logoUrl:
+          type: string
+        presidentUserId:
+          type: integer
+          format: int64
+    Department:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        clubId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        managerUserId:
+          type: integer
+          format: int64
+    CreateDepartmentRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        managerUserId:
+          type: integer
+          format: int64
+    UpdateDepartmentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        managerUserId:
+          type: integer
+          format: int64
+    Position:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        clubId:
+          type: integer
+          format: int64
+        departmentId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        maxCount:
+          type: integer
+        roleIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    CreatePositionRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        departmentId:
+          type: integer
+          format: int64
+        maxCount:
+          type: integer
+        roleIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    UpdatePositionRequest:
+      $ref: '#/components/schemas/CreatePositionRequest'
+    RecruitmentCampaign:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        clubId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        applyStartAt:
+          type: string
+          format: date-time
+        applyEndAt:
+          type: string
+          format: date-time
+        interviewStartAt:
+          type: string
+          format: date-time
+        interviewEndAt:
+          type: string
+          format: date-time
+        resultPublishAt:
+          type: string
+          format: date-time
+        targetGrades:
+          type: array
+          items:
+            type: string
+        maxApplicants:
+          type: integer
+        status:
+          $ref: '#/components/schemas/RecruitmentCampaignStatus'
+    CreateRecruitmentCampaignRequest:
+      type: object
+      required: [name, applyStartAt, applyEndAt]
+      properties:
+        name:
+          type: string
+        applyStartAt:
+          type: string
+          format: date-time
+        applyEndAt:
+          type: string
+          format: date-time
+        interviewStartAt:
+          type: string
+          format: date-time
+        interviewEndAt:
+          type: string
+          format: date-time
+        resultPublishAt:
+          type: string
+          format: date-time
+        targetGrades:
+          type: array
+          items:
+            type: string
+        maxApplicants:
+          type: integer
+        status:
+          $ref: '#/components/schemas/RecruitmentCampaignStatus'
+    UpdateRecruitmentCampaignRequest:
+      $ref: '#/components/schemas/CreateRecruitmentCampaignRequest'
+    Application:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        campaignId:
+          type: integer
+          format: int64
+        clubId:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        firstChoiceDepartmentId:
+          type: integer
+          format: int64
+        secondChoiceDepartmentId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        profile:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+    CreateApplicationRequest:
+      type: object
+      required: [campaignId, clubId, firstChoiceDepartmentId]
+      properties:
+        campaignId:
+          type: integer
+          format: int64
+        clubId:
+          type: integer
+          format: int64
+        firstChoiceDepartmentId:
+          type: integer
+          format: int64
+        secondChoiceDepartmentId:
+          type: integer
+          format: int64
+        profile:
+          type: object
+          additionalProperties: true
+    UpdateApplicationRequest:
+      type: object
+      properties:
+        firstChoiceDepartmentId:
+          type: integer
+          format: int64
+        secondChoiceDepartmentId:
+          type: integer
+          format: int64
+        profile:
+          type: object
+          additionalProperties: true
+    ApprovalRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        applicationId:
+          type: integer
+          format: int64
+        node:
+          type: string
+        action:
+          type: string
+        operatorId:
+          type: integer
+          format: int64
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ApprovalActionRequest:
+      type: object
+      required: [action, node]
+      properties:
+        action:
+          type: string
+          enum: [approve, reject, transfer, request_more_info]
+        node:
+          type: string
+        comment:
+          type: string
+        nextInterviewerIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    BatchApprovalRequest:
+      type: object
+      required: [applicationIds, action, node]
+      properties:
+        applicationIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        action:
+          type: string
+          enum: [approve, reject]
+        node:
+          type: string
+        comment:
+          type: string
+    Interview:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        applicationId:
+          type: integer
+          format: int64
+        round:
+          type: integer
+        scheduledStartAt:
+          type: string
+          format: date-time
+        scheduledEndAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+        mode:
+          type: string
+          enum: [online, offline]
+        interviewerIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        status:
+          $ref: '#/components/schemas/InterviewStatus'
+    CreateInterviewRequest:
+      type: object
+      required: [applicationId, round, scheduledStartAt, scheduledEndAt, interviewerIds]
+      properties:
+        applicationId:
+          type: integer
+          format: int64
+        round:
+          type: integer
+        scheduledStartAt:
+          type: string
+          format: date-time
+        scheduledEndAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+        mode:
+          type: string
+          enum: [online, offline]
+        interviewerIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    UpdateInterviewRequest:
+      $ref: '#/components/schemas/CreateInterviewRequest'
+    InterviewFeedbackRequest:
+      type: object
+      required: [scores, suggestion]
+      properties:
+        scores:
+          type: object
+          additionalProperties:
+            type: integer
+        suggestion:
+          type: string
+          enum: [pass, reject, waitlist]
+        comment:
+          type: string
+    FinalDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approved, waitlisted, rejected]
+        departmentId:
+          type: integer
+          format: int64
+        positionId:
+          type: integer
+          format: int64
+        comment:
+          type: string
+    Membership:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        clubId:
+          type: integer
+          format: int64
+        departmentId:
+          type: integer
+          format: int64
+        positionId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/MembershipStatus'
+        joinedAt:
+          type: string
+          format: date-time
+        leftAt:
+          type: string
+          format: date-time
+          nullable: true
+    CreateMembershipRequest:
+      type: object
+      required: [userId, clubId]
+      properties:
+        userId:
+          type: integer
+          format: int64
+        clubId:
+          type: integer
+          format: int64
+        departmentId:
+          type: integer
+          format: int64
+        positionId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/MembershipStatus'
+    UpdateMembershipRequest:
+      type: object
+      properties:
+        departmentId:
+          type: integer
+          format: int64
+        positionId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/MembershipStatus'
+    AssignPositionRequest:
+      type: object
+      required: [positionId]
+      properties:
+        positionId:
+          type: integer
+          format: int64
+        effectiveAt:
+          type: string
+          format: date-time
+    ExitApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        membershipId:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [submitted, approved, rejected]
+        createdAt:
+          type: string
+          format: date-time
+    CreateExitApplicationRequest:
+      type: object
+      required: [membershipId, reason]
+      properties:
+        membershipId:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        description:
+          type: string
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        code:
+          type: string
+        dataScope:
+          type: string
+        description:
+          type: string
+    CreateRoleRequest:
+      type: object
+      required: [name, code]
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        dataScope:
+          type: string
+        description:
+          type: string
+    UpdateRoleRequest:
+      $ref: '#/components/schemas/CreateRoleRequest'
+    Permission:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        code:
+          type: string
+        type:
+          type: string
+        path:
+          type: string
+        method:
+          type: string
+    CreatePermissionRequest:
+      type: object
+      required: [name, code, type]
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        type:
+          type: string
+          enum: [menu, page, button, api, data]
+        path:
+          type: string
+        method:
+          type: string
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    CreateNotificationRequest:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+        receiverUserIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    OperationLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        operatorId:
+          type: integer
+          format: int64
+        module:
+          type: string
+        action:
+          type: string
+        targetId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    LoginLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        loginAt:
+          type: string
+          format: date-time
+        ip:
+          type: string
+        userAgent:
+          type: string
+    UserStatus:
+      type: string
+      enum: [active, disabled, locked]
+    ClubStatus:
+      type: string
+      enum: [active, inactive]
+    RecruitmentStatus:
+      type: string
+      enum: [open, closed]
+    RecruitmentCampaignStatus:
+      type: string
+      enum: [draft, published, open, closed, archived]
+    ApplicationStatus:
+      type: string
+      enum: [draft, submitted, pre_screen_passed, pre_screen_rejected, interview_scheduled, interviewed, final_approved, waitlisted, rejected, cancelled]
+    InterviewStatus:
+      type: string
+      enum: [pending, confirmed, completed, missed, cancelled]
+    MembershipStatus:
+      type: string
+      enum: [probation, active, suspended, left, graduated]
