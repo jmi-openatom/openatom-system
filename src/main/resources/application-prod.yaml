@@ -43,6 +43,10 @@ sa-token:
   token-style: uuid
   is-log: ${SA_TOKEN_LOG_ENABLED:false}
 
+app:
+  cors:
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:*}
+
 logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}

@@ -20,3 +20,7 @@ sa-token:
   is-share: false
   token-style: uuid
   is-log: true
+
+app:
+  cors:
+    allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:*}
