@@ -19,6 +19,6 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /path/to/your/project  # 修改为服务器上的项目路径
+            cd /www/wwwroot/openatom-system  # 修改为服务器上的项目路径
             git pull origin main
             docker-compose up -d --build
