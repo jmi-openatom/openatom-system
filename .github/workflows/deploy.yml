@@ -41,7 +41,20 @@ jobs:
             
             # 使用最新的 docker compose (较新版本 docker 已集成 compose)
             if command -v docker-compose >/dev/null 2>&1; then
-              docker-compose up -d --build
+              COMPOSE_CMD="docker-compose"
             else
-              docker compose up -d --build
+              COMPOSE_CMD="docker compose"
             fi
+
+            $COMPOSE_CMD up -d --build
+            sleep 10
+            $COMPOSE_CMD ps
+
+            # 任一核心容器未运行时，输出日志并失败
+            for service in mysql backend frontend; do
+              if ! $COMPOSE_CMD ps "$service" | grep -q "Up"; then
+                echo "Service $service is not running"
+                $COMPOSE_CMD logs --tail=200 "$service" || true
+                exit 1
+              fi
+            done
