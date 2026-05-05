@@ -17,7 +17,11 @@
           <router-link to="/forms">入会申请</router-link>
           <router-link to="/progress">我的申请</router-link>
         </nav>
-        <el-button v-if="showAdminEntry" type="primary" :icon="Setting" @click="$router.push('/admin')">管理员后台</el-button>
+        <div class="site-header__actions">
+          <el-button v-if="isLoggedIn" plain :icon="UserFilled" @click="$router.push('/profile')">个人中心</el-button>
+          <el-button v-else plain :icon="UserFilled" @click="$router.push('/admin/login')">登录</el-button>
+          <el-button v-if="showAdminEntry" type="primary" :icon="Setting" @click="$router.push('/admin')">管理员后台</el-button>
+        </div>
       </div>
     </header>
     <main>
@@ -36,18 +40,23 @@
 </template>
 
 <script>
-import { Setting } from '@element-plus/icons-vue'
+import { Setting, UserFilled } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
+import { getToken } from '../utils/auth'
 import { hasAdminAccess } from '../utils/permission'
 
 export default {
   name: 'SiteLayout',
   data() {
     return {
-      Setting: markRaw(Setting)
+      Setting: markRaw(Setting),
+      UserFilled: markRaw(UserFilled)
     }
   },
   computed: {
+    isLoggedIn() {
+      return Boolean(getToken())
+    },
     showAdminEntry() {
       return hasAdminAccess()
     }
@@ -75,6 +84,12 @@ export default {
   min-height: 76px;
   align-items: center;
   gap: 26px;
+}
+
+.site-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .brand {
@@ -168,6 +183,10 @@ export default {
     width: 100%;
     order: 3;
     overflow-x: auto;
+  }
+
+  .site-header__actions {
+    margin-left: auto;
   }
 
   .site-footer__inner {
