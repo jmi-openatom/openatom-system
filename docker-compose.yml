@@ -33,7 +33,7 @@ services:
     build: ./frontend
     container_name: openatom-frontend
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-18080}:80"
     depends_on:
       - backend
     networks:
