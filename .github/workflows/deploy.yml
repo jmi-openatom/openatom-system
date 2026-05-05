@@ -3,7 +3,10 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main  # 或者是您使用的主要分支名称
+      - main
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   deploy:
