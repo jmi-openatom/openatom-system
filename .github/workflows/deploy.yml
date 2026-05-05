@@ -22,6 +22,18 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /www/wwwroot/openatom-system  # 修改为服务器上的项目路径
-            git pull origin main
-            docker-compose up -d --build
+            cd /www/wwwroot/openatom-system || { echo "Directory not found"; exit 1; }
+            
+            # 清理可能导致冲突的本地文件（如 .DS_Store）
+            find . -name ".DS_Store" -delete
+            
+            # 强制重置本地修改并拉取最新代码
+            git fetch --all
+            git reset --hard origin/main
+            
+            # 使用最新的 docker compose (较新版本 docker 已集成 compose)
+            if command -v docker-compose >/dev/null 2>&1; then
+              docker-compose up -d --build
+            else
+              docker compose up -d --build
+            fi
