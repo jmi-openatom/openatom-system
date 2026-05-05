@@ -20,7 +20,7 @@ jobs:
         run: |
           [ -n "${{ secrets.SERVER_HOST }}" ] || (echo "SERVER_HOST is empty" && exit 1)
           [ -n "${{ secrets.SERVER_USER }}" ] || (echo "SERVER_USER is empty" && exit 1)
-          [ -n "${{ secrets.SERVER_SSH_KEY }}" ] || (echo "SERVER_SSH_KEY is empty" && exit 1)
+          [ -n "${{ secrets.SERVER_PASSWORD }}" ] || (echo "SERVER_PASSWORD is empty" && exit 1)
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -28,7 +28,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT || '22' }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          password: ${{ secrets.SERVER_PASSWORD }}
           script: |
             cd /www/wwwroot/openatom-system || { echo "Directory not found"; exit 1; }
             
