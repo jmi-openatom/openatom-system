@@ -7,8 +7,6 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root123456}
       MYSQL_USER: ${DB_USERNAME:-openatom-system}
       MYSQL_PASSWORD: ${DB_PASSWORD:-5JS7XaFfJGhXBH2j}
-    ports:
-      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./db/create_table.sql:/docker-entrypoint-initdb.d/create_table.sql
