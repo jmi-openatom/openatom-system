@@ -2,7 +2,7 @@ spring:
   application:
     name: openatom-system
   datasource:
-    url: jdbc:mysql://localhost:3306/openatom_db?serverTimeZone=UTC
+    url: jdbc:mysql://localhost:3306/openatom-system?serverTimeZone=UTC
     username: ${DB_USENAME:root}
     password: ${DB_PASSWORD:ab321818}
     driver-class-name: com.mysql.cj.jdbc.Driver
