@@ -1,17 +1,15 @@
-# MacOS
-.DS_Store
-**/.DS_Store
-
-node_modules/
-
-# Build
+# build artifact
 build/
 target/
 dist/
 
+# dependency package
+node_modules/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
 # IDE
 .idea/
 .vscode/
-*.iws
-*.iml
-*.ipr
