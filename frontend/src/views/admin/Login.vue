@@ -7,17 +7,6 @@
         <p>登录后可统一维护社团、成员、审批、面试和权限等业务数据。</p>
       </div>
       <el-card shadow="never" class="login-card">
-        <div class="register-switch">
-          <el-switch
-            v-model="registerEnabled"
-            :disabled="!canManageRegister"
-            inline-prompt
-            active-text="注册开"
-            inactive-text="注册关"
-            @change="handleRegisterSwitch"
-          />
-          <span>{{ canManageRegister ? '允许新用户自助注册' : `当前注册：${registerEnabled ? '开启' : '关闭'}` }}</span>
-        </div>
         <el-tabs v-model="activeTab">
           <el-tab-pane label="账号登录" name="login">
             <el-form ref="loginRef" :model="loginForm" :rules="loginRules" label-position="top">
