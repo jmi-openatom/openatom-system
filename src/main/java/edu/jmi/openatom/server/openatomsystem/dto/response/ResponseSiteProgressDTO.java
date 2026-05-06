@@ -29,7 +29,6 @@ public class ResponseSiteProgressDTO {
     private String status;
     private Timestamp createdAt;
     private Timestamp updatedAt;
-    private List<ApprovalRecordProgress> approvalRecords;
     private List<InterviewProgress> interviews;
   }
 
@@ -45,18 +44,5 @@ public class ResponseSiteProgressDTO {
     private String location;
     private String mode;
     private String status;
-    private String comment;
-    private String suggestion;
-  }
-
-  @Data
-  @Builder
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class ApprovalRecordProgress {
-    private String node;
-    private String action;
-    private String comment;
-    private Timestamp createdAt;
   }
 }

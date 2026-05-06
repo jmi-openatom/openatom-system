@@ -16,8 +16,6 @@ import edu.jmi.openatom.server.openatomsystem.entity.ClubDepartment;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubPosition;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
-import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedback;
-import edu.jmi.openatom.server.openatomsystem.entity.ApprovalRecord;
 import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
@@ -28,8 +26,6 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubPositionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.InterviewMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.InterviewFeedbackMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.ApprovalRecordMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RecruitmentCampaignMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
@@ -66,8 +62,6 @@ public class SiteServiceImpl implements SiteService {
   private final ClubAwardMapper clubAwardMapper;
   private final SiteFormMapper siteFormMapper;
   private final RegistrationSettingService registrationSettingService;
-  private final ApprovalRecordMapper approvalRecordMapper;
-  private final InterviewFeedbackMapper interviewFeedbackMapper;
 
   @Override
   public ApiResponse<ResponseClubHomeDTO> getClubHome(String clubCode) {
@@ -228,32 +222,6 @@ public class SiteServiceImpl implements SiteService {
                     .orderByDesc(Interview::getId))
             .stream()
             .collect(Collectors.groupingBy(Interview::getApplicationId));
-            
-    Map<Integer, List<ApprovalRecord>> approvalsByApplication =
-        approvalRecordMapper
-            .selectList(
-                new LambdaQueryWrapper<ApprovalRecord>()
-                    .in(ApprovalRecord::getApplicationId, applications.stream().map(MembershipApplication::getId).toList())
-                    .orderByAsc(ApprovalRecord::getCreatedAt))
-            .stream()
-            .collect(Collectors.groupingBy(ApprovalRecord::getApplicationId));
-
-    List<Integer> interviewIds =
-        interviewsByApplication.values().stream()
-            .flatMap(List::stream)
-            .map(Interview::getId)
-            .toList();
-
-    Map<Integer, List<InterviewFeedback>> feedbacksByInterview =
-        interviewIds.isEmpty()
-            ? Map.of()
-            : interviewFeedbackMapper
-                .selectList(
-                    new LambdaQueryWrapper<InterviewFeedback>()
-                        .in(InterviewFeedback::getInterviewId, interviewIds)
-                        .orderByDesc(InterviewFeedback::getCreatedAt))
-                .stream()
-                .collect(Collectors.groupingBy(InterviewFeedback::getInterviewId));
 
     return ApiResponse.success(
         ResponseSiteProgressDTO.builder()
@@ -262,7 +230,7 @@ public class SiteServiceImpl implements SiteService {
                     .map(
                         application ->
                             toProgressApplication(
-                                application, users, clubs, campaigns, departments, interviewsByApplication, approvalsByApplication, feedbacksByInterview))
+                                application, users, clubs, campaigns, departments, interviewsByApplication))
                     .toList())
             .build());
   }
@@ -517,9 +485,7 @@ public class SiteServiceImpl implements SiteService {
       Map<Integer, Club> clubs,
       Map<Integer, RecruitmentCampaign> campaigns,
       Map<Integer, ClubDepartment> departments,
-      Map<Integer, List<Interview>> interviewsByApplication,
-      Map<Integer, List<ApprovalRecord>> approvalsByApplication,
-      Map<Integer, List<InterviewFeedback>> feedbacksByInterview) {
+      Map<Integer, List<Interview>> interviewsByApplication) {
     User user = getNullable(users, application.getUserId());
     Club club = getNullable(clubs, application.getClubId());
     RecruitmentCampaign campaign = getNullable(campaigns, application.getCampaignId());
@@ -542,25 +508,12 @@ public class SiteServiceImpl implements SiteService {
         .updatedAt(application.getUpdatedAt())
         .interviews(
             interviewsByApplication.getOrDefault(application.getId(), List.of()).stream()
-                .map(interview -> toProgressInterview(interview, feedbacksByInterview))
-                .toList())
-        .approvalRecords(
-            approvalsByApplication.getOrDefault(application.getId(), List.of()).stream()
-                .map(record -> ResponseSiteProgressDTO.ApprovalRecordProgress.builder()
-                    .node(record.getNode())
-                    .action(record.getAction())
-                    .comment(record.getComment())
-                    .createdAt(record.getCreatedAt())
-                    .build())
+                .map(this::toProgressInterview)
                 .toList())
         .build();
   }
 
-  private ResponseSiteProgressDTO.InterviewProgress toProgressInterview(Interview interview, Map<Integer, List<InterviewFeedback>> feedbacksByInterview) {
-    List<InterviewFeedback> feedbacks = feedbacksByInterview.getOrDefault(interview.getId(), List.of());
-    String comment = feedbacks.isEmpty() ? null : feedbacks.get(0).getComment();
-    String suggestion = feedbacks.isEmpty() ? null : feedbacks.get(0).getSuggestion();
-
+  private ResponseSiteProgressDTO.InterviewProgress toProgressInterview(Interview interview) {
     return ResponseSiteProgressDTO.InterviewProgress.builder()
         .id(interview.getId())
         .round(interview.getRound())
@@ -569,8 +522,6 @@ public class SiteServiceImpl implements SiteService {
         .location(interview.getLocation())
         .mode(interview.getMode())
         .status(interview.getStatus())
-        .comment(comment)
-        .suggestion(suggestion)
         .build();
   }
 

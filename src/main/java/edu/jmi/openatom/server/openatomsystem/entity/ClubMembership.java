@@ -38,8 +38,6 @@ public class ClubMembership {
   @TableField("sort_order")
   private Integer sortOrder;
 
-  private String description;
-
   @TableField("joined_at")
   private Timestamp joinedAt;
 
