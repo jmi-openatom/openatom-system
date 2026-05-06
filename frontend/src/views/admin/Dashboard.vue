@@ -45,7 +45,7 @@
             </el-card>
             <br>
             <el-card shadow="never">
-                <button @click="handleRegisterSwitch">切换前端注册</button>
+                <el-button @click="handleRegisterSwitch">切换前端注册</el-button>
             </el-card>
         </div>
 
@@ -55,7 +55,7 @@
 
 <script>
 import {DocumentChecked, OfficeBuilding, User, UserFilled} from '@element-plus/icons-vue'
-import {applicationApi, authApi, clubApi, interviewApi, membershipApi, userApi} from '../../api'
+import {applicationApi, authApi, clubApi, interviewApi, membershipApi, siteApi, userApi} from '../../api'
 import {formatDateTime, statusType} from '../../utils/format'
 import {hasAnyPermission} from '../../utils/permission'
 import {ElMessage} from "element-plus";
@@ -141,6 +141,12 @@ export default {
                 ElMessage.success(value ? '已开启注册' : '已关闭注册')
             } catch (error) {
                 await this.fetchRegisterEnabled()
+            }
+        },
+        async fetchRegisterEnabled() {
+            this.registerEnabled = Boolean(await siteApi.registerEnabled())
+            if (!this.registerEnabled && this.activeTab === 'register') {
+                this.activeTab = 'login'
             }
         },
     }
