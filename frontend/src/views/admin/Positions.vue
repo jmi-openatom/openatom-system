@@ -29,7 +29,7 @@
       </el-table-column>
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
+          <el-button link type="primary" @click="openDialog(row)" >编辑</el-button>
           <el-popconfirm title="确定删除该岗位？" @confirm="remove(row)">
             <template #reference>
               <el-button link type="danger">删除</el-button>

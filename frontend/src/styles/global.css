@@ -116,7 +116,6 @@ textarea {
   --el-button-hover-border-color: var(--oa-primary-dark);
   --el-button-active-bg-color: var(--oa-primary-dark);
   --el-button-active-border-color: var(--oa-primary-dark);
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
 }
 
 .el-card,
