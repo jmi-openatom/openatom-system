@@ -15,7 +15,7 @@
                     <el-descriptions-item label="手机号">{{ user.phone || '-' }}</el-descriptions-item>
                 </el-descriptions>
                 <br>
-                <el-button @click="authApi.logout()">退出登录</el-button>
+                <el-button @click="logout()">退出登录</el-button>
             </el-card>
             <el-card shadow="never">
                 <template #header>
@@ -81,6 +81,10 @@ export default {
         async fetchApplications() {
             const result = await siteApi.progress()
             this.applications = result?.applications || []
+        },
+        async logout() {
+            await authApi.logout()
+            this.$router.push('/admin/login')
         }
     }
 }
