@@ -24,6 +24,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     ensureUserColumns();
     fixAdminPassword();
     ensureRecruitmentCampaignColumns();
+    ensureSiteFormTable();
     ensureMembershipApplicationColumns();
     ensureFormSubmissionTable();
     ensureOfficeDocumentTable();
@@ -94,6 +95,34 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
         ALTER TABLE `membership_application`
         MODIFY COLUMN `user_id` INT NULL COMMENT '申请用户ID，匿名提交时可为空'
         """);
+  }
+
+  private void ensureSiteFormTable() {
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `site_form`
+        (
+            `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+            `club_id` INT NOT NULL COMMENT '社团ID',
+            `name` VARCHAR(100) NOT NULL COMMENT '表单名称',
+            `start_at` TIMESTAMP NULL DEFAULT NULL COMMENT '收集开始时间',
+            `end_at` TIMESTAMP NULL DEFAULT NULL COMMENT '收集结束时间',
+            `login_required` TINYINT(1) DEFAULT 1 COMMENT '是否要求登录后提交',
+            `form_schema` JSON DEFAULT NULL COMMENT '自定义表单结构',
+            `status` VARCHAR(30) DEFAULT 'draft' COMMENT '状态',
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+            `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            PRIMARY KEY (`id`),
+            KEY `idx_site_form_club_id` (`club_id`),
+            KEY `idx_site_form_status` (`status`)
+        ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='信息收集表单表'
+        """);
+    addColumnIfAbsent("site_form", "start_at", "TIMESTAMP NULL DEFAULT NULL COMMENT '收集开始时间'");
+    addColumnIfAbsent("site_form", "end_at", "TIMESTAMP NULL DEFAULT NULL COMMENT '收集结束时间'");
+    addColumnIfAbsent(
+        "site_form", "login_required", "TINYINT(1) DEFAULT 1 COMMENT '是否要求登录后提交'");
+    addColumnIfAbsent("site_form", "form_schema", "JSON DEFAULT NULL COMMENT '自定义表单结构'");
+    addColumnIfAbsent("site_form", "updated_at", "TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'");
   }
 
   private void ensureFormSubmissionTable() {
