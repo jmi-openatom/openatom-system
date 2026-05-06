@@ -4,7 +4,7 @@
       <div class="toolbar">
         <div>
           <h1 class="page-title">入会申请</h1>
-          <p class="section-subtitle">选择感兴趣的社团并填写招新表单，开启你的社团之旅。</p>
+          <p class="section-subtitle">填写招新表单，开启你的社团之旅。</p>
         </div>
         <div class="toolbar__filters">
           <el-select v-if="clubs.length > 1" v-model="selectedClubId" filterable placeholder="选择社团" style="width: 240px" @change="fetchCampaigns">

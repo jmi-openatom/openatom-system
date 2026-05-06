@@ -2,7 +2,7 @@
   <div class="site-page">
     <section class="container apply-grid">
       <div>
-        <h1 class="page-title">入会申请表</h1>
+        <h1 class="page-title">表单填写</h1>
         <p class="section-subtitle">请认真填写以下信息，提交后可以在“我的申请”中查看后续进度。</p>
         <div class="apply-note panel">
           <h3>申请说明</h3>
