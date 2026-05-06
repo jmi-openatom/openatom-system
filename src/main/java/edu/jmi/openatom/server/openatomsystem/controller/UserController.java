@@ -10,6 +10,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUserUpdate;
 import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseMembershipDTO;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
+import edu.jmi.openatom.server.openatomsystem.entity.Role;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.service.RoleService;
 import edu.jmi.openatom.server.openatomsystem.service.UserService;
@@ -79,6 +80,12 @@ public class UserController {
       @Valid @RequestBody RequestAssignUserRolesDTO requestAssignUserRolesDTO) {
     return roleService.assignUserRoles(
         userId, requestAssignUserRolesDTO == null ? null : requestAssignUserRolesDTO.getRoleIds());
+  }
+
+  @GetMapping("/{userId}/roles")
+  @SaCheckPermission("user:role:list")
+  public ApiResponse<List<Role>> getUserRoles(@PathVariable Integer userId) {
+    return roleService.getUserRoles(userId);
   }
 
   @GetMapping("/{userId}")

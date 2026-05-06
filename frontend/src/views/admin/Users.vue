@@ -41,6 +41,7 @@
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
           <el-button v-if="canUpdateUser" link type="primary" @click="openDialog(row)">编辑</el-button>
+          <el-button v-if="canAssignRole" link type="success" @click="openRoleDialog(row)">分配角色</el-button>
           <el-button v-if="canUpdateUserStatus" link type="warning" @click="toggleStatus(row)">{{ row.userStatus === 'disabled' ? '启用' : '禁用' }}</el-button>
           <el-button v-if="canResetUserPassword" link type="danger" @click="resetPassword(row)">重置密码</el-button>
         </template>
@@ -63,13 +64,32 @@
         <el-button type="primary" :loading="saving" @click="saveUser">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="roleDialogVisible" title="分配角色" width="500px">
+      <el-form label-width="86px">
+        <el-form-item label="用户名">
+          <span>{{ currentRoleUser.realName || currentRoleUser.userName }}</span>
+        </el-form-item>
+        <el-form-item label="选择角色">
+          <el-checkbox-group v-model="checkedRoleIds">
+            <el-checkbox v-for="item in allRoles" :key="item.id" :label="item.id">
+              {{ item.name }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="roleDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="roleSaving" @click="saveUserRoles">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Upload } from '@element-plus/icons-vue'
-import { userApi } from '../../api'
+import { userApi, rbacApi } from '../../api'
 import { statusType } from '../../utils/format'
 import { getToken } from '../../utils/auth'
 import { hasPermission } from '../../utils/permission'
@@ -88,6 +108,11 @@ export default {
       total: 0,
       query: { keyword: '', status: '', page: 1, pageSize: 10 },
       form: {},
+      allRoles: [],
+      currentRoleUser: {},
+      checkedRoleIds: [],
+      roleDialogVisible: false,
+      roleSaving: false,
       rules: {
         username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
         realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
@@ -108,6 +133,9 @@ export default {
     },
     canCreateUser() {
       return hasPermission('user:create')
+    },
+    canAssignRole() {
+      return hasPermission('user:role:assign')
     },
     canUpdateUser() {
       return hasPermission('user:update')
@@ -185,6 +213,34 @@ export default {
       await ElMessageBox.confirm(`确认重置 ${row.realName || row.userName} 的密码？`, '提示')
       await userApi.resetPassword(row.id, { newPassword: '12345678' })
       ElMessage.success('已重置为 12345678')
+    },
+    async fetchAllRoles() {
+      if (this.allRoles.length === 0) {
+        const result = await rbacApi.roles({ page: 1, pageSize: 100 })
+        this.allRoles = result?.list || result || []
+      }
+    },
+    async openRoleDialog(row) {
+      this.currentRoleUser = row
+      this.checkedRoleIds = []
+      this.roleDialogVisible = true
+      await this.fetchAllRoles()
+      try {
+        const roles = await userApi.roles(row.id)
+        this.checkedRoleIds = roles.map((r) => r.id)
+      } catch (err) {
+        ElMessage.error('获取用户角色失败')
+      }
+    },
+    async saveUserRoles() {
+      this.roleSaving = true
+      try {
+        await userApi.assignRoles(this.currentRoleUser.id, { roleIds: this.checkedRoleIds })
+        ElMessage.success('角色分配成功')
+        this.roleDialogVisible = false
+      } finally {
+        this.roleSaving = false
+      }
     }
   }
 }

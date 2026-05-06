@@ -60,6 +60,12 @@ export const userApi = {
   },
   resetPassword(id, data) {
     return request.post(`/users/${id}/reset-password`, data)
+  },
+  roles(id) {
+    return request.get(`/users/${id}/roles`)
+  },
+  assignRoles(id, data) {
+    return request.post(`/users/${id}/roles`, data)
   }
 }
 

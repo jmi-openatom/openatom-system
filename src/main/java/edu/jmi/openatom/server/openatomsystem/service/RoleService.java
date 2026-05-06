@@ -20,4 +20,6 @@ public interface RoleService {
   ApiResponse<String> assignRolePermissions(Integer roleId, List<Integer> permissionIds);
 
   ApiResponse<String> assignUserRoles(Integer userId, List<Integer> roleIds);
+
+  ApiResponse<List<Role>> getUserRoles(Integer userId);
 }

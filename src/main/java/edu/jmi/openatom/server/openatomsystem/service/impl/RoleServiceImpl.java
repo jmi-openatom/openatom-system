@@ -189,6 +189,20 @@ public class RoleServiceImpl implements RoleService {
     return ApiResponse.success("用户角色分配成功");
   }
 
+  @Override
+  public ApiResponse<List<Role>> getUserRoles(Integer userId) {
+    if (userId == null) {
+      return ApiResponse.error(400, "userId不能为空");
+    }
+    List<UserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
+    List<Integer> roleIds = userRoles.stream().map(UserRole::getRoleId).toList();
+    if (roleIds.isEmpty()) {
+      return ApiResponse.success(List.of());
+    }
+    List<Role> roles = roleMapper.selectBatchIds(roleIds);
+    return ApiResponse.success(roles);
+  }
+
   private boolean isBlank(String value) {
     return value == null || value.isBlank();
   }
