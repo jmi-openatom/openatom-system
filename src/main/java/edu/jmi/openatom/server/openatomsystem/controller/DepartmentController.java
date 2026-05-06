@@ -23,7 +23,6 @@ public class DepartmentController {
   private final DepartmentService departmentService;
 
   @GetMapping("/clubs/{clubId}/departments")
-  @SaCheckPermission("department:list")
   public ApiResponse<List<ClubDepartment>> getDepartmentsByClubId(@PathVariable Integer clubId) {
     return departmentService.getDepartmentsByClubId(clubId);
   }
