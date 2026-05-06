@@ -20,11 +20,24 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
   @Transactional(rollbackFor = Exception.class)
   public void run(ApplicationArguments args) {
     ensureUserColumns();
+    fixAdminPassword();
     ensureRecruitmentCampaignColumns();
     ensureMembershipApplicationColumns();
     ensureFormSubmissionTable();
     ensureOfficeDocumentTable();
     ensureOperationLogColumns();
+  }
+
+  private void fixAdminPassword() {
+    // 修正错误的 admin 初始化密码哈希 (240be... 是错误的 admin123456 哈希)
+    int updated =
+        jdbcTemplate.update(
+            "UPDATE tb_user SET password = ? WHERE user_name = 'admin' AND password = ?",
+            "ac0e7d037817094e9e0b4441f9bae3209d67b02fa484917065f71b16109a1a78",
+            "240be518fabd2724bfcdd75c7315e70b8a97ef591dce6c584b77f21cd2e40dbb");
+    if (updated > 0) {
+      log.info("Fixed admin initialization password hash");
+    }
   }
 
   private void ensureUserColumns() {

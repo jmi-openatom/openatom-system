@@ -664,7 +664,7 @@ WHERE NOT EXISTS (SELECT 1 FROM `sys_role` WHERE `code` = 'probationary_member')
 -- 初始化管理员账号，密码为 admin123456 的 SHA-256
 INSERT INTO `tb_user` (`user_name`, `password`, `real_name`, `student_id`, `user_status`)
 SELECT 'admin',
-       '240be518fabd2724bfcdd75c7315e70b8a97ef591dce6c584b77f21cd2e40dbb',
+       'ac0e7d037817094e9e0b4441f9bae3209d67b02fa484917065f71b16109a1a78',
        '系统管理员',
        'admin',
        1
