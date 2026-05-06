@@ -1,7 +1,5 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
-import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
-
 import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.stp.SaLoginModel;
