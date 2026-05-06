@@ -299,13 +299,8 @@ export default {
           name: this.form.name,
           status: this.form.status,
           loginRequired: this.form.loginRequired,
-          applyStartAt: this.form.applyStartAt,
-          applyEndAt: this.form.applyEndAt,
-          interviewStartAt: this.form.interviewStartAt || null,
-          interviewEndAt: this.form.interviewEndAt || null,
-          resultPublishAt: this.form.resultPublishAt || null,
-          targetGrades: this.form.targetGrades || [],
-          maxApplicants: this.form.maxApplicants || null,
+          startAt: this.form.startAt || null,
+          endAt: this.form.endAt || null,
           formSchema
         }
 

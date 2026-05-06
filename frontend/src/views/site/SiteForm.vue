@@ -16,7 +16,7 @@
           <h3>当前表单</h3>
           <p class="campaign-line"><strong>{{ formMeta.name || '信息收集表单' }}</strong></p>
           <p class="campaign-line">提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}</p>
-          <p class="campaign-line">收集时间：{{ formatRange(formMeta.applyStartAt, formMeta.applyEndAt) }}</p>
+          <p class="campaign-line">收集时间：{{ formatRange(formMeta.startAt, formMeta.endAt) }}</p>
         </div>
       </div>
       <el-card shadow="never">
@@ -125,18 +125,18 @@ export default {
     canSubmit() {
       if (!this.formMeta?.id) return false
       if (['closed', 'archived'].includes(this.formMeta.status)) return false
-      if (this.formMeta.applyStartAt && new Date(this.formMeta.applyStartAt).getTime() > Date.now()) return false
-      if (!this.formMeta.applyEndAt) return true
-      return new Date(this.formMeta.applyEndAt).getTime() >= Date.now()
+      if (this.formMeta.startAt && new Date(this.formMeta.startAt).getTime() > Date.now()) return false
+      if (!this.formMeta.endAt) return true
+      return new Date(this.formMeta.endAt).getTime() >= Date.now()
     },
     dynamicFields() {
       return this.parseSchema(this.formMeta?.formSchema)
     },
     hasApplicantNameField() {
-      return this.dynamicFields.some((field) => field.key === 'applicantName')
+      return Boolean(this.findApplicantFieldKey())
     },
     hasContactField() {
-      return this.dynamicFields.some((field) => field.key === 'contact')
+      return Boolean(this.findContactFieldKey())
     }
   },
   created() {
@@ -163,16 +163,18 @@ export default {
       this.resetForm()
     },
     buildRules() {
+      const applicantFieldKey = this.findApplicantFieldKey()
+      const contactFieldKey = this.findContactFieldKey()
       return {
         ...(this.requiresLogin
           ? {}
           : {
-              ...(!this.hasApplicantNameField
-                ? { 'formData.anonymousName': [{ required: true, message: '请填写联系人', trigger: 'blur' }] }
-                : {}),
-              ...(!this.hasContactField
-                ? { 'formData.anonymousContact': [{ required: true, message: '请填写联系方式', trigger: 'blur' }] }
-                : {})
+              ...(applicantFieldKey
+                ? { [`formData.${applicantFieldKey}`]: [{ required: true, message: '请填写联系人', trigger: 'blur' }] }
+                : { 'formData.anonymousName': [{ required: true, message: '请填写联系人', trigger: 'blur' }] }),
+              ...(contactFieldKey
+                ? { [`formData.${contactFieldKey}`]: [{ required: true, message: '请填写联系方式', trigger: 'blur' }] }
+                : { 'formData.anonymousContact': [{ required: true, message: '请填写联系方式', trigger: 'blur' }] })
             }),
         ...this.dynamicFields.reduce((rules, field) => {
           if (field.required) {
@@ -202,9 +204,11 @@ export default {
         }
         this.submitting = true
         try {
+          const anonymousName = this.resolveAnonymousName()
+          const anonymousContact = this.resolveAnonymousContact()
           await formSubmissionApi.create(this.formMeta.id, {
-            anonymousName: this.form.formData.anonymousName,
-            anonymousContact: this.form.formData.anonymousContact,
+            anonymousName,
+            anonymousContact,
             formData: this.form.formData
           })
           ElMessage.success('表单已提交')
@@ -232,6 +236,24 @@ export default {
     },
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
+    },
+    findApplicantFieldKey() {
+      const candidates = ['anonymousName', 'applicantName', 'name', 'realName']
+      const field = this.dynamicFields.find((item) => candidates.includes(item.key))
+      return field?.key || ''
+    },
+    findContactFieldKey() {
+      const candidates = ['anonymousContact', 'contact', 'phone', 'email', 'wechat']
+      const field = this.dynamicFields.find((item) => candidates.includes(item.key))
+      return field?.key || ''
+    },
+    resolveAnonymousName() {
+      const applicantFieldKey = this.findApplicantFieldKey()
+      return (this.form.formData.anonymousName || this.form.formData[applicantFieldKey] || '').trim()
+    },
+    resolveAnonymousContact() {
+      const contactFieldKey = this.findContactFieldKey()
+      return (this.form.formData.anonymousContact || this.form.formData[contactFieldKey] || '').trim()
     }
   }
 }
