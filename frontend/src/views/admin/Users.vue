@@ -29,16 +29,16 @@
     </div>
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="userName" label="用户名" min-width="130" />
-      <el-table-column prop="realName" label="姓名" min-width="120" />
-      <el-table-column prop="studentId" label="学号" min-width="120" />
-      <el-table-column prop="className" label="班级" min-width="120" />
-      <el-table-column prop="phone" label="手机号" min-width="140" />
-      <el-table-column prop="email" label="邮箱" min-width="180" />
+      <el-table-column prop="userName" label="用户名" />
+      <el-table-column prop="realName" label="姓名"  />
+      <el-table-column prop="studentId" label="学号"  />
+      <el-table-column prop="className" label="班级" />
+      <el-table-column prop="phone" label="手机号" />
+      <el-table-column prop="email" label="邮箱"  />
       <el-table-column prop="userStatus" label="状态" width="110">
         <template #default="{ row }"><el-tag :type="statusType(row.userStatus)">{{ statusText(row.userStatus) }}</el-tag></template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
           <el-button v-if="canUpdateUser" link type="primary" @click="openDialog(row)">编辑</el-button>
           <el-button v-if="canAssignRole" link type="success" @click="openRoleDialog(row)">分配角色</el-button>

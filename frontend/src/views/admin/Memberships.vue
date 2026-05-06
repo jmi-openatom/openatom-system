@@ -27,7 +27,7 @@
           <el-switch v-model="row.featured" @change="toggleFeatured(row)" />
         </template>
       </el-table-column>
-      <el-table-column prop="sortOrder" label="展示排序" width="120">
+      <el-table-column prop="sortOrder" label="展示排序" width="150">
         <template #default="{ row }">
           <el-input-number v-model="row.sortOrder" :min="0" size="small" @change="updateDisplay(row)" />
         </template>
@@ -35,7 +35,7 @@
       <el-table-column prop="status" label="状态" width="110">
         <template #default="{ row }"><el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag></template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openAssign(row)">分配岗位</el-button>
           <el-button link type="success" @click="changeStatus(row, 'active')">转正式</el-button>

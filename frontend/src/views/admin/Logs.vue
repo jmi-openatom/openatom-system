@@ -15,20 +15,20 @@
             <el-table-column label="ID" prop="id" width="80"/>
             <el-table-column v-if="activeTab === 'operation'" label="操作" prop="action"/>
             <el-table-column v-if="activeTab === 'operation'" label="详细" prop="content"/>
-            <el-table-column label="模块" prop="module">
+            <el-table-column label="模块" prop="module" width="120">
                 <template #default="{ row }">{{ row.module || 'login' }}</template>
             </el-table-column>
             >
-            <el-table-column label="时间" min-width="170" prop="createdAt">
+            <el-table-column label="时间" min-width="60" prop="createdAt">
                 <template #default="{ row }">{{ formatDateTime(row.createdAt || row.loginAt) }}</template>
             </el-table-column>
-            <el-table-column label="登陆IP">
+            <el-table-column label="登陆IP" min-width="70">
                 <template #default="{ row }">{{ row.ip || '无数据' }}</template>
             </el-table-column>
-            <el-table-column label="用户">
+            <el-table-column label="用户" min-width="70">
                 <template #default="{ row }">{{ row.userId || '无数据' }}</template>
             </el-table-column>
-            <el-table-column label="设备">
+            <el-table-column label="设备" min-width="70">
                 <template #default="{ row }">{{ row.userAgent || '无数据' }}</template>
             </el-table-column>
         </el-table>

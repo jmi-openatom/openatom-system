@@ -15,10 +15,10 @@
 
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="name" label="岗位名称" min-width="160" />
       <el-table-column label="所属部门" min-width="160">
         <template #default="{ row }">{{ departmentName(row.departmentId) }}</template>
       </el-table-column>
+      <el-table-column prop="name" label="岗位名称" min-width="160" />
       <el-table-column prop="maxCount" label="人数上限" width="110">
         <template #default="{ row }">{{ row.maxCount || '-' }}</template>
       </el-table-column>
