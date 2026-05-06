@@ -3,7 +3,7 @@
         <div class="login-panel">
             <div class="login-copy">
                 <span class="login-logo">OA</span>
-                <h1>OpenAtom 管理后台</h1>
+                <h1>OpenAtom 登录</h1>
                 <p>登录后可统一维护社团、成员、审批、面试和权限等业务数据。</p>
             </div>
             <el-card class="login-card" shadow="never">
