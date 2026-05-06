@@ -16,4 +16,6 @@ public interface AuthService {
   ApiResponse<String> logout(String refreshToken);
 
   ApiResponse<ResponseCurrentUserDTO> getCurrentUserInfo();
+
+  ApiResponse<Boolean> updateRegisterEnabled(Boolean enabled);
 }

@@ -19,6 +19,8 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void run(ApplicationArguments args) {
+    ensureSystemSettingTable();
+    ensureRegisterSettingSeed();
     ensureUserColumns();
     fixAdminPassword();
     ensureRecruitmentCampaignColumns();
@@ -38,6 +40,31 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     if (updated > 0) {
       log.info("Fixed admin initialization password hash");
     }
+  }
+
+  private void ensureSystemSettingTable() {
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `system_setting`
+        (
+            `setting_key` VARCHAR(100) NOT NULL COMMENT '配置键',
+            `setting_value` VARCHAR(255) DEFAULT NULL COMMENT '配置值',
+            `description` VARCHAR(255) DEFAULT NULL COMMENT '配置说明',
+            `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            PRIMARY KEY (`setting_key`)
+        ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='系统配置表'
+        """);
+  }
+
+  private void ensureRegisterSettingSeed() {
+    jdbcTemplate.update(
+        """
+        INSERT INTO system_setting (`setting_key`, `setting_value`, `description`)
+        SELECT 'register_enabled', 'false', '是否开放用户自助注册'
+        WHERE NOT EXISTS (
+            SELECT 1 FROM system_setting WHERE setting_key = 'register_enabled'
+        )
+        """);
   }
 
   private void ensureUserColumns() {

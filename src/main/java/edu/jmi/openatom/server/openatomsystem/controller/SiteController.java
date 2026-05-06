@@ -50,4 +50,9 @@ public class SiteController {
   public ApiResponse<ResponseSiteProgressDTO> getMyProgress() {
     return siteService.getMyProgress();
   }
+
+  @GetMapping("/site/register-enabled")
+  public ApiResponse<Boolean> getRegisterEnabled() {
+    return siteService.getRegisterEnabled();
+  }
 }

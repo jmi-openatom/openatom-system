@@ -62,11 +62,11 @@
               </el-select>
             </el-form-item>
           </template>
-          <el-form-item v-if="!requiresLogin" label="联系人" prop="anonymousName">
-            <el-input v-model="form.anonymousName" placeholder="请输入姓名" />
+          <el-form-item v-if="!requiresLogin && !hasApplicantNameField" label="联系人" prop="formData.applicantName">
+            <el-input v-model="form.formData.applicantName" placeholder="请输入姓名" />
           </el-form-item>
-          <el-form-item v-if="!requiresLogin" label="联系方式" prop="anonymousContact">
-            <el-input v-model="form.anonymousContact" placeholder="请填写手机号、邮箱或微信" />
+          <el-form-item v-if="!requiresLogin && !hasContactField" label="联系方式" prop="formData.contact">
+            <el-input v-model="form.formData.contact" placeholder="请填写手机号、邮箱或微信" />
           </el-form-item>
           <el-divider v-if="dynamicFields.length" content-position="left">详细信息</el-divider>
           <template v-for="field in dynamicFields" :key="field.key">
@@ -110,7 +110,7 @@
 
 <script>
 import { ElMessage } from 'element-plus'
-import { applicationApi, clubApi, formSubmissionApi, siteApi } from '../../api'
+import { applicationApi, clubApi, siteApi } from '../../api'
 import { getToken } from '../../utils/auth'
 import { formatDateTime } from '../../utils/format'
 
@@ -123,8 +123,6 @@ export default {
       departments: [],
       submitting: false,
       form: {
-        anonymousName: '',
-        anonymousContact: '',
         firstChoiceDepartmentId: undefined,
         secondChoiceDepartmentId: undefined,
         formData: {}
@@ -148,6 +146,12 @@ export default {
     },
     dynamicFields() {
       return this.parseSchema(this.formMeta?.formSchema)
+    },
+    hasApplicantNameField() {
+      return this.dynamicFields.some((field) => field.key === 'applicantName')
+    },
+    hasContactField() {
+      return this.dynamicFields.some((field) => field.key === 'contact')
     }
   },
   created() {
@@ -180,8 +184,12 @@ export default {
               firstChoiceDepartmentId: [{ required: true, message: '请选择第一志愿', trigger: 'change' }]
             }
           : {
-              anonymousName: [{ required: true, message: '请填写联系人', trigger: 'blur' }],
-              anonymousContact: [{ required: true, message: '请填写联系方式', trigger: 'blur' }]
+              ...(!this.hasApplicantNameField
+                ? { 'formData.applicantName': [{ required: true, message: '请填写联系人', trigger: 'blur' }] }
+                : {}),
+              ...(!this.hasContactField
+                ? { 'formData.contact': [{ required: true, message: '请填写联系方式', trigger: 'blur' }] }
+                : {})
             }),
         ...this.dynamicFields.reduce((rules, field) => {
           if (field.required) {
@@ -211,24 +219,17 @@ export default {
         }
         this.submitting = true
         try {
+          await applicationApi.create({
+            campaignId: this.formMeta.id,
+            clubId: this.club.id,
+            firstChoiceDepartmentId: this.hasToken ? this.form.firstChoiceDepartmentId : undefined,
+            secondChoiceDepartmentId: this.hasToken ? this.form.secondChoiceDepartmentId : undefined,
+            profile: this.form.formData
+          })
           if (this.hasToken) {
-            // 登录用户提交入会申请
-            await applicationApi.create({
-              campaignId: this.formMeta.id,
-              clubId: this.club.id,
-              firstChoiceDepartmentId: this.form.firstChoiceDepartmentId,
-              secondChoiceDepartmentId: this.form.secondChoiceDepartmentId,
-              profile: this.form.formData
-            })
             ElMessage.success('入会申请已提交，请在“我的申请”中关注进度')
           } else {
-            // 匿名用户提交普通表单
-            await formSubmissionApi.create(this.formMeta.id, {
-              anonymousName: this.form.anonymousName,
-              anonymousContact: this.form.anonymousContact,
-              formData: this.form.formData
-            })
-            ElMessage.success('表单已提交')
+            ElMessage.success('入会申请已提交')
           }
           this.resetForm()
           if (this.hasToken) {
@@ -244,9 +245,13 @@ export default {
       this.dynamicFields.forEach((field) => {
         formData[field.key] = ''
       })
+      if (!this.hasApplicantNameField) {
+        formData.applicantName = ''
+      }
+      if (!this.hasContactField) {
+        formData.contact = ''
+      }
       this.form = {
-        anonymousName: '',
-        anonymousContact: '',
         firstChoiceDepartmentId: undefined,
         secondChoiceDepartmentId: undefined,
         formData

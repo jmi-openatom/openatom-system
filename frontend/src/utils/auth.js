@@ -11,11 +11,17 @@ export function getToken() {
 
 export function setSession(payload) {
   const data = payload || {}
-  localStorage.setItem(TOKEN_KEY, data.accessToken || data.token || '')
-  localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken || '')
-  localStorage.setItem(USER_KEY, JSON.stringify(data.user || {}))
-  localStorage.setItem(ROLE_KEY, JSON.stringify(data.roles || []))
-  localStorage.setItem(PERMISSION_KEY, JSON.stringify(data.permissions || []))
+  const hasAccessToken = Object.prototype.hasOwnProperty.call(data, 'accessToken') || Object.prototype.hasOwnProperty.call(data, 'token')
+  const hasRefreshToken = Object.prototype.hasOwnProperty.call(data, 'refreshToken')
+  const hasUser = Object.prototype.hasOwnProperty.call(data, 'user')
+  const hasRoles = Object.prototype.hasOwnProperty.call(data, 'roles')
+  const hasPermissions = Object.prototype.hasOwnProperty.call(data, 'permissions')
+
+  localStorage.setItem(TOKEN_KEY, hasAccessToken ? (data.accessToken || data.token || '') : (localStorage.getItem(TOKEN_KEY) || ''))
+  localStorage.setItem(REFRESH_TOKEN_KEY, hasRefreshToken ? (data.refreshToken || '') : (localStorage.getItem(REFRESH_TOKEN_KEY) || ''))
+  localStorage.setItem(USER_KEY, JSON.stringify(hasUser ? (data.user || {}) : getCurrentUser()))
+  localStorage.setItem(ROLE_KEY, JSON.stringify(hasRoles ? (data.roles || []) : getCurrentRoles()))
+  localStorage.setItem(PERMISSION_KEY, JSON.stringify(hasPermissions ? (data.permissions || []) : getCurrentPermissions()))
 }
 
 export function clearSession() {

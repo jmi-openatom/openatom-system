@@ -16,6 +16,9 @@ export const siteApi = {
   progress() {
     return request.get('/site/progress')
   },
+  registerEnabled() {
+    return request.get('/site/register-enabled')
+  },
   formDetail(id) {
     return request.get(`/site/forms/${id}`)
   }
@@ -33,6 +36,9 @@ export const authApi = {
   },
   me() {
     return request.get('/auth/me')
+  },
+  updateRegisterEnabled(enabled) {
+    return request.patch('/auth/register-enabled', null, { params: { enabled } })
   }
 }
 

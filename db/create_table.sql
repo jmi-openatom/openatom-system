@@ -444,6 +444,17 @@ CREATE TABLE IF NOT EXISTS `login_log`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='登录日志表';
 
+-- 系统配置表
+CREATE TABLE IF NOT EXISTS `system_setting`
+(
+    `setting_key`   VARCHAR(100) NOT NULL COMMENT '配置键',
+    `setting_value` VARCHAR(255) DEFAULT NULL COMMENT '配置值',
+    `description`   VARCHAR(255) DEFAULT NULL COMMENT '配置说明',
+    `updated_at`    TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`setting_key`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT ='系统配置表';
+
 -- 初始化权限点
 INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
 SELECT '退出登录', 'auth:logout', 'api', '/auth/logout', 'POST' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'auth:logout');
@@ -669,6 +680,11 @@ SELECT 'admin',
        'admin',
        1
 WHERE NOT EXISTS (SELECT 1 FROM `tb_user` WHERE `user_name` = 'admin' OR `student_id` = 'admin');
+
+-- 初始化系统配置
+INSERT INTO `system_setting` (`setting_key`, `setting_value`, `description`)
+SELECT 'register_enabled', 'false', '是否开放用户自助注册'
+WHERE NOT EXISTS (SELECT 1 FROM `system_setting` WHERE `setting_key` = 'register_enabled');
 
 -- 绑定 super_admin 全部权限
 INSERT IGNORE INTO `sys_role_permission` (`role_id`, `permission_id`)

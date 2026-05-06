@@ -29,6 +29,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.entity.UserRole;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
+import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
 import edu.jmi.openatom.server.openatomsystem.common.web.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
@@ -64,6 +65,7 @@ public class AuthServiceImpl implements AuthService {
   private final LoginLogMapper loginLogMapper;
   private final PasswordService passwordService;
   private final ClientIpResolver clientIpResolver;
+  private final RegistrationSettingService registrationSettingService;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -72,6 +74,9 @@ public class AuthServiceImpl implements AuthService {
         || requestRegisterDTO.getUsername() == null
         || requestRegisterDTO.getPassword() == null) {
       return ApiResponse.error("注册信息不能为空");
+    }
+    if (!registrationSettingService.isRegisterEnabled()) {
+      return ApiResponse.error(403, "当前未开放注册");
     }
     String studentId =
         requestRegisterDTO.getStudentId() == null || requestRegisterDTO.getStudentId().isBlank()
@@ -210,6 +215,20 @@ public class AuthServiceImpl implements AuthService {
             .roles(snapshot.roles())
             .permissions(snapshot.permissions())
             .build());
+  }
+
+  @Override
+  public ApiResponse<Boolean> updateRegisterEnabled(Boolean enabled) {
+    if (enabled == null) {
+      return ApiResponse.error(400, "注册开关不能为空");
+    }
+    if (!StpUtil.isLogin()) {
+      return ApiResponse.error(401, "请先登录");
+    }
+    if (!StpUtil.hasRole("super_admin")) {
+      return ApiResponse.error(403, "仅系统管理员可修改注册开关");
+    }
+    return ApiResponse.success(registrationSettingService.updateRegisterEnabled(enabled), "注册开关更新成功");
   }
 
   private ResponseLoginDTO createLoginResponse(User user) {

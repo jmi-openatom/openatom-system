@@ -28,6 +28,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.InterviewMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RecruitmentCampaignMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
+import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
 import edu.jmi.openatom.server.openatomsystem.service.SiteService;
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
@@ -56,6 +57,7 @@ public class SiteServiceImpl implements SiteService {
   private final InterviewMapper interviewMapper;
   private final ClubActivityMapper clubActivityMapper;
   private final ClubAwardMapper clubAwardMapper;
+  private final RegistrationSettingService registrationSettingService;
 
   @Override
   public ApiResponse<ResponseClubHomeDTO> getClubHome(String clubCode) {
@@ -230,6 +232,11 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
+  public ApiResponse<Boolean> getRegisterEnabled() {
+    return ApiResponse.success(registrationSettingService.isRegisterEnabled());
+  }
+
+  @Override
   public ApiResponse<ResponseRecruitmentDTO> getRecruitment(Integer clubId) {
     Club club = findClub(clubId, null);
     if (club == null) {
@@ -312,7 +319,7 @@ public class SiteServiceImpl implements SiteService {
       List<ClubAward> awards) {
     long activeMembers =
         memberships.stream()
-            .filter(membership -> !"exited".equalsIgnoreCase(membership.getStatus()))
+            .filter(membership -> !"left".equalsIgnoreCase(membership.getStatus()))
             .count();
     long openCampaigns =
         campaigns.stream().filter(campaign -> "published".equalsIgnoreCase(campaign.getStatus())).count();
@@ -367,7 +374,8 @@ public class SiteServiceImpl implements SiteService {
     List<ClubMembership> topMemberships =
         memberships.stream()
             .filter(membership -> membership.getUserId() != null)
-            .filter(membership -> !"exited".equalsIgnoreCase(membership.getStatus()))
+            .filter(membership -> Boolean.TRUE.equals(membership.getFeatured()))
+            .filter(membership -> !"left".equalsIgnoreCase(membership.getStatus()))
             .sorted(
                 Comparator.comparing(
                         ClubMembership::getFeatured, Comparator.nullsLast(Comparator.reverseOrder()))

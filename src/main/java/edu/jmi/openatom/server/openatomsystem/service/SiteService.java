@@ -26,4 +26,6 @@ public interface SiteService {
   ApiResponse<ResponseSiteFormDetailDTO> getFormDetail(Integer campaignId);
 
   ApiResponse<ResponseSiteProgressDTO> getMyProgress();
+
+  ApiResponse<Boolean> getRegisterEnabled();
 }

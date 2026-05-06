@@ -10,11 +10,13 @@
         <div class="register-switch">
           <el-switch
             v-model="registerEnabled"
+            :disabled="!canManageRegister"
             inline-prompt
             active-text="注册开"
             inactive-text="注册关"
+            @change="handleRegisterSwitch"
           />
-          <span>允许新用户自助注册</span>
+          <span>{{ canManageRegister ? '允许新用户自助注册' : `当前注册：${registerEnabled ? '开启' : '关闭'}` }}</span>
         </div>
         <el-tabs v-model="activeTab">
           <el-tab-pane label="账号登录" name="login">
@@ -59,11 +61,9 @@
 
 <script>
 import { ElMessage } from 'element-plus'
-import { authApi } from '../../api'
+import { authApi, siteApi } from '../../api'
 import { clearRememberedLogin, getRememberedLogin, setRememberedLogin, setSession } from '../../utils/auth'
-import { hasAdminAccess } from '../../utils/permission'
-
-const REGISTER_SWITCH_KEY = 'openatom_register_enabled'
+import { hasAdminAccess, hasRole } from '../../utils/permission'
 
 export default {
   name: 'AdminLogin',
@@ -95,22 +95,37 @@ export default {
       }
     }
   },
-  created() {
+  computed: {
+    canManageRegister() {
+      return hasRole('super_admin')
+    }
+  },
+  async created() {
     const rememberedLogin = getRememberedLogin()
     this.loginForm.username = rememberedLogin.username || ''
     this.loginForm.password = rememberedLogin.password || ''
     this.rememberPassword = Boolean(rememberedLogin.remember)
-    this.registerEnabled = localStorage.getItem(REGISTER_SWITCH_KEY) === 'true'
-  },
-  watch: {
-    registerEnabled(value) {
-      localStorage.setItem(REGISTER_SWITCH_KEY, String(value))
-      if (!value && this.activeTab === 'register') {
-        this.activeTab = 'login'
-      }
-    }
+    await this.fetchRegisterEnabled()
   },
   methods: {
+    async fetchRegisterEnabled() {
+      this.registerEnabled = Boolean(await siteApi.registerEnabled())
+      if (!this.registerEnabled && this.activeTab === 'register') {
+        this.activeTab = 'login'
+      }
+    },
+    async handleRegisterSwitch(value) {
+      if (!this.canManageRegister) {
+        await this.fetchRegisterEnabled()
+        return
+      }
+      try {
+        await authApi.updateRegisterEnabled(value)
+        ElMessage.success(value ? '已开启注册' : '已关闭注册')
+      } catch (error) {
+        await this.fetchRegisterEnabled()
+      }
+    },
     handleLogin() {
       this.$refs.loginRef.validate(async (valid) => {
         if (!valid) return

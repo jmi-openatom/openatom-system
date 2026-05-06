@@ -9,7 +9,7 @@
           </div>
         </template>
         <el-descriptions :column="1" border>
-          <el-descriptions-item label="用户名">{{ user.username || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="用户名">{{ user.userName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="姓名">{{ user.realName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="邮箱">{{ user.email || '-' }}</el-descriptions-item>
           <el-descriptions-item label="手机号">{{ user.phone || '-' }}</el-descriptions-item>
@@ -37,7 +37,7 @@
 </template>
 
 <script>
-import { applicationApi, authApi } from '../../api'
+import { authApi, siteApi } from '../../api'
 import { getCurrentUser, getToken, setSession } from '../../utils/auth'
 import { formatDateTime, statusType } from '../../utils/format'
 
@@ -64,13 +64,18 @@ export default {
     formatDateTime,
     statusType,
     async fetchProfile() {
-      const user = await authApi.me()
-      this.user = user || {}
-      setSession({ accessToken: getToken(), user: this.user })
+      const result = await authApi.me()
+      this.user = result?.user || {}
+      setSession({
+        accessToken: getToken(),
+        user: this.user,
+        roles: result?.roles || [],
+        permissions: result?.permissions || []
+      })
     },
     async fetchApplications() {
-      const result = await applicationApi.list({ applicantUserId: this.user.id })
-      this.applications = result?.list || result || []
+      const result = await siteApi.progress()
+      this.applications = result?.applications || []
     }
   }
 }
