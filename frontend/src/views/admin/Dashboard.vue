@@ -43,10 +43,12 @@
                     </el-table-column>
                 </el-table>
             </el-card>
+            <br>
+            <el-card shadow="never">
+                <button @click="handleRegisterSwitch">切换前端注册</button>
+            </el-card>
         </div>
-        <el-card shadow="never">
-            <button @click="handleRegisterSwitch">切换前端注册</button>
-        </el-card>
+
         <el-empty v-else description="当前账号没有可展示的概览数据权限"/>
     </div>
 </template>
