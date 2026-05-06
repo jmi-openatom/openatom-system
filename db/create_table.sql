@@ -299,6 +299,7 @@ CREATE TABLE IF NOT EXISTS `club_membership`
     `status`        VARCHAR(30)    DEFAULT 'probation' COMMENT '成员状态',
     `featured`      TINYINT(1)     DEFAULT 0 COMMENT '是否在官网主要人员展示',
     `sort_order`    INT            DEFAULT 0 COMMENT '官网展示排序',
+    `description`   VARCHAR(255)   DEFAULT NULL COMMENT '官网主要人员简介',
     `joined_at`     TIMESTAMP      DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
     `left_at`       TIMESTAMP NULL DEFAULT NULL COMMENT '离开时间',
     PRIMARY KEY (`id`),

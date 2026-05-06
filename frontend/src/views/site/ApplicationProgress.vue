@@ -62,6 +62,25 @@
             <el-step title="结果通知" />
           </el-steps>
 
+          <el-divider content-position="left" v-if="item.approvalRecords?.length">审批意见</el-divider>
+          <div v-if="item.approvalRecords?.length" class="approval-list">
+            <el-timeline>
+              <el-timeline-item
+                v-for="(record, index) in item.approvalRecords"
+                :key="index"
+                :timestamp="formatDateTime(record.createdAt)"
+                :type="approvalActionType(record.action)"
+                placement="top"
+              >
+                <el-card shadow="hover" class="approval-card">
+                  <h4>{{ approvalNodeText(record.node) }} - {{ approvalActionText(record.action) }}</h4>
+                  <p v-if="record.comment" class="approval-comment">{{ record.comment }}</p>
+                  <p v-else class="approval-comment" style="color: #909399; font-style: italic;">（无意见）</p>
+                </el-card>
+              </el-timeline-item>
+            </el-timeline>
+          </div>
+
           <el-divider content-position="left">面试安排</el-divider>
           <div v-if="item.interviews?.length" class="interview-list">
             <div v-for="interview in item.interviews" :key="interview.id" class="interview-item">
@@ -73,6 +92,19 @@
                 <span>时间：{{ formatRange(interview.scheduledStartAt, interview.scheduledEndAt) }}</span>
                 <span>方式：{{ interviewModeText(interview.mode) }}</span>
                 <span>地点/链接：{{ interview.location || '-' }}</span>
+              </div>
+              <div v-if="interview.comment || interview.suggestion" class="interview-feedback">
+                <el-divider border-style="dashed" style="margin: 10px 0" />
+                <div class="feedback-content">
+                  <span v-if="interview.suggestion">
+                    <strong>面试建议：</strong>
+                    <el-tag size="small" :type="suggestionType(interview.suggestion)">{{ suggestionText(interview.suggestion) }}</el-tag>
+                  </span>
+                  <div v-if="interview.comment" style="margin-top: 6px;">
+                    <strong>评语：</strong>
+                    <span>{{ interview.comment }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -201,6 +233,52 @@ export default {
     },
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
+    },
+    approvalNodeText(node) {
+      return (
+        {
+          initial_review: '初审',
+          final_review: '终审'
+        }[node] || node || '审批'
+      )
+    },
+    approvalActionText(action) {
+      return (
+        {
+          approve: '同意',
+          reject: '拒绝',
+          waitlist: '候补',
+          pass: '通过'
+        }[action] || action || '审批'
+      )
+    },
+    approvalActionType(action) {
+      return (
+        {
+          approve: 'success',
+          pass: 'success',
+          reject: 'danger',
+          waitlist: 'warning'
+        }[action] || 'info'
+      )
+    },
+    suggestionText(suggestion) {
+      return (
+        {
+          pass: '建议通过',
+          reject: '建议淘汰',
+          waitlist: '建议待定'
+        }[suggestion] || suggestion
+      )
+    },
+    suggestionType(suggestion) {
+      return (
+        {
+          pass: 'success',
+          reject: 'danger',
+          waitlist: 'warning'
+        }[suggestion] || 'info'
+      )
     }
   }
 }
@@ -307,6 +385,38 @@ export default {
   display: grid;
   gap: 8px;
   color: #475569;
+}
+
+.approval-list {
+  padding: 0 10px;
+  margin-top: 10px;
+}
+
+.approval-card {
+  --el-card-padding: 12px 16px;
+}
+
+.approval-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #303133;
+}
+
+.approval-comment {
+  margin: 0;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.interview-feedback {
+  margin-top: 8px;
+}
+
+.feedback-content {
+  font-size: 13px;
+  color: #606266;
 }
 
 @media (max-width: 900px) {
