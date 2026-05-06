@@ -102,7 +102,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
         CREATE TABLE IF NOT EXISTS `form_submission`
         (
             `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-            `campaign_id` INT NOT NULL COMMENT '表单ID',
+            `form_id` INT NOT NULL COMMENT '表单ID',
             `club_id` INT NOT NULL COMMENT '社团ID',
             `user_id` INT NULL COMMENT '提交用户ID',
             `anonymous_name` VARCHAR(80) DEFAULT NULL COMMENT '匿名提交联系人',
@@ -112,11 +112,30 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
             PRIMARY KEY (`id`),
-            KEY `idx_form_submission_campaign` (`campaign_id`),
+            KEY `idx_form_submission_form` (`form_id`),
             KEY `idx_form_submission_club` (`club_id`),
             KEY `idx_form_submission_user` (`user_id`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='通用表单提交记录表'
         """);
+    if (!tableExists("form_submission")) {
+      return;
+    }
+    if (columnExists("form_submission", "campaign_id") && !columnExists("form_submission", "form_id")) {
+      jdbcTemplate.execute(
+          """
+          ALTER TABLE `form_submission`
+          CHANGE COLUMN `campaign_id` `form_id` INT NOT NULL COMMENT '表单ID'
+          """);
+      log.info("Renamed legacy column: form_submission.campaign_id -> form_id");
+    }
+    if (!indexExists("form_submission", "idx_form_submission_form")) {
+      jdbcTemplate.execute("ALTER TABLE `form_submission` ADD INDEX `idx_form_submission_form` (`form_id`)");
+      log.info("Added missing index: form_submission.idx_form_submission_form");
+    }
+    if (indexExists("form_submission", "idx_form_submission_campaign")) {
+      jdbcTemplate.execute("ALTER TABLE `form_submission` DROP INDEX `idx_form_submission_campaign`");
+      log.info("Dropped legacy index: form_submission.idx_form_submission_campaign");
+    }
   }
 
   private void ensureOfficeDocumentTable() {
@@ -187,6 +206,20 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             Integer.class,
             tableName,
             columnName);
+    return count != null && count > 0;
+  }
+
+  private boolean indexExists(String tableName, String indexName) {
+    Integer count =
+        jdbcTemplate.queryForObject(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?
+            """,
+            Integer.class,
+            tableName,
+            indexName);
     return count != null && count > 0;
   }
 }

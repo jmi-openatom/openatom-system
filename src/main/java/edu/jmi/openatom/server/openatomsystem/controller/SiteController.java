@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseClubHomeDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDetailDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormDetailDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteProgressDTO;
@@ -38,6 +39,12 @@ public class SiteController {
   public ApiResponse<ResponseRecruitmentDTO> getRecruitment(
       @RequestParam(required = false) Integer clubId) {
     return siteService.getRecruitment(clubId);
+  }
+
+  @GetMapping("/site/recruitment/{campaignId}")
+  public ApiResponse<ResponseRecruitmentDetailDTO> getRecruitmentDetail(
+      @org.springframework.web.bind.annotation.PathVariable Integer campaignId) {
+    return siteService.getRecruitmentDetail(campaignId);
   }
 
   @GetMapping("/site/forms/{campaignId}")

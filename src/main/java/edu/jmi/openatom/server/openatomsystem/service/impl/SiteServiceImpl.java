@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseClubHomeDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDetailDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormDetailDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteProgressDTO;
@@ -261,6 +262,30 @@ public class SiteServiceImpl implements SiteService {
         ResponseRecruitmentDTO.builder()
             .club(club)
             .campaigns(campaigns)
+            .departments(departments)
+            .build());
+  }
+
+  @Override
+  public ApiResponse<ResponseRecruitmentDetailDTO> getRecruitmentDetail(Integer campaignId) {
+    RecruitmentCampaign campaign =
+        campaignId == null ? null : recruitmentCampaignMapper.selectById(campaignId);
+    if (campaign == null) {
+      return ApiResponse.error(404, "招新计划不存在");
+    }
+    Club club = clubMapper.selectById(campaign.getClubId());
+    if (club == null) {
+      return ApiResponse.error(404, "社团不存在");
+    }
+    List<ClubDepartment> departments =
+        clubDepartmentMapper.selectList(
+            new LambdaQueryWrapper<ClubDepartment>()
+                .eq(ClubDepartment::getClubId, club.getId())
+                .orderByAsc(ClubDepartment::getId));
+    return ApiResponse.success(
+        ResponseRecruitmentDetailDTO.builder()
+            .club(club)
+            .campaign(campaign)
             .departments(departments)
             .build());
   }

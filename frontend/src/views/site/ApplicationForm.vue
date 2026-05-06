@@ -160,18 +160,19 @@ export default {
   methods: {
     formatDateTime,
     async loadFormDetail() {
-      const result = await siteApi.formDetail(this.$route.params.id)
+      const result = await siteApi.recruitmentDetail(this.$route.params.id)
       this.club = result?.club || {}
       this.formMeta = {
-        ...(result?.form || {}),
-        loginRequired: result?.form?.loginRequired !== false
+        ...(result?.campaign || {}),
+        loginRequired: result?.campaign?.loginRequired !== false
       }
       if (this.formMeta.id && this.requiresLogin && !this.hasToken) {
         ElMessage.warning('当前表单需要登录后填写，正在跳转到登录页')
         this.$router.replace({ path: '/admin/login', query: { redirect: this.$route.fullPath } })
         return
       }
-      if (this.club.id) {
+      this.departments = result?.departments || []
+      if (!this.departments.length && this.club.id) {
         const deptResult = await clubApi.departments(this.club.id)
         this.departments = deptResult?.list || deptResult || []
       }

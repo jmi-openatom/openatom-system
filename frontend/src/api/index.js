@@ -13,6 +13,9 @@ export const siteApi = {
   recruitment(params) {
     return request.get('/site/recruitment', { params })
   },
+  recruitmentDetail(id) {
+    return request.get(`/site/recruitment/${id}`)
+  },
   progress() {
     return request.get('/site/progress')
   },

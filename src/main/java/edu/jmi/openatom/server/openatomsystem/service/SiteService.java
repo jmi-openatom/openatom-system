@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.service;
 
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseClubHomeDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDetailDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteProgressDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormsDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormDetailDTO;
@@ -22,6 +23,8 @@ public interface SiteService {
   ApiResponse<ResponseSiteFormsDTO> getPublicForms(Integer clubId);
 
   ApiResponse<ResponseRecruitmentDTO> getRecruitment(Integer clubId);
+
+  ApiResponse<ResponseRecruitmentDetailDTO> getRecruitmentDetail(Integer campaignId);
 
   ApiResponse<ResponseSiteFormDetailDTO> getFormDetail(Integer campaignId);
 

@@ -123,7 +123,7 @@ public class DefaultClubContentInitializer implements ApplicationRunner {
         CREATE TABLE IF NOT EXISTS `form_submission`
         (
             `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-            `campaign_id` INT NOT NULL COMMENT '表单ID',
+            `form_id` INT NOT NULL COMMENT '表单ID',
             `club_id` INT NOT NULL COMMENT '社团ID',
             `user_id` INT NULL COMMENT '提交用户ID',
             `anonymous_name` VARCHAR(80) DEFAULT NULL COMMENT '匿名提交联系人',
@@ -133,7 +133,7 @@ public class DefaultClubContentInitializer implements ApplicationRunner {
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
             PRIMARY KEY (`id`),
-            KEY `idx_form_submission_campaign` (`campaign_id`),
+            KEY `idx_form_submission_form` (`form_id`),
             KEY `idx_form_submission_club` (`club_id`),
             KEY `idx_form_submission_user` (`user_id`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='通用表单提交记录表'
