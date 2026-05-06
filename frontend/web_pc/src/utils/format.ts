@@ -19,7 +19,7 @@ export function statusType(status: string): string {
     interviewing: 'warning',
     disabled: 'danger',
     rejected: 'danger',
-    closed: 'info'
+    closed: 'info',
   }
   return map[String(status || '').toLowerCase()] || 'info'
 }

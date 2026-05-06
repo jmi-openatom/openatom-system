@@ -14,14 +14,24 @@
         </div>
         <div class="apply-note panel" v-if="formMeta.id">
           <h3>当前表单</h3>
-          <p class="campaign-line"><strong>{{ formMeta.name || '信息收集表单' }}</strong></p>
-          <p class="campaign-line">提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}</p>
+          <p class="campaign-line">
+            <strong>{{ formMeta.name || '信息收集表单' }}</strong>
+          </p>
+          <p class="campaign-line">
+            提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}
+          </p>
           <p class="campaign-line">收集时间：{{ formatRange(formMeta.startAt, formMeta.endAt) }}</p>
         </div>
       </div>
       <el-card shadow="never">
         <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
-          <el-alert v-if="!formMeta.id" type="warning" show-icon :closable="false" title="表单不存在或暂未开放" />
+          <el-alert
+            v-if="!formMeta.id"
+            type="warning"
+            show-icon
+            :closable="false"
+            title="表单不存在或暂未开放"
+          />
           <el-alert
             v-else-if="requiresLogin && !hasToken"
             type="info"
@@ -49,11 +59,22 @@
           <el-form-item label="表单名称">
             <el-input :model-value="formMeta.name || '-'" disabled />
           </el-form-item>
-          <el-form-item v-if="!requiresLogin && !hasApplicantNameField" label="联系人" prop="formData.anonymousName">
+          <el-form-item
+            v-if="!requiresLogin && !hasApplicantNameField"
+            label="联系人"
+            prop="formData.anonymousName"
+          >
             <el-input v-model="form.formData.anonymousName" placeholder="请输入姓名" />
           </el-form-item>
-          <el-form-item v-if="!requiresLogin && !hasContactField" label="联系方式" prop="formData.anonymousContact">
-            <el-input v-model="form.formData.anonymousContact" placeholder="请填写手机号、邮箱或微信" />
+          <el-form-item
+            v-if="!requiresLogin && !hasContactField"
+            label="联系方式"
+            prop="formData.anonymousContact"
+          >
+            <el-input
+              v-model="form.formData.anonymousContact"
+              placeholder="请填写手机号、邮箱或微信"
+            />
           </el-form-item>
           <el-divider v-if="dynamicFields.length" content-position="left">详细信息</el-divider>
           <template v-for="field in dynamicFields" :key="field.key">
@@ -86,7 +107,14 @@
             </el-form-item>
           </template>
           <el-form-item>
-            <el-button type="primary" :disabled="!formMeta.id || !canSubmit" :loading="submitting" @click="submitForm">提交表单</el-button>
+            <el-button
+              type="primary"
+              :disabled="!formMeta.id || !canSubmit"
+              :loading="submitting"
+              @click="submitForm"
+            >
+              提交表单
+            </el-button>
             <el-button @click="resetForm">重置</el-button>
           </el-form-item>
         </el-form>
@@ -97,9 +125,9 @@
 
 <script>
 import { ElMessage } from 'element-plus'
-import { formSubmissionApi, clubApi, siteApi } from '../../api'
-import { getToken } from '../../utils/auth'
-import { formatDateTime } from '../../utils/format'
+import { formSubmissionApi, clubApi, siteApi } from '@/api'
+import { getToken } from '@/utils/auth.ts'
+import { formatDateTime } from '@/utils/format.ts'
 
 export default {
   name: 'SiteForm',
@@ -110,9 +138,9 @@ export default {
       departments: [],
       submitting: false,
       form: {
-        formData: {}
+        formData: {},
       },
-      rules: {}
+      rules: {},
     }
   },
   computed: {
@@ -125,7 +153,8 @@ export default {
     canSubmit() {
       if (!this.formMeta?.id) return false
       if (['closed', 'archived'].includes(this.formMeta.status)) return false
-      if (this.formMeta.startAt && new Date(this.formMeta.startAt).getTime() > Date.now()) return false
+      if (this.formMeta.startAt && new Date(this.formMeta.startAt).getTime() > Date.now())
+        return false
       if (!this.formMeta.endAt) return true
       return new Date(this.formMeta.endAt).getTime() >= Date.now()
     },
@@ -137,7 +166,7 @@ export default {
     },
     hasContactField() {
       return Boolean(this.findContactFieldKey())
-    }
+    },
   },
   created() {
     this.loadFormDetail()
@@ -149,7 +178,7 @@ export default {
       this.club = result?.club || {}
       this.formMeta = {
         ...(result?.form || {}),
-        loginRequired: result?.form?.loginRequired !== false
+        loginRequired: result?.form?.loginRequired !== false,
       }
       if (this.formMeta.id && this.requiresLogin && !this.hasToken) {
         ElMessage.warning('当前表单需要登录后填写，正在跳转到登录页')
@@ -170,18 +199,40 @@ export default {
           ? {}
           : {
               ...(applicantFieldKey
-                ? { [`formData.${applicantFieldKey}`]: [{ required: true, message: '请填写联系人', trigger: 'blur' }] }
-                : { 'formData.anonymousName': [{ required: true, message: '请填写联系人', trigger: 'blur' }] }),
+                ? {
+                    [`formData.${applicantFieldKey}`]: [
+                      { required: true, message: '请填写联系人', trigger: 'blur' },
+                    ],
+                  }
+                : {
+                    'formData.anonymousName': [
+                      { required: true, message: '请填写联系人', trigger: 'blur' },
+                    ],
+                  }),
               ...(contactFieldKey
-                ? { [`formData.${contactFieldKey}`]: [{ required: true, message: '请填写联系方式', trigger: 'blur' }] }
-                : { 'formData.anonymousContact': [{ required: true, message: '请填写联系方式', trigger: 'blur' }] })
+                ? {
+                    [`formData.${contactFieldKey}`]: [
+                      { required: true, message: '请填写联系方式', trigger: 'blur' },
+                    ],
+                  }
+                : {
+                    'formData.anonymousContact': [
+                      { required: true, message: '请填写联系方式', trigger: 'blur' },
+                    ],
+                  }),
             }),
         ...this.dynamicFields.reduce((rules, field) => {
           if (field.required) {
-            rules[`formData.${field.key}`] = [{ required: true, message: `请填写${field.label || field.key}`, trigger: 'blur' }]
+            rules[`formData.${field.key}`] = [
+              {
+                required: true,
+                message: `请填写${field.label || field.key}`,
+                trigger: 'blur',
+              },
+            ]
           }
           return rules
-        }, {})
+        }, {}),
       }
     },
     parseSchema(value) {
@@ -209,7 +260,7 @@ export default {
           await formSubmissionApi.create(this.formMeta.id, {
             anonymousName,
             anonymousContact,
-            formData: this.form.formData
+            formData: this.form.formData,
           })
           ElMessage.success('表单已提交')
           this.resetForm()
@@ -230,7 +281,7 @@ export default {
         formData.anonymousContact = ''
       }
       this.form = {
-        formData
+        formData,
       }
       this.rules = this.buildRules()
     },
@@ -249,13 +300,21 @@ export default {
     },
     resolveAnonymousName() {
       const applicantFieldKey = this.findApplicantFieldKey()
-      return (this.form.formData.anonymousName || this.form.formData[applicantFieldKey] || '').trim()
+      return (
+        this.form.formData.anonymousName ||
+        this.form.formData[applicantFieldKey] ||
+        ''
+      ).trim()
     },
     resolveAnonymousContact() {
       const contactFieldKey = this.findContactFieldKey()
-      return (this.form.formData.anonymousContact || this.form.formData[contactFieldKey] || '').trim()
-    }
-  }
+      return (
+        this.form.formData.anonymousContact ||
+        this.form.formData[contactFieldKey] ||
+        ''
+      ).trim()
+    },
+  },
 }
 </script>
 

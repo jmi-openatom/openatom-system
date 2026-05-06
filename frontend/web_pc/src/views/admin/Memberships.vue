@@ -2,7 +2,13 @@
   <div class="admin-page">
     <div class="toolbar">
       <div class="toolbar__filters">
-        <el-input v-model="query.keyword" clearable placeholder="搜索成员/社团" style="width: 220px" @keyup.enter="fetchList" />
+        <el-input
+          v-model="query.keyword"
+          clearable
+          placeholder="搜索成员/社团"
+          style="width: 220px"
+          @keyup.enter="fetchList"
+        />
         <el-select v-model="query.status" clearable placeholder="成员状态" style="width: 150px">
           <el-option label="在会" value="active" />
           <el-option label="试用" value="probation" />
@@ -17,7 +23,9 @@
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column label="成员" min-width="150">
-        <template #default="{ row }">{{ row.realName || row.userName || `用户 ${row.userId}` }}</template>
+        <template #default="{ row }">{{
+          row.realName || row.userName || `用户 ${row.userId}`
+        }}</template>
       </el-table-column>
       <el-table-column prop="clubName" label="社团" min-width="140" />
       <el-table-column prop="departmentName" label="部门" min-width="120" />
@@ -29,11 +37,18 @@
       </el-table-column>
       <el-table-column prop="sortOrder" label="展示排序" width="150">
         <template #default="{ row }">
-          <el-input-number v-model="row.sortOrder" :min="0" size="small" @change="updateDisplay(row)" />
+          <el-input-number
+            v-model="row.sortOrder"
+            :min="0"
+            size="small"
+            @change="updateDisplay(row)"
+          />
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="110">
-        <template #default="{ row }"><el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag></template>
+        <template #default="{ row }">
+          <el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag>
+        </template>
       </el-table-column>
       <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
@@ -47,20 +62,44 @@
 
     <el-dialog v-model="dialogVisible" title="新增成员" width="520px">
       <el-form :model="form" label-width="90px">
-        <el-form-item label="用户ID"><el-input-number v-model="form.userId" :min="1" /></el-form-item>
-        <el-form-item label="社团"><el-input :model-value="currentClubName" disabled /></el-form-item>
+        <el-form-item label="用户ID">
+          <el-input-number v-model="form.userId" :min="1" />
+        </el-form-item>
+        <el-form-item label="社团">
+          <el-input :model-value="currentClubName" disabled />
+        </el-form-item>
         <el-form-item label="部门">
-          <el-select v-model="form.departmentId" clearable filterable placeholder="选择部门" @change="form.positionId = undefined">
-            <el-option v-for="item in departments" :key="item.id" :label="item.name" :value="item.id" />
+          <el-select
+            v-model="form.departmentId"
+            clearable
+            filterable
+            placeholder="选择部门"
+            @change="form.positionId = undefined"
+          >
+            <el-option
+              v-for="item in departments"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="岗位">
           <el-select v-model="form.positionId" clearable filterable placeholder="选择岗位">
-            <el-option v-for="item in filteredPositions(form.departmentId)" :key="item.id" :label="positionLabel(item)" :value="item.id" />
+            <el-option
+              v-for="item in filteredPositions(form.departmentId)"
+              :key="item.id"
+              :label="positionLabel(item)"
+              :value="item.id"
+            />
           </el-select>
         </el-form-item>
-        <el-form-item label="官网展示"><el-switch v-model="form.featured" /></el-form-item>
-        <el-form-item label="展示排序"><el-input-number v-model="form.sortOrder" :min="0" /></el-form-item>
+        <el-form-item label="官网展示">
+          <el-switch v-model="form.featured" />
+        </el-form-item>
+        <el-form-item label="展示排序">
+          <el-input-number v-model="form.sortOrder" :min="0" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -70,15 +109,33 @@
 
     <el-dialog v-model="assignVisible" title="分配岗位" width="520px">
       <el-form :model="assignForm" label-width="90px">
-        <el-form-item label="成员"><el-input :model-value="assignForm.memberName" disabled /></el-form-item>
+        <el-form-item label="成员">
+          <el-input :model-value="assignForm.memberName" disabled />
+        </el-form-item>
         <el-form-item label="部门">
-          <el-select v-model="assignForm.departmentId" clearable filterable placeholder="选择部门" @change="assignForm.positionId = undefined">
-            <el-option v-for="item in departments" :key="item.id" :label="item.name" :value="item.id" />
+          <el-select
+            v-model="assignForm.departmentId"
+            clearable
+            filterable
+            placeholder="选择部门"
+            @change="assignForm.positionId = undefined"
+          >
+            <el-option
+              v-for="item in departments"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="岗位">
           <el-select v-model="assignForm.positionId" clearable filterable placeholder="选择岗位">
-            <el-option v-for="item in filteredPositions(assignForm.departmentId)" :key="item.id" :label="positionLabel(item)" :value="item.id" />
+            <el-option
+              v-for="item in filteredPositions(assignForm.departmentId)"
+              :key="item.id"
+              :label="positionLabel(item)"
+              :value="item.id"
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -93,8 +150,8 @@
 <script>
 import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { clubApi, membershipApi } from '../../api'
-import { statusType } from '../../utils/format'
+import { clubApi, membershipApi } from '@/api'
+import { statusType } from '@/utils/format.ts'
 
 export default {
   name: 'AdminMemberships',
@@ -112,8 +169,20 @@ export default {
       query: { keyword: '', status: '', page: 1, pageSize: 20 },
       dialogVisible: false,
       assignVisible: false,
-      form: { userId: undefined, clubId: undefined, departmentId: undefined, positionId: undefined, featured: false, sortOrder: 0 },
-      assignForm: { membershipId: '', memberName: '', departmentId: undefined, positionId: undefined }
+      form: {
+        userId: undefined,
+        clubId: undefined,
+        departmentId: undefined,
+        positionId: undefined,
+        featured: false,
+        sortOrder: 0,
+      },
+      assignForm: {
+        membershipId: '',
+        memberName: '',
+        departmentId: undefined,
+        positionId: undefined,
+      },
     }
   },
   async created() {
@@ -142,7 +211,15 @@ export default {
       this.positions = await clubApi.positions(this.currentClubId)
     },
     openDialog() {
-      this.form = { userId: undefined, clubId: this.currentClubId, departmentId: undefined, positionId: undefined, featured: false, sortOrder: 0, status: 'probation' }
+      this.form = {
+        userId: undefined,
+        clubId: this.currentClubId,
+        departmentId: undefined,
+        positionId: undefined,
+        featured: false,
+        sortOrder: 0,
+        status: 'probation',
+      }
       this.dialogVisible = true
     },
     async createMembership() {
@@ -156,14 +233,14 @@ export default {
         membershipId: row.id,
         memberName: row.realName || row.userName || `用户 ${row.userId}`,
         departmentId: row.departmentId,
-        positionId: row.positionId
+        positionId: row.positionId,
       }
       this.assignVisible = true
     },
     async submitAssign() {
       await membershipApi.update(this.assignForm.membershipId, {
         departmentId: this.assignForm.departmentId,
-        positionId: this.assignForm.positionId
+        positionId: this.assignForm.positionId,
       })
       ElMessage.success('岗位已更新')
       this.assignVisible = false
@@ -188,7 +265,7 @@ export default {
     positionLabel(position) {
       const department = this.departments.find((item) => item.id === position.departmentId)
       return department ? `${department.name} / ${position.name}` : position.name
-    }
-  }
+    },
+  },
 }
 </script>

@@ -7,9 +7,7 @@ const escapeHtml = (value = ''): string =>
     .replaceAll("'", '&#39;')
 
 const inline = (value: string): string =>
-  value
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
+  value.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`(.+?)`/g, '<code>$1</code>')
 
 export function renderMarkdown(markdown = ''): string {
   const lines = escapeHtml(markdown).split(/\r?\n/)

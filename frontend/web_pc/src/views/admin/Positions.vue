@@ -2,11 +2,29 @@
   <div class="admin-page">
     <div class="toolbar">
       <div class="toolbar__filters">
-        <el-select v-model="selectedClubId" filterable placeholder="选择社团" style="width: 240px" @change="handleClubChange">
+        <el-select
+          v-model="selectedClubId"
+          filterable
+          placeholder="选择社团"
+          style="width: 240px"
+          @change="handleClubChange"
+        >
           <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
         </el-select>
-        <el-select v-model="query.departmentId" clearable filterable placeholder="选择部门" style="width: 220px" @change="fetchList">
-          <el-option v-for="department in departments" :key="department.id" :label="department.name" :value="department.id" />
+        <el-select
+          v-model="query.departmentId"
+          clearable
+          filterable
+          placeholder="选择部门"
+          style="width: 220px"
+          @change="fetchList"
+        >
+          <el-option
+            v-for="department in departments"
+            :key="department.id"
+            :label="department.name"
+            :value="department.id"
+          />
         </el-select>
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
@@ -29,7 +47,7 @@
       </el-table-column>
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDialog(row)" >编辑</el-button>
+          <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
           <el-popconfirm title="确定删除该岗位？" @confirm="remove(row)">
             <template #reference>
               <el-button link type="danger">删除</el-button>
@@ -44,13 +62,28 @@
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑岗位' : '新增岗位'" width="640px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="所属社团" prop="clubId">
-          <el-select v-model="form.clubId" filterable placeholder="请选择社团" @change="loadDepartments">
+          <el-select
+            v-model="form.clubId"
+            filterable
+            placeholder="请选择社团"
+            @change="loadDepartments"
+          >
             <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="所属部门">
-          <el-select v-model="form.departmentId" clearable filterable placeholder="不选则为社团通用岗位">
-            <el-option v-for="department in dialogDepartments" :key="department.id" :label="department.name" :value="department.id" />
+          <el-select
+            v-model="form.departmentId"
+            clearable
+            filterable
+            placeholder="不选则为社团通用岗位"
+          >
+            <el-option
+              v-for="department in dialogDepartments"
+              :key="department.id"
+              :label="department.name"
+              :value="department.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="岗位名称" prop="name">
@@ -60,8 +93,19 @@
           <el-input-number v-model="form.maxCount" :min="1" />
         </el-form-item>
         <el-form-item label="关联角色">
-          <el-select v-model="form.roleIds" multiple clearable filterable placeholder="可选，给岗位绑定基础角色">
-            <el-option v-for="role in roles" :key="role.id" :label="role.name || role.code" :value="role.id" />
+          <el-select
+            v-model="form.roleIds"
+            multiple
+            clearable
+            filterable
+            placeholder="可选，给岗位绑定基础角色"
+          >
+            <el-option
+              v-for="role in roles"
+              :key="role.id"
+              :label="role.name || role.code"
+              :value="role.id"
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -76,7 +120,7 @@
 <script>
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { clubApi, positionApi, rbacApi } from '../../api'
+import { clubApi, positionApi, rbacApi } from '@/api'
 
 export default {
   name: 'AdminPositions',
@@ -97,8 +141,8 @@ export default {
       form: {},
       rules: {
         clubId: [{ required: true, message: '请选择社团', trigger: 'change' }],
-        name: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }]
-      }
+        name: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
+      },
     }
   },
   async created() {
@@ -148,7 +192,9 @@ export default {
       try {
         const result = await clubApi.positions(this.selectedClubId)
         const list = result?.list || result || []
-        this.rows = this.query.departmentId ? list.filter((item) => item.departmentId === this.query.departmentId) : list
+        this.rows = this.query.departmentId
+          ? list.filter((item) => item.departmentId === this.query.departmentId)
+          : list
       } finally {
         this.loading = false
       }
@@ -159,14 +205,14 @@ export default {
             ...row,
             clubId: row.clubId,
             departmentId: row.departmentId,
-            roleIds: row.roleIds || []
+            roleIds: row.roleIds || [],
           }
         : {
             clubId: this.selectedClubId,
             departmentId: undefined,
             name: '',
             maxCount: undefined,
-            roleIds: []
+            roleIds: [],
           }
       this.dialogDepartments = this.form.clubId === this.selectedClubId ? this.departments : []
       this.loadDepartments(this.form.clubId)
@@ -181,7 +227,7 @@ export default {
             departmentId: this.form.departmentId,
             name: this.form.name,
             maxCount: this.form.maxCount,
-            roleIds: this.form.roleIds
+            roleIds: this.form.roleIds,
           }
           if (this.form.id) {
             await positionApi.update(this.form.id, payload)
@@ -209,7 +255,7 @@ export default {
       return (roleIds || [])
         .map((roleId) => this.roles.find((item) => item.id === roleId)?.name)
         .filter(Boolean)
-    }
-  }
+    },
+  },
 }
 </script>

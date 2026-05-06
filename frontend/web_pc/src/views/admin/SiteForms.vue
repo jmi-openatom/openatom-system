@@ -2,10 +2,23 @@
   <div class="admin-page">
     <div class="toolbar">
       <div class="toolbar__filters">
-        <el-select v-if="clubs.length > 1" v-model="selectedClubId" filterable placeholder="选择社团" style="width: 240px" @change="fetchList">
+        <el-select
+          v-if="clubs.length > 1"
+          v-model="selectedClubId"
+          filterable
+          placeholder="选择社团"
+          style="width: 240px"
+          @change="fetchList"
+        >
           <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
         </el-select>
-        <el-select v-model="query.status" clearable placeholder="表单状态" style="width: 150px" @change="fetchList">
+        <el-select
+          v-model="query.status"
+          clearable
+          placeholder="表单状态"
+          style="width: 150px"
+          @change="fetchList"
+        >
           <el-option label="草稿" value="draft" />
           <el-option label="已发布" value="published" />
           <el-option label="收集中" value="open" />
@@ -24,7 +37,9 @@
       </el-table-column>
       <el-table-column prop="loginRequired" label="登录" width="110">
         <template #default="{ row }">
-          <el-tag :type="row.loginRequired ? 'success' : 'warning'">{{ row.loginRequired ? '需要' : '可匿名' }}</el-tag>
+          <el-tag :type="row.loginRequired ? 'success' : 'warning'">{{
+            row.loginRequired ? '需要' : '可匿名'
+          }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="120">
@@ -38,15 +53,28 @@
           <el-button link type="success" @click="openSubmissions(row)">记录</el-button>
           <el-button link type="info" @click="previewSchema(row)">预览字段</el-button>
           <el-button link type="warning" @click="copyFormLink(row)">复制链接</el-button>
-          <el-button link type="success" @click="publish(row)" v-if="row.status !== 'open'">发布</el-button>
-          <el-button link type="danger" @click="closeSiteForm(row)" v-if="row.status === 'open' || row.status === 'published'">结束</el-button>
+          <el-button link type="success" @click="publish(row)" v-if="row.status !== 'open'"
+            >发布</el-button
+          >
+          <el-button
+            link
+            type="danger"
+            @click="closeSiteForm(row)"
+            v-if="row.status === 'open' || row.status === 'published'"
+            >结束
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
 
     <el-empty v-if="!loading && !rows.length" description="当前社团暂无信息收集表单" />
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑表单' : '新增表单'" width="920px" @closed="handleDialogClosed">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="form.id ? '编辑表单' : '新增表单'"
+      width="920px"
+      @closed="handleDialogClosed"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="112px">
         <div class="form-grid">
           <el-form-item label="所属社团" prop="clubId">
@@ -63,11 +91,21 @@
               <el-option label="已归档" value="archived" />
             </el-select>
           </el-form-item>
-          <el-form-item label="表单名称" prop="name"><el-input v-model="form.name" placeholder="如：报名信息收集、活动意向登记" /></el-form-item>
-          <el-form-item label="开始时间" prop="startAt"><el-input v-model="form.startAt" type="datetime-local" /></el-form-item>
-          <el-form-item label="结束时间" prop="endAt"><el-input v-model="form.endAt" type="datetime-local" /></el-form-item>
+          <el-form-item label="表单名称" prop="name">
+            <el-input v-model="form.name" placeholder="如：报名信息收集、活动意向登记" />
+          </el-form-item>
+          <el-form-item label="开始时间" prop="startAt">
+            <el-input v-model="form.startAt" type="datetime-local" />
+          </el-form-item>
+          <el-form-item label="结束时间" prop="endAt">
+            <el-input v-model="form.endAt" type="datetime-local" />
+          </el-form-item>
           <el-form-item label="需先登录">
-            <el-switch v-model="form.loginRequired" active-text="需要登录" inactive-text="匿名可填" />
+            <el-switch
+              v-model="form.loginRequired"
+              active-text="需要登录"
+              inactive-text="匿名可填"
+            />
           </el-form-item>
         </div>
 
@@ -76,7 +114,9 @@
           <el-button size="small" @click="addField('text')">新增单行输入</el-button>
           <el-button size="small" @click="addField('textarea')">新增多行输入</el-button>
           <el-button size="small" @click="addField('select')">新增下拉选择</el-button>
-          <el-button size="small" type="warning" plain @click="useDefaultFields">恢复默认字段</el-button>
+          <el-button size="small" type="warning" plain @click="useDefaultFields"
+            >恢复默认字段</el-button
+          >
         </div>
         <el-alert
           type="info"
@@ -107,14 +147,23 @@
             </div>
             <div class="designer-card__grid">
               <el-form-item label="字段名称" label-width="84px" required>
-                <el-input v-model="field.label" placeholder="如：申请理由" @blur="fillFieldKey(field)" />
+                <el-input
+                  v-model="field.label"
+                  placeholder="如：申请理由"
+                  @blur="fillFieldKey(field)"
+                />
               </el-form-item>
               <el-form-item label="字段 Key" label-width="84px" required>
                 <el-input v-model="field.key" placeholder="如：reason" />
               </el-form-item>
               <el-form-item label="字段类型" label-width="84px">
                 <el-select v-model="field.type" @change="handleTypeChange(field)">
-                  <el-option v-for="item in fieldTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+                  <el-option
+                    v-for="item in fieldTypeOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  />
                 </el-select>
               </el-form-item>
               <el-form-item label="是否必填" label-width="84px">
@@ -130,10 +179,16 @@
                 <el-button size="small" @click="addOption(field)">新增选项</el-button>
               </div>
               <div v-if="field.options.length" class="designer-options__list">
-                <div v-for="(option, optionIndex) in field.options" :key="option.uid" class="designer-option-row">
+                <div
+                  v-for="(option, optionIndex) in field.options"
+                  :key="option.uid"
+                  class="designer-option-row"
+                >
                   <el-input v-model="option.label" placeholder="显示文案" />
                   <el-input v-model="option.value" placeholder="提交值" />
-                  <el-button link type="danger" @click="removeOption(field, optionIndex)">删除</el-button>
+                  <el-button link type="danger" @click="removeOption(field, optionIndex)"
+                    >删除</el-button
+                  >
                 </div>
               </div>
               <el-empty v-else description="请至少配置一个下拉选项" :image-size="70" />
@@ -155,7 +210,9 @@
         <el-table-column prop="type" label="类型" width="120" />
         <el-table-column prop="required" label="必填" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.required ? 'danger' : 'info'">{{ row.required ? '是' : '否' }}</el-tag>
+            <el-tag :type="row.required ? 'danger' : 'info'">{{
+              row.required ? '是' : '否'
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="选项/提示" min-width="220">
@@ -171,12 +228,12 @@
 <script>
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { siteFormApi, clubApi } from '../../api'
-import { formatDateTime, statusType } from '../../utils/format'
+import { siteFormApi, clubApi } from '@/api'
+import { formatDateTime, statusType } from '@/utils/format.ts'
 
 const defaultFormSchema = [
   { key: 'name', label: '姓名', type: 'text', required: true, placeholder: '请输入姓名' },
-  { key: 'studentId', label: '学号', type: 'text', required: false, placeholder: '请输入学号' }
+  { key: 'studentId', label: '学号', type: 'text', required: false, placeholder: '请输入学号' },
 ]
 
 function toInputTime(value) {
@@ -207,14 +264,14 @@ export default {
       fieldTypeOptions: [
         { label: '单行输入', value: 'text' },
         { label: '多行输入', value: 'textarea' },
-        { label: '下拉选择', value: 'select' }
+        { label: '下拉选择', value: 'select' },
       ],
       rules: {
         clubId: [{ required: true, message: '请选择社团', trigger: 'change' }],
         name: [{ required: true, message: '请输入表单名称', trigger: 'blur' }],
         startAt: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
-        endAt: [{ required: true, message: '请选择结束时间', trigger: 'change' }]
-      }
+        endAt: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
+      },
     }
   },
   created() {
@@ -239,13 +296,25 @@ export default {
       try {
         const result = await clubApi.siteForms(this.selectedClubId)
         const list = result?.list || result || []
-        this.rows = this.query.status ? list.filter((item) => item.status === this.query.status) : list
+        this.rows = this.query.status
+          ? list.filter((item) => item.status === this.query.status)
+          : list
       } finally {
         this.loading = false
       }
     },
     statusText(status) {
-      return { draft: '草稿', published: '已发布', open: '收集中', closed: '已结束', archived: '已归档' }[status] || status || '-'
+      return (
+        {
+          draft: '草稿',
+          published: '已发布',
+          open: '收集中',
+          closed: '已结束',
+          archived: '已归档',
+        }[status] ||
+        status ||
+        '-'
+      )
     },
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '-'} - ${formatDateTime(endAt) || '-'}`
@@ -257,7 +326,7 @@ export default {
         status: 'draft',
         loginRequired: true,
         startAt: '',
-        endAt: ''
+        endAt: '',
       }
     },
     openDialog(row) {
@@ -268,7 +337,7 @@ export default {
             status: row.status || 'draft',
             loginRequired: row.loginRequired !== false,
             startAt: toInputTime(row.startAt),
-            endAt: toInputTime(row.endAt)
+            endAt: toInputTime(row.endAt),
           }
         : this.createEmptyForm()
       this.schemaFields = this.normalizeSchema(row?.formSchema || defaultFormSchema)
@@ -301,7 +370,7 @@ export default {
           loginRequired: this.form.loginRequired,
           startAt: this.form.startAt || null,
           endAt: this.form.endAt || null,
-          formSchema
+          formSchema,
         }
 
         this.saving = true
@@ -332,7 +401,10 @@ export default {
       this.fetchList()
     },
     openSubmissions(row) {
-      this.$router.push({ path: '/admin/form-submissions', query: { formId: row.id, clubId: row.clubId } })
+      this.$router.push({
+        path: '/admin/form-submissions',
+        query: { formId: row.id, clubId: row.clubId },
+      })
     },
     async copyFormLink(row) {
       const link = `${window.location.origin}${this.$router.resolve({ path: `/forms/${row.id}` }).href}`
@@ -364,14 +436,14 @@ export default {
         type,
         required: false,
         placeholder: '',
-        options: type === 'select' ? [this.createOption()] : []
+        options: type === 'select' ? [this.createOption()] : [],
       }
     },
     createOption(option = {}) {
       return {
         uid: this.nextUid(),
         label: option.label || '',
-        value: option.value || ''
+        value: option.value || '',
       }
     },
     addOption(field) {
@@ -443,7 +515,7 @@ export default {
           const options = (field.options || [])
             .map((option) => ({
               label: option.label?.trim() || option.value?.trim(),
-              value: option.value?.trim() || option.label?.trim()
+              value: option.value?.trim() || option.label?.trim(),
             }))
             .filter((option) => option.label && option.value)
           if (!options.length) {
@@ -456,7 +528,7 @@ export default {
             type: field.type,
             required: Boolean(field.required),
             placeholder: field.placeholder?.trim() || '',
-            options
+            options,
           })
           continue
         }
@@ -465,7 +537,7 @@ export default {
           label: field.label.trim(),
           type: field.type,
           required: Boolean(field.required),
-          placeholder: field.placeholder?.trim() || ''
+          placeholder: field.placeholder?.trim() || '',
         })
       }
       return schema
@@ -516,9 +588,11 @@ export default {
         options:
           field.type === 'select'
             ? (field.options || []).map((option) =>
-                this.createOption(typeof option === 'object' ? option : { label: option, value: option })
+                this.createOption(
+                  typeof option === 'object' ? option : { label: option, value: option },
+                ),
               )
-            : []
+            : [],
       }))
     },
     typeText(type) {
@@ -542,8 +616,8 @@ export default {
     },
     nextUid() {
       return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-    }
-  }
+    },
+  },
 }
 </script>
 

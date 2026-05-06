@@ -14,14 +14,26 @@
         </div>
         <div class="apply-note panel" v-if="formMeta.id">
           <h3>当前表单</h3>
-          <p class="campaign-line"><strong>{{ formMeta.name || '信息收集表单' }}</strong></p>
-          <p class="campaign-line">提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}</p>
-          <p class="campaign-line">收集时间：{{ formatRange(formMeta.applyStartAt, formMeta.applyEndAt) }}</p>
+          <p class="campaign-line">
+            <strong>{{ formMeta.name || '信息收集表单' }}</strong>
+          </p>
+          <p class="campaign-line">
+            提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}
+          </p>
+          <p class="campaign-line">
+            收集时间：{{ formatRange(formMeta.applyStartAt, formMeta.applyEndAt) }}
+          </p>
         </div>
       </div>
       <el-card shadow="never">
         <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
-          <el-alert v-if="!formMeta.id" type="warning" show-icon :closable="false" title="表单不存在或暂未开放" />
+          <el-alert
+            v-if="!formMeta.id"
+            type="warning"
+            show-icon
+            :closable="false"
+            title="表单不存在或暂未开放"
+          />
           <el-alert
             v-else-if="requiresLogin && !hasToken"
             type="info"
@@ -52,20 +64,46 @@
           <template v-if="hasToken">
             <el-divider content-position="left">意向选择</el-divider>
             <el-form-item label="第一志愿" prop="firstChoiceDepartmentId">
-              <el-select v-model="form.firstChoiceDepartmentId" filterable placeholder="请选择意向部门">
-                <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
+              <el-select
+                v-model="form.firstChoiceDepartmentId"
+                filterable
+                placeholder="请选择意向部门"
+              >
+                <el-option
+                  v-for="dept in departments"
+                  :key="dept.id"
+                  :label="dept.name"
+                  :value="dept.id"
+                />
               </el-select>
             </el-form-item>
             <el-form-item label="第二志愿" prop="secondChoiceDepartmentId">
-              <el-select v-model="form.secondChoiceDepartmentId" filterable placeholder="请选择意向部门（可选）">
-                <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
+              <el-select
+                v-model="form.secondChoiceDepartmentId"
+                filterable
+                placeholder="请选择意向部门（可选）"
+              >
+                <el-option
+                  v-for="dept in departments"
+                  :key="dept.id"
+                  :label="dept.name"
+                  :value="dept.id"
+                />
               </el-select>
             </el-form-item>
           </template>
-          <el-form-item v-if="!requiresLogin && !hasApplicantNameField" label="联系人" prop="formData.applicantName">
+          <el-form-item
+            v-if="!requiresLogin && !hasApplicantNameField"
+            label="联系人"
+            prop="formData.applicantName"
+          >
             <el-input v-model="form.formData.applicantName" placeholder="请输入姓名" />
           </el-form-item>
-          <el-form-item v-if="!requiresLogin && !hasContactField" label="联系方式" prop="formData.contact">
+          <el-form-item
+            v-if="!requiresLogin && !hasContactField"
+            label="联系方式"
+            prop="formData.contact"
+          >
             <el-input v-model="form.formData.contact" placeholder="请填写手机号、邮箱或微信" />
           </el-form-item>
           <el-divider v-if="dynamicFields.length" content-position="left">详细信息</el-divider>
@@ -99,7 +137,14 @@
             </el-form-item>
           </template>
           <el-form-item>
-            <el-button type="primary" :disabled="!formMeta.id || !canSubmit" :loading="submitting" @click="submitForm">提交表单</el-button>
+            <el-button
+              type="primary"
+              :disabled="!formMeta.id || !canSubmit"
+              :loading="submitting"
+              @click="submitForm"
+            >
+              提交表单
+            </el-button>
             <el-button @click="resetForm">重置</el-button>
           </el-form-item>
         </el-form>
@@ -110,9 +155,9 @@
 
 <script>
 import { ElMessage } from 'element-plus'
-import { applicationApi, clubApi, siteApi } from '../../api'
-import { getToken } from '../../utils/auth'
-import { formatDateTime } from '../../utils/format'
+import { applicationApi, clubApi, siteApi } from '@/api'
+import { getToken } from '@/utils/auth.ts'
+import { formatDateTime } from '@/utils/format.ts'
 
 export default {
   name: 'SiteApplicationForm',
@@ -125,9 +170,9 @@ export default {
       form: {
         firstChoiceDepartmentId: undefined,
         secondChoiceDepartmentId: undefined,
-        formData: {}
+        formData: {},
       },
-      rules: {}
+      rules: {},
     }
   },
   computed: {
@@ -140,7 +185,8 @@ export default {
     canSubmit() {
       if (!this.formMeta?.id) return false
       if (['closed', 'archived'].includes(this.formMeta.status)) return false
-      if (this.formMeta.applyStartAt && new Date(this.formMeta.applyStartAt).getTime() > Date.now()) return false
+      if (this.formMeta.applyStartAt && new Date(this.formMeta.applyStartAt).getTime() > Date.now())
+        return false
       if (!this.formMeta.applyEndAt) return true
       return new Date(this.formMeta.applyEndAt).getTime() >= Date.now()
     },
@@ -152,7 +198,7 @@ export default {
     },
     hasContactField() {
       return this.dynamicFields.some((field) => field.key === 'contact')
-    }
+    },
   },
   created() {
     this.loadFormDetail()
@@ -164,7 +210,7 @@ export default {
       this.club = result?.club || {}
       this.formMeta = {
         ...(result?.campaign || {}),
-        loginRequired: result?.campaign?.loginRequired !== false
+        loginRequired: result?.campaign?.loginRequired !== false,
       }
       if (this.formMeta.id && this.requiresLogin && !this.hasToken) {
         ElMessage.warning('当前表单需要登录后填写，正在跳转到登录页')
@@ -182,22 +228,38 @@ export default {
       return {
         ...(this.requiresLogin
           ? {
-              firstChoiceDepartmentId: [{ required: true, message: '请选择第一志愿', trigger: 'change' }]
+              firstChoiceDepartmentId: [
+                { required: true, message: '请选择第一志愿', trigger: 'change' },
+              ],
             }
           : {
               ...(!this.hasApplicantNameField
-                ? { 'formData.applicantName': [{ required: true, message: '请填写联系人', trigger: 'blur' }] }
+                ? {
+                    'formData.applicantName': [
+                      { required: true, message: '请填写联系人', trigger: 'blur' },
+                    ],
+                  }
                 : {}),
               ...(!this.hasContactField
-                ? { 'formData.contact': [{ required: true, message: '请填写联系方式', trigger: 'blur' }] }
-                : {})
+                ? {
+                    'formData.contact': [
+                      { required: true, message: '请填写联系方式', trigger: 'blur' },
+                    ],
+                  }
+                : {}),
             }),
         ...this.dynamicFields.reduce((rules, field) => {
           if (field.required) {
-            rules[`formData.${field.key}`] = [{ required: true, message: `请填写${field.label || field.key}`, trigger: 'blur' }]
+            rules[`formData.${field.key}`] = [
+              {
+                required: true,
+                message: `请填写${field.label || field.key}`,
+                trigger: 'blur',
+              },
+            ]
           }
           return rules
-        }, {})
+        }, {}),
       }
     },
     parseSchema(value) {
@@ -224,8 +286,10 @@ export default {
             campaignId: this.formMeta.id,
             clubId: this.club.id,
             firstChoiceDepartmentId: this.hasToken ? this.form.firstChoiceDepartmentId : undefined,
-            secondChoiceDepartmentId: this.hasToken ? this.form.secondChoiceDepartmentId : undefined,
-            profile: this.form.formData
+            secondChoiceDepartmentId: this.hasToken
+              ? this.form.secondChoiceDepartmentId
+              : undefined,
+            profile: this.form.formData,
           })
           if (this.hasToken) {
             ElMessage.success('入会申请已提交，请在“我的申请”中关注进度')
@@ -255,14 +319,14 @@ export default {
       this.form = {
         firstChoiceDepartmentId: undefined,
         secondChoiceDepartmentId: undefined,
-        formData
+        formData,
       }
       this.rules = this.buildRules()
     },
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
-    }
-  }
+    },
+  },
 }
 </script>
 

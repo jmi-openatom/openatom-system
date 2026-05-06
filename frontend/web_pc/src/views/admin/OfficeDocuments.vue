@@ -2,11 +2,23 @@
   <div class="admin-page office-documents-page">
     <div class="toolbar">
       <div class="toolbar__filters">
-        <el-select v-model="query.docType" clearable placeholder="单据类型" style="width: 180px" @change="fetchList">
+        <el-select
+          v-model="query.docType"
+          clearable
+          placeholder="单据类型"
+          style="width: 180px"
+          @change="fetchList"
+        >
           <el-option label="假条" value="leave_note" />
           <el-option label="场地申请表" value="venue_application" />
         </el-select>
-        <el-input v-model="query.keyword" clearable placeholder="搜索标题" style="width: 240px" @keyup.enter="fetchList" />
+        <el-input
+          v-model="query.keyword"
+          clearable
+          placeholder="搜索标题"
+          style="width: 240px"
+          @keyup.enter="fetchList"
+        />
         <el-button type="primary" @click="fetchList">查询</el-button>
       </div>
       <div class="toolbar__actions">
@@ -49,7 +61,9 @@
         <template #header>
           <div class="card-header">
             <span>{{ form.id ? '编辑单据' : '新建单据' }}</span>
-            <el-tag :type="form.docType === 'leave_note' ? 'warning' : 'success'">{{ typeText(form.docType) }}</el-tag>
+            <el-tag :type="form.docType === 'leave_note' ? 'warning' : 'success'">{{
+              typeText(form.docType)
+            }}</el-tag>
           </div>
         </template>
 
@@ -172,7 +186,13 @@
 
           <el-form-item>
             <el-button type="primary" :loading="saving" @click="save">保存</el-button>
-            <el-button v-if="form.id" type="success" :loading="exportingId === form.id" @click="exportRow(form)">导出 Word</el-button>
+            <el-button
+              v-if="form.id"
+              type="success"
+              :loading="exportingId === form.id"
+              @click="exportRow(form)"
+              >导出 Word
+            </el-button>
             <el-button @click="resetForm">重置</el-button>
           </el-form-item>
         </el-form>
@@ -183,8 +203,8 @@
 
 <script>
 import { ElMessage } from 'element-plus'
-import { officeDocumentApi } from '../../api'
-import { formatDateTime } from '../../utils/format'
+import { officeDocumentApi } from '@/api'
+import { formatDateTime } from '@/utils/format.ts'
 
 function createLeaveForm() {
   return {
@@ -199,7 +219,7 @@ function createLeaveForm() {
     venueName: '至德楼 E206',
     reason: '',
     departmentName: '信息工程学院',
-    documentDate: ''
+    documentDate: '',
   }
 }
 
@@ -222,7 +242,7 @@ function createVenueForm() {
     dailySchedule: '',
     projectTypes: [],
     projectDescription: '',
-    documentDate: ''
+    documentDate: '',
   }
 }
 
@@ -239,7 +259,7 @@ export default {
       userOptions: [],
       query: {
         docType: '',
-        keyword: ''
+        keyword: '',
       },
       form: createLeaveForm(),
       rules: {
@@ -248,8 +268,8 @@ export default {
         memberIds: [{ required: true, message: '请至少选择一名人员', trigger: 'change' }],
         reason: [{ required: true, message: '请填写请假事由', trigger: 'blur' }],
         venueName: [{ required: true, message: '请填写场地名称', trigger: 'blur' }],
-        contactName: [{ required: true, message: '请填写联系人', trigger: 'blur' }]
-      }
+        contactName: [{ required: true, message: '请填写联系人', trigger: 'blur' }],
+      },
     }
   },
   created() {
@@ -259,10 +279,14 @@ export default {
   methods: {
     formatDateTime,
     typeText(type) {
-      return {
-        leave_note: '假条',
-        venue_application: '场地申请表'
-      }[type] || type || '-'
+      return (
+        {
+          leave_note: '假条',
+          venue_application: '场地申请表',
+        }[type] ||
+        type ||
+        '-'
+      )
     },
     userLabel(user) {
       return `${user.realName || '未命名'} / ${user.studentId || '-'} / ${user.major || user.college || '-'}`
@@ -303,7 +327,7 @@ export default {
         id: row.id,
         docType: row.docType,
         title: row.title,
-        ...payload
+        ...payload,
       }
       if (!Array.isArray(this.form.memberIds)) {
         this.form.memberIds = []
@@ -332,7 +356,7 @@ export default {
           venueName: this.form.venueName,
           reason: this.form.reason,
           departmentName: this.form.departmentName,
-          documentDate: this.form.documentDate
+          documentDate: this.form.documentDate,
         }
       }
       return {
@@ -350,7 +374,7 @@ export default {
         dailySchedule: this.form.dailySchedule,
         projectTypes: this.form.projectTypes,
         projectDescription: this.form.projectDescription,
-        documentDate: this.form.documentDate
+        documentDate: this.form.documentDate,
       }
     },
     save() {
@@ -361,7 +385,7 @@ export default {
           const payload = {
             docType: this.form.docType,
             title: this.form.title,
-            payload: this.buildPayload()
+            payload: this.buildPayload(),
           }
           if (this.form.id) {
             await officeDocumentApi.update(this.form.id, payload)
@@ -402,8 +426,8 @@ export default {
     },
     today() {
       return new Date().toISOString().slice(0, 10)
-    }
-  }
+    },
+  },
 }
 </script>
 

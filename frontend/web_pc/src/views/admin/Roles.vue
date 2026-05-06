@@ -24,10 +24,18 @@
       <template #header>
         <div class="card-header">
           <span>权限分配</span>
-          <el-button type="primary" :disabled="!currentRole.id" @click="savePermissions">保存权限</el-button>
+          <el-button type="primary" :disabled="!currentRole.id" @click="savePermissions"
+            >保存权限</el-button
+          >
         </div>
       </template>
-      <el-alert v-if="!currentRole.id" title="请先选择左侧角色" type="info" show-icon :closable="false" />
+      <el-alert
+        v-if="!currentRole.id"
+        title="请先选择左侧角色"
+        type="info"
+        show-icon
+        :closable="false"
+      />
       <div v-else>
         <p class="muted">当前角色：{{ currentRole.name }}</p>
         <el-checkbox-group v-model="checkedPermissionIds" class="permission-list">
@@ -40,9 +48,15 @@
 
     <el-dialog v-model="roleVisible" :title="roleForm.id ? '编辑角色' : '新增角色'" width="520px">
       <el-form :model="roleForm" label-width="86px">
-        <el-form-item label="角色名称"><el-input v-model="roleForm.name" /></el-form-item>
-        <el-form-item label="角色编码"><el-input v-model="roleForm.code" /></el-form-item>
-        <el-form-item label="说明"><el-input v-model="roleForm.description" type="textarea" :rows="3" /></el-form-item>
+        <el-form-item label="角色名称">
+          <el-input v-model="roleForm.name" />
+        </el-form-item>
+        <el-form-item label="角色编码">
+          <el-input v-model="roleForm.code" />
+        </el-form-item>
+        <el-form-item label="说明">
+          <el-input v-model="roleForm.description" type="textarea" :rows="3" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="roleVisible = false">取消</el-button>
@@ -55,7 +69,7 @@
 <script>
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { rbacApi } from '../../api'
+import { rbacApi } from '@/api'
 
 export default {
   name: 'AdminRoles',
@@ -68,7 +82,7 @@ export default {
       currentRole: {},
       checkedPermissionIds: [],
       roleVisible: false,
-      roleForm: {}
+      roleForm: {},
     }
   },
   created() {
@@ -113,11 +127,11 @@ export default {
     },
     async savePermissions() {
       await rbacApi.assignRolePermissions(this.currentRole.id, {
-        permissionIds: this.checkedPermissionIds
+        permissionIds: this.checkedPermissionIds,
       })
       ElMessage.success('权限已保存')
-    }
-  }
+    },
+  },
 }
 </script>
 

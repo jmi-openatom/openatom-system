@@ -2,7 +2,13 @@
   <div class="admin-page">
     <div class="toolbar">
       <div class="toolbar__filters">
-        <el-select v-model="query.status" clearable placeholder="活动状态" style="width: 150px" @change="fetchList">
+        <el-select
+          v-model="query.status"
+          clearable
+          placeholder="活动状态"
+          style="width: 150px"
+          @change="fetchList"
+        >
           <el-option label="草稿" value="draft" />
           <el-option label="已发布" value="published" />
           <el-option label="已关闭" value="closed" />
@@ -32,7 +38,9 @@
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="110">
-        <template #default="{ row }"><el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag></template>
+        <template #default="{ row }">
+          <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
+        </template>
       </el-table-column>
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
@@ -50,20 +58,57 @@
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑活动' : '新增活动'" width="920px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="112px">
         <div class="form-grid">
-          <el-form-item label="活动标题" prop="title"><el-input v-model="form.title" /></el-form-item>
-          <el-form-item label="状态"><el-select v-model="form.status"><el-option label="草稿" value="draft" /><el-option label="发布" value="published" /><el-option label="关闭" value="closed" /><el-option label="取消" value="cancelled" /></el-select></el-form-item>
-          <el-form-item label="开始时间"><el-input v-model="form.activityAt" type="datetime-local" /></el-form-item>
-          <el-form-item label="结束时间"><el-input v-model="form.endAt" type="datetime-local" /></el-form-item>
-          <el-form-item label="活动地点"><el-input v-model="form.location" /></el-form-item>
-          <el-form-item label="封面URL"><el-input v-model="form.coverUrl" /></el-form-item>
+          <el-form-item label="活动标题" prop="title">
+            <el-input v-model="form.title" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="form.status">
+              <el-option label="草稿" value="draft" />
+              <el-option label="发布" value="published" />
+              <el-option label="关闭" value="closed" />
+              <el-option label="取消" value="cancelled" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="开始时间">
+            <el-input v-model="form.activityAt" type="datetime-local" />
+          </el-form-item>
+          <el-form-item label="结束时间">
+            <el-input v-model="form.endAt" type="datetime-local" />
+          </el-form-item>
+          <el-form-item label="活动地点">
+            <el-input v-model="form.location" />
+          </el-form-item>
+          <el-form-item label="封面URL">
+            <el-input v-model="form.coverUrl" />
+          </el-form-item>
         </div>
-        <el-form-item label="活动摘要"><el-input v-model="form.summary" type="textarea" :rows="2" maxlength="500" show-word-limit /></el-form-item>
-        <el-form-item label="Markdown介绍"><el-input v-model="form.descriptionMarkdown" type="textarea" :rows="10" /></el-form-item>
+        <el-form-item label="活动摘要">
+          <el-input
+            v-model="form.summary"
+            type="textarea"
+            :rows="2"
+            maxlength="500"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="Markdown介绍">
+          <el-input v-model="form.descriptionMarkdown" type="textarea" :rows="10" />
+        </el-form-item>
         <el-divider content-position="left">报名设置</el-divider>
-        <el-form-item label="官网报名"><el-switch v-model="form.registrationRequired" active-text="需要" inactive-text="不需要" /></el-form-item>
+        <el-form-item label="官网报名">
+          <el-switch
+            v-model="form.registrationRequired"
+            active-text="需要"
+            inactive-text="不需要"
+          />
+        </el-form-item>
         <div class="form-grid" v-if="form.registrationRequired">
-          <el-form-item label="报名开始"><el-input v-model="form.registrationStartAt" type="datetime-local" /></el-form-item>
-          <el-form-item label="报名结束"><el-input v-model="form.registrationEndAt" type="datetime-local" /></el-form-item>
+          <el-form-item label="报名开始">
+            <el-input v-model="form.registrationStartAt" type="datetime-local" />
+          </el-form-item>
+          <el-form-item label="报名结束">
+            <el-input v-model="form.registrationEndAt" type="datetime-local" />
+          </el-form-item>
         </div>
         <el-form-item v-if="form.registrationRequired" label="自定义字段">
           <el-input v-model="registrationFieldsText" type="textarea" :rows="6" />
@@ -91,13 +136,12 @@
 <script>
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { activityApi } from '../../api'
-import { formatDateTime, statusType } from '../../utils/format'
+import { activityApi } from '@/api/index.ts'
 
 const defaultFields = [
   { label: '姓名', type: 'text', required: true },
   { label: '联系方式', type: 'text', required: true },
-  { label: '备注', type: 'textarea', required: false }
+  { label: '备注', type: 'textarea', required: false },
 ]
 
 export default {
@@ -116,8 +160,8 @@ export default {
       form: {},
       registrationFieldsText: '',
       rules: {
-        title: [{ required: true, message: '请输入活动标题', trigger: 'blur' }]
-      }
+        title: [{ required: true, message: '请输入活动标题', trigger: 'blur' }],
+      },
     }
   },
   created() {
@@ -127,7 +171,11 @@ export default {
     formatDateTime,
     statusType,
     statusText(status) {
-      return { draft: '草稿', published: '已发布', closed: '已关闭', cancelled: '已取消' }[status] || status || '-'
+      return (
+        { draft: '草稿', published: '已发布', closed: '已关闭', cancelled: '已取消' }[status] ||
+        status ||
+        '-'
+      )
     },
     async fetchList() {
       this.loading = true
@@ -139,8 +187,20 @@ export default {
     },
     openDialog(row) {
       this.form = row
-        ? { ...row, activityAt: this.toInputTime(row.activityAt), endAt: this.toInputTime(row.endAt), registrationStartAt: this.toInputTime(row.registrationStartAt), registrationEndAt: this.toInputTime(row.registrationEndAt) }
-        : { title: '', status: 'draft', summary: '', descriptionMarkdown: '# 活动介绍\n\n', registrationRequired: false }
+        ? {
+            ...row,
+            activityAt: this.toInputTime(row.activityAt),
+            endAt: this.toInputTime(row.endAt),
+            registrationStartAt: this.toInputTime(row.registrationStartAt),
+            registrationEndAt: this.toInputTime(row.registrationEndAt),
+          }
+        : {
+            title: '',
+            status: 'draft',
+            summary: '',
+            descriptionMarkdown: '# 活动介绍\n\n',
+            registrationRequired: false,
+          }
       this.registrationFieldsText = this.prettyFields(row?.registrationFields || defaultFields)
       this.dialogVisible = true
     },
@@ -191,8 +251,8 @@ export default {
       } catch {
         return JSON.stringify(defaultFields, null, 2)
       }
-    }
-  }
+    },
+  },
 }
 </script>
 

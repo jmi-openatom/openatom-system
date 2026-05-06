@@ -1,4 +1,4 @@
-import { getCurrentPermissions, getCurrentRoles, getToken } from './auth'
+import { getCurrentPermissions, getCurrentRoles, getToken } from '@/utils/auth.ts'
 
 const adminRoles = ['super_admin', 'club_admin', 'department_head']
 

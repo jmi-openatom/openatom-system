@@ -2,7 +2,13 @@
   <div class="admin-page">
     <div class="toolbar">
       <div class="toolbar__filters">
-        <el-input v-model="query.keyword" clearable placeholder="搜索社团" style="width: 220px" @keyup.enter="fetchList" />
+        <el-input
+          v-model="query.keyword"
+          clearable
+          placeholder="搜索社团"
+          style="width: 220px"
+          @keyup.enter="fetchList"
+        />
         <el-select v-model="query.status" clearable placeholder="状态" style="width: 140px">
           <el-option label="启用" value="enabled" />
           <el-option label="禁用" value="disabled" />
@@ -17,28 +23,55 @@
       <el-table-column prop="code" label="编号" width="120" />
       <el-table-column prop="category" label="分类" width="130" />
       <el-table-column prop="recruitmentStatus" label="招新" width="120">
-        <template #default="{ row }"><el-tag :type="statusType(row.recruitmentStatus)">{{ row.recruitmentStatus || '-' }}</el-tag></template>
+        <template #default="{ row }">
+          <el-tag :type="statusType(row.recruitmentStatus)">{{
+            row.recruitmentStatus || '-'
+          }}</el-tag>
+        </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="110">
-        <template #default="{ row }"><el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag></template>
+        <template #default="{ row }">
+          <el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag>
+        </template>
       </el-table-column>
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
-          <el-button link type="success" @click="changeRecruitment(row, 'open')">开放招新</el-button>
-          <el-button link type="warning" @click="changeRecruitment(row, 'closed')">关闭招新</el-button>
+          <el-button link type="success" @click="changeRecruitment(row, 'open')"
+            >开放招新</el-button
+          >
+          <el-button link type="warning" @click="changeRecruitment(row, 'closed')"
+            >关闭招新</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination class="pager" layout="total, prev, pager, next, sizes" :total="total" v-model:current-page="query.page" v-model:page-size="query.pageSize" @change="fetchList" />
+    <el-pagination
+      class="pager"
+      layout="total, prev, pager, next, sizes"
+      :total="total"
+      v-model:current-page="query.page"
+      v-model:page-size="query.pageSize"
+      @change="fetchList"
+    />
 
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑社团' : '新增社团'" width="640px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="社团名称" prop="name"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="社团编号" prop="code"><el-input v-model="form.code" /></el-form-item>
-        <el-form-item label="分类"><el-input v-model="form.category" /></el-form-item>
-        <el-form-item label="社长用户ID"><el-input-number v-model="form.presidentUserId" :min="1" /></el-form-item>
-        <el-form-item label="简介"><el-input v-model="form.description" type="textarea" :rows="4" /></el-form-item>
+        <el-form-item label="社团名称" prop="name">
+          <el-input v-model="form.name" />
+        </el-form-item>
+        <el-form-item label="社团编号" prop="code">
+          <el-input v-model="form.code" />
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-input v-model="form.category" />
+        </el-form-item>
+        <el-form-item label="社长用户ID">
+          <el-input-number v-model="form.presidentUserId" :min="1" />
+        </el-form-item>
+        <el-form-item label="简介">
+          <el-input v-model="form.description" type="textarea" :rows="4" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -51,8 +84,8 @@
 <script>
 import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import { clubApi } from '../../api'
-import { statusType } from '../../utils/format'
+import { clubApi } from '@/api'
+import { statusType } from '@/utils/format.ts'
 
 export default {
   name: 'AdminClubs',
@@ -69,8 +102,8 @@ export default {
       form: {},
       rules: {
         name: [{ required: true, message: '请输入社团名称', trigger: 'blur' }],
-        code: [{ required: true, message: '请输入社团编号', trigger: 'blur' }]
-      }
+        code: [{ required: true, message: '请输入社团编号', trigger: 'blur' }],
+      },
     }
   },
   created() {
@@ -89,7 +122,9 @@ export default {
       }
     },
     openDialog(row) {
-      this.form = row ? { ...row } : { name: '', code: '', category: '', presidentUserId: undefined, description: '' }
+      this.form = row
+        ? { ...row }
+        : { name: '', code: '', category: '', presidentUserId: undefined, description: '' }
       this.dialogVisible = true
     },
     saveClub() {
@@ -111,8 +146,8 @@ export default {
       await clubApi.updateRecruitmentStatus(row.id, status)
       ElMessage.success('招新状态已更新')
       this.fetchList()
-    }
-  }
+    },
+  },
 }
 </script>
 

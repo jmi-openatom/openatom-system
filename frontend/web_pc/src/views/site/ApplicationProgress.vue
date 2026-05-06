@@ -36,7 +36,9 @@
                   <span>提交时间：{{ formatDateTime(item.createdAt) }}</span>
                 </div>
               </div>
-              <el-tag :type="statusType(item.status)">{{ applicationStatusText(item.status) }}</el-tag>
+              <el-tag :type="statusType(item.status)">{{
+                applicationStatusText(item.status)
+              }}</el-tag>
             </div>
           </template>
 
@@ -55,7 +57,12 @@
             </div>
           </div>
 
-          <el-steps :active="applicationStep(item.status)" finish-status="success" align-center class="progress-steps">
+          <el-steps
+            :active="applicationStep(item.status)"
+            finish-status="success"
+            align-center
+            class="progress-steps"
+          >
             <el-step title="已提交" />
             <el-step title="审核中" />
             <el-step title="面试阶段" />
@@ -67,10 +74,16 @@
             <div v-for="interview in item.interviews" :key="interview.id" class="interview-item">
               <div class="interview-item__top">
                 <strong>第 {{ interview.round || 1 }} 轮面试</strong>
-                <el-tag :type="statusType(interview.status)">{{ interviewStatusText(interview.status) }}</el-tag>
+                <el-tag :type="statusType(interview.status)">{{
+                  interviewStatusText(interview.status)
+                }}</el-tag>
               </div>
               <div class="interview-item__meta">
-                <span>时间：{{ formatRange(interview.scheduledStartAt, interview.scheduledEndAt) }}</span>
+                <span
+                  >时间：{{
+                    formatRange(interview.scheduledStartAt, interview.scheduledEndAt)
+                  }}</span
+                >
                 <span>方式：{{ interviewModeText(interview.mode) }}</span>
                 <span>地点/链接：{{ interview.location || '-' }}</span>
               </div>
@@ -84,9 +97,9 @@
 </template>
 
 <script>
-import { authApi, siteApi } from '../../api'
-import { getCurrentUser, getToken, setSession } from '../../utils/auth'
-import { formatDateTime, statusType } from '../../utils/format'
+import { authApi, siteApi } from '@/api'
+import { getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
+import { formatDateTime, statusType } from '@/utils/format.ts'
 
 export default {
   name: 'SiteApplicationProgress',
@@ -94,7 +107,7 @@ export default {
     return {
       loading: false,
       user: getCurrentUser(),
-      applications: []
+      applications: [],
     }
   },
   computed: {
@@ -103,7 +116,7 @@ export default {
     },
     displayName() {
       return this.user.realName || this.user.userName || '当前用户'
-    }
+    },
   },
   created() {
     if (this.isLogin) {
@@ -121,7 +134,7 @@ export default {
         accessToken: getToken(),
         user: this.user,
         roles: result?.roles || [],
-        permissions: result?.permissions || []
+        permissions: result?.permissions || [],
       })
     },
     async fetchProgress() {
@@ -148,8 +161,10 @@ export default {
           interviewed: '已完成面试',
           final_approved: '已通过',
           rejected: '未通过',
-          cancelled: '已撤回'
-        }[status] || status || '-'
+          cancelled: '已撤回',
+        }[status] ||
+        status ||
+        '-'
       )
     },
     interviewStatusText(status) {
@@ -157,16 +172,20 @@ export default {
         {
           pending: '待确认',
           confirmed: '已确认',
-          completed: '已完成'
-        }[status] || status || '-'
+          completed: '已完成',
+        }[status] ||
+        status ||
+        '-'
       )
     },
     interviewModeText(mode) {
       return (
         {
           offline: '线下',
-          online: '线上'
-        }[mode] || mode || '未设置'
+          online: '线上',
+        }[mode] ||
+        mode ||
+        '未设置'
       )
     },
     applicationStatusHint(status) {
@@ -180,7 +199,7 @@ export default {
           interviewed: '面试已完成，等待最终结果',
           final_approved: '恭喜，你已通过入会流程',
           rejected: '本次申请未通过，可关注后续批次',
-          cancelled: '你已主动撤回该申请'
+          cancelled: '你已主动撤回该申请',
         }[status] || '请留意后续通知'
       )
     },
@@ -195,14 +214,14 @@ export default {
           interviewed: 3,
           final_approved: 4,
           rejected: 4,
-          cancelled: 4
+          cancelled: 4,
         }[status] ?? 1
       )
     },
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
-    }
-  }
+    },
+  },
 }
 </script>
 

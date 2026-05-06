@@ -2,7 +2,13 @@
   <div class="admin-page">
     <div class="toolbar">
       <div class="toolbar__filters">
-        <el-input v-model="query.keyword" clearable placeholder="搜索用户名/姓名" style="width: 220px" @keyup.enter="fetchList" />
+        <el-input
+          v-model="query.keyword"
+          clearable
+          placeholder="搜索用户名/姓名"
+          style="width: 220px"
+          @keyup.enter="fetchList"
+        />
         <el-select v-model="query.status" clearable placeholder="状态" style="width: 140px">
           <el-option label="启用" value="active" />
           <el-option label="禁用" value="disabled" />
@@ -19,45 +25,80 @@
           :on-success="handleImportSuccess"
           :on-error="handleImportError"
           accept=".xlsx, .xls"
-          style="display: inline-block; margin-right: 12px;"
+          style="display: inline-block; margin-right: 12px"
         >
           <el-button type="success" :icon="Upload">导入用户</el-button>
         </el-upload>
-        <el-button v-if="canImportUsers" type="info" link @click="downloadTemplate">下载模板</el-button>
-        <el-button v-if="canCreateUser" type="primary" :icon="Plus" @click="openDialog()">新增用户</el-button>
+        <el-button v-if="canImportUsers" type="info" link @click="downloadTemplate"
+          >下载模板</el-button
+        >
+        <el-button v-if="canCreateUser" type="primary" :icon="Plus" @click="openDialog()"
+          >新增用户</el-button
+        >
       </div>
     </div>
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="userName" label="用户名" />
-      <el-table-column prop="realName" label="姓名"  />
-      <el-table-column prop="studentId" label="学号"  />
+      <el-table-column prop="realName" label="姓名" />
+      <el-table-column prop="studentId" label="学号" />
       <el-table-column prop="className" label="班级" />
       <el-table-column prop="phone" label="手机号" />
-      <el-table-column prop="email" label="邮箱"  />
+      <el-table-column prop="email" label="邮箱" />
       <el-table-column prop="userStatus" label="状态" width="110">
-        <template #default="{ row }"><el-tag :type="statusType(row.userStatus)">{{ statusText(row.userStatus) }}</el-tag></template>
+        <template #default="{ row }">
+          <el-tag :type="statusType(row.userStatus)">{{ statusText(row.userStatus) }}</el-tag>
+        </template>
       </el-table-column>
       <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
-          <el-button v-if="canUpdateUser" link type="primary" @click="openDialog(row)">编辑</el-button>
-          <el-button v-if="canAssignRole" link type="success" @click="openRoleDialog(row)">分配角色</el-button>
-          <el-button v-if="canUpdateUserStatus" link type="warning" @click="toggleStatus(row)">{{ row.userStatus === 'disabled' ? '启用' : '禁用' }}</el-button>
-          <el-button v-if="canResetUserPassword" link type="danger" @click="resetPassword(row)">重置密码</el-button>
+          <el-button v-if="canUpdateUser" link type="primary" @click="openDialog(row)"
+            >编辑</el-button
+          >
+          <el-button v-if="canAssignRole" link type="success" @click="openRoleDialog(row)"
+            >分配角色</el-button
+          >
+          <el-button v-if="canUpdateUserStatus" link type="warning" @click="toggleStatus(row)">
+            {{ row.userStatus === 'disabled' ? '启用' : '禁用' }}
+          </el-button>
+          <el-button v-if="canResetUserPassword" link type="danger" @click="resetPassword(row)"
+            >重置密码</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination class="pager" layout="total, prev, pager, next, sizes" :total="total" v-model:current-page="query.page" v-model:page-size="query.pageSize" @change="fetchList" />
+    <el-pagination
+      class="pager"
+      layout="total, prev, pager, next, sizes"
+      :total="total"
+      v-model:current-page="query.page"
+      v-model:page-size="query.pageSize"
+      @change="fetchList"
+    />
 
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑用户' : '新增用户'" width="560px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="86px">
-        <el-form-item label="用户名" prop="username"><el-input v-model="form.username" /></el-form-item>
-        <el-form-item label="姓名" prop="realName"><el-input v-model="form.realName" /></el-form-item>
-        <el-form-item label="学号"><el-input v-model="form.studentId" /></el-form-item>
-        <el-form-item label="班级"><el-input v-model="form.className" /></el-form-item>
-        <el-form-item label="手机号"><el-input v-model="form.phone" /></el-form-item>
-        <el-form-item label="邮箱"><el-input v-model="form.email" /></el-form-item>
-        <el-form-item v-if="!form.id" label="密码" prop="password"><el-input v-model="form.password" type="password" show-password /></el-form-item>
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="form.username" />
+        </el-form-item>
+        <el-form-item label="姓名" prop="realName">
+          <el-input v-model="form.realName" />
+        </el-form-item>
+        <el-form-item label="学号">
+          <el-input v-model="form.studentId" />
+        </el-form-item>
+        <el-form-item label="班级">
+          <el-input v-model="form.className" />
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model="form.phone" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="form.email" />
+        </el-form-item>
+        <el-form-item v-if="!form.id" label="密码" prop="password">
+          <el-input v-model="form.password" type="password" show-password />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -89,10 +130,10 @@
 <script>
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Upload } from '@element-plus/icons-vue'
-import { userApi, rbacApi } from '../../api'
-import { statusType } from '../../utils/format'
-import { getToken } from '../../utils/auth'
-import { hasPermission } from '../../utils/permission'
+import { userApi, rbacApi } from '@/api'
+import { statusType } from '@/utils/format.ts'
+import { getToken } from '@/utils/auth.ts'
+import { hasPermission } from '@/utils/permission.ts'
 
 export default {
   name: 'AdminUsers',
@@ -116,8 +157,8 @@ export default {
       rules: {
         username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
         realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-        password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-      }
+        password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+      },
     }
   },
   computed: {
@@ -125,7 +166,7 @@ export default {
       const token = getToken()
       return {
         Authorization: `Bearer ${token}`,
-        jmiopenatom: token
+        jmiopenatom: token,
       }
     },
     canImportUsers() {
@@ -145,7 +186,7 @@ export default {
     },
     canResetUserPassword() {
       return hasPermission('user:password:reset')
-    }
+    },
   },
   created() {
     this.fetchList()
@@ -185,7 +226,15 @@ export default {
     openDialog(row) {
       this.form = row
         ? { ...row, username: row.userName || row.username }
-        : { username: '', realName: '', studentId: '', className: '', phone: '', email: '', password: '' }
+        : {
+            username: '',
+            realName: '',
+            studentId: '',
+            className: '',
+            phone: '',
+            email: '',
+            password: '',
+          }
       this.dialogVisible = true
     },
     saveUser() {
@@ -241,8 +290,8 @@ export default {
       } finally {
         this.roleSaving = false
       }
-    }
-  }
+    },
+  },
 }
 </script>
 

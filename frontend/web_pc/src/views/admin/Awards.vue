@@ -26,17 +26,35 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑获奖经历' : '新增获奖经历'" width="680px">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="form.id ? '编辑获奖经历' : '新增获奖经历'"
+      width="680px"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="标题" prop="title"><el-input v-model="form.title" /></el-form-item>
-        <el-form-item label="比赛名称" prop="competitionName"><el-input v-model="form.competitionName" /></el-form-item>
+        <el-form-item label="标题" prop="title">
+          <el-input v-model="form.title" />
+        </el-form-item>
+        <el-form-item label="比赛名称" prop="competitionName">
+          <el-input v-model="form.competitionName" />
+        </el-form-item>
         <div class="form-grid">
-          <el-form-item label="奖项等级"><el-input v-model="form.awardLevel" /></el-form-item>
-          <el-form-item label="获奖年份"><el-input-number v-model="form.awardYear" :min="2000" :max="2100" /></el-form-item>
-          <el-form-item label="团队/成员"><el-input v-model="form.teamName" /></el-form-item>
-          <el-form-item label="排序"><el-input-number v-model="form.sortOrder" :min="0" /></el-form-item>
+          <el-form-item label="奖项等级">
+            <el-input v-model="form.awardLevel" />
+          </el-form-item>
+          <el-form-item label="获奖年份">
+            <el-input-number v-model="form.awardYear" :min="2000" :max="2100" />
+          </el-form-item>
+          <el-form-item label="团队/成员">
+            <el-input v-model="form.teamName" />
+          </el-form-item>
+          <el-form-item label="排序">
+            <el-input-number v-model="form.sortOrder" :min="0" />
+          </el-form-item>
         </div>
-        <el-form-item label="说明"><el-input v-model="form.description" type="textarea" :rows="4" /></el-form-item>
+        <el-form-item label="说明">
+          <el-input v-model="form.description" type="textarea" :rows="4" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -49,7 +67,7 @@
 <script>
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { awardApi } from '../../api'
+import { awardApi } from '@/api'
 
 export default {
   name: 'AdminAwards',
@@ -64,8 +82,8 @@ export default {
       form: {},
       rules: {
         title: [{ required: true, message: '请输入获奖标题', trigger: 'blur' }],
-        competitionName: [{ required: true, message: '请输入比赛名称', trigger: 'blur' }]
-      }
+        competitionName: [{ required: true, message: '请输入比赛名称', trigger: 'blur' }],
+      },
     }
   },
   created() {
@@ -81,7 +99,17 @@ export default {
       }
     },
     openDialog(row) {
-      this.form = row ? { ...row } : { title: '', competitionName: '', awardLevel: '', awardYear: new Date().getFullYear(), teamName: '', description: '', sortOrder: 0 }
+      this.form = row
+        ? { ...row }
+        : {
+            title: '',
+            competitionName: '',
+            awardLevel: '',
+            awardYear: new Date().getFullYear(),
+            teamName: '',
+            description: '',
+            sortOrder: 0,
+          }
       this.dialogVisible = true
     },
     save() {
@@ -103,8 +131,8 @@ export default {
       await awardApi.remove(row.id)
       ElMessage.success('获奖经历已删除')
       this.fetchList()
-    }
-  }
+    },
+  },
 }
 </script>
 

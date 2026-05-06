@@ -1,12 +1,14 @@
 {
   "name": "web-pc",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --mode dev",
     "build": "vue-tsc --noEmit && vite build",
     "typecheck": "vue-tsc --noEmit",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
@@ -18,8 +20,10 @@
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^25.6.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/tsconfig": "^0.9.1",
+    "oxfmt": "^0.48.0",
     "typescript": "~5.8.0",
     "vite": "^6.0.7",
     "vue-tsc": "^2.2.0"

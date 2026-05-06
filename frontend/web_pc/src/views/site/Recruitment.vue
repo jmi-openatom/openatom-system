@@ -7,7 +7,14 @@
           <p class="section-subtitle">填写招新表单，开启你的社团之旅。</p>
         </div>
         <div class="toolbar__filters">
-          <el-select v-if="clubs.length > 1" v-model="selectedClubId" filterable placeholder="选择社团" style="width: 240px" @change="fetchCampaigns">
+          <el-select
+            v-if="clubs.length > 1"
+            v-model="selectedClubId"
+            filterable
+            placeholder="选择社团"
+            style="width: 240px"
+            @change="fetchCampaigns"
+          >
             <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
           </el-select>
           <el-button type="primary" :icon="Refresh" @click="loadAll">刷新</el-button>
@@ -15,9 +22,17 @@
       </div>
 
       <el-empty v-if="!selectedClubId && !loading" description="请先选择社团" />
-      <el-empty v-else-if="selectedClubId && !campaigns.length && !loading" :description="clubs.length > 1 ? '该社团暂无开放中的招新表单' : '当前暂无开放中的招新表单'" />
+      <el-empty
+        v-else-if="selectedClubId && !campaigns.length && !loading"
+        :description="clubs.length > 1 ? '该社团暂无开放中的招新表单' : '当前暂无开放中的招新表单'"
+      />
       <el-timeline v-else v-loading="loading">
-        <el-timeline-item v-for="item in campaigns" :key="item.id" :timestamp="formatRange(item)" placement="top">
+        <el-timeline-item
+          v-for="item in campaigns"
+          :key="item.id"
+          :timestamp="formatRange(item)"
+          placement="top"
+        >
           <div class="campaign-item panel">
             <div>
               <h3>{{ item.name || '招新计划' }}</h3>
@@ -38,8 +53,8 @@
 
 <script>
 import { Refresh } from '@element-plus/icons-vue'
-import { clubApi } from '../../api'
-import { formatDateTime, statusType } from '../../utils/format'
+import { clubApi } from '@/api'
+import { formatDateTime, statusType } from '@/utils/format.ts'
 
 export default {
   name: 'SiteRecruitment',
@@ -49,7 +64,7 @@ export default {
       loading: false,
       clubs: [],
       campaigns: [],
-      selectedClubId: ''
+      selectedClubId: '',
     }
   },
   created() {
@@ -87,9 +102,19 @@ export default {
       return `${formatDateTime(item.applyStartAt)} - ${formatDateTime(item.applyEndAt)}`
     },
     statusText(status) {
-      return { draft: '草稿', published: '已发布', open: '收集中', closed: '已结束', archived: '已归档' }[status] || status || '-'
-    }
-  }
+      return (
+        {
+          draft: '草稿',
+          published: '已发布',
+          open: '收集中',
+          closed: '已结束',
+          archived: '已归档',
+        }[status] ||
+        status ||
+        '-'
+      )
+    },
+  },
 }
 </script>
 

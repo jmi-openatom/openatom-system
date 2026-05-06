@@ -2,16 +2,41 @@
   <div class="admin-page">
     <div class="toolbar">
       <div class="toolbar__filters">
-        <el-select v-if="clubs.length > 1" v-model="selectedClubId" filterable placeholder="选择社团" style="width: 220px" @change="handleClubChange">
+        <el-select
+          v-if="clubs.length > 1"
+          v-model="selectedClubId"
+          filterable
+          placeholder="选择社团"
+          style="width: 220px"
+          @change="handleClubChange"
+        >
           <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
         </el-select>
-        <el-select v-model="selectedFormId" filterable placeholder="选择表单" style="width: 260px" @change="fetchList">
+        <el-select
+          v-model="selectedFormId"
+          filterable
+          placeholder="选择表单"
+          style="width: 260px"
+          @change="fetchList"
+        >
           <el-option v-for="item in forms" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
-        <el-input v-model="keyword" clearable placeholder="搜索提交人/联系方式" style="width: 240px" @keyup.enter="fetchList" />
+        <el-input
+          v-model="keyword"
+          clearable
+          placeholder="搜索提交人/联系方式"
+          style="width: 240px"
+          @keyup.enter="fetchList"
+        />
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
-      <el-button type="success" :disabled="!selectedFormId" :loading="exporting" @click="exportExcel">导出 Excel</el-button>
+      <el-button
+        type="success"
+        :disabled="!selectedFormId"
+        :loading="exporting"
+        @click="exportExcel"
+        >导出 Excel
+      </el-button>
     </div>
 
     <el-alert
@@ -60,14 +85,26 @@
     <el-dialog v-model="detailVisible" title="提交内容" width="760px">
       <div v-if="detailRow" class="detail-panel">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="提交人">{{ detailRow.submitterName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="联系方式">{{ detailRow.contact || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="账号">{{ detailRow.submitterAccount || '匿名提交' }}</el-descriptions-item>
-          <el-descriptions-item label="提交时间">{{ formatDateTime(detailRow.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item label="提交人">{{
+            detailRow.submitterName || '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="联系方式">{{
+            detailRow.contact || '-'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="账号">{{
+            detailRow.submitterAccount || '匿名提交'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="提交时间">{{
+            formatDateTime(detailRow.createdAt)
+          }}</el-descriptions-item>
         </el-descriptions>
         <el-divider content-position="left">字段内容</el-divider>
         <el-descriptions :column="1" border>
-          <el-descriptions-item v-for="field in previewEntries" :key="field.key" :label="field.label">
+          <el-descriptions-item
+            v-for="field in previewEntries"
+            :key="field.key"
+            :label="field.label"
+          >
             <div class="detail-value">{{ field.value }}</div>
           </el-descriptions-item>
         </el-descriptions>
@@ -79,8 +116,8 @@
 <script>
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
-import { clubApi, formSubmissionApi } from '../../api'
-import { formatDateTime } from '../../utils/format'
+import { clubApi, formSubmissionApi } from '@/api'
+import { formatDateTime } from '@/utils/format.ts'
 
 export default {
   name: 'AdminFormSubmissions',
@@ -99,7 +136,7 @@ export default {
       pageSize: 10,
       total: 0,
       detailVisible: false,
-      detailRow: null
+      detailRow: null,
     }
   },
   computed: {
@@ -114,9 +151,9 @@ export default {
       return this.currentSchema.map((field) => ({
         key: field.key,
         label: field.label || field.key,
-        value: this.formatValue(values[field.key])
+        value: this.formatValue(values[field.key]),
       }))
-    }
+    },
   },
   async created() {
     const queryClubId = Number(this.$route.query.clubId || '')
@@ -166,7 +203,7 @@ export default {
         const result = await formSubmissionApi.list(this.selectedFormId, {
           keyword: this.keyword || undefined,
           page: this.page,
-          pageSize: this.pageSize
+          pageSize: this.pageSize,
         })
         this.rows = result?.list || []
         this.total = result?.total || 0
@@ -216,8 +253,8 @@ export default {
     },
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
-    }
-  }
+    },
+  },
 }
 </script>
 

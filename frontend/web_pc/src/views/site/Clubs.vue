@@ -7,7 +7,13 @@
           <p class="section-subtitle">查看已上线社团，了解分类、介绍与当前招新状态。</p>
         </div>
         <div class="toolbar__filters">
-          <el-input v-model="query.keyword" placeholder="搜索社团名称" clearable style="width: 220px" @keyup.enter="fetchClubs" />
+          <el-input
+            v-model="query.keyword"
+            placeholder="搜索社团名称"
+            clearable
+            style="width: 220px"
+            @keyup.enter="fetchClubs"
+          />
           <el-select v-model="query.category" placeholder="分类" clearable style="width: 150px">
             <el-option label="学术科技" value="academic" />
             <el-option label="文体兴趣" value="interest" />
@@ -43,8 +49,8 @@
 
 <script>
 import { Search } from '@element-plus/icons-vue'
-import { clubApi } from '../../api'
-import { statusType } from '../../utils/format'
+import { clubApi } from '@/api'
+import { statusType } from '@/utils/format.ts'
 
 export default {
   name: 'SiteClubs',
@@ -56,8 +62,8 @@ export default {
       query: {
         keyword: '',
         category: '',
-        status: 'enabled'
-      }
+        status: 'enabled',
+      },
     }
   },
   created() {
@@ -77,8 +83,8 @@ export default {
       } finally {
         this.loading = false
       }
-    }
-  }
+    },
+  },
 }
 </script>
 

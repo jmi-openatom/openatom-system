@@ -5,13 +5,20 @@
         <div>
           <el-tag effect="plain">社团活动</el-tag>
           <h1>活动日程</h1>
-          <p>讲座、工作坊、项目冲刺和竞赛复盘都会在这里发布；需要报名的活动可直接进入详情填写表单。</p>
+          <p>
+            讲座、工作坊、项目冲刺和竞赛复盘都会在这里发布；需要报名的活动可直接进入详情填写表单。
+          </p>
         </div>
       </div>
     </section>
 
     <section class="container activities-list">
-      <article v-for="item in rows" :key="item.id" class="activity-row" @click="$router.push(`/activities/${item.id}`)">
+      <article
+        v-for="item in rows"
+        :key="item.id"
+        class="activity-row"
+        @click="$router.push(`/activities/${item.id}`)"
+      >
         <div class="activity-row__date">
           <strong>{{ day(item.activityAt) }}</strong>
           <span>{{ month(item.activityAt) }}</span>
@@ -34,15 +41,15 @@
 </template>
 
 <script>
-import { siteApi } from '../../api'
-import { formatDateTime } from '../../utils/format'
+import { siteApi } from '@/api/index.ts'
+import { formatDateTime } from '@/utils/format.ts'
 
 export default {
   name: 'SiteActivities',
   data() {
     return {
       loading: false,
-      rows: []
+      rows: [],
     }
   },
   created() {
@@ -65,8 +72,8 @@ export default {
       if (!value) return '待定'
       return `${new Date(value).getMonth() + 1}月`
     },
-    formatDateTime
-  }
+    formatDateTime,
+  },
 }
 </script>
 

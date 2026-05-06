@@ -3,7 +3,7 @@
     <header class="site-header">
       <div class="container site-header__inner">
         <router-link class="brand" to="/">
-          <img alt="徽标" class="brand__mark" src="/logo.png"/>
+          <img alt="徽标" class="brand__mark" src="/logo.png" />
           <span>
             <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
@@ -16,10 +16,18 @@
           <router-link to="/progress">我的申请</router-link>
         </nav>
         <div class="site-header__actions">
-          <el-button v-if="isLoggedIn" :icon="UserFilled" plain @click="$router.push('/profile')">个人中心
+          <el-button v-if="isLoggedIn" :icon="UserFilled" plain @click="$router.push('/profile')"
+            >个人中心
           </el-button>
-          <el-button v-else :icon="UserFilled" plain @click="$router.push('/admin/login')">登录</el-button>
-          <el-button v-if="showAdminEntry" :icon="Setting" type="primary" @click="$router.push('/admin')">
+          <el-button v-else :icon="UserFilled" plain @click="$router.push('/admin/login')"
+            >登录</el-button
+          >
+          <el-button
+            v-if="showAdminEntry"
+            :icon="Setting"
+            type="primary"
+            @click="$router.push('/admin')"
+          >
             管理员后台
           </el-button>
         </div>
@@ -27,13 +35,13 @@
     </header>
 
     <main class="site-main">
-      <router-view/>
+      <router-view />
     </main>
 
     <footer class="site-footer">
       <div class="container site-footer__inner">
         <div class="site-footer__brand">
-          <img alt="徽标" class="site-footer__logo" src="/logo.png"/>
+          <img alt="徽标" class="site-footer__logo" src="/logo.png" />
           <div class="brand-text">
             <span class="name">开放原子开源社团</span>
             <span class="slogan">Open Atom Open Source Club</span>
@@ -49,17 +57,17 @@
 </template>
 
 <script lang="ts">
-import {Setting, UserFilled} from '@element-plus/icons-vue'
-import {markRaw} from 'vue'
-import {getToken} from '../utils/auth'
-import {hasAdminAccess} from '../utils/permission'
+import { Setting, UserFilled } from '@element-plus/icons-vue'
+import { markRaw } from 'vue'
+import { getToken } from '@/utils/auth.ts'
+import { hasAdminAccess } from '@/utils/permission.ts'
 
 export default {
   name: 'SiteLayout',
   data() {
     return {
       Setting: markRaw(Setting),
-      UserFilled: markRaw(UserFilled)
+      UserFilled: markRaw(UserFilled),
     }
   },
   computed: {
@@ -68,8 +76,8 @@ export default {
     },
     showAdminEntry() {
       return hasAdminAccess()
-    }
-  }
+    },
+  },
 }
 </script>
 

@@ -26,17 +26,28 @@ export function getToken(): string | null {
 
 export function setSession(payload?: SessionPayload): void {
   const data = payload || {}
-  const hasAccessToken = Object.prototype.hasOwnProperty.call(data, 'accessToken') || Object.prototype.hasOwnProperty.call(data, 'token')
+  const hasAccessToken =
+    Object.prototype.hasOwnProperty.call(data, 'accessToken') ||
+    Object.prototype.hasOwnProperty.call(data, 'token')
   const hasRefreshToken = Object.prototype.hasOwnProperty.call(data, 'refreshToken')
   const hasUser = Object.prototype.hasOwnProperty.call(data, 'user')
   const hasRoles = Object.prototype.hasOwnProperty.call(data, 'roles')
   const hasPermissions = Object.prototype.hasOwnProperty.call(data, 'permissions')
 
-  localStorage.setItem(TOKEN_KEY, hasAccessToken ? (data.accessToken || data.token || '') : (localStorage.getItem(TOKEN_KEY) || ''))
-  localStorage.setItem(REFRESH_TOKEN_KEY, hasRefreshToken ? (data.refreshToken || '') : (localStorage.getItem(REFRESH_TOKEN_KEY) || ''))
-  localStorage.setItem(USER_KEY, JSON.stringify(hasUser ? (data.user || {}) : getCurrentUser()))
-  localStorage.setItem(ROLE_KEY, JSON.stringify(hasRoles ? (data.roles || []) : getCurrentRoles()))
-  localStorage.setItem(PERMISSION_KEY, JSON.stringify(hasPermissions ? (data.permissions || []) : getCurrentPermissions()))
+  localStorage.setItem(
+    TOKEN_KEY,
+    hasAccessToken ? data.accessToken || data.token || '' : localStorage.getItem(TOKEN_KEY) || '',
+  )
+  localStorage.setItem(
+    REFRESH_TOKEN_KEY,
+    hasRefreshToken ? data.refreshToken || '' : localStorage.getItem(REFRESH_TOKEN_KEY) || '',
+  )
+  localStorage.setItem(USER_KEY, JSON.stringify(hasUser ? data.user || {} : getCurrentUser()))
+  localStorage.setItem(ROLE_KEY, JSON.stringify(hasRoles ? data.roles || [] : getCurrentRoles()))
+  localStorage.setItem(
+    PERMISSION_KEY,
+    JSON.stringify(hasPermissions ? data.permissions || [] : getCurrentPermissions()),
+  )
 }
 
 export function clearSession(): void {
@@ -73,7 +84,9 @@ export function getCurrentPermissions(): string[] {
 
 export function getRememberedLogin(): LoginPayload {
   try {
-    return JSON.parse(localStorage.getItem(REMEMBER_LOGIN_KEY) || '{"username":"","password":"","remember":false}')
+    return JSON.parse(
+      localStorage.getItem(REMEMBER_LOGIN_KEY) || '{"username":"","password":"","remember":false}',
+    )
   } catch (_error) {
     return { username: '', password: '', remember: false }
   }
@@ -85,8 +98,8 @@ export function setRememberedLogin(payload?: LoginPayload): void {
     JSON.stringify({
       username: payload?.username || '',
       password: payload?.password || '',
-      remember: Boolean(payload?.remember)
-    })
+      remember: Boolean(payload?.remember),
+    }),
   )
 }
 
