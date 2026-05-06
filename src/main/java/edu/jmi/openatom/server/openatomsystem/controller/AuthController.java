@@ -2,10 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestLoginDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestLogoutDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestRefreshTokenDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestRegisterDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.request.*;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseCurrentUserDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
@@ -44,7 +41,8 @@ public class AuthController {
 
   @PostMapping("/logout")
   @SaCheckPermission("auth:logout")
-  public ApiResponse<String> logout(@RequestBody(required = false) RequestLogoutDTO requestLogoutDTO) {
+  public ApiResponse<String> logout(
+      @RequestBody(required = false) RequestLogoutDTO requestLogoutDTO) {
     return authService.logout(requestLogoutDTO == null ? null : requestLogoutDTO.getRefreshToken());
   }
 
@@ -57,5 +55,11 @@ public class AuthController {
   @PatchMapping("/register-enabled")
   public ApiResponse<Boolean> updateRegisterEnabled(@RequestParam Boolean enabled) {
     return authService.updateRegisterEnabled(enabled);
+  }
+
+  @PatchMapping("/password")
+  public ApiResponse<String> changePassword(
+      @RequestBody RequestChangePassword requestChangePassword) {
+    return authService.changePassword(requestChangePassword);
   }
 }

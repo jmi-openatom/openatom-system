@@ -1,197 +1,217 @@
 <template>
-  <div class="site-shell">
-    <header class="site-header">
-      <div class="container site-header__inner">
-        <router-link to="/" class="brand">
-          <img class="brand__mark" src="/logo.png" alt="开放原子开源社团徽标" />
-          <span>
+    <div class="site-shell">
+        <header class="site-header">
+            <div class="container site-header__inner">
+                <router-link class="brand" to="/">
+                    <img alt="徽标" class="brand__mark" src="/logo.png"/>
+                    <span>
             <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
           </span>
-        </router-link>
-        <nav class="site-nav">
-          <a href="/#overview">概览</a>
-          <router-link to="/activities">活动</router-link>
-          <a href="/#people">主要人员</a>
-          <a href="/#achievements">比赛获奖</a>
-          <router-link to="/apply">入会申请</router-link>
-          <router-link to="/progress">我的申请</router-link>
-        </nav>
-        <div class="site-header__actions">
-          <el-button v-if="isLoggedIn" plain :icon="UserFilled" @click="$router.push('/profile')">个人中心</el-button>
-          <el-button v-else plain :icon="UserFilled" @click="$router.push('/admin/login')">登录</el-button>
-          <el-button v-if="showAdminEntry" type="primary" :icon="Setting" @click="$router.push('/admin')">管理员后台</el-button>
-        </div>
-      </div>
-    </header>
-    <main>
-      <router-view />
-    </main>
-    <footer class="site-footer">
-      <div class="container site-footer__inner">
-        <div class="site-footer__brand">
-          <img class="site-footer__logo" src="/logo.png" alt="开放原子开源社团徽标" />
-          <span>开放原子开源社团</span>
-        </div>
-        <span>技术分享、项目实践、竞赛训练与开源协作</span>
-      </div>
-    </footer>
-  </div>
+                </router-link>
+                <nav class="site-nav">
+                    <a href="/#overview">概览</a>
+                    <router-link to="/activities">活动</router-link>
+                    <router-link to="/apply">入会申请</router-link>
+                    <router-link to="/progress">我的申请</router-link>
+                </nav>
+                <div class="site-header__actions">
+                    <el-button v-if="isLoggedIn" :icon="UserFilled" plain @click="$router.push('/profile')">个人中心
+                    </el-button>
+                    <el-button v-else :icon="UserFilled" plain @click="$router.push('/admin/login')">登录</el-button>
+                    <el-button v-if="showAdminEntry" :icon="Setting" type="primary" @click="$router.push('/admin')">
+                        管理员后台
+                    </el-button>
+                </div>
+            </div>
+        </header>
+
+        <main class="site-main">
+            <router-view/>
+        </main>
+
+        <footer class="site-footer">
+            <div class="container site-footer__inner">
+                <div class="site-footer__brand">
+                    <img alt="徽标" class="site-footer__logo" src="/logo.png"/>
+                    <div class="brand-text">
+                        <span class="name">开放原子开源社团</span>
+                        <span class="slogan">Open Atom Open Source Club</span>
+                    </div>
+                </div>
+                <div class="site-footer__info">
+                    <p>技术分享 · 项目实践 · 竞赛训练 · 开源协作</p>
+                    <p class="copyright">© 2025 JMI-OPENATOM. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
 </template>
 
 <script>
-import { Setting, UserFilled } from '@element-plus/icons-vue'
-import { markRaw } from 'vue'
-import { getToken } from '../utils/auth'
-import { hasAdminAccess } from '../utils/permission'
+import {Setting, UserFilled} from '@element-plus/icons-vue'
+import {markRaw} from 'vue'
+import {getToken} from '../utils/auth'
+import {hasAdminAccess} from '../utils/permission'
 
 export default {
-  name: 'SiteLayout',
-  data() {
-    return {
-      Setting: markRaw(Setting),
-      UserFilled: markRaw(UserFilled)
-    }
-  },
-  computed: {
-    isLoggedIn() {
-      return Boolean(getToken())
+    name: 'SiteLayout',
+    data() {
+        return {
+            Setting: markRaw(Setting),
+            UserFilled: markRaw(UserFilled)
+        }
     },
-    showAdminEntry() {
-      return hasAdminAccess()
+    computed: {
+        isLoggedIn() {
+            return Boolean(getToken())
+        },
+        showAdminEntry() {
+            return hasAdminAccess()
+        }
     }
-  }
 }
 </script>
 
 <style scoped>
+/* 页面整体布局：Flex 垂直排布 */
 .site-shell {
-  min-height: 100vh;
-  background: transparent;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f8fafc;
 }
 
+/* Header 样式 */
 .site-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: rgba(248, 251, 255, 0.86);
-  border-bottom: 1px solid rgba(219, 230, 245, 0.9);
-  backdrop-filter: blur(18px);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid #e2e8f0;
+    backdrop-filter: blur(12px);
 }
 
 .site-header__inner {
-  display: flex;
-  min-height: 76px;
-  align-items: center;
-  gap: 26px;
+    display: flex;
+    min-height: 76px;
+    align-items: center;
+    gap: 26px;
 }
 
-.site-header__actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* 主体内容：撑开空间 */
+.site-main {
+    flex: 1;
 }
 
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 210px;
-}
-
-.brand__mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
-  object-fit: cover;
-}
-
-.brand strong,
-.brand small {
-  display: block;
-}
-
-.brand strong {
-  color: #0f172a;
-}
-
-.brand small {
-  margin-top: 2px;
-  color: var(--oa-muted);
-}
-
-.site-nav {
-  display: flex;
-  flex: 1;
-  gap: 10px;
-  color: #334155;
-  font-size: 14px;
-}
-
-.site-nav a {
-  padding: 10px 14px;
-  border-radius: 999px;
-  white-space: nowrap;
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease;
-}
-
-.site-nav a:hover,
-.site-nav a.router-link-active {
-  color: var(--oa-primary-dark);
-  background: rgba(37, 99, 235, 0.08);
-  font-weight: 600;
-}
-
+/* --- Footer 完整样式 --- */
 .site-footer {
-  padding: 30px 0 38px;
-  border-top: 1px solid rgba(219, 230, 245, 0.86);
-  background: rgba(255, 255, 255, 0.58);
+    flex-shrink: 0;
+    padding: 48px 0 32px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    color: #64748b;
 }
 
 .site-footer__inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--oa-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 
 .site-footer__brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: #0f172a;
-  font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .site-footer__logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
-  object-fit: cover;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    filter: grayscale(0.2);
 }
 
-@media (max-width: 900px) {
-  .site-header__inner {
-    flex-wrap: wrap;
-    padding: 12px 0;
-  }
+.brand-text .name {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
 
-  .site-nav {
-    width: 100%;
-    order: 3;
-    overflow-x: auto;
-  }
+.brand-text .slogan {
+    font-size: 12px;
+    color: #94a3b8;
+}
 
-  .site-header__actions {
-    margin-left: auto;
-  }
+.site-footer__info {
+    text-align: right;
+    font-size: 14px;
+}
 
-  .site-footer__inner {
-    flex-direction: column;
+.site-footer__info p {
+    margin: 0 0 8px;
+}
+
+.copyright {
+    font-size: 12px;
+    color: #cbd5e1;
+}
+
+/* 通用样式 */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.brand__mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+}
+
+.brand strong {
+    display: block;
+    color: #0f172a;
+}
+
+.brand small {
+    color: #64748b;
+}
+
+.site-nav {
+    flex: 1;
+    display: flex;
     gap: 8px;
-  }
+}
+
+.site-nav a {
+    padding: 8px 16px;
+    color: #334155;
+    text-decoration: none;
+    border-radius: 20px;
+    transition: 0.3s;
+}
+
+.site-nav a:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+/* 响应式 */
+@media (max-width: 900px) {
+    .site-footer__inner {
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        text-align: center;
+    }
+
+    .site-footer__info {
+        text-align: center;
+    }
 }
 </style>

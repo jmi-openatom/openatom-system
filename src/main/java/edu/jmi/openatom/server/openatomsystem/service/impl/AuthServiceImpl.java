@@ -1,24 +1,20 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
+import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
+
 import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import edu.jmi.openatom.server.openatomsystem.bootstrap.RoleSeedTemplate;
+import edu.jmi.openatom.server.openatomsystem.common.web.ClientIpResolver;
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
+import edu.jmi.openatom.server.openatomsystem.dto.request.RequestChangePassword;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestRegisterDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseCurrentUserDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseLoginDTO;
-import edu.jmi.openatom.server.openatomsystem.mapper.LoginLogMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.PermissionMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.RoleMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.RolePermissionMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.UserRoleMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
 import edu.jmi.openatom.server.openatomsystem.entity.LoginLog;
@@ -27,10 +23,17 @@ import edu.jmi.openatom.server.openatomsystem.entity.Role;
 import edu.jmi.openatom.server.openatomsystem.entity.RolePermission;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.entity.UserRole;
+import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.LoginLogMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.PermissionMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.RoleMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.RolePermissionMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.UserRoleMapper;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
-import edu.jmi.openatom.server.openatomsystem.common.web.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.util.Collections;
@@ -39,12 +42,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -228,7 +231,29 @@ public class AuthServiceImpl implements AuthService {
     if (!StpUtil.hasRole("super_admin")) {
       return ApiResponse.error(403, "仅系统管理员可修改注册开关");
     }
-    return ApiResponse.success(registrationSettingService.updateRegisterEnabled(enabled), "注册开关更新成功");
+    return ApiResponse.success(
+        registrationSettingService.updateRegisterEnabled(enabled), "注册开关更新成功");
+  }
+
+  @Override
+  public ApiResponse<String> changePassword(RequestChangePassword requestChangePassword) {
+    if (requestChangePassword == null
+        || requestChangePassword.getOldPassword() == null
+        || requestChangePassword.getNewPassword() == null) {
+      return ApiResponse.error("密码不能为空");
+    }
+    if (!StpUtil.isLogin()) {
+      return ApiResponse.error(401, "请先登录");
+    }
+    int id = StpUtil.getLoginIdAsInt();
+    User user = userMapper.selectById(id);
+    if (!passwordService.matches(requestChangePassword.getOldPassword(), user.getPassword())) {
+      return ApiResponse.error("旧密码不正确");
+    }
+    user.setPassword(passwordService.encode(requestChangePassword.getNewPassword()));
+    userMapper.updateById(user);
+    StpUtil.logout();
+    return ApiResponse.success("密码更新成功");
   }
 
   private ResponseLoginDTO createLoginResponse(User user) {
@@ -252,11 +277,13 @@ public class AuthServiceImpl implements AuthService {
 
   private AuthSnapshot buildAuthSnapshot(Integer userId) {
     List<UserRole> userRoles =
-        userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
+        userRoleMapper.selectList(
+            new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
     List<Integer> roleIds =
         userRoles.stream().map(UserRole::getRoleId).distinct().collect(Collectors.toList());
 
-    List<Role> roles = roleIds.isEmpty() ? Collections.emptyList() : roleMapper.selectBatchIds(roleIds);
+    List<Role> roles =
+        roleIds.isEmpty() ? Collections.emptyList() : roleMapper.selectBatchIds(roleIds);
     List<String> roleCodes =
         roles.stream().map(Role::getCode).filter(code -> code != null && !code.isBlank()).toList();
 
@@ -314,7 +341,8 @@ public class AuthServiceImpl implements AuthService {
 
   private void recordLoginLog(Integer userId) {
     HttpServletRequest request = null;
-    if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+    if (RequestContextHolder.getRequestAttributes()
+        instanceof ServletRequestAttributes attributes) {
       request = attributes.getRequest();
     }
     loginLogMapper.insert(

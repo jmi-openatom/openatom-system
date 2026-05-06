@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
+import edu.jmi.openatom.server.openatomsystem.dto.request.RequestChangePassword;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestRegisterDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseCurrentUserDTO;
@@ -18,4 +19,6 @@ public interface AuthService {
   ApiResponse<ResponseCurrentUserDTO> getCurrentUserInfo();
 
   ApiResponse<Boolean> updateRegisterEnabled(Boolean enabled);
+
+  ApiResponse<String> changePassword(RequestChangePassword requestChangePassword);
 }
