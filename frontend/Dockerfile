@@ -1,14 +1,13 @@
-# Build stage
+# Compatibility Dockerfile for deployments that still build from ./frontend.
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package*.json ./
+COPY web_pc/package*.json ./
 RUN npm ci
-COPY . .
+COPY web_pc/. .
 RUN npm run build
 
-# Run stage
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY web_pc/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

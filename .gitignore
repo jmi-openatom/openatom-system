@@ -32,6 +32,11 @@ build/
 ### VS Code ###
 .vscode/
 
+### Local build artifacts ###
+backend/.mvn-cache/
+frontend/web_pc/node_modules/
+frontend/web_pc/dist/
+
 ### macOS ###
 .DS_Store
 **/.DS_Store

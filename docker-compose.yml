@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
@@ -13,7 +11,7 @@ services:
     volumes:
       # 数据持久化和初始化脚本
       - mysql_data:/var/lib/mysql
-      - ./db/create_table.sql:/docker-entrypoint-initdb.d/create_table.sql
+      - ./backend/db/create_table.sql:/docker-entrypoint-initdb.d/create_table.sql
     ports:
       # 关键修改：将宿主机的 3307 映射到容器的 3306
       # 这样你连接服务器 IP:3307 就能访问到这个 Docker 里的 MySQL
@@ -23,7 +21,9 @@ services:
     restart: always
 
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: openatom-backend
     environment:
       # 注意：容器间通信依然使用服务名 mysql 和内部端口 3306
@@ -39,7 +39,9 @@ services:
     restart: always
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend/web_pc
+      dockerfile: Dockerfile
     container_name: openatom-frontend
     ports:
       - "${FRONTEND_PORT:-18080}:80"

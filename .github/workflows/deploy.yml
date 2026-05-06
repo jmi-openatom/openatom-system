@@ -30,6 +30,7 @@ jobs:
           port: ${{ secrets.SERVER_PORT || '22' }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
+            set -eu
             cd /www/wwwroot/openatom-system || { echo "Directory not found"; exit 1; }
             
             # 清理可能导致冲突的本地文件（如 .DS_Store）
