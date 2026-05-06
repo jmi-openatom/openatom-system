@@ -1,0 +1,146 @@
+2026-05-06T09:15:53.801+08:00  INFO 51088 --- [openatom-system] [main] e.j.o.s.o.OpenatomSystemApplication      : Starting OpenatomSystemApplication using Java 21.0.10 with PID 51088 (/Users/ariven/1-jmiopenatom/openatom-system/target/classes started by ariven in /Users/ariven/1-jmiopenatom/openatom-system)
+2026-05-06T09:15:53.803+08:00  INFO 51088 --- [openatom-system] [main] e.j.o.s.o.OpenatomSystemApplication      : The following 1 profile is active: "prod"
+2026-05-06T09:15:54.226+08:00  INFO 51088 --- [openatom-system] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8921 (http)
+2026-05-06T09:15:54.232+08:00  INFO 51088 --- [openatom-system] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-06T09:15:54.232+08:00  INFO 51088 --- [openatom-system] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.41]
+2026-05-06T09:15:54.296+08:00  INFO 51088 --- [openatom-system] [main] o.a.c.c.C.[.[localhost].[/api/v1]        : Initializing Spring embedded WebApplicationContext
+2026-05-06T09:15:54.297+08:00  INFO 51088 --- [openatom-system] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 480 ms
+2026-05-06T09:15:54.528+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.UserRole".
+2026-05-06T09:15:54.528+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.UserRole ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T09:15:54.533+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.RolePermission".
+2026-05-06T09:15:54.534+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.RolePermission ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T09:15:54.637+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.InterviewInterviewer".
+2026-05-06T09:15:54.638+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.InterviewInterviewer ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T09:15:54.655+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.NotificationReceiver".
+2026-05-06T09:15:54.656+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.NotificationReceiver ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T09:15:54.672+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.ClubPositionRole".
+2026-05-06T09:15:54.672+08:00  WARN 51088 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.ClubPositionRole ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T09:15:54.815+08:00  INFO 51088 --- [openatom-system] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8921 (http) with context path '/api/v1'
+2026-05-06T09:15:54.818+08:00  INFO 51088 --- [openatom-system] [main] e.j.o.s.o.OpenatomSystemApplication      : Started OpenatomSystemApplication in 1.17 seconds (process running for 1.281)
+2026-05-06T09:15:54.821+08:00  INFO 51088 --- [openatom-system] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-06T09:15:55.990+08:00  INFO 51088 --- [openatom-system] [main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-06T09:15:56.001+08:00 ERROR 51088 --- [openatom-system] [main] o.s.boot.SpringApplication               : Application run failed
+
+org.springframework.transaction.CannotCreateTransactionException: Could not open JDBC Connection for transaction
+	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:313) ~[spring-jdbc-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.startTransaction(AbstractPlatformTransactionManager.java:532) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.getTransaction(AbstractPlatformTransactionManager.java:405) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.createTransactionIfNecessary(TransactionAspectSupport.java:604) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:373) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.20.jar:6.1.20]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:769) ~[spring-aop-6.1.20.jar:6.1.20]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:721) ~[spring-aop-6.1.20.jar:6.1.20]
+	at edu.jmi.openatom.server.openatomsystem.bootstrap.SchemaCompatibilityInitializer$$SpringCGLIB$$0.run(<generated>) ~[classes/:na]
+	at org.springframework.boot.SpringApplication.lambda$callRunner$4(SpringApplication.java:787) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82) ~[spring-core-6.1.20.jar:6.1.20]
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60) ~[spring-core-6.1.20.jar:6.1.20]
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86) ~[spring-core-6.1.20.jar:6.1.20]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:799) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:775) ~[spring-boot-3.3.12.jar:3.3.12]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:184) ~[na:na]
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:510) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234) ~[na:na]
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:596) ~[na:na]
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:775) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:342) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1364) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1353) ~[spring-boot-3.3.12.jar:3.3.12]
+	at edu.jmi.openatom.server.openatomsystem.OpenatomSystemApplication.main(OpenatomSystemApplication.java:12) ~[classes/:na]
+Caused by: java.sql.SQLException: Access denied for user 'openatom-system'@'localhost' (using password: YES)
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:130) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:122) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:815) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:438) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:241) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:189) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:137) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:360) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:202) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:461) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:550) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:98) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:111) ~[HikariCP-5.1.0.jar:na]
+	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:269) ~[spring-jdbc-6.1.20.jar:6.1.20]
+	... 29 common frames omitted
+
+2026-05-06T14:35:25.852+08:00  INFO 83470 --- [openatom-system] [main] e.j.o.s.o.OpenatomSystemApplication      : Starting OpenatomSystemApplication using Java 25.0.2 with PID 83470 (/Users/ariven/1-jmiopenatom/openatom-system/target/classes started by ariven in /Users/ariven/1-jmiopenatom/openatom-system)
+2026-05-06T14:35:25.853+08:00  INFO 83470 --- [openatom-system] [main] e.j.o.s.o.OpenatomSystemApplication      : The following 1 profile is active: "prod"
+2026-05-06T14:35:26.290+08:00  INFO 83470 --- [openatom-system] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8921 (http)
+2026-05-06T14:35:26.296+08:00  INFO 83470 --- [openatom-system] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-06T14:35:26.296+08:00  INFO 83470 --- [openatom-system] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.41]
+2026-05-06T14:35:26.310+08:00  INFO 83470 --- [openatom-system] [main] o.a.c.c.C.[.[localhost].[/api/v1]        : Initializing Spring embedded WebApplicationContext
+2026-05-06T14:35:26.310+08:00  INFO 83470 --- [openatom-system] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 439 ms
+2026-05-06T14:35:26.519+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.UserRole".
+2026-05-06T14:35:26.519+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.UserRole ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T14:35:26.524+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.RolePermission".
+2026-05-06T14:35:26.524+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.RolePermission ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T14:35:26.623+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.InterviewInterviewer".
+2026-05-06T14:35:26.623+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.InterviewInterviewer ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T14:35:26.639+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.NotificationReceiver".
+2026-05-06T14:35:26.639+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.NotificationReceiver ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T14:35:26.654+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.metadata.TableInfoHelper      : Can not find table primary key in Class: "edu.jmi.openatom.server.openatomsystem.entity.ClubPositionRole".
+2026-05-06T14:35:26.654+08:00  WARN 83470 --- [openatom-system] [main] c.b.m.core.injector.DefaultSqlInjector   : class edu.jmi.openatom.server.openatomsystem.entity.ClubPositionRole ,Not found @TableId annotation, Cannot use Mybatis-Plus 'xxById' Method.
+2026-05-06T14:35:26.798+08:00  INFO 83470 --- [openatom-system] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8921 (http) with context path '/api/v1'
+2026-05-06T14:35:26.802+08:00  INFO 83470 --- [openatom-system] [main] e.j.o.s.o.OpenatomSystemApplication      : Started OpenatomSystemApplication in 1.154 seconds (process running for 1.432)
+2026-05-06T14:35:26.805+08:00  INFO 83470 --- [openatom-system] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-06T14:35:27.878+08:00  INFO 83470 --- [openatom-system] [main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-06T14:35:27.895+08:00 ERROR 83470 --- [openatom-system] [main] o.s.boot.SpringApplication               : Application run failed
+
+org.springframework.transaction.CannotCreateTransactionException: Could not open JDBC Connection for transaction
+	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:313) ~[spring-jdbc-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.startTransaction(AbstractPlatformTransactionManager.java:532) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.getTransaction(AbstractPlatformTransactionManager.java:405) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.createTransactionIfNecessary(TransactionAspectSupport.java:604) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:373) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.1.20.jar:6.1.20]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.1.20.jar:6.1.20]
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:769) ~[spring-aop-6.1.20.jar:6.1.20]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:721) ~[spring-aop-6.1.20.jar:6.1.20]
+	at edu.jmi.openatom.server.openatomsystem.bootstrap.SchemaCompatibilityInitializer$$SpringCGLIB$$0.run(<generated>) ~[classes/:na]
+	at org.springframework.boot.SpringApplication.lambda$callRunner$4(SpringApplication.java:787) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.util.function.ThrowingConsumer$1.acceptWithException(ThrowingConsumer.java:82) ~[spring-core-6.1.20.jar:6.1.20]
+	at org.springframework.util.function.ThrowingConsumer.accept(ThrowingConsumer.java:60) ~[spring-core-6.1.20.jar:6.1.20]
+	at org.springframework.util.function.ThrowingConsumer$1.accept(ThrowingConsumer.java:86) ~[spring-core-6.1.20.jar:6.1.20]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:799) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:787) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.lambda$callRunners$3(SpringApplication.java:775) ~[spring-boot-3.3.12.jar:3.3.12]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.accept(ForEachOps.java:186) ~[na:na]
+	at java.base/java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:357) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:571) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:560) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:153) ~[na:na]
+	at java.base/java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:176) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:265) ~[na:na]
+	at java.base/java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:632) ~[na:na]
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:775) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:342) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1364) ~[spring-boot-3.3.12.jar:3.3.12]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1353) ~[spring-boot-3.3.12.jar:3.3.12]
+	at edu.jmi.openatom.server.openatomsystem.OpenatomSystemApplication.main(OpenatomSystemApplication.java:12) ~[classes/:na]
+Caused by: java.sql.SQLException: Access denied for user 'openatom-system'@'localhost' (using password: YES)
+	at com.mysql.cj.jdbc.exceptions.SQLError.createSQLException(SQLError.java:130) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:122) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:815) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:438) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:241) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.mysql.cj.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:189) ~[mysql-connector-j-8.3.0.jar:8.3.0]
+	at com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:137) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:360) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:202) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:461) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:550) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:98) ~[HikariCP-5.1.0.jar:na]
+	at com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:111) ~[HikariCP-5.1.0.jar:na]
+	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:269) ~[spring-jdbc-6.1.20.jar:6.1.20]
+	... 29 common frames omitted
+
