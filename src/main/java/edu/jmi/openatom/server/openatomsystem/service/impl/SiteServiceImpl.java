@@ -4,11 +4,11 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseClubHomeDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDetailDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDetailDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormDetailDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteProgressDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormsDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteProgressDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubAward;
@@ -18,6 +18,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.ClubPosition;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
 import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
+import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubActivityMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubAwardMapper;
@@ -28,7 +29,6 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubPositionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.InterviewMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RecruitmentCampaignMapper;
-import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
 import edu.jmi.openatom.server.openatomsystem.mapper.SiteFormMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
@@ -111,7 +111,7 @@ public class SiteServiceImpl implements SiteService {
             .activities(activities.stream().map(this::toActivity).toList())
             .people(buildPeople(memberships))
             .awards(awards.stream().map(this::toAward).toList())
-            .techStack(departments.stream().map(ClubDepartment::getName).limit(5).toList())
+            .techStack(departments.stream().map(ClubDepartment::getName).limit(10).toList())
             .build());
   }
 
@@ -150,9 +150,7 @@ public class SiteServiceImpl implements SiteService {
   public ApiResponse<List<Club>> getPublicClubs() {
     return ApiResponse.success(
         clubMapper.selectList(
-            new LambdaQueryWrapper<Club>()
-                .eq(Club::getStatus, "active")
-                .orderByAsc(Club::getId)));
+            new LambdaQueryWrapper<Club>().eq(Club::getStatus, "active").orderByAsc(Club::getId)));
   }
 
   @Override
@@ -188,17 +186,26 @@ public class SiteServiceImpl implements SiteService {
 
     Map<Integer, Club> clubs =
         selectMap(
-            applications.stream().map(MembershipApplication::getClubId).filter(Objects::nonNull).toList(),
+            applications.stream()
+                .map(MembershipApplication::getClubId)
+                .filter(Objects::nonNull)
+                .toList(),
             clubMapper::selectBatchIds,
             Club::getId);
     Map<Integer, User> users =
         selectMap(
-            applications.stream().map(MembershipApplication::getUserId).filter(Objects::nonNull).toList(),
+            applications.stream()
+                .map(MembershipApplication::getUserId)
+                .filter(Objects::nonNull)
+                .toList(),
             userMapper::selectBatchIds,
             User::getId);
     Map<Integer, RecruitmentCampaign> campaigns =
         selectMap(
-            applications.stream().map(MembershipApplication::getCampaignId).filter(Objects::nonNull).toList(),
+            applications.stream()
+                .map(MembershipApplication::getCampaignId)
+                .filter(Objects::nonNull)
+                .toList(),
             recruitmentCampaignMapper::selectBatchIds,
             RecruitmentCampaign::getId);
     Map<Integer, ClubDepartment> departments =
@@ -217,7 +224,9 @@ public class SiteServiceImpl implements SiteService {
         interviewMapper
             .selectList(
                 new LambdaQueryWrapper<Interview>()
-                    .in(Interview::getApplicationId, applications.stream().map(MembershipApplication::getId).toList())
+                    .in(
+                        Interview::getApplicationId,
+                        applications.stream().map(MembershipApplication::getId).toList())
                     .orderByAsc(Interview::getRound)
                     .orderByDesc(Interview::getId))
             .stream()
@@ -230,7 +239,12 @@ public class SiteServiceImpl implements SiteService {
                     .map(
                         application ->
                             toProgressApplication(
-                                application, users, clubs, campaigns, departments, interviewsByApplication))
+                                application,
+                                users,
+                                clubs,
+                                campaigns,
+                                departments,
+                                interviewsByApplication))
                     .toList())
             .build());
   }
@@ -300,11 +314,7 @@ public class SiteServiceImpl implements SiteService {
     if (club == null) {
       return ApiResponse.error(404, "社团不存在");
     }
-    return ApiResponse.success(
-        ResponseSiteFormDetailDTO.builder()
-            .club(club)
-            .form(form)
-            .build());
+    return ApiResponse.success(ResponseSiteFormDetailDTO.builder().club(club).form(form).build());
   }
 
   private Club findClub(String clubCode) {
@@ -320,12 +330,16 @@ public class SiteServiceImpl implements SiteService {
     }
     String code = isBlank(clubCode) ? DEFAULT_CLUB_CODE : clubCode;
     Club club =
-        clubMapper.selectOne(new LambdaQueryWrapper<Club>().eq(Club::getCode, code).last("LIMIT 1"));
+        clubMapper.selectOne(
+            new LambdaQueryWrapper<Club>().eq(Club::getCode, code).last("LIMIT 1"));
     if (club != null) {
       return club;
     }
     return clubMapper.selectOne(
-        new LambdaQueryWrapper<Club>().eq(Club::getStatus, "active").orderByAsc(Club::getId).last("LIMIT 1"));
+        new LambdaQueryWrapper<Club>()
+            .eq(Club::getStatus, "active")
+            .orderByAsc(Club::getId)
+            .last("LIMIT 1"));
   }
 
   private ResponseClubHomeDTO.ClubProfile toClubProfile(Club club) {
@@ -350,7 +364,9 @@ public class SiteServiceImpl implements SiteService {
             .filter(membership -> !"left".equalsIgnoreCase(membership.getStatus()))
             .count();
     long openCampaigns =
-        campaigns.stream().filter(campaign -> "published".equalsIgnoreCase(campaign.getStatus())).count();
+        campaigns.stream()
+            .filter(campaign -> "published".equalsIgnoreCase(campaign.getStatus()))
+            .count();
     return List.of(
         metric("在册成员", activeMembers, "来自成员关系表"),
         metric("年度活动", activities.size(), "来自社团活动表"),
@@ -367,9 +383,9 @@ public class SiteServiceImpl implements SiteService {
   }
 
   private List<ResponseClubHomeDTO.FocusArea> buildFocusAreas(List<ClubDepartment> departments) {
-    List<String> icons = List.of("monitor", "cpu", "lightning");
+    List<String> icons = List.of("monitor", "cpu", "lightning", "phone");
     return departments.stream()
-        .limit(3)
+        .limit(4)
         .map(
             department ->
                 focus(
@@ -406,19 +422,26 @@ public class SiteServiceImpl implements SiteService {
             .filter(membership -> !"left".equalsIgnoreCase(membership.getStatus()))
             .sorted(
                 Comparator.comparing(
-                        ClubMembership::getFeatured, Comparator.nullsLast(Comparator.reverseOrder()))
+                        ClubMembership::getFeatured,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
                     .thenComparing(
-                        ClubMembership::getSortOrder, Comparator.nullsLast(Comparator.naturalOrder()))
+                        ClubMembership::getSortOrder,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
                     .thenComparing(
-                        ClubMembership::getJoinedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                        ClubMembership::getJoinedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
             .toList();
     if (topMemberships.isEmpty()) {
       return List.of();
     }
 
     Map<Integer, User> users =
-        userMapper.selectBatchIds(
-                topMemberships.stream().map(ClubMembership::getUserId).filter(Objects::nonNull).toList())
+        userMapper
+            .selectBatchIds(
+                topMemberships.stream()
+                    .map(ClubMembership::getUserId)
+                    .filter(Objects::nonNull)
+                    .toList())
             .stream()
             .collect(Collectors.toMap(User::getId, Function.identity()));
     Map<Integer, ClubDepartment> departments =
@@ -435,12 +458,22 @@ public class SiteServiceImpl implements SiteService {
   }
 
   private List<ClubDepartment> selectDepartments(List<ClubMembership> memberships) {
-    List<Integer> ids = memberships.stream().map(ClubMembership::getDepartmentId).filter(Objects::nonNull).distinct().toList();
+    List<Integer> ids =
+        memberships.stream()
+            .map(ClubMembership::getDepartmentId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
     return ids.isEmpty() ? List.of() : clubDepartmentMapper.selectBatchIds(ids);
   }
 
   private List<ClubPosition> selectPositions(List<ClubMembership> memberships) {
-    List<Integer> ids = memberships.stream().map(ClubMembership::getPositionId).filter(Objects::nonNull).distinct().toList();
+    List<Integer> ids =
+        memberships.stream()
+            .map(ClubMembership::getPositionId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
     return ids.isEmpty() ? List.of() : clubPositionMapper.selectBatchIds(ids);
   }
 
@@ -489,8 +522,10 @@ public class SiteServiceImpl implements SiteService {
     User user = getNullable(users, application.getUserId());
     Club club = getNullable(clubs, application.getClubId());
     RecruitmentCampaign campaign = getNullable(campaigns, application.getCampaignId());
-    ClubDepartment firstDepartment = getNullable(departments, application.getFirstChoiceDepartmentId());
-    ClubDepartment secondDepartment = getNullable(departments, application.getSecondChoiceDepartmentId());
+    ClubDepartment firstDepartment =
+        getNullable(departments, application.getFirstChoiceDepartmentId());
+    ClubDepartment secondDepartment =
+        getNullable(departments, application.getSecondChoiceDepartmentId());
     String preferredDepartment =
         firstDepartment == null
             ? (secondDepartment == null ? null : secondDepartment.getName())
@@ -501,7 +536,10 @@ public class SiteServiceImpl implements SiteService {
         .clubName(club == null ? null : club.getName())
         .campaignId(application.getCampaignId())
         .campaignName(campaign == null ? null : campaign.getName())
-        .applicantName(user == null ? null : (isBlank(user.getRealName()) ? user.getUserName() : user.getRealName()))
+        .applicantName(
+            user == null
+                ? null
+                : (isBlank(user.getRealName()) ? user.getUserName() : user.getRealName()))
         .preferredDepartment(preferredDepartment)
         .status(application.getStatus())
         .createdAt(application.getCreatedAt())
@@ -544,14 +582,13 @@ public class SiteServiceImpl implements SiteService {
   }
 
   private <T> Map<Integer, T> selectMap(
-      List<Integer> ids,
-      Function<List<Integer>, List<T>> selector,
-      Function<T, Integer> idGetter) {
+      List<Integer> ids, Function<List<Integer>, List<T>> selector, Function<T, Integer> idGetter) {
     List<Integer> distinctIds = ids.stream().distinct().toList();
     if (distinctIds.isEmpty()) {
       return Map.of();
     }
-    return selector.apply(distinctIds).stream().collect(Collectors.toMap(idGetter, Function.identity()));
+    return selector.apply(distinctIds).stream()
+        .collect(Collectors.toMap(idGetter, Function.identity()));
   }
 
   private boolean isBlank(String value) {
