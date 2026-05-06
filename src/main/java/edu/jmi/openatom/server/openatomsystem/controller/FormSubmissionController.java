@@ -26,29 +26,29 @@ import org.springframework.web.bind.annotation.RestController;
 public class FormSubmissionController {
   private final FormSubmissionService formSubmissionService;
 
-  @PostMapping("/site/forms/{campaignId}/submissions")
+  @PostMapping("/site/forms/{formId}/submissions")
   public ApiResponse<Integer> create(
-      @PathVariable Integer campaignId,
+      @PathVariable Integer formId,
       @Valid @RequestBody RequestCreateFormSubmissionDTO request) {
-    return formSubmissionService.create(campaignId, request);
+    return formSubmissionService.create(formId, request);
   }
 
-  @GetMapping("/recruitment-campaigns/{campaignId}/submissions")
-  @SaCheckPermission("recruitment-campaign:detail")
+  @GetMapping("/site-forms/{formId}/submissions")
+  @SaCheckPermission("site-form:detail")
   public ApiResponse<PageDataDTO<ResponseFormSubmissionDTO>> list(
-      @PathVariable Integer campaignId,
+      @PathVariable Integer formId,
       @RequestParam(required = false) String keyword,
       @RequestParam(defaultValue = "1") Long page,
       @RequestParam(defaultValue = "10") Long pageSize) {
-    return formSubmissionService.list(campaignId, keyword, page, pageSize);
+    return formSubmissionService.list(formId, keyword, page, pageSize);
   }
 
-  @GetMapping("/recruitment-campaigns/{campaignId}/submissions/export")
-  @SaCheckPermission("recruitment-campaign:detail")
-  public ResponseEntity<byte[]> export(@PathVariable Integer campaignId) {
-    byte[] bytes = formSubmissionService.exportExcel(campaignId);
+  @GetMapping("/site-forms/{formId}/submissions/export")
+  @SaCheckPermission("site-form:detail")
+  public ResponseEntity<byte[]> export(@PathVariable Integer formId) {
+    byte[] bytes = formSubmissionService.exportExcel(formId);
     String fileName =
-        URLEncoder.encode("form-submissions-" + campaignId + ".xlsx", StandardCharsets.UTF_8);
+        URLEncoder.encode("form-submissions-" + formId + ".xlsx", StandardCharsets.UTF_8);
     return ResponseEntity.ok()
         .header(
             HttpHeaders.CONTENT_DISPOSITION,

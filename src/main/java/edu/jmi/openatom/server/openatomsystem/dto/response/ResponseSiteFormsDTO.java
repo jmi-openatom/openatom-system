@@ -1,7 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.dto.response;
 
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
-import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
+import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,5 +14,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResponseSiteFormsDTO {
   private Club club;
-  private List<RecruitmentCampaign> forms;
+  private List<SiteForm> forms;
 }

@@ -5,7 +5,7 @@
         <el-select v-if="clubs.length > 1" v-model="selectedClubId" filterable placeholder="选择社团" style="width: 240px" @change="fetchList">
           <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
         </el-select>
-        <el-select v-model="query.status" clearable placeholder="招新计划状态" style="width: 150px" @change="fetchList">
+        <el-select v-model="query.status" clearable placeholder="表单状态" style="width: 150px" @change="fetchList">
           <el-option label="草稿" value="draft" />
           <el-option label="已发布" value="published" />
           <el-option label="收集中" value="open" />
@@ -14,19 +14,13 @@
         </el-select>
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
-      <el-button type="primary" :icon="Plus" @click="openDialog()">新增计划</el-button>
-      </div>
-  
-      <el-table v-loading="loading" :data="rows" class="admin-table">
-        <el-table-column prop="name" label="计划名称" min-width="220" />
-      <el-table-column label="目标年级" min-width="180">
-        <template #default="{ row }">{{ formatTargetGrades(row.targetGrades) }}</template>
-      </el-table-column>
-      <el-table-column label="人数上限" width="120">
-        <template #default="{ row }">{{ row.maxApplicants || '不限' }}</template>
-      </el-table-column>
+      <el-button type="primary" :icon="Plus" @click="openDialog()">新增表单</el-button>
+    </div>
+
+    <el-table v-loading="loading" :data="rows" class="admin-table">
+      <el-table-column prop="name" label="表单名称" min-width="220" />
       <el-table-column label="收集时间" min-width="230">
-        <template #default="{ row }">{{ formatRange(row.applyStartAt, row.applyEndAt) }}</template>
+        <template #default="{ row }">{{ formatRange(row.startAt, row.endAt) }}</template>
       </el-table-column>
       <el-table-column prop="loginRequired" label="登录" width="110">
         <template #default="{ row }">
@@ -45,14 +39,14 @@
           <el-button link type="info" @click="previewSchema(row)">预览字段</el-button>
           <el-button link type="warning" @click="copyFormLink(row)">复制链接</el-button>
           <el-button link type="success" @click="publish(row)" v-if="row.status !== 'open'">发布</el-button>
-          <el-button link type="danger" @click="closeCampaign(row)" v-if="row.status === 'open' || row.status === 'published'">结束</el-button>
+          <el-button link type="danger" @click="closeSiteForm(row)" v-if="row.status === 'open' || row.status === 'published'">结束</el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <el-empty v-if="!loading && !rows.length" description="当前社团暂无信息收集招新计划" />
+    <el-empty v-if="!loading && !rows.length" description="当前社团暂无信息收集表单" />
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑招新计划' : '新增招新计划'" width="920px" @closed="handleDialogClosed">
+    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑表单' : '新增表单'" width="920px" @closed="handleDialogClosed">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="112px">
         <div class="form-grid">
           <el-form-item label="所属社团" prop="clubId">
@@ -60,7 +54,7 @@
               <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
             </el-select>
           </el-form-item>
-          <el-form-item label="招新计划状态">
+          <el-form-item label="表单状态">
             <el-select v-model="form.status">
               <el-option label="草稿" value="draft" />
               <el-option label="已发布" value="published" />
@@ -69,26 +63,9 @@
               <el-option label="已归档" value="archived" />
             </el-select>
           </el-form-item>
-          <el-form-item label="招新计划名称" prop="name"><el-input v-model="form.name" placeholder="如：报名信息收集、活动意向登记" /></el-form-item>
-          <el-form-item label="开始时间" prop="applyStartAt"><el-input v-model="form.applyStartAt" type="datetime-local" /></el-form-item>
-          <el-form-item label="结束时间" prop="applyEndAt"><el-input v-model="form.applyEndAt" type="datetime-local" /></el-form-item>
-          <el-form-item label="面试开始">
-            <el-input v-model="form.interviewStartAt" type="datetime-local" />
-          </el-form-item>
-          <el-form-item label="面试结束">
-            <el-input v-model="form.interviewEndAt" type="datetime-local" />
-          </el-form-item>
-          <el-form-item label="结果公布">
-            <el-input v-model="form.resultPublishAt" type="datetime-local" />
-          </el-form-item>
-          <el-form-item label="人数上限">
-            <el-input-number v-model="form.maxApplicants" :min="1" :step="1" controls-position="right" placeholder="不填则不限" />
-          </el-form-item>
-          <el-form-item label="目标年级">
-            <el-select v-model="form.targetGrades" multiple collapse-tags collapse-tags-tooltip clearable placeholder="不限制则留空">
-              <el-option v-for="item in gradeOptions" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
-          </el-form-item>
+          <el-form-item label="表单名称" prop="name"><el-input v-model="form.name" placeholder="如：报名信息收集、活动意向登记" /></el-form-item>
+          <el-form-item label="开始时间" prop="startAt"><el-input v-model="form.startAt" type="datetime-local" /></el-form-item>
+          <el-form-item label="结束时间" prop="endAt"><el-input v-model="form.endAt" type="datetime-local" /></el-form-item>
           <el-form-item label="需先登录">
             <el-switch v-model="form.loginRequired" active-text="需要登录" inactive-text="匿名可填" />
           </el-form-item>
@@ -171,7 +148,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="previewVisible" title="招新计划字段预览" width="760px">
+    <el-dialog v-model="previewVisible" title="表单字段预览" width="760px">
       <el-table :data="previewFields">
         <el-table-column prop="key" label="字段Key" min-width="140" />
         <el-table-column prop="label" label="字段名称" min-width="140" />
@@ -194,7 +171,7 @@
 <script>
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { campaignApi, clubApi } from '../../api'
+import { siteFormApi, clubApi } from '../../api'
 import { formatDateTime, statusType } from '../../utils/format'
 
 const defaultFormSchema = [
@@ -210,7 +187,7 @@ function toInputTime(value) {
 }
 
 export default {
-  name: 'AdminRecruitmentCampaigns',
+  name: 'AdminSiteForms',
   data() {
     return {
       Plus,
@@ -227,14 +204,6 @@ export default {
       previewFields: [],
       schemaFields: [],
       draggedFieldIndex: -1,
-      gradeOptions: [
-        { label: '大一', value: 'freshman' },
-        { label: '大二', value: 'sophomore' },
-        { label: '大三', value: 'junior' },
-        { label: '大四', value: 'senior' },
-        { label: '研究生', value: 'graduate' },
-        { label: '其他', value: 'other' }
-      ],
       fieldTypeOptions: [
         { label: '单行输入', value: 'text' },
         { label: '多行输入', value: 'textarea' },
@@ -242,9 +211,9 @@ export default {
       ],
       rules: {
         clubId: [{ required: true, message: '请选择社团', trigger: 'change' }],
-        name: [{ required: true, message: '请输入招新计划名称', trigger: 'blur' }],
-        applyStartAt: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
-        applyEndAt: [{ required: true, message: '请选择结束时间', trigger: 'change' }]
+        name: [{ required: true, message: '请输入表单名称', trigger: 'blur' }],
+        startAt: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
+        endAt: [{ required: true, message: '请选择结束时间', trigger: 'change' }]
       }
     }
   },
@@ -268,7 +237,7 @@ export default {
       }
       this.loading = true
       try {
-        const result = await clubApi.campaigns(this.selectedClubId)
+        const result = await clubApi.siteForms(this.selectedClubId)
         const list = result?.list || result || []
         this.rows = this.query.status ? list.filter((item) => item.status === this.query.status) : list
       } finally {
@@ -281,32 +250,14 @@ export default {
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '-'} - ${formatDateTime(endAt) || '-'}`
     },
-    formatTargetGrades(value) {
-      const labels = {
-        freshman: '大一',
-        sophomore: '大二',
-        junior: '大三',
-        senior: '大四',
-        graduate: '研究生',
-        other: '其他'
-      }
-      const grades = this.parseJsonMaybe(value, [])
-      if (!Array.isArray(grades) || !grades.length) return '不限'
-      return grades.map((item) => labels[item] || item).join(' / ')
-    },
     createEmptyForm() {
       return {
         clubId: this.selectedClubId || '',
         name: '',
         status: 'draft',
         loginRequired: true,
-        applyStartAt: '',
-        applyEndAt: '',
-        interviewStartAt: '',
-        interviewEndAt: '',
-        resultPublishAt: '',
-        targetGrades: [],
-        maxApplicants: undefined
+        startAt: '',
+        endAt: ''
       }
     },
     openDialog(row) {
@@ -316,13 +267,8 @@ export default {
             clubId: row.clubId,
             status: row.status || 'draft',
             loginRequired: row.loginRequired !== false,
-            applyStartAt: toInputTime(row.applyStartAt),
-            applyEndAt: toInputTime(row.applyEndAt),
-            interviewStartAt: toInputTime(row.interviewStartAt),
-            interviewEndAt: toInputTime(row.interviewEndAt),
-            resultPublishAt: toInputTime(row.resultPublishAt),
-            targetGrades: this.parseJsonMaybe(row.targetGrades, []),
-            maxApplicants: row.maxApplicants || undefined
+            startAt: toInputTime(row.startAt),
+            endAt: toInputTime(row.endAt)
           }
         : this.createEmptyForm()
       this.schemaFields = this.normalizeSchema(row?.formSchema || defaultFormSchema)
@@ -366,11 +312,12 @@ export default {
         this.saving = true
         try {
           if (payload.id) {
-            await campaignApi.update(payload.id, payload)
+            await siteFormApi.update(payload.id, payload)
+            ElMessage.success('表单已更新')
           } else {
-            await campaignApi.create(payload.clubId, payload)
+            await siteFormApi.create(payload.clubId, payload)
+            ElMessage.success('表单已创建')
           }
-          ElMessage.success('招新计划已保存')
           this.dialogVisible = false
           this.selectedClubId = payload.clubId
           await this.fetchList()
@@ -380,17 +327,17 @@ export default {
       })
     },
     async publish(row) {
-      await campaignApi.publish(row.id)
-      ElMessage.success('招新计划已发布')
+      await siteFormApi.publish(row.id)
+      ElMessage.success('表单已发布')
       this.fetchList()
     },
-    async closeCampaign(row) {
-      await campaignApi.close(row.id)
-      ElMessage.success('招新计划已结束')
+    async closeSiteForm(row) {
+      await siteFormApi.close(row.id)
+      ElMessage.success('表单已结束')
       this.fetchList()
     },
     openSubmissions(row) {
-      this.$router.push({ path: '/admin/form-submissions', query: { campaignId: row.id, clubId: row.clubId } })
+      this.$router.push({ path: '/admin/form-submissions', query: { formId: row.id, clubId: row.clubId } })
     },
     async copyFormLink(row) {
       const link = `${window.location.origin}${this.$router.resolve({ path: `/forms/${row.id}` }).href}`
@@ -478,7 +425,7 @@ export default {
     },
     buildFormSchema() {
       if (!this.schemaFields.length) {
-        ElMessage.warning('请至少配置一个招新计划字段')
+        ElMessage.warning('请至少配置一个表单字段')
         return null
       }
       const keys = new Set()
@@ -548,7 +495,7 @@ export default {
         return false
       }
       if (applyEnd && interviewStart && interviewStart < applyEnd) {
-        ElMessage.warning('面试开始时间不能早于招新计划结束时间')
+        ElMessage.warning('面试开始时间不能早于表单结束时间')
         return false
       }
       if (interviewEnd && resultPublishAt && resultPublishAt < interviewEnd) {

@@ -6,10 +6,10 @@ import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseFormSubmissionDTO;
 
 public interface FormSubmissionService {
-  ApiResponse<Integer> create(Integer campaignId, RequestCreateFormSubmissionDTO request);
+  ApiResponse<Integer> create(Integer formId, RequestCreateFormSubmissionDTO request);
 
   ApiResponse<PageDataDTO<ResponseFormSubmissionDTO>> list(
-      Integer campaignId, String keyword, Long page, Long pageSize);
+      Integer formId, String keyword, Long page, Long pageSize);
 
-  byte[] exportExcel(Integer campaignId);
+  byte[] exportExcel(Integer formId);
 }

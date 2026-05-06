@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResponseFormSubmissionDTO {
   private Integer id;
-  private Integer campaignId;
+  private Integer formId;
   private Integer clubId;
   private Integer userId;
   private String submitterName;

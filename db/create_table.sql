@@ -168,6 +168,25 @@ CREATE TABLE IF NOT EXISTS `recruitment_campaign`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='招新计划表';
 
+-- 信息收集表单表
+CREATE TABLE IF NOT EXISTS `site_form`
+(
+    `id`                 INT          NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `club_id`            INT          NOT NULL COMMENT '社团ID',
+    `name`               VARCHAR(100) NOT NULL COMMENT '表单名称',
+    `start_at`           TIMESTAMP    NULL DEFAULT NULL COMMENT '收集开始时间',
+    `end_at`             TIMESTAMP    NULL DEFAULT NULL COMMENT '收集结束时间',
+    `login_required`     TINYINT(1)        DEFAULT 1 COMMENT '是否要求登录后提交',
+    `form_schema`        JSON              DEFAULT NULL COMMENT '自定义表单结构',
+    `status`             VARCHAR(30)       DEFAULT 'draft' COMMENT '状态',
+    `created_at`         TIMESTAMP         DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at`         TIMESTAMP    NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_site_form_club_id` (`club_id`),
+    KEY `idx_site_form_status` (`status`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT ='信息收集表单表';
+
 -- 入会申请表
 CREATE TABLE IF NOT EXISTS `membership_application`
 (
@@ -193,7 +212,7 @@ CREATE TABLE IF NOT EXISTS `membership_application`
 CREATE TABLE IF NOT EXISTS `form_submission`
 (
     `id`                INT          NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `campaign_id`       INT          NOT NULL COMMENT '招新计划ID',
+    `form_id`           INT          NOT NULL COMMENT '表单ID',
     `club_id`           INT          NOT NULL COMMENT '社团ID',
     `user_id`           INT               DEFAULT NULL COMMENT '用户ID',
     `anonymous_name`    VARCHAR(50)       DEFAULT NULL COMMENT '匿名姓名',
@@ -203,7 +222,7 @@ CREATE TABLE IF NOT EXISTS `form_submission`
     `created_at`        TIMESTAMP         DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at`        TIMESTAMP    NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    KEY `idx_form_campaign_id` (`campaign_id`),
+    KEY `idx_form_form_id` (`form_id`),
     KEY `idx_form_club_id` (`club_id`),
     KEY `idx_form_user_id` (`user_id`)
 ) ENGINE = InnoDB
@@ -542,6 +561,14 @@ INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
 SELECT '创建招新计划', 'recruitment-campaign:create', 'api', '/clubs/{clubId}/recruitment-campaigns', 'POST' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'recruitment-campaign:create');
 INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
 SELECT '获取招新计划详情', 'recruitment-campaign:detail', 'api', '/recruitment-campaigns/{campaignId}', 'GET' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'recruitment-campaign:detail');
+INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
+SELECT '查询信息收集表单', 'site-form:list', 'api', '/site-forms', 'GET' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'site-form:list');
+INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
+SELECT '新增信息收集表单', 'site-form:create', 'api', '/site-forms', 'POST' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'site-form:create');
+INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
+SELECT '更新信息收集表单', 'site-form:update', 'api', '/site-forms/{formId}', 'PATCH' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'site-form:update');
+INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
+SELECT '获取表单详情', 'site-form:detail', 'api', '/site-forms/{formId}', 'GET' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'site-form:detail');
 INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
 SELECT '更新招新计划', 'recruitment-campaign:update', 'api', '/recruitment-campaigns/{campaignId}', 'PATCH' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'recruitment-campaign:update');
 INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)

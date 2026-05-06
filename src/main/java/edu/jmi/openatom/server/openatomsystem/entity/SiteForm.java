@@ -14,28 +14,27 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName("form_submission")
-public class FormSubmission {
+@TableName("site_form")
+public class SiteForm {
   @TableId(value = "id", type = IdType.AUTO)
   private Integer id;
-
-  @TableField("form_id")
-  private Integer formId;
 
   @TableField("club_id")
   private Integer clubId;
 
-  @TableField("user_id")
-  private Integer userId;
+  private String name;
 
-  @TableField("anonymous_name")
-  private String anonymousName;
+  @TableField("start_at")
+  private Timestamp startAt;
 
-  @TableField("anonymous_contact")
-  private String anonymousContact;
+  @TableField("end_at")
+  private Timestamp endAt;
 
-  @TableField("form_data")
-  private String formData;
+  @TableField("login_required")
+  private Boolean loginRequired;
+
+  @TableField("form_schema")
+  private String formSchema;
 
   private String status;
 

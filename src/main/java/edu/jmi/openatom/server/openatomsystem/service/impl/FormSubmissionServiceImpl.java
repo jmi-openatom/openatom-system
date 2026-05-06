@@ -10,10 +10,10 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateFormSubmi
 import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseFormSubmissionDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.FormSubmission;
-import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
+import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.FormSubmissionMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.RecruitmentCampaignMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.SiteFormMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.FormSubmissionService;
 import java.io.ByteArrayOutputStream;
@@ -38,29 +38,29 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FormSubmissionServiceImpl implements FormSubmissionService {
   private final FormSubmissionMapper formSubmissionMapper;
-  private final RecruitmentCampaignMapper recruitmentCampaignMapper;
+  private final SiteFormMapper siteFormMapper;
   private final UserMapper userMapper;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<Integer> create(Integer campaignId, RequestCreateFormSubmissionDTO request) {
-    RecruitmentCampaign campaign = recruitmentCampaignMapper.selectById(campaignId);
-    if (campaign == null) {
+  public ApiResponse<Integer> create(Integer formId, RequestCreateFormSubmissionDTO request) {
+    SiteForm form = siteFormMapper.selectById(formId);
+    if (form == null) {
       return ApiResponse.error(404, "表单不存在");
     }
-    if (!List.of("open", "published").contains(campaign.getStatus())) {
+    if (!List.of("open", "published").contains(form.getStatus())) {
       return ApiResponse.error(400, "当前表单未开放提交");
     }
     Timestamp now = new Timestamp(System.currentTimeMillis());
-    if (campaign.getApplyStartAt() != null && now.before(campaign.getApplyStartAt())) {
+    if (form.getStartAt() != null && now.before(form.getStartAt())) {
       return ApiResponse.error(400, "表单收集尚未开始");
     }
-    if (campaign.getApplyEndAt() != null && now.after(campaign.getApplyEndAt())) {
+    if (form.getEndAt() != null && now.after(form.getEndAt())) {
       return ApiResponse.error(400, "表单收集已结束");
     }
 
     Integer userId = StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null;
-    if (Boolean.TRUE.equals(campaign.getLoginRequired()) && userId == null) {
+    if (Boolean.TRUE.equals(form.getLoginRequired()) && userId == null) {
       return ApiResponse.error(401, "该表单需要登录后提交");
     }
     if (userId == null) {
@@ -72,15 +72,15 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
       }
     }
 
-    ApiResponse<String> validation = validateFormData(campaign.getFormSchema(), request.getFormData());
+    ApiResponse<String> validation = validateFormData(form.getFormSchema(), request.getFormData());
     if (validation != null) {
       return ApiResponse.error(validation.getCode(), validation.getMessage());
     }
 
     FormSubmission submission =
         FormSubmission.builder()
-            .campaignId(campaignId)
-            .clubId(campaign.getClubId())
+            .formId(formId)
+            .clubId(form.getClubId())
             .userId(userId)
             .anonymousName(trimToNull(request.getAnonymousName()))
             .anonymousContact(trimToNull(request.getAnonymousContact()))
@@ -95,19 +95,19 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
 
   @Override
   public ApiResponse<PageDataDTO<ResponseFormSubmissionDTO>> list(
-      Integer campaignId, String keyword, Long page, Long pageSize) {
-    if (campaignId == null) {
-      return ApiResponse.error(400, "campaignId不能为空");
+      Integer formId, String keyword, Long page, Long pageSize) {
+    if (formId == null) {
+      return ApiResponse.error(400, "formId不能为空");
     }
-    RecruitmentCampaign campaign = recruitmentCampaignMapper.selectById(campaignId);
-    if (campaign == null) {
+    SiteForm form = siteFormMapper.selectById(formId);
+    if (form == null) {
       return ApiResponse.error(404, "表单不存在");
     }
     long current = PageRequests.page(page);
     long size = PageRequests.pageSize(pageSize);
     LambdaQueryWrapper<FormSubmission> wrapper =
         new LambdaQueryWrapper<FormSubmission>()
-            .eq(FormSubmission::getCampaignId, campaignId)
+            .eq(FormSubmission::getFormId, formId)
             .orderByDesc(FormSubmission::getId);
 
     if (!isBlank(keyword)) {
@@ -157,21 +157,21 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
   }
 
   @Override
-  public byte[] exportExcel(Integer campaignId) {
-    RecruitmentCampaign campaign = recruitmentCampaignMapper.selectById(campaignId);
-    if (campaign == null) {
+  public byte[] exportExcel(Integer formId) {
+    SiteForm form = siteFormMapper.selectById(formId);
+    if (form == null) {
       throw new IllegalArgumentException("表单不存在");
     }
     List<FormSubmission> submissions =
         formSubmissionMapper.selectList(
             new LambdaQueryWrapper<FormSubmission>()
-                .eq(FormSubmission::getCampaignId, campaignId)
+                .eq(FormSubmission::getFormId, formId)
                 .orderByAsc(FormSubmission::getId));
-    List<Map<String, Object>> schema = Jsons.parseListOfObjects(campaign.getFormSchema());
+    List<Map<String, Object>> schema = Jsons.parseListOfObjects(form.getFormSchema());
 
     try (XSSFWorkbook workbook = new XSSFWorkbook();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-      Sheet sheet = workbook.createSheet(safeSheetName(campaign.getName()));
+      Sheet sheet = workbook.createSheet(safeSheetName(form.getName()));
       writeHeader(sheet, schema);
       List<ResponseFormSubmissionDTO> rows = toResponseList(submissions);
       for (int i = 0; i < rows.size(); i++) {
@@ -254,7 +254,7 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
             : firstNonBlank(user.getPhone(), user.getEmail(), submission.getAnonymousContact());
     return ResponseFormSubmissionDTO.builder()
         .id(submission.getId())
-        .campaignId(submission.getCampaignId())
+        .formId(submission.getFormId())
         .clubId(submission.getClubId())
         .userId(submission.getUserId())
         .submitterName(submitterName)

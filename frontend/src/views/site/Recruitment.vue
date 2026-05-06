@@ -20,12 +20,12 @@
         <el-timeline-item v-for="item in campaigns" :key="item.id" :timestamp="formatRange(item)" placement="top">
           <div class="campaign-item panel">
             <div>
-              <h3>{{ item.name || '信息收集表单' }}</h3>
+              <h3>{{ item.name || '招新计划' }}</h3>
               <p>提交方式：{{ item.loginRequired ? '需要登录' : '支持匿名填写' }}</p>
             </div>
             <div class="campaign-item__action">
               <el-tag :type="statusType(item.status)">{{ statusText(item.status) }}</el-tag>
-              <el-button type="primary" @click="$router.push(`/forms/${item.id}`)">
+              <el-button type="primary" @click="$router.push(`/apply/${item.id}`)">
                 立即填写
               </el-button>
             </div>

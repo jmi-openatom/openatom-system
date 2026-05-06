@@ -27,6 +27,8 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubPositionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.InterviewMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RecruitmentCampaignMapper;
+import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
+import edu.jmi.openatom.server.openatomsystem.mapper.SiteFormMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
 import edu.jmi.openatom.server.openatomsystem.service.SiteService;
@@ -57,6 +59,7 @@ public class SiteServiceImpl implements SiteService {
   private final InterviewMapper interviewMapper;
   private final ClubActivityMapper clubActivityMapper;
   private final ClubAwardMapper clubAwardMapper;
+  private final SiteFormMapper siteFormMapper;
   private final RegistrationSettingService registrationSettingService;
 
   @Override
@@ -157,13 +160,13 @@ public class SiteServiceImpl implements SiteService {
     if (club == null) {
       return ApiResponse.error(404, "默认社团不存在");
     }
-    List<RecruitmentCampaign> forms =
-        recruitmentCampaignMapper.selectList(
-            new LambdaQueryWrapper<RecruitmentCampaign>()
-                .eq(RecruitmentCampaign::getClubId, club.getId())
-                .in(RecruitmentCampaign::getStatus, List.of("open", "published"))
-                .orderByDesc(RecruitmentCampaign::getApplyStartAt)
-                .orderByDesc(RecruitmentCampaign::getId));
+    List<SiteForm> forms =
+        siteFormMapper.selectList(
+            new LambdaQueryWrapper<SiteForm>()
+                .eq(SiteForm::getClubId, club.getId())
+                .in(SiteForm::getStatus, List.of("open", "published"))
+                .orderByDesc(SiteForm::getStartAt)
+                .orderByDesc(SiteForm::getId));
     return ApiResponse.success(ResponseSiteFormsDTO.builder().club(club).forms(forms).build());
   }
 
@@ -263,19 +266,19 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
-  public ApiResponse<ResponseSiteFormDetailDTO> getFormDetail(Integer campaignId) {
-    RecruitmentCampaign campaign = recruitmentCampaignMapper.selectById(campaignId);
-    if (campaign == null) {
+  public ApiResponse<ResponseSiteFormDetailDTO> getFormDetail(Integer formId) {
+    SiteForm form = siteFormMapper.selectById(formId);
+    if (form == null) {
       return ApiResponse.error(404, "表单不存在");
     }
-    Club club = clubMapper.selectById(campaign.getClubId());
+    Club club = clubMapper.selectById(form.getClubId());
     if (club == null) {
       return ApiResponse.error(404, "社团不存在");
     }
     return ApiResponse.success(
         ResponseSiteFormDetailDTO.builder()
             .club(club)
-            .form(campaign)
+            .form(form)
             .build());
   }
 

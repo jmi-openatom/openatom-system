@@ -5,22 +5,22 @@
         <el-select v-if="clubs.length > 1" v-model="selectedClubId" filterable placeholder="选择社团" style="width: 220px" @change="handleClubChange">
           <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
         </el-select>
-        <el-select v-model="selectedCampaignId" filterable placeholder="选择表单" style="width: 260px" @change="fetchList">
-          <el-option v-for="item in campaigns" :key="item.id" :label="item.name" :value="item.id" />
+        <el-select v-model="selectedFormId" filterable placeholder="选择表单" style="width: 260px" @change="fetchList">
+          <el-option v-for="item in forms" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
         <el-input v-model="keyword" clearable placeholder="搜索提交人/联系方式" style="width: 240px" @keyup.enter="fetchList" />
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
-      <el-button type="success" :disabled="!selectedCampaignId" :loading="exporting" @click="exportExcel">导出 Excel</el-button>
+      <el-button type="success" :disabled="!selectedFormId" :loading="exporting" @click="exportExcel">导出 Excel</el-button>
     </div>
 
     <el-alert
-      v-if="currentCampaign"
+      v-if="currentForm"
       type="info"
       show-icon
       :closable="false"
-      :title="`当前表单：${currentCampaign.name}`"
-      :description="`收集时间：${formatRange(currentCampaign.applyStartAt, currentCampaign.applyEndAt)}`"
+      :title="`当前表单：${currentForm.name}`"
+      :description="`收集时间：${formatRange(currentForm.applyStartAt, currentForm.applyEndAt)}`"
     />
 
     <el-table v-loading="loading" :data="rows" class="admin-table">
@@ -88,9 +88,9 @@ export default {
     return {
       Refresh,
       clubs: [],
-      campaigns: [],
+      forms: [],
       selectedClubId: '',
-      selectedCampaignId: '',
+      selectedFormId: '',
       keyword: '',
       loading: false,
       exporting: false,
@@ -103,11 +103,11 @@ export default {
     }
   },
   computed: {
-    currentCampaign() {
-      return this.campaigns.find((item) => item.id === this.selectedCampaignId) || null
+    currentForm() {
+      return this.forms.find((item) => item.id === this.selectedFormId) || null
     },
     currentSchema() {
-      return this.parseSchema(this.currentCampaign?.formSchema)
+      return this.parseSchema(this.currentForm?.formSchema)
     },
     previewEntries() {
       const values = this.detailRow?.formData || {}
@@ -123,9 +123,9 @@ export default {
     if (queryClubId) {
       this.selectedClubId = queryClubId
     }
-    const queryCampaignId = Number(this.$route.query.campaignId || '')
-    if (queryCampaignId) {
-      this.selectedCampaignId = queryCampaignId
+    const queryFormId = Number(this.$route.query.formId || '')
+    if (queryFormId) {
+      this.selectedFormId = queryFormId
     }
     await this.loadClubs()
   },
@@ -141,29 +141,29 @@ export default {
     },
     async handleClubChange(clubId) {
       if (!clubId) {
-        this.campaigns = []
-        this.selectedCampaignId = ''
+        this.forms = []
+        this.selectedFormId = ''
         this.rows = []
         return
       }
-      const result = await clubApi.campaigns(clubId)
-      this.campaigns = result?.list || result || []
-      const hasCurrent = this.campaigns.some((item) => item.id === this.selectedCampaignId)
+      const result = await clubApi.siteForms(clubId)
+      this.forms = result?.list || result || []
+      const hasCurrent = this.forms.some((item) => item.id === this.selectedFormId)
       if (!hasCurrent) {
-        this.selectedCampaignId = this.campaigns[0]?.id || ''
+        this.selectedFormId = this.forms[0]?.id || ''
       }
       this.page = 1
       await this.fetchList()
     },
     async fetchList() {
-      if (!this.selectedCampaignId) {
+      if (!this.selectedFormId) {
         this.rows = []
         this.total = 0
         return
       }
       this.loading = true
       try {
-        const result = await formSubmissionApi.list(this.selectedCampaignId, {
+        const result = await formSubmissionApi.list(this.selectedFormId, {
           keyword: this.keyword || undefined,
           page: this.page,
           pageSize: this.pageSize
@@ -175,14 +175,14 @@ export default {
       }
     },
     async exportExcel() {
-      if (!this.selectedCampaignId) return
+      if (!this.selectedFormId) return
       this.exporting = true
       try {
-        const blob = await formSubmissionApi.export(this.selectedCampaignId)
+        const blob = await formSubmissionApi.export(this.selectedFormId)
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `${this.currentCampaign?.name || '表单记录'}.xlsx`
+        link.download = `${this.currentForm?.name || '表单记录'}.xlsx`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)

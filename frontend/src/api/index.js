@@ -84,6 +84,9 @@ export const clubApi = {
   },
   campaigns(clubId) {
     return request.get(`/clubs/${clubId}/recruitment-campaigns`)
+  },
+  siteForms(clubId) {
+    return request.get(`/clubs/${clubId}/site-forms`)
   }
 }
 
@@ -114,15 +117,30 @@ export const campaignApi = {
   }
 }
 
+export const siteFormApi = {
+  create(clubId, data) {
+    return request.post(`/clubs/${clubId}/site-forms`, data)
+  },
+  update(id, data) {
+    return request.patch(`/site-forms/${id}`, data)
+  },
+  publish(id) {
+    return request.post(`/site-forms/${id}/publish`)
+  },
+  close(id) {
+    return request.post(`/site-forms/${id}/close`)
+  }
+}
+
 export const formSubmissionApi = {
-  create(campaignId, data) {
-    return request.post(`/site/forms/${campaignId}/submissions`, data)
+  create(formId, data) {
+    return request.post(`/site/forms/${formId}/submissions`, data)
   },
-  list(campaignId, params) {
-    return request.get(`/recruitment-campaigns/${campaignId}/submissions`, { params })
+  list(formId, params) {
+    return request.get(`/site-forms/${formId}/submissions`, { params })
   },
-  export(campaignId) {
-    return request.get(`/recruitment-campaigns/${campaignId}/submissions/export`, { responseType: 'blob' })
+  export(formId) {
+    return request.get(`/site-forms/${formId}/submissions/export`, { responseType: 'blob' })
   }
 }
 
