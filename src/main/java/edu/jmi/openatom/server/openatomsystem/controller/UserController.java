@@ -83,7 +83,7 @@ public class UserController {
   }
 
   @GetMapping("/{userId}/roles")
-  @SaCheckPermission("user:role:list")
+  @SaCheckPermission("user:role:assign")
   public ApiResponse<List<Role>> getUserRoles(@PathVariable Integer userId) {
     return roleService.getUserRoles(userId);
   }
