@@ -38,9 +38,9 @@ OpenAtom System 是一个基于 Spring Boot 3 + Vue 3 Option 的社团/组织管
 ### 前端启动
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd frontend/web_pc
+pnpm install
+pnpm run dev
 ```
 
 ## 🐳 Docker 部署 (推荐)
