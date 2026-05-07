@@ -70,20 +70,14 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
 
   private void ensureUserColumns() {
     addColumnIfAbsent(
-        "tb_user",
-        "class_name",
-        "VARCHAR(100) DEFAULT NULL COMMENT '班级' AFTER `grade` ");
+        "tb_user", "class_name", "VARCHAR(100) DEFAULT NULL COMMENT '班级' AFTER `grade` ");
   }
 
   private void ensureRecruitmentCampaignColumns() {
     addColumnIfAbsent(
-        "recruitment_campaign",
-        "login_required",
-        "TINYINT(1) DEFAULT 1 COMMENT '是否要求登录后提交'");
+        "recruitment_campaign", "login_required", "TINYINT(1) DEFAULT 1 COMMENT '是否要求登录后提交'");
     addColumnIfAbsent(
-        "recruitment_campaign",
-        "form_schema",
-        "JSON DEFAULT NULL COMMENT '自定义报名表单结构'");
+        "recruitment_campaign", "form_schema", "JSON DEFAULT NULL COMMENT '自定义报名表单结构'");
   }
 
   private void ensureMembershipApplicationColumns() {
@@ -119,10 +113,12 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
         """);
     addColumnIfAbsent("site_form", "start_at", "TIMESTAMP NULL DEFAULT NULL COMMENT '收集开始时间'");
     addColumnIfAbsent("site_form", "end_at", "TIMESTAMP NULL DEFAULT NULL COMMENT '收集结束时间'");
-    addColumnIfAbsent(
-        "site_form", "login_required", "TINYINT(1) DEFAULT 1 COMMENT '是否要求登录后提交'");
+    addColumnIfAbsent("site_form", "login_required", "TINYINT(1) DEFAULT 1 COMMENT '是否要求登录后提交'");
     addColumnIfAbsent("site_form", "form_schema", "JSON DEFAULT NULL COMMENT '自定义表单结构'");
-    addColumnIfAbsent("site_form", "updated_at", "TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'");
+    addColumnIfAbsent(
+        "site_form",
+        "updated_at",
+        "TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'");
   }
 
   private void ensureFormSubmissionTable() {
@@ -149,7 +145,8 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     if (!tableExists("form_submission")) {
       return;
     }
-    if (columnExists("form_submission", "campaign_id") && !columnExists("form_submission", "form_id")) {
+    if (columnExists("form_submission", "campaign_id")
+        && !columnExists("form_submission", "form_id")) {
       jdbcTemplate.execute(
           """
           ALTER TABLE `form_submission`
@@ -158,11 +155,13 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
       log.info("Renamed legacy column: form_submission.campaign_id -> form_id");
     }
     if (!indexExists("form_submission", "idx_form_submission_form")) {
-      jdbcTemplate.execute("ALTER TABLE `form_submission` ADD INDEX `idx_form_submission_form` (`form_id`)");
+      jdbcTemplate.execute(
+          "ALTER TABLE `form_submission` ADD INDEX `idx_form_submission_form` (`form_id`)");
       log.info("Added missing index: form_submission.idx_form_submission_form");
     }
     if (indexExists("form_submission", "idx_form_submission_campaign")) {
-      jdbcTemplate.execute("ALTER TABLE `form_submission` DROP INDEX `idx_form_submission_campaign`");
+      jdbcTemplate.execute(
+          "ALTER TABLE `form_submission` DROP INDEX `idx_form_submission_campaign`");
       log.info("Dropped legacy index: form_submission.idx_form_submission_campaign");
     }
   }

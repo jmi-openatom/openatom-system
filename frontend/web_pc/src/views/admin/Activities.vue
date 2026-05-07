@@ -137,6 +137,7 @@
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { activityApi } from '@/api/index.ts'
+import { formatDateTime, statusType } from '@/utils/format.ts'
 
 const defaultFields = [
   { label: '姓名', type: 'text', required: true },

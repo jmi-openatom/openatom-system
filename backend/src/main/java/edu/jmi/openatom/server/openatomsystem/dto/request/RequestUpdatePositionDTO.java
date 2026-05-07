@@ -17,5 +17,6 @@ public class RequestUpdatePositionDTO {
 
   @Min(value = 1, message = "岗位最大人数必须大于0")
   private Integer maxCount;
+
   private List<Integer> roleIds;
 }

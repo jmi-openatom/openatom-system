@@ -59,7 +59,8 @@ public class ExitApplicationController {
   @PostMapping("/memberships/{membershipId}/force-exit")
   @SaCheckPermission("membership:force-exit")
   public ApiResponse<String> forceExit(
-      @PathVariable Integer membershipId, @RequestBody(required = false) RequestForceExitDTO request) {
+      @PathVariable Integer membershipId,
+      @RequestBody(required = false) RequestForceExitDTO request) {
     return membershipService.forceExit(membershipId, request == null ? null : request.getReason());
   }
 }

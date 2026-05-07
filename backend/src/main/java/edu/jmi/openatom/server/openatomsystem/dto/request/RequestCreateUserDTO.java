@@ -38,6 +38,7 @@ public class RequestCreateUserDTO {
 
   @Size(max = 32, message = "学号长度不能超过32个字符")
   private String studentNo;
+
   private String college;
   private String major;
   private String grade;

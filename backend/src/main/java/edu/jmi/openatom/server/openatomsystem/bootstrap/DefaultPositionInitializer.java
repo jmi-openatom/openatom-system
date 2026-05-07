@@ -20,9 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DefaultPositionInitializer implements ApplicationRunner {
   private static final List<DefaultPositionSeed> DEFAULT_POSITIONS =
-      List.of(
-          new DefaultPositionSeed("部门负责人", 1),
-          new DefaultPositionSeed("成员", null));
+      List.of(new DefaultPositionSeed("部门负责人", 1), new DefaultPositionSeed("成员", null));
 
   private final ClubDepartmentMapper clubDepartmentMapper;
   private final ClubPositionMapper clubPositionMapper;

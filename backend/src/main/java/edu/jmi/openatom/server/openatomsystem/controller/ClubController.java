@@ -36,7 +36,8 @@ public class ClubController {
 
   @PostMapping("/clubs")
   @SaCheckPermission("club:create")
-  public ApiResponse<String> createClub(@Valid @RequestBody RequestCreateClubDTO requestCreateClubDTO) {
+  public ApiResponse<String> createClub(
+      @Valid @RequestBody RequestCreateClubDTO requestCreateClubDTO) {
     return clubService.createClub(requestCreateClubDTO);
   }
 

@@ -5,11 +5,11 @@
         <h1>消息通知</h1>
         <p>及时获取社团公告、活动进展及申请反馈</p>
       </div>
-      <el-button 
-        v-if="notifications.some(n => n.readFlag === 0)" 
-        type="primary" 
-        link 
-        :icon="CircleCheck" 
+      <el-button
+        v-if="notifications.some((n) => n.readFlag === 0)"
+        type="primary"
+        link
+        :icon="CircleCheck"
         @click="markAllAsRead"
       >
         全部标记为已读
@@ -20,16 +20,16 @@
       <div v-if="notifications.length === 0 && !loading" class="empty-state">
         <el-empty description="暂无新消息" />
       </div>
-      
-      <div 
-        v-for="item in notifications" 
-        :key="item.id" 
+
+      <div
+        v-for="item in notifications"
+        :key="item.id"
         class="notification-item"
         :class="{ 'is-unread': item.readFlag === 0 }"
         @click="handleRead(item)"
       >
         <div class="item-icon" :class="item.type || 'other'">
-          <el-icon :size="28"><Bell /></el-icon>
+          <el-icon><Bell /></el-icon>
         </div>
         <div class="item-body">
           <div class="item-header">
@@ -73,15 +73,13 @@ const handleRead = async (item: any) => {
 }
 
 const markAllAsRead = async () => {
-  const unreadIds = notifications.value
-    .filter(n => n.readFlag === 0)
-    .map(n => n.id)
-  
+  const unreadIds = notifications.value.filter((n) => n.readFlag === 0).map((n) => n.id)
+
   if (unreadIds.length === 0) return
-  
+
   try {
-    await Promise.all(unreadIds.map(id => notificationApi.markRead(id)))
-    notifications.value.forEach(n => n.readFlag = 1)
+    await Promise.all(unreadIds.map((id) => notificationApi.markRead(id)))
+    notifications.value.forEach((n) => (n.readFlag = 1))
     ElMessage.success('全部已标记为已读')
   } catch (e) {
     ElMessage.error('操作失败')
@@ -133,8 +131,9 @@ onMounted(fetchNotifications)
 }
 
 .notification-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(30, 90, 235, 0.05);
+  border-color: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.05);
 }
 
 .notification-item.is-unread {
@@ -143,8 +142,8 @@ onMounted(fetchNotifications)
 }
 
 .item-icon {
-  width: 55px;
-  height: 55px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   display: grid;
   place-items: center;
@@ -152,10 +151,22 @@ onMounted(fetchNotifications)
   flex-shrink: 0;
 }
 
-.item-icon.system { background: var(--oa-primary); color: #fff; }
-.item-icon.activity { background: #dcfce7; color: #22c55e; }
-.item-icon.approval { background: #fef9c3; color: #eab308; }
-.item-icon.other { background: #f1f5f9; color: #64748b; }
+.item-icon.system {
+  background: #fee2e2;
+  color: #ef4444;
+}
+.item-icon.activity {
+  background: #dcfce7;
+  color: #22c55e;
+}
+.item-icon.approval {
+  background: #fef9c3;
+  color: #eab308;
+}
+.item-icon.other {
+  background: #f1f5f9;
+  color: #64748b;
+}
 
 .item-body {
   flex: 1;
@@ -170,8 +181,8 @@ onMounted(fetchNotifications)
 }
 
 .item-title {
-  font-weight: 800;
-  font-size: 18px;
+  font-weight: 600;
+  font-size: 16px;
   color: #1e293b;
 }
 
@@ -181,7 +192,7 @@ onMounted(fetchNotifications)
 }
 
 .item-content {
-  font-size: 16px;
+  font-size: 14px;
   color: #475569;
   line-height: 1.5;
 }

@@ -26,7 +26,8 @@ public class OperationLogInterceptor implements HandlerInterceptor {
   private final ClientIpResolver clientIpResolver;
 
   @Override
-  public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+  public boolean preHandle(
+      HttpServletRequest request, HttpServletResponse response, Object handler) {
     request.setAttribute(START_TIME_ATTRIBUTE, System.currentTimeMillis());
     return true;
   }

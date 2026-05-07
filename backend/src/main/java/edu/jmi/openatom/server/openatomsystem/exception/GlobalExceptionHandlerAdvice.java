@@ -45,13 +45,15 @@ public class GlobalExceptionHandlerAdvice {
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ApiResponse<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+  public ApiResponse<Void> handleHttpMessageNotReadableException(
+      HttpMessageNotReadableException e) {
     log.warn("Invalid request body", e);
     return ApiResponse.error(400, "请求体格式错误，请检查 JSON 格式");
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ApiResponse<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+  public ApiResponse<Void> handleMethodArgumentNotValidException(
+      MethodArgumentNotValidException e) {
     String message =
         e.getBindingResult().getFieldErrors().stream()
             .map(error -> error.getDefaultMessage())

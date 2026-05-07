@@ -50,11 +50,7 @@ public class SystemUserInitializer implements ApplicationRunner {
 
   private Role initRoleTemplate(RoleSeedTemplate template) {
     Role role =
-        ensureRole(
-            template.code(),
-            template.name(),
-            template.dataScope(),
-            template.description());
+        ensureRole(template.code(), template.name(), template.dataScope(), template.description());
     bindRolePermissions(role.getId(), template.permissionCodes());
     return role;
   }
@@ -66,12 +62,7 @@ public class SystemUserInitializer implements ApplicationRunner {
     }
 
     Role newRole =
-        Role.builder()
-            .name(name)
-            .code(code)
-            .dataScope(dataScope)
-            .description(description)
-            .build();
+        Role.builder().name(name).code(code).dataScope(dataScope).description(description).build();
     roleMapper.insert(newRole);
     log.info("Initialized role: {}", code);
     return newRole;
@@ -133,7 +124,8 @@ public class SystemUserInitializer implements ApplicationRunner {
   }
 
   private void bindRolePermissions(Integer roleId, List<String> permissionCodes) {
-    List<Integer> permissionIds = permissionCodes.stream().map(this::findPermissionIdByCode).toList();
+    List<Integer> permissionIds =
+        permissionCodes.stream().map(this::findPermissionIdByCode).toList();
     for (Integer permissionId : permissionIds) {
       RolePermission exists =
           rolePermissionMapper.selectOne(
@@ -149,7 +141,8 @@ public class SystemUserInitializer implements ApplicationRunner {
 
   private Integer findPermissionIdByCode(String code) {
     Permission permission =
-        permissionMapper.selectOne(new LambdaQueryWrapper<Permission>().eq(Permission::getCode, code));
+        permissionMapper.selectOne(
+            new LambdaQueryWrapper<Permission>().eq(Permission::getCode, code));
     if (permission == null) {
       throw new IllegalStateException("Permission not initialized: " + code);
     }

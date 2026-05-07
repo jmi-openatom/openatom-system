@@ -30,7 +30,8 @@ public class SaPermissionInterfaceImpl implements StpInterface {
   public List<String> getPermissionList(Object loginId, String loginType) {
     Integer userId = Integer.valueOf(String.valueOf(loginId));
     List<Integer> roleIds =
-        userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId))
+        userRoleMapper
+            .selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId))
             .stream()
             .map(UserRole::getRoleId)
             .distinct()
@@ -41,7 +42,8 @@ public class SaPermissionInterfaceImpl implements StpInterface {
 
     List<Integer> permissionIds =
         rolePermissionMapper
-            .selectList(new LambdaQueryWrapper<RolePermission>().in(RolePermission::getRoleId, roleIds))
+            .selectList(
+                new LambdaQueryWrapper<RolePermission>().in(RolePermission::getRoleId, roleIds))
             .stream()
             .map(RolePermission::getPermissionId)
             .distinct()
@@ -63,7 +65,8 @@ public class SaPermissionInterfaceImpl implements StpInterface {
   public List<String> getRoleList(Object loginId, String loginType) {
     Integer userId = Integer.valueOf(String.valueOf(loginId));
     List<Integer> roleIds =
-        userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId))
+        userRoleMapper
+            .selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId))
             .stream()
             .map(UserRole::getRoleId)
             .distinct()

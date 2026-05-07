@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class RequestUserUpdate {
   @Size(max = 64, message = "真实姓名长度不能超过64个字符")
   private String realName;
+
   private String gender;
 
   @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确")
@@ -26,6 +27,7 @@ public class RequestUserUpdate {
 
   @Size(max = 32, message = "学号长度不能超过32个字符")
   private String studentNo;
+
   private String college;
   private String major;
   private String grade;

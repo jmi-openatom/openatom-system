@@ -58,7 +58,8 @@ public class ActivityController {
 
   @PostMapping("/activities/{activityId}/registrations")
   public ApiResponse<String> register(
-      @PathVariable Integer activityId, @RequestBody(required = false) RequestActivityRegistrationDTO request) {
+      @PathVariable Integer activityId,
+      @RequestBody(required = false) RequestActivityRegistrationDTO request) {
     return activityService.register(activityId, request);
   }
 

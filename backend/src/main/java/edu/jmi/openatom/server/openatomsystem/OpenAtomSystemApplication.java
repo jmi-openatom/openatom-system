@@ -6,10 +6,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 @MapperScan("edu.jmi.openatom.server.openatomsystem.mapper")
-public class OpenatomSystemApplication {
+public class OpenAtomSystemApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(OpenatomSystemApplication.class, args);
-	}
-
+  public static void main(String[] args) {
+    SpringApplication.run(OpenAtomSystemApplication.class, args);
+  }
 }

@@ -19,6 +19,7 @@ public class RequestUpdateClubDTO {
 
   @Size(max = 1000, message = "社团描述长度不能超过1000个字符")
   private String description;
+
   private String logoUrl;
   private Integer presidentUserId;
 }

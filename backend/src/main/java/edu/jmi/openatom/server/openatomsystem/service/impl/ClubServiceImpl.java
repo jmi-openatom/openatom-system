@@ -1,6 +1,5 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateClubDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateClubDTO;
@@ -26,22 +25,7 @@ public class ClubServiceImpl implements ClubService {
   @Override
   public ApiResponse<List<Club>> getClubs(
       String keyword, String category, String status, String recruitmentStatus) {
-    LambdaQueryWrapper<Club> wrapper = new LambdaQueryWrapper<>();
-    if (!isBlank(keyword)) {
-      wrapper.and(
-          query -> query.like(Club::getName, keyword).or().like(Club::getCode, keyword));
-    }
-    if (!isBlank(category)) {
-      wrapper.eq(Club::getCategory, category);
-    }
-    if (!isBlank(status)) {
-      wrapper.eq(Club::getStatus, status);
-    }
-    if (!isBlank(recruitmentStatus)) {
-      wrapper.eq(Club::getRecruitmentStatus, recruitmentStatus);
-    }
-    wrapper.orderByAsc(Club::getId);
-    return ApiResponse.success(clubMapper.selectList(wrapper));
+    return ApiResponse.success(clubMapper.selectByConditions(keyword, category, status, recruitmentStatus));
   }
 
   @Override
@@ -55,9 +39,7 @@ public class ClubServiceImpl implements ClubService {
     if (!userExists(requestCreateClubDTO.getPresidentUserId())) {
       return ApiResponse.error(400, "负责人用户不存在");
     }
-    if (clubMapper.selectCount(
-            new LambdaQueryWrapper<Club>().eq(Club::getCode, requestCreateClubDTO.getCode()))
-        > 0) {
+    if (clubMapper.countByCode(requestCreateClubDTO.getCode()) > 0) {
       return ApiResponse.error(400, "社团编码已存在");
     }
 

@@ -25,8 +25,7 @@ public class DefaultClubInitializer implements ApplicationRunner {
   @Transactional(rollbackFor = Exception.class)
   public void run(ApplicationArguments args) {
     Club club =
-        clubMapper.selectOne(
-            new LambdaQueryWrapper<Club>().eq(Club::getCode, DEFAULT_CLUB_CODE));
+        clubMapper.selectOne(new LambdaQueryWrapper<Club>().eq(Club::getCode, DEFAULT_CLUB_CODE));
     if (club != null) {
       if (!DEFAULT_CLUB_NAME.equals(club.getName())) {
         club.setName(DEFAULT_CLUB_NAME);

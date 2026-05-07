@@ -92,7 +92,7 @@
               </el-tag>
 
               <div class="activity-image">
-                <img :src="activity.coverUrl " :alt="activity.title ">
+                <img :src="activity.coverUrl" :alt="activity.title" />
               </div>
             </article>
           </el-carousel-item>

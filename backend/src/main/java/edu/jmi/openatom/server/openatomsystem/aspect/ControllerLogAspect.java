@@ -38,8 +38,7 @@ public class ControllerLogAspect {
     long startTime = System.currentTimeMillis();
     MethodSignature signature = (MethodSignature) joinPoint.getSignature();
     HttpServletRequest request = currentRequest();
-    String methodName =
-        signature.getDeclaringType().getSimpleName() + "." + signature.getName();
+    String methodName = signature.getDeclaringType().getSimpleName() + "." + signature.getName();
 
     try {
       log.info(
@@ -138,5 +137,4 @@ public class ControllerLogAspect {
     }
     return maskSensitiveFields(toJsonNode(result));
   }
-
 }

@@ -16,5 +16,6 @@ public class RequestUpdateDepartmentDTO {
 
   @Size(max = 500, message = "部门描述长度不能超过500个字符")
   private String description;
+
   private Integer managerUserId;
 }

@@ -12,10 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ResponseLoginDTO {
-	private String accessToken;
-	private String refreshToken;
-	private Integer expiresIn;
-	private User user;
-	private List<String> roles;
-	private List<String> permissions;
+  private String accessToken;
+  private String refreshToken;
+  private Integer expiresIn;
+  private User user;
+  private List<String> roles;
+  private List<String> permissions;
 }

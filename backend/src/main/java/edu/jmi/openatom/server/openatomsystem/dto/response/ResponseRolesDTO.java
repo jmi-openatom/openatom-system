@@ -12,5 +12,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class ResponseRolesDTO {
-	List<Role> roles;
+  List<Role> roles;
 }
