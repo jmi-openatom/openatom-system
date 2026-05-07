@@ -4,7 +4,7 @@
             <div class="login-copy">
                 <span class="login-logo">OA</span>
                 <h1>OpenAtom 登录</h1>
-                <p>登录后可统一维护社团、成员、审批、面试和权限等业务数据。</p>
+                <p>JMI-OPENATOM</p>
             </div>
             <el-card class="login-card" shadow="never">
                 <el-tabs v-model="activeTab">
@@ -53,10 +53,9 @@
 </template>
 
 <script>
-import {ElMessage} from 'element-plus'
-import {authApi, siteApi} from '../../api'
-import {clearRememberedLogin, getRememberedLogin, setRememberedLogin, setSession} from '../../utils/auth'
-import {hasAdminAccess, hasRole} from '../../utils/permission'
+import { ElMessage } from 'element-plus'
+import { authApi, siteApi } from '../../api'
+import { clearRememberedLogin, getRememberedLogin, setRememberedLogin, setSession } from '../../utils/auth'
 
 export default {
     name: 'AdminLogin',
@@ -78,19 +77,14 @@ export default {
                 email: ''
             },
             loginRules: {
-                username: [{required: true, message: '请输入用户名', trigger: 'blur'}],
-                password: [{required: true, message: '请输入密码', trigger: 'blur'}]
+                username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+                password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
             },
             registerRules: {
-                username: [{required: true, message: '请输入用户名', trigger: 'blur'}],
-                realName: [{required: true, message: '请输入姓名', trigger: 'blur'}],
-                password: [{required: true, message: '请输入密码', trigger: 'blur'}]
+                username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+                realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+                password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
             }
-        }
-    },
-    computed: {
-        canManageRegister() {
-            return hasRole('super_admin')
         }
     },
     async created() {
@@ -102,9 +96,46 @@ export default {
     },
     methods: {
         async fetchRegisterEnabled() {
-            this.registerEnabled = Boolean(await siteApi.registerEnabled())
-            if (!this.registerEnabled && this.activeTab === 'register') {
-                this.activeTab = 'login'
+            try {
+                this.registerEnabled = Boolean(await siteApi.registerEnabled())
+                if (!this.registerEnabled && this.activeTab === 'register') {
+                    this.activeTab = 'login'
+                }
+            } catch (e) {
+                this.registerEnabled = false
+            }
+        },
+
+        // 核心跳转逻辑封装
+        completeAuth(sessionData, message) {
+            // 1. 处理记住密码逻辑
+            if (this.rememberPassword) {
+                setRememberedLogin({
+                    username: this.loginForm.username,
+                    password: this.loginForm.password,
+                    remember: true
+                })
+            } else {
+                clearRememberedLogin()
+            }
+
+            // 2. 设置 Session
+            setSession(sessionData)
+            ElMessage.success(message)
+
+            // 3. 智能跳转
+            // 情况A: URL 带有 redirect 参数 (通常来自拦截器)
+            const redirectPath = this.$route.query.redirect
+            if (redirectPath) {
+                this.$router.replace(redirectPath)
+            }
+            // 情况B: 浏览器有历史记录
+            else if (window.history.length > 1) {
+                this.$router.back()
+            }
+            // 情况C: 兜底跳转首页
+            else {
+                this.$router.replace('/')
             }
         },
 
@@ -114,26 +145,18 @@ export default {
                 this.loading = true
                 try {
                     const result = await authApi.login(this.loginForm)
-                    if (this.rememberPassword) {
-                        setRememberedLogin({
-                            username: this.loginForm.username,
-                            password: this.loginForm.password,
-                            remember: true
-                        })
-                    } else {
-                        clearRememberedLogin()
-                    }
-                    setSession(result)
-                    ElMessage.success('登录成功')
-                    this.$router.replace(this.$route.query.redirect || (hasAdminAccess() ? '/admin/dashboard' : '/progress'))
+                    this.completeAuth(result, '登录成功')
+                } catch (err) {
+                    // 错误处理通常在拦截器中完成
                 } finally {
                     this.loading = false
                 }
             })
         },
+
         handleRegister() {
             if (!this.registerEnabled) {
-                ElMessage.warning('当前已关闭注册，请联系管理员开通')
+                ElMessage.warning('当前已关闭注册')
                 this.activeTab = 'login'
                 return
             }
@@ -142,22 +165,14 @@ export default {
                 this.loading = true
                 try {
                     await authApi.register(this.registerForm)
+                    // 注册后自动执行登录
                     const result = await authApi.login({
                         username: this.registerForm.username,
                         password: this.registerForm.password
                     })
-                    if (this.rememberPassword) {
-                        setRememberedLogin({
-                            username: this.registerForm.username,
-                            password: this.registerForm.password,
-                            remember: true
-                        })
-                    } else {
-                        clearRememberedLogin()
-                    }
-                    setSession(result)
-                    ElMessage.success('注册成功')
-                    this.$router.replace(hasAdminAccess() ? '/admin/dashboard' : '/progress')
+                    this.completeAuth(result, '注册并登录成功')
+                } catch (err) {
+                    // 错误处理
                 } finally {
                     this.loading = false
                 }
@@ -168,6 +183,7 @@ export default {
 </script>
 
 <style scoped>
+/* 保持你原有的 CSS 代码，此处略 */
 .login-page {
     min-height: 100vh;
     display: grid;
@@ -187,7 +203,7 @@ export default {
 }
 
 .login-copy {
-    color: var(--oa-text);
+    color: #1e293b;
 }
 
 .login-logo {
@@ -232,26 +248,12 @@ export default {
     margin: -4px 0 16px;
 }
 
-.register-switch {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-bottom: 10px;
-    color: #64748b;
-    font-size: 13px;
-}
-
 .login-card :deep(.el-card__body) {
     padding: 24px 24px 18px;
 }
 
 .login-card :deep(.el-tabs__nav-wrap::after) {
     background-color: rgba(219, 230, 245, 0.9);
-}
-
-.login-card :deep(.el-tabs__item.is-active) {
-    color: var(--oa-primary-dark);
 }
 
 @media (max-width: 860px) {
