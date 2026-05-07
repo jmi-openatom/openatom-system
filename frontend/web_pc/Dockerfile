@@ -1,9 +1,17 @@
 # Build stage
 FROM node:20-alpine AS build
 WORKDIR /app
-RUN npm install -g pnpm
-COPY package*.json pnpm-lock.yaml ./
+
+# Enable corepack and prepare pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy lockfile and package.json for dependency fetching
+COPY pnpm-lock.yaml package.json ./
+
+# Install dependencies (utilizing layer caching)
 RUN pnpm install --frozen-lockfile
+
+# Copy source code and build
 COPY . .
 RUN pnpm run build
 
