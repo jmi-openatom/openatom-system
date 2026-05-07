@@ -111,29 +111,54 @@ public class SiteServiceImpl implements SiteService {
     if (applications.isEmpty()) {
       return ApiResponse.success(ResponseSiteProgressDTO.builder().applications(List.of()).build());
     }
-    Map<Integer, Club> clubs = selectMap(
-        applications.stream().map(MembershipApplication::getClubId).filter(Objects::nonNull).toList(),
-        clubMapper::selectBatchIds, Club::getId);
-    Map<Integer, User> users = selectMap(
-        applications.stream().map(MembershipApplication::getUserId).filter(Objects::nonNull).toList(),
-        userMapper::selectBatchIds, User::getId);
-    Map<Integer, RecruitmentCampaign> campaigns = selectMap(
-        applications.stream().map(MembershipApplication::getCampaignId).filter(Objects::nonNull).toList(),
-        recruitmentCampaignMapper::selectBatchIds, RecruitmentCampaign::getId);
-    Map<Integer, ClubDepartment> departments = selectMap(
-        applications.stream()
-            .flatMap(a -> java.util.stream.Stream.of(a.getFirstChoiceDepartmentId(), a.getSecondChoiceDepartmentId()))
-            .filter(Objects::nonNull).toList(),
-        clubDepartmentMapper::selectBatchIds, ClubDepartment::getId);
+    Map<Integer, Club> clubs =
+        selectMap(
+            applications.stream()
+                .map(MembershipApplication::getClubId)
+                .filter(Objects::nonNull)
+                .toList(),
+            clubMapper::selectBatchIds,
+            Club::getId);
+    Map<Integer, User> users =
+        selectMap(
+            applications.stream()
+                .map(MembershipApplication::getUserId)
+                .filter(Objects::nonNull)
+                .toList(),
+            userMapper::selectBatchIds,
+            User::getId);
+    Map<Integer, RecruitmentCampaign> campaigns =
+        selectMap(
+            applications.stream()
+                .map(MembershipApplication::getCampaignId)
+                .filter(Objects::nonNull)
+                .toList(),
+            recruitmentCampaignMapper::selectBatchIds,
+            RecruitmentCampaign::getId);
+    Map<Integer, ClubDepartment> departments =
+        selectMap(
+            applications.stream()
+                .flatMap(
+                    a ->
+                        java.util.stream.Stream.of(
+                            a.getFirstChoiceDepartmentId(), a.getSecondChoiceDepartmentId()))
+                .filter(Objects::nonNull)
+                .toList(),
+            clubDepartmentMapper::selectBatchIds,
+            ClubDepartment::getId);
     List<Integer> appIds = applications.stream().map(MembershipApplication::getId).toList();
     Map<Integer, List<Interview>> interviewsByApplication =
         interviewMapper.selectByApplicationIds(appIds).stream()
             .collect(Collectors.groupingBy(Interview::getApplicationId));
     return ApiResponse.success(
         ResponseSiteProgressDTO.builder()
-            .applications(applications.stream()
-                .map(a -> toProgressApplication(a, users, clubs, campaigns, departments, interviewsByApplication))
-                .toList())
+            .applications(
+                applications.stream()
+                    .map(
+                        a ->
+                            toProgressApplication(
+                                a, users, clubs, campaigns, departments, interviewsByApplication))
+                    .toList())
             .build());
   }
 
@@ -148,21 +173,31 @@ public class SiteServiceImpl implements SiteService {
     if (club == null) {
       return ApiResponse.error(404, "默认社团不存在");
     }
-    List<RecruitmentCampaign> campaigns = recruitmentCampaignMapper.selectOpenByClubId(club.getId());
+    List<RecruitmentCampaign> campaigns =
+        recruitmentCampaignMapper.selectOpenByClubId(club.getId());
     List<ClubDepartment> departments = clubDepartmentMapper.selectByClubIdOrdered(club.getId());
     return ApiResponse.success(
-        ResponseRecruitmentDTO.builder().club(club).campaigns(campaigns).departments(departments).build());
+        ResponseRecruitmentDTO.builder()
+            .club(club)
+            .campaigns(campaigns)
+            .departments(departments)
+            .build());
   }
 
   @Override
   public ApiResponse<ResponseRecruitmentDetailDTO> getRecruitmentDetail(Integer campaignId) {
-    RecruitmentCampaign campaign = campaignId == null ? null : recruitmentCampaignMapper.selectById(campaignId);
+    RecruitmentCampaign campaign =
+        campaignId == null ? null : recruitmentCampaignMapper.selectById(campaignId);
     if (campaign == null) return ApiResponse.error(404, "招新计划不存在");
     Club club = clubMapper.selectById(campaign.getClubId());
     if (club == null) return ApiResponse.error(404, "社团不存在");
     List<ClubDepartment> departments = clubDepartmentMapper.selectByClubIdOrdered(club.getId());
     return ApiResponse.success(
-        ResponseRecruitmentDetailDTO.builder().club(club).campaign(campaign).departments(departments).build());
+        ResponseRecruitmentDetailDTO.builder()
+            .club(club)
+            .campaign(campaign)
+            .departments(departments)
+            .build());
   }
 
   @Override
@@ -174,7 +209,9 @@ public class SiteServiceImpl implements SiteService {
     return ApiResponse.success(ResponseSiteFormDetailDTO.builder().club(club).form(form).build());
   }
 
-  private Club findClub(String clubCode) { return findClub(null, clubCode); }
+  private Club findClub(String clubCode) {
+    return findClub(null, clubCode);
+  }
 
   private Club findClub(Integer clubId, String clubCode) {
     if (clubId != null) {
@@ -186,131 +223,244 @@ public class SiteServiceImpl implements SiteService {
   }
 
   private ResponseClubHomeDTO.ClubProfile toClubProfile(Club club) {
-    return ResponseClubHomeDTO.ClubProfile.builder().id(club.getId()).name(club.getName())
-        .code(club.getCode()).category(club.getCategory()).description(club.getDescription())
-        .logoUrl(club.getLogoUrl()).recruitmentStatus(club.getRecruitmentStatus()).build();
+    return ResponseClubHomeDTO.ClubProfile.builder()
+        .id(club.getId())
+        .name(club.getName())
+        .code(club.getCode())
+        .category(club.getCategory())
+        .description(club.getDescription())
+        .logoUrl(club.getLogoUrl())
+        .recruitmentStatus(club.getRecruitmentStatus())
+        .build();
   }
 
   private List<ResponseClubHomeDTO.Metric> buildMetrics(
-      List<ClubMembership> memberships, List<RecruitmentCampaign> campaigns,
-      List<ClubActivity> activities, List<ClubAward> awards) {
-    long activeMembers = memberships.stream()
-        .filter(m -> !"left".equalsIgnoreCase(m.getStatus())).count();
-    long openCampaigns = campaigns.stream()
-        .filter(c -> "published".equalsIgnoreCase(c.getStatus())).count();
-    return List.of(metric("在册成员", activeMembers, "来自成员关系表"), metric("年度活动", activities.size(), "来自社团活动表"),
-        metric("竞赛获奖", awards.size(), "来自比赛获奖表"), metric("招新计划", openCampaigns, "当前发布中的批次"));
+      List<ClubMembership> memberships,
+      List<RecruitmentCampaign> campaigns,
+      List<ClubActivity> activities,
+      List<ClubAward> awards) {
+    long activeMembers =
+        memberships.stream().filter(m -> !"left".equalsIgnoreCase(m.getStatus())).count();
+    long openCampaigns =
+        campaigns.stream().filter(c -> "published".equalsIgnoreCase(c.getStatus())).count();
+    return List.of(
+        metric("在册成员", activeMembers, "来自成员关系表"),
+        metric("年度活动", activities.size(), "来自社团活动表"),
+        metric("竞赛获奖", awards.size(), "来自比赛获奖表"),
+        metric("招新计划", openCampaigns, "当前发布中的批次"));
   }
 
   private ResponseClubHomeDTO.Metric metric(String label, long value, String note) {
-    return ResponseClubHomeDTO.Metric.builder().label(label).value(String.valueOf(value)).note(note).build();
+    return ResponseClubHomeDTO.Metric.builder()
+        .label(label)
+        .value(String.valueOf(value))
+        .note(note)
+        .build();
   }
 
   private List<ResponseClubHomeDTO.FocusArea> buildFocusAreas(List<ClubDepartment> departments) {
     List<String> icons = List.of("monitor", "cpu", "lightning", "phone");
-    return departments.stream().limit(4)
-        .map(d -> focus(d.getName(), d.getDescription(), icons.get(departments.indexOf(d) % icons.size()))).toList();
+    return departments.stream()
+        .limit(4)
+        .map(
+            d ->
+                focus(
+                    d.getName(),
+                    d.getDescription(),
+                    icons.get(departments.indexOf(d) % icons.size())))
+        .toList();
   }
 
   private ResponseClubHomeDTO.FocusArea focus(String title, String description, String icon) {
-    return ResponseClubHomeDTO.FocusArea.builder().title(title).description(description).icon(icon).build();
+    return ResponseClubHomeDTO.FocusArea.builder()
+        .title(title)
+        .description(description)
+        .icon(icon)
+        .build();
   }
 
   private ResponseClubHomeDTO.Activity toActivity(ClubActivity activity) {
-    return ResponseClubHomeDTO.Activity.builder().id(activity.getId())
-        .date(formatMonthDay(activity.getActivityAt())).title(activity.getTitle())
-        .description(activity.getSummary()).location(activity.getLocation()).status(activity.getStatus()).build();
+    return ResponseClubHomeDTO.Activity.builder()
+        .id(activity.getId())
+        .date(formatMonthDay(activity.getActivityAt()))
+        .title(activity.getTitle())
+        .description(activity.getSummary())
+        .location(activity.getLocation())
+        .status(activity.getStatus())
+        .coverUrl(activity.getCoverUrl() == null ? "" : activity.getCoverUrl())
+        .build();
   }
 
   private List<ResponseClubHomeDTO.Person> buildPeople(List<ClubMembership> memberships) {
-    List<ClubMembership> topMemberships = memberships.stream()
-        .filter(m -> m.getUserId() != null).filter(m -> Boolean.TRUE.equals(m.getFeatured()))
-        .filter(m -> !"left".equalsIgnoreCase(m.getStatus()))
-        .sorted(Comparator.comparing(ClubMembership::getFeatured, Comparator.nullsLast(Comparator.reverseOrder()))
-            .thenComparing(ClubMembership::getSortOrder, Comparator.nullsLast(Comparator.naturalOrder()))
-            .thenComparing(ClubMembership::getJoinedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-        .toList();
+    List<ClubMembership> topMemberships =
+        memberships.stream()
+            .filter(m -> m.getUserId() != null)
+            .filter(m -> Boolean.TRUE.equals(m.getFeatured()))
+            .filter(m -> !"left".equalsIgnoreCase(m.getStatus()))
+            .sorted(
+                Comparator.comparing(
+                        ClubMembership::getFeatured,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                        ClubMembership::getSortOrder,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(
+                        ClubMembership::getJoinedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
     if (topMemberships.isEmpty()) return List.of();
-    Map<Integer, User> users = userMapper.selectBatchIds(
-        topMemberships.stream().map(ClubMembership::getUserId).filter(Objects::nonNull).toList())
-        .stream().collect(Collectors.toMap(User::getId, Function.identity()));
-    Map<Integer, ClubDepartment> depts = selectDepartments(topMemberships).stream()
-        .collect(Collectors.toMap(ClubDepartment::getId, Function.identity()));
-    Map<Integer, ClubPosition> positions = selectPositions(topMemberships).stream()
-        .collect(Collectors.toMap(ClubPosition::getId, Function.identity()));
-    return topMemberships.stream().map(m -> toPerson(m, users, depts, positions)).filter(Objects::nonNull).toList();
+    Map<Integer, User> users =
+        userMapper
+            .selectBatchIds(
+                topMemberships.stream()
+                    .map(ClubMembership::getUserId)
+                    .filter(Objects::nonNull)
+                    .toList())
+            .stream()
+            .collect(Collectors.toMap(User::getId, Function.identity()));
+    Map<Integer, ClubDepartment> depts =
+        selectDepartments(topMemberships).stream()
+            .collect(Collectors.toMap(ClubDepartment::getId, Function.identity()));
+    Map<Integer, ClubPosition> positions =
+        selectPositions(topMemberships).stream()
+            .collect(Collectors.toMap(ClubPosition::getId, Function.identity()));
+    return topMemberships.stream()
+        .map(m -> toPerson(m, users, depts, positions))
+        .filter(Objects::nonNull)
+        .toList();
   }
 
   private List<ClubDepartment> selectDepartments(List<ClubMembership> memberships) {
-    List<Integer> ids = memberships.stream().map(ClubMembership::getDepartmentId).filter(Objects::nonNull).distinct().toList();
+    List<Integer> ids =
+        memberships.stream()
+            .map(ClubMembership::getDepartmentId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
     return ids.isEmpty() ? List.of() : clubDepartmentMapper.selectBatchIds(ids);
   }
 
   private List<ClubPosition> selectPositions(List<ClubMembership> memberships) {
-    List<Integer> ids = memberships.stream().map(ClubMembership::getPositionId).filter(Objects::nonNull).distinct().toList();
+    List<Integer> ids =
+        memberships.stream()
+            .map(ClubMembership::getPositionId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
     return ids.isEmpty() ? List.of() : clubPositionMapper.selectBatchIds(ids);
   }
 
-  private ResponseClubHomeDTO.Person toPerson(ClubMembership membership, Map<Integer, User> users,
-      Map<Integer, ClubDepartment> departments, Map<Integer, ClubPosition> positions) {
+  private ResponseClubHomeDTO.Person toPerson(
+      ClubMembership membership,
+      Map<Integer, User> users,
+      Map<Integer, ClubDepartment> departments,
+      Map<Integer, ClubPosition> positions) {
     User user = users.get(membership.getUserId());
     if (user == null) return null;
     String name = isBlank(user.getRealName()) ? user.getUserName() : user.getRealName();
     String department = OptionalName.of(departments.get(membership.getDepartmentId()));
     String position = OptionalName.of(positions.get(membership.getPositionId()));
     String role = isBlank(position) ? membership.getStatus() : position;
-    return ResponseClubHomeDTO.Person.builder().userId(user.getId()).name(name).initial(initialOf(name))
-        .role(role).focus(isBlank(department) ? user.getMajor() : department).avatar(user.getAvatar()).build();
+    return ResponseClubHomeDTO.Person.builder()
+        .userId(user.getId())
+        .name(name)
+        .initial(initialOf(name))
+        .role(role)
+        .focus(isBlank(department) ? user.getMajor() : department)
+        .avatar(user.getAvatar())
+        .build();
   }
 
   private ResponseClubHomeDTO.Award toAward(ClubAward award) {
-    return ResponseClubHomeDTO.Award.builder().id(award.getId()).year(award.getAwardYear())
-        .title(award.getTitle()).competitionName(award.getCompetitionName())
-        .awardLevel(award.getAwardLevel()).teamName(award.getTeamName()).description(award.getDescription()).build();
+    return ResponseClubHomeDTO.Award.builder()
+        .id(award.getId())
+        .year(award.getAwardYear())
+        .title(award.getTitle())
+        .competitionName(award.getCompetitionName())
+        .awardLevel(award.getAwardLevel())
+        .teamName(award.getTeamName())
+        .description(award.getDescription())
+        .build();
   }
 
   private ResponseSiteProgressDTO.ApplicationProgress toProgressApplication(
-      MembershipApplication app, Map<Integer, User> users, Map<Integer, Club> clubs,
-      Map<Integer, RecruitmentCampaign> campaigns, Map<Integer, ClubDepartment> departments,
+      MembershipApplication app,
+      Map<Integer, User> users,
+      Map<Integer, Club> clubs,
+      Map<Integer, RecruitmentCampaign> campaigns,
+      Map<Integer, ClubDepartment> departments,
       Map<Integer, List<Interview>> interviewsByApp) {
     User user = getNullable(users, app.getUserId());
     Club club = getNullable(clubs, app.getClubId());
     RecruitmentCampaign campaign = getNullable(campaigns, app.getCampaignId());
     ClubDepartment first = getNullable(departments, app.getFirstChoiceDepartmentId());
     ClubDepartment second = getNullable(departments, app.getSecondChoiceDepartmentId());
-    String preferredDept = first == null ? (second == null ? null : second.getName()) : first.getName();
+    String preferredDept =
+        first == null ? (second == null ? null : second.getName()) : first.getName();
     return ResponseSiteProgressDTO.ApplicationProgress.builder()
-        .id(app.getId()).clubId(app.getClubId()).clubName(club == null ? null : club.getName())
-        .campaignId(app.getCampaignId()).campaignName(campaign == null ? null : campaign.getName())
-        .applicantName(user == null ? null : (isBlank(user.getRealName()) ? user.getUserName() : user.getRealName()))
-        .preferredDepartment(preferredDept).status(app.getStatus())
-        .createdAt(app.getCreatedAt()).updatedAt(app.getUpdatedAt())
-        .interviews(interviewsByApp.getOrDefault(app.getId(), List.of()).stream()
-            .map(this::toProgressInterview).toList())
+        .id(app.getId())
+        .clubId(app.getClubId())
+        .clubName(club == null ? null : club.getName())
+        .campaignId(app.getCampaignId())
+        .campaignName(campaign == null ? null : campaign.getName())
+        .applicantName(
+            user == null
+                ? null
+                : (isBlank(user.getRealName()) ? user.getUserName() : user.getRealName()))
+        .preferredDepartment(preferredDept)
+        .status(app.getStatus())
+        .createdAt(app.getCreatedAt())
+        .updatedAt(app.getUpdatedAt())
+        .interviews(
+            interviewsByApp.getOrDefault(app.getId(), List.of()).stream()
+                .map(this::toProgressInterview)
+                .toList())
         .build();
   }
 
   private ResponseSiteProgressDTO.InterviewProgress toProgressInterview(Interview interview) {
-    return ResponseSiteProgressDTO.InterviewProgress.builder().id(interview.getId())
-        .round(interview.getRound()).scheduledStartAt(interview.getScheduledStartAt())
-        .scheduledEndAt(interview.getScheduledEndAt()).location(interview.getLocation())
-        .mode(interview.getMode()).status(interview.getStatus()).build();
+    return ResponseSiteProgressDTO.InterviewProgress.builder()
+        .id(interview.getId())
+        .round(interview.getRound())
+        .scheduledStartAt(interview.getScheduledStartAt())
+        .scheduledEndAt(interview.getScheduledEndAt())
+        .location(interview.getLocation())
+        .mode(interview.getMode())
+        .status(interview.getStatus())
+        .build();
   }
 
-  private String formatMonthDay(Timestamp ts) { return ts == null ? "" : ts.toLocalDateTime().format(MONTH_DAY_FORMATTER); }
-  private String initialOf(String name) { return isBlank(name) ? "社" : name.substring(0, 1); }
-  private <T> T getNullable(Map<Integer, T> map, Integer key) { return key == null ? null : map.get(key); }
+  private String formatMonthDay(Timestamp ts) {
+    return ts == null ? "" : ts.toLocalDateTime().format(MONTH_DAY_FORMATTER);
+  }
 
-  private <T> Map<Integer, T> selectMap(List<Integer> ids, Function<List<Integer>, List<T>> selector, Function<T, Integer> idGetter) {
+  private String initialOf(String name) {
+    return isBlank(name) ? "社" : name.substring(0, 1);
+  }
+
+  private <T> T getNullable(Map<Integer, T> map, Integer key) {
+    return key == null ? null : map.get(key);
+  }
+
+  private <T> Map<Integer, T> selectMap(
+      List<Integer> ids, Function<List<Integer>, List<T>> selector, Function<T, Integer> idGetter) {
     List<Integer> distinctIds = ids.stream().distinct().toList();
     if (distinctIds.isEmpty()) return Map.of();
-    return selector.apply(distinctIds).stream().collect(Collectors.toMap(idGetter, Function.identity()));
+    return selector.apply(distinctIds).stream()
+        .collect(Collectors.toMap(idGetter, Function.identity()));
   }
 
-  private boolean isBlank(String value) { return value == null || value.isBlank(); }
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
+  }
 
   private static class OptionalName {
-    private static String of(ClubDepartment d) { return d == null ? null : d.getName(); }
-    private static String of(ClubPosition p) { return p == null ? null : p.getName(); }
+    private static String of(ClubDepartment d) {
+      return d == null ? null : d.getName();
+    }
+
+    private static String of(ClubPosition p) {
+      return p == null ? null : p.getName();
+    }
   }
 }
