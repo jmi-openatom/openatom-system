@@ -1,7 +1,6 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestSaveOfficeDocumentDTO;
@@ -57,48 +56,13 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
     if (club == null) {
       return ApiResponse.error(404, "默认社团不存在");
     }
-    LambdaQueryWrapper<OfficeDocument> wrapper =
-        new LambdaQueryWrapper<OfficeDocument>()
-            .eq(OfficeDocument::getClubId, club.getId())
-            .orderByDesc(OfficeDocument::getId);
-    if (!isBlank(docType)) {
-      wrapper.eq(OfficeDocument::getDocType, normalizeDocType(docType));
-    }
-    if (!isBlank(keyword)) {
-      wrapper.like(OfficeDocument::getTitle, keyword.trim());
-    }
-    return ApiResponse.success(officeDocumentMapper.selectList(wrapper));
+    return ApiResponse.success(officeDocumentMapper.selectByConditions(club.getId(), normalizeDocType(docType), keyword));
   }
 
   @Override
   public ApiResponse<List<ResponseOfficeDocumentUserOptionDTO>> listUserOptions(String keyword) {
-    LambdaQueryWrapper<User> wrapper =
-        new LambdaQueryWrapper<User>()
-            .select(
-                User::getId,
-                User::getRealName,
-                User::getStudentId,
-                User::getCollege,
-                User::getMajor,
-                User::getGrade,
-                User::getClassName,
-                User::getPhone)
-            .orderByAsc(User::getStudentId)
-            .orderByAsc(User::getId);
-    if (!isBlank(keyword)) {
-      wrapper.and(
-          query ->
-              query
-                  .like(User::getRealName, keyword.trim())
-                  .or()
-                  .like(User::getStudentId, keyword.trim())
-                  .or()
-                  .like(User::getMajor, keyword.trim())
-                  .or()
-                  .like(User::getClassName, keyword.trim()));
-    }
     return ApiResponse.success(
-        userMapper.selectList(wrapper).stream()
+        userMapper.selectOptionsByKeyword(keyword).stream()
             .map(
                 item ->
                     ResponseOfficeDocumentUserOptionDTO.builder()
@@ -326,8 +290,7 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
   }
 
   private Club defaultClub() {
-    return clubMapper.selectOne(
-        new LambdaQueryWrapper<Club>().eq(Club::getCode, DEFAULT_CLUB_CODE));
+    return clubMapper.selectDefaultClub(DEFAULT_CLUB_CODE);
   }
 
   private String normalizeDocType(String docType) {

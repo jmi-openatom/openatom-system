@@ -1,8 +1,26 @@
 package edu.jmi.openatom.server.openatomsystem.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.OperationLog;
+import java.sql.Timestamp;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface OperationLogMapper extends BaseMapper<OperationLog> {}
+public interface OperationLogMapper extends BaseMapper<OperationLog> {
+
+  /** 按条件查操作日志 */
+  default List<OperationLog> selectByConditions(
+      Integer operatorId, String module, String action,
+      Timestamp startTime, Timestamp endTime) {
+    LambdaQueryWrapper<OperationLog> wrapper = new LambdaQueryWrapper<>();
+    wrapper.eq(operatorId != null, OperationLog::getOperatorId, operatorId);
+    wrapper.eq(module != null && !module.isBlank(), OperationLog::getModule, module);
+    wrapper.eq(action != null && !action.isBlank(), OperationLog::getAction, action);
+    wrapper.ge(startTime != null, OperationLog::getCreatedAt, startTime);
+    wrapper.le(endTime != null, OperationLog::getCreatedAt, endTime);
+    wrapper.orderByDesc(OperationLog::getCreatedAt);
+    return selectList(wrapper);
+  }
+}
