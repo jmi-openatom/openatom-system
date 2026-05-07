@@ -138,31 +138,32 @@ const form = ref({
   content: '',
   type: 'system',
   isAll: true,
-  receiverUserIds: []
+  receiverUserIds: [],
 })
 
 const rules = {
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
   content: [{ required: true, message: '请输入内容', trigger: 'blur' }],
   type: [{ required: true, message: '请选择类型', trigger: 'change' }],
-  receiverUserIds: [{ 
-    validator: (rule, value, callback) => {
-      if (!form.value.isAll && (!value || value.length === 0)) {
-        callback(new Error('请选择至少一个接收用户'))
-      } else {
-        callback()
-      }
-    }, 
-    trigger: 'change' 
-  }]
+  receiverUserIds: [
+    {
+      validator: (rule, value, callback) => {
+        if (!form.value.isAll && (!value || value.length === 0)) {
+          callback(new Error('请选择至少一个接收用户'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change',
+    },
+  ],
 }
 
 const filteredRows = computed(() => {
   if (!keyword.value) return rows.value
   const k = keyword.value.toLowerCase()
-  return rows.value.filter(r => 
-    r.title.toLowerCase().includes(k) || 
-    r.content.toLowerCase().includes(k)
+  return rows.value.filter(
+    (r) => r.title.toLowerCase().includes(k) || r.content.toLowerCase().includes(k),
   )
 })
 
@@ -171,7 +172,7 @@ const typeTag = (type: string) => {
     system: 'danger',
     activity: 'success',
     approval: 'warning',
-    other: 'info'
+    other: 'info',
   }
   return map[type] || 'info'
 }
@@ -181,7 +182,7 @@ const typeText = (type: string) => {
     system: '系统通知',
     activity: '活动通知',
     approval: '审批通知',
-    other: '其他'
+    other: '其他',
   }
   return map[type] || type
 }
@@ -202,21 +203,21 @@ const openDialog = () => {
     content: '',
     type: 'system',
     isAll: true,
-    receiverUserIds: []
+    receiverUserIds: [],
   }
   dialogVisible.value = true
 }
 
 const handleSave = async () => {
   const formRef = ref(null)
-  // Note: in setup, we'd use a template ref. For simplicity in this script, 
+  // Note: in setup, we'd use a template ref. For simplicity in this script,
   // I'll assume validation passes if fields are filled or use the ref properly if I had it.
   // Let's just do manual check for now or rely on the formRef if I define it.
   if (!form.value.title || !form.value.content) {
     ElMessage.warning('请完善通知内容')
     return
   }
-  
+
   saving.value = true
   try {
     await notificationApi.create(form.value)

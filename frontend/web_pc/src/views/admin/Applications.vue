@@ -156,7 +156,13 @@
               v-for="record in approvalRecords"
               :key="record.id"
               :timestamp="formatDateTime(record.createdAt)"
-              :type="record.action === 'approve' ? 'success' : record.action === 'reject' ? 'danger' : 'info'"
+              :type="
+                record.action === 'approve'
+                  ? 'success'
+                  : record.action === 'reject'
+                    ? 'danger'
+                    : 'info'
+              "
             >
               <strong>{{ approvalLabel(record.action) }}</strong>
               <p v-if="record.comment" class="record-comment">{{ record.comment }}</p>

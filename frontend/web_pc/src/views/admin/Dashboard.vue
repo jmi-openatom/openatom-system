@@ -21,7 +21,9 @@
           <el-table-column label="社团" min-width="130" prop="clubName" />
           <el-table-column label="状态" prop="status" width="110">
             <template #default="{ row }">
-              <el-tag :type="statusType(row.status)">{{ applicationStatusText(row.status) }}</el-tag>
+              <el-tag :type="statusType(row.status)">{{
+                applicationStatusText(row.status)
+              }}</el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -76,7 +78,12 @@ import {
   siteApi,
   userApi,
 } from '@/api'
-import { applicationStatusText, formatDateTime, interviewStatusText, statusType } from '@/utils/format.ts'
+import {
+  applicationStatusText,
+  formatDateTime,
+  interviewStatusText,
+  statusType,
+} from '@/utils/format.ts'
 import { hasAnyPermission } from '@/utils/permission.ts'
 import { ElMessage } from 'element-plus'
 
