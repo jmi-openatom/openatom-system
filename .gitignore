@@ -2,6 +2,7 @@
 build/
 target/
 dist/
+log/
 
 # dependency package
 node_modules/
