@@ -74,7 +74,7 @@
           :interval="4000"
           arrow="never"
           class="activity-carousel"
-          height="220px"
+          height="600px"
           type="card"
         >
           <el-carousel-item v-for="activity in activities" :key="activity.title">
@@ -87,9 +87,13 @@
                 <h3>{{ activity.title }}</h3>
                 <p>{{ activity.description }}</p>
               </div>
-              <el-tag :type="statusType(activity.status)" effect="plain"
+              <el-tag :type="statusType(activity.status)" effect="plain" class="activity-tag"
                 >{{ statusText(activity.status) }}
               </el-tag>
+
+              <div class="activity-image">
+                <img :src="activity.coverUrl " :alt="activity.title ">
+              </div>
             </article>
           </el-carousel-item>
         </el-carousel>
@@ -654,6 +658,32 @@ export default {
   -webkit-line-clamp: 2;
   overflow: hidden;
   margin-bottom: 8px;
+}
+
+.activity-image {
+  width: 540px;
+  height: 400px;
+  flex-shrink: 0;
+  padding: 5px;
+  margin: 0 auto;
+  background: var(--oa-primary-soft);
+}
+
+.activity-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+:deep(.el-tag) {
+  width: auto;
+  height: 40px;
+  font-size: 16px;
+  font-weight: 550;
+  padding: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 1040px) {

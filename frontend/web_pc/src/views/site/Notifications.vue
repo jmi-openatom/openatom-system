@@ -29,7 +29,7 @@
         @click="handleRead(item)"
       >
         <div class="item-icon" :class="item.type || 'other'">
-          <el-icon><Bell /></el-icon>
+          <el-icon :size="28"><Bell /></el-icon>
         </div>
         <div class="item-body">
           <div class="item-header">
@@ -133,9 +133,8 @@ onMounted(fetchNotifications)
 }
 
 .notification-item:hover {
-  border-color: #2563eb;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.05);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(30, 90, 235, 0.05);
 }
 
 .notification-item.is-unread {
@@ -144,8 +143,8 @@ onMounted(fetchNotifications)
 }
 
 .item-icon {
-  width: 48px;
-  height: 48px;
+  width: 55px;
+  height: 55px;
   border-radius: 12px;
   display: grid;
   place-items: center;
@@ -153,7 +152,7 @@ onMounted(fetchNotifications)
   flex-shrink: 0;
 }
 
-.item-icon.system { background: #fee2e2; color: #ef4444; }
+.item-icon.system { background: var(--oa-primary); color: #fff; }
 .item-icon.activity { background: #dcfce7; color: #22c55e; }
 .item-icon.approval { background: #fef9c3; color: #eab308; }
 .item-icon.other { background: #f1f5f9; color: #64748b; }
@@ -171,8 +170,8 @@ onMounted(fetchNotifications)
 }
 
 .item-title {
-  font-weight: 600;
-  font-size: 16px;
+  font-weight: 800;
+  font-size: 18px;
   color: #1e293b;
 }
 
@@ -182,7 +181,7 @@ onMounted(fetchNotifications)
 }
 
 .item-content {
-  font-size: 14px;
+  font-size: 16px;
   color: #475569;
   line-height: 1.5;
 }
