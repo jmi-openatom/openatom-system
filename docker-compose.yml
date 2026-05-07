@@ -42,6 +42,8 @@ services:
     build:
       context: ./frontend/web_pc
       dockerfile: Dockerfile
+      args:
+        - VITE_APP_VERSION=${VITE_APP_VERSION:-unknown}
     container_name: openatom-frontend
     ports:
       - "${FRONTEND_PORT:-18080}:80"

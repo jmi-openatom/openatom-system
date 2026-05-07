@@ -49,7 +49,10 @@
         </div>
         <div class="site-footer__info">
           <p>技术分享 · 项目实践 · 竞赛训练 · 开源协作</p>
-          <p class="copyright">© 2025 JMI-OPENATOM. All rights reserved.</p>
+          <p class="copyright">
+            © 2025 JMI-OPENATOM. All rights reserved.
+            <span v-if="appVersion" class="version-tag">Version: {{ appVersion }}</span>
+          </p>
         </div>
       </div>
     </footer>
@@ -76,6 +79,9 @@ export default {
     },
     showAdminEntry() {
       return hasAdminAccess()
+    },
+    appVersion() {
+      return __APP_VERSION__
     },
   },
 }
@@ -165,6 +171,15 @@ export default {
 .copyright {
   font-size: 12px;
   color: #cbd5e1;
+}
+
+.version-tag {
+  margin-left: 12px;
+  padding: 2px 6px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* 通用样式 */
