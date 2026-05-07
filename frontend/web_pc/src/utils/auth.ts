@@ -5,11 +5,26 @@ const ROLE_KEY = 'openatom_roles'
 const PERMISSION_KEY = 'openatom_permissions'
 const REMEMBER_LOGIN_KEY = 'openatom_remember_login'
 
-export function getToken() {
+interface SessionPayload {
+  accessToken?: string
+  token?: string
+  refreshToken?: string
+  user?: Record<string, unknown>
+  roles?: string[]
+  permissions?: string[]
+}
+
+interface LoginPayload {
+  username?: string
+  password?: string
+  remember?: boolean
+}
+
+export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
 }
 
-export function setSession(payload) {
+export function setSession(payload?: SessionPayload): void {
   const data = payload || {}
   const hasAccessToken = Object.prototype.hasOwnProperty.call(data, 'accessToken') || Object.prototype.hasOwnProperty.call(data, 'token')
   const hasRefreshToken = Object.prototype.hasOwnProperty.call(data, 'refreshToken')
@@ -24,7 +39,7 @@ export function setSession(payload) {
   localStorage.setItem(PERMISSION_KEY, JSON.stringify(hasPermissions ? (data.permissions || []) : getCurrentPermissions()))
 }
 
-export function clearSession() {
+export function clearSession(): void {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(REFRESH_TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
@@ -32,39 +47,39 @@ export function clearSession() {
   localStorage.removeItem(PERMISSION_KEY)
 }
 
-export function getCurrentUser() {
+export function getCurrentUser(): Record<string, unknown> {
   try {
     return JSON.parse(localStorage.getItem(USER_KEY) || '{}')
-  } catch (error) {
+  } catch (_error) {
     return {}
   }
 }
 
-export function getCurrentRoles() {
+export function getCurrentRoles(): string[] {
   try {
     return JSON.parse(localStorage.getItem(ROLE_KEY) || '[]')
-  } catch (error) {
+  } catch (_error) {
     return []
   }
 }
 
-export function getCurrentPermissions() {
+export function getCurrentPermissions(): string[] {
   try {
     return JSON.parse(localStorage.getItem(PERMISSION_KEY) || '[]')
-  } catch (error) {
+  } catch (_error) {
     return []
   }
 }
 
-export function getRememberedLogin() {
+export function getRememberedLogin(): LoginPayload {
   try {
     return JSON.parse(localStorage.getItem(REMEMBER_LOGIN_KEY) || '{"username":"","password":"","remember":false}')
-  } catch (error) {
+  } catch (_error) {
     return { username: '', password: '', remember: false }
   }
 }
 
-export function setRememberedLogin(payload) {
+export function setRememberedLogin(payload?: LoginPayload): void {
   localStorage.setItem(
     REMEMBER_LOGIN_KEY,
     JSON.stringify({
@@ -75,6 +90,6 @@ export function setRememberedLogin(payload) {
   )
 }
 
-export function clearRememberedLogin() {
+export function clearRememberedLogin(): void {
   localStorage.removeItem(REMEMBER_LOGIN_KEY)
 }

@@ -9,15 +9,17 @@
         </div>
       </div>
       <el-menu
-        router
-        :default-active="$route.path"
-        class="admin-menu"
-        background-color="transparent"
-        text-color="#475569"
-        active-text-color="#2563eb"
+          router
+          :default-active="$route.path"
+          class="admin-menu"
+          background-color="transparent"
+          text-color="#475569"
+          active-text-color="#2563eb"
       >
         <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
-          <el-icon><component :is="item.icon" /></el-icon>
+          <el-icon>
+            <component :is="item.icon"/>
+          </el-icon>
           <span>{{ item.label }}</span>
         </el-menu-item>
       </el-menu>
@@ -33,7 +35,9 @@
           <el-dropdown @command="handleCommand">
             <el-button type="primary">
               {{ user.realName || user.username || '管理员' }}
-              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              <el-icon class="el-icon--right">
+                <ArrowDown/>
+              </el-icon>
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
@@ -44,13 +48,13 @@
         </div>
       </el-header>
       <el-main class="admin-main">
-        <router-view />
+        <router-view/>
       </el-main>
     </el-container>
   </el-container>
 </template>
 
-<script>
+<script lang="ts">
 import {
   ArrowDown,
   Calendar,
@@ -67,9 +71,9 @@ import {
   User,
   UserFilled
 } from '@element-plus/icons-vue'
-import { authApi } from '../api'
-import { clearSession, getCurrentUser } from '../utils/auth'
-import { hasAnyPermission } from '../utils/permission'
+import {authApi} from '../api'
+import {clearSession, getCurrentUser} from '../utils/auth'
+import {hasAnyPermission} from '../utils/permission'
 
 export default {
   name: 'AdminLayout',
@@ -79,22 +83,27 @@ export default {
       HomeFilled,
       user: getCurrentUser(),
       menus: [
-        { path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: [] },
-        { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
-        { path: '/admin/clubs', label: '社团管理', icon: OfficeBuilding, permissions: ['club:list'] },
-        { path: '/admin/positions', label: '岗位管理', icon: List, permissions: ['position:list'] },
-        { path: '/admin/recruitment-campaigns', label: '招新计划', icon: DocumentChecked, permissions: ['recruitment-campaign:list'] },
-        { path: '/admin/site-forms', label: '表单管理', icon: DocumentChecked, permissions: ['site-form:list'] },
-        { path: '/admin/form-submissions', label: '表单记录', icon: Tickets, permissions: ['site-form:detail'] },
-        { path: '/admin/office-documents', label: '文书中心', icon: DocumentChecked, permissions: ['document:list'] },
-        { path: '/admin/activities', label: '活动管理', icon: Calendar, permissions: ['activity:list'] },
-        { path: '/admin/awards', label: '获奖经历', icon: Trophy, permissions: ['award:list'] },
-        { path: '/admin/applications', label: '入会申请', icon: DocumentChecked, permissions: ['application:list'] },
-        { path: '/admin/interviews', label: '面试管理', icon: MessageBox, permissions: ['interview:list'] },
-        { path: '/admin/memberships', label: '成员管理', icon: UserFilled, permissions: ['membership:list'] },
-        { path: '/admin/roles', label: '角色权限', icon: Lock, permissions: ['role:list', 'permission:list'] },
-        { path: '/admin/logs', label: '系统日志', icon: List, permissions: ['log:operation:list', 'log:login:list'] },
-        { path: '/', label: '返回官网', icon: Connection, permissions: [] }
+        {path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: []},
+        {path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list']},
+        {path: '/admin/clubs', label: '社团管理', icon: OfficeBuilding, permissions: ['club:list']},
+        {path: '/admin/positions', label: '岗位管理', icon: List, permissions: ['position:list']},
+        {
+          path: '/admin/recruitment-campaigns',
+          label: '招新计划',
+          icon: DocumentChecked,
+          permissions: ['recruitment-campaign:list']
+        },
+        {path: '/admin/site-forms', label: '表单管理', icon: DocumentChecked, permissions: ['site-form:list']},
+        {path: '/admin/form-submissions', label: '表单记录', icon: Tickets, permissions: ['site-form:detail']},
+        {path: '/admin/office-documents', label: '文书中心', icon: DocumentChecked, permissions: ['document:list']},
+        {path: '/admin/activities', label: '活动管理', icon: Calendar, permissions: ['activity:list']},
+        {path: '/admin/awards', label: '获奖经历', icon: Trophy, permissions: ['award:list']},
+        {path: '/admin/applications', label: '入会申请', icon: DocumentChecked, permissions: ['application:list']},
+        {path: '/admin/interviews', label: '面试管理', icon: MessageBox, permissions: ['interview:list']},
+        {path: '/admin/memberships', label: '成员管理', icon: UserFilled, permissions: ['membership:list']},
+        {path: '/admin/roles', label: '角色权限', icon: Lock, permissions: ['role:list', 'permission:list']},
+        {path: '/admin/logs', label: '系统日志', icon: List, permissions: ['log:operation:list', 'log:login:list']},
+        {path: '/', label: '返回官网', icon: Connection, permissions: []}
       ]
     }
   },
@@ -108,7 +117,7 @@ export default {
     }
   },
   methods: {
-    async handleCommand(command) {
+    async handleCommand(command: string) {
       if (command !== 'logout') return
       try {
         await authApi.logout()

@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 import { getToken } from '../utils/auth'
 import { hasAdminAccess, hasAnyPermission } from '../utils/permission'
 import SiteLayout from '../layouts/SiteLayout.vue'
@@ -22,31 +22,26 @@ const adminFallbackRoutes = [
     '/admin/logs'
 ]
 
-// 检查是否有权访问具体的管理路径
-function canAccessAdminPath(to) {
-    const permissions = to.meta?.permissions || []
-    // 如果没有配置 permissions，默认允许（如 dashboard）
-    if (permissions.length === 0) return true
+function canAccessAdminPath(to: RouteLocationNormalized): boolean {
+    const permissions: string[] = (to.meta?.permissions as string[]) || []
     return hasAnyPermission(permissions)
 }
 
-// 判断是否是管理端路径
-function requiresAdminAuth(to) {
+function requiresAdminAuth(to: RouteLocationNormalized): boolean {
     return to.path.startsWith('/admin') && to.path !== '/admin/login'
 }
 
-// 判断是否是前台需要登录的路径
-function requiresSiteLogin(to) {
+function requiresSiteLogin(to: RouteLocationNormalized): boolean {
     return to.matched.some((record) => record.meta?.requiresSiteLogin)
 }
 
-// 自动寻找当前用户第一个有权限进入的后台页面
-function firstAccessibleAdminPath() {
-    const accessible = adminFallbackRoutes.find((path) => {
-        const route = router.getRoutes().find((item) => item.path === path)
-        return route ? canAccessAdminPath(route) : false
-    })
-    return accessible || '/admin/dashboard'
+function firstAccessibleAdminPath(): string {
+    return (
+        adminFallbackRoutes.find((path) => {
+            const route = router.getRoutes().find((item) => item.path === path)
+            return route ? canAccessAdminPath(route as unknown as RouteLocationNormalized) : false
+        }) || '/admin/dashboard'
+    )
 }
 
 const routes = [
@@ -191,34 +186,24 @@ const router = createRouter({
     }
 })
 
-// 路由拦截器
 router.beforeEach((to) => {
-    const isLogin = !!getToken()
-
-    // 1. 未登录处理：访问管理端或前台受限页面
-    if ((requiresAdminAuth(to) || requiresSiteLogin(to)) && !isLogin) {
-        return {
-            path: '/admin/login',
-            query: { redirect: to.fullPath } // 关键点：记录来源地址
-        }
+    if ((requiresAdminAuth(to) || requiresSiteLogin(to)) && !getToken()) {
+        return { path: '/admin/login', query: { redirect: to.fullPath } }
     }
 
-    // 2. 已登录状态下访问登录页
-    if (to.path === '/admin/login' && isLogin) {
-        // 如果是管理员，去后台；如果是普通用户，去进度页
-        return hasAdminAccess() ? firstAccessibleAdminPath() : '/progress'
-    }
-
-    // 3. 管理后台权限检查
-    if (requiresAdminAuth(to) && isLogin) {
-        // 没有后台访问特权
+    // 管理后台路径权限检查
+    if (requiresAdminAuth(to)) {
         if (!hasAdminAccess()) {
             return '/progress'
         }
-        // 有特权但没有具体页面的权限
         if (!canAccessAdminPath(to)) {
             return firstAccessibleAdminPath()
         }
+    }
+
+    // 已登录用户访问登录页的处理
+    if (to.path === '/admin/login' && getToken()) {
+        return hasAdminAccess() ? firstAccessibleAdminPath() : '/progress'
     }
 
     return true

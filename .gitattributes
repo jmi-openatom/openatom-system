@@ -1,2 +1,45 @@
-/mvnw text eol=lf
-*.cmd text eol=crlf
+# global
+* text=auto eol=lf
+
+# frontend
+*.js text
+*.ts text
+*.tsx text
+*.vue text
+*.css text
+*.scss text
+*.sass text
+*.less text
+*.html text
+*.json text
+*.md text
+*.yml text
+*.yaml text
+*.xml text
+
+# backend
+*.java text
+*.properties text
+*.gradle text
+*.groovy text
+*.kt text
+*.kts text
+
+# binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+*.rar binary
+*.gz binary
+*.jar binary
+*.war binary
+*.exe binary

@@ -1,4 +1,4 @@
-const escapeHtml = (value = '') =>
+const escapeHtml = (value = ''): string =>
   String(value)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -6,17 +6,17 @@ const escapeHtml = (value = '') =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;')
 
-const inline = (value) =>
+const inline = (value: string): string =>
   value
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
 
-export function renderMarkdown(markdown = '') {
+export function renderMarkdown(markdown = ''): string {
   const lines = escapeHtml(markdown).split(/\r?\n/)
-  const html = []
+  const html: string[] = []
   let listOpen = false
 
-  const closeList = () => {
+  const closeList = (): void => {
     if (listOpen) {
       html.push('</ul>')
       listOpen = false

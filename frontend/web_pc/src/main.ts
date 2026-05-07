@@ -8,9 +8,9 @@ import './styles/global.css'
 
 const app = createApp(App)
 
-Object.entries(ElementPlusIconsVue).forEach(([key, component]) => {
-  app.component(key, component)
-})
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component as Parameters<typeof app.component>[1])
+}
 
 app.use(ElementPlus)
 app.use(router)
