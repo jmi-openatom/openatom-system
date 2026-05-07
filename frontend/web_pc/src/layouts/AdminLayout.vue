@@ -23,6 +23,9 @@
           <span>{{ item.label }}</span>
         </el-menu-item>
       </el-menu>
+      <div class="admin-aside__footer">
+        <span class="version-tag">{{ version }}</span>
+      </div>
     </el-aside>
     <el-container>
       <el-header class="admin-header">
@@ -83,6 +86,7 @@ export default {
       ArrowDown,
       HomeFilled,
       user: getCurrentUser(),
+      version: __APP_VERSION__,
       menus: [
         { path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: [] },
         { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
@@ -285,6 +289,22 @@ export default {
 .admin-menu :deep(.el-menu-item.is-active) {
   background: rgba(37, 99, 235, 0.1);
   font-weight: 600;
+}
+
+.admin-aside__footer {
+  display: flex;
+  justify-content: center;
+  padding: 12px 16px 18px;
+}
+
+.version-tag {
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
 }
 
 @media (max-width: 900px) {

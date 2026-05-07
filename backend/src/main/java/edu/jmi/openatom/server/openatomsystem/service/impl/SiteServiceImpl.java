@@ -16,8 +16,6 @@ import edu.jmi.openatom.server.openatomsystem.entity.ClubDepartment;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubPosition;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
-import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedback;
-import edu.jmi.openatom.server.openatomsystem.entity.ApprovalRecord;
 import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
 import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
@@ -28,8 +26,6 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubDepartmentMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubPositionMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.ApprovalRecordMapper;
-import edu.jmi.openatom.server.openatomsystem.mapper.InterviewFeedbackMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.InterviewMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RecruitmentCampaignMapper;
@@ -62,8 +58,6 @@ public class SiteServiceImpl implements SiteService {
   private final RecruitmentCampaignMapper recruitmentCampaignMapper;
   private final MembershipApplicationMapper applicationMapper;
   private final InterviewMapper interviewMapper;
-  private final InterviewFeedbackMapper interviewFeedbackMapper;
-  private final ApprovalRecordMapper approvalRecordMapper;
   private final ClubActivityMapper clubActivityMapper;
   private final ClubAwardMapper clubAwardMapper;
   private final SiteFormMapper siteFormMapper;
@@ -237,31 +231,6 @@ public class SiteServiceImpl implements SiteService {
                     .orderByDesc(Interview::getId))
             .stream()
             .collect(Collectors.groupingBy(Interview::getApplicationId));
-    Map<Integer, List<ApprovalRecord>> approvalsByApplication =
-        approvalRecordMapper
-            .selectList(
-                new LambdaQueryWrapper<ApprovalRecord>()
-                    .in(
-                        ApprovalRecord::getApplicationId,
-                        applications.stream().map(MembershipApplication::getId).toList())
-                    .orderByDesc(ApprovalRecord::getId))
-            .stream()
-            .collect(Collectors.groupingBy(ApprovalRecord::getApplicationId));
-    List<Integer> interviewIds =
-        interviewsByApplication.values().stream()
-            .flatMap(List::stream)
-            .map(Interview::getId)
-            .toList();
-    Map<Integer, List<InterviewFeedback>> feedbacksByInterview =
-        interviewIds.isEmpty()
-            ? Map.of()
-            : interviewFeedbackMapper
-                .selectList(
-                    new LambdaQueryWrapper<InterviewFeedback>()
-                        .in(InterviewFeedback::getInterviewId, interviewIds)
-                        .orderByDesc(InterviewFeedback::getId))
-                .stream()
-                .collect(Collectors.groupingBy(InterviewFeedback::getInterviewId));
 
     return ApiResponse.success(
         ResponseSiteProgressDTO.builder()
@@ -275,9 +244,7 @@ public class SiteServiceImpl implements SiteService {
                                 clubs,
                                 campaigns,
                                 departments,
-                                interviewsByApplication,
-                                approvalsByApplication,
-                                feedbacksByInterview))
+                                interviewsByApplication))
                     .toList())
             .build());
   }
@@ -551,9 +518,7 @@ public class SiteServiceImpl implements SiteService {
       Map<Integer, Club> clubs,
       Map<Integer, RecruitmentCampaign> campaigns,
       Map<Integer, ClubDepartment> departments,
-      Map<Integer, List<Interview>> interviewsByApplication,
-      Map<Integer, List<ApprovalRecord>> approvalsByApplication,
-      Map<Integer, List<InterviewFeedback>> feedbacksByInterview) {
+      Map<Integer, List<Interview>> interviewsByApplication) {
     User user = getNullable(users, application.getUserId());
     Club club = getNullable(clubs, application.getClubId());
     RecruitmentCampaign campaign = getNullable(campaigns, application.getCampaignId());
@@ -581,14 +546,12 @@ public class SiteServiceImpl implements SiteService {
         .updatedAt(application.getUpdatedAt())
         .interviews(
             interviewsByApplication.getOrDefault(application.getId(), List.of()).stream()
-                .map(i -> toProgressInterview(i, feedbacksByInterview))
+                .map(this::toProgressInterview)
                 .toList())
-        .approvalRecords(approvalsByApplication.getOrDefault(application.getId(), List.of()))
         .build();
   }
 
-  private ResponseSiteProgressDTO.InterviewProgress toProgressInterview(
-      Interview interview, Map<Integer, List<InterviewFeedback>> feedbacksByInterview) {
+  private ResponseSiteProgressDTO.InterviewProgress toProgressInterview(Interview interview) {
     return ResponseSiteProgressDTO.InterviewProgress.builder()
         .id(interview.getId())
         .round(interview.getRound())
@@ -597,7 +560,6 @@ public class SiteServiceImpl implements SiteService {
         .location(interview.getLocation())
         .mode(interview.getMode())
         .status(interview.getStatus())
-        .feedbacks(feedbacksByInterview.getOrDefault(interview.getId(), List.of()))
         .build();
   }
 

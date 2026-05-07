@@ -87,10 +87,10 @@ jobs:
               COMPOSE_CMD="docker compose"
             fi
 
-            COMMIT_COUNT=$(git rev-list --count HEAD)
+            BUILD_NUMBER="${{ github.run_number }}"
             SHORT_SHA=$(git rev-parse --short HEAD)
             PKG_VER=$(node -p "require('./frontend/web_pc/package.json').version")
-            APP_VER="v$PKG_VER.$COMMIT_COUNT-$SHORT_SHA"
+            APP_VER="v$PKG_VER.$BUILD_NUMBER-$SHORT_SHA"
             VITE_APP_VERSION=$APP_VER $COMPOSE_CMD up -d --build
             sleep 10
             $COMPOSE_CMD ps

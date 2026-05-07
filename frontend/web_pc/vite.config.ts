@@ -7,7 +7,8 @@ import pkg from './package.json'
 // Get version info
 let appVersion = `v${pkg.version}`
 try {
-  const commitCount = execSync('git rev-list --count HEAD').toString().trim()
+  const buildNumber = process.env.VITE_BUILD_NUMBER || process.env.GITHUB_RUN_NUMBER
+  const commitCount = buildNumber || execSync('git rev-list --count HEAD').toString().trim()
   const shortHash = execSync('git rev-parse --short HEAD').toString().trim()
   appVersion = `v${pkg.version}.${commitCount}-${shortHash}`
 } catch (e) {
