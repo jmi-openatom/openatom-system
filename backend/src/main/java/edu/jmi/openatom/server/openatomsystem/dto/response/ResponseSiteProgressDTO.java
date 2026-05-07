@@ -1,5 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.dto.response;
 
+import edu.jmi.openatom.server.openatomsystem.entity.ApprovalRecord;
+import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedback;
+
 import java.sql.Timestamp;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -30,6 +33,7 @@ public class ResponseSiteProgressDTO {
     private Timestamp createdAt;
     private Timestamp updatedAt;
     private List<InterviewProgress> interviews;
+    private List<ApprovalRecord> approvalRecords;
   }
 
   @Data
@@ -44,5 +48,6 @@ public class ResponseSiteProgressDTO {
     private String location;
     private String mode;
     private String status;
+    private List<InterviewFeedback> feedbacks;
   }
 }

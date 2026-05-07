@@ -57,6 +57,7 @@
 <script lang="ts">
 import {
   ArrowDown,
+  Bell,
   Calendar,
   Connection,
   DataAnalysis,
@@ -152,6 +153,12 @@ export default {
           label: '系统日志',
           icon: List,
           permissions: ['log:operation:list', 'log:login:list'],
+        },
+        {
+          path: '/admin/notifications',
+          label: '通知管理',
+          icon: Bell,
+          permissions: ['notification:list'],
         },
         { path: '/', label: '返回官网', icon: Connection, permissions: [] },
       ],

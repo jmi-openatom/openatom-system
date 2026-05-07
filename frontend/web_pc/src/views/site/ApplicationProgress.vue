@@ -87,9 +87,35 @@
                 <span>方式：{{ interviewModeText(interview.mode) }}</span>
                 <span>地点/链接：{{ interview.location || '-' }}</span>
               </div>
+              <div v-if="interview.feedbacks?.length" class="interview-feedback">
+                <div v-for="fb in interview.feedbacks" :key="fb.id" class="feedback-bubble">
+                  <p>{{ fb.suggestion || fb.comment || '面试官未填写具体评价' }}</p>
+                </div>
+              </div>
             </div>
           </div>
           <el-empty v-else description="暂未安排面试，请留意后续通知" :image-size="72" />
+
+          <template v-if="item.approvalRecords?.length">
+            <el-divider content-position="left">审核意见</el-divider>
+            <div class="approval-history">
+              <div
+                v-for="record in item.approvalRecords"
+                :key="record.id"
+                class="approval-record"
+                :class="`is-${record.action}`"
+              >
+                <div class="record-dot"></div>
+                <div class="record-content">
+                  <div class="record-title">
+                    <span>{{ approvalActionText(record.action) }}</span>
+                    <time>{{ formatDateTime(record.createdAt) }}</time>
+                  </div>
+                  <p v-if="record.comment" class="record-comment">{{ record.comment }}</p>
+                </div>
+              </div>
+            </div>
+          </template>
         </el-card>
       </div>
     </section>
@@ -221,6 +247,16 @@ export default {
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
     },
+    approvalActionText(action) {
+      return (
+        {
+          approve: '审核通过',
+          reject: '审核驳回',
+          transfer: '申请转交',
+          request_more_info: '补充材料',
+        }[action] || action
+      )
+    },
   },
 }
 </script>
@@ -337,5 +373,93 @@ export default {
   .progress-summary {
     grid-template-columns: 1fr;
   }
+}
+
+.interview-feedback {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(219, 230, 245, 0.6);
+}
+
+.feedback-bubble {
+  background: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.approval-history {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 4px;
+}
+
+.approval-record {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+
+.approval-record:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 16px;
+  bottom: -20px;
+  width: 1px;
+  background: #e2e8f0;
+}
+
+.record-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  margin-top: 6px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.is-approve .record-dot {
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.is-reject .record-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.record-content {
+  flex: 1;
+}
+
+.record-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.record-title span {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.record-title time {
+  font-size: 12px;
+  color: var(--oa-muted);
+}
+
+.record-comment {
+  font-size: 14px;
+  color: #475569;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 0;
 }
 </style>

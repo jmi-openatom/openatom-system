@@ -133,6 +133,21 @@
             <div class="profile-value">{{ item.value }}</div>
           </el-descriptions-item>
         </el-descriptions>
+
+        <template v-if="approvalRecords.length">
+          <el-divider content-position="left">审核历史</el-divider>
+          <el-timeline>
+            <el-timeline-item
+              v-for="record in approvalRecords"
+              :key="record.id"
+              :timestamp="formatDateTime(record.createdAt)"
+              :type="record.action === 'approve' ? 'success' : record.action === 'reject' ? 'danger' : 'info'"
+            >
+              <strong>{{ approvalLabel(record.action) }}</strong>
+              <p v-if="record.comment" class="record-comment">{{ record.comment }}</p>
+            </el-timeline-item>
+          </el-timeline>
+        </template>
       </div>
     </el-dialog>
 
@@ -268,6 +283,7 @@ export default {
       },
       departments: [],
       positions: [],
+      approvalRecords: [],
     }
   },
   created() {
@@ -292,9 +308,16 @@ export default {
     canFinalDecision(row) {
       return ['interviewed'].includes(row?.status)
     },
-    openProfile(row) {
+    async openProfile(row) {
       this.currentProfileRow = row
+      this.approvalRecords = []
       this.profileVisible = true
+      try {
+        const records = await approvalApi.records(row.id)
+        this.approvalRecords = records || []
+      } catch (e) {
+        console.error('Failed to fetch approval records', e)
+      }
     },
     async fetchList() {
       this.loading = true
@@ -454,5 +477,14 @@ export default {
 .profile-value {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.record-comment {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #475569;
 }
 </style>

@@ -21,6 +21,7 @@ public class RequestCreateNotificationDTO {
 
   private String type;
 
-  @NotEmpty(message = "receiverUserIds不能为空")
+  private Boolean isAll;
+
   private List<Integer> receiverUserIds;
 }

@@ -12,10 +12,21 @@
         <nav class="site-nav">
           <a href="/#overview">概览</a>
           <router-link to="/activities">活动</router-link>
-          <router-link to="/apply">入会申请</router-link>
+           <router-link to="/apply">入会申请</router-link>
+          <router-link to="/progress">我的申请</router-link>
           <router-link to="/progress">我的申请</router-link>
         </nav>
         <div class="site-header__actions">
+          <el-button
+            v-if="isLoggedIn"
+            circle
+            class="notification-btn"
+            @click="$router.push('/notifications')"
+          >
+            <el-badge is-dot :hidden="unreadCount === 0">
+              <el-icon><Bell /></el-icon>
+            </el-badge>
+          </el-button>
           <el-button v-if="isLoggedIn" :icon="UserFilled" plain @click="$router.push('/profile')"
             >个人中心
           </el-button>
@@ -49,10 +60,7 @@
         </div>
         <div class="site-footer__info">
           <p>技术分享 · 项目实践 · 竞赛训练 · 开源协作</p>
-          <p class="copyright">
-            © 2025 JMI-OPENATOM. All rights reserved.
-            <span v-if="appVersion" class="version-tag">Version: {{ appVersion }}</span>
-          </p>
+          <p class="copyright">© 2025 JMI-OPENATOM. All rights reserved.</p>
         </div>
       </div>
     </footer>
@@ -60,10 +68,11 @@
 </template>
 
 <script lang="ts">
-import { Setting, UserFilled } from '@element-plus/icons-vue'
+import { Bell, Setting, UserFilled } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
 import { getToken } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
+import { notificationApi } from '@/api'
 
 export default {
   name: 'SiteLayout',
@@ -71,6 +80,9 @@ export default {
     return {
       Setting: markRaw(Setting),
       UserFilled: markRaw(UserFilled),
+      Bell: markRaw(Bell),
+      unreadCount: 0,
+      unreadTimer: null as any,
     }
   },
   computed: {
@@ -80,8 +92,24 @@ export default {
     showAdminEntry() {
       return hasAdminAccess()
     },
-    appVersion() {
-      return __APP_VERSION__
+  },
+  created() {
+    if (this.isLoggedIn) {
+      this.fetchUnreadCount()
+      this.unreadTimer = setInterval(this.fetchUnreadCount, 30000)
+    }
+  },
+  beforeUnmount() {
+    if (this.unreadTimer) clearInterval(this.unreadTimer)
+  },
+  methods: {
+    async fetchUnreadCount() {
+      try {
+        const count = await notificationApi.unreadCount()
+        this.unreadCount = typeof count === 'number' ? count : 0
+      } catch (e) {
+        // ignore
+      }
     },
   },
 }
@@ -173,15 +201,6 @@ export default {
   color: #cbd5e1;
 }
 
-.version-tag {
-  margin-left: 12px;
-  padding: 2px 6px;
-  background: #f1f5f9;
-  border-radius: 4px;
-  color: #94a3b8;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
 /* 通用样式 */
 .brand {
   display: flex;
@@ -222,6 +241,33 @@ export default {
 .site-nav a:hover {
   background: #eff6ff;
   color: #2563eb;
+}
+
+.nav-notification {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 8px !important;
+  width: 40px;
+  height: 40px;
+}
+
+.notification-btn {
+  border: none !important;
+  background: transparent !important;
+  font-size: 20px;
+  color: #64748b;
+  transition: all 0.3s;
+}
+
+.notification-btn:hover {
+  color: #2563eb;
+  background: #eff6ff !important;
+}
+
+.notification-btn :deep(.el-badge__content.is-fixed.is-dot) {
+  right: 2px;
+  top: 2px;
 }
 
 /* 响应式 */

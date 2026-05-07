@@ -6,6 +6,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestAssignPositionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestChangeMembershipStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateMembershipDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateNotificationDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestFinalDecisionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateMembershipDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseMembershipDTO;
@@ -22,6 +23,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubPositionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
+import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,6 +46,7 @@ public class MembershipServiceImpl implements MembershipService {
   private final ClubMapper clubMapper;
   private final ClubDepartmentMapper departmentMapper;
   private final ClubPositionMapper positionMapper;
+  private final NotificationService notificationService;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -81,6 +84,28 @@ public class MembershipServiceImpl implements MembershipService {
       application.setStatus("rejected");
     }
     applicationMapper.updateById(application);
+
+    // Send automated notification
+    String title = "入会终审结果";
+    String content = "您的入会申请终审结果已出：";
+    if ("approved".equals(request.getDecision())) {
+      content += "【通过】。恭喜您正式成为社团成员！";
+    } else if ("waitlisted".equals(request.getDecision())) {
+      content += "【候补】。请耐心等待后续通知。";
+    } else {
+      content += "【未通过】。感谢您的关注与参与。";
+    }
+    if (request.getComment() != null && !request.getComment().isBlank()) {
+      content += "\n评价：" + request.getComment();
+    }
+    notificationService.create(
+        RequestCreateNotificationDTO.builder()
+            .title(title)
+            .content(content)
+            .type("approval")
+            .receiverUserIds(List.of(application.getUserId()))
+            .build());
+
     return ApiResponse.success("终审决策已处理");
   }
 

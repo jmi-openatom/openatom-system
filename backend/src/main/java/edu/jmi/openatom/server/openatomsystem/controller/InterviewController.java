@@ -6,6 +6,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateInterview
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestInterviewFeedbackDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateInterviewDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
+import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedback;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -69,5 +70,11 @@ public class InterviewController {
   @SaCheckPermission("interview:complete")
   public ApiResponse<String> complete(@PathVariable Integer interviewId) {
     return interviewService.complete(interviewId);
+  }
+
+  @GetMapping("/interviews/{interviewId}/feedbacks")
+  @SaCheckPermission("interview:detail")
+  public ApiResponse<List<InterviewFeedback>> feedbacks(@PathVariable Integer interviewId) {
+    return interviewService.getFeedbacks(interviewId);
   }
 }

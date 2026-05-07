@@ -20,7 +20,8 @@ body {
   margin: 0;
   color: var(--oa-text);
   background: var(--oa-bg);
-  font-family: Inter, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  font-family:
+    Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

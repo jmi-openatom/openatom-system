@@ -6,6 +6,7 @@ import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateInterviewDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateNotificationDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestInterviewFeedbackDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateInterviewDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
@@ -17,6 +18,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.InterviewInterviewerMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.InterviewMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewService;
+import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class InterviewServiceImpl implements InterviewService {
   private final InterviewInterviewerMapper interviewInterviewerMapper;
   private final InterviewFeedbackMapper interviewFeedbackMapper;
   private final MembershipApplicationMapper applicationMapper;
+  private final NotificationService notificationService;
 
   @Override
   public ApiResponse<List<Interview>> list(
@@ -92,6 +95,22 @@ public class InterviewServiceImpl implements InterviewService {
     bindInterviewers(interview.getId(), request.getInterviewerIds());
     application.setStatus("interview_scheduled");
     applicationMapper.updateById(application);
+
+    // Send automated notification
+    notificationService.create(
+        RequestCreateNotificationDTO.builder()
+            .title("面试安排通知")
+            .content(
+                String.format(
+                    "您好，您的入会申请已安排面试。\n时间：%s 至 %s\n地点：%s\n形式：%s\n请准时参加！",
+                    request.getScheduledStartAt(),
+                    request.getScheduledEndAt(),
+                    request.getLocation(),
+                    "offline".equals(request.getMode()) ? "线下面试" : "线上面试"))
+            .type("activity")
+            .receiverUserIds(List.of(application.getUserId()))
+            .build());
+
     return ApiResponse.success("面试创建成功");
   }
 
@@ -169,6 +188,15 @@ public class InterviewServiceImpl implements InterviewService {
       applicationMapper.updateById(application);
     }
     return ApiResponse.success("面试已完成");
+  }
+
+  @Override
+  public ApiResponse<List<InterviewFeedback>> getFeedbacks(Integer interviewId) {
+    return ApiResponse.success(
+        interviewFeedbackMapper.selectList(
+            new LambdaQueryWrapper<InterviewFeedback>()
+                .eq(InterviewFeedback::getInterviewId, interviewId)
+                .orderByDesc(InterviewFeedback::getId)));
   }
 
   private ApiResponse<String> changeStatus(Integer interviewId, String status, String message) {

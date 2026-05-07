@@ -20,6 +20,7 @@ const adminFallbackRoutes = [
   '/admin/memberships',
   '/admin/roles',
   '/admin/logs',
+  '/admin/notifications',
 ]
 
 function canAccessAdminPath(to: RouteLocationNormalized): boolean {
@@ -86,6 +87,12 @@ const routes = [
         name: 'site-profile',
         meta: { requiresSiteLogin: true },
         component: () => import('../views/site/Profile.vue'),
+      },
+      {
+        path: 'notifications',
+        name: 'site-notifications',
+        meta: { requiresSiteLogin: true },
+        component: () => import('../views/site/Notifications.vue'),
       },
     ],
   },
@@ -189,6 +196,12 @@ const routes = [
         name: 'admin-logs',
         meta: { permissions: ['log:operation:list', 'log:login:list'] },
         component: () => import('../views/admin/Logs.vue'),
+      },
+      {
+        path: 'notifications',
+        name: 'admin-notifications',
+        meta: { permissions: ['notification:list'] },
+        component: () => import('../views/admin/Notifications.vue'),
       },
     ],
   },
