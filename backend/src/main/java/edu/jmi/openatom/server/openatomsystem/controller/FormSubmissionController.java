@@ -28,8 +28,7 @@ public class FormSubmissionController {
 
   @PostMapping("/site/forms/{formId}/submissions")
   public ApiResponse<Integer> create(
-      @PathVariable Integer formId,
-      @Valid @RequestBody RequestCreateFormSubmissionDTO request) {
+      @PathVariable Integer formId, @Valid @RequestBody RequestCreateFormSubmissionDTO request) {
     return formSubmissionService.create(formId, request);
   }
 
@@ -52,7 +51,10 @@ public class FormSubmissionController {
     return ResponseEntity.ok()
         .header(
             HttpHeaders.CONTENT_DISPOSITION,
-            ContentDisposition.attachment().filename(fileName, StandardCharsets.UTF_8).build().toString())
+            ContentDisposition.attachment()
+                .filename(fileName, StandardCharsets.UTF_8)
+                .build()
+                .toString())
         .contentType(
             MediaType.parseMediaType(
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

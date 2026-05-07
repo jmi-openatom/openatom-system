@@ -198,12 +198,16 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
     }
   }
 
-  private void writeRow(Row row, ResponseFormSubmissionDTO submission, List<Map<String, Object>> schema) {
-    row.createCell(0).setCellValue(submission.getCreatedAt() == null ? "" : submission.getCreatedAt().toString());
+  private void writeRow(
+      Row row, ResponseFormSubmissionDTO submission, List<Map<String, Object>> schema) {
+    row.createCell(0)
+        .setCellValue(
+            submission.getCreatedAt() == null ? "" : submission.getCreatedAt().toString());
     row.createCell(1).setCellValue(defaultString(submission.getSubmitterName()));
     row.createCell(2).setCellValue(defaultString(submission.getSubmitterAccount()));
     row.createCell(3).setCellValue(defaultString(submission.getContact()));
-    Map<String, Object> formData = submission.getFormData() == null ? Map.of() : submission.getFormData();
+    Map<String, Object> formData =
+        submission.getFormData() == null ? Map.of() : submission.getFormData();
     for (int i = 0; i < schema.size(); i++) {
       String key = asString(schema.get(i).get("key"), "");
       row.createCell(i + 4).setCellValue(formatValue(formData.get(key)));
@@ -233,13 +237,18 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
       return List.of();
     }
     Set<Integer> userIds =
-        submissions.stream().map(FormSubmission::getUserId).filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
+        submissions.stream()
+            .map(FormSubmission::getUserId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
     Map<Integer, User> users =
         userIds.isEmpty()
             ? Map.of()
             : userMapper.selectBatchIds(userIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
-    return submissions.stream().map(submission -> toResponse(submission, users.get(submission.getUserId()))).toList();
+    return submissions.stream()
+        .map(submission -> toResponse(submission, users.get(submission.getUserId())))
+        .toList();
   }
 
   private ResponseFormSubmissionDTO toResponse(FormSubmission submission, User user) {
@@ -278,7 +287,10 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
       return "";
     }
     if (value instanceof List<?> list) {
-      return list.stream().map(this::formatValue).filter(item -> !item.isBlank()).collect(Collectors.joining(" / "));
+      return list.stream()
+          .map(this::formatValue)
+          .filter(item -> !item.isBlank())
+          .collect(Collectors.joining(" / "));
     }
     if (value instanceof Map<?, ?> map) {
       return Jsons.stringify(map);

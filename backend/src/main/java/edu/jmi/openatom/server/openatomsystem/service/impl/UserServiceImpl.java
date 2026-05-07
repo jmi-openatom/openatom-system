@@ -96,7 +96,12 @@ public class UserServiceImpl implements UserService {
               .toList();
       if (userIds.isEmpty()) {
         return ApiResponse.success(
-            PageDataDTO.<User>builder().list(List.of()).page(current).pageSize(size).total(0L).build());
+            PageDataDTO.<User>builder()
+                .list(List.of())
+                .page(current)
+                .pageSize(size)
+                .total(0L)
+                .build());
       }
       wrapper.in("id", userIds);
     }
@@ -406,10 +411,13 @@ public class UserServiceImpl implements UserService {
     }
 
     userRoleMapper.delete(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
-    clubMembershipMapper.delete(new LambdaQueryWrapper<ClubMembership>().eq(ClubMembership::getUserId, userId));
+    clubMembershipMapper.delete(
+        new LambdaQueryWrapper<ClubMembership>().eq(ClubMembership::getUserId, userId));
     activityRegistrationMapper.delete(
         new LambdaQueryWrapper<edu.jmi.openatom.server.openatomsystem.entity.ActivityRegistration>()
-            .eq(edu.jmi.openatom.server.openatomsystem.entity.ActivityRegistration::getUserId, userId));
+            .eq(
+                edu.jmi.openatom.server.openatomsystem.entity.ActivityRegistration::getUserId,
+                userId));
     membershipApplicationMapper.update(
         null,
         new LambdaUpdateWrapper<MembershipApplication>()

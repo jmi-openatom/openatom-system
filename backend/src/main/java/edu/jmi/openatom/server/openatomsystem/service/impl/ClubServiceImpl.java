@@ -28,8 +28,7 @@ public class ClubServiceImpl implements ClubService {
       String keyword, String category, String status, String recruitmentStatus) {
     LambdaQueryWrapper<Club> wrapper = new LambdaQueryWrapper<>();
     if (!isBlank(keyword)) {
-      wrapper.and(
-          query -> query.like(Club::getName, keyword).or().like(Club::getCode, keyword));
+      wrapper.and(query -> query.like(Club::getName, keyword).or().like(Club::getCode, keyword));
     }
     if (!isBlank(category)) {
       wrapper.eq(Club::getCategory, category);

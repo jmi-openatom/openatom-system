@@ -43,12 +43,17 @@ public class UserController {
       @RequestParam(defaultValue = "1") Long page,
       @RequestParam(defaultValue = "10") Long pageSize) {
     return userService.getUsers(
-        keyword, status == null || status.isBlank() ? null : UserStatus.fromValue(status), clubId, page, pageSize);
+        keyword,
+        status == null || status.isBlank() ? null : UserStatus.fromValue(status),
+        clubId,
+        page,
+        pageSize);
   }
 
   @PostMapping
   @SaCheckPermission("user:create")
-  public ApiResponse<String> createUser(@Valid @RequestBody RequestCreateUserDTO requestCreateUserDTO) {
+  public ApiResponse<String> createUser(
+      @Valid @RequestBody RequestCreateUserDTO requestCreateUserDTO) {
     return userService.createUser(requestCreateUserDTO);
   }
 
@@ -66,7 +71,10 @@ public class UserController {
     return ResponseEntity.ok()
         .header(
             HttpHeaders.CONTENT_DISPOSITION,
-            ContentDisposition.attachment().filename(fileName, StandardCharsets.UTF_8).build().toString())
+            ContentDisposition.attachment()
+                .filename(fileName, StandardCharsets.UTF_8)
+                .build()
+                .toString())
         .contentType(
             MediaType.parseMediaType(
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
@@ -118,7 +126,8 @@ public class UserController {
   @PostMapping("/{userId}/reset-password")
   @SaCheckPermission("user:password:reset")
   public ApiResponse<String> resetPassword(
-      @PathVariable Integer userId, @Valid @RequestBody RequestResetPasswordDTO requestResetPasswordDTO) {
+      @PathVariable Integer userId,
+      @Valid @RequestBody RequestResetPasswordDTO requestResetPasswordDTO) {
     return userService.resetPassword(userId, requestResetPasswordDTO);
   }
 

@@ -68,7 +68,9 @@ public class PositionServiceImpl implements PositionService {
     }
     ApiResponse<String> validateResponse =
         validateDepartmentAndRoles(
-            clubId, requestCreatePositionDTO.getDepartmentId(), requestCreatePositionDTO.getRoleIds());
+            clubId,
+            requestCreatePositionDTO.getDepartmentId(),
+            requestCreatePositionDTO.getRoleIds());
     if (validateResponse != null) {
       return validateResponse;
     }

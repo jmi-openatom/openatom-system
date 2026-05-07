@@ -153,10 +153,11 @@ public class NotificationServiceImpl implements NotificationService {
   @Override
   public ApiResponse<Integer> unreadCount() {
     Integer userId = StpUtil.getLoginIdAsInt();
-    Long count = notificationReceiverMapper.selectCount(
-        new LambdaQueryWrapper<NotificationReceiver>()
-            .eq(NotificationReceiver::getReceiverUserId, userId)
-            .eq(NotificationReceiver::getReadFlag, 0));
+    Long count =
+        notificationReceiverMapper.selectCount(
+            new LambdaQueryWrapper<NotificationReceiver>()
+                .eq(NotificationReceiver::getReceiverUserId, userId)
+                .eq(NotificationReceiver::getReadFlag, 0));
     return ApiResponse.success(count.intValue());
   }
 }

@@ -65,7 +65,10 @@ public class OfficeDocumentController {
     return ResponseEntity.ok()
         .header(
             HttpHeaders.CONTENT_DISPOSITION,
-            ContentDisposition.attachment().filename(fileName, StandardCharsets.UTF_8).build().toString())
+            ContentDisposition.attachment()
+                .filename(fileName, StandardCharsets.UTF_8)
+                .build()
+                .toString())
         .contentType(
             MediaType.parseMediaType(
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))

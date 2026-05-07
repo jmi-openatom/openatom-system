@@ -20,6 +20,7 @@ public class RequestUpdateRoleDTO {
   @NotBlank(message = "角色编码不能为空")
   @Pattern(regexp = "^[a-z][a-z0-9:_-]{1,63}$", message = "角色编码只能包含小写字母、数字、冒号、下划线和连字符，并以字母开头")
   private String code;
+
   private String dataScope;
 
   @Size(max = 255, message = "描述长度不能超过255个字符")

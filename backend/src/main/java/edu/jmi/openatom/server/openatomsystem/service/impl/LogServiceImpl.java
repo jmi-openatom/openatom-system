@@ -39,7 +39,8 @@ public class LogServiceImpl implements LogService {
   @Override
   public ApiResponse<List<LoginLog>> getLoginLogs() {
     return ApiResponse.success(
-        loginLogMapper.selectList(new LambdaQueryWrapper<LoginLog>().orderByDesc(LoginLog::getLoginAt)));
+        loginLogMapper.selectList(
+            new LambdaQueryWrapper<LoginLog>().orderByDesc(LoginLog::getLoginAt)));
   }
 
   private Timestamp parseTime(String value) {
@@ -53,6 +54,7 @@ public class LogServiceImpl implements LogService {
     if (normalized.length() == 16) {
       normalized = normalized + ":00";
     }
-    return Timestamp.valueOf(LocalDateTime.parse(normalized, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+    return Timestamp.valueOf(
+        LocalDateTime.parse(normalized, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
   }
 }

@@ -118,6 +118,9 @@ public class AwardServiceImpl implements AwardService {
       return club;
     }
     return clubMapper.selectOne(
-        new LambdaQueryWrapper<Club>().eq(Club::getStatus, "active").orderByAsc(Club::getId).last("LIMIT 1"));
+        new LambdaQueryWrapper<Club>()
+            .eq(Club::getStatus, "active")
+            .orderByAsc(Club::getId)
+            .last("LIMIT 1"));
   }
 }

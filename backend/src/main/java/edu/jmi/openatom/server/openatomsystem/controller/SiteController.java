@@ -31,7 +31,8 @@ public class SiteController {
   }
 
   @GetMapping("/site/activities/{activityId}")
-  public ApiResponse<ClubActivity> getActivityDetail(@org.springframework.web.bind.annotation.PathVariable Integer activityId) {
+  public ApiResponse<ClubActivity> getActivityDetail(
+      @org.springframework.web.bind.annotation.PathVariable Integer activityId) {
     return siteService.getActivityDetail(activityId);
   }
 

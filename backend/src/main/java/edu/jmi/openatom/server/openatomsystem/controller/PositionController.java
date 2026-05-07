@@ -31,7 +31,8 @@ public class PositionController {
   @PostMapping("/clubs/{clubId}/positions")
   @SaCheckPermission("position:create")
   public ApiResponse<String> createPosition(
-      @PathVariable Integer clubId, @Valid @RequestBody RequestCreatePositionDTO requestCreatePositionDTO) {
+      @PathVariable Integer clubId,
+      @Valid @RequestBody RequestCreatePositionDTO requestCreatePositionDTO) {
     return positionService.createPosition(clubId, requestCreatePositionDTO);
   }
 

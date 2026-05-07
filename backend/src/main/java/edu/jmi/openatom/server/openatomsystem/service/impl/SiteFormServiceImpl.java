@@ -70,9 +70,7 @@ public class SiteFormServiceImpl implements SiteFormService {
   @Override
   public ApiResponse<SiteForm> detail(Integer formId) {
     SiteForm form = findSiteForm(formId);
-    return form == null
-        ? ApiResponse.error(404, "表单不存在")
-        : ApiResponse.success(form);
+    return form == null ? ApiResponse.error(404, "表单不存在") : ApiResponse.success(form);
   }
 
   @Override

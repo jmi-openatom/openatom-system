@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 @RequiredArgsConstructor
-class OpenatomSystemApplicationTests {
+class OpenAtomSystemApplicationTests {
 
   @Test
   public void helloworld() {

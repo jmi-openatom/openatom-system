@@ -33,7 +33,8 @@ public class ApplicationController {
       @RequestParam(required = false) String keyword,
       @RequestParam(defaultValue = "1") Long page,
       @RequestParam(defaultValue = "10") Long pageSize) {
-    return applicationService.list(campaignId, clubId, status, departmentId, keyword, page, pageSize);
+    return applicationService.list(
+        campaignId, clubId, status, departmentId, keyword, page, pageSize);
   }
 
   @PostMapping("/applications")
@@ -50,7 +51,8 @@ public class ApplicationController {
   @PatchMapping("/applications/{applicationId}")
   @SaCheckPermission("application:update")
   public ApiResponse<String> update(
-      @PathVariable Integer applicationId, @Valid @RequestBody RequestUpdateApplicationDTO request) {
+      @PathVariable Integer applicationId,
+      @Valid @RequestBody RequestUpdateApplicationDTO request) {
     return applicationService.update(applicationId, request);
   }
 

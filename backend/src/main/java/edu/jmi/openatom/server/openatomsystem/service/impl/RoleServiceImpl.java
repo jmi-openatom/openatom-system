@@ -194,7 +194,9 @@ public class RoleServiceImpl implements RoleService {
     if (userId == null) {
       return ApiResponse.error(400, "userId不能为空");
     }
-    List<UserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
+    List<UserRole> userRoles =
+        userRoleMapper.selectList(
+            new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
     List<Integer> roleIds = userRoles.stream().map(UserRole::getRoleId).toList();
     if (roleIds.isEmpty()) {
       return ApiResponse.success(List.of());

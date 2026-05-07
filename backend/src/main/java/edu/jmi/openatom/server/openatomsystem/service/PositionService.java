@@ -9,7 +9,8 @@ import java.util.List;
 public interface PositionService {
   ApiResponse<List<ResponsePositionDTO>> getPositionsByClubId(Integer clubId);
 
-  ApiResponse<String> createPosition(Integer clubId, RequestCreatePositionDTO requestCreatePositionDTO);
+  ApiResponse<String> createPosition(
+      Integer clubId, RequestCreatePositionDTO requestCreatePositionDTO);
 
   ApiResponse<ResponsePositionDTO> getPositionById(Integer positionId);
 

@@ -18,5 +18,6 @@ public class RequestCreateDepartmentDTO {
 
   @Size(max = 500, message = "部门描述长度不能超过500个字符")
   private String description;
+
   private Integer managerUserId;
 }

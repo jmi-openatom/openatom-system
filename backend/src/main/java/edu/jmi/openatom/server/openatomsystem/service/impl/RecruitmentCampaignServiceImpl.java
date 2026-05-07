@@ -75,13 +75,12 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
   @Override
   public ApiResponse<RecruitmentCampaign> detail(Integer campaignId) {
     RecruitmentCampaign campaign = findCampaign(campaignId);
-    return campaign == null
-        ? ApiResponse.error(404, "招新计划不存在")
-        : ApiResponse.success(campaign);
+    return campaign == null ? ApiResponse.error(404, "招新计划不存在") : ApiResponse.success(campaign);
   }
 
   @Override
-  public ApiResponse<String> update(Integer campaignId, RequestUpdateRecruitmentCampaignDTO request) {
+  public ApiResponse<String> update(
+      Integer campaignId, RequestUpdateRecruitmentCampaignDTO request) {
     RecruitmentCampaign campaign = findCampaign(campaignId);
     if (campaign == null) {
       return ApiResponse.error(404, "招新计划不存在");

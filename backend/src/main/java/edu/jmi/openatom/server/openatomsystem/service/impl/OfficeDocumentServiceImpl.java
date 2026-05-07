@@ -44,7 +44,8 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
   private static final String DOC_TYPE_LEAVE = "leave_note";
   private static final String DOC_TYPE_VENUE = "venue_application";
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy 年 MM 月 dd 日");
+  private static final DateTimeFormatter DATE_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy 年 MM 月 dd 日");
 
   private final OfficeDocumentMapper officeDocumentMapper;
   private final ClubMapper clubMapper;
@@ -140,9 +141,7 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
             .updatedBy(operatorId)
             .build();
     int rows = officeDocumentMapper.insert(document);
-    return rows > 0
-        ? ApiResponse.success(document.getId(), "单据创建成功")
-        : ApiResponse.error("单据创建失败");
+    return rows > 0 ? ApiResponse.success(document.getId(), "单据创建成功") : ApiResponse.error("单据创建失败");
   }
 
   @Override
@@ -176,7 +175,8 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
     }
     Map<String, Object> payload = Jsons.parseObject(document.getPayload());
     Map<Integer, User> selectedUsers = loadUsers(payload.get("memberIds"));
-    try (XWPFDocument word = new XWPFDocument(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+    try (XWPFDocument word = new XWPFDocument();
+        ByteArrayOutputStream out = new ByteArrayOutputStream()) {
       if (DOC_TYPE_LEAVE.equals(document.getDocType())) {
         buildLeaveNote(word, document, payload, selectedUsers);
       } else if (DOC_TYPE_VENUE.equals(document.getDocType())) {
@@ -208,14 +208,7 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
     String reason = value(payload, "reason", "开展社团项目培训与竞赛训练");
     addParagraph(
         word,
-        "现需以下同学于 "
-            + dateRange
-            + "，每天 "
-            + timeRange
-            + " 到 "
-            + venue
-            + " 进行活动。事由如下："
-            + reason,
+        "现需以下同学于 " + dateRange + "，每天 " + timeRange + " 到 " + venue + " 进行活动。事由如下：" + reason,
         12,
         false);
 
@@ -229,7 +222,10 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
     addParagraph(word, "导员签字：", 12, false);
     addBlankParagraph(word);
     addRightParagraph(word, value(payload, "departmentName", "信息工程学院"), 12);
-    addRightParagraph(word, formatDate(value(payload, "documentDate", toDateString(document.getCreatedAt()))), 12);
+    addRightParagraph(
+        word,
+        formatDate(value(payload, "documentDate", toDateString(document.getCreatedAt()))),
+        12);
   }
 
   private void buildVenueApplication(
@@ -248,24 +244,46 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
     fillLabelCell(table.getRow(1).getCell(0), "实践场所");
     fillValueCell(
         table.getRow(1).getCell(1),
-        "场地名称：" + value(payload, "venueName", "-") + "\n"
-            + "联系人：" + value(payload, "contactName", "-") + "    联系电话：" + value(payload, "contactPhone", "-") + "\n"
-            + "申请开始日期：" + formatDate(value(payload, "startDate", null)) + "\n"
-            + "申请结束日期：" + formatDate(value(payload, "endDate", null)) + "\n"
-            + "总时长：" + buildDurationText(payload));
+        "场地名称："
+            + value(payload, "venueName", "-")
+            + "\n"
+            + "联系人："
+            + value(payload, "contactName", "-")
+            + "    联系电话："
+            + value(payload, "contactPhone", "-")
+            + "\n"
+            + "申请开始日期："
+            + formatDate(value(payload, "startDate", null))
+            + "\n"
+            + "申请结束日期："
+            + formatDate(value(payload, "endDate", null))
+            + "\n"
+            + "总时长："
+            + buildDurationText(payload));
 
     fillLabelCell(table.getRow(2).getCell(0), "实践项目");
     fillValueCell(
         table.getRow(2).getCell(1),
-        "项目类型：" + String.join("、", stringList(payload.get("projectTypes"))) + "\n"
-            + "项目简要说明：" + value(payload, "projectDescription", "-"));
+        "项目类型："
+            + String.join("、", stringList(payload.get("projectTypes")))
+            + "\n"
+            + "项目简要说明："
+            + value(payload, "projectDescription", "-"));
 
     fillLabelCell(table.getRow(3).getCell(0), "申请主体");
     fillValueCell(
         table.getRow(3).getCell(1),
-        "申请方式：" + ("team".equals(value(payload, "applyMode", "team")) ? "团队" : "个人") + "\n"
-            + "指导老师：" + value(payload, "teacherName", "-") + "    联系电话：" + value(payload, "teacherPhone", "-") + "\n"
-            + "人数：" + selectedUsers.size() + " 人\n"
+        "申请方式："
+            + ("team".equals(value(payload, "applyMode", "team")) ? "团队" : "个人")
+            + "\n"
+            + "指导老师："
+            + value(payload, "teacherName", "-")
+            + "    联系电话："
+            + value(payload, "teacherPhone", "-")
+            + "\n"
+            + "人数："
+            + selectedUsers.size()
+            + " 人\n"
             + buildMemberDetail(selectedUsers.values()));
 
     addBlankParagraph(word);
@@ -275,7 +293,11 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
     addParagraph(word, "3. 如需取消或调整预约，将提前联系相关负责人。", 12, false);
     addBlankParagraph(word);
     addParagraph(word, "申请人签字：__________________", 12, false);
-    addParagraph(word, "日期：" + formatDate(value(payload, "documentDate", toDateString(document.getCreatedAt()))), 12, false);
+    addParagraph(
+        word,
+        "日期：" + formatDate(value(payload, "documentDate", toDateString(document.getCreatedAt()))),
+        12,
+        false);
   }
 
   private ApiResponse<String> validatePayload(String docType, Map<String, Object> payload) {
@@ -304,7 +326,8 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
   }
 
   private Club defaultClub() {
-    return clubMapper.selectOne(new LambdaQueryWrapper<Club>().eq(Club::getCode, DEFAULT_CLUB_CODE));
+    return clubMapper.selectOne(
+        new LambdaQueryWrapper<Club>().eq(Club::getCode, DEFAULT_CLUB_CODE));
   }
 
   private String normalizeDocType(String docType) {
@@ -325,14 +348,17 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
       return Map.of();
     }
     return userMapper.selectBatchIds(memberIds).stream()
-        .collect(Collectors.toMap(User::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
+        .collect(
+            Collectors.toMap(User::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
   }
 
   private List<String> buildGroupLines(Collection<User> users) {
     Map<String, List<String>> grouped = new LinkedHashMap<>();
     for (User user : users) {
       String key = defaultText(user.getClassName(), "未分班");
-      grouped.computeIfAbsent(key.trim(), item -> new ArrayList<>()).add(defaultText(user.getRealName(), "未命名"));
+      grouped
+          .computeIfAbsent(key.trim(), item -> new ArrayList<>())
+          .add(defaultText(user.getRealName(), "未命名"));
     }
     List<String> lines = new ArrayList<>();
     for (Map.Entry<String, List<String>> entry : grouped.entrySet()) {
@@ -466,7 +492,9 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
     if (timestamp == null) {
       return LocalDate.now().toString();
     }
-    return LocalDateTime.ofInstant(timestamp.toInstant(), ZoneId.systemDefault()).toLocalDate().toString();
+    return LocalDateTime.ofInstant(timestamp.toInstant(), ZoneId.systemDefault())
+        .toLocalDate()
+        .toString();
   }
 
   private String defaultText(String value, String defaultValue) {

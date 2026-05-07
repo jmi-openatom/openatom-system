@@ -37,7 +37,8 @@ public class InterviewServiceImpl implements InterviewService {
   public ApiResponse<List<Interview>> list(
       Integer campaignId, Integer applicationId, Integer interviewerId, String status) {
     LambdaQueryWrapper<Interview> wrapper = new LambdaQueryWrapper<>();
-    wrapper.eq(applicationId != null, Interview::getApplicationId, applicationId)
+    wrapper
+        .eq(applicationId != null, Interview::getApplicationId, applicationId)
         .eq(status != null && !status.isBlank(), Interview::getStatus, status)
         .orderByDesc(Interview::getId);
     if (campaignId != null) {
@@ -218,7 +219,10 @@ public class InterviewServiceImpl implements InterviewService {
     }
     for (Integer interviewerId : interviewerIds.stream().distinct().toList()) {
       interviewInterviewerMapper.insert(
-          InterviewInterviewer.builder().interviewId(interviewId).interviewerId(interviewerId).build());
+          InterviewInterviewer.builder()
+              .interviewId(interviewId)
+              .interviewerId(interviewerId)
+              .build());
     }
   }
 

@@ -113,7 +113,8 @@ public class MembershipServiceImpl implements MembershipService {
   public ApiResponse<List<ResponseMembershipDTO>> list(
       Integer clubId, Integer departmentId, Integer positionId, String status, String keyword) {
     LambdaQueryWrapper<ClubMembership> wrapper = new LambdaQueryWrapper<>();
-    wrapper.eq(clubId != null, ClubMembership::getClubId, clubId)
+    wrapper
+        .eq(clubId != null, ClubMembership::getClubId, clubId)
         .eq(departmentId != null, ClubMembership::getDepartmentId, departmentId)
         .eq(positionId != null, ClubMembership::getPositionId, positionId)
         .eq(status != null && !status.isBlank(), ClubMembership::getStatus, status)
@@ -143,7 +144,10 @@ public class MembershipServiceImpl implements MembershipService {
   public ApiResponse<String> create(RequestCreateMembershipDTO request) {
     ApiResponse<String> validation =
         validateMembershipRefs(
-            request.getUserId(), request.getClubId(), request.getDepartmentId(), request.getPositionId());
+            request.getUserId(),
+            request.getClubId(),
+            request.getDepartmentId(),
+            request.getPositionId());
     if (validation != null) {
       return validation;
     }
@@ -205,7 +209,8 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
-  public ApiResponse<String> assignPosition(Integer membershipId, RequestAssignPositionDTO request) {
+  public ApiResponse<String> assignPosition(
+      Integer membershipId, RequestAssignPositionDTO request) {
     ClubMembership membership = findMembership(membershipId);
     if (membership == null) {
       return ApiResponse.error(404, "成员不存在");
@@ -338,12 +343,18 @@ public class MembershipServiceImpl implements MembershipService {
             Club::getId);
     Map<Integer, ClubDepartment> departments =
         selectMap(
-            memberships.stream().map(ClubMembership::getDepartmentId).filter(Objects::nonNull).toList(),
+            memberships.stream()
+                .map(ClubMembership::getDepartmentId)
+                .filter(Objects::nonNull)
+                .toList(),
             departmentMapper::selectBatchIds,
             ClubDepartment::getId);
     Map<Integer, ClubPosition> positions =
         selectMap(
-            memberships.stream().map(ClubMembership::getPositionId).filter(Objects::nonNull).toList(),
+            memberships.stream()
+                .map(ClubMembership::getPositionId)
+                .filter(Objects::nonNull)
+                .toList(),
             positionMapper::selectBatchIds,
             ClubPosition::getId);
 
@@ -353,14 +364,13 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   private <T> Map<Integer, T> selectMap(
-      List<Integer> ids,
-      Function<List<Integer>, List<T>> selector,
-      Function<T, Integer> idGetter) {
+      List<Integer> ids, Function<List<Integer>, List<T>> selector, Function<T, Integer> idGetter) {
     List<Integer> distinctIds = ids.stream().distinct().toList();
     if (distinctIds.isEmpty()) {
       return Map.of();
     }
-    return selector.apply(distinctIds).stream().collect(Collectors.toMap(idGetter, Function.identity()));
+    return selector.apply(distinctIds).stream()
+        .collect(Collectors.toMap(idGetter, Function.identity()));
   }
 
   private ResponseMembershipDTO toResponse(

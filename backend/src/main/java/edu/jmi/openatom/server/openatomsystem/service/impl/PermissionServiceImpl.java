@@ -21,7 +21,8 @@ public class PermissionServiceImpl implements PermissionService {
   }
 
   @Override
-  public ApiResponse<String> createPermission(RequestCreatePermissionDTO requestCreatePermissionDTO) {
+  public ApiResponse<String> createPermission(
+      RequestCreatePermissionDTO requestCreatePermissionDTO) {
     if (requestCreatePermissionDTO == null) {
       return ApiResponse.error("请求参数为空");
     }

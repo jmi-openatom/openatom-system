@@ -161,7 +161,8 @@ public class ActivityServiceImpl implements ActivityService {
       return ApiResponse.error(400, "该活动无需官网报名");
     }
     Timestamp now = Times.now();
-    if (activity.getRegistrationStartAt() != null && now.before(activity.getRegistrationStartAt())) {
+    if (activity.getRegistrationStartAt() != null
+        && now.before(activity.getRegistrationStartAt())) {
       return ApiResponse.error(400, "报名尚未开始");
     }
     if (activity.getRegistrationEndAt() != null && now.after(activity.getRegistrationEndAt())) {

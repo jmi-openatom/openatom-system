@@ -53,7 +53,8 @@ public class ApplicationServiceImpl implements ApplicationService {
     long current = PageRequests.page(page);
     long size = PageRequests.pageSize(pageSize);
     LambdaQueryWrapper<MembershipApplication> wrapper = new LambdaQueryWrapper<>();
-    wrapper.eq(campaignId != null, MembershipApplication::getCampaignId, campaignId)
+    wrapper
+        .eq(campaignId != null, MembershipApplication::getCampaignId, campaignId)
         .eq(clubId != null, MembershipApplication::getClubId, clubId)
         .eq(status != null && !status.isBlank(), MembershipApplication::getStatus, status)
         .and(
@@ -239,7 +240,8 @@ public class ApplicationServiceImpl implements ApplicationService {
     return null;
   }
 
-  private ApiResponse<String> validateDynamicFields(String formSchema, Map<String, Object> profile) {
+  private ApiResponse<String> validateDynamicFields(
+      String formSchema, Map<String, Object> profile) {
     for (Map<String, Object> field : Jsons.parseListOfObjects(formSchema)) {
       String key = readString(field.get("key"));
       if (isBlank(key) || !Boolean.TRUE.equals(field.get("required"))) {
@@ -263,39 +265,53 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
     Map<Integer, User> users =
         selectMap(
-            applications.stream().map(MembershipApplication::getUserId).filter(Objects::nonNull).toList(),
+            applications.stream()
+                .map(MembershipApplication::getUserId)
+                .filter(Objects::nonNull)
+                .toList(),
             userMapper::selectBatchIds,
             User::getId);
     Map<Integer, Club> clubs =
         selectMap(
-            applications.stream().map(MembershipApplication::getClubId).filter(Objects::nonNull).toList(),
+            applications.stream()
+                .map(MembershipApplication::getClubId)
+                .filter(Objects::nonNull)
+                .toList(),
             clubMapper::selectBatchIds,
             Club::getId);
     Map<Integer, RecruitmentCampaign> campaigns =
         selectMap(
-            applications.stream().map(MembershipApplication::getCampaignId).filter(Objects::nonNull).toList(),
+            applications.stream()
+                .map(MembershipApplication::getCampaignId)
+                .filter(Objects::nonNull)
+                .toList(),
             campaignMapper::selectBatchIds,
             RecruitmentCampaign::getId);
     Map<Integer, ClubDepartment> departments =
         selectMap(
             applications.stream()
-                .flatMap(application -> Stream.of(application.getFirstChoiceDepartmentId(), application.getSecondChoiceDepartmentId()))
+                .flatMap(
+                    application ->
+                        Stream.of(
+                            application.getFirstChoiceDepartmentId(),
+                            application.getSecondChoiceDepartmentId()))
                 .filter(Objects::nonNull)
                 .toList(),
             departmentMapper::selectBatchIds,
             ClubDepartment::getId);
-    return applications.stream().map(application -> toResponse(application, users, clubs, campaigns, departments)).toList();
+    return applications.stream()
+        .map(application -> toResponse(application, users, clubs, campaigns, departments))
+        .toList();
   }
 
   private <T> Map<Integer, T> selectMap(
-      List<Integer> ids,
-      Function<List<Integer>, List<T>> selector,
-      Function<T, Integer> idGetter) {
+      List<Integer> ids, Function<List<Integer>, List<T>> selector, Function<T, Integer> idGetter) {
     List<Integer> distinctIds = ids.stream().distinct().toList();
     if (distinctIds.isEmpty()) {
       return Map.of();
     }
-    return selector.apply(distinctIds).stream().collect(Collectors.toMap(idGetter, Function.identity()));
+    return selector.apply(distinctIds).stream()
+        .collect(Collectors.toMap(idGetter, Function.identity()));
   }
 
   private ResponseApplicationDTO toResponse(
@@ -307,8 +323,10 @@ public class ApplicationServiceImpl implements ApplicationService {
     User user = getNullable(users, application.getUserId());
     Club club = getNullable(clubs, application.getClubId());
     RecruitmentCampaign campaign = getNullable(campaigns, application.getCampaignId());
-    ClubDepartment firstDepartment = getNullable(departments, application.getFirstChoiceDepartmentId());
-    ClubDepartment secondDepartment = getNullable(departments, application.getSecondChoiceDepartmentId());
+    ClubDepartment firstDepartment =
+        getNullable(departments, application.getFirstChoiceDepartmentId());
+    ClubDepartment secondDepartment =
+        getNullable(departments, application.getSecondChoiceDepartmentId());
     Map<String, Object> profile = Jsons.parseObject(application.getProfile());
     String firstDepartmentName = firstDepartment == null ? null : firstDepartment.getName();
     String secondDepartmentName = secondDepartment == null ? null : secondDepartment.getName();
@@ -328,7 +346,8 @@ public class ApplicationServiceImpl implements ApplicationService {
         .firstChoiceDepartmentName(firstDepartmentName)
         .secondChoiceDepartmentId(application.getSecondChoiceDepartmentId())
         .secondChoiceDepartmentName(secondDepartmentName)
-        .preferredDepartment(firstDepartmentName == null ? secondDepartmentName : firstDepartmentName)
+        .preferredDepartment(
+            firstDepartmentName == null ? secondDepartmentName : firstDepartmentName)
         .status(application.getStatus())
         .profile(profile)
         .createdAt(application.getCreatedAt())

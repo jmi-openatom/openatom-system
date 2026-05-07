@@ -23,16 +23,14 @@ public class SiteFormController {
 
   @GetMapping("/clubs/{clubId}/site-forms")
   @SaCheckPermission("site-form:list")
-  public ApiResponse<List<SiteForm>> list(
-      @PathVariable Integer clubId) {
+  public ApiResponse<List<SiteForm>> list(@PathVariable Integer clubId) {
     return siteFormService.listByClub(clubId);
   }
 
   @PostMapping("/clubs/{clubId}/site-forms")
   @SaCheckPermission("site-form:create")
   public ApiResponse<String> create(
-      @PathVariable Integer clubId,
-      @Valid @RequestBody RequestCreateSiteFormDTO request) {
+      @PathVariable Integer clubId, @Valid @RequestBody RequestCreateSiteFormDTO request) {
     return siteFormService.create(clubId, request);
   }
 
@@ -45,8 +43,7 @@ public class SiteFormController {
   @PatchMapping("/site-forms/{formId}")
   @SaCheckPermission("site-form:update")
   public ApiResponse<String> update(
-      @PathVariable Integer formId,
-      @RequestBody RequestUpdateSiteFormDTO request) {
+      @PathVariable Integer formId, @RequestBody RequestUpdateSiteFormDTO request) {
     return siteFormService.update(formId, request);
   }
 

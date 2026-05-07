@@ -14,24 +14,24 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RequestRegisterDTO {
-	@Size(max = 32, message = "学号长度不能超过32个字符")
-	private String studentId;
+  @Size(max = 32, message = "学号长度不能超过32个字符")
+  private String studentId;
 
-	@NotBlank(message = "用户名不能为空")
-	@Size(max = 64, message = "用户名长度不能超过64个字符")
-	private String username;
+  @NotBlank(message = "用户名不能为空")
+  @Size(max = 64, message = "用户名长度不能超过64个字符")
+  private String username;
 
-	@NotBlank(message = "密码不能为空")
-	@Size(min = 8, max = 72, message = "密码长度必须在8到72个字符之间")
-	private String password;
+  @NotBlank(message = "密码不能为空")
+  @Size(min = 8, max = 72, message = "密码长度必须在8到72个字符之间")
+  private String password;
 
-	@Size(max = 64, message = "真实姓名长度不能超过64个字符")
-	private String realName;
+  @Size(max = 64, message = "真实姓名长度不能超过64个字符")
+  private String realName;
 
-	@Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确")
-	private String phone;
+  @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确")
+  private String phone;
 
-	@Email(message = "邮箱格式不正确")
-	@Size(max = 128, message = "邮箱长度不能超过128个字符")
-	private String email;
+  @Email(message = "邮箱格式不正确")
+  @Size(max = 128, message = "邮箱长度不能超过128个字符")
+  private String email;
 }
