@@ -23,9 +23,23 @@
         </el-select>
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
-      <el-button type="success" :disabled="!selection.length" @click="batchApprove"
-        >批量通过</el-button
-      >
+      <div class="toolbar__actions">
+        <el-button type="success" :disabled="!batchApproveCandidates.length" @click="batchApprove"
+          >批量初审通过</el-button
+        >
+        <el-button
+          type="primary"
+          :disabled="!batchInterviewCandidates.length"
+          @click="openBatchInterview"
+          >批量安排面试</el-button
+        >
+        <el-button
+          type="warning"
+          :disabled="!batchFinalCandidates.length"
+          @click="openBatchFinalDecision"
+          >批量终审</el-button
+        >
+      </div>
     </div>
     <el-table
       v-loading="loading"
@@ -34,13 +48,14 @@
       @selection-change="selection = $event"
     >
       <el-table-column type="selection" width="48" />
-      <el-table-column prop="id" label="ID" width="80" />
+      <el-table-column type="index" label="编号" width="72" />
+      <el-table-column prop="id" label="申请ID" width="90" />
       <el-table-column prop="applicantName" label="申请人" min-width="130" />
       <el-table-column prop="clubName" label="社团" min-width="140" />
       <el-table-column prop="preferredDepartment" label="意向部门" min-width="130" />
       <el-table-column prop="status" label="状态" width="120">
         <template #default="{ row }">
-          <el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag>
+          <el-tag :type="statusType(row.status)">{{ applicationStatusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="createdAt" label="提交时间" min-width="170">
@@ -117,7 +132,7 @@
             </p>
           </div>
           <el-tag :type="statusType(currentProfileRow.status)">{{
-            currentProfileRow.status || '-'
+            applicationStatusText(currentProfileRow.status)
           }}</el-tag>
         </div>
         <el-descriptions :column="2" border>
@@ -186,6 +201,58 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="batchInterviewVisible" title="批量安排面试" width="760px">
+      <el-form :model="batchInterviewForm" label-width="110px">
+        <el-form-item label="处理人数">
+          <el-input :model-value="String(batchInterviewTargets.length)" disabled />
+        </el-form-item>
+        <el-form-item label="首场开始时间">
+          <el-date-picker
+            v-model="batchInterviewForm.scheduledStartAt"
+            type="datetime"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+          />
+        </el-form-item>
+        <el-form-item label="每场时长">
+          <el-input-number v-model="batchInterviewForm.durationMinutes" :min="5" :step="5" />
+          <span class="form-suffix">分钟</span>
+        </el-form-item>
+        <el-form-item label="场次间隔">
+          <el-input-number v-model="batchInterviewForm.gapMinutes" :min="0" :step="5" />
+          <span class="form-suffix">分钟</span>
+        </el-form-item>
+        <el-form-item label="地点/链接">
+          <el-input v-model="batchInterviewForm.location" />
+        </el-form-item>
+        <el-form-item label="方式">
+          <el-select v-model="batchInterviewForm.mode" style="width: 180px">
+            <el-option label="线下" value="offline" />
+            <el-option label="线上" value="online" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <el-divider content-position="left">自动编排预览</el-divider>
+      <el-table :data="batchInterviewPreview" max-height="320">
+        <el-table-column prop="order" label="编号" width="72" />
+        <el-table-column prop="applicationId" label="申请ID" width="90" />
+        <el-table-column prop="applicantName" label="申请人" min-width="120" />
+        <el-table-column prop="preferredDepartment" label="意向部门" min-width="120" />
+        <el-table-column label="排期时间" min-width="220">
+          <template #default="{ row }">
+            {{ formatRange(row.scheduledStartAt, row.scheduledEndAt) }}
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <template #footer>
+        <el-button @click="batchInterviewVisible = false">取消</el-button>
+        <el-button type="primary" :loading="batchInterviewSubmitting" @click="submitBatchInterview"
+          >保存</el-button
+        >
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="finalVisible" title="终审决策" width="600px">
       <el-form :model="finalForm" label-width="98px">
         <el-form-item label="申请ID">
@@ -204,6 +271,7 @@
             filterable
             placeholder="请选择部门"
             style="width: 320px"
+            @change="finalForm.positionId = undefined"
           >
             <el-option
               v-for="item in departments"
@@ -217,11 +285,12 @@
           <el-select
             v-model="finalForm.positionId"
             filterable
-            placeholder="请选择岗位"
+            clearable
+            placeholder="请选择岗位（可选）"
             style="width: 320px"
           >
             <el-option
-              v-for="item in positions"
+              v-for="item in availablePositions"
               :key="item.id"
               :label="item.name || `岗位 ${item.id}`"
               :value="item.id"
@@ -239,6 +308,48 @@
         >
       </template>
     </el-dialog>
+
+    <el-dialog v-model="batchFinalVisible" title="批量终审" width="760px">
+      <el-form :model="batchFinalForm" label-width="110px">
+        <el-form-item label="处理人数">
+          <el-input :model-value="String(batchFinalTargets.length)" disabled />
+        </el-form-item>
+        <el-form-item label="终审结果">
+          <el-select v-model="batchFinalForm.decision" style="width: 220px">
+            <el-option label="录用" value="approved" />
+            <el-option label="候补" value="waitlisted" />
+            <el-option label="拒绝" value="rejected" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="batchFinalForm.comment" type="textarea" :rows="3" />
+        </el-form-item>
+      </el-form>
+
+      <el-alert
+        v-if="batchFinalForm.decision === 'approved'"
+        type="info"
+        show-icon
+        :closable="false"
+        title="批量终审通过时，系统会默认加入第一志愿部门；未选择第一志愿部门的申请将自动跳过。"
+      />
+
+      <el-divider content-position="left">处理预览</el-divider>
+      <el-table :data="batchFinalPreview" max-height="320">
+        <el-table-column prop="order" label="编号" width="72" />
+        <el-table-column prop="applicationId" label="申请ID" width="90" />
+        <el-table-column prop="applicantName" label="申请人" min-width="120" />
+        <el-table-column prop="firstChoiceDepartmentName" label="第一志愿部门" min-width="150" />
+        <el-table-column prop="resultText" label="处理结果" min-width="210" />
+      </el-table>
+
+      <template #footer>
+        <el-button @click="batchFinalVisible = false">取消</el-button>
+        <el-button type="primary" :loading="batchFinalSubmitting" @click="submitBatchFinalDecision"
+          >提交</el-button
+        >
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -246,7 +357,7 @@
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { applicationApi, approvalApi, clubApi, interviewApi, membershipApi } from '@/api'
-import { formatDateTime, statusType } from '@/utils/format.ts'
+import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
 
 export default {
   name: 'AdminApplications',
@@ -271,6 +382,16 @@ export default {
         location: '',
         mode: 'offline',
       },
+      batchInterviewVisible: false,
+      batchInterviewSubmitting: false,
+      batchInterviewTargets: [],
+      batchInterviewForm: {
+        scheduledStartAt: '',
+        durationMinutes: 30,
+        gapMinutes: 10,
+        location: '',
+        mode: 'offline',
+      },
       finalVisible: false,
       finalSubmitting: false,
       finalForm: {
@@ -279,6 +400,13 @@ export default {
         decision: 'approved',
         departmentId: undefined,
         positionId: undefined,
+        comment: '',
+      },
+      batchFinalVisible: false,
+      batchFinalSubmitting: false,
+      batchFinalTargets: [],
+      batchFinalForm: {
+        decision: 'approved',
         comment: '',
       },
       departments: [],
@@ -292,6 +420,7 @@ export default {
   methods: {
     formatDateTime,
     statusType,
+    applicationStatusText,
     approvalLabel(action) {
       if (action === 'approve') return '通过'
       if (action === 'reject') return '驳回'
@@ -345,7 +474,7 @@ export default {
     },
     async batchApprove() {
       await approvalApi.batch({
-        applicationIds: this.selection.map((item) => item.id),
+        applicationIds: this.batchApproveCandidates.map((item) => item.id),
         approval: { action: 'approve', node: 'pre_screen', comment: '批量通过' },
       })
       ElMessage.success('批量审批完成')
@@ -362,18 +491,60 @@ export default {
       }
       this.interviewVisible = true
     },
+    openBatchInterview() {
+      if (!this.batchInterviewCandidates.length) {
+        ElMessage.warning('请选择可安排面试的申请')
+        return
+      }
+      this.batchInterviewTargets = [...this.batchInterviewCandidates]
+      this.batchInterviewForm = {
+        scheduledStartAt: '',
+        durationMinutes: 30,
+        gapMinutes: 10,
+        location: '',
+        mode: 'offline',
+      }
+      this.batchInterviewVisible = true
+    },
     async createInterview() {
       await interviewApi.create(this.interviewForm)
       ElMessage.success('面试已安排')
       this.interviewVisible = false
       this.fetchList()
     },
+    async submitBatchInterview() {
+      if (this.batchInterviewSubmitting) return
+      if (!this.batchInterviewForm.scheduledStartAt) {
+        ElMessage.error('请选择首场开始时间')
+        return
+      }
+      this.batchInterviewSubmitting = true
+      try {
+        await Promise.all(
+          this.batchInterviewPreview.map((item) =>
+            interviewApi.create({
+              applicationId: item.applicationId,
+              round: 1,
+              scheduledStartAt: item.scheduledStartAt,
+              scheduledEndAt: item.scheduledEndAt,
+              location: this.batchInterviewForm.location,
+              mode: this.batchInterviewForm.mode,
+            }),
+          ),
+        )
+        ElMessage.success(`已批量安排 ${this.batchInterviewTargets.length} 场面试`)
+        this.batchInterviewVisible = false
+        this.fetchList()
+      } finally {
+        this.batchInterviewSubmitting = false
+      }
+    },
     async openFinalDecision(row) {
       this.finalForm = {
         applicationId: row.id,
         clubId: row.clubId,
         decision: 'approved',
-        departmentId: row.firstChoiceDepartmentId || row.secondChoiceDepartmentId || undefined,
+        departmentId: row.firstChoiceDepartmentId || undefined,
         positionId: undefined,
         comment: '',
       }
@@ -388,6 +559,18 @@ export default {
         this.positions = positions || []
       }
       this.finalVisible = true
+    },
+    openBatchFinalDecision() {
+      if (!this.batchFinalCandidates.length) {
+        ElMessage.warning('请选择可终审的申请')
+        return
+      }
+      this.batchFinalTargets = [...this.batchFinalCandidates]
+      this.batchFinalForm = {
+        decision: 'approved',
+        comment: '',
+      }
+      this.batchFinalVisible = true
     },
     prettifyProfileKey(key) {
       return (
@@ -409,10 +592,6 @@ export default {
           ElMessage.error('请选择部门')
           return
         }
-        if (!this.finalForm.positionId) {
-          ElMessage.error('请选择岗位')
-          return
-        }
       }
       this.finalSubmitting = true
       try {
@@ -431,8 +610,106 @@ export default {
         this.finalSubmitting = false
       }
     },
+    async submitBatchFinalDecision() {
+      if (this.batchFinalSubmitting) return
+      const targets =
+        this.batchFinalForm.decision === 'approved'
+          ? this.batchFinalTargets.filter((item) => item.firstChoiceDepartmentId)
+          : this.batchFinalTargets
+      const skippedCount = this.batchFinalTargets.length - targets.length
+      if (!targets.length) {
+        ElMessage.warning('没有可提交的终审记录')
+        return
+      }
+      this.batchFinalSubmitting = true
+      try {
+        await Promise.all(
+          targets.map((item) =>
+            membershipApi.finalDecision(item.id, {
+              decision: this.batchFinalForm.decision,
+              departmentId:
+                this.batchFinalForm.decision === 'approved'
+                  ? item.firstChoiceDepartmentId
+                  : undefined,
+              comment: this.batchFinalForm.comment,
+            }),
+          ),
+        )
+        ElMessage.success(
+          skippedCount
+            ? `批量终审完成，已处理 ${targets.length} 条，跳过 ${skippedCount} 条`
+            : `批量终审完成，已处理 ${targets.length} 条`,
+        )
+        this.batchFinalVisible = false
+        this.fetchList()
+      } finally {
+        this.batchFinalSubmitting = false
+      }
+    },
+    toDateTimeValue(value) {
+      const date = value instanceof Date ? value : new Date(value)
+      if (Number.isNaN(date.getTime())) return ''
+      const pad = (num) => String(num).padStart(2, '0')
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    },
   },
   computed: {
+    batchApproveCandidates() {
+      return this.selection.filter((item) => this.canPreScreen(item))
+    },
+    batchInterviewCandidates() {
+      return this.selection.filter((item) => this.canScheduleInterview(item))
+    },
+    batchFinalCandidates() {
+      return this.selection.filter((item) => this.canFinalDecision(item))
+    },
+    batchInterviewPreview() {
+      const duration = Number(this.batchInterviewForm.durationMinutes) || 30
+      const gap = Number(this.batchInterviewForm.gapMinutes) || 0
+      const baseTime = this.batchInterviewForm.scheduledStartAt
+        ? new Date(this.batchInterviewForm.scheduledStartAt).getTime()
+        : Number.NaN
+      return this.batchInterviewTargets.map((item, index) => {
+        const startTime = Number.isNaN(baseTime)
+          ? ''
+          : this.toDateTimeValue(baseTime + index * (duration + gap) * 60 * 1000)
+        const endTime = startTime
+          ? this.toDateTimeValue(new Date(startTime).getTime() + duration * 60 * 1000)
+          : ''
+        return {
+          order: index + 1,
+          applicationId: item.id,
+          applicantName: item.applicantName || `申请 ${item.id}`,
+          preferredDepartment: item.preferredDepartment || '未选择部门',
+          scheduledStartAt: startTime,
+          scheduledEndAt: endTime,
+        }
+      })
+    },
+    batchFinalPreview() {
+      return this.batchFinalTargets.map((item, index) => {
+        const firstChoiceDepartmentName = item.firstChoiceDepartmentName || '未选择'
+        const resultText =
+          this.batchFinalForm.decision === 'approved'
+            ? item.firstChoiceDepartmentId
+              ? `录用至 ${firstChoiceDepartmentName}`
+              : '跳过（未选择第一志愿部门）'
+            : this.batchFinalForm.decision === 'waitlisted'
+              ? '候补'
+              : '拒绝'
+        return {
+          order: index + 1,
+          applicationId: item.id,
+          applicantName: item.applicantName || `申请 ${item.id}`,
+          firstChoiceDepartmentName,
+          resultText,
+        }
+      })
+    },
+    availablePositions() {
+      if (!this.finalForm.departmentId) return this.positions
+      return this.positions.filter((item) => item.departmentId === this.finalForm.departmentId)
+    },
     profileEntries() {
       const profile = this.currentProfileRow?.profile || {}
       return Object.entries(profile)
@@ -455,6 +732,16 @@ export default {
 .pager {
   margin-top: 16px;
   justify-content: flex-end;
+}
+
+.toolbar__actions {
+  display: flex;
+  gap: 12px;
+}
+
+.form-suffix {
+  margin-left: 10px;
+  color: var(--oa-muted);
 }
 
 .profile-panel {

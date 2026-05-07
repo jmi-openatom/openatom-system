@@ -41,6 +41,7 @@ public enum SystemPermission {
   USER_CREATE("后台创建用户", "user:create", "api", "/users", "POST"),
   USER_INFO("获取用户详情", "user:info", "api", "/users/{userId}", "GET"),
   USER_UPDATE("更新用户信息", "user:update", "api", "/users/{userId}", "PATCH"),
+  USER_DELETE("删除用户", "user:delete", "api", "/users/{userId}", "DELETE"),
   USER_STATUS_UPDATE("更新用户状态", "user:status:update", "api", "/users/{userId}/status", "PATCH"),
   USER_PASSWORD_RESET(
       "重置用户密码", "user:password:reset", "api", "/users/{userId}/reset-password", "POST"),

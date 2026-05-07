@@ -25,13 +25,13 @@
       <el-table-column prop="recruitmentStatus" label="招新" width="120">
         <template #default="{ row }">
           <el-tag :type="statusType(row.recruitmentStatus)">{{
-            row.recruitmentStatus || '-'
+            recruitmentStatusText(row.recruitmentStatus)
           }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="110">
         <template #default="{ row }">
-          <el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag>
+          <el-tag :type="statusType(row.status)">{{ clubStatusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="260" fixed="right">
@@ -85,7 +85,7 @@
 import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { clubApi } from '@/api'
-import { statusType } from '@/utils/format.ts'
+import { clubStatusText, recruitmentStatusText, statusType } from '@/utils/format.ts'
 
 export default {
   name: 'AdminClubs',
@@ -110,6 +110,8 @@ export default {
     this.fetchList()
   },
   methods: {
+    clubStatusText,
+    recruitmentStatusText,
     statusType,
     async fetchList() {
       this.loading = true

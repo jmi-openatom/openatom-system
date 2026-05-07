@@ -24,7 +24,7 @@
       <el-table-column prop="location" label="地点/链接" min-width="160" />
       <el-table-column prop="status" label="状态" width="120">
         <template #default="{ row }">
-          <el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag>
+          <el-tag :type="statusType(row.status)">{{ interviewStatusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="开始时间" min-width="170">
@@ -70,7 +70,7 @@
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { interviewApi } from '@/api'
-import { formatDateTime, statusType } from '@/utils/format.ts'
+import { formatDateTime, interviewStatusText, statusType } from '@/utils/format.ts'
 
 export default {
   name: 'AdminInterviews',
@@ -90,6 +90,7 @@ export default {
   methods: {
     formatDateTime,
     statusType,
+    interviewStatusText,
     async fetchList() {
       this.loading = true
       try {

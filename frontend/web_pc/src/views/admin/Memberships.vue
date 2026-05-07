@@ -47,7 +47,7 @@
       </el-table-column>
       <el-table-column prop="status" label="状态" width="110">
         <template #default="{ row }">
-          <el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag>
+          <el-tag :type="statusType(row.status)">{{ membershipStatusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="300" fixed="right">
@@ -56,6 +56,9 @@
           <el-button link type="success" @click="changeStatus(row, 'active')">转正式</el-button>
           <el-button link type="warning" @click="changeStatus(row, 'suspended')">暂停</el-button>
           <el-button link type="danger" @click="changeStatus(row, 'left')">退会</el-button>
+          <el-button v-if="canForceExit" link type="danger" @click="forceExit(row)"
+            >移出社团</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -148,10 +151,11 @@
 </template>
 
 <script>
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { clubApi, membershipApi } from '@/api'
-import { statusType } from '@/utils/format.ts'
+import { membershipStatusText, statusType } from '@/utils/format.ts'
+import { hasPermission } from '@/utils/permission.ts'
 
 export default {
   name: 'AdminMemberships',
@@ -189,7 +193,13 @@ export default {
     await this.loadOptions()
     this.fetchList()
   },
+  computed: {
+    canForceExit() {
+      return hasPermission('membership:force-exit')
+    },
+  },
   methods: {
+    membershipStatusText,
     statusType,
     async fetchList() {
       this.loading = true
@@ -249,6 +259,16 @@ export default {
     async changeStatus(row, status) {
       await membershipApi.changeStatus(row.id, { status })
       ElMessage.success('成员状态已更新')
+      this.fetchList()
+    },
+    async forceExit(row) {
+      await ElMessageBox.confirm(
+        `确认将 ${row.realName || row.userName || `用户 ${row.userId}`} 移出社团？`,
+        '提示',
+        { type: 'warning' },
+      )
+      await membershipApi.forceExit(row.id, { reason: '管理员移出社团' })
+      ElMessage.success('已移出社团')
       this.fetchList()
     },
     async toggleFeatured(row) {

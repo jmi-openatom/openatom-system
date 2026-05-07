@@ -21,7 +21,7 @@
           <el-table-column label="社团" min-width="130" prop="clubName" />
           <el-table-column label="状态" prop="status" width="110">
             <template #default="{ row }">
-              <el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag>
+              <el-tag :type="statusType(row.status)">{{ applicationStatusText(row.status) }}</el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -34,7 +34,7 @@
           <el-table-column label="候选人" min-width="120" prop="candidateName" />
           <el-table-column label="状态" prop="status" width="110">
             <template #default="{ row }">
-              <el-tag :type="statusType(row.status)">{{ row.status || '-' }}</el-tag>
+              <el-tag :type="statusType(row.status)">{{ interviewStatusText(row.status) }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="时间" min-width="160" prop="scheduledAt">
@@ -76,7 +76,7 @@ import {
   siteApi,
   userApi,
 } from '@/api'
-import { formatDateTime, statusType } from '@/utils/format.ts'
+import { applicationStatusText, formatDateTime, interviewStatusText, statusType } from '@/utils/format.ts'
 import { hasAnyPermission } from '@/utils/permission.ts'
 import { ElMessage } from 'element-plus'
 
@@ -135,7 +135,9 @@ export default {
     this.fetchRegisterEnabled() // 页面加载时获取初始状态
   },
   methods: {
+    applicationStatusText,
     formatDateTime,
+    interviewStatusText,
     statusType,
     countValue(result) {
       if (!result) {

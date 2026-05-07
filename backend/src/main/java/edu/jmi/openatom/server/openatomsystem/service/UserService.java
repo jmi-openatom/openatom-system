@@ -33,4 +33,6 @@ public interface UserService {
       Integer userId, RequestResetPasswordDTO requestResetPasswordDTO);
 
   ApiResponse<List<ResponseMembershipDTO>> getUserMemberships(Integer userId);
+
+  ApiResponse<String> deleteUser(Integer userId);
 }

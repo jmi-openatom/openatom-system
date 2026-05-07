@@ -173,9 +173,10 @@ public class ActivityServiceImpl implements ActivityService {
             new LambdaQueryWrapper<ClubMembership>()
                 .eq(ClubMembership::getUserId, userId)
                 .eq(ClubMembership::getClubId, activity.getClubId())
+                .eq(ClubMembership::getStatus, "active")
                 .isNull(ClubMembership::getLeftAt));
     if (membershipCount == null || membershipCount == 0) {
-      return ApiResponse.error(403, "请使用已注册并绑定社团的账号报名");
+      return ApiResponse.error(403, "无权限，请先加入社团");
     }
     ActivityRegistration exists =
         activityRegistrationMapper.selectOne(

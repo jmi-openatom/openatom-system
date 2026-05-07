@@ -50,7 +50,7 @@
           <el-tag :type="statusType(row.userStatus)">{{ statusText(row.userStatus) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="300" fixed="right">
+      <el-table-column label="操作" width="360" fixed="right">
         <template #default="{ row }">
           <el-button v-if="canUpdateUser" link type="primary" @click="openDialog(row)"
             >编辑</el-button
@@ -63,6 +63,9 @@
           </el-button>
           <el-button v-if="canResetUserPassword" link type="danger" @click="resetPassword(row)"
             >重置密码</el-button
+          >
+          <el-button v-if="canDeleteUser" link type="danger" @click="removeUser(row)"
+            >删除用户</el-button
           >
         </template>
       </el-table-column>
@@ -187,6 +190,9 @@ export default {
     canResetUserPassword() {
       return hasPermission('user:password:reset')
     },
+    canDeleteUser() {
+      return hasPermission('user:delete')
+    },
   },
   created() {
     this.fetchList()
@@ -262,6 +268,16 @@ export default {
       await ElMessageBox.confirm(`确认重置 ${row.realName || row.userName} 的密码？`, '提示')
       await userApi.resetPassword(row.id, { newPassword: '12345678' })
       ElMessage.success('已重置为 12345678')
+    },
+    async removeUser(row) {
+      await ElMessageBox.confirm(
+        `确认删除用户 ${row.realName || row.userName}？删除后不可恢复。若该用户仍在社团中，请先移出社团。`,
+        '提示',
+        { type: 'warning' },
+      )
+      await userApi.remove(row.id)
+      ElMessage.success('用户已删除')
+      this.fetchList()
     },
     async fetchAllRoles() {
       if (this.allRoles.length === 0) {

@@ -56,6 +56,9 @@ export const userApi = {
     create(data: Record<string, unknown>): Promise<AxiosResponse> {
         return request.post('/users', data)
     },
+    remove(id: string | number): Promise<AxiosResponse> {
+        return request.delete(`/users/${id}`)
+    },
     update(id: string | number, data: Record<string, unknown>): Promise<AxiosResponse> {
         return request.patch(`/users/${id}`, data)
     },
@@ -280,6 +283,9 @@ export const membershipApi = {
     },
     changeStatus(id: string | number, data: Record<string, unknown>): Promise<AxiosResponse> {
         return request.post(`/memberships/${id}/change-status`, data)
+    },
+    forceExit(id: string | number, data: Record<string, unknown> = {}): Promise<AxiosResponse> {
+        return request.post(`/memberships/${id}/force-exit`, data)
     },
     finalDecision(applicationId: string | number, data: Record<string, unknown>): Promise<AxiosResponse> {
         return request.post(`/applications/${applicationId}/final-decisions`, data)

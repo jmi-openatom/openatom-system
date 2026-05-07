@@ -31,7 +31,7 @@
               <div class="club-card__title">
                 <h3>{{ club.name }}</h3>
                 <el-tag size="small" :type="statusType(club.recruitmentStatus)">
-                  {{ club.recruitmentStatus || 'unknown' }}
+                  {{ recruitmentStatusText(club.recruitmentStatus || 'unknown') }}
                 </el-tag>
               </div>
               <p>{{ club.description || '该社团暂未填写介绍。' }}</p>
@@ -50,7 +50,7 @@
 <script>
 import { Search } from '@element-plus/icons-vue'
 import { clubApi } from '@/api'
-import { statusType } from '@/utils/format.ts'
+import { recruitmentStatusText, statusType } from '@/utils/format.ts'
 
 export default {
   name: 'SiteClubs',
@@ -70,6 +70,7 @@ export default {
     this.fetchClubs()
   },
   methods: {
+    recruitmentStatusText,
     statusType,
     shortName(name) {
       return (name || '社团').slice(0, 2)

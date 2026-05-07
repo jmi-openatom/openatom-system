@@ -21,6 +21,14 @@
         <h2>活动报名</h2>
         <p v-if="!activity.registrationRequired">该活动无需官网报名，按活动说明参与即可。</p>
         <template v-else>
+          <el-alert
+            v-if="signupBlockedMessage"
+            type="warning"
+            show-icon
+            :closable="false"
+            :title="signupBlockedMessage"
+            class="signup-alert"
+          />
           <el-form label-position="top">
             <el-form-item
               v-for="field in fields"
@@ -65,6 +73,7 @@ import { activityApi, siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { getToken } from '@/utils/auth.ts'
 import { renderMarkdown } from '@/utils/markdown.ts'
+import { hasRole } from '@/utils/permission.ts'
 
 export default {
   name: 'SiteActivityDetail',
@@ -91,6 +100,12 @@ export default {
         return []
       }
     },
+    signupBlockedMessage() {
+      if (!this.activity.registrationRequired) return ''
+      if (!getToken()) return '请先登录后再报名'
+      if (!hasRole('formal_member')) return '无权限，请先加入社团'
+      return ''
+    },
   },
   created() {
     this.fetchDetail()
@@ -107,8 +122,12 @@ export default {
     },
     async submit() {
       if (!getToken()) {
-        ElMessage.warning('请先使用已注册的社团账号登录后再报名')
+        ElMessage.warning('请先登录后再报名')
         this.$router.push({ path: '/admin/login', query: { redirect: this.$route.fullPath } })
+        return
+      }
+      if (!hasRole('formal_member')) {
+        ElMessage.warning('无权限，请先加入社团')
         return
       }
       const missing = this.fields.find((field) => field.required && !this.form[field.label])
@@ -207,6 +226,10 @@ export default {
 .signup-panel p {
   color: var(--oa-muted);
   line-height: 1.7;
+}
+
+.signup-alert {
+  margin-bottom: 16px;
 }
 
 .signup-panel .el-button {

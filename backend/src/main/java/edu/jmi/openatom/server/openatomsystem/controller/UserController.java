@@ -101,6 +101,12 @@ public class UserController {
     return userService.updateUserInfo(userId, requestUserUpdate);
   }
 
+  @DeleteMapping("/{userId}")
+  @SaCheckPermission("user:delete")
+  public ApiResponse<String> delete(@PathVariable Integer userId) {
+    return userService.deleteUser(userId);
+  }
+
   @PatchMapping("/{userId}/status")
   @SaCheckPermission("user:status:update")
   public ApiResponse<String> updateStatus(

@@ -3,6 +3,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.bootstrap.RoleSeedTemplate;
 import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
@@ -13,13 +14,20 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUserUpdate;
 import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseMembershipDTO;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
+import edu.jmi.openatom.server.openatomsystem.mapper.ActivityRegistrationMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.ClubDepartmentMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.FormSubmissionMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RoleMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserRoleMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
+import edu.jmi.openatom.server.openatomsystem.entity.ClubDepartment;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
+import edu.jmi.openatom.server.openatomsystem.entity.FormSubmission;
+import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import edu.jmi.openatom.server.openatomsystem.entity.Role;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.entity.UserRole;
@@ -46,7 +54,11 @@ public class UserServiceImpl implements UserService {
   private final RoleMapper roleMapper;
   private final UserRoleMapper userRoleMapper;
   private final ClubMapper clubMapper;
+  private final ClubDepartmentMapper clubDepartmentMapper;
   private final ClubMembershipMapper clubMembershipMapper;
+  private final MembershipApplicationMapper membershipApplicationMapper;
+  private final ActivityRegistrationMapper activityRegistrationMapper;
+  private final FormSubmissionMapper formSubmissionMapper;
   private final PasswordService passwordService;
 
   @Override
@@ -368,6 +380,59 @@ public class UserServiceImpl implements UserService {
             .map(this::buildMembershipResponse)
             .toList();
     return ApiResponse.success(memberships);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public ApiResponse<String> deleteUser(Integer userId) {
+    if (userId == null) {
+      return ApiResponse.error(400, "userId不能为空");
+    }
+    if (StpUtil.isLogin() && userId.equals(StpUtil.getLoginIdAsInt())) {
+      return ApiResponse.error(400, "不能删除当前登录用户");
+    }
+    User user = userMapper.selectById(userId);
+    if (user == null) {
+      return ApiResponse.error(404, "用户不存在");
+    }
+
+    Long activeMembershipCount =
+        clubMembershipMapper.selectCount(
+            new LambdaQueryWrapper<ClubMembership>()
+                .eq(ClubMembership::getUserId, userId)
+                .isNull(ClubMembership::getLeftAt));
+    if (activeMembershipCount != null && activeMembershipCount > 0) {
+      return ApiResponse.error(400, "请先将该用户从社团中移出");
+    }
+
+    userRoleMapper.delete(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
+    clubMembershipMapper.delete(new LambdaQueryWrapper<ClubMembership>().eq(ClubMembership::getUserId, userId));
+    activityRegistrationMapper.delete(
+        new LambdaQueryWrapper<edu.jmi.openatom.server.openatomsystem.entity.ActivityRegistration>()
+            .eq(edu.jmi.openatom.server.openatomsystem.entity.ActivityRegistration::getUserId, userId));
+    membershipApplicationMapper.update(
+        null,
+        new LambdaUpdateWrapper<MembershipApplication>()
+            .eq(MembershipApplication::getUserId, userId)
+            .set(MembershipApplication::getUserId, null));
+    formSubmissionMapper.update(
+        null,
+        new LambdaUpdateWrapper<FormSubmission>()
+            .eq(FormSubmission::getUserId, userId)
+            .set(FormSubmission::getUserId, null));
+    clubMapper.update(
+        null,
+        new LambdaUpdateWrapper<Club>()
+            .eq(Club::getPresidentUserId, userId)
+            .set(Club::getPresidentUserId, null));
+    clubDepartmentMapper.update(
+        null,
+        new LambdaUpdateWrapper<ClubDepartment>()
+            .eq(ClubDepartment::getManagerUserId, userId)
+            .set(ClubDepartment::getManagerUserId, null));
+
+    int rows = userMapper.deleteById(userId);
+    return rows > 0 ? ApiResponse.success("用户已删除") : ApiResponse.error("用户删除失败");
   }
 
   private boolean existsByUsernameOrStudentId(String username, String studentId) {

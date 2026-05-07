@@ -33,7 +33,9 @@
           <el-table-column label="社团名称" min-width="150" prop="clubName" />
           <el-table-column label="当前状态" prop="status" width="120">
             <template #default="{ row }">
-              <el-tag :type="statusType(row.status)">{{ row.status || '审核中' }}</el-tag>
+              <el-tag :type="statusType(row.status)">{{
+                applicationStatusText(row.status || 'reviewing')
+              }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="提交时间" min-width="180" prop="createdAt">
@@ -83,7 +85,7 @@
 <script>
 import { authApi, siteApi } from '@/api'
 import { getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
-import { formatDateTime, statusType } from '@/utils/format.ts'
+import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
 import { ElMessage } from 'element-plus'
 
 export default {
@@ -120,6 +122,7 @@ export default {
     }
   },
   methods: {
+    applicationStatusText,
     formatDateTime,
     statusType,
     async fetchProfile() {

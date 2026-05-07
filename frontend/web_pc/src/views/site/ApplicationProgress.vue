@@ -125,7 +125,12 @@
 <script>
 import { authApi, siteApi } from '@/api'
 import { getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
-import { formatDateTime, statusType } from '@/utils/format.ts'
+import {
+  applicationStatusText,
+  formatDateTime,
+  interviewStatusText,
+  statusType,
+} from '@/utils/format.ts'
 
 export default {
   name: 'SiteApplicationProgress',
@@ -176,34 +181,8 @@ export default {
     goLogin() {
       this.$router.push({ path: '/admin/login', query: { redirect: this.$route.fullPath } })
     },
-    applicationStatusText(status) {
-      return (
-        {
-          draft: '草稿',
-          submitted: '已提交',
-          reviewing: '审核中',
-          approved: '初审通过',
-          interview_scheduled: '已安排面试',
-          interviewed: '已完成面试',
-          final_approved: '已通过',
-          rejected: '未通过',
-          cancelled: '已撤回',
-        }[status] ||
-        status ||
-        '-'
-      )
-    },
-    interviewStatusText(status) {
-      return (
-        {
-          pending: '待确认',
-          confirmed: '已确认',
-          completed: '已完成',
-        }[status] ||
-        status ||
-        '-'
-      )
-    },
+    applicationStatusText,
+    interviewStatusText,
     interviewModeText(mode) {
       return (
         {
@@ -221,9 +200,12 @@ export default {
           submitted: '申请已提交，等待审核',
           reviewing: '管理员正在审核你的申请材料',
           approved: '申请已通过初筛，等待安排面试',
+          pre_screen_passed: '申请已通过初筛，等待安排面试',
+          pre_screen_rejected: '初审未通过，可留意后续招新批次',
           interview_scheduled: '已安排面试，请按时参加',
           interviewed: '面试已完成，等待最终结果',
           final_approved: '恭喜，你已通过入会流程',
+          waitlisted: '你已进入候补，请等待后续通知',
           rejected: '本次申请未通过，可关注后续批次',
           cancelled: '你已主动撤回该申请',
         }[status] || '请留意后续通知'
@@ -236,9 +218,12 @@ export default {
           submitted: 1,
           reviewing: 1,
           approved: 2,
+          pre_screen_passed: 2,
+          pre_screen_rejected: 4,
           interview_scheduled: 3,
           interviewed: 3,
           final_approved: 4,
+          waitlisted: 4,
           rejected: 4,
           cancelled: 4,
         }[status] ?? 1
