@@ -24,8 +24,11 @@
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
       <div class="toolbar__actions">
-        <el-button type="success" :disabled="!batchApproveCandidates.length" @click="batchApprove"
+        <el-button type="success" :disabled="!batchApproveCandidates.length" @click="openBatchPreScreen('approve')"
           >批量初审通过</el-button
+        >
+        <el-button type="danger" :disabled="!batchApproveCandidates.length" @click="openBatchPreScreen('reject')"
+          >批量驳回</el-button
         >
         <el-button
           type="primary"
@@ -118,6 +121,38 @@
       <template #footer>
         <el-button @click="approvalVisible = false">取消</el-button>
         <el-button type="primary" @click="submitApproval">提交</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="batchPreScreenVisible" title="批量处理申请" width="620px">
+      <el-form :model="batchPreScreenForm" label-width="98px">
+        <el-form-item label="处理人数">
+          <el-input :model-value="String(batchApproveCandidates.length)" disabled />
+        </el-form-item>
+        <el-form-item label="处理动作">
+          <el-tag :type="batchPreScreenForm.action === 'approve' ? 'success' : 'danger'">
+            {{ approvalLabel(batchPreScreenForm.action) }}
+          </el-tag>
+        </el-form-item>
+        <el-form-item label="审批意见">
+          <el-input v-model="batchPreScreenForm.comment" type="textarea" :rows="3" />
+        </el-form-item>
+      </el-form>
+      <el-divider content-position="left">涉及申请</el-divider>
+      <el-table :data="batchApproveCandidates" max-height="280">
+        <el-table-column prop="id" label="申请ID" width="90" />
+        <el-table-column prop="applicantName" label="申请人" min-width="120" />
+        <el-table-column prop="clubName" label="社团" min-width="130" />
+        <el-table-column prop="preferredDepartment" label="意向部门" min-width="120" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="statusType(row.status)" size="small">{{ applicationStatusText(row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="batchPreScreenVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitBatchPreScreen">确认提交</el-button>
       </template>
     </el-dialog>
 
@@ -377,6 +412,8 @@ export default {
       query: { keyword: '', status: '', page: 1, pageSize: 10 },
       approvalVisible: false,
       approvalForm: { applicationId: '', action: 'approve', comment: '' },
+      batchPreScreenVisible: false,
+      batchPreScreenForm: { action: 'approve', comment: '' },
       profileVisible: false,
       currentProfileRow: null,
       interviewVisible: false,
@@ -478,12 +515,27 @@ export default {
       this.approvalVisible = false
       this.fetchList()
     },
-    async batchApprove() {
+    openBatchPreScreen(action) {
+      if (!this.batchApproveCandidates.length) {
+        ElMessage.warning('请选择可初审的申请')
+        return
+      }
+      this.batchPreScreenForm = { action, comment: action === 'approve' ? '批量通过' : '批量驳回' }
+      this.batchPreScreenVisible = true
+    },
+    async submitBatchPreScreen() {
       await approvalApi.batch({
         applicationIds: this.batchApproveCandidates.map((item) => item.id),
-        approval: { action: 'approve', node: 'pre_screen', comment: '批量通过' },
+        approval: {
+          action: this.batchPreScreenForm.action,
+          node: 'pre_screen',
+          comment: this.batchPreScreenForm.comment || undefined,
+        },
       })
-      ElMessage.success('批量审批完成')
+      ElMessage.success(
+        `批量${this.approvalLabel(this.batchPreScreenForm.action)}完成，已处理 ${this.batchApproveCandidates.length} 条`,
+      )
+      this.batchPreScreenVisible = false
       this.fetchList()
     },
     openInterview(row) {

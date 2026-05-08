@@ -100,6 +100,7 @@ public class InterviewServiceImpl implements InterviewService {
   public ApiResponse<String> feedback(Integer interviewId, RequestInterviewFeedbackDTO request) {
     Interview interview = findInterview(interviewId);
     if (interview == null) return ApiResponse.error(404, "面试不存在");
+    if ("completed".equals(interview.getStatus())) return ApiResponse.error(422, "面试已完成，无法提交反馈");
     interviewFeedbackMapper.insert(InterviewFeedback.builder().interviewId(interviewId)
         .interviewerId(StpUtil.getLoginIdAsInt()).scores(Jsons.stringify(request.getScores()))
         .suggestion(request.getSuggestion()).comment(request.getComment()).build());
@@ -110,6 +111,8 @@ public class InterviewServiceImpl implements InterviewService {
   public ApiResponse<String> complete(Integer interviewId) {
     Interview interview = findInterview(interviewId);
     if (interview == null) return ApiResponse.error(404, "面试不存在");
+    if ("completed".equals(interview.getStatus())) return ApiResponse.error(422, "面试已完成，无法重复完成");
+    if ("pending".equals(interview.getStatus())) return ApiResponse.error(422, "请先确认面试再进行完成操作");
     interview.setStatus("completed");
     interviewMapper.updateById(interview);
     MembershipApplication application = applicationMapper.selectById(interview.getApplicationId());

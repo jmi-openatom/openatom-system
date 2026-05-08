@@ -1,37 +1,42 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.jmi.openatom.server.openatomsystem.entity.SystemSetting;
+import edu.jmi.openatom.server.openatomsystem.mapper.SystemSettingMapper;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
-public class RegistrationSettingServiceImpl implements RegistrationSettingService {
+@RequiredArgsConstructor
+public class RegistrationSettingServiceImpl extends ServiceImpl<SystemSettingMapper, SystemSetting>
+    implements RegistrationSettingService {
   private static final String REGISTER_ENABLED_KEY = "register_enabled";
 
   private final JdbcTemplate jdbcTemplate;
 
+  @Override
   public boolean isRegisterEnabled() {
     ensureSettingRow();
-    String value =
-        jdbcTemplate.query(
-            "SELECT setting_value FROM system_setting WHERE setting_key = ? LIMIT 1",
-            resultSet -> resultSet.next() ? resultSet.getString("setting_value") : null,
-            REGISTER_ENABLED_KEY);
-    return Boolean.parseBoolean(value);
+    SystemSetting setting = getById(REGISTER_ENABLED_KEY);
+    return setting != null && Boolean.parseBoolean(setting.getSettingValue());
   }
 
+  @Override
   public boolean updateRegisterEnabled(boolean enabled) {
     ensureSettingRow();
-    jdbcTemplate.update(
-        "UPDATE system_setting SET setting_value = ? WHERE setting_key = ?",
-        String.valueOf(enabled),
-        REGISTER_ENABLED_KEY);
+    SystemSetting setting =
+        SystemSetting.builder()
+            .settingKey(REGISTER_ENABLED_KEY)
+            .settingValue(String.valueOf(enabled))
+            .build();
+    saveOrUpdate(setting);
     return enabled;
   }
 
   private void ensureSettingRow() {
+    // Keep DDL in JdbcTemplate as MyBatis-Plus doesn't handle it
     jdbcTemplate.execute(
         """
         CREATE TABLE IF NOT EXISTS `system_setting`
@@ -43,15 +48,15 @@ public class RegistrationSettingServiceImpl implements RegistrationSettingServic
             PRIMARY KEY (`setting_key`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='系统配置表'
         """);
-    jdbcTemplate.update(
-        """
-        INSERT INTO system_setting (`setting_key`, `setting_value`, `description`)
-        SELECT ?, 'false', '是否开放用户自助注册'
-        WHERE NOT EXISTS (
-            SELECT 1 FROM system_setting WHERE setting_key = ?
-        )
-        """,
-        REGISTER_ENABLED_KEY,
-        REGISTER_ENABLED_KEY);
+
+    if (getById(REGISTER_ENABLED_KEY) == null) {
+      SystemSetting defaultSetting =
+          SystemSetting.builder()
+              .settingKey(REGISTER_ENABLED_KEY)
+              .settingValue("false")
+              .description("是否开放用户自助注册")
+              .build();
+      save(defaultSetting);
+    }
   }
 }

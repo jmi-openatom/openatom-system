@@ -266,6 +266,9 @@ export const interviewApi = {
   complete(id: string | number): Promise<AxiosResponse> {
     return request.post(`/interviews/${id}/complete`)
   },
+  feedbacks(id: string | number): Promise<AxiosResponse> {
+    return request.get(`/interviews/${id}/feedbacks`)
+  },
 }
 
 export const membershipApi = {
