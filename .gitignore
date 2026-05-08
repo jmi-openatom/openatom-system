@@ -13,3 +13,8 @@ node_modules/
 
 # IDE
 .idea/
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcworkspace/xcuserdata/
