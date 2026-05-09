@@ -24,10 +24,16 @@
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
       <div class="toolbar__actions">
-        <el-button type="success" :disabled="!batchApproveCandidates.length" @click="openBatchPreScreen('approve')"
+        <el-button
+          type="success"
+          :disabled="!batchApproveCandidates.length"
+          @click="openBatchPreScreen('approve')"
           >批量初审通过</el-button
         >
-        <el-button type="danger" :disabled="!batchApproveCandidates.length" @click="openBatchPreScreen('reject')"
+        <el-button
+          type="danger"
+          :disabled="!batchApproveCandidates.length"
+          @click="openBatchPreScreen('reject')"
           >批量驳回</el-button
         >
         <el-button
@@ -146,7 +152,9 @@
         <el-table-column prop="preferredDepartment" label="意向部门" min-width="120" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" size="small">{{ applicationStatusText(row.status) }}</el-tag>
+            <el-tag :type="statusType(row.status)" size="small">{{
+              applicationStatusText(row.status)
+            }}</el-tag>
           </template>
         </el-table-column>
       </el-table>

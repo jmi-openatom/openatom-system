@@ -17,13 +17,22 @@
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
       <div class="toolbar__actions">
-        <el-button type="success" :disabled="!batchConfirmCandidates.length" @click="openBatchConfirm"
+        <el-button
+          type="success"
+          :disabled="!batchConfirmCandidates.length"
+          @click="openBatchConfirm"
           >批量确认</el-button
         >
-        <el-button type="primary" :disabled="!batchFeedbackCandidates.length" @click="openBatchFeedback"
+        <el-button
+          type="primary"
+          :disabled="!batchFeedbackCandidates.length"
+          @click="openBatchFeedback"
           >批量反馈</el-button
         >
-        <el-button type="warning" :disabled="!batchCompleteCandidates.length" @click="openBatchComplete"
+        <el-button
+          type="warning"
+          :disabled="!batchCompleteCandidates.length"
+          @click="openBatchComplete"
           >批量完成</el-button
         >
       </div>
@@ -52,10 +61,22 @@
       </el-table-column>
       <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
-          <el-button v-if="row.status === 'pending'" link type="success" @click="confirmInterview(row)">确认</el-button>
+          <el-button
+            v-if="row.status === 'pending'"
+            link
+            type="success"
+            @click="confirmInterview(row)"
+            >确认</el-button
+          >
           <el-button link type="primary" @click="openFeedback(row)">反馈</el-button>
           <el-button link type="info" @click="viewFeedbacks(row)">查看反馈</el-button>
-          <el-button v-if="row.status !== 'completed'" link type="warning" @click="openCompleteConfirm(row)">完成</el-button>
+          <el-button
+            v-if="row.status !== 'completed'"
+            link
+            type="warning"
+            @click="openCompleteConfirm(row)"
+            >完成</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
@@ -79,7 +100,9 @@
       </el-table>
       <template #footer>
         <el-button @click="batchConfirmVisible = false">取消</el-button>
-        <el-button type="primary" :loading="batchConfirmSubmitting" @click="submitBatchConfirm">确认</el-button>
+        <el-button type="primary" :loading="batchConfirmSubmitting" @click="submitBatchConfirm"
+          >确认</el-button
+        >
       </template>
     </el-dialog>
 
@@ -106,7 +129,12 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="统一评语">
-          <el-input v-model="batchFeedbackForm.comment" type="textarea" :rows="3" placeholder="批量反馈的统一点评（可选）" />
+          <el-input
+            v-model="batchFeedbackForm.comment"
+            type="textarea"
+            :rows="3"
+            placeholder="批量反馈的统一点评（可选）"
+          />
         </el-form-item>
       </el-form>
       <el-divider content-position="left">涉及面试</el-divider>
@@ -121,7 +149,9 @@
       </el-table>
       <template #footer>
         <el-button @click="batchFeedbackVisible = false">取消</el-button>
-        <el-button type="primary" :loading="batchFeedbackSubmitting" @click="submitBatchFeedback">提交</el-button>
+        <el-button type="primary" :loading="batchFeedbackSubmitting" @click="submitBatchFeedback"
+          >提交</el-button
+        >
       </template>
     </el-dialog>
 
@@ -146,7 +176,9 @@
         <el-table-column prop="round" label="轮次" width="72" />
         <el-table-column prop="status" label="当前状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" size="small">{{ interviewStatusText(row.status) }}</el-tag>
+            <el-tag :type="statusType(row.status)" size="small">{{
+              interviewStatusText(row.status)
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="location" label="地点" min-width="140" />
@@ -156,16 +188,28 @@
       </el-table>
       <template #footer>
         <el-button @click="batchCompleteVisible = false">取消</el-button>
-        <el-button type="primary" :loading="batchCompleteSubmitting" @click="submitBatchComplete">完成</el-button>
+        <el-button type="primary" :loading="batchCompleteSubmitting" @click="submitBatchComplete"
+          >完成</el-button
+        >
       </template>
     </el-dialog>
 
     <!-- 面试反馈对话框 -->
     <el-dialog v-model="feedbackVisible" title="面试反馈" width="600px">
-      <el-descriptions v-if="feedbackForm.interviewId" :column="2" border size="small" style="margin-bottom: 16px">
+      <el-descriptions
+        v-if="feedbackForm.interviewId"
+        :column="2"
+        border
+        size="small"
+        style="margin-bottom: 16px"
+      >
         <el-descriptions-item label="面试ID">{{ feedbackForm.interviewId }}</el-descriptions-item>
-        <el-descriptions-item label="申请ID">{{ currentFeedbackApplicationId }}</el-descriptions-item>
-        <el-descriptions-item label="轮次">第 {{ feedbackForm.round || '-' }} 轮</el-descriptions-item>
+        <el-descriptions-item label="申请ID">{{
+          currentFeedbackApplicationId
+        }}</el-descriptions-item>
+        <el-descriptions-item label="轮次"
+          >第 {{ feedbackForm.round || '-' }} 轮</el-descriptions-item
+        >
         <el-descriptions-item label="地点">{{ feedbackForm.location || '-' }}</el-descriptions-item>
       </el-descriptions>
       <el-form :model="feedbackForm" label-width="78px">
@@ -191,22 +235,40 @@
       </el-form>
       <template #footer>
         <el-button @click="feedbackVisible = false">取消</el-button>
-        <el-button type="primary" :loading="feedbackSubmitting" @click="submitFeedback">提交反馈</el-button>
+        <el-button type="primary" :loading="feedbackSubmitting" @click="submitFeedback"
+          >提交反馈</el-button
+        >
       </template>
     </el-dialog>
 
     <!-- 查看反馈列表对话框 -->
     <el-dialog v-model="feedbacksVisible" title="反馈记录" width="700px">
-      <el-descriptions v-if="viewingFeedbacksInterviewId" :column="2" border size="small" style="margin-bottom: 16px">
-        <el-descriptions-item label="面试ID">{{ viewingFeedbacksInterviewId }}</el-descriptions-item>
-        <el-descriptions-item label="面试状态">{{ interviewStatusText(viewingFeedbacksStatus) }}</el-descriptions-item>
+      <el-descriptions
+        v-if="viewingFeedbacksInterviewId"
+        :column="2"
+        border
+        size="small"
+        style="margin-bottom: 16px"
+      >
+        <el-descriptions-item label="面试ID">{{
+          viewingFeedbacksInterviewId
+        }}</el-descriptions-item>
+        <el-descriptions-item label="面试状态">{{
+          interviewStatusText(viewingFeedbacksStatus)
+        }}</el-descriptions-item>
       </el-descriptions>
       <el-table v-loading="feedbacksLoading" :data="feedbackRecords" max-height="360">
         <el-table-column type="index" label="编号" width="72" />
         <el-table-column label="沟通能力" width="100">
           <template #default="{ row }">
             <template v-if="row.scoresObj && row.scoresObj.communication != null">
-              <el-rate :model-value="Number(row.scoresObj.communication)" :max="5" disabled show-score size="small" />
+              <el-rate
+                :model-value="Number(row.scoresObj.communication)"
+                :max="5"
+                disabled
+                show-score
+                size="small"
+              />
             </template>
             <span v-else>-</span>
           </template>
@@ -214,7 +276,13 @@
         <el-table-column label="专业能力" width="100">
           <template #default="{ row }">
             <template v-if="row.scoresObj && row.scoresObj.professional != null">
-              <el-rate :model-value="Number(row.scoresObj.professional)" :max="5" disabled show-score size="small" />
+              <el-rate
+                :model-value="Number(row.scoresObj.professional)"
+                :max="5"
+                disabled
+                show-score
+                size="small"
+              />
             </template>
             <span v-else>-</span>
           </template>
@@ -222,14 +290,22 @@
         <el-table-column label="综合素质" width="100">
           <template #default="{ row }">
             <template v-if="row.scoresObj && row.scoresObj.overall != null">
-              <el-rate :model-value="Number(row.scoresObj.overall)" :max="5" disabled show-score size="small" />
+              <el-rate
+                :model-value="Number(row.scoresObj.overall)"
+                :max="5"
+                disabled
+                show-score
+                size="small"
+              />
             </template>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="suggestion" label="建议" width="100">
           <template #default="{ row }">
-            <el-tag :type="suggestionType(row.suggestion)" size="small">{{ suggestionText(row.suggestion) }}</el-tag>
+            <el-tag :type="suggestionType(row.suggestion)" size="small">{{
+              suggestionText(row.suggestion)
+            }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="comment" label="评语" min-width="140" show-overflow-tooltip />
@@ -245,11 +321,21 @@
 
     <!-- 完成面试确认对话框 -->
     <el-dialog v-model="completeConfirmVisible" title="确认完成面试" width="480px">
-      <el-descriptions v-if="completingInterview" :column="1" border size="small" style="margin-bottom: 12px">
+      <el-descriptions
+        v-if="completingInterview"
+        :column="1"
+        border
+        size="small"
+        style="margin-bottom: 12px"
+      >
         <el-descriptions-item label="面试ID">{{ completingInterview.id }}</el-descriptions-item>
-        <el-descriptions-item label="申请ID">{{ completingInterview.applicationId }}</el-descriptions-item>
+        <el-descriptions-item label="申请ID">{{
+          completingInterview.applicationId
+        }}</el-descriptions-item>
         <el-descriptions-item label="当前状态">
-          <el-tag :type="statusType(completingInterview.status)" size="small">{{ interviewStatusText(completingInterview.status) }}</el-tag>
+          <el-tag :type="statusType(completingInterview.status)" size="small">{{
+            interviewStatusText(completingInterview.status)
+          }}</el-tag>
         </el-descriptions-item>
       </el-descriptions>
       <el-alert
@@ -263,7 +349,9 @@
       <p style="color: var(--oa-muted)">完成面试后，申请将进入[已面试]状态，可进行终审决策。</p>
       <template #footer>
         <el-button @click="completeConfirmVisible = false">取消</el-button>
-        <el-button type="primary" :loading="completeSubmitting" @click="submitComplete">确认完成</el-button>
+        <el-button type="primary" :loading="completeSubmitting" @click="submitComplete"
+          >确认完成</el-button
+        >
       </template>
     </el-dialog>
   </div>
@@ -362,16 +450,17 @@ export default {
 
     // ---- 批量确认 ----
     openBatchConfirm() {
-      if (!this.batchConfirmCandidates.length) { ElMessage.warning('请选择待确认的面试'); return }
+      if (!this.batchConfirmCandidates.length) {
+        ElMessage.warning('请选择待确认的面试')
+        return
+      }
       this.batchConfirmVisible = true
     },
     async submitBatchConfirm() {
       if (this.batchConfirmSubmitting) return
       this.batchConfirmSubmitting = true
       try {
-        await Promise.all(
-          this.batchConfirmCandidates.map((item) => interviewApi.confirm(item.id)),
-        )
+        await Promise.all(this.batchConfirmCandidates.map((item) => interviewApi.confirm(item.id)))
         ElMessage.success(`已批量确认 ${this.batchConfirmCandidates.length} 场面试`)
         this.batchConfirmVisible = false
         this.fetchList()
@@ -382,7 +471,10 @@ export default {
 
     // ---- 批量反馈 ----
     openBatchFeedback() {
-      if (!this.batchFeedbackCandidates.length) { ElMessage.warning('请选择可反馈的面试'); return }
+      if (!this.batchFeedbackCandidates.length) {
+        ElMessage.warning('请选择可反馈的面试')
+        return
+      }
       this.batchFeedbackForm = {
         scores: { communication: 3, professional: 3, overall: 3 },
         suggestion: 'approve',
@@ -413,7 +505,10 @@ export default {
 
     // ---- 批量完成 ----
     openBatchComplete() {
-      if (!this.batchCompleteCandidates.length) { ElMessage.warning('请选择可完成的面试'); return }
+      if (!this.batchCompleteCandidates.length) {
+        ElMessage.warning('请选择可完成的面试')
+        return
+      }
       this.batchCompleteVisible = true
     },
     async submitBatchComplete() {

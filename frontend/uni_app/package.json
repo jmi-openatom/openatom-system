@@ -1,7 +1,10 @@
 {
 	"dependencies": {
+		"@boxicons/vue": "^1.0.1",
 		"@vant/popperjs": "^1.3.0",
 		"@vant/use": "^1.6.0",
+		"sass": "^1.99.0",
+		"sass-loader": "^16.0.8",
 		"vant": "^4.9.24"
 	}
 }
