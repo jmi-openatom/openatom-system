@@ -1,29 +1,36 @@
 <template>
-    <view class="page">
-        <!-- Feature Grid -->
-        <view class="grid">
-            <view v-for="item in features" :key="item.label" class="grid-item">
-                <text class="grid-icon">{{ item.icon }}</text>
-                <text class="grid-label">{{ item.label }}</text>
-            </view>
-        </view>
+    <view>
+        <tm-sheet>
+            <tm-text class=" text-weight-b mb-16 d-block" font-size="32">警告 tmAlert</tm-text>
+            <tm-text color="#999999">
+                样式丰富，用于警告信息的提醒。
+            </tm-text>
+        </tm-sheet>
+        <tm-alert>默认为thin浅色样式，可以自适应暗黑</tm-alert>
+        <tm-alert skin='normal'>也可以把skin改成normal变成纯背景</tm-alert>
+        <tm-alert color="#000000" icon="thumb-up-line" skin='normal'>也可以把skin改成normal变成纯背景</tm-alert>
+        <tm-alert color="#dee3e7" icon="thumb-up-line" skin='normal'>也可以把skin改成normal变成纯背景</tm-alert>
 
-        <!-- List -->
-        <view class="list">
-            <view v-for="n in 5" :key="n" class="list-item">
-                <text class="list-icon">📝</text>
-                <view class="list-body">
-                    <text class="list-title">动态标题 {{ n }}</text>
-                    <text class="list-desc">这是动态描述内容区域</text>
-                </view>
-                <text class="list-arrow">›</text>
-            </view>
-        </view>
-
+        <tm-sheet>
+            <tm-text class=" text-weight-b " font-size="32">可以使用默认的状态来管理颜色</tm-text>
+        </tm-sheet>
+        <tm-alert icon="alarm-line" skin='normal' status="success">自定义图标</tm-alert>
+        <tm-alert skin='normal' status="error">错误提醒</tm-alert>
+        <tm-alert closeIcon="arrow-right-line" skin='normal' status="warn">警告提醒</tm-alert>
+        <tm-alert color="#728398" icon="money-cny-circle-fill" skin='normal'>自定义背景色</tm-alert>
+        <tm-sheet>
+            <tm-text class=" text-weight-b " font-size="32">比如改些圆角，边线啥的,样式丰富请自行设计</tm-text>
+        </tm-sheet>
+        <tm-alert :round="['6']" skin='normal' status="warn">警告提醒</tm-alert>
+        <tm-alert :round="['12', '0']" skin='normal' status="error">改下圆角</tm-alert>
+        <tm-alert :border="['2']">加个小边框</tm-alert>
+        <tm-alert :border="['2']" :borderColor="['#89c0ff']" :darkBorderColor="['#3b5066']"
+                  :showClose="false">加个小边框,隐藏关闭
+        </tm-alert>
     </view>
 </template>
 
-<script setup>
+<script setup type="ts">
 import {ref} from 'vue'
 
 const features = ref([
@@ -37,6 +44,41 @@ const features = ref([
 <style scoped>
 .page {
     padding-bottom: 140rpx;
+}
+
+.kit-title {
+    display: flex;
+    align-items: center;
+}
+
+.kit-title-text {
+    flex: 1;
+    margin-left: 12rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.kit-actions {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    margin-top: 20rpx;
+}
+
+.uni-icon-demo {
+    display: flex;
+    align-items: center;
+    height: 56rpx;
+    padding: 0 18rpx;
+    background: #fff7ed;
+    border-radius: 28rpx;
+}
+
+.uni-icon-text {
+    margin-left: 8rpx;
+    font-size: 24rpx;
+    color: #92400e;
 }
 
 .grid {

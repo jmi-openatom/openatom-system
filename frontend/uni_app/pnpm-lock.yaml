@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@dcloudio/uni-ui':
+        specifier: ^1.5.12
+        version: 1.5.12
       '@vant/popperjs':
         specifier: ^1.3.0
         version: 1.3.0
@@ -17,12 +20,18 @@ importers:
       '@vant/weapp':
         specifier: ^1.11.7
         version: 1.11.7
+      pinia:
+        specifier: ^2.1.7
+        version: 2.3.1(vue@3.5.34)
       sass:
         specifier: ^1.99.0
         version: 1.99.0
       sass-loader:
         specifier: ^16.0.8
         version: 16.0.8(sass@1.99.0)
+      tmui-uni:
+        specifier: ^3.2.16
+        version: 3.2.16
       vant:
         specifier: ^4.9.24
         version: 4.9.24(vue@3.5.34)
@@ -45,6 +54,9 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@dcloudio/uni-ui@1.5.12':
+    resolution: {integrity: sha512-mGDl2OZSz7D8xcUAzJegWDHOqB4MEFBSW9Esb/oJiu2/3Gk9+P/Z4bA4JZ9jv9VWBYbMrYwaTfK1Z728kABdYg==}
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
@@ -160,6 +172,9 @@ packages:
   '@vue/compiler-ssr@3.5.34':
     resolution: {integrity: sha512-cDtTHKibkThKGHH1SP+WdccquNRYQDFH6rRjQCqT9G2ltFAfoR5pUftpab/z+aM5mW9HLLVQW7hfKKQe/1GBeQ==}
 
+  '@vue/devtools-api@6.6.4':
+    resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
+
   '@vue/reactivity@3.5.34':
     resolution: {integrity: sha512-y9XDjCEuBp+98k+UL5dbYkh57AHU4o6cxZedOPXw3bmrZZYLQsVHguGurq7hVrPCSrQtrnz1f9dssyFr+dMXfQ==}
 
@@ -227,6 +242,15 @@ packages:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
 
+  pinia@2.3.1:
+    resolution: {integrity: sha512-khUlZSwt9xXCaTbbxFYBKDc/bWAGWJjOgvxETwkTN7KRm66EeT1ZdZj6i2ceh9sP2Pzqsbc704r2yngBrxBVug==}
+    peerDependencies:
+      typescript: '>=4.4.4'
+      vue: ^2.7.0 || ^3.5.11
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   postcss@8.5.14:
     resolution: {integrity: sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg==}
     engines: {node: ^10 || ^12 || >=14}
@@ -265,10 +289,25 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
+  tmui-uni@3.2.16:
+    resolution: {integrity: sha512-GwOhLZg/DNTLxKlYKXDUDIHEd4656vuEd3W7w9PhnYQElik4iXAhjh8/EeVGPoy9g0IYiamCiD5oDHK0iABEjA==}
+    engines: {HBuilderX: ^3.6.18, uni-app: ^4.07, uni-app-x: ''}
+
   vant@4.9.24:
     resolution: {integrity: sha512-tP1A7Vjzv1/B1ljb95Jhv9Q9w6acaaZDJvy6wcKrwGgY0gQZlg+FXLZH/AIKZBE3xvYGDUsv/M7AuGcr/Pqd6A==}
     peerDependencies:
       vue: ^3.0.0
+
+  vue-demi@0.14.10:
+    resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
+    engines: {node: '>=12'}
+    hasBin: true
+    peerDependencies:
+      '@vue/composition-api': ^1.0.0-rc.1
+      vue: ^3.0.0-0 || ^2.6.0
+    peerDependenciesMeta:
+      '@vue/composition-api':
+        optional: true
 
   vue@3.5.34:
     resolution: {integrity: sha512-WdLBG9gm02OgJIG9axd5Hpx0TFLdzVgfG2evFFu8Rur5O/IoGc5cMjnjh3tPL6GnRGsYvUhBSKVPYVcxRKpMCA==}
@@ -292,6 +331,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
+
+  '@dcloudio/uni-ui@1.5.12': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
@@ -394,6 +435,8 @@ snapshots:
       '@vue/compiler-dom': 3.5.34
       '@vue/shared': 3.5.34
 
+  '@vue/devtools-api@6.6.4': {}
+
   '@vue/reactivity@3.5.34':
     dependencies:
       '@vue/shared': 3.5.34
@@ -457,6 +500,14 @@ snapshots:
   picomatch@4.0.4:
     optional: true
 
+  pinia@2.3.1(vue@3.5.34):
+    dependencies:
+      '@vue/devtools-api': 6.6.4
+      vue: 3.5.34
+      vue-demi: 0.14.10(vue@3.5.34)
+    transitivePeerDependencies:
+      - '@vue/composition-api'
+
   postcss@8.5.14:
     dependencies:
       nanoid: 3.3.12
@@ -481,11 +532,17 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
+  tmui-uni@3.2.16: {}
+
   vant@4.9.24(vue@3.5.34):
     dependencies:
       '@vant/popperjs': 1.3.0
       '@vant/use': 1.6.0(vue@3.5.34)
       '@vue/shared': 3.5.34
+      vue: 3.5.34
+
+  vue-demi@0.14.10(vue@3.5.34):
+    dependencies:
       vue: 3.5.34
 
   vue@3.5.34:

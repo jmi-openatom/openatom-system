@@ -1,4 +1,11 @@
 {
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^tm-(.*)": "@/uni_modules/tmui-uni/components/tm-$1/tm-$1.vue",
+      "^uni-icons$": "@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue"
+    }
+  },
   "pages": [
     {
       "path": "pages/home/index",
