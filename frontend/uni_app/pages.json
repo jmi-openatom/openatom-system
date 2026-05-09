@@ -23,7 +23,13 @@
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "OpenAtom",
     "navigationBarBackgroundColor": "#F8F8F8",
-    "backgroundColor": "#F5F5F5"
+    "backgroundColor": "#F5F5F5",
+    "usingComponents": {
+      "van-icon": "/wxcomponents/vant/icon/index",
+      "van-loading": "/wxcomponents/vant/loading/index",
+      "van-button": "/wxcomponents/vant/button/index",
+      "van-nav-bar": "/wxcomponents/vant/nav-bar/index"
+    }
   },
   "tabBar": {
     "custom": true,

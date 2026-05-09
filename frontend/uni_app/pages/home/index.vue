@@ -1,32 +1,44 @@
-<!-- ============================================================
-View: Home page template
-============================================================ -->
 <template>
     <view class="page">
-        <!-- Header -->
         <HeaderBar title="首页"/>
 
-        <Banner></Banner>
+        <Banner/>
+
+        <!-- Feature Grid -->
+        <view class="grid">
+            <view v-for="item in features" :key="item.label" class="grid-item">
+                <text class="grid-icon">{{ item.icon }}</text>
+                <text class="grid-label">{{ item.label }}</text>
+            </view>
+        </view>
+
+        <!-- List -->
+        <view class="list">
+            <view v-for="n in 5" :key="n" class="list-item">
+                <text class="list-icon">📝</text>
+                <view class="list-body">
+                    <text class="list-title">动态标题 {{ n }}</text>
+                    <text class="list-desc">这是动态描述内容区域</text>
+                </view>
+                <text class="list-arrow">›</text>
+            </view>
+        </view>
 
         <CustomTabBar current="pages/home/index"/>
     </view>
 </template>
 
-<!-- ============================================================
-ViewModel: Home page logic
-============================================================ -->
 <script setup>
 import {ref} from 'vue'
-import {BarChartSquare, Clipboard, Cog, Search} from '@boxicons/vue'
 import CustomTabBar from '@/components/CustomTabBar.vue'
-import HeaderBar from "@/components/HeaderBar.vue";
-import Banner from "@/pages/home/components/Banner.vue";
+import HeaderBar from '@/components/HeaderBar.vue'
+import Banner from '@/pages/home/components/Banner.vue'
 
 const features = ref([
-    {icon: Clipboard, label: '功能A'},
-    {icon: Search, label: '功能B'},
-    {icon: BarChartSquare, label: '功能C'},
-    {icon: Cog, label: '功能D'}
+    {icon: '📋', label: '功能A'},
+    {icon: '🔍', label: '功能B'},
+    {icon: '📊', label: '功能C'},
+    {icon: '⚙️', label: '功能D'}
 ])
 </script>
 
@@ -50,6 +62,10 @@ const features = ref([
     padding: 30rpx 0;
 }
 
+.grid-icon {
+    font-size: 48rpx;
+}
+
 .grid-label {
     font-size: 26rpx;
     color: #333;
@@ -70,6 +86,7 @@ const features = ref([
 }
 
 .list-icon {
+    font-size: 36rpx;
     margin-right: 20rpx;
     flex-shrink: 0;
 }
@@ -88,5 +105,10 @@ const features = ref([
     font-size: 26rpx;
     color: #999;
     margin-top: 8rpx;
+}
+
+.list-arrow {
+    font-size: 36rpx;
+    color: #ccc;
 }
 </style>

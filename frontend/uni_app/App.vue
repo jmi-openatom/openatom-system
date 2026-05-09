@@ -15,9 +15,6 @@ onHide(() => {
 </script>
 
 <style>
-/* ---- Import Vant styles ---- */
-@import 'vant/lib/index.css';
-
 /* ---- Global page base ---- */
 page {
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,

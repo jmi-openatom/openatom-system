@@ -15,7 +15,9 @@ app.$mount()
 
 // #ifdef VUE3
 import { createSSRApp } from 'vue'
+// #ifdef H5
 import 'vant/lib/index.css'
+// #endif
 
 export function createApp() {
   const app = createSSRApp(App)
