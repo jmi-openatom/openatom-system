@@ -3,19 +3,19 @@
     {
       "path": "pages/home/index",
       "style": {
-        "navigationStyle": "custom"
+        "navigationBarTitleText": "首页"
       }
     },
     {
       "path": "pages/messages/index",
       "style": {
-        "navigationStyle": "custom"
+        "navigationBarTitleText": "消息"
       }
     },
     {
       "path": "pages/profile/index",
       "style": {
-        "navigationStyle": "custom"
+        "navigationBarTitleText": "我的"
       }
     }
   ],
@@ -23,16 +23,9 @@
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "OpenAtom",
     "navigationBarBackgroundColor": "#F8F8F8",
-    "backgroundColor": "#F5F5F5",
-    "usingComponents": {
-      "van-icon": "/wxcomponents/vant/icon/index",
-      "van-loading": "/wxcomponents/vant/loading/index",
-      "van-button": "/wxcomponents/vant/button/index",
-      "van-nav-bar": "/wxcomponents/vant/nav-bar/index"
-    }
+    "backgroundColor": "#F5F5F5"
   },
   "tabBar": {
-    "custom": true,
     "color": "#999999",
     "selectedColor": "#1989fa",
     "backgroundColor": "#ffffff",

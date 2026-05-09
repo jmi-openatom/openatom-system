@@ -1,9 +1,5 @@
 <template>
     <view class="page">
-        <HeaderBar title="首页"/>
-
-        <Banner/>
-
         <!-- Feature Grid -->
         <view class="grid">
             <view v-for="item in features" :key="item.label" class="grid-item">
@@ -24,15 +20,11 @@
             </view>
         </view>
 
-        <CustomTabBar current="pages/home/index"/>
     </view>
 </template>
 
 <script setup>
 import {ref} from 'vue'
-import CustomTabBar from '@/components/CustomTabBar.vue'
-import HeaderBar from '@/components/HeaderBar.vue'
-import Banner from '@/pages/home/components/Banner.vue'
 
 const features = ref([
     {icon: '📋', label: '功能A'},

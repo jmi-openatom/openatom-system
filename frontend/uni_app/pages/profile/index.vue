@@ -20,19 +20,14 @@
 
     <!-- Logout -->
     <view class="logout-wrap">
-      <van-button type="danger" round block @click="onLogout">退出登录</van-button>
+      <button class="logout-button" @click="onLogout">退出登录</button>
     </view>
 
-    <CustomTabBar current="pages/profile/index" />
   </view>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-// #ifdef H5
-import { Button as VanButton } from 'vant'
-// #endif
-import CustomTabBar from '@/components/CustomTabBar.vue'
 
 const userName = ref('用户')
 const menus = ref([
@@ -126,5 +121,16 @@ const onLogout = () => {
 }
 .logout-wrap {
   margin: 80rpx 24rpx;
+}
+.logout-button {
+  height: 88rpx;
+  line-height: 88rpx;
+  color: #fff;
+  background: #ee0a24;
+  border-radius: 44rpx;
+  font-size: 30rpx;
+}
+.logout-button::after {
+  border: 0;
 }
 </style>

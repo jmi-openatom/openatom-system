@@ -19,10 +19,15 @@
     "wxext14566970e7e9f62": "2.27.3"
   },
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "wxcomponents"
+      }
+    ],
     "include": []
   },
-  "appid": "wxba889078f9a66057",
+  "appid": "wx8c6b52ab95da0938",
   "editorSetting": {},
   "projectArchitecture": "multiPlatform"
 }

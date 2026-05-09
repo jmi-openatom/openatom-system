@@ -1,7 +1,5 @@
 <template>
   <view class="page">
-    <HeaderBar title="消息" />
-
     <view class="msg-list">
       <view class="msg-item" v-for="msg in messages" :key="msg.id" @click="onTap(msg)">
         <view class="msg-avatar">
@@ -18,22 +16,17 @@
       </view>
     </view>
 
-    <CustomTabBar current="pages/messages/index" :badge="unreadTotal" />
   </view>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import HeaderBar from '@/components/HeaderBar.vue'
-import CustomTabBar from '@/components/CustomTabBar.vue'
+import { ref } from 'vue'
 
 const messages = ref([
   { id: 1, avatar: '👤', name: '系统通知', time: '10:30', preview: '欢迎加入OpenAtom平台', unread: 1 },
   { id: 2, avatar: '💬', name: '团队协作', time: '昨天', preview: '你的项目有新更新', unread: 3 },
   { id: 3, avatar: '🔔', name: '活动提醒', time: '周三', preview: '社区大会将于明天举行', unread: 0 }
 ])
-
-const unreadTotal = computed(() => messages.value.reduce((sum, m) => sum + (m.unread || 0), 0))
 
 const onTap = (msg) => {
   uni.showToast({ title: `打开 ${msg.name}`, icon: 'none' })
