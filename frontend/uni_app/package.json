@@ -1,6 +1,7 @@
 {
 	"scripts": {
-		"postinstall": "node scripts/patch-vant-use.js"
+		"postinstall": "node scripts/patch-vant-use.js && node scripts/sync-vant-weapp.js",
+		"sync:vant-weapp": "node scripts/sync-vant-weapp.js"
 	},
 	"dependencies": {
 		"@vant/popperjs": "^1.3.0",
