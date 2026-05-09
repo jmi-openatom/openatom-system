@@ -25,16 +25,20 @@ struct RecruitmentView: View {
     }
 
     private var listView: some View {
-        List {
-            ForEach(vm.campaigns) { campaign in
-                NavigationLink {
-                    ApplicationFormView(campaignId: campaign.id)
-                } label: {
-                    CampaignRow(campaign: campaign, clubName: vm.club?.name)
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                ForEach(vm.campaigns) { campaign in
+                    NavigationLink {
+                        ApplicationFormView(campaignId: campaign.id)
+                    } label: {
+                        CampaignRow(campaign: campaign, clubName: vm.club?.name)
+                            .premiumCard()
+                    }
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(16)
         }
-        .listStyle(.plain)
     }
 }
 

@@ -24,15 +24,19 @@ struct DiscoverView: View {
     }
 
     private var listView: some View {
-        List {
-            ForEach(vm.activities) { activity in
-                NavigationLink {
-                    ActivityDetailView(activityId: activity.id)
-                } label: {
-                    ActivityRow(activity: activity)
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                ForEach(vm.activities) { activity in
+                    NavigationLink {
+                        ActivityDetailView(activityId: activity.id)
+                    } label: {
+                        ActivityRow(activity: activity)
+                            .premiumCard()
+                    }
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(16)
         }
-        .listStyle(.plain)
     }
 }

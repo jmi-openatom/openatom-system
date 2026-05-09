@@ -44,16 +44,20 @@ struct ApplicationProgressView: View {
     }
 
     private var listView: some View {
-        List {
-            ForEach(vm.applications) { app in
-                NavigationLink {
-                    ApplicationDetailView(application: app)
-                } label: {
-                    ProgressRow(application: app)
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                ForEach(vm.applications) { app in
+                    NavigationLink {
+                        ApplicationDetailView(application: app)
+                    } label: {
+                        ProgressRow(application: app)
+                            .premiumCard()
+                    }
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(16)
         }
-        .listStyle(.plain)
     }
 }
 
@@ -61,7 +65,7 @@ struct ProgressRow: View {
     let application: ApplicationProgress
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(application.club?.name ?? "社团")
                     .font(.headline)
@@ -70,18 +74,21 @@ struct ProgressRow: View {
                     StatusBadge(status: status)
                 }
             }
-            if let campaignName = application.campaign?.name {
-                Text(campaignName)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                if let campaignName = application.campaign?.name {
+                    Text(campaignName)
+                        .font(.subheadline.bold())
+                }
+                if let deptName = application.firstChoiceDepartment?.name {
+                    Label(deptName, systemImage: "building.2")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
-            if let deptName = application.firstChoiceDepartment?.name {
-                Label(deptName, systemImage: "building")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+            
+
         }
-        .padding(.vertical, 4)
     }
 }
 
@@ -90,60 +97,82 @@ struct ApplicationDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
+            VStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
                     Text("申请信息")
                         .font(.headline)
-                    infoRow(label: "社团", value: application.club?.name ?? "-")
-                    infoRow(label: "招募", value: application.campaign?.name ?? "-")
-                    infoRow(label: "意向部门", value: application.firstChoiceDepartment?.name ?? "-")
-                    infoRow(label: "状态", badge: application.status)
+                    
+                    VStack(spacing: 12) {
+                        infoRow(label: "申请社团", value: application.club?.name)
+                        Divider()
+                        infoRow(label: "招募计划", value: application.campaign?.name)
+                        Divider()
+                        infoRow(label: "意向部门", value: application.firstChoiceDepartment?.name)
+                        Divider()
+                        infoRow(label: "当前状态", badge: application.status)
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .premiumCard()
 
                 if let records = application.approvalRecords, !records.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 20) {
                         Text("审核进度")
                             .font(.headline)
 
-                        ForEach(records.sorted(by: { ($0.node ?? 0) < ($1.node ?? 0) })) { record in
-                            HStack(spacing: 12) {
-                                Circle()
-                                    .fill(approvalColor(record.action))
-                                    .frame(width: 10, height: 10)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(record.operatorUser?.displayName ?? "审核人")
-                                        .font(.subheadline.weight(.medium))
-                                    if let action = record.action {
-                                        Text(approvalActionText(action))
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(records.sorted(by: { ($0.node ?? 0) < ($1.node ?? 0) }).enumerated()), id: \.offset) { index, record in
+                                HStack(alignment: .top, spacing: 16) {
+                                    VStack(spacing: 0) {
+                                        Circle()
+                                            .fill(approvalColor(record.action))
+                                            .frame(width: 12, height: 12)
+                                        
+                                        if index < records.count - 1 {
+                                            Rectangle()
+                                                .fill(Color(.systemGray4))
+                                                .frame(width: 2)
+                                                .frame(minHeight: 40)
+                                        }
                                     }
-                                    if let comment = record.comment, !comment.isEmpty {
-                                        Text("备注: \(comment)")
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            Text(record.operatorUser?.displayName ?? "审核人")
+                                                .font(.subheadline.bold())
+                                            Spacer()
+                                            if let date = record.createdAt {
+                                                Text(date)
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        
+                                        if let action = record.action {
+                                            Text(approvalActionText(action))
+                                                .font(.caption)
+                                                .foregroundColor(approvalColor(action))
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 2)
+                                                .background(approvalColor(action).opacity(0.1))
+                                                .clipShape(Capsule())
+                                        }
+                                        
+                                        if let comment = record.comment, !comment.isEmpty {
+                                            Text(comment)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .padding(8)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .background(Color(.systemGray6))
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        }
                                     }
-                                }
-
-                                Spacer()
-
-                                if let date = record.createdAt {
-                                    Text(date)
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
+                                    .padding(.bottom, index < records.count - 1 ? 16 : 0)
                                 }
                             }
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(Color(.systemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .premiumCard()
                 }
             }
             .padding(16)
@@ -163,7 +192,7 @@ struct ApplicationDetailView: View {
                 StatusBadge(status: badge)
             } else if let value = value {
                 Text(value)
-                    .font(.subheadline)
+                    .font(.subheadline.bold())
             }
         }
     }
@@ -178,9 +207,9 @@ struct ApplicationDetailView: View {
 
     private func approvalActionText(_ action: String) -> String {
         switch action {
-        case "APPROVED": return "已通过"
-        case "REJECTED": return "已拒绝"
-        case "PENDING": return "待审核"
+        case "APPROVED": return "审核通过"
+        case "REJECTED": return "审核驳回"
+        case "PENDING": return "等待审核"
         default: return action
         }
     }

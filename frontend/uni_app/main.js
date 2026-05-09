@@ -13,6 +13,8 @@ app.$mount()
 
 // #ifdef VUE3
 import { createSSRApp } from 'vue'
+import 'vant/lib/index.css'
+
 export function createApp() {
   const app = createSSRApp(App)
   return {

@@ -22,17 +22,8 @@ actor APIClient {
     static let shared = APIClient()
     private let baseURL = "https://api.jmi-openatom.cn/api/v1"
 
-    private let decoder: JSONDecoder = {
-        let d = JSONDecoder()
-        d.keyDecodingStrategy = .convertFromSnakeCase
-        return d
-    }()
-
-    private let encoder: JSONEncoder = {
-        let e = JSONEncoder()
-        e.keyEncodingStrategy = .convertToSnakeCase
-        return e
-    }()
+    private let decoder: JSONDecoder = JSONDecoder()
+    private let encoder: JSONEncoder = JSONEncoder()
 
     private init() {}
 
@@ -82,40 +73,37 @@ actor APIClient {
             throw APIError.invalidResponse
         }
 
-        if httpResponse.statusCode == 401 {
+        if httpResponse.statusCode == 401 && authenticated {
             await Session.shared.clear()
             throw APIError.httpError(401, "登录已过期，请重新登录")
         }
 
         // Try to decode the API envelope
-        if let envelope = try? decoder.decode(ApiResponse<T>.self, from: data) {
-            if envelope.code == 0 {
-                if let responseData = envelope.data {
-                    return responseData
-                }
-                // If T is EmptyResponse or data is nil, try to return something
-                if T.self == EmptyResponse.self {
-                    return EmptyResponse() as! T
-                }
-                throw APIError.httpError(envelope.code, envelope.message)
-            }
-            // For 401 code in envelope
-            if envelope.code == 401 {
-                await Session.shared.clear()
-                throw APIError.httpError(401, "登录已过期，请重新登录")
-            }
-            throw APIError.httpError(envelope.code, envelope.message)
-        }
-
-        // If envelope decode fails, try direct decode
+        let envelope: ApiResponse<T>
         do {
-            return try decoder.decode(T.self, from: data)
+            envelope = try decoder.decode(ApiResponse<T>.self, from: data)
         } catch {
+            // Envelope decode failed, try direct decode
             if let str = String(data: data, encoding: .utf8) {
                 throw APIError.httpError(httpResponse.statusCode, str)
             }
             throw APIError.decodingError(error)
         }
+
+        if envelope.code == 0 {
+            if let responseData = envelope.data {
+                return responseData
+            }
+            if T.self == EmptyResponse.self {
+                return EmptyResponse() as! T
+            }
+            throw APIError.httpError(envelope.code, envelope.message)
+        }
+        if envelope.code == 401 && authenticated {
+            await Session.shared.clear()
+            throw APIError.httpError(401, "登录已过期，请重新登录")
+        }
+        throw APIError.httpError(envelope.code, envelope.message)
     }
 
     func get<T: Decodable>(_ path: String, authenticated: Bool = true) async throws -> T {

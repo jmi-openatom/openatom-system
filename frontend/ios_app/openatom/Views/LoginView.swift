@@ -12,19 +12,17 @@ struct LoginView: View {
     @State private var email = ""
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    logoSection
-                    formSection
-                }
-                .padding(24)
+        ScrollView {
+            VStack(spacing: 24) {
+                logoSection
+                formSection
             }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle(isRegistering ? "注册" : "登录")
-            .navigationBarTitleDisplayMode(.inline)
-            .task { await vm.checkRegisterEnabled() }
+            .padding(24)
         }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(isRegistering ? "注册" : "登录")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await vm.checkRegisterEnabled() }
     }
 
     private var logoSection: some View {

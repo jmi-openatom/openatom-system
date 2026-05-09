@@ -41,44 +41,49 @@ struct ActivityRow: View {
     let activity: Activity
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
             if let cover = activity.coverUrl, !cover.isEmpty {
-                AsyncImageView(url: cover, size: 64)
+                AsyncImageView(url: cover, size: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(.systemGray5))
-                    .frame(width: 64, height: 64)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+                    .frame(width: 80, height: 80)
                     .overlay {
                         Image(systemName: "calendar")
+                            .font(.title2)
                             .foregroundColor(.gray)
                     }
             }
-            VStack(alignment: .leading, spacing: 4) {
+            
+            VStack(alignment: .leading, spacing: 6) {
                 Text(activity.title ?? "")
-                    .font(.subheadline.weight(.medium))
+                    .font(.headline)
                     .lineLimit(2)
+                    .foregroundColor(.primary)
+                
                 if let summary = activity.summary, !summary.isEmpty {
                     Text(summary)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(2)
                 }
-                HStack(spacing: 8) {
+                
+                Spacer(minLength: 0)
+                
+                HStack(spacing: 12) {
                     let date = activity.formattedDate
                     if !date.isEmpty {
-                        Label(date, systemImage: "calendar")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        Label(date, systemImage: "clock")
                     }
                     if let location = activity.location {
-                        Label(location, systemImage: "location")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        Label(location, systemImage: "mappin")
                     }
                 }
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.accentColor)
             }
         }
-        .padding(.vertical, 4)
     }
 }
 
@@ -109,72 +114,92 @@ struct ActivityDetailView: View {
 
     private func activityContent(_ activity: Activity) -> some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: 24) {
                 if let cover = activity.coverUrl, !cover.isEmpty {
-                    AsyncImageView(url: cover, size: 240)
+                    AsyncImageView(url: cover, size: 400)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 200)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .frame(height: 240)
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(activity.title ?? "")
-                        .font(.title2.bold())
-
-                    if let summary = activity.summary, !summary.isEmpty {
-                        Text(summary)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if let status = activity.status {
+                            StatusBadge(status: status)
+                        }
+                        
+                        Text(activity.title ?? "")
+                            .font(.title.bold())
+                        
+                        if let summary = activity.summary, !summary.isEmpty {
+                            Text(summary)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                     }
-
-                    let dateRange = activity.formattedDateRange
-                    if !dateRange.isEmpty {
-                        Label(dateRange, systemImage: "calendar")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    
+                    Divider()
+                    
+                    VStack(spacing: 16) {
+                        if !activity.formattedDateRange.isEmpty {
+                            detailRow(icon: "calendar", label: "活动时间", value: activity.formattedDateRange)
+                        }
+                        detailRow(icon: "mappin.circle", label: "活动地点", value: activity.location ?? "未指定")
                     }
-                    if let location = activity.location {
-                        Label(location, systemImage: "location")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let status = activity.status {
-                        StatusBadge(status: status)
+                    
+                    if let desc = activity.descriptionMarkdown, !desc.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("详情介绍")
+                                .font(.headline)
+                            Text(desc)
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .lineSpacing(4)
+                        }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(Color(.systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                if let desc = activity.descriptionMarkdown, !desc.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("活动详情")
-                            .font(.headline)
-                        Text(desc)
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(Color(.systemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
+                .premiumCard()
 
                 if activity.registrationRequired == true && session.isLoggedIn {
                     Button(action: { Task { await vm.register() } }) {
-                        Label("立即报名", systemImage: "person.badge.plus")
-                            .fontWeight(.semibold)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                        HStack {
+                            Text("立即报名")
+                                .fontWeight(.bold)
+                            Image(systemName: "arrow.right")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            LinearGradient(colors: [.accentColor, .accentColor.opacity(0.8)], startPoint: .leading, endPoint: .trailing)
+                        )
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: .accentColor.opacity(0.3), radius: 10, x: 0, y: 5)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.horizontal)
                 }
             }
             .padding(16)
         }
         .background(Color(.systemGroupedBackground))
+    }
+    
+    private func detailRow(icon: String, label: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.headline)
+                .foregroundColor(.accentColor)
+                .frame(width: 32, height: 32)
+                .background(Color.accentColor.opacity(0.1))
+                .clipShape(Circle())
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Text(value)
+                    .font(.subheadline.bold())
+            }
+        }
     }
 }

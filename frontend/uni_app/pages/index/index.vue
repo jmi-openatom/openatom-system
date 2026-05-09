@@ -4,11 +4,16 @@
 		<view class="text-area">
 			<text class="title">{{title}}</text>
 		</view>
+
+        <van-button type="primary" round>主要按钮</van-button>
 	</view>
 </template>
 
 <script>
+	import { Button as VanButton } from 'vant'
+
 	export default {
+		components: { VanButton },
 		data() {
 			return {
 				title: 'Hello'

@@ -20,44 +20,52 @@ struct SettingsView: View {
     }
 
     private var adminLinks: some View {
-        List {
-            Section("管理功能") {
-                NavigationLink {
-                    AdminDashboardView()
-                } label: {
-                    Label("控制台", systemImage: "rectangle.3.group")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("管理功能")
+                    .font(.headline)
+                    .padding(.horizontal, 4)
+                
+                VStack(spacing: 0) {
+                    adminRow(label: "控制台", icon: "rectangle.3.group.fill", color: .blue) { AdminDashboardView() }
+                    Divider()
+                    adminRow(label: "用户管理", icon: "person.2.fill", color: .purple) { AdminUsersView() }
+                    Divider()
+                    adminRow(label: "社团管理", icon: "building.2.fill", color: .orange) { AdminClubsView() }
+                    Divider()
+                    adminRow(label: "申请管理", icon: "doc.text.fill", color: .green) { AdminApplicationsView() }
+                    Divider()
+                    adminRow(label: "面试管理", icon: "person.bubble.fill", color: .red) { AdminInterviewsView() }
+                    Divider()
+                    adminRow(label: "成员管理", icon: "person.3.fill", color: .indigo) { AdminMembershipsView() }
                 }
-
-                NavigationLink {
-                    AdminUsersView()
-                } label: {
-                    Label("用户管理", systemImage: "person.2")
-                }
-
-                NavigationLink {
-                    AdminClubsView()
-                } label: {
-                    Label("社团管理", systemImage: "building.2")
-                }
-
-                NavigationLink {
-                    AdminApplicationsView()
-                } label: {
-                    Label("申请管理", systemImage: "doc.text")
-                }
-
-                NavigationLink {
-                    AdminInterviewsView()
-                } label: {
-                    Label("面试管理", systemImage: "person.bubble")
-                }
-
-                NavigationLink {
-                    AdminMembershipsView()
-                } label: {
-                    Label("成员管理", systemImage: "person.3")
-                }
+                .premiumCard()
             }
+            .padding(16)
+        }
+    }
+    
+    private func adminRow<V: View>(label: String, icon: String, color: Color, @ViewBuilder destination: () -> V) -> some View {
+        NavigationLink {
+            destination()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .foregroundColor(.white)
+                    .frame(width: 32, height: 32)
+                    .background(color)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                
+                Text(label)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption.bold())
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 12)
         }
     }
 

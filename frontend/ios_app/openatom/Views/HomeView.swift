@@ -27,96 +27,112 @@ struct HomeView: View {
     @ViewBuilder
     private func contentView(_ home: SiteHome) -> some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: 20) {
                 if let club = home.club {
                     heroSection(club: club, metrics: home.metrics ?? [])
                 }
 
-                if let techStack = home.techStack, !techStack.isEmpty {
-                    techStackSection(techStack)
-                }
+                VStack(spacing: 20) {
+                    if let techStack = home.techStack, !techStack.isEmpty {
+                        techStackSection(techStack)
+                    }
 
-                if let focusAreas = home.focusAreas, !focusAreas.isEmpty {
-                    focusAreasSection(focusAreas)
-                }
+                    if let focusAreas = home.focusAreas, !focusAreas.isEmpty {
+                        focusAreasSection(focusAreas)
+                    }
 
-                if let activities = home.activities, !activities.isEmpty {
-                    activitiesSection(activities)
-                }
+                    if let activities = home.activities, !activities.isEmpty {
+                        activitiesSection(activities)
+                    }
 
-                if let people = home.people, !people.isEmpty {
-                    peopleSection(people)
-                }
+                    if let people = home.people, !people.isEmpty {
+                        peopleSection(people)
+                    }
 
-                if let awards = home.awards, !awards.isEmpty {
-                    awardsSection(awards)
+                    if let awards = home.awards, !awards.isEmpty {
+                        awardsSection(awards)
+                    }
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
             }
-            .padding(16)
         }
         .background(Color(.systemGroupedBackground))
+        .ignoresSafeArea(edges: .top)
     }
 
     // MARK: - Hero
 
     private func heroSection(club: SiteClub, metrics: [SiteMetric]) -> some View {
-        VStack(spacing: 20) {
-            VStack(spacing: 12) {
-                if let logo = club.logoUrl, !logo.isEmpty {
-                    AsyncImageView(url: logo, size: 80)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                } else {
-                    Image(systemName: "atom")
-                        .font(.system(size: 44))
-                        .foregroundColor(.accentColor)
-                        .frame(width: 80, height: 80)
-                        .background(Color.accentColor.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                }
+        VStack(spacing: 0) {
+            ZStack {
+                LinearGradient(
+                    colors: [Color.accentColor, Color.accentColor.opacity(0.8), Color.purple.opacity(0.6)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .frame(height: 300)
+                
+                VStack(spacing: 16) {
+                    Spacer(minLength: 60)
+                    if let logo = club.logoUrl, !logo.isEmpty {
+                        AsyncImageView(url: logo, size: 90)
+                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                            .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
+                    } else {
+                        Image(systemName: "atom")
+                            .font(.system(size: 44))
+                            .foregroundColor(.white)
+                            .frame(width: 90, height: 90)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                    }
 
-                Text(club.name ?? "社团")
-                    .font(.largeTitle.bold())
-
-                if let desc = club.description, !desc.isEmpty {
-                    Text(desc)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(3)
-                }
-
-                if let status = club.recruitmentStatus {
-                    StatusBadge(status: status)
+                    VStack(spacing: 4) {
+                        Text(club.name ?? "社团")
+                            .font(.title.bold())
+                            .foregroundColor(.white)
+                        
+                        if let desc = club.description, !desc.isEmpty {
+                            Text(desc)
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.9))
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                                .padding(.horizontal, 40)
+                        }
+                    }
+                    
+                    if let status = club.recruitmentStatus {
+                        StatusBadge(status: status)
+                            .shadow(color: .black.opacity(0.1), radius: 5)
+                    }
+                    Spacer(minLength: 20)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 24)
-            .padding(.horizontal, 16)
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 40, bottomTrailingRadius: 40))
 
             if !metrics.isEmpty {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ForEach(Array(metrics.enumerated()), id: \.offset) { _, metric in
-                        VStack(spacing: 6) {
+                HStack(spacing: 12) {
+                    ForEach(Array(metrics.prefix(3).enumerated()), id: \.offset) { _, metric in
+                        VStack(spacing: 4) {
                             Text(metric.value ?? "0")
-                                .font(.title.bold())
-                                .foregroundColor(.accentColor)
+                                .font(.headline.bold())
+                                .foregroundColor(.primary)
                             Text(metric.label ?? "")
-                                .font(.caption)
+                                .font(.caption2)
                                 .foregroundColor(.secondary)
-                            if let note = metric.note {
-                                Text(note)
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary.opacity(0.7))
-                            }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
+                        .padding(.vertical, 12)
                         .background(Color(.systemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
                     }
                 }
+                .padding(.horizontal, 24)
+                .offset(y: -30)
+                .padding(.bottom, -10)
             }
         }
     }
@@ -128,10 +144,10 @@ struct HomeView: View {
             FlowLayout(spacing: 8) {
                 ForEach(tags, id: \.self) { tag in
                     Text(tag)
-                        .font(.caption.weight(.medium))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.1))
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color.accentColor.opacity(0.08))
                         .foregroundColor(.accentColor)
                         .clipShape(Capsule())
                 }
@@ -142,31 +158,32 @@ struct HomeView: View {
     // MARK: - Focus Areas
 
     private func focusAreasSection(_ areas: [SiteFocusArea]) -> some View {
-        sectionView(title: "方向简介", icon: "square.grid.2x2") {
+        sectionView(title: "研究方向", icon: "sparkles") {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 ForEach(Array(areas.enumerated()), id: \.offset) { index, area in
-                    VStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Image(systemName: focusIcon(for: area.icon, index: index))
-                            .font(.title2)
-                            .foregroundColor(focusColor(index: index))
-                            .frame(width: 40, height: 40)
-                            .background(focusColor(index: index).opacity(0.1))
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(focusColor(index: index))
                             .clipShape(RoundedRectangle(cornerRadius: 10))
 
-                        Text(area.title ?? "")
-                            .font(.subheadline.weight(.semibold))
-
-                        if let desc = area.description, !desc.isEmpty {
-                            Text(desc)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                                .multilineTextAlignment(.center)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(area.title ?? "")
+                                .font(.subheadline.bold())
+                            
+                            if let desc = area.description, !desc.isEmpty {
+                                Text(desc)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(2)
+                            }
                         }
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(12)
-                    .background(Color(.systemBackground))
+                    .background(Color(.systemGroupedBackground).opacity(0.5))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
@@ -177,65 +194,54 @@ struct HomeView: View {
 
     private func activitiesSection(_ activities: [SiteActivity]) -> some View {
         sectionView(title: "近期活动", icon: "calendar") {
-            ForEach(activities) { activity in
-                NavigationLink {
-                    ActivityDetailView(activityId: activity.id)
-                } label: {
-                    HStack(spacing: 12) {
-                        if let cover = activity.coverUrl, !cover.isEmpty {
-                            AsyncImageView(url: cover, size: 60)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        } else {
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(.systemGray5))
-                                .frame(width: 60, height: 60)
-                                .overlay {
-                                    Image(systemName: "calendar")
-                                        .foregroundColor(.gray)
-                                }
-                        }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(activity.title ?? "")
-                                .font(.subheadline.weight(.medium))
-                                .lineLimit(2)
-                                .foregroundColor(.primary)
-                            if let desc = activity.description, !desc.isEmpty {
-                                Text(desc)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(2)
+            VStack(spacing: 12) {
+                ForEach(activities) { activity in
+                    NavigationLink {
+                        ActivityDetailView(activityId: activity.id)
+                    } label: {
+                        HStack(spacing: 12) {
+                            if let cover = activity.coverUrl, !cover.isEmpty {
+                                AsyncImageView(url: cover, size: 64)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            } else {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemGray6))
+                                    .frame(width: 64, height: 64)
+                                    .overlay {
+                                        Image(systemName: "calendar")
+                                            .foregroundColor(.gray)
+                                    }
                             }
-                            HStack(spacing: 8) {
-                                if let date = activity.date {
-                                    Label(date, systemImage: "calendar")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
-                                if let location = activity.location {
-                                    Label(location, systemImage: "location")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
 
-                        Spacer()
-
-                        VStack(spacing: 4) {
-                            if let status = activity.status {
-                                StatusBadge(status: status)
-                            }
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(activity.title ?? "")
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.primary)
+                                
+                                HStack(spacing: 8) {
+                                    if let date = activity.date {
+                                        Label(date, systemImage: "clock")
+                                            .font(.caption2)
+                                    }
+                                    if let location = activity.location {
+                                        Label(location, systemImage: "mappin.and.ellipse")
+                                            .font(.caption2)
+                                    }
+                                }
                                 .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
+                            }
 
-                if activity.id != activities.last?.id {
-                    Divider()
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.secondary.opacity(0.5))
+                        }
+                        .padding(8)
+                        .background(Color(.systemGroupedBackground).opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -244,46 +250,42 @@ struct HomeView: View {
     // MARK: - People
 
     private func peopleSection(_ people: [SitePerson]) -> some View {
-        sectionView(title: "核心成员 (\(people.count))", icon: "person.3") {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ForEach(people) { person in
-                    VStack(spacing: 8) {
-                        if let avatar = person.avatar, !avatar.isEmpty {
-                            AsyncImageView(url: avatar, size: 48)
-                                .clipShape(Circle())
-                        } else {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [.accentColor, .accentColor.opacity(0.6)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 48, height: 48)
-                                .overlay {
-                                    Text(personInitial(person))
-                                        .font(.headline)
-                                        .foregroundColor(.white)
+        sectionView(title: "核心团队", icon: "person.2.fill") {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(people) { person in
+                        VStack(spacing: 8) {
+                            if let avatar = person.avatar, !avatar.isEmpty {
+                                AsyncImageView(url: avatar, size: 56)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(Color.accentColor.opacity(0.2), lineWidth: 1))
+                            } else {
+                                Circle()
+                                    .fill(LinearGradient(colors: [.accentColor, .blue], startPoint: .top, endPoint: .bottom))
+                                    .frame(width: 56, height: 56)
+                                    .overlay {
+                                        Text(personInitial(person))
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                    }
+                            }
+
+                            VStack(spacing: 2) {
+                                Text(person.name ?? "")
+                                    .font(.caption.bold())
+                                    .lineLimit(1)
+                                if let role = person.role {
+                                    Text(role)
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
                                 }
+                            }
                         }
-
-                        Text(person.name ?? "")
-                            .font(.subheadline.weight(.medium))
-                            .lineLimit(1)
-
-                        if let role = person.role {
-                            Text(role)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
+                        .frame(width: 80)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color(.systemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+                .padding(.vertical, 4)
             }
         }
     }
@@ -291,45 +293,38 @@ struct HomeView: View {
     // MARK: - Awards
 
     private func awardsSection(_ awards: [SiteAward]) -> some View {
-        sectionView(title: "获奖荣誉 (\(awards.count))", icon: "trophy") {
-            ForEach(awards) { award in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        if let year = award.year {
-                            Text(String(year))
-                                .font(.title3.bold())
-                                .foregroundColor(.accentColor)
+        sectionView(title: "荣获奖项", icon: "trophy.fill") {
+            VStack(spacing: 12) {
+                ForEach(awards.prefix(5)) { award in
+                    HStack(spacing: 12) {
+                        Text(String(award.year ?? 0))
+                            .font(.system(.subheadline, design: .rounded).bold())
+                            .foregroundColor(.orange)
+                            .frame(width: 44)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(award.title ?? "")
+                                .font(.subheadline.bold())
+                            Text(award.competitionName ?? "")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
                         }
-                        Text(award.title ?? "")
-                            .font(.subheadline.weight(.medium))
+                        
                         Spacer()
+                        
                         if let level = award.awardLevel {
                             Text(level)
-                                .font(.caption.weight(.medium))
-                                .foregroundColor(.orange)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
                                 .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
-                                .background(Color.orange.opacity(0.1))
+                                .padding(.vertical, 4)
+                                .background(Color.orange)
                                 .clipShape(Capsule())
                         }
                     }
-
-                    if let comp = award.competitionName {
-                        Text(comp)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let team = award.teamName {
-                        Text(team)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(.vertical, 4)
-
-                if award.id != awards.last?.id {
-                    Divider()
+                    .padding(10)
+                    .background(Color(.systemGroupedBackground).opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
         }
@@ -344,24 +339,30 @@ struct HomeView: View {
     }
 
     private func sectionView<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label(title, systemImage: icon)
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(.accentColor)
+                Text(title)
+                    .font(.headline)
+                Spacer()
+            }
             content()
         }
         .padding(16)
         .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: .black.opacity(0.03), radius: 10, x: 0, y: 5)
     }
 
     private func focusIcon(for apiIcon: String?, index: Int) -> String {
         switch apiIcon {
         case "monitor": return "desktopcomputer"
         case "cpu": return "cpu"
-        case "lightning": return "bolt"
+        case "lightning": return "bolt.fill"
         case "phone": return "iphone"
         default:
-            let icons = ["desktopcomputer", "cpu", "bolt", "iphone"]
+            let icons = ["desktopcomputer", "cpu", "bolt.fill", "iphone"]
             return icons[index % icons.count]
         }
     }
