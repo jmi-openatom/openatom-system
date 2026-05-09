@@ -1,5 +1,6 @@
 <template>
   <view class="page">
+    <tm-navbar title="消息" :showNavBack="false" />
     <view class="msg-list">
       <view class="msg-item" v-for="msg in messages" :key="msg.id" @click="onTap(msg)">
         <view class="msg-avatar">
@@ -15,12 +16,18 @@
         <view class="msg-badge" v-if="msg.unread">{{ msg.unread }}</view>
       </view>
     </view>
-
+    <tm-tabbar
+        :list="tabbarList"
+        :activeIndex="1"
+        position="fixed"
+        :showTopBorder="true"
+    />
   </view>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { tabbarList } from '@/config/tabbar'
 
 const messages = ref([
   { id: 1, avatar: '👤', name: '系统通知', time: '10:30', preview: '欢迎加入OpenAtom平台', unread: 1 },

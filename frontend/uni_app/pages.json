@@ -10,46 +10,31 @@
     {
       "path": "pages/home/index",
       "style": {
+        "navigationStyle": "custom",
         "navigationBarTitleText": "首页"
       }
     },
     {
       "path": "pages/messages/index",
       "style": {
+        "navigationStyle": "custom",
         "navigationBarTitleText": "消息"
       }
     },
     {
       "path": "pages/profile/index",
       "style": {
+        "navigationStyle": "custom",
         "navigationBarTitleText": "我的"
       }
     }
   ],
   "globalStyle": {
+    "navigationStyle": "custom",
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "OpenAtom",
     "navigationBarBackgroundColor": "#F8F8F8",
     "backgroundColor": "#F5F5F5"
-  },
-  "tabBar": {
-    "color": "#999999",
-    "selectedColor": "#1989fa",
-    "backgroundColor": "#ffffff",
-    "list": [
-      {
-        "pagePath": "pages/home/index",
-        "text": "首页"
-      },
-      {
-        "pagePath": "pages/messages/index",
-        "text": "消息"
-      },
-      {
-        "pagePath": "pages/profile/index",
-        "text": "我的"
-      }
-    ]
   },
   "uniIdRouter": {}
 }

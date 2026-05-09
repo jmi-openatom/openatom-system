@@ -1,37 +1,96 @@
 <template>
-    <view>
+    <view class="page">
+        <tm-navbar :showNavBack="false" title="首页"/>
+        <br>
         <tm-sheet>
-            <tm-text class=" text-weight-b mb-16 d-block" font-size="32">警告 tmAlert</tm-text>
-            <tm-text color="#999999">
-                样式丰富，用于警告信息的提醒。
-            </tm-text>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
         </tm-sheet>
-        <tm-alert>默认为thin浅色样式，可以自适应暗黑</tm-alert>
-        <tm-alert skin='normal'>也可以把skin改成normal变成纯背景</tm-alert>
-        <tm-alert color="#000000" icon="thumb-up-line" skin='normal'>也可以把skin改成normal变成纯背景</tm-alert>
-        <tm-alert color="#dee3e7" icon="thumb-up-line" skin='normal'>也可以把skin改成normal变成纯背景</tm-alert>
-
+        <br>
         <tm-sheet>
-            <tm-text class=" text-weight-b " font-size="32">可以使用默认的状态来管理颜色</tm-text>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
         </tm-sheet>
-        <tm-alert icon="alarm-line" skin='normal' status="success">自定义图标</tm-alert>
-        <tm-alert skin='normal' status="error">错误提醒</tm-alert>
-        <tm-alert closeIcon="arrow-right-line" skin='normal' status="warn">警告提醒</tm-alert>
-        <tm-alert color="#728398" icon="money-cny-circle-fill" skin='normal'>自定义背景色</tm-alert>
+        <br>
         <tm-sheet>
-            <tm-text class=" text-weight-b " font-size="32">比如改些圆角，边线啥的,样式丰富请自行设计</tm-text>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
         </tm-sheet>
-        <tm-alert :round="['6']" skin='normal' status="warn">警告提醒</tm-alert>
-        <tm-alert :round="['12', '0']" skin='normal' status="error">改下圆角</tm-alert>
-        <tm-alert :border="['2']">加个小边框</tm-alert>
-        <tm-alert :border="['2']" :borderColor="['#89c0ff']" :darkBorderColor="['#3b5066']"
-                  :showClose="false">加个小边框,隐藏关闭
-        </tm-alert>
+        <br>
+        <tm-sheet>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
+        </tm-sheet>
+        <br>
+        <tm-sheet>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
+        </tm-sheet>
+        <br>
+        <tm-sheet>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
+        </tm-sheet>
+        <br>
+        <tm-sheet>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
+        </tm-sheet>
+        <br>
+        <tm-sheet>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
+        </tm-sheet>
+        <br>
+        <tm-sheet>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
+        </tm-sheet>
+        <br>
+        <tm-sheet>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
+        </tm-sheet>
+        <br>
+        <tm-sheet>
+            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
+            <view>
+                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
+            </view>
+        </tm-sheet>
+        
+        <tm-tabbar
+            :activeIndex="0"
+            :list="tabbarList"
+            :showTopBorder="true"
+            position="fixed"
+        />
     </view>
 </template>
 
 <script setup type="ts">
 import {ref} from 'vue'
+import {tabbarList} from '@/config/tabbar'
 
 const features = ref([
     {icon: '📋', label: '功能A'},

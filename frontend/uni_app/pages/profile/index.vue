@@ -1,5 +1,6 @@
 <template>
   <view class="page">
+    <tm-navbar title="我的" :showNavBack="false" />
     <!-- User card -->
     <view class="user-card">
       <view class="avatar">
@@ -23,11 +24,18 @@
       <button class="logout-button" @click="onLogout">退出登录</button>
     </view>
 
+    <tm-tabbar
+        :list="tabbarList"
+        :activeIndex="2"
+        position="fixed"
+        :showTopBorder="true"
+    />
   </view>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { tabbarList } from '@/config/tabbar'
 
 const userName = ref('用户')
 const menus = ref([
