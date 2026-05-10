@@ -131,7 +131,6 @@ onMounted(fetchNotifications)
 }
 
 .notification-item:hover {
-  border-color: #2563eb;
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(37, 99, 235, 0.05);
 }
@@ -142,18 +141,18 @@ onMounted(fetchNotifications)
 }
 
 .item-icon {
-  width: 48px;
-  height: 48px;
+  width: 55px;
+  height: 55px;
   border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 20px;
+  font-size: 30px;
   flex-shrink: 0;
 }
 
 .item-icon.system {
-  background: #fee2e2;
-  color: #ef4444;
+  background: var(--oa-primary);
+  color: #fff;
 }
 .item-icon.activity {
   background: #dcfce7;
@@ -182,12 +181,12 @@ onMounted(fetchNotifications)
 
 .item-title {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
   color: #1e293b;
 }
 
 .item-time {
-  font-size: 13px;
+  font-size: 16px;
   color: #94a3b8;
 }
 
