@@ -29,14 +29,25 @@
             <span>社团概况</span>
             <strong>持续更新</strong>
           </div>
-          <div class="signal-grid">
-            <div v-for="metric in metrics" :key="metric.label" class="signal-card">
-              <span>{{ metric.label }}</span>
-              <strong>{{ metric.value }}</strong>
-              <small>{{ metric.note }}</small>
+          <div v-if="metrics.length" class="signal-grid" role="list" aria-label="社团关键指标">
+            <div
+              v-for="metric in metrics"
+              :key="metric.label"
+              class="signal-card"
+              :class="`signal-card--${metricTone(metric.label)}`"
+              role="listitem"
+            >
+              <div class="signal-card__head">
+                <el-icon class="signal-card__icon" aria-hidden="true">
+                  <component :is="metricIcon(metric.label)" />
+                </el-icon>
+                <span class="signal-card__label">{{ metric.label }}</span>
+              </div>
+              <strong class="signal-card__value">{{ metric.value }}</strong>
+              <small class="signal-card__note">{{ metric.note }}</small>
             </div>
           </div>
-          <el-empty v-if="!metrics.length" :image-size="72" description="暂无社团统计数据" />
+          <el-empty v-else :image-size="72" description="暂无社团统计数据" />
           <div v-if="techStack.length" class="terminal-strip">
             <span v-for="item in stack" :key="item">{{ item }}</span>
           </div>
@@ -155,15 +166,27 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { markRaw, nextTick } from 'vue'
 import { siteApi } from '@/api'
-import { Cpu, DataAnalysis, Lightning, Monitor, UserFilled } from '@element-plus/icons-vue'
+import {
+  Calendar,
+  Collection,
+  Cpu,
+  DataAnalysis,
+  Lightning,
+  Monitor,
+  Trophy,
+  UserFilled,
+} from '@element-plus/icons-vue'
 
 gsap.registerPlugin(ScrollTrigger)
 
 const icons = {
+  Calendar: markRaw(Calendar),
+  Collection: markRaw(Collection),
   Cpu: markRaw(Cpu),
   DataAnalysis: markRaw(DataAnalysis),
   Lightning: markRaw(Lightning),
   Monitor: markRaw(Monitor),
+  Trophy: markRaw(Trophy),
   UserFilled: markRaw(UserFilled),
 }
 
@@ -281,6 +304,22 @@ export default {
         '-'
       )
     },
+    metricIcon(label) {
+      if (!label) return icons.DataAnalysis
+      if (label.includes('成员')) return icons.UserFilled
+      if (label.includes('活动')) return icons.Calendar
+      if (label.includes('获奖')) return icons.Trophy
+      if (label.includes('招新')) return icons.Collection
+      return icons.DataAnalysis
+    },
+    metricTone(label) {
+      if (!label) return 'default'
+      if (label.includes('成员')) return 'members'
+      if (label.includes('活动')) return 'activity'
+      if (label.includes('获奖')) return 'award'
+      if (label.includes('招新')) return 'recruit'
+      return 'default'
+    },
   },
 }
 </script>
@@ -387,24 +426,88 @@ export default {
 }
 
 .signal-card {
+  position: relative;
   min-height: 122px;
   padding: 16px;
   border: 1px solid rgba(219, 230, 245, 0.95);
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff, #f7fbff);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.signal-card span,
-.signal-card small {
+.signal-card:hover {
+  border-color: rgba(147, 197, 253, 0.65);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.08);
+}
+
+.signal-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.signal-card__icon {
+  flex-shrink: 0;
+  font-size: 22px;
+  color: var(--oa-primary-dark);
+  opacity: 0.88;
+}
+
+.signal-card__label {
   display: block;
   color: #64748b;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
-.signal-card strong {
+.signal-card__value {
   display: block;
   margin: 10px 0 8px;
   color: #0f172a;
   font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.signal-card__note {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.signal-card--members {
+  background: linear-gradient(180deg, #ffffff, #eff6ff);
+}
+
+.signal-card--members .signal-card__icon {
+  color: #2563eb;
+}
+
+.signal-card--activity {
+  background: linear-gradient(180deg, #ffffff, #f0fdf4);
+}
+
+.signal-card--activity .signal-card__icon {
+  color: #16a34a;
+}
+
+.signal-card--award {
+  background: linear-gradient(180deg, #ffffff, #fffbeb);
+}
+
+.signal-card--award .signal-card__icon {
+  color: #d97706;
+}
+
+.signal-card--recruit {
+  background: linear-gradient(180deg, #ffffff, #faf5ff);
+}
+
+.signal-card--recruit .signal-card__icon {
+  color: #7c3aed;
 }
 
 .terminal-strip {

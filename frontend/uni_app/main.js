@@ -1,8 +1,11 @@
-import App from './App'
+import App from './App.vue'
+import * as api from '@/api'
 
 import './style/global.css'
 import 'tmui-uni/css/tmui.css'
 import 'tmui-uni/css/remixicon.css'
+
+Object.assign(globalThis, api)
 
 // #ifndef VUE3
 import Vue from 'vue'

@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": false,
+    "skipLibCheck": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "types": ["@dcloudio/types"],
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "api/**/*.ts",
+    "store/**/*.ts",
+    "utils/**/*.ts",
+    "config/**/*.ts",
+    "pages/**/*.vue",
+    "pages/**/*.ts",
+    "components/**/*.vue",
+    "App.vue",
+    "env.d.ts",
+    "auto-imports.d.ts"
+  ],
+  "exclude": ["node_modules", "unpackage", "uni_modules", "wxcomponents"]
+}

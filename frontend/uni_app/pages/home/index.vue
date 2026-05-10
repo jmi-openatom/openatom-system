@@ -1,207 +1,127 @@
 <template>
     <view class="page">
         <tm-navbar :showNavBack="false" title="首页"/>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        <br>
-        <tm-sheet>
-            <tm-text class="text-weight-b mb-16 d-block" font-size="36">Welcome</tm-text>
-            <view>
-                <tm-text>欢迎来到JMI-OPENATOM 系统</tm-text>
-            </view>
-        </tm-sheet>
-        
-        <tm-tabbar
-            :activeIndex="0"
-            :list="tabbarList"
-            :showTopBorder="true"
-            position="fixed"
-        />
+        <scroll-view
+            class="main-scroll"
+            scroll-y
+            scroll-with-animation
+            :scroll-into-view="scrollIntoView"
+        >
+            <HomeBanner
+                :club="data.club"
+                :loading="loading"
+                @activities="scrollToActivities"
+                @join="goJoin"
+            />
+            <HomeMetrics :club-name="clubName" :metrics="data.metrics || []" />
+            <HomeTechTags :tags="data.techStack || []" />
+            <HomeFocusGrid :items="data.focusAreas || []" />
+            <HomeActivityScroller :activities="data.activities || []" />
+            <HomePeopleList :people="data.people || []" />
+            <HomeAwardList :awards="data.awards || []" />
+            <view class="scroll-spacer" />
+            <view class="bottom-pad" />
+        </scroll-view>
+        <Tabbar :activeIndex="0"/>
     </view>
 </template>
 
-<script setup type="ts">
-import {ref} from 'vue'
-import {tabbarList} from '@/config/tabbar'
+<script setup>
+import Tabbar from '@/components/Tabbar.vue'
+import HomeActivityScroller from '@/pages/home/components/HomeActivityScroller.vue'
+import HomeAwardList from '@/pages/home/components/HomeAwardList.vue'
+import HomeBanner from '@/pages/home/components/HomeBanner.vue'
+import HomeFocusGrid from '@/pages/home/components/HomeFocusGrid.vue'
+import HomeMetrics from '@/pages/home/components/HomeMetrics.vue'
+import HomePeopleList from '@/pages/home/components/HomePeopleList.vue'
+import HomeTechTags from '@/pages/home/components/HomeTechTags.vue'
+import { siteApi } from '@/api'
+import { computed, nextTick, onMounted, ref } from 'vue'
 
-const features = ref([
-    {icon: '📋', label: '功能A'},
-    {icon: '🔍', label: '功能B'},
-    {icon: '📊', label: '功能C'},
-    {icon: '⚙️', label: '功能D'}
-])
+const loading = ref(true)
+const scrollIntoView = ref('')
+const data = ref({
+    club: {},
+    metrics: [],
+    focusAreas: [],
+    activities: [],
+    people: [],
+    awards: [],
+    techStack: [],
+})
+
+const clubName = computed(() => {
+    const c = data.value.club
+    return (c && c.name) || ''
+})
+
+async function loadClubHome() {
+    loading.value = true
+    try {
+        const res = await siteApi.clubHome()
+        data.value = res || {
+            club: {},
+            metrics: [],
+            focusAreas: [],
+            activities: [],
+            people: [],
+            awards: [],
+            techStack: [],
+        }
+    } catch {
+        data.value = {
+            club: {},
+            metrics: [],
+            focusAreas: [],
+            activities: [],
+            people: [],
+            awards: [],
+            techStack: [],
+        }
+    } finally {
+        loading.value = false
+    }
+}
+
+function goJoin() {
+    uni.switchTab({url: '/pages/profile/index'})
+}
+
+function scrollToActivities() {
+    scrollIntoView.value = ''
+    nextTick(() => {
+        scrollIntoView.value = 'section-activities'
+        setTimeout(() => {
+            scrollIntoView.value = ''
+        }, 400)
+    })
+}
+
+onMounted(() => {
+    loadClubHome()
+})
 </script>
 
 <style scoped>
 .page {
-    padding-bottom: 140rpx;
-}
-
-.kit-title {
-    display: flex;
-    align-items: center;
-}
-
-.kit-title-text {
-    flex: 1;
-    margin-left: 12rpx;
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.kit-actions {
-    display: flex;
-    align-items: center;
-    gap: 20rpx;
-    margin-top: 20rpx;
-}
-
-.uni-icon-demo {
-    display: flex;
-    align-items: center;
-    height: 56rpx;
-    padding: 0 18rpx;
-    background: #fff7ed;
-    border-radius: 28rpx;
-}
-
-.uni-icon-text {
-    margin-left: 8rpx;
-    font-size: 24rpx;
-    color: #92400e;
-}
-
-.grid {
-    display: flex;
-    flex-wrap: wrap;
-    padding: 0 24rpx;
-    margin-top: 20rpx;
-}
-
-.grid-item {
-    width: 25%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 30rpx 0;
+    height: 100vh;
+    background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 32%, #f8fafc 100%);
+    box-sizing: border-box;
 }
 
-.grid-icon {
-    font-size: 48rpx;
-}
-
-.grid-label {
-    font-size: 26rpx;
-    color: #333;
-    margin-top: 10rpx;
-}
-
-.list {
-    margin: 0 24rpx;
-}
-
-.list-item {
-    display: flex;
-    align-items: center;
-    padding: 30rpx;
-    margin-bottom: 16rpx;
-    background: #fff;
-    border-radius: 12rpx;
-}
-
-.list-icon {
-    font-size: 36rpx;
-    margin-right: 20rpx;
-    flex-shrink: 0;
-}
-
-.list-body {
+.main-scroll {
     flex: 1;
+    height: 0;
+    padding-top: 8rpx;
 }
 
-.list-title {
-    font-size: 30rpx;
-    font-weight: 500;
-    color: #333;
+.scroll-spacer {
+    height: 32rpx;
 }
 
-.list-desc {
-    font-size: 26rpx;
-    color: #999;
-    margin-top: 8rpx;
-}
-
-.list-arrow {
-    font-size: 36rpx;
-    color: #ccc;
+.bottom-pad {
+    height: 120rpx;
 }
 </style>

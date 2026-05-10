@@ -1,7 +1,12 @@
 {
+	"type": "module",
 	"scripts": {
+		"dev:mp-weixin": "node scripts/dev-mp-weixin.js",
+		"open:mp-weixin": "node scripts/open-mp-weixin.js",
+		"preview:mp-weixin": "node scripts/open-mp-weixin.js && node scripts/dev-mp-weixin.js",
 		"postinstall": "node scripts/patch-vant-use.js && node scripts/sync-vant-weapp.js",
-		"sync:vant-weapp": "node scripts/sync-vant-weapp.js"
+		"sync:vant-weapp": "node scripts/sync-vant-weapp.js",
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@dcloudio/uni-ui": "^1.5.12",
@@ -13,5 +18,11 @@
 		"sass-loader": "^16.0.8",
 		"tmui-uni": "^3.2.16",
 		"vant": "^4.9.24"
+	},
+	"devDependencies": {
+		"@dcloudio/types": "^3.4.31",
+		"typescript": "^6.0.3",
+		"unplugin-auto-import": "^21.0.0",
+		"vue": "^3.5.34"
 	}
 }
