@@ -72,12 +72,16 @@
         <el-carousel
           v-if="activities.length"
           :interval="4000"
-          arrow="never"
+          arrow="always"
           class="activity-carousel"
           height="600px"
           type="card"
         >
-          <el-carousel-item v-for="activity in activities" :key="activity.title">
+          <el-carousel-item
+              v-for="activity in activities"
+              :key="activity.title"
+              class="activity-carousel-item"
+          >
             <article
               class="activity-card reveal-card"
               @click="$router.push(`/activities/${activity.id}`)"
@@ -87,9 +91,6 @@
                 <h3>{{ activity.title }}</h3>
                 <p>{{ activity.description }}</p>
               </div>
-              <el-tag :type="statusType(activity.status)" effect="plain" class="activity-tag"
-                >{{ statusText(activity.status) }}
-              </el-tag>
 
               <div class="activity-image">
                 <img :src="activity.coverUrl" :alt="activity.title" />
@@ -621,6 +622,16 @@ export default {
   margin-top: 16px;
 }
 
+#activities .container {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.activity-carousel-item{
+  width: 800px;
+}
+
 .activity-card {
   background: var(--oa-panel);
   border: 1px solid var(--oa-border);
@@ -661,12 +672,11 @@ export default {
 }
 
 .activity-image {
-  width: 540px;
+  width: 95%;
   height: 400px;
   flex-shrink: 0;
   padding: 5px;
-  margin: 0 auto;
-  background: var(--oa-primary-soft);
+  margin: 0 auto
 }
 
 .activity-image img {
