@@ -9,6 +9,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 角色实体
+ *
+ * <p>对应数据库表 sys_role, 定义系统角色, 包括角色名称, 编码和数据权限范围
+ */
 @Data
 @Builder
 @AllArgsConstructor

@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 招新活动
+ *
+ * <p>对应数据库表 recruitment_campaign, 管理社团招新活动的配置, 包括报名时间, 面试安排和目标年级
+ */
 @Data
 @Builder
 @AllArgsConstructor

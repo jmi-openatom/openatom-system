@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建部门请求
+ *
+ * <p>用于在社团下创建新部门, 包含部门名称name, 描述description和负责人用户ID managerUserId
+ */
 @Data
 @Builder
 @NoArgsConstructor

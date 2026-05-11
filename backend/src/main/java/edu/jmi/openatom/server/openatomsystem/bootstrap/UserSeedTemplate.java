@@ -2,6 +2,11 @@ package edu.jmi.openatom.server.openatomsystem.bootstrap;
 
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 
+/**
+ * 用户种子模板
+ *
+ * <p>定义系统预置用户的模板数据, 提供管理员账号的默认信息
+ */
 public record UserSeedTemplate(
     String username,
     String rawPassword,

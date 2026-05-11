@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 社团活动
+ *
+ * <p>对应数据库表 club_activity, 存储社团发布的活动信息, 包括活动时间, 地点, 报名设置及内容描述
+ */
 @Data
 @Builder
 @AllArgsConstructor

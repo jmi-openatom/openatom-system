@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 公文实体
+ *
+ * <p>对应数据库表 office_document, 存储社团公文信息, 包括公文类型, 标题, 内容和审批状态
+ */
 @Data
 @Builder
 @NoArgsConstructor

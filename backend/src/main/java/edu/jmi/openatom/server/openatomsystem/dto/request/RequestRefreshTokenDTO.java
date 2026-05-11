@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 刷新令牌请求
+ *
+ * <p>用于刷新访问令牌, 携带refreshToken获取新的访问凭证
+ */
 @Data
 @Builder
 @AllArgsConstructor

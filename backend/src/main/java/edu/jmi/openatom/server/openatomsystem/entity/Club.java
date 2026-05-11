@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 社团实体
+ *
+ * <p>对应数据库表 club, 存储社团基本信息, 包括名称, 编码, 分类, 状态及社长信息
+ */
 @Data
 @Builder
 @AllArgsConstructor

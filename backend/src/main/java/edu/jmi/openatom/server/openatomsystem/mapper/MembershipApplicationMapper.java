@@ -8,6 +8,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 入社申请数据访问层
+ *
+ * <p>提供对入社申请(MembershipApplication)的数据库操作, 包括按用户ID查询申请, 统计同批次有效申请数, 按招新计划查询申请, 条件分页查询以及清空申请用户ID等功能
+ */
 @Mapper
 public interface MembershipApplicationMapper extends BaseMapper<MembershipApplication> {
 

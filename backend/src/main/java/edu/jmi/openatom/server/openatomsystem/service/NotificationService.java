@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseNotificationD
 import edu.jmi.openatom.server.openatomsystem.entity.Notification;
 import java.util.List;
 
+/**
+ * 通知消息服务接口
+ *
+ * <p>定义当前用户通知列表, 创建通知, 标记已读, 全部通知查询, 删除通知以及未读数量统计等业务操作
+ */
 public interface NotificationService {
   ApiResponse<List<ResponseNotificationDTO>> currentUserNotifications();
 

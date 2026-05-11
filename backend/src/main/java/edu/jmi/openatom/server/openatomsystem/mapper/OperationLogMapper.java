@@ -7,6 +7,11 @@ import java.sql.Timestamp;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 操作日志数据访问层
+ *
+ * <p>提供对操作日志(OperationLog)的数据库操作, 包括按操作人, 模块, 动作和时间范围等条件查询日志等功能
+ */
 @Mapper
 public interface OperationLogMapper extends BaseMapper<OperationLog> {
 

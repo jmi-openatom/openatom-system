@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 更新申请请求
+ *
+ * <p>用于用户修改已提交的入社申请, 包含第一和第二志愿部门ID firstChoiceDepartmentId和secondChoiceDepartmentId以及个人资料profile
+ */
 @Data
 @Builder
 @NoArgsConstructor

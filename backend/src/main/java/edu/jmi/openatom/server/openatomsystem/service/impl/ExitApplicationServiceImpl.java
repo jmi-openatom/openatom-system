@@ -13,6 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 退社申请管理实现类
+ *
+ * <p>负责退社申请的创建, 查询, 审批通过和驳回等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class ExitApplicationServiceImpl implements ExitApplicationService {

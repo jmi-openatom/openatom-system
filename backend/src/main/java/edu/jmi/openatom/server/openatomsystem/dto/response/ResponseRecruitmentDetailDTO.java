@@ -9,6 +9,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 招新详情DTO
+ *
+ * <p>包含社团信息, 当前招新活动以及可选部门列表, 用于招新申请的详细信息展示
+ */
 @Data
 @Builder
 @NoArgsConstructor

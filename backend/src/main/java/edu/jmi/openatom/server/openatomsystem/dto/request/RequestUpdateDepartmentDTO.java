@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 更新部门请求
+ *
+ * <p>用于更新部门信息, 包含部门名称name, 描述description和负责人用户ID managerUserId
+ */
 @Data
 @Builder
 @NoArgsConstructor

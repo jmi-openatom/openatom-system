@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 更新招新状态请求
+ *
+ * <p>用于更新招新计划的状态, 携带状态值recruitmentStatus（open或closed）
+ */
 @Data
 @Builder
 @NoArgsConstructor

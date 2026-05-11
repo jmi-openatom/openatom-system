@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 分页数据DTO
+ *
+ * <p>封装分页查询结果, 包含数据列表, 当前页码, 每页大小及总记录数
+ */
 @Data
 @Builder
 @NoArgsConstructor

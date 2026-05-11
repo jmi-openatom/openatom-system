@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 更新社团状态请求
+ *
+ * <p>用于更新社团的运营状态, 携带状态值status（active或inactive）
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -8,6 +8,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateRecruitme
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import java.util.List;
 
+/**
+ * 社团管理服务接口
+ *
+ * <p>定义社团的查询列表, 创建, 查看详情, 更新基本信息, 更新状态以及更新招新状态等业务操作
+ */
 public interface ClubService {
   ApiResponse<List<Club>> getClubs(
       String keyword, String category, String status, String recruitmentStatus);

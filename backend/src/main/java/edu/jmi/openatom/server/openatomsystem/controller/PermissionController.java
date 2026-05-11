@@ -14,18 +14,34 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 权限管理控制器
+ *
+ * <p>提供系统权限的查询与创建功能
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/permissions")
 public class PermissionController {
   private final PermissionService permissionService;
 
+  /**
+   * 获取所有权限
+   *
+   * @return 权限列表
+   */
   @GetMapping
   @SaCheckPermission("permission:list")
   public ApiResponse<List<Permission>> getPermissions() {
     return permissionService.getPermissions();
   }
 
+  /**
+   * 创建新权限
+   *
+   * @param requestCreatePermissionDTO 创建权限请求参数
+   * @return 创建结果
+   */
   @PostMapping
   @SaCheckPermission("permission:create")
   public ApiResponse<String> createPermission(

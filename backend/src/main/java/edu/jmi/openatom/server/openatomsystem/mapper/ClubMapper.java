@@ -7,6 +7,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 社团数据访问层
+ *
+ * <p>提供对社团(Club)的数据库操作, 包括条件查询社团, 按编码查重, 查默认社团, 查活跃社团以及清空社团负责人等功能
+ */
 @Mapper
 public interface ClubMapper extends BaseMapper<Club> {
 

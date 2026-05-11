@@ -19,6 +19,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 角色管理实现类
+ *
+ * <p>负责角色的创建, 更新, 删除, 查询以及角色权限分配和用户角色分配等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class RoleServiceImpl implements RoleService {

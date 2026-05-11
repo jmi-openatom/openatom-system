@@ -4,6 +4,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Locale;
 import org.springframework.stereotype.Component;
 
+/**
+ * 客户端 IP 解析器
+ *
+ * <p>从 HTTP 请求中解析客户端真实 IP 地址, 支持 X-Forwarded-For, X-Real-IP, Forwarded 等代理头信息
+ */
 @Component
 public class ClientIpResolver {
 

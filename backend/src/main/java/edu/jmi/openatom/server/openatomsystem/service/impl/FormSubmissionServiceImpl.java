@@ -34,6 +34,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 表单提交管理实现类
+ *
+ * <p>负责表单提交的创建, 分页查询, 动态字段校验以及提交数据的Excel导出等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class FormSubmissionServiceImpl implements FormSubmissionService {

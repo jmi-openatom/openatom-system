@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 面试记录
+ *
+ * <p>对应数据库表 interview, 记录招新面试的调度信息, 包括面试时间, 地点, 方式和状态
+ */
 @Data
 @Builder
 @AllArgsConstructor

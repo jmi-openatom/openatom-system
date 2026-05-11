@@ -18,11 +18,28 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 成员申请表控制器
+ *
+ * <p>提供成员申请的增删改查, 提交与撤回等操作
+ */
 @RestController
 @RequiredArgsConstructor
 public class ApplicationController {
   private final ApplicationService applicationService;
 
+  /**
+   * 分页查询申请表列表
+   *
+   * @param campaignId 招新活动ID
+   * @param clubId 社团ID
+   * @param status 申请状态
+   * @param departmentId 部门ID
+   * @param keyword 关键词
+   * @param page 页码
+   * @param pageSize 每页大小
+   * @return 分页申请表数据
+   */
   @GetMapping("/applications")
   @SaCheckPermission("application:list")
   public ApiResponse<PageDataDTO<ResponseApplicationDTO>> list(
@@ -37,17 +54,36 @@ public class ApplicationController {
         campaignId, clubId, status, departmentId, keyword, page, pageSize);
   }
 
+  /**
+   * 创建申请表
+   *
+   * @param request 创建申请请求
+   * @return 申请表ID
+   */
   @PostMapping("/applications")
   public ApiResponse<Integer> create(@Valid @RequestBody RequestCreateApplicationDTO request) {
     return applicationService.create(request);
   }
 
+  /**
+   * 获取申请表详情
+   *
+   * @param applicationId 申请表ID
+   * @return 申请表详情
+   */
   @GetMapping("/applications/{applicationId}")
   @SaCheckPermission("application:detail")
   public ApiResponse<MembershipApplication> detail(@PathVariable Integer applicationId) {
     return applicationService.detail(applicationId);
   }
 
+  /**
+   * 更新申请表
+   *
+   * @param applicationId 申请表ID
+   * @param request 更新申请请求
+   * @return 操作结果
+   */
   @PatchMapping("/applications/{applicationId}")
   @SaCheckPermission("application:update")
   public ApiResponse<String> update(
@@ -56,12 +92,24 @@ public class ApplicationController {
     return applicationService.update(applicationId, request);
   }
 
+  /**
+   * 提交申请表
+   *
+   * @param applicationId 申请表ID
+   * @return 操作结果
+   */
   @PostMapping("/applications/{applicationId}/submit")
   @SaCheckPermission("application:submit")
   public ApiResponse<String> submit(@PathVariable Integer applicationId) {
     return applicationService.submit(applicationId);
   }
 
+  /**
+   * 撤回申请表
+   *
+   * @param applicationId 申请表ID
+   * @return 操作结果
+   */
   @PostMapping("/applications/{applicationId}/withdraw")
   @SaCheckPermission("application:withdraw")
   public ApiResponse<String> withdraw(@PathVariable Integer applicationId) {

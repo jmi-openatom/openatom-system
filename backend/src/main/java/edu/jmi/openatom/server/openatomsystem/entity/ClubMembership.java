@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 社团成员关系
+ *
+ * <p>对应数据库表 club_membership, 记录用户与社团的成员关系, 包括所属部门, 职位和状态
+ */
 @Data
 @Builder
 @AllArgsConstructor

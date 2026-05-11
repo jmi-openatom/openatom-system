@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 重置密码请求
+ *
+ * <p>用于管理员重置用户密码, 携带新密码newPassword
+ */
 @Data
 @Builder
 @NoArgsConstructor

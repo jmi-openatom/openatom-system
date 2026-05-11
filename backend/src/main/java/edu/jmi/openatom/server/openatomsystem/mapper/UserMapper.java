@@ -8,6 +8,11 @@ import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 用户数据访问层
+ *
+ * <p>提供对用户(User)的数据库操作, 包括按学号或用户名查重, 登录查询, 模糊搜索用户以及条件分页查询用户等功能
+ */
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
 

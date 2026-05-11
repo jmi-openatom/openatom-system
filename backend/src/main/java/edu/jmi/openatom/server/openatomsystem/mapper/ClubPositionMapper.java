@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.ClubPosition;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 社团岗位数据访问层
+ *
+ * <p>提供对社团岗位(ClubPosition)的数据库操作, 包括按社团ID查询岗位列表以及检查岗位名称唯一性等功能
+ */
 @Mapper
 public interface ClubPositionMapper extends BaseMapper<ClubPosition> {
 

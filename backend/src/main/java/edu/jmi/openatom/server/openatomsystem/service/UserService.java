@@ -12,6 +12,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.User;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 用户管理服务接口
+ *
+ * <p>定义用户的分页列表, 创建, 导入, 导出模板, 查看详情, 更新信息, 更新状态, 重置密码, 查询用户社团成员身份和删除等业务操作
+ */
 public interface UserService {
   ApiResponse<PageDataDTO<User>> getUsers(
       String keyword, UserStatus status, Integer clubId, Long page, Long pageSize);

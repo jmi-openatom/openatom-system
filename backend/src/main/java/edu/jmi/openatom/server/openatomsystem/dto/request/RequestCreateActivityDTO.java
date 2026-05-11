@@ -3,6 +3,11 @@ package edu.jmi.openatom.server.openatomsystem.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+/**
+ * 创建活动请求
+ *
+ * <p>用于创建新活动, 包含活动标题title, 摘要summary, 描述descriptionMarkdown, 活动时间activityAt和endAt, 地点location, 状态status, 封面coverUrl, 报名设置registrationRequired, 报名时间范围registrationStartAt和registrationEndAt以及自定义报名字段registrationFields
+ */
 @Data
 public class RequestCreateActivityDTO {
   @NotBlank(message = "活动标题不能为空")

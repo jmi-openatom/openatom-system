@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 登录日志
+ *
+ * <p>对应数据库表 login_log, 记录用户的登录行为, 包括登录时间, IP地址和用户代理信息
+ */
 @Data
 @Builder
 @AllArgsConstructor

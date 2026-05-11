@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 站点表单
+ *
+ * <p>对应数据库表 site_form, 存储站点自定义表单的配置信息, 包括表单名称, 有效期和表单Schema
+ */
 @Data
 @Builder
 @AllArgsConstructor

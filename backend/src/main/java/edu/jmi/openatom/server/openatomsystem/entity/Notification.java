@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 通知
+ *
+ * <p>对应数据库表 notification, 存储系统发送的通知消息, 包含标题, 内容和类型
+ */
 @Data
 @Builder
 @AllArgsConstructor

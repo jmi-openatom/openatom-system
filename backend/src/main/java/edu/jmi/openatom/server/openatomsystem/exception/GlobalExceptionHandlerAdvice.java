@@ -15,6 +15,12 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * 全局异常处理
+ *
+ * <p>使用 @RestControllerAdvice 统一处理全局异常，包括未登录, 无权限,
+ * 参数校验失败, 资源不存在等异常, 返回统一的 ApiResponse 格式
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandlerAdvice {

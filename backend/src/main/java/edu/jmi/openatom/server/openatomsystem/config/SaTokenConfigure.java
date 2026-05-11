@@ -14,6 +14,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * Sa-Token 配置
+ *
+ * <p>注册 Sa-Token 拦截器实现登录校验, 配置全局跨域过滤器, 并注册操作日志拦截器
+ */
 @Configuration
 @RequiredArgsConstructor
 public class SaTokenConfigure implements WebMvcConfigurer {

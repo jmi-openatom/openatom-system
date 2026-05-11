@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建通知请求
+ *
+ * <p>用于发送系统通知, 包含通知标题title, 内容content, 类型type, 是否全员发送isAll以及指定接收者ID列表receiverUserIds
+ */
 @Data
 @Builder
 @NoArgsConstructor

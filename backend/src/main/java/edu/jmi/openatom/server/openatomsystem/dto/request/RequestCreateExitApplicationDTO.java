@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建退社申请请求
+ *
+ * <p>用于成员提交退社申请, 包含成员关系ID membershipId, 退社原因reason和补充说明description
+ */
 @Data
 @Builder
 @NoArgsConstructor

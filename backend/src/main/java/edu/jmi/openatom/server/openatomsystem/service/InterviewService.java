@@ -8,6 +8,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.Interview;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedback;
 import java.util.List;
 
+/**
+ * 面试管理服务接口
+ *
+ * <p>定义面试的列表查询, 创建, 查看详情, 更新, 确认, 提交反馈, 完成以及查看反馈列表等业务操作
+ */
 public interface InterviewService {
   ApiResponse<List<Interview>> list(
       Integer campaignId, Integer applicationId, Integer interviewerId, String status);

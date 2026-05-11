@@ -23,11 +23,23 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 公文管理控制器
+ *
+ * <p>提供公文的列表查询, 创建, 更新, 用户选项查询及导出 Word 文档等功能
+ */
 @RestController
 @RequiredArgsConstructor
 public class OfficeDocumentController {
   private final OfficeDocumentService officeDocumentService;
 
+  /**
+   * 查询公文列表
+   *
+   * @param docType 公文类型（可选）
+   * @param keyword 搜索关键词（可选）
+   * @return 公文列表
+   */
   @GetMapping("/office-documents")
   @SaCheckPermission("document:list")
   public ApiResponse<List<OfficeDocument>> list(
@@ -36,6 +48,12 @@ public class OfficeDocumentController {
     return officeDocumentService.list(docType, keyword);
   }
 
+  /**
+   * 获取公文用户选项列表
+   *
+   * @param keyword 搜索关键词（可选）
+   * @return 用户选项列表
+   */
   @GetMapping("/office-documents/user-options")
   @SaCheckPermission("document:list")
   public ApiResponse<List<ResponseOfficeDocumentUserOptionDTO>> userOptions(
@@ -43,12 +61,25 @@ public class OfficeDocumentController {
     return officeDocumentService.listUserOptions(keyword);
   }
 
+  /**
+   * 创建公文
+   *
+   * @param request 创建公文请求参数
+   * @return 公文ID
+   */
   @PostMapping("/office-documents")
   @SaCheckPermission("document:create")
   public ApiResponse<Integer> create(@Valid @RequestBody RequestSaveOfficeDocumentDTO request) {
     return officeDocumentService.create(request);
   }
 
+  /**
+   * 更新公文
+   *
+   * @param documentId 公文ID
+   * @param request 更新公文请求参数
+   * @return 更新结果
+   */
   @PatchMapping("/office-documents/{documentId}")
   @SaCheckPermission("document:update")
   public ApiResponse<String> update(
@@ -56,6 +87,12 @@ public class OfficeDocumentController {
     return officeDocumentService.update(documentId, request);
   }
 
+  /**
+   * 导出公文为 Word 文档
+   *
+   * @param documentId 公文ID
+   * @return Word 文件字节流
+   */
   @GetMapping("/office-documents/{documentId}/export")
   @SaCheckPermission("document:export")
   public ResponseEntity<byte[]> export(@PathVariable Integer documentId) {

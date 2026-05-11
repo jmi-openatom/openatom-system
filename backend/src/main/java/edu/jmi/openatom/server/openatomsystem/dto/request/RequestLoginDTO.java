@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 登录请求
+ *
+ * <p>用于用户登录系统, 携带用户名username和密码password
+ */
 @Data
 @Builder
 @AllArgsConstructor

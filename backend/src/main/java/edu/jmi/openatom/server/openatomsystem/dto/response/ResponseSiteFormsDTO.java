@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 站点表单列表DTO
+ *
+ * <p>包含社团信息及其对应的表单列表, 用于站点表单的管理与展示
+ */
 @Data
 @Builder
 @NoArgsConstructor

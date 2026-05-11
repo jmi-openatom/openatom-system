@@ -3,6 +3,11 @@ package edu.jmi.openatom.server.openatomsystem.enums;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 系统权限枚举
+ *
+ * <p>定义系统中所有可用的权限点, 包含权限名称, 编码, 类型, 路径和请求方法
+ */
 public enum SystemPermission {
   AUTH_LOGOUT("退出登录", "auth:logout", "api", "/auth/logout", "POST"),
   AUTH_ME("查看当前用户信息", "auth:me", "api", "/auth/me", "GET"),

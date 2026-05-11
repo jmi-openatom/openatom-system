@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 更新岗位请求
+ *
+ * <p>用于更新社团岗位信息, 包含岗位名称name, 所属部门ID departmentId, 最大人数maxCount和关联角色ID列表roleIds
+ */
 @Data
 @Builder
 @NoArgsConstructor

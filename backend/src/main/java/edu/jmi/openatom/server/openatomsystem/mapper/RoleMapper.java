@@ -5,6 +5,11 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.Role;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 角色数据访问层
+ *
+ * <p>提供对角色(Role)的数据库操作, 包括按编码查询角色, 按编码查重以及排除指定ID查询角色等功能
+ */
 @Mapper
 public interface RoleMapper extends BaseMapper<Role> {
 

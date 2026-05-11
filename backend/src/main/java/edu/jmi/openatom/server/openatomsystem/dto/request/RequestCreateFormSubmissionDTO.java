@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建表单提交请求
+ *
+ * <p>用于提交站点表单数据, 支持匿名提交时填写anonymousName和anonymousContact, 携带表单内容formData
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 社团成员关系数据访问层
+ *
+ * <p>提供对社团成员关系(ClubMembership)的数据库操作, 包括按社团ID或用户ID查询成员列表, 统计活跃成员关系以及条件查询成员等功能
+ */
 @Mapper
 public interface ClubMembershipMapper extends BaseMapper<ClubMembership> {
 

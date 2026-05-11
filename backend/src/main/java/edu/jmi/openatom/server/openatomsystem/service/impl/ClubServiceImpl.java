@@ -13,6 +13,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * 社团管理实现类
+ *
+ * <p>负责社团的创建, 更新, 查询以及社团状态和招新状态的变更等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class ClubServiceImpl implements ClubService {

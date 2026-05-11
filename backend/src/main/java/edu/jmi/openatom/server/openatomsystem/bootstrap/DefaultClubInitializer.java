@@ -11,6 +11,11 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 默认社团初始化器
+ *
+ * <p>应用启动时初始化默认社团(开放原子开源社团), 若已存在则更新名称
+ */
 @Slf4j
 @Component
 @Order(3)

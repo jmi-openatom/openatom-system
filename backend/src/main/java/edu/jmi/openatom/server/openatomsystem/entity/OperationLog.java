@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 操作日志
+ *
+ * <p>对应数据库表 operation_log, 记录用户在系统中的操作行为, 包括操作模块, 动作和内容
+ */
 @Data
 @Builder
 @AllArgsConstructor

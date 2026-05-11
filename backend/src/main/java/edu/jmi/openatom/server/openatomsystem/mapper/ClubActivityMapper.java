@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 社团活动数据访问层
+ *
+ * <p>提供对社团活动(ClubActivity)的数据库操作, 包括按社团ID和状态查询已发布活动, 按活动ID和社团ID查询单条活动等功能
+ */
 @Mapper
 public interface ClubActivityMapper extends BaseMapper<ClubActivity> {
 

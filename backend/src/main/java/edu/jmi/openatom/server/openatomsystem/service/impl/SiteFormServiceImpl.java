@@ -14,6 +14,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * 站点表单管理实现类
+ *
+ * <p>负责前端展示表单的创建, 更新, 查询, 发布和关闭等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class SiteFormServiceImpl implements SiteFormService {

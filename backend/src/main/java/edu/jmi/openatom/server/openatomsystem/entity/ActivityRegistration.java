@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 活动报名记录
+ *
+ * <p>对应数据库表 activity_registration, 记录用户对社团活动的报名信息, 包含报名表单数据和审批状态
+ */
 @Data
 @Builder
 @AllArgsConstructor

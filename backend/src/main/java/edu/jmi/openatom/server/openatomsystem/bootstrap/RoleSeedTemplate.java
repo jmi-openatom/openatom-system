@@ -3,6 +3,11 @@ package edu.jmi.openatom.server.openatomsystem.bootstrap;
 import edu.jmi.openatom.server.openatomsystem.enums.SystemPermission;
 import java.util.List;
 
+/**
+ * 角色种子模板
+ *
+ * <p>定义系统预置角色的模板数据, 包含超级管理员, 社团管理员, 部门负责人, 正式成员, 非正式成员等角色及其权限配置
+ */
 public record RoleSeedTemplate(
     String code, String name, String dataScope, String description, List<String> permissionCodes) {
 

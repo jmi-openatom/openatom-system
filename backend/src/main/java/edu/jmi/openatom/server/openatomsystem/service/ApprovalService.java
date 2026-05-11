@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestBatchApprovalDT
 import edu.jmi.openatom.server.openatomsystem.entity.ApprovalRecord;
 import java.util.List;
 
+/**
+ * 审批服务接口
+ *
+ * <p>定义审批记录的查询, 单个审批和批量审批等业务操作
+ */
 public interface ApprovalService {
   ApiResponse<List<ApprovalRecord>> records(Integer applicationId);
 

@@ -16,6 +16,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 审批处理实现类
+ *
+ * <p>负责入会申请的审批, 批量审批, 审批记录查询以及审批通过后发送通知等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class ApprovalServiceImpl implements ApprovalService {

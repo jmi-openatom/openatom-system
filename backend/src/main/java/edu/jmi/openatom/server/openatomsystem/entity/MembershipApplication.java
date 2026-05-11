@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 入社申请
+ *
+ * <p>对应数据库表 membership_application, 记录用户申请加入社团的信息, 包括志愿部门, 个人简介和审批状态
+ */
 @Data
 @Builder
 @AllArgsConstructor

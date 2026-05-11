@@ -5,6 +5,11 @@ import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 
+/**
+ * 申请响应DTO
+ *
+ * <p>包含申请ID, 志愿部门信息, 申请人资料及申请状态, 用于展示用户的社团申请记录
+ */
 @Data
 @Builder
 public class ResponseApplicationDTO {

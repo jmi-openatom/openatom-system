@@ -9,6 +9,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 数据库结构兼容性初始化器
+ *
+ * <p>应用启动时检查并修复数据库表结构, 确保表, 列, 索引等与当前代码兼容, 包括系统配置表, 用户表, 招新计划表, 表单表等的结构更新
+ */
 @Slf4j
 @Component
 @Order(0)

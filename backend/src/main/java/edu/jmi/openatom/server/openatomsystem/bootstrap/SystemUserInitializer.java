@@ -21,6 +21,11 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 系统用户初始化器
+ *
+ * <p>应用启动时初始化系统预置角色和用户, 包括超级管理员账号及其权限绑定, 以及正式成员, 非正式成员, 部门负责人, 社团管理员等角色的权限配置
+ */
 @Slf4j
 @Component
 @Order(2)

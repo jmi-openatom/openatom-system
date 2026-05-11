@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.ClubAward;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 社团获奖数据访问层
+ *
+ * <p>提供对社团获奖记录(ClubAward)的数据库操作, 包括按社团ID查询获奖列表, 按ID和社团ID查询单条获奖记录等功能
+ */
 @Mapper
 public interface ClubAwardMapper extends BaseMapper<ClubAward> {
 

@@ -14,6 +14,11 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 默认岗位初始化器
+ *
+ * <p>应用启动时为每个部门的初始化和同步默认岗位(部门负责人, 成员)
+ */
 @Slf4j
 @Component
 @Order(5)

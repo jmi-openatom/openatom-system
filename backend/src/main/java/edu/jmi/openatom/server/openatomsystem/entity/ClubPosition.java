@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 社团职位
+ *
+ * <p>对应数据库表 club_position, 定义社团或部门内的职位, 包括职位名称和最大人数限制
+ */
 @Data
 @Builder
 @AllArgsConstructor

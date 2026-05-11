@@ -32,6 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+/**
+ * 用户认证授权实现类
+ *
+ * <p>负责用户注册, 登录, 令牌刷新, 退出登录, 密码修改以及用户权限快照的构建等核心认证逻辑
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

@@ -13,6 +13,11 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 系统权限初始化器
+ *
+ * <p>应用启动时将 PermissionSeedCatalog 中的权限种子数据同步到数据库权限表
+ */
 @Slf4j
 @Component
 @Order(1)

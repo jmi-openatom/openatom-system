@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateSiteFormD
 import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
 import java.util.List;
 
+/**
+ * 站点表单服务接口
+ *
+ * <p>定义站点表单的按社团查询列表, 创建, 查看详情, 更新, 发布和关闭等业务操作
+ */
 public interface SiteFormService {
   ApiResponse<List<SiteForm>> listByClub(Integer clubId);
 

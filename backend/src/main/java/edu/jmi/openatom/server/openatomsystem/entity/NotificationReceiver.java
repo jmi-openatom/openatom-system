@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 通知接收记录
+ *
+ * <p>对应数据库表 notification_receiver, 记录通知的接收用户及其阅读状态
+ */
 @Data
 @Builder
 @AllArgsConstructor

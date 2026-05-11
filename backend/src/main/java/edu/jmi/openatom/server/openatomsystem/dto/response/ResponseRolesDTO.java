@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 角色列表DTO
+ *
+ * <p>封装系统中的角色数据列表, 用于角色管理与权限分配
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

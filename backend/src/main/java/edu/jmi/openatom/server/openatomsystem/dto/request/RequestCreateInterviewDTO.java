@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建面试请求
+ *
+ * <p>用于为申请创建面试安排, 包含申请ID applicationId, 面试轮次round, 计划开始和结束时间scheduledStartAt和scheduledEndAt, 地点location, 面试模式mode以及面试官ID列表interviewerIds
+ */
 @Data
 @Builder
 @NoArgsConstructor

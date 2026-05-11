@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 权限实体
+ *
+ * <p>对应数据库表 sys_permission, 定义系统中的权限项, 包括权限名称, 编码, 类型和接口路径
+ */
 @Data
 @Builder
 @AllArgsConstructor

@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户角色分配请求
+ *
+ * <p>用于为用户批量分配角色, 携带角色ID列表roleIds
+ */
 @Data
 @Builder
 @NoArgsConstructor

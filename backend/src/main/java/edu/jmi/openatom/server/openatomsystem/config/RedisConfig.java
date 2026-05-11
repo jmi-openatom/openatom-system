@@ -11,6 +11,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+/**
+ * Redis 配置
+ *
+ * <p>配置 RedisTemplate 的序列化方式, 使用 Jackson2JsonRedisSerializer 进行值序列化, StringRedisSerializer 进行键序列化
+ */
 @Configuration
 public class RedisConfig {
 

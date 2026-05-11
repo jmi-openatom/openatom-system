@@ -6,6 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * JSON 工具类
+ *
+ * <p>封装 Jackson ObjectMapper, 提供对象序列化, JSON 解析等静态方法
+ */
 public final class Jsons {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

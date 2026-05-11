@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.Interview;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 面试数据访问层
+ *
+ * <p>提供对面试(Interview)的数据库操作, 包括按申请ID列表查询面试以及按条件查询面试列表等功能
+ */
 @Mapper
 public interface InterviewMapper extends BaseMapper<Interview> {
 

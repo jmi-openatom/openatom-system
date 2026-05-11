@@ -9,6 +9,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * 权限管理实现类
+ *
+ * <p>负责权限的列表查询和新权限创建, 包含权限编码排重校验
+ */
 @Service
 @RequiredArgsConstructor
 public class PermissionServiceImpl implements PermissionService {

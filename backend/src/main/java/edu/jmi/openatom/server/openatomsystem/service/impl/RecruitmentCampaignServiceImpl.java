@@ -14,6 +14,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * 招新计划管理实现类
+ *
+ * <p>负责招新计划的创建, 更新, 查询, 发布和关闭等业务逻辑, 包含招新表单Schema管理
+ */
 @Service
 @RequiredArgsConstructor
 public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignService {

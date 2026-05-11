@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 面试反馈
+ *
+ * <p>对应数据库表 interview_feedback, 记录面试官对面试者的评分, 建议和评价
+ */
 @Data
 @Builder
 @AllArgsConstructor

@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户信息更新请求
+ *
+ * <p>用于用户修改个人信息, 包含真实姓名realName, 性别gender, 手机号phone, 邮箱email, 学号studentNo, 学院college, 专业major, 年级grade, 班级className和头像avatar
+ */
 @Data
 @Builder
 @AllArgsConstructor

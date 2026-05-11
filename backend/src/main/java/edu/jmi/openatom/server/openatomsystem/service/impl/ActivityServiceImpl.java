@@ -22,6 +22,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 社团活动管理实现类
+ *
+ * <p>负责社团活动的创建, 更新, 删除, 查询以及活动报名管理, 包含报名资格校验和状态流转等核心业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class ActivityServiceImpl implements ActivityService {

@@ -29,6 +29,11 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * 入会申请管理实现类
+ *
+ * <p>负责入会申请的创建, 更新, 提交, 撤回, 分页查询以及申请表单的动态字段校验等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class ApplicationServiceImpl implements ApplicationService {

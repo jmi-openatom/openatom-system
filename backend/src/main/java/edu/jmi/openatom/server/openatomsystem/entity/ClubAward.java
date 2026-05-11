@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 社团奖项
+ *
+ * <p>对应数据库表 club_award, 记录社团在各类比赛中获得的奖项, 包括比赛名称, 奖项级别和获奖年份
+ */
 @Data
 @Builder
 @AllArgsConstructor

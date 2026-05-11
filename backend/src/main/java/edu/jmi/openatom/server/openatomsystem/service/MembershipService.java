@@ -10,6 +10,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseMembershipDTO
 import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
 import java.util.List;
 
+/**
+ * 社员管理服务接口
+ *
+ * <p>定义社员的最终录取决定, 列表查询, 创建, 查看详情, 更新, 分配职位, 变更状态和强制退社等业务操作
+ */
 public interface MembershipService {
   ApiResponse<String> finalDecision(Integer applicationId, RequestFinalDecisionDTO request);
 

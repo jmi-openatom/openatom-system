@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 社团部门
+ *
+ * <p>对应数据库表 club_department, 存储社团内部的部门信息, 包括部门名称, 描述及负责人
+ */
 @Data
 @Builder
 @AllArgsConstructor

@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建成员关系请求
+ *
+ * <p>用于建立用户与社团的成员关系, 包含用户ID userId, 社团ID clubId, 所属部门ID departmentId, 岗位ID positionId, 成员状态status, 是否推荐featured和排序sortOrder
+ */
 @Data
 @Builder
 @NoArgsConstructor

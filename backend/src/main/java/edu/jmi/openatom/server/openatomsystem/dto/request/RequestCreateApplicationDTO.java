@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建申请请求
+ *
+ * <p>用于用户提交入社申请, 包含招新计划ID campaignId, 社团ID clubId, 第一和第二志愿部门ID firstChoiceDepartmentId和secondChoiceDepartmentId以及个人资料profile
+ */
 @Data
 @Builder
 @NoArgsConstructor

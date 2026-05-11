@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.RolePermission;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 角色权限关联数据访问层
+ *
+ * <p>提供对角色权限关联关系(RolePermission)的数据库操作, 包括按角色ID列表查询关联关系以及按角色ID删除关联关系等功能
+ */
 @Mapper
 public interface RolePermissionMapper extends BaseMapper<RolePermission> {
 

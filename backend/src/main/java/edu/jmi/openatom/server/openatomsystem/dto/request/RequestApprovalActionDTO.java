@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 审批动作请求
+ *
+ * <p>用于提交审批操作, 包含审批动作action, 审批节点node, 审批意见comment以及下一轮面试官ID列表nextInterviewerIds
+ */
 @Data
 @Builder
 @NoArgsConstructor

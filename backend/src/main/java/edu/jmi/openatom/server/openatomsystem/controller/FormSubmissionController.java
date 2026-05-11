@@ -21,17 +21,38 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 表单提交控制器
+ *
+ * <p>提供表单提交及导出等操作
+ */
 @RestController
 @RequiredArgsConstructor
 public class FormSubmissionController {
   private final FormSubmissionService formSubmissionService;
 
+  /**
+   * 提交表单
+   *
+   * @param formId 表单ID
+   * @param request 创建表单提交请求
+   * @return 提交记录ID
+   */
   @PostMapping("/site/forms/{formId}/submissions")
   public ApiResponse<Integer> create(
       @PathVariable Integer formId, @Valid @RequestBody RequestCreateFormSubmissionDTO request) {
     return formSubmissionService.create(formId, request);
   }
 
+  /**
+   * 分页查询表单提交列表
+   *
+   * @param formId 表单ID
+   * @param keyword 关键词
+   * @param page 页码
+   * @param pageSize 每页大小
+   * @return 分页表单提交数据
+   */
   @GetMapping("/site-forms/{formId}/submissions")
   @SaCheckPermission("site-form:detail")
   public ApiResponse<PageDataDTO<ResponseFormSubmissionDTO>> list(
@@ -42,6 +63,12 @@ public class FormSubmissionController {
     return formSubmissionService.list(formId, keyword, page, pageSize);
   }
 
+  /**
+   * 导出表单提交数据为Excel
+   *
+   * @param formId 表单ID
+   * @return Excel文件响应
+   */
   @GetMapping("/site-forms/{formId}/submissions/export")
   @SaCheckPermission("site-form:detail")
   public ResponseEntity<byte[]> export(@PathVariable Integer formId) {

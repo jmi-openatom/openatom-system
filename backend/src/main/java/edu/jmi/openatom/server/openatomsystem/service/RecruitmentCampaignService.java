@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateRecruitme
 import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
 import java.util.List;
 
+/**
+ * 招新活动服务接口
+ *
+ * <p>定义招新活动的按社团查询列表, 创建, 查看详情, 更新, 发布和关闭等业务操作
+ */
 public interface RecruitmentCampaignService {
   ApiResponse<List<RecruitmentCampaign>> listByClub(Integer clubId);
 

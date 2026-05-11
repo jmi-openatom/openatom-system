@@ -6,7 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 用户角色关联实体类 */
+/**
+ * 用户角色关联
+ *
+ * <p>对应数据库表 sys_user_role, 建立用户与角色之间的多对多关联关系
+ */
 @Data
 @Builder
 @AllArgsConstructor

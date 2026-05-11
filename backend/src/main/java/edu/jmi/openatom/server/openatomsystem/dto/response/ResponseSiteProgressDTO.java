@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 站点申请进度DTO
+ *
+ * <p>包含申请进度列表, 每个申请进度包含申请信息, 状态及对应的面试轮次安排
+ */
 @Data
 @Builder
 @NoArgsConstructor

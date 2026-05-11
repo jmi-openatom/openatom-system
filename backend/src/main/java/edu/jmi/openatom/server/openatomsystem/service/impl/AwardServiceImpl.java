@@ -12,6 +12,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * 获奖经历管理实现类
+ *
+ * <p>负责社团获奖记录的创建, 更新, 删除和查询等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class AwardServiceImpl implements AwardService {

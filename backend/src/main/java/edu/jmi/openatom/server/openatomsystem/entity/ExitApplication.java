@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 退社申请
+ *
+ * <p>对应数据库表 exit_application, 记录成员的退社申请信息, 包含退社原因和审批状态
+ */
 @Data
 @Builder
 @AllArgsConstructor

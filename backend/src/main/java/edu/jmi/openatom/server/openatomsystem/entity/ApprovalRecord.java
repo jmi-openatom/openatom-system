@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 审批记录
+ *
+ * <p>对应数据库表 approval_record, 记录审批流程中每个节点的操作信息, 包括审批人, 动作和备注
+ */
 @Data
 @Builder
 @AllArgsConstructor

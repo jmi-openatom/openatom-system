@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建权限请求
+ *
+ * <p>用于创建系统权限项, 包含权限名称name, 唯一编码code, 类型type, 关联路径path和请求方法method
+ */
 @Data
 @Builder
 @NoArgsConstructor

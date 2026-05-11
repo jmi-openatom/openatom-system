@@ -27,6 +27,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 用户管理实现类
+ *
+ * <p>负责用户的创建, 更新, 删除, 分页查询, Excel导入导出, 密码重置以及用户社团信息查询等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {

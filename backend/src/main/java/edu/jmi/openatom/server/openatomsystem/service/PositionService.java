@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdatePositionD
 import edu.jmi.openatom.server.openatomsystem.dto.response.ResponsePositionDTO;
 import java.util.List;
 
+/**
+ * 职位管理服务接口
+ *
+ * <p>定义社团职位的按社团查询列表, 创建, 查看详情, 更新和删除等业务操作
+ */
 public interface PositionService {
   ApiResponse<List<ResponsePositionDTO>> getPositionsByClubId(Integer clubId);
 

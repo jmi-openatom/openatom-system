@@ -7,6 +7,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.ClubDepartment;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 社团部门数据访问层
+ *
+ * <p>提供对社团部门(ClubDepartment)的数据库操作, 包括按社团ID查询部门列表, 检查部门名称唯一性以及清空部门负责人等功能
+ */
 @Mapper
 public interface ClubDepartmentMapper extends BaseMapper<ClubDepartment> {
 

@@ -11,6 +11,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户实体
+ *
+ * <p>对应数据库表 tb_user, 存储用户基本信息, 包括学号, 姓名, 院系, 专业等个人信息及账户状态
+ */
 @Data
 @Builder
 @AllArgsConstructor

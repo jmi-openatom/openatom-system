@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 表单提交记录DTO
+ *
+ * <p>包含表单提交ID, 所属表单, 提交者信息, 联系方式以及表单填写的具体数据
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -14,6 +14,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 部门管理实现类
+ *
+ * <p>负责社团部门的创建, 更新, 删除和查询等业务逻辑, 包含部门名称排重校验
+ */
 @Service
 @RequiredArgsConstructor
 public class DepartmentServiceImpl implements DepartmentService {

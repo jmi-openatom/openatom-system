@@ -14,6 +14,11 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 默认部门初始化器
+ *
+ * <p>应用启动时为每个社团初始化默认部门(项目部, 宣传组, 活动部, 外联部)
+ */
 @Slf4j
 @Component
 @Order(4)

@@ -8,6 +8,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+/**
+ * 注册设置管理实现类
+ *
+ * <p>负责用户自助注册开关的查询和更新, 确保系统配置表中注册相关记录的存在性
+ */
 @Service
 @RequiredArgsConstructor
 public class RegistrationSettingServiceImpl extends ServiceImpl<SystemSettingMapper, SystemSetting>

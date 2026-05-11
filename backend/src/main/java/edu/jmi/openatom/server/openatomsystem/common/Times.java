@@ -4,6 +4,11 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
+/**
+ * 时间工具类
+ *
+ * <p>提供时间戳解析和获取当前时间戳等静态方法
+ */
 public final class Times {
   private Times() {}
 

@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseOfficeDocumen
 import edu.jmi.openatom.server.openatomsystem.entity.OfficeDocument;
 import java.util.List;
 
+/**
+ * 公文管理服务接口
+ *
+ * <p>定义公文的列表查询, 用户选项查询, 创建, 更新和导出 docx 等业务操作
+ */
 public interface OfficeDocumentService {
   ApiResponse<List<OfficeDocument>> list(String docType, String keyword);
 

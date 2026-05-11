@@ -23,6 +23,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 面试管理实现类
+ *
+ * <p>负责面试的创建, 更新, 确认, 完成, 反馈提交以及面试官关联绑定等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class InterviewServiceImpl implements InterviewService {

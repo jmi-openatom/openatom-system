@@ -10,6 +10,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 表单提交记录
+ *
+ * <p>对应数据库表 form_submission, 记录用户提交的各类表单数据, 支持匿名提交和状态追踪
+ */
 @Data
 @Builder
 @AllArgsConstructor

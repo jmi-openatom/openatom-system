@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.UserRole;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 用户角色关联数据访问层
+ *
+ * <p>提供对用户角色关联关系(UserRole)的数据库操作, 包括按用户ID查询角色, 按用户和角色查询关联关系以及按用户ID或角色ID删除关联关系等功能
+ */
 @Mapper
 public interface UserRoleMapper extends BaseMapper<UserRole> {
 

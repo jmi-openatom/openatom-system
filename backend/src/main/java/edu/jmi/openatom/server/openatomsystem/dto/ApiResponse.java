@@ -4,9 +4,9 @@ import java.io.Serializable;
 import lombok.Getter;
 
 /**
- * 统一结果返回封装类
+ * 统一API响应
  *
- * @param <T> 泛型数据类型
+ * <p>封装API响应的状态码, 消息提示, 返回数据及追踪ID, 提供静态工厂方法用于快速构建成功或失败响应
  */
 @Getter
 public class ApiResponse<T> implements Serializable {

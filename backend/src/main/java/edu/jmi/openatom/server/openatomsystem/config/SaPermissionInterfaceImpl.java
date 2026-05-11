@@ -18,6 +18,11 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/**
+ * Sa-Token 权限接口实现
+ *
+ * <p>实现 StpInterface 接口, 从数据库加载用户的权限码和角色标识, 用于 Sa-Token 的权限校验
+ */
 @Component
 @RequiredArgsConstructor
 public class SaPermissionInterfaceImpl implements StpInterface {

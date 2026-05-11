@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateDepartmen
 import edu.jmi.openatom.server.openatomsystem.entity.ClubDepartment;
 import java.util.List;
 
+/**
+ * 部门管理服务接口
+ *
+ * <p>定义社团部门的按社团查询列表, 创建, 查看详情, 更新和删除等业务操作
+ */
 public interface DepartmentService {
   ApiResponse<List<ClubDepartment>> getDepartmentsByClubId(Integer clubId);
 

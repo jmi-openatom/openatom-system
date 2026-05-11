@@ -17,6 +17,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 成员管理实现类
+ *
+ * <p>负责社团成员的新增, 更新, 查询, 终审决策, 岗位分配, 状态变更以及强制退社等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class MembershipServiceImpl implements MembershipService {

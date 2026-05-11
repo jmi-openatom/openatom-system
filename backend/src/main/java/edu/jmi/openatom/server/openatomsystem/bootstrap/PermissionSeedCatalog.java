@@ -3,6 +3,11 @@ package edu.jmi.openatom.server.openatomsystem.bootstrap;
 import edu.jmi.openatom.server.openatomsystem.enums.SystemPermission;
 import java.util.List;
 
+/**
+ * 权限种子目录
+ *
+ * <p>提供系统权限枚举的种子数据, 生成权限初始化所需的 PermissionSeed 列表
+ */
 public final class PermissionSeedCatalog {
   private PermissionSeedCatalog() {}
 

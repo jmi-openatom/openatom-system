@@ -9,6 +9,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 注册请求
+ *
+ * <p>用于新用户注册账号, 包含用户名username, 密码password, 真实姓名realName, 手机号phone, 邮箱email和学号studentId
+ */
 @Data
 @Builder
 @AllArgsConstructor

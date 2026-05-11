@@ -4,6 +4,11 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+/**
+ * 应用启动类
+ *
+ * <p>Spring Boot 应用入口, 配置 Mapper 扫描路径
+ */
 @SpringBootApplication
 @MapperScan("edu.jmi.openatom.server.openatomsystem.mapper")
 public class OpenAtomSystemApplication {

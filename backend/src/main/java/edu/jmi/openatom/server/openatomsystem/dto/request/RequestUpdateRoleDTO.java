@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 更新角色请求
+ *
+ * <p>用于更新角色信息, 包含角色名称name, 唯一编码code, 数据权限范围dataScope和描述description
+ */
 @Data
 @Builder
 @NoArgsConstructor

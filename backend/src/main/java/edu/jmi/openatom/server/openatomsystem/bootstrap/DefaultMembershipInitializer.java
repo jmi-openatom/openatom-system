@@ -9,6 +9,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 默认成员关系初始化器
+ *
+ * <p>应用启动时将系统中所有用户同步为默认社团的试用期成员
+ */
 @Slf4j
 @Component
 @Order(6)

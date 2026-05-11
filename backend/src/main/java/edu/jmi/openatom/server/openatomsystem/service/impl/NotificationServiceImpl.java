@@ -20,6 +20,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 通知管理实现类
+ *
+ * <p>负责通知的发送（单人/全员）, 已读标记, 未读统计, 通知列表查询以及通知删除等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {

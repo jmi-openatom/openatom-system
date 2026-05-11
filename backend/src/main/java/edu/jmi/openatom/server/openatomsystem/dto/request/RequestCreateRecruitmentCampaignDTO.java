@@ -9,6 +9,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建招新计划请求
+ *
+ * <p>用于创建招新活动, 包含计划名称name, 申请起止时间applyStartAt和applyEndAt, 面试时间范围interviewStartAt和interviewEndAt, 结果发布时间resultPublishAt, 目标年级targetGrades, 最大申请人数maxApplicants, 是否要求登录loginRequired, 报名表单结构formSchema和状态status
+ */
 @Data
 @Builder
 @NoArgsConstructor

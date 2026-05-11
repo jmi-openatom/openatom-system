@@ -7,6 +7,11 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 
+/**
+ * 社团招新数据DTO
+ *
+ * <p>包含社团基本信息, 招新活动列表及部门列表, 用于招新管理页面的数据展示
+ */
 @Data
 @Builder
 public class ResponseRecruitmentDTO {

@@ -23,6 +23,11 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * 站点数据聚合实现类
+ *
+ * <p>负责前台页面的数据聚合展示, 包括社团首页信息, 招新列表, 活动详情, 入会进度查询等
+ */
 @Service
 @RequiredArgsConstructor
 public class SiteServiceImpl implements SiteService {

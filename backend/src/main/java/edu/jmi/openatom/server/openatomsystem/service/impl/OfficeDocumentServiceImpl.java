@@ -37,6 +37,11 @@ import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 办公单据管理实现类
+ *
+ * <p>负责请假条和场地申请单等办公单据的创建, 更新, 查询以及Word文档导出等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class OfficeDocumentServiceImpl implements OfficeDocumentService {

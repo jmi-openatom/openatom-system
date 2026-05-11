@@ -19,6 +19,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 岗位管理实现类
+ *
+ * <p>负责社团岗位的创建, 更新, 删除, 查询以及岗位与角色的关联绑定等业务逻辑
+ */
 @Service
 @RequiredArgsConstructor
 public class PositionServiceImpl implements PositionService {

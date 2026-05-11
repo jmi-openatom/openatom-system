@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建社团请求
+ *
+ * <p>用于创建新社团, 包含社团名称name, 唯一编码code, 分类category, 描述description, Logo地址logoUrl和社长用户ID presidentUserId
+ */
 @Data
 @Builder
 @NoArgsConstructor

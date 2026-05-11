@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 成员状态变更请求
+ *
+ * <p>用于修改成员关系状态, 携带目标状态status
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 登录响应DTO
+ *
+ * <p>包含登录成功后的访问令牌, 刷新令牌, 过期时间, 当前用户信息及权限角色数据
+ */
 @Data
 @Builder
 @AllArgsConstructor

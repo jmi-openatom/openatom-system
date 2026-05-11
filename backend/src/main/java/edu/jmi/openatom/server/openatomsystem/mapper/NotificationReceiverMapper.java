@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.NotificationReceiver;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 通知接收人数据访问层
+ *
+ * <p>提供对通知接收人(NotificationReceiver)的数据库操作, 包括按接收人查询通知, 按通知ID和用户ID查询更新以及统计未读数等功能
+ */
 @Mapper
 public interface NotificationReceiverMapper extends BaseMapper<NotificationReceiver> {
 

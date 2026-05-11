@@ -21,11 +21,23 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 社团成员管理控制器
+ *
+ * <p>提供社团成员申请的终审, 成员列表查询, 成员信息增删改查, 职位分配及状态变更等功能
+ */
 @RestController
 @RequiredArgsConstructor
 public class MembershipController {
   private final MembershipService membershipService;
 
+  /**
+   * 对社团申请作出终审决定
+   *
+   * @param applicationId 申请ID
+   * @param request 终审决定请求参数
+   * @return 终审结果
+   */
   @PostMapping("/applications/{applicationId}/final-decisions")
   @SaCheckPermission("application:final-decision")
   public ApiResponse<String> finalDecision(
@@ -33,6 +45,16 @@ public class MembershipController {
     return membershipService.finalDecision(applicationId, request);
   }
 
+  /**
+   * 分页查询成员列表
+   *
+   * @param clubId 社团ID（可选）
+   * @param departmentId 部门ID（可选）
+   * @param positionId 职位ID（可选）
+   * @param status 成员状态（可选）
+   * @param keyword 搜索关键词（可选）
+   * @return 成员列表
+   */
   @GetMapping("/memberships")
   @SaCheckPermission("membership:list")
   public ApiResponse<List<ResponseMembershipDTO>> list(
@@ -44,18 +66,37 @@ public class MembershipController {
     return membershipService.list(clubId, departmentId, positionId, status, keyword);
   }
 
+  /**
+   * 创建新的社团成员
+   *
+   * @param request 创建成员请求参数
+   * @return 创建结果
+   */
   @PostMapping("/memberships")
   @SaCheckPermission("membership:create")
   public ApiResponse<String> create(@Valid @RequestBody RequestCreateMembershipDTO request) {
     return membershipService.create(request);
   }
 
+  /**
+   * 获取成员详情
+   *
+   * @param membershipId 成员ID
+   * @return 成员详情
+   */
   @GetMapping("/memberships/{membershipId}")
   @SaCheckPermission("membership:detail")
   public ApiResponse<ClubMembership> detail(@PathVariable Integer membershipId) {
     return membershipService.detail(membershipId);
   }
 
+  /**
+   * 更新成员信息
+   *
+   * @param membershipId 成员ID
+   * @param request 更新成员请求参数
+   * @return 更新结果
+   */
   @PatchMapping("/memberships/{membershipId}")
   @SaCheckPermission("membership:update")
   public ApiResponse<String> update(
@@ -63,6 +104,13 @@ public class MembershipController {
     return membershipService.update(membershipId, request);
   }
 
+  /**
+   * 为成员分配职位
+   *
+   * @param membershipId 成员ID
+   * @param request 分配职位请求参数
+   * @return 分配结果
+   */
   @PostMapping("/memberships/{membershipId}/assign-position")
   @SaCheckPermission("membership:position:assign")
   public ApiResponse<String> assignPosition(
@@ -70,6 +118,13 @@ public class MembershipController {
     return membershipService.assignPosition(membershipId, request);
   }
 
+  /**
+   * 变更成员状态
+   *
+   * @param membershipId 成员ID
+   * @param request 变更状态请求参数
+   * @return 变更结果
+   */
   @PostMapping("/memberships/{membershipId}/change-status")
   @SaCheckPermission("membership:status:change")
   public ApiResponse<String> changeStatus(

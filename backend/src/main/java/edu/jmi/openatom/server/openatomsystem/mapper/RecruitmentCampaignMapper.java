@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 招新活动数据访问层
+ *
+ * <p>提供对招新活动(RecruitmentCampaign)的数据库操作, 包括按社团ID查询招新计划, 查询已发布或开放中的招新计划等功能
+ */
 @Mapper
 public interface RecruitmentCampaignMapper extends BaseMapper<RecruitmentCampaign> {
 

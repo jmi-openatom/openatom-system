@@ -13,6 +13,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
+/**
+ * 操作日志拦截器
+ *
+ * <p>实现 HandlerInterceptor 接口, 在请求完成后记录操作日志到数据库, 包含操作人, 模块, 动作, 目标 ID 和请求详情等信息
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor

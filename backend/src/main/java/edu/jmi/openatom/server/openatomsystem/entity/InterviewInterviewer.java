@@ -7,6 +7,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 面试官关联
+ *
+ * <p>对应数据库表 interview_interviewer, 建立面试与面试官之间的多对多关联关系
+ */
 @Data
 @Builder
 @AllArgsConstructor

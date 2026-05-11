@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 成员信息DTO
+ *
+ * <p>包含成员ID, 所属社团与部门信息, 职位详情, 成员状态, 是否核心成员及排序和加入时间
+ */
 @Data
 @Builder
 @NoArgsConstructor

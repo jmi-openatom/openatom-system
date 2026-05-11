@@ -8,6 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 保存办公单据请求
+ *
+ * <p>用于保存办公流程单据, 包含单据类型docType, 标题title和单据内容payload
+ */
 @Data
 @Builder
 @NoArgsConstructor

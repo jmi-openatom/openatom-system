@@ -13,6 +13,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * 日志管理实现类
+ *
+ * <p>负责操作日志和登录日志的查询, 支持按操作人, 模块, 时间和行为等条件筛选
+ */
 @Service
 @RequiredArgsConstructor
 public class LogServiceImpl implements LogService {

@@ -6,6 +6,11 @@ import edu.jmi.openatom.server.openatomsystem.entity.LoginLog;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
+/**
+ * 登录日志数据访问层
+ *
+ * <p>提供对登录日志(LoginLog)的数据库操作, 包括查询所有登录日志并按登录时间降序排序等功能
+ */
 @Mapper
 public interface LoginLogMapper extends BaseMapper<LoginLog> {
 

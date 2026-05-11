@@ -5,6 +5,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * 密码加密服务
+ *
+ * <p>提供密码的加密, 匹配验证以及密码加密级别升级检测等功能, 支持 BCrypt 和 SHA-256 两种加密方式
+ */
 @Component
 public class PasswordService {
   private static final String BCRYPT_PREFIX = "$2";
