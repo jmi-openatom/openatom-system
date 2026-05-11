@@ -2,10 +2,24 @@ spring:
   application:
     name: openatom-system
   datasource:
-    url: jdbc:mysql://localhost:3306/openatom-system?serverTimeZone=UTC
+    url: jdbc:mysql://82.39.213.37:3307/openatom-system?serverTimeZone=UTC
     username: ${DB_USENAME:root}
-    password: ${DB_PASSWORD:ab321818}
+    password: ${DB_PASSWORD:root123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
 
 server:
   port: 8921
@@ -20,6 +34,7 @@ sa-token:
   is-share: false
   token-style: uuid
   is-log: true
+
 
 app:
   cors:

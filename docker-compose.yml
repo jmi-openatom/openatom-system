@@ -20,6 +20,18 @@ services:
       - openatom-network
     restart: always
 
+  redis:
+    image: redis:7-alpine
+    container_name: openatom-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - openatom-network
+    restart: always
+
   backend:
     build:
       context: .
@@ -30,6 +42,9 @@ services:
       - DB_URL=jdbc:mysql://mysql:3306/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
       - DB_USERNAME=${DB_USERNAME:-openatom-system}
       - DB_PASSWORD=${DB_PASSWORD:-5JS7XaFfJGhXBH2j}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     ports:
       - "8921:8921"
     depends_on:
@@ -59,3 +74,4 @@ networks:
 
 volumes:
   mysql_data:
+  redis_data:
