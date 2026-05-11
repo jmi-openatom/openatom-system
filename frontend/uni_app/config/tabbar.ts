@@ -2,8 +2,15 @@ export const tabbarList = [
     {
         title: '首页',
         icon: 'home-4-line',
-        selectedIcon: 'home-fill',
+        selectedIcon: 'home-4-line',
         url: '/pages/home/index',
+        openType: 'reLaunch' as const
+    },
+    {
+        title: '活动',
+        icon: 'calendar-check-line',
+        selectedIcon: 'calendar-check-line',
+        url: '/pages/activity/index',
         openType: 'reLaunch' as const
     },
     {

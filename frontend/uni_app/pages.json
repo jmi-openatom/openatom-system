@@ -1,40 +1,54 @@
 {
-  "easycom": {
-    "autoscan": true,
-    "custom": {
-      "^tm-(.*)": "@/uni_modules/tmui-uni/components/tm-$1/tm-$1.vue",
-      "^uni-icons$": "@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue"
-    }
-  },
-  "pages": [
-    {
-      "path": "pages/home/index",
-      "style": {
-        "navigationStyle": "custom",
-        "navigationBarTitleText": "首页"
-      }
+    "easycom": {
+        "autoscan": true,
+        "custom": {
+            "^tm-(.*)": "@/uni_modules/tmui-uni/components/tm-$1/tm-$1.vue",
+            "^uni-icons$": "@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue"
+        }
     },
-    {
-      "path": "pages/messages/index",
-      "style": {
+    "pages": [
+        {
+            "path": "pages/home/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "首页"
+            }
+        },
+        {
+            "path": "pages/messages/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "消息"
+            }
+        },
+        {
+            "path": "pages/profile/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "我的"
+            }
+        },
+        {
+            "path": "pages/activity/index",
+            "style": {
+                "navigationBarTitleText": "活动",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/login/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "登录"
+            }
+        }
+    ],
+    "globalStyle": {
         "navigationStyle": "custom",
-        "navigationBarTitleText": "消息"
-      }
+        "navigationBarTextStyle": "black",
+        "navigationBarTitleText": "OpenAtom",
+        "navigationBarBackgroundColor": "#F8F8F8",
+        "backgroundColor": "#F5F5F5"
     },
-    {
-      "path": "pages/profile/index",
-      "style": {
-        "navigationStyle": "custom",
-        "navigationBarTitleText": "我的"
-      }
-    }
-  ],
-  "globalStyle": {
-    "navigationStyle": "custom",
-    "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "OpenAtom",
-    "navigationBarBackgroundColor": "#F8F8F8",
-    "backgroundColor": "#F5F5F5"
-  },
-  "uniIdRouter": {}
+    "uniIdRouter": {}
 }

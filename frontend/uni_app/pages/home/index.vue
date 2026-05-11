@@ -2,10 +2,10 @@
     <view class="page">
         <tm-navbar :showNavBack="false" title="首页"/>
         <scroll-view
-            class="main-scroll"
-            scroll-y
-            scroll-with-animation
             :scroll-into-view="scrollIntoView"
+            class="main-scroll"
+            scroll-with-animation
+            scroll-y
         >
             <HomeBanner
                 :club="data.club"
@@ -13,14 +13,13 @@
                 @activities="scrollToActivities"
                 @join="goJoin"
             />
-            <HomeMetrics :club-name="clubName" :metrics="data.metrics || []" />
-            <HomeTechTags :tags="data.techStack || []" />
-            <HomeFocusGrid :items="data.focusAreas || []" />
-            <HomeActivityScroller :activities="data.activities || []" />
-            <HomePeopleList :people="data.people || []" />
-            <HomeAwardList :awards="data.awards || []" />
-            <view class="scroll-spacer" />
-            <view class="bottom-pad" />
+            <HomeMetrics :club-name="clubName" :metrics="data.metrics || []"/>
+            <HomeFocusGrid :items="data.focusAreas || []"/>
+            <HomeActivityScroller :activities="data.activities || []"/>
+            <HomePeopleList :people="data.people || []"/>
+            <HomeAwardList :awards="data.awards || []"/>
+            <view class="scroll-spacer"/>
+            <view class="bottom-pad"/>
         </scroll-view>
         <Tabbar :activeIndex="0"/>
     </view>
@@ -34,9 +33,8 @@ import HomeBanner from '@/pages/home/components/HomeBanner.vue'
 import HomeFocusGrid from '@/pages/home/components/HomeFocusGrid.vue'
 import HomeMetrics from '@/pages/home/components/HomeMetrics.vue'
 import HomePeopleList from '@/pages/home/components/HomePeopleList.vue'
-import HomeTechTags from '@/pages/home/components/HomeTechTags.vue'
-import { siteApi } from '@/api'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import {siteApi} from '@/api'
+import {computed, nextTick, onMounted, ref} from 'vue'
 
 const loading = ref(true)
 const scrollIntoView = ref('')
@@ -112,6 +110,7 @@ onMounted(() => {
 }
 
 .main-scroll {
+    margin-top: 10px;
     flex: 1;
     height: 0;
     padding-top: 8rpx;

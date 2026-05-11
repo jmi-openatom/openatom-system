@@ -24,7 +24,7 @@
             <button class="logout-button" @click="onLogout">退出登录</button>
         </view>
 
-        <Tabbar :activeIndex="2"></Tabbar>
+        <Tabbar :activeIndex="3"></Tabbar>
     </view>
 </template>
 

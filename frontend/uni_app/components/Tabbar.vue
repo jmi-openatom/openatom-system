@@ -11,8 +11,8 @@ const props = defineProps({activeIndex: 2});
     <tm-tabbar
         :activeIndex="activeIndex"
         :list="tabbarList"
-        :outIndex="activeIndex"
         :showTopBorder="true"
+        outIndex="-1"
         position="fixed"
     />
 </template>

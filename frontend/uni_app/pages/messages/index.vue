@@ -16,7 +16,7 @@
                 <view v-if="msg.unread" class="msg-badge">{{ msg.unread }}</view>
             </view>
         </view>
-        <Tabbar :activeIndex="1"></Tabbar>
+        <Tabbar :activeIndex="2"></Tabbar>
     </view>
 </template>
 

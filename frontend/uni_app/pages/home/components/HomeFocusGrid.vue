@@ -22,7 +22,6 @@ const list = computed(() => (props.items || []).filter((x) => x?.title || x?.des
 
             <view v-if="list.length" class="grid">
                 <view v-for="(item, i) in list" :key="`${item.title}-${i}`" class="card">
-                    <view class="card__icon"/>
                     <text class="card__title">{{ item.title }}</text>
                     <text class="card__desc">{{ item.description || '暂无描述' }}</text>
                 </view>
