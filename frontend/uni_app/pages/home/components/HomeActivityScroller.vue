@@ -22,12 +22,8 @@ function statusText(s?: string) {
 }
 
 function onTap(item: ClubHomeActivity) {
-    const lines = [item.title, item.date, item.location, item.description].filter(Boolean).join('\n')
-    const content = (lines || '暂无更多信息').slice(0, 480)
-    uni.showModal({
-        title: '活动详情',
-        content,
-        showCancel: false,
+    uni.navigateTo({
+        url: `/pages/activity/detail/index?id=${item.id}`,
     })
 }
 </script>

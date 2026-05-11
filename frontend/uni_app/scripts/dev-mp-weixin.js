@@ -18,22 +18,14 @@ for (const file of [hbuilderNode, uniCli]) {
   }
 }
 
-for (const script of ['patch-vant-use.js', 'sync-vant-weapp.js']) {
-  const result = spawnSync(process.execPath, [resolve(projectRoot, 'scripts', script)], {
-    cwd: projectRoot,
-    stdio: 'inherit'
-  })
-
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1)
-  }
-}
+// vant scripts skipped — project now uses tmui only
 
 const child = spawn(hbuilderNode, [uniCli, '-p', 'mp-weixin'], {
   cwd: projectRoot,
   stdio: 'inherit',
   env: {
     ...process.env,
+    NODE_ENV: process.env.NODE_ENV || 'development',
     HX_APP_ROOT: hbuilderRoot,
     UNI_INPUT_DIR: projectRoot,
     UNI_OUTPUT_DIR: outputDir

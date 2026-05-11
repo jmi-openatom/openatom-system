@@ -16,7 +16,7 @@ withDefaults(
         <view class="empty__icon">
             <view class="empty__ring"/>
             <text class="empty__emoji">
-                <tm-icon name="calendar-check-line"></tm-icon>
+                <tm-icon name="calendar-check-line" size="40px"></tm-icon>
             </text>
         </view>
         <text class="empty__title">{{ title }}</text>

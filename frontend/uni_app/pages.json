@@ -36,6 +36,12 @@
             }
         },
         {
+            "path": "pages/activity/detail/index",
+            "style": {
+                "navigationBarTitleText": "活动详情"
+            }
+        },
+        {
             "path": "pages/login/index",
             "style": {
                 "navigationStyle": "custom",

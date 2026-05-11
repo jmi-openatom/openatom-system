@@ -23,18 +23,16 @@ function onSelect(value: ActivityStatus) {
 
 <template>
     <view class="filter-bar">
-        <scroll-view :show-scrollbar="false" class="filter-scroll" enable-flex scroll-x>
-            <view class="filter-inner">
-                <view
-                    v-for="f in filters"
-                    :key="f.value"
-                    :class="['filter-pill', { 'filter-pill--active': activeFilter === f.value }]"
-                    @tap="onSelect(f.value)"
-                >
-                    <text>{{ f.label }}</text>
-                </view>
+        <view class="filter-track">
+            <view
+                v-for="f in filters"
+                :key="f.value"
+                :class="['filter-segment', { 'filter-segment--active': activeFilter === f.value }]"
+                @tap="onSelect(f.value)"
+            >
+                <text class="filter-segment__label">{{ f.label }}</text>
             </view>
-        </scroll-view>
+        </view>
     </view>
 </template>
 
@@ -43,42 +41,43 @@ function onSelect(value: ActivityStatus) {
     position: sticky;
     top: 0;
     z-index: 10;
-    padding: 16rpx 0 8rpx;
-    //background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(248, 250, 252, 0.85));
+    padding: 20rpx 24rpx 12rpx;
     backdrop-filter: blur(20rpx);
 }
 
-.filter-scroll {
-    width: 100%;
-    white-space: nowrap;
+.filter-track {
+    display: flex;
+    padding: 6rpx;
+    border-radius: 20rpx;
+    background: #f1f5f9;
+    border: 1rpx solid rgba(226, 232, 240, 0.9);
 }
 
-.filter-inner {
-    display: inline-flex;
-    gap: 16rpx;
-    padding: 0 24rpx;
-}
-
-.filter-pill {
-    display: inline-flex;
+.filter-segment {
+    flex: 1;
+    display: flex;
     align-items: center;
-    height: 60rpx;
-    padding: 0 28rpx;
-    border-radius: 999rpx;
-    background: #fff;
-    border: 1rpx solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 4rpx 12rpx rgba(31, 55, 88, 0.04);
-    font-size: 26rpx;
+    justify-content: center;
+    height: 64rpx;
+    border-radius: 16rpx;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.filter-segment__label {
+    font-size: 28rpx;
     font-weight: 500;
     color: #64748b;
-    transition: all 0.2s;
+    transition: color 0.25s;
 }
 
-.filter-pill--active {
-    color: #fff;
-    background: linear-gradient(135deg, #1769e8, #3a84ff);
-    border-color: transparent;
-    box-shadow: 0 8rpx 20rpx rgba(23, 105, 232, 0.28);
-    font-weight: 600;
+.filter-segment--active {
+    background: #fff;
+    box-shadow: 0 2rpx 8rpx rgba(31, 55, 88, 0.08), 0 1rpx 2rpx rgba(31, 55, 88, 0.06);
+
+    .filter-segment__label {
+        color: #1769e8;
+        font-weight: 600;
+    }
 }
 </style>

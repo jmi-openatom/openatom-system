@@ -17,7 +17,7 @@
             <HomeFocusGrid :items="data.focusAreas || []"/>
             <HomeActivityScroller :activities="data.activities || []"/>
             <HomePeopleList :people="data.people || []"/>
-            <HomeAwardList :awards="data.awards || []"/>
+            <HomeAwardList :awards="data.awards || []" class="award__list"/>
             <view class="scroll-spacer"/>
             <view class="bottom-pad"/>
         </scroll-view>
@@ -121,6 +121,10 @@ onMounted(() => {
 }
 
 .bottom-pad {
-    height: 120rpx;
+    height: 300rpx;
+}
+
+.award__list {
+    margin-bottom: 32rpx;
 }
 </style>

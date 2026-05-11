@@ -25,7 +25,7 @@
                     v-for="(item, i) in list"
                     :key="item.id || i"
                     :activity="item"
-                    @tap="onTap"
+                    @tap="onTap(item)"
                 />
             </view>
 
@@ -38,6 +38,7 @@
             <view v-if="!loading && list.length && noMore" class="no-more">
                 <text>— 没有更多了 —</text>
             </view>
+
 
             <view class="bottom-pad"/>
         </scroll-view>
@@ -130,21 +131,7 @@ function onLoadMore() {
 }
 
 function onTap(item: ActivityItem) {
-    const lines = [
-        item.title,
-        item.date ? `时间：${item.date}` : '',
-        item.location ? `地点：${item.location}` : '',
-        item.maxParticipants ? `人数：${item.currentParticipants || 0}/${item.maxParticipants}` : '',
-        item.description || '',
-    ]
-        .filter(Boolean)
-        .join('\n')
-    const content = (lines || '暂无更多信息').slice(0, 480)
-    uni.showModal({
-        title: '活动详情',
-        content,
-        showCancel: false,
-    })
+    uni.navigateTo({url: `/pages/activity/detail/index?id=${item.id}`})
 }
 
 onMounted(() => {
