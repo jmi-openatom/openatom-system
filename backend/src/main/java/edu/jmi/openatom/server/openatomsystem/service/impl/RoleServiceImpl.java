@@ -1,8 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateNewRoleDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateRoleDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNewRoleDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRoleDTO;
 import edu.jmi.openatom.server.openatomsystem.mapper.PermissionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RoleMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RolePermissionMapper;
@@ -34,97 +34,97 @@ public class RoleServiceImpl implements RoleService {
   private final UserRoleMapper userRoleMapper;
 
   @Override
-  public ApiResponse<List<Role>> getRoles() { return ApiResponse.success(roleMapper.selectList(null)); }
+  public Result<List<Role>> getRoles() { return Result.success(roleMapper.selectList(null)); }
 
   @Override
-  public ApiResponse<String> createNewRole(RequestCreateNewRoleDTO dto) {
-    if (dto == null) return ApiResponse.error("请求参数为空");
-    if (isBlank(dto.getName()) || isBlank(dto.getCode())) return ApiResponse.error(400, "角色名称和角色编码不能为空");
-    if (roleMapper.countByCode(dto.getCode()) > 0) return ApiResponse.error("角色代码已存在");
+  public Result<String> createNewRole(RequestCreateNewRoleDTO dto) {
+    if (dto == null) return Result.error("请求参数为空");
+    if (isBlank(dto.getName()) || isBlank(dto.getCode())) return Result.error(400, "角色名称和角色编码不能为空");
+    if (roleMapper.countByCode(dto.getCode()) > 0) return Result.error("角色代码已存在");
     Role newRole = Role.builder().name(dto.getName()).code(dto.getCode()).dataScope(dto.getDataScope()).description(dto.getDescription()).build();
     int row = roleMapper.insert(newRole);
-    return row > 0 ? ApiResponse.success("角色创建成功") : ApiResponse.error("角色创建失败");
+    return row > 0 ? Result.success("角色创建成功") : Result.error("角色创建失败");
   }
 
   @Override
-  public ApiResponse<Role> getRoleByRoleId(Integer roleId) {
-    if (roleId == null) return ApiResponse.error(400, "roleId不能为空");
+  public Result<Role> getRoleByRoleId(Integer roleId) {
+    if (roleId == null) return Result.error(400, "roleId不能为空");
     Role role = roleMapper.selectById(roleId);
-    if (role == null) return ApiResponse.error(404, "角色不存在");
-    return ApiResponse.success(role);
+    if (role == null) return Result.error(404, "角色不存在");
+    return Result.success(role);
   }
 
   @Override
-  public ApiResponse<String> updateRole(Integer roleId, RequestUpdateRoleDTO dto) {
-    if (roleId == null) return ApiResponse.error(400, "roleId不能为空");
-    if (dto == null) return ApiResponse.error("请求参数为空");
+  public Result<String> updateRole(Integer roleId, RequestUpdateRoleDTO dto) {
+    if (roleId == null) return Result.error(400, "roleId不能为空");
+    if (dto == null) return Result.error("请求参数为空");
     Role role = roleMapper.selectById(roleId);
-    if (role == null) return ApiResponse.error(404, "角色不存在");
-    if (isBlank(dto.getName()) || isBlank(dto.getCode())) return ApiResponse.error(400, "角色名称和角色编码不能为空");
+    if (role == null) return Result.error(404, "角色不存在");
+    if (isBlank(dto.getName()) || isBlank(dto.getCode())) return Result.error(400, "角色名称和角色编码不能为空");
     Role roleWithSameCode = roleMapper.selectByCodeExcludeId(dto.getCode(), roleId);
-    if (roleWithSameCode != null) return ApiResponse.error(400, "角色代码已存在");
+    if (roleWithSameCode != null) return Result.error(400, "角色代码已存在");
     role.setName(dto.getName()); role.setCode(dto.getCode()); role.setDataScope(dto.getDataScope()); role.setDescription(dto.getDescription());
     int row = roleMapper.updateById(role);
-    return row > 0 ? ApiResponse.success("角色更新成功") : ApiResponse.error("角色更新失败");
+    return row > 0 ? Result.success("角色更新成功") : Result.error("角色更新失败");
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> deleteRole(Integer roleId) {
-    if (roleId == null) return ApiResponse.error(400, "roleId不能为空");
+  public Result<String> deleteRole(Integer roleId) {
+    if (roleId == null) return Result.error(400, "roleId不能为空");
     Role role = roleMapper.selectById(roleId);
-    if (role == null) return ApiResponse.error(404, "角色不存在");
+    if (role == null) return Result.error(404, "角色不存在");
     rolePermissionMapper.deleteByRoleId(roleId);
     userRoleMapper.deleteByRoleId(roleId);
     int row = roleMapper.deleteById(roleId);
-    return row > 0 ? ApiResponse.success("角色删除成功") : ApiResponse.error("角色删除失败");
+    return row > 0 ? Result.success("角色删除成功") : Result.error("角色删除失败");
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> assignRolePermissions(Integer roleId, List<Integer> permissionIds) {
-    if (roleId == null) return ApiResponse.error(400, "roleId不能为空");
-    if (permissionIds == null) return ApiResponse.error(400, "permissionIds不能为空");
+  public Result<String> assignRolePermissions(Integer roleId, List<Integer> permissionIds) {
+    if (roleId == null) return Result.error(400, "roleId不能为空");
+    if (permissionIds == null) return Result.error(400, "permissionIds不能为空");
     Role role = roleMapper.selectById(roleId);
-    if (role == null) return ApiResponse.error(404, "角色不存在");
+    if (role == null) return Result.error(404, "角色不存在");
     List<Integer> distinctPermissionIds = permissionIds.stream().distinct().toList();
     if (!distinctPermissionIds.isEmpty()) {
       List<Permission> permissions = permissionMapper.selectBatchIds(distinctPermissionIds);
-      if (permissions.size() != distinctPermissionIds.size()) return ApiResponse.error(400, "存在无效的permissionId");
+      if (permissions.size() != distinctPermissionIds.size()) return Result.error(400, "存在无效的permissionId");
     }
     rolePermissionMapper.deleteByRoleId(roleId);
     for (Integer permissionId : distinctPermissionIds) {
       rolePermissionMapper.insert(RolePermission.builder().roleId(roleId).permissionId(permissionId).build());
     }
-    return ApiResponse.success("角色权限分配成功");
+    return Result.success("角色权限分配成功");
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> assignUserRoles(Integer userId, List<Integer> roleIds) {
-    if (userId == null) return ApiResponse.error(400, "userId不能为空");
-    if (roleIds == null) return ApiResponse.error(400, "roleIds不能为空");
+  public Result<String> assignUserRoles(Integer userId, List<Integer> roleIds) {
+    if (userId == null) return Result.error(400, "userId不能为空");
+    if (roleIds == null) return Result.error(400, "roleIds不能为空");
     User user = userMapper.selectById(userId);
-    if (user == null) return ApiResponse.error(404, "用户不存在");
+    if (user == null) return Result.error(404, "用户不存在");
     List<Integer> distinctRoleIds = roleIds.stream().distinct().toList();
     if (!distinctRoleIds.isEmpty()) {
       List<Role> roles = roleMapper.selectBatchIds(distinctRoleIds);
-      if (roles.size() != distinctRoleIds.size()) return ApiResponse.error(400, "存在无效的roleId");
+      if (roles.size() != distinctRoleIds.size()) return Result.error(400, "存在无效的roleId");
     }
     userRoleMapper.deleteByUserId(userId);
     for (Integer roleId : distinctRoleIds) {
       userRoleMapper.insert(UserRole.builder().userId(userId).roleId(roleId).build());
     }
-    return ApiResponse.success("用户角色分配成功");
+    return Result.success("用户角色分配成功");
   }
 
   @Override
-  public ApiResponse<List<Role>> getUserRoles(Integer userId) {
-    if (userId == null) return ApiResponse.error(400, "userId不能为空");
+  public Result<List<Role>> getUserRoles(Integer userId) {
+    if (userId == null) return Result.error(400, "userId不能为空");
     List<UserRole> userRoles = userRoleMapper.selectByUserId(userId);
     List<Integer> roleIds = userRoles.stream().map(UserRole::getRoleId).toList();
-    if (roleIds.isEmpty()) return ApiResponse.success(List.of());
-    return ApiResponse.success(roleMapper.selectBatchIds(roleIds));
+    if (roleIds.isEmpty()) return Result.success(List.of());
+    return Result.success(roleMapper.selectBatchIds(roleIds));
   }
 
   private boolean isBlank(String value) { return value == null || value.isBlank(); }

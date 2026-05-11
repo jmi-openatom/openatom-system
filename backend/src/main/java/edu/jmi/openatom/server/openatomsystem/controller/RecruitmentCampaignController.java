@@ -1,9 +1,9 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateRecruitmentCampaignDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateRecruitmentCampaignDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateRecruitmentCampaignDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRecruitmentCampaignDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
 import edu.jmi.openatom.server.openatomsystem.service.RecruitmentCampaignService;
 import jakarta.validation.Valid;
@@ -34,7 +34,7 @@ public class RecruitmentCampaignController {
    */
   @GetMapping("/clubs/{clubId}/recruitment-campaigns")
   @SaCheckPermission("recruitment-campaign:list")
-  public ApiResponse<List<RecruitmentCampaign>> list(@PathVariable Integer clubId) {
+  public Result<List<RecruitmentCampaign>> list(@PathVariable Integer clubId) {
     return recruitmentCampaignService.listByClub(clubId);
   }
 
@@ -47,7 +47,7 @@ public class RecruitmentCampaignController {
    */
   @PostMapping("/clubs/{clubId}/recruitment-campaigns")
   @SaCheckPermission("recruitment-campaign:create")
-  public ApiResponse<String> create(
+  public Result<String> create(
       @PathVariable Integer clubId,
       @Valid @RequestBody RequestCreateRecruitmentCampaignDTO request) {
     return recruitmentCampaignService.create(clubId, request);
@@ -61,7 +61,7 @@ public class RecruitmentCampaignController {
    */
   @GetMapping("/recruitment-campaigns/{campaignId}")
   @SaCheckPermission("recruitment-campaign:detail")
-  public ApiResponse<RecruitmentCampaign> detail(@PathVariable Integer campaignId) {
+  public Result<RecruitmentCampaign> detail(@PathVariable Integer campaignId) {
     return recruitmentCampaignService.detail(campaignId);
   }
 
@@ -74,7 +74,7 @@ public class RecruitmentCampaignController {
    */
   @PatchMapping("/recruitment-campaigns/{campaignId}")
   @SaCheckPermission("recruitment-campaign:update")
-  public ApiResponse<String> update(
+  public Result<String> update(
       @PathVariable Integer campaignId,
       @Valid @RequestBody RequestUpdateRecruitmentCampaignDTO request) {
     return recruitmentCampaignService.update(campaignId, request);
@@ -88,7 +88,7 @@ public class RecruitmentCampaignController {
    */
   @PostMapping("/recruitment-campaigns/{campaignId}/publish")
   @SaCheckPermission("recruitment-campaign:publish")
-  public ApiResponse<String> publish(@PathVariable Integer campaignId) {
+  public Result<String> publish(@PathVariable Integer campaignId) {
     return recruitmentCampaignService.publish(campaignId);
   }
 
@@ -100,7 +100,7 @@ public class RecruitmentCampaignController {
    */
   @PostMapping("/recruitment-campaigns/{campaignId}/close")
   @SaCheckPermission("recruitment-campaign:close")
-  public ApiResponse<String> close(@PathVariable Integer campaignId) {
+  public Result<String> close(@PathVariable Integer campaignId) {
     return recruitmentCampaignService.close(campaignId);
   }
 }

@@ -1,10 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreatePositionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdatePositionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponsePositionDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreatePositionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdatePositionDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponsePositionVO;
 import edu.jmi.openatom.server.openatomsystem.service.PositionService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -35,7 +35,7 @@ public class PositionController {
    */
   @GetMapping("/clubs/{clubId}/positions")
   @SaCheckPermission("position:list")
-  public ApiResponse<List<ResponsePositionDTO>> getPositionsByClubId(@PathVariable Integer clubId) {
+  public Result<List<ResponsePositionVO>> getPositionsByClubId(@PathVariable Integer clubId) {
     return positionService.getPositionsByClubId(clubId);
   }
 
@@ -48,7 +48,7 @@ public class PositionController {
    */
   @PostMapping("/clubs/{clubId}/positions")
   @SaCheckPermission("position:create")
-  public ApiResponse<String> createPosition(
+  public Result<String> createPosition(
       @PathVariable Integer clubId,
       @Valid @RequestBody RequestCreatePositionDTO requestCreatePositionDTO) {
     return positionService.createPosition(clubId, requestCreatePositionDTO);
@@ -62,7 +62,7 @@ public class PositionController {
    */
   @GetMapping("/positions/{positionId}")
   @SaCheckPermission("position:detail")
-  public ApiResponse<ResponsePositionDTO> getPositionById(@PathVariable Integer positionId) {
+  public Result<ResponsePositionVO> getPositionById(@PathVariable Integer positionId) {
     return positionService.getPositionById(positionId);
   }
 
@@ -75,7 +75,7 @@ public class PositionController {
    */
   @PatchMapping("/positions/{positionId}")
   @SaCheckPermission("position:update")
-  public ApiResponse<String> updatePosition(
+  public Result<String> updatePosition(
       @PathVariable Integer positionId,
       @Valid @RequestBody RequestUpdatePositionDTO requestUpdatePositionDTO) {
     return positionService.updatePosition(positionId, requestUpdatePositionDTO);
@@ -89,7 +89,7 @@ public class PositionController {
    */
   @DeleteMapping("/positions/{positionId}")
   @SaCheckPermission("position:delete")
-  public ApiResponse<String> deletePosition(@PathVariable Integer positionId) {
+  public Result<String> deletePosition(@PathVariable Integer positionId) {
     return positionService.deletePosition(positionId);
   }
 }

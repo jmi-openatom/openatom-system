@@ -1,8 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateAwardDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateAwardDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateAwardDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateAwardDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubAward;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubAwardMapper;
@@ -26,28 +26,28 @@ public class AwardServiceImpl implements AwardService {
   private final ClubAwardMapper clubAwardMapper;
 
   @Override
-  public ApiResponse<List<ClubAward>> list() {
+  public Result<List<ClubAward>> list() {
     Club club = defaultClub();
-    if (club == null) return ApiResponse.error(404, "默认社团不存在");
-    return ApiResponse.success(clubAwardMapper.selectByClubIdOrdered(club.getId()));
+    if (club == null) return Result.error(404, "默认社团不存在");
+    return Result.success(clubAwardMapper.selectByClubIdOrdered(club.getId()));
   }
 
   @Override
-  public ApiResponse<String> create(RequestCreateAwardDTO request) {
+  public Result<String> create(RequestCreateAwardDTO request) {
     Club club = defaultClub();
-    if (club == null) return ApiResponse.error(404, "默认社团不存在");
+    if (club == null) return Result.error(404, "默认社团不存在");
     int rows = clubAwardMapper.insert(ClubAward.builder().clubId(club.getId())
         .title(request.getTitle()).competitionName(request.getCompetitionName())
         .awardLevel(request.getAwardLevel()).awardYear(request.getAwardYear())
         .teamName(request.getTeamName()).description(request.getDescription())
         .sortOrder(request.getSortOrder() == null ? 0 : request.getSortOrder()).build());
-    return rows > 0 ? ApiResponse.success("获奖经历创建成功") : ApiResponse.error("获奖经历创建失败");
+    return rows > 0 ? Result.success("获奖经历创建成功") : Result.error("获奖经历创建失败");
   }
 
   @Override
-  public ApiResponse<String> update(Integer awardId, RequestUpdateAwardDTO request) {
+  public Result<String> update(Integer awardId, RequestUpdateAwardDTO request) {
     ClubAward award = findAward(awardId);
-    if (award == null) return ApiResponse.error(404, "获奖经历不存在");
+    if (award == null) return Result.error(404, "获奖经历不存在");
     if (request.getTitle() != null) award.setTitle(request.getTitle());
     if (request.getCompetitionName() != null) award.setCompetitionName(request.getCompetitionName());
     if (request.getAwardLevel() != null) award.setAwardLevel(request.getAwardLevel());
@@ -56,15 +56,15 @@ public class AwardServiceImpl implements AwardService {
     if (request.getDescription() != null) award.setDescription(request.getDescription());
     if (request.getSortOrder() != null) award.setSortOrder(request.getSortOrder());
     int rows = clubAwardMapper.updateById(award);
-    return rows > 0 ? ApiResponse.success("获奖经历更新成功") : ApiResponse.error("获奖经历更新失败");
+    return rows > 0 ? Result.success("获奖经历更新成功") : Result.error("获奖经历更新失败");
   }
 
   @Override
-  public ApiResponse<String> delete(Integer awardId) {
+  public Result<String> delete(Integer awardId) {
     ClubAward award = findAward(awardId);
-    if (award == null) return ApiResponse.error(404, "获奖经历不存在");
+    if (award == null) return Result.error(404, "获奖经历不存在");
     int rows = clubAwardMapper.deleteById(awardId);
-    return rows > 0 ? ApiResponse.success("获奖经历已删除") : ApiResponse.error("获奖经历删除失败");
+    return rows > 0 ? Result.success("获奖经历已删除") : Result.error("获奖经历删除失败");
   }
 
   private ClubAward findAward(Integer awardId) {

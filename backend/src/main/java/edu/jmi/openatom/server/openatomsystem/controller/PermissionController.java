@@ -1,8 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreatePermissionDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreatePermissionDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Permission;
 import edu.jmi.openatom.server.openatomsystem.service.PermissionService;
 import jakarta.validation.Valid;
@@ -32,7 +32,7 @@ public class PermissionController {
    */
   @GetMapping
   @SaCheckPermission("permission:list")
-  public ApiResponse<List<Permission>> getPermissions() {
+  public Result<List<Permission>> getPermissions() {
     return permissionService.getPermissions();
   }
 
@@ -44,7 +44,7 @@ public class PermissionController {
    */
   @PostMapping
   @SaCheckPermission("permission:create")
-  public ApiResponse<String> createPermission(
+  public Result<String> createPermission(
       @Valid @RequestBody RequestCreatePermissionDTO requestCreatePermissionDTO) {
     return permissionService.createPermission(requestCreatePermissionDTO);
   }

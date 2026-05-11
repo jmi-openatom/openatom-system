@@ -1,9 +1,9 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateSiteFormDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateSiteFormDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateSiteFormDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateSiteFormDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
 import edu.jmi.openatom.server.openatomsystem.service.SiteFormService;
 import jakarta.validation.Valid;
@@ -34,7 +34,7 @@ public class SiteFormController {
    */
   @GetMapping("/clubs/{clubId}/site-forms")
   @SaCheckPermission("site-form:list")
-  public ApiResponse<List<SiteForm>> list(@PathVariable Integer clubId) {
+  public Result<List<SiteForm>> list(@PathVariable Integer clubId) {
     return siteFormService.listByClub(clubId);
   }
 
@@ -47,7 +47,7 @@ public class SiteFormController {
    */
   @PostMapping("/clubs/{clubId}/site-forms")
   @SaCheckPermission("site-form:create")
-  public ApiResponse<String> create(
+  public Result<String> create(
       @PathVariable Integer clubId, @Valid @RequestBody RequestCreateSiteFormDTO request) {
     return siteFormService.create(clubId, request);
   }
@@ -60,7 +60,7 @@ public class SiteFormController {
    */
   @GetMapping("/site-forms/{formId}")
   @SaCheckPermission("site-form:detail")
-  public ApiResponse<SiteForm> detail(@PathVariable Integer formId) {
+  public Result<SiteForm> detail(@PathVariable Integer formId) {
     return siteFormService.detail(formId);
   }
 
@@ -73,7 +73,7 @@ public class SiteFormController {
    */
   @PatchMapping("/site-forms/{formId}")
   @SaCheckPermission("site-form:update")
-  public ApiResponse<String> update(
+  public Result<String> update(
       @PathVariable Integer formId, @RequestBody RequestUpdateSiteFormDTO request) {
     return siteFormService.update(formId, request);
   }
@@ -86,7 +86,7 @@ public class SiteFormController {
    */
   @PostMapping("/site-forms/{formId}/publish")
   @SaCheckPermission("site-form:update")
-  public ApiResponse<String> publish(@PathVariable Integer formId) {
+  public Result<String> publish(@PathVariable Integer formId) {
     return siteFormService.publish(formId);
   }
 
@@ -98,7 +98,7 @@ public class SiteFormController {
    */
   @PostMapping("/site-forms/{formId}/close")
   @SaCheckPermission("site-form:update")
-  public ApiResponse<String> close(@PathVariable Integer formId) {
+  public Result<String> close(@PathVariable Integer formId) {
     return siteFormService.close(formId);
   }
 }

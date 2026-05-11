@@ -1,10 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestAssignRolePermissionsDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateNewRoleDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateRoleDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestAssignRolePermissionsDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNewRoleDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRoleDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Role;
 import edu.jmi.openatom.server.openatomsystem.service.RoleService;
 import jakarta.validation.Valid;
@@ -30,7 +30,7 @@ public class RoleController {
    */
   @GetMapping
   @SaCheckPermission("role:list")
-  public ApiResponse<List<Role>> roles() {
+  public Result<List<Role>> roles() {
     return roleService.getRoles();
   }
 
@@ -42,7 +42,7 @@ public class RoleController {
    */
   @PostMapping
   @SaCheckPermission("role:create")
-  public ApiResponse<String> createNewRole(
+  public Result<String> createNewRole(
       @Valid @RequestBody RequestCreateNewRoleDTO requestCreateNewRoleDTO) {
     return roleService.createNewRole(requestCreateNewRoleDTO);
   }
@@ -55,7 +55,7 @@ public class RoleController {
    */
   @GetMapping("/{roleId}")
   @SaCheckPermission("role:detail")
-  public ApiResponse<Role> getRoleByRoleId(@PathVariable Integer roleId) {
+  public Result<Role> getRoleByRoleId(@PathVariable Integer roleId) {
     return roleService.getRoleByRoleId(roleId);
   }
 
@@ -68,7 +68,7 @@ public class RoleController {
    */
   @PatchMapping("/{roleId}")
   @SaCheckPermission("role:update")
-  public ApiResponse<String> updateRole(
+  public Result<String> updateRole(
       @PathVariable Integer roleId, @Valid @RequestBody RequestUpdateRoleDTO requestUpdateRoleDTO) {
     return roleService.updateRole(roleId, requestUpdateRoleDTO);
   }
@@ -81,7 +81,7 @@ public class RoleController {
    */
   @DeleteMapping("/{roleId}")
   @SaCheckPermission("role:delete")
-  public ApiResponse<String> deleteRole(@PathVariable Integer roleId) {
+  public Result<String> deleteRole(@PathVariable Integer roleId) {
     return roleService.deleteRole(roleId);
   }
 
@@ -94,7 +94,7 @@ public class RoleController {
    */
   @PostMapping("/{roleId}/permissions")
   @SaCheckPermission("role:permission:assign")
-  public ApiResponse<String> assignRolePermissions(
+  public Result<String> assignRolePermissions(
       @PathVariable Integer roleId,
       @Valid @RequestBody RequestAssignRolePermissionsDTO requestAssignRolePermissionsDTO) {
     return roleService.assignRolePermissions(

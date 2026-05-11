@@ -1,13 +1,13 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseClubHomeDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDetailDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormDetailDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormsDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteProgressDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseClubHomeVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentDetailVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteFormDetailVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteFormsVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteProgressVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
@@ -48,10 +48,10 @@ public class SiteServiceImpl implements SiteService {
   private final RegistrationSettingService registrationSettingService;
 
   @Override
-  public ApiResponse<ResponseClubHomeDTO> getClubHome(String clubCode) {
+  public Result<ResponseClubHomeVO> getClubHome(String clubCode) {
     Club club = findClub(clubCode);
     if (club == null) {
-      return ApiResponse.error(404, "默认社团不存在");
+      return Result.error(404, "默认社团不存在");
     }
     List<ClubMembership> memberships = clubMembershipMapper.selectByClubIdOrdered(club.getId());
     List<RecruitmentCampaign> campaigns =
@@ -59,8 +59,8 @@ public class SiteServiceImpl implements SiteService {
     List<ClubDepartment> departments = clubDepartmentMapper.selectByClubIdOrdered(club.getId());
     List<ClubActivity> activities = clubActivityMapper.selectPublishedByClubId(club.getId(), 6);
     List<ClubAward> awards = clubAwardMapper.selectByClubIdOrdered(club.getId());
-    return ApiResponse.success(
-        ResponseClubHomeDTO.builder()
+    return Result.success(
+        ResponseClubHomeVO.builder()
             .club(toClubProfile(club))
             .metrics(buildMetrics(memberships, campaigns, activities, awards))
             .focusAreas(buildFocusAreas(departments))
@@ -72,49 +72,49 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
-  public ApiResponse<List<ClubActivity>> getActivities() {
+  public Result<List<ClubActivity>> getActivities() {
     Club club = findClub(null);
     if (club == null) {
-      return ApiResponse.error(404, "默认社团不存在");
+      return Result.error(404, "默认社团不存在");
     }
-    return ApiResponse.success(clubActivityMapper.selectPublishedByClubIdAll(club.getId()));
+    return Result.success(clubActivityMapper.selectPublishedByClubIdAll(club.getId()));
   }
 
   @Override
-  public ApiResponse<ClubActivity> getActivityDetail(Integer activityId) {
+  public Result<ClubActivity> getActivityDetail(Integer activityId) {
     Club club = findClub(null);
     if (club == null) {
-      return ApiResponse.error(404, "默认社团不存在");
+      return Result.error(404, "默认社团不存在");
     }
     ClubActivity activity =
         clubActivityMapper.selectPublishedByIdAndClubId(activityId, club.getId());
-    return activity == null ? ApiResponse.error(404, "活动不存在") : ApiResponse.success(activity);
+    return activity == null ? Result.error(404, "活动不存在") : Result.success(activity);
   }
 
   @Override
-  public ApiResponse<List<Club>> getPublicClubs() {
-    return ApiResponse.success(clubMapper.selectActiveClubs());
+  public Result<List<Club>> getPublicClubs() {
+    return Result.success(clubMapper.selectActiveClubs());
   }
 
   @Override
-  public ApiResponse<ResponseSiteFormsDTO> getPublicForms(Integer clubId) {
+  public Result<ResponseSiteFormsVO> getPublicForms(Integer clubId) {
     Club club = findClub(clubId, null);
     if (club == null) {
-      return ApiResponse.error(404, "默认社团不存在");
+      return Result.error(404, "默认社团不存在");
     }
     List<SiteForm> forms = siteFormMapper.selectOpenByClubId(club.getId());
-    return ApiResponse.success(ResponseSiteFormsDTO.builder().club(club).forms(forms).build());
+    return Result.success(ResponseSiteFormsVO.builder().club(club).forms(forms).build());
   }
 
   @Override
-  public ApiResponse<ResponseSiteProgressDTO> getMyProgress() {
+  public Result<ResponseSiteProgressVO> getMyProgress() {
     if (!StpUtil.isLogin()) {
-      return ApiResponse.error(401, "请先登录后查看入会进度");
+      return Result.error(401, "请先登录后查看入会进度");
     }
     Integer userId = StpUtil.getLoginIdAsInt();
     List<MembershipApplication> applications = applicationMapper.selectByUserIdOrdered(userId);
     if (applications.isEmpty()) {
-      return ApiResponse.success(ResponseSiteProgressDTO.builder().applications(List.of()).build());
+      return Result.success(ResponseSiteProgressVO.builder().applications(List.of()).build());
     }
     Map<Integer, Club> clubs =
         selectMap(
@@ -155,8 +155,8 @@ public class SiteServiceImpl implements SiteService {
     Map<Integer, List<Interview>> interviewsByApplication =
         interviewMapper.selectByApplicationIds(appIds).stream()
             .collect(Collectors.groupingBy(Interview::getApplicationId));
-    return ApiResponse.success(
-        ResponseSiteProgressDTO.builder()
+    return Result.success(
+        ResponseSiteProgressVO.builder()
             .applications(
                 applications.stream()
                     .map(
@@ -168,21 +168,21 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
-  public ApiResponse<Boolean> getRegisterEnabled() {
-    return ApiResponse.success(registrationSettingService.isRegisterEnabled());
+  public Result<Boolean> getRegisterEnabled() {
+    return Result.success(registrationSettingService.isRegisterEnabled());
   }
 
   @Override
-  public ApiResponse<ResponseRecruitmentDTO> getRecruitment(Integer clubId) {
+  public Result<ResponseRecruitmentVO> getRecruitment(Integer clubId) {
     Club club = findClub(clubId, null);
     if (club == null) {
-      return ApiResponse.error(404, "默认社团不存在");
+      return Result.error(404, "默认社团不存在");
     }
     List<RecruitmentCampaign> campaigns =
         recruitmentCampaignMapper.selectOpenByClubId(club.getId());
     List<ClubDepartment> departments = clubDepartmentMapper.selectByClubIdOrdered(club.getId());
-    return ApiResponse.success(
-        ResponseRecruitmentDTO.builder()
+    return Result.success(
+        ResponseRecruitmentVO.builder()
             .club(club)
             .campaigns(campaigns)
             .departments(departments)
@@ -190,15 +190,15 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
-  public ApiResponse<ResponseRecruitmentDetailDTO> getRecruitmentDetail(Integer campaignId) {
+  public Result<ResponseRecruitmentDetailVO> getRecruitmentDetail(Integer campaignId) {
     RecruitmentCampaign campaign =
         campaignId == null ? null : recruitmentCampaignMapper.selectById(campaignId);
-    if (campaign == null) return ApiResponse.error(404, "招新计划不存在");
+    if (campaign == null) return Result.error(404, "招新计划不存在");
     Club club = clubMapper.selectById(campaign.getClubId());
-    if (club == null) return ApiResponse.error(404, "社团不存在");
+    if (club == null) return Result.error(404, "社团不存在");
     List<ClubDepartment> departments = clubDepartmentMapper.selectByClubIdOrdered(club.getId());
-    return ApiResponse.success(
-        ResponseRecruitmentDetailDTO.builder()
+    return Result.success(
+        ResponseRecruitmentDetailVO.builder()
             .club(club)
             .campaign(campaign)
             .departments(departments)
@@ -206,12 +206,12 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
-  public ApiResponse<ResponseSiteFormDetailDTO> getFormDetail(Integer formId) {
+  public Result<ResponseSiteFormDetailVO> getFormDetail(Integer formId) {
     SiteForm form = siteFormMapper.selectById(formId);
-    if (form == null) return ApiResponse.error(404, "表单不存在");
+    if (form == null) return Result.error(404, "表单不存在");
     Club club = clubMapper.selectById(form.getClubId());
-    if (club == null) return ApiResponse.error(404, "社团不存在");
-    return ApiResponse.success(ResponseSiteFormDetailDTO.builder().club(club).form(form).build());
+    if (club == null) return Result.error(404, "社团不存在");
+    return Result.success(ResponseSiteFormDetailVO.builder().club(club).form(form).build());
   }
 
   private Club findClub(String clubCode) {
@@ -227,8 +227,8 @@ public class SiteServiceImpl implements SiteService {
     return clubMapper.selectDefaultClub(code);
   }
 
-  private ResponseClubHomeDTO.ClubProfile toClubProfile(Club club) {
-    return ResponseClubHomeDTO.ClubProfile.builder()
+  private ResponseClubHomeVO.ClubProfile toClubProfile(Club club) {
+    return ResponseClubHomeVO.ClubProfile.builder()
         .id(club.getId())
         .name(club.getName())
         .code(club.getCode())
@@ -239,7 +239,7 @@ public class SiteServiceImpl implements SiteService {
         .build();
   }
 
-  private List<ResponseClubHomeDTO.Metric> buildMetrics(
+  private List<ResponseClubHomeVO.Metric> buildMetrics(
       List<ClubMembership> memberships,
       List<RecruitmentCampaign> campaigns,
       List<ClubActivity> activities,
@@ -255,15 +255,15 @@ public class SiteServiceImpl implements SiteService {
         metric("招新计划", openCampaigns, "当前发布中的批次"));
   }
 
-  private ResponseClubHomeDTO.Metric metric(String label, long value, String note) {
-    return ResponseClubHomeDTO.Metric.builder()
+  private ResponseClubHomeVO.Metric metric(String label, long value, String note) {
+    return ResponseClubHomeVO.Metric.builder()
         .label(label)
         .value(String.valueOf(value))
         .note(note)
         .build();
   }
 
-  private List<ResponseClubHomeDTO.FocusArea> buildFocusAreas(List<ClubDepartment> departments) {
+  private List<ResponseClubHomeVO.FocusArea> buildFocusAreas(List<ClubDepartment> departments) {
     List<String> icons = List.of("monitor", "cpu", "lightning", "phone");
     return departments.stream()
         .limit(4)
@@ -276,16 +276,16 @@ public class SiteServiceImpl implements SiteService {
         .toList();
   }
 
-  private ResponseClubHomeDTO.FocusArea focus(String title, String description, String icon) {
-    return ResponseClubHomeDTO.FocusArea.builder()
+  private ResponseClubHomeVO.FocusArea focus(String title, String description, String icon) {
+    return ResponseClubHomeVO.FocusArea.builder()
         .title(title)
         .description(description)
         .icon(icon)
         .build();
   }
 
-  private ResponseClubHomeDTO.Activity toActivity(ClubActivity activity) {
-    return ResponseClubHomeDTO.Activity.builder()
+  private ResponseClubHomeVO.Activity toActivity(ClubActivity activity) {
+    return ResponseClubHomeVO.Activity.builder()
         .id(activity.getId())
         .date(formatMonthDay(activity.getActivityAt()))
         .title(activity.getTitle())
@@ -296,7 +296,7 @@ public class SiteServiceImpl implements SiteService {
         .build();
   }
 
-  private List<ResponseClubHomeDTO.Person> buildPeople(List<ClubMembership> memberships) {
+  private List<ResponseClubHomeVO.Person> buildPeople(List<ClubMembership> memberships) {
     List<ClubMembership> topMemberships =
         memberships.stream()
             .filter(m -> m.getUserId() != null)
@@ -355,7 +355,7 @@ public class SiteServiceImpl implements SiteService {
     return ids.isEmpty() ? List.of() : clubPositionMapper.selectBatchIds(ids);
   }
 
-  private ResponseClubHomeDTO.Person toPerson(
+  private ResponseClubHomeVO.Person toPerson(
       ClubMembership membership,
       Map<Integer, User> users,
       Map<Integer, ClubDepartment> departments,
@@ -366,7 +366,7 @@ public class SiteServiceImpl implements SiteService {
     String department = OptionalName.of(departments.get(membership.getDepartmentId()));
     String position = OptionalName.of(positions.get(membership.getPositionId()));
     String role = isBlank(position) ? membership.getStatus() : position;
-    return ResponseClubHomeDTO.Person.builder()
+    return ResponseClubHomeVO.Person.builder()
         .userId(user.getId())
         .name(name)
         .initial(initialOf(name))
@@ -376,8 +376,8 @@ public class SiteServiceImpl implements SiteService {
         .build();
   }
 
-  private ResponseClubHomeDTO.Award toAward(ClubAward award) {
-    return ResponseClubHomeDTO.Award.builder()
+  private ResponseClubHomeVO.Award toAward(ClubAward award) {
+    return ResponseClubHomeVO.Award.builder()
         .id(award.getId())
         .year(award.getAwardYear())
         .title(award.getTitle())
@@ -388,7 +388,7 @@ public class SiteServiceImpl implements SiteService {
         .build();
   }
 
-  private ResponseSiteProgressDTO.ApplicationProgress toProgressApplication(
+  private ResponseSiteProgressVO.ApplicationProgress toProgressApplication(
       MembershipApplication app,
       Map<Integer, User> users,
       Map<Integer, Club> clubs,
@@ -402,7 +402,7 @@ public class SiteServiceImpl implements SiteService {
     ClubDepartment second = getNullable(departments, app.getSecondChoiceDepartmentId());
     String preferredDept =
         first == null ? (second == null ? null : second.getName()) : first.getName();
-    return ResponseSiteProgressDTO.ApplicationProgress.builder()
+    return ResponseSiteProgressVO.ApplicationProgress.builder()
         .id(app.getId())
         .clubId(app.getClubId())
         .clubName(club == null ? null : club.getName())
@@ -423,8 +423,8 @@ public class SiteServiceImpl implements SiteService {
         .build();
   }
 
-  private ResponseSiteProgressDTO.InterviewProgress toProgressInterview(Interview interview) {
-    return ResponseSiteProgressDTO.InterviewProgress.builder()
+  private ResponseSiteProgressVO.InterviewProgress toProgressInterview(Interview interview) {
+    return ResponseSiteProgressVO.InterviewProgress.builder()
         .id(interview.getId())
         .round(interview.getRound())
         .scheduledStartAt(interview.getScheduledStartAt())

@@ -1,10 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateFormSubmissionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseFormSubmissionDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateFormSubmissionDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseFormSubmissionVO;
 import edu.jmi.openatom.server.openatomsystem.service.FormSubmissionService;
 import jakarta.validation.Valid;
 import java.net.URLEncoder;
@@ -39,7 +39,7 @@ public class FormSubmissionController {
    * @return 提交记录ID
    */
   @PostMapping("/site/forms/{formId}/submissions")
-  public ApiResponse<Integer> create(
+  public Result<Integer> create(
       @PathVariable Integer formId, @Valid @RequestBody RequestCreateFormSubmissionDTO request) {
     return formSubmissionService.create(formId, request);
   }
@@ -55,7 +55,7 @@ public class FormSubmissionController {
    */
   @GetMapping("/site-forms/{formId}/submissions")
   @SaCheckPermission("site-form:detail")
-  public ApiResponse<PageDataDTO<ResponseFormSubmissionDTO>> list(
+  public Result<PageDataVO<ResponseFormSubmissionVO>> list(
       @PathVariable Integer formId,
       @RequestParam(required = false) String keyword,
       @RequestParam(defaultValue = "1") Long page,

@@ -1,9 +1,9 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateNotificationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseNotificationDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNotificationDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseNotificationVO;
 import edu.jmi.openatom.server.openatomsystem.entity.Notification;
 import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import jakarta.validation.Valid;
@@ -28,7 +28,7 @@ public class NotificationController {
    * @return 通知列表
    */
   @GetMapping
-  public ApiResponse<List<ResponseNotificationDTO>> notifications() {
+  public Result<List<ResponseNotificationVO>> notifications() {
     return notificationService.currentUserNotifications();
   }
 
@@ -38,7 +38,7 @@ public class NotificationController {
    * @return 未读通知数量
    */
   @GetMapping("/unread-count")
-  public ApiResponse<Integer> unreadCount() {
+  public Result<Integer> unreadCount() {
     return notificationService.unreadCount();
   }
 
@@ -50,7 +50,7 @@ public class NotificationController {
    */
   @PostMapping("/admin")
   @SaCheckPermission("notification:create")
-  public ApiResponse<String> create(@Valid @RequestBody RequestCreateNotificationDTO request) {
+  public Result<String> create(@Valid @RequestBody RequestCreateNotificationDTO request) {
     return notificationService.create(request);
   }
 
@@ -61,7 +61,7 @@ public class NotificationController {
    * @return 操作结果
    */
   @PostMapping("/{notificationId}/read")
-  public ApiResponse<String> markRead(@PathVariable Integer notificationId) {
+  public Result<String> markRead(@PathVariable Integer notificationId) {
     return notificationService.markRead(notificationId);
   }
 
@@ -72,7 +72,7 @@ public class NotificationController {
    */
   @GetMapping("/admin")
   @SaCheckPermission("notification:list")
-  public ApiResponse<List<Notification>> listAll() {
+  public Result<List<Notification>> listAll() {
     return notificationService.listAll();
   }
 
@@ -84,7 +84,7 @@ public class NotificationController {
    */
   @DeleteMapping("/admin/{notificationId}")
   @SaCheckPermission("notification:delete")
-  public ApiResponse<String> delete(@PathVariable Integer notificationId) {
+  public Result<String> delete(@PathVariable Integer notificationId) {
     return notificationService.delete(notificationId);
   }
 }

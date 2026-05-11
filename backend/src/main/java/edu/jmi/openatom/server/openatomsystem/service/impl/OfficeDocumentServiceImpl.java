@@ -2,9 +2,9 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestSaveOfficeDocumentDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseOfficeDocumentUserOptionDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveOfficeDocumentDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseOfficeDocumentUserOptionVO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.OfficeDocument;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
@@ -56,21 +56,21 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
   private final UserMapper userMapper;
 
   @Override
-  public ApiResponse<List<OfficeDocument>> list(String docType, String keyword) {
+  public Result<List<OfficeDocument>> list(String docType, String keyword) {
     Club club = defaultClub();
     if (club == null) {
-      return ApiResponse.error(404, "默认社团不存在");
+      return Result.error(404, "默认社团不存在");
     }
-    return ApiResponse.success(officeDocumentMapper.selectByConditions(club.getId(), normalizeDocType(docType), keyword));
+    return Result.success(officeDocumentMapper.selectByConditions(club.getId(), normalizeDocType(docType), keyword));
   }
 
   @Override
-  public ApiResponse<List<ResponseOfficeDocumentUserOptionDTO>> listUserOptions(String keyword) {
-    return ApiResponse.success(
+  public Result<List<ResponseOfficeDocumentUserOptionVO>> listUserOptions(String keyword) {
+    return Result.success(
         userMapper.selectOptionsByKeyword(keyword).stream()
             .map(
                 item ->
-                    ResponseOfficeDocumentUserOptionDTO.builder()
+                    ResponseOfficeDocumentUserOptionVO.builder()
                         .id(item.getId())
                         .realName(item.getRealName())
                         .studentId(item.getStudentId())
@@ -85,18 +85,18 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<Integer> create(RequestSaveOfficeDocumentDTO request) {
+  public Result<Integer> create(RequestSaveOfficeDocumentDTO request) {
     Club club = defaultClub();
     if (club == null) {
-      return ApiResponse.error(404, "默认社团不存在");
+      return Result.error(404, "默认社团不存在");
     }
     String docType = normalizeDocType(request == null ? null : request.getDocType());
     if (docType == null) {
-      return ApiResponse.error(400, "不支持的单据类型");
+      return Result.error(400, "不支持的单据类型");
     }
-    ApiResponse<String> validation = validatePayload(docType, request.getPayload());
+    Result<String> validation = validatePayload(docType, request.getPayload());
     if (validation != null) {
-      return ApiResponse.error(validation.getCode(), validation.getMessage());
+      return Result.error(validation.getCode(), validation.getMessage());
     }
     Integer operatorId = StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null;
     OfficeDocument document =
@@ -110,30 +110,30 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
             .updatedBy(operatorId)
             .build();
     int rows = officeDocumentMapper.insert(document);
-    return rows > 0 ? ApiResponse.success(document.getId(), "单据创建成功") : ApiResponse.error("单据创建失败");
+    return rows > 0 ? Result.success(document.getId(), "单据创建成功") : Result.error("单据创建失败");
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> update(Integer documentId, RequestSaveOfficeDocumentDTO request) {
+  public Result<String> update(Integer documentId, RequestSaveOfficeDocumentDTO request) {
     OfficeDocument document = officeDocumentMapper.selectById(documentId);
     if (document == null) {
-      return ApiResponse.error(404, "单据不存在");
+      return Result.error(404, "单据不存在");
     }
     String docType = normalizeDocType(request == null ? null : request.getDocType());
     if (docType == null) {
-      return ApiResponse.error(400, "不支持的单据类型");
+      return Result.error(400, "不支持的单据类型");
     }
-    ApiResponse<String> validation = validatePayload(docType, request.getPayload());
+    Result<String> validation = validatePayload(docType, request.getPayload());
     if (validation != null) {
-      return ApiResponse.error(validation.getCode(), validation.getMessage());
+      return Result.error(validation.getCode(), validation.getMessage());
     }
     document.setDocType(docType);
     document.setTitle(request.getTitle().trim());
     document.setPayload(Jsons.stringify(request.getPayload()));
     document.setUpdatedBy(StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null);
     int rows = officeDocumentMapper.updateById(document);
-    return rows > 0 ? ApiResponse.success("单据更新成功") : ApiResponse.error("单据更新失败");
+    return rows > 0 ? Result.success("单据更新成功") : Result.error("单据更新失败");
   }
 
   @Override
@@ -269,29 +269,29 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
         false);
   }
 
-  private ApiResponse<String> validatePayload(String docType, Map<String, Object> payload) {
+  private Result<String> validatePayload(String docType, Map<String, Object> payload) {
     if (payload == null || payload.isEmpty()) {
-      return ApiResponse.error(400, "单据内容不能为空");
+      return Result.error(400, "单据内容不能为空");
     }
     if (stringList(payload.get("memberIds")).isEmpty()) {
-      return ApiResponse.error(400, "请至少选择一名人员");
+      return Result.error(400, "请至少选择一名人员");
     }
     if (DOC_TYPE_LEAVE.equals(docType)) {
       if (isBlank(value(payload, "reason", null))) {
-        return ApiResponse.error(400, "请填写请假事由");
+        return Result.error(400, "请填写请假事由");
       }
       return null;
     }
     if (DOC_TYPE_VENUE.equals(docType)) {
       if (isBlank(value(payload, "venueName", null))) {
-        return ApiResponse.error(400, "请填写场地名称");
+        return Result.error(400, "请填写场地名称");
       }
       if (isBlank(value(payload, "contactName", null))) {
-        return ApiResponse.error(400, "请填写联系人");
+        return Result.error(400, "请填写联系人");
       }
       return null;
     }
-    return ApiResponse.error(400, "不支持的单据类型");
+    return Result.error(400, "不支持的单据类型");
   }
 
   private Club defaultClub() {

@@ -1,14 +1,14 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestAssignUserRolesDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateUserDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestResetPasswordDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateUserStatusDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUserUpdate;
-import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseMembershipDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestAssignUserRolesDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateUserDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestResetPasswordDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateUserStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUserUpdateDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.entity.Role;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
@@ -51,7 +51,7 @@ public class UserController {
    */
   @GetMapping
   @SaCheckPermission("user:list")
-  public ApiResponse<PageDataDTO<User>> users(
+  public Result<PageDataVO<User>> users(
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) String status,
       @RequestParam(required = false) Integer clubId,
@@ -73,7 +73,7 @@ public class UserController {
    */
   @PostMapping
   @SaCheckPermission("user:create")
-  public ApiResponse<String> createUser(
+  public Result<String> createUser(
       @Valid @RequestBody RequestCreateUserDTO requestCreateUserDTO) {
     return userService.createUser(requestCreateUserDTO);
   }
@@ -86,7 +86,7 @@ public class UserController {
    */
   @PostMapping("/import")
   @SaCheckPermission("user:import")
-  public ApiResponse<String> importUsers(@RequestParam("file") MultipartFile file) {
+  public Result<String> importUsers(@RequestParam("file") MultipartFile file) {
     return userService.importUsers(file);
   }
 
@@ -122,7 +122,7 @@ public class UserController {
    */
   @PostMapping("/{userId}/roles")
   @SaCheckPermission("user:role:assign")
-  public ApiResponse<String> assignUserRoles(
+  public Result<String> assignUserRoles(
       @PathVariable Integer userId,
       @Valid @RequestBody RequestAssignUserRolesDTO requestAssignUserRolesDTO) {
     return roleService.assignUserRoles(
@@ -137,7 +137,7 @@ public class UserController {
    */
   @GetMapping("/{userId}/roles")
   @SaCheckPermission("user:role:assign")
-  public ApiResponse<List<Role>> getUserRoles(@PathVariable Integer userId) {
+  public Result<List<Role>> getUserRoles(@PathVariable Integer userId) {
     return roleService.getUserRoles(userId);
   }
 
@@ -149,7 +149,7 @@ public class UserController {
    */
   @GetMapping("/{userId}")
   @SaCheckPermission("user:info")
-  public ApiResponse<User> info(@PathVariable Integer userId) {
+  public Result<User> info(@PathVariable Integer userId) {
     return userService.infoByUserId(userId);
   }
 
@@ -162,8 +162,8 @@ public class UserController {
    */
   @PatchMapping("/{userId}")
   @SaCheckPermission("user:update")
-  public ApiResponse<String> update(
-      @PathVariable Integer userId, @Valid @RequestBody RequestUserUpdate requestUserUpdate) {
+  public Result<String> update(
+      @PathVariable Integer userId, @Valid @RequestBody RequestUserUpdateDTO requestUserUpdate) {
     return userService.updateUserInfo(userId, requestUserUpdate);
   }
 
@@ -175,7 +175,7 @@ public class UserController {
    */
   @DeleteMapping("/{userId}")
   @SaCheckPermission("user:delete")
-  public ApiResponse<String> delete(@PathVariable Integer userId) {
+  public Result<String> delete(@PathVariable Integer userId) {
     return userService.deleteUser(userId);
   }
 
@@ -188,7 +188,7 @@ public class UserController {
    */
   @PatchMapping("/{userId}/status")
   @SaCheckPermission("user:status:update")
-  public ApiResponse<String> updateStatus(
+  public Result<String> updateStatus(
       @PathVariable Integer userId,
       @Valid @RequestBody RequestUpdateUserStatusDTO requestUpdateUserStatusDTO) {
     return userService.updateUserStatus(userId, requestUpdateUserStatusDTO);
@@ -203,7 +203,7 @@ public class UserController {
    */
   @PostMapping("/{userId}/reset-password")
   @SaCheckPermission("user:password:reset")
-  public ApiResponse<String> resetPassword(
+  public Result<String> resetPassword(
       @PathVariable Integer userId,
       @Valid @RequestBody RequestResetPasswordDTO requestResetPasswordDTO) {
     return userService.resetPassword(userId, requestResetPasswordDTO);
@@ -217,7 +217,7 @@ public class UserController {
    */
   @GetMapping("/{userId}/memberships")
   @SaCheckPermission("user:membership:list")
-  public ApiResponse<List<ResponseMembershipDTO>> memberships(@PathVariable Integer userId) {
+  public Result<List<ResponseMembershipVO>> memberships(@PathVariable Integer userId) {
     return userService.getUserMemberships(userId);
   }
 }

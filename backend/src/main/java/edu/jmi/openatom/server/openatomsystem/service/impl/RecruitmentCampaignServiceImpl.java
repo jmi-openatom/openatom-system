@@ -2,9 +2,9 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateRecruitmentCampaignDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateRecruitmentCampaignDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateRecruitmentCampaignDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRecruitmentCampaignDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
@@ -28,19 +28,19 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
   private final ClubMapper clubMapper;
 
   @Override
-  public ApiResponse<List<RecruitmentCampaign>> listByClub(Integer clubId) {
-    if (clubId == null) return ApiResponse.error(400, "clubId不能为空");
-    if (clubMapper.selectById(clubId) == null) return ApiResponse.error(404, "社团不存在");
-    return ApiResponse.success(recruitmentCampaignMapper.selectByClubIdOrdered(clubId));
+  public Result<List<RecruitmentCampaign>> listByClub(Integer clubId) {
+    if (clubId == null) return Result.error(400, "clubId不能为空");
+    if (clubMapper.selectById(clubId) == null) return Result.error(404, "社团不存在");
+    return Result.success(recruitmentCampaignMapper.selectByClubIdOrdered(clubId));
   }
 
   @Override
-  public ApiResponse<String> create(Integer clubId, RequestCreateRecruitmentCampaignDTO request) {
-    if (clubId == null) return ApiResponse.error(400, "clubId不能为空");
+  public Result<String> create(Integer clubId, RequestCreateRecruitmentCampaignDTO request) {
+    if (clubId == null) return Result.error(400, "clubId不能为空");
     Club club = clubMapper.selectById(clubId);
-    if (club == null) return ApiResponse.error(404, "社团不存在");
+    if (club == null) return Result.error(404, "社团不存在");
     String status = request.getStatus() == null ? "draft" : request.getStatus();
-    if (!STATUSES.contains(status)) return ApiResponse.error(400, "招新计划状态不合法");
+    if (!STATUSES.contains(status)) return Result.error(400, "招新计划状态不合法");
     RecruitmentCampaign campaign = RecruitmentCampaign.builder().clubId(clubId).name(request.getName())
         .applyStartAt(Times.parseTimestamp(request.getApplyStartAt())).applyEndAt(Times.parseTimestamp(request.getApplyEndAt()))
         .interviewStartAt(Times.parseTimestamp(request.getInterviewStartAt())).interviewEndAt(Times.parseTimestamp(request.getInterviewEndAt()))
@@ -48,19 +48,19 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
         .maxApplicants(request.getMaxApplicants()).loginRequired(Boolean.TRUE.equals(request.getLoginRequired()))
         .formSchema(Jsons.stringify(request.getFormSchema())).status(status).build();
     int row = recruitmentCampaignMapper.insert(campaign);
-    return row > 0 ? ApiResponse.success("招新计划创建成功") : ApiResponse.error("招新计划创建失败");
+    return row > 0 ? Result.success("招新计划创建成功") : Result.error("招新计划创建失败");
   }
 
   @Override
-  public ApiResponse<RecruitmentCampaign> detail(Integer campaignId) {
+  public Result<RecruitmentCampaign> detail(Integer campaignId) {
     RecruitmentCampaign campaign = findCampaign(campaignId);
-    return campaign == null ? ApiResponse.error(404, "招新计划不存在") : ApiResponse.success(campaign);
+    return campaign == null ? Result.error(404, "招新计划不存在") : Result.success(campaign);
   }
 
   @Override
-  public ApiResponse<String> update(Integer campaignId, RequestUpdateRecruitmentCampaignDTO request) {
+  public Result<String> update(Integer campaignId, RequestUpdateRecruitmentCampaignDTO request) {
     RecruitmentCampaign campaign = findCampaign(campaignId);
-    if (campaign == null) return ApiResponse.error(404, "招新计划不存在");
+    if (campaign == null) return Result.error(404, "招新计划不存在");
     if (request.getName() != null) campaign.setName(request.getName());
     if (request.getApplyStartAt() != null) campaign.setApplyStartAt(Times.parseTimestamp(request.getApplyStartAt()));
     if (request.getApplyEndAt() != null) campaign.setApplyEndAt(Times.parseTimestamp(request.getApplyEndAt()));
@@ -72,25 +72,25 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
     if (request.getLoginRequired() != null) campaign.setLoginRequired(request.getLoginRequired());
     if (request.getFormSchema() != null) campaign.setFormSchema(Jsons.stringify(request.getFormSchema()));
     if (request.getStatus() != null) {
-      if (!STATUSES.contains(request.getStatus())) return ApiResponse.error(400, "招新计划状态不合法");
+      if (!STATUSES.contains(request.getStatus())) return Result.error(400, "招新计划状态不合法");
       campaign.setStatus(request.getStatus());
     }
     int row = recruitmentCampaignMapper.updateById(campaign);
-    return row > 0 ? ApiResponse.success("招新计划更新成功") : ApiResponse.error("招新计划更新失败");
+    return row > 0 ? Result.success("招新计划更新成功") : Result.error("招新计划更新失败");
   }
 
   @Override
-  public ApiResponse<String> publish(Integer campaignId) { return updateStatus(campaignId, "open", "招新计划发布成功"); }
+  public Result<String> publish(Integer campaignId) { return updateStatus(campaignId, "open", "招新计划发布成功"); }
 
   @Override
-  public ApiResponse<String> close(Integer campaignId) { return updateStatus(campaignId, "closed", "招新计划关闭成功"); }
+  public Result<String> close(Integer campaignId) { return updateStatus(campaignId, "closed", "招新计划关闭成功"); }
 
-  private ApiResponse<String> updateStatus(Integer campaignId, String status, String message) {
+  private Result<String> updateStatus(Integer campaignId, String status, String message) {
     RecruitmentCampaign campaign = findCampaign(campaignId);
-    if (campaign == null) return ApiResponse.error(404, "招新计划不存在");
+    if (campaign == null) return Result.error(404, "招新计划不存在");
     campaign.setStatus(status);
     int row = recruitmentCampaignMapper.updateById(campaign);
-    return row > 0 ? ApiResponse.success(message) : ApiResponse.error("招新计划状态更新失败");
+    return row > 0 ? Result.success(message) : Result.error("招新计划状态更新失败");
   }
 
   private RecruitmentCampaign findCampaign(Integer campaignId) { return campaignId == null ? null : recruitmentCampaignMapper.selectById(campaignId); }

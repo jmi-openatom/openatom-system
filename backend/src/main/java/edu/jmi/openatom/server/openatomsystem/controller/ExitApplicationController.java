@@ -1,10 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateExitApplicationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestForceExitDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestRejectExitApplicationDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateExitApplicationDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestForceExitDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestRejectExitApplicationDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.ExitApplication;
 import edu.jmi.openatom.server.openatomsystem.service.ExitApplicationService;
 import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
@@ -35,7 +35,7 @@ public class ExitApplicationController {
    */
   @GetMapping("/exit-applications")
   @SaCheckPermission("exit-application:list")
-  public ApiResponse<List<ExitApplication>> list() {
+  public Result<List<ExitApplication>> list() {
     return exitApplicationService.list();
   }
 
@@ -47,7 +47,7 @@ public class ExitApplicationController {
    */
   @PostMapping("/exit-applications")
   @SaCheckPermission("exit-application:create")
-  public ApiResponse<String> create(@Valid @RequestBody RequestCreateExitApplicationDTO request) {
+  public Result<String> create(@Valid @RequestBody RequestCreateExitApplicationDTO request) {
     return exitApplicationService.create(request);
   }
 
@@ -59,7 +59,7 @@ public class ExitApplicationController {
    */
   @GetMapping("/exit-applications/{exitApplicationId}")
   @SaCheckPermission("exit-application:detail")
-  public ApiResponse<ExitApplication> detail(@PathVariable Integer exitApplicationId) {
+  public Result<ExitApplication> detail(@PathVariable Integer exitApplicationId) {
     return exitApplicationService.detail(exitApplicationId);
   }
 
@@ -71,7 +71,7 @@ public class ExitApplicationController {
    */
   @PostMapping("/exit-applications/{exitApplicationId}/approve")
   @SaCheckPermission("exit-application:approve")
-  public ApiResponse<String> approve(@PathVariable Integer exitApplicationId) {
+  public Result<String> approve(@PathVariable Integer exitApplicationId) {
     return exitApplicationService.approve(exitApplicationId);
   }
 
@@ -84,7 +84,7 @@ public class ExitApplicationController {
    */
   @PostMapping("/exit-applications/{exitApplicationId}/reject")
   @SaCheckPermission("exit-application:reject")
-  public ApiResponse<String> reject(
+  public Result<String> reject(
       @PathVariable Integer exitApplicationId,
       @RequestBody(required = false) RequestRejectExitApplicationDTO request) {
     return exitApplicationService.reject(
@@ -100,7 +100,7 @@ public class ExitApplicationController {
    */
   @PostMapping("/memberships/{membershipId}/force-exit")
   @SaCheckPermission("membership:force-exit")
-  public ApiResponse<String> forceExit(
+  public Result<String> forceExit(
       @PathVariable Integer membershipId,
       @RequestBody(required = false) RequestForceExitDTO request) {
     return membershipService.forceExit(membershipId, request == null ? null : request.getReason());

@@ -1,9 +1,9 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreatePositionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdatePositionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponsePositionDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreatePositionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdatePositionDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponsePositionVO;
 import java.util.List;
 
 /**
@@ -12,15 +12,15 @@ import java.util.List;
  * <p>定义社团职位的按社团查询列表, 创建, 查看详情, 更新和删除等业务操作
  */
 public interface PositionService {
-  ApiResponse<List<ResponsePositionDTO>> getPositionsByClubId(Integer clubId);
+  Result<List<ResponsePositionVO>> getPositionsByClubId(Integer clubId);
 
-  ApiResponse<String> createPosition(
+  Result<String> createPosition(
       Integer clubId, RequestCreatePositionDTO requestCreatePositionDTO);
 
-  ApiResponse<ResponsePositionDTO> getPositionById(Integer positionId);
+  Result<ResponsePositionVO> getPositionById(Integer positionId);
 
-  ApiResponse<String> updatePosition(
+  Result<String> updatePosition(
       Integer positionId, RequestUpdatePositionDTO requestUpdatePositionDTO);
 
-  ApiResponse<String> deletePosition(Integer positionId);
+  Result<String> deletePosition(Integer positionId);
 }

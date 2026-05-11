@@ -1,10 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.*;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseCurrentUserDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseLoginDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.*;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ public class AuthController {
    * @return 操作结果
    */
   @PostMapping("/register")
-  public ApiResponse<String> register(@Valid @RequestBody RequestRegisterDTO requestRegisterDTO) {
+  public Result<String> register(@Valid @RequestBody RequestRegisterDTO requestRegisterDTO) {
     return authService.register(requestRegisterDTO);
   }
 
@@ -45,7 +45,7 @@ public class AuthController {
    * @return 登录响应
    */
   @PostMapping("/login")
-  public ApiResponse<ResponseLoginDTO> login(@Valid @RequestBody RequestLoginDTO requestLoginDTO) {
+  public Result<ResponseLoginVO> login(@Valid @RequestBody RequestLoginDTO requestLoginDTO) {
     return authService.login(requestLoginDTO);
   }
 
@@ -56,7 +56,7 @@ public class AuthController {
    * @return 新的登录响应
    */
   @PostMapping("/refresh-token")
-  public ApiResponse<ResponseLoginDTO> refresh(
+  public Result<ResponseLoginVO> refresh(
       @Valid @RequestBody RequestRefreshTokenDTO requestRefreshTokenDTO) {
     return authService.refreshToken(
         requestRefreshTokenDTO == null ? null : requestRefreshTokenDTO.getRefreshToken());
@@ -70,7 +70,7 @@ public class AuthController {
    */
   @PostMapping("/logout")
   @SaCheckPermission("auth:logout")
-  public ApiResponse<String> logout(
+  public Result<String> logout(
       @RequestBody(required = false) RequestLogoutDTO requestLogoutDTO) {
     return authService.logout(requestLogoutDTO == null ? null : requestLogoutDTO.getRefreshToken());
   }
@@ -82,7 +82,7 @@ public class AuthController {
    */
   @GetMapping("/me")
   @SaCheckPermission("auth:me")
-  public ApiResponse<ResponseCurrentUserDTO> me() {
+  public Result<ResponseCurrentUserVO> me() {
     return authService.getCurrentUserInfo();
   }
 
@@ -93,7 +93,7 @@ public class AuthController {
    * @return 更新后的注册开关状态
    */
   @PatchMapping("/register-enabled")
-  public ApiResponse<Boolean> updateRegisterEnabled(@RequestParam Boolean enabled) {
+  public Result<Boolean> updateRegisterEnabled(@RequestParam Boolean enabled) {
     return authService.updateRegisterEnabled(enabled);
   }
 
@@ -104,8 +104,8 @@ public class AuthController {
    * @return 操作结果
    */
   @PatchMapping("/password")
-  public ApiResponse<String> changePassword(
-      @RequestBody RequestChangePassword requestChangePassword) {
+  public Result<String> changePassword(
+      @RequestBody RequestChangePasswordDTO requestChangePassword) {
     return authService.changePassword(requestChangePassword);
   }
 }

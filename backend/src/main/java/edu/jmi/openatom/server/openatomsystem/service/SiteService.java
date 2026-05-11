@@ -1,12 +1,12 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseClubHomeDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDetailDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteProgressDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormsDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseSiteFormDetailDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseRecruitmentDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseClubHomeVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentDetailVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteProgressVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteFormsVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteFormDetailVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentVO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
 import java.util.List;
@@ -17,23 +17,23 @@ import java.util.List;
  * <p>定义社团主页, 活动列表, 活动详情, 公开社团列表, 公开表单, 招新信息, 招新详情, 表单详情, 我的进度以及注册开关查询等对外展示业务操作
  */
 public interface SiteService {
-  ApiResponse<ResponseClubHomeDTO> getClubHome(String clubCode);
+  Result<ResponseClubHomeVO> getClubHome(String clubCode);
 
-  ApiResponse<List<ClubActivity>> getActivities();
+  Result<List<ClubActivity>> getActivities();
 
-  ApiResponse<ClubActivity> getActivityDetail(Integer activityId);
+  Result<ClubActivity> getActivityDetail(Integer activityId);
 
-  ApiResponse<List<Club>> getPublicClubs();
+  Result<List<Club>> getPublicClubs();
 
-  ApiResponse<ResponseSiteFormsDTO> getPublicForms(Integer clubId);
+  Result<ResponseSiteFormsVO> getPublicForms(Integer clubId);
 
-  ApiResponse<ResponseRecruitmentDTO> getRecruitment(Integer clubId);
+  Result<ResponseRecruitmentVO> getRecruitment(Integer clubId);
 
-  ApiResponse<ResponseRecruitmentDetailDTO> getRecruitmentDetail(Integer campaignId);
+  Result<ResponseRecruitmentDetailVO> getRecruitmentDetail(Integer campaignId);
 
-  ApiResponse<ResponseSiteFormDetailDTO> getFormDetail(Integer campaignId);
+  Result<ResponseSiteFormDetailVO> getFormDetail(Integer campaignId);
 
-  ApiResponse<ResponseSiteProgressDTO> getMyProgress();
+  Result<ResponseSiteProgressVO> getMyProgress();
 
-  ApiResponse<Boolean> getRegisterEnabled();
+  Result<Boolean> getRegisterEnabled();
 }

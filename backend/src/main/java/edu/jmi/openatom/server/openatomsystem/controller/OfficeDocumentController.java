@@ -1,9 +1,9 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestSaveOfficeDocumentDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseOfficeDocumentUserOptionDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveOfficeDocumentDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseOfficeDocumentUserOptionVO;
 import edu.jmi.openatom.server.openatomsystem.entity.OfficeDocument;
 import edu.jmi.openatom.server.openatomsystem.service.OfficeDocumentService;
 import jakarta.validation.Valid;
@@ -42,7 +42,7 @@ public class OfficeDocumentController {
    */
   @GetMapping("/office-documents")
   @SaCheckPermission("document:list")
-  public ApiResponse<List<OfficeDocument>> list(
+  public Result<List<OfficeDocument>> list(
       @RequestParam(required = false) String docType,
       @RequestParam(required = false) String keyword) {
     return officeDocumentService.list(docType, keyword);
@@ -56,7 +56,7 @@ public class OfficeDocumentController {
    */
   @GetMapping("/office-documents/user-options")
   @SaCheckPermission("document:list")
-  public ApiResponse<List<ResponseOfficeDocumentUserOptionDTO>> userOptions(
+  public Result<List<ResponseOfficeDocumentUserOptionVO>> userOptions(
       @RequestParam(required = false) String keyword) {
     return officeDocumentService.listUserOptions(keyword);
   }
@@ -69,7 +69,7 @@ public class OfficeDocumentController {
    */
   @PostMapping("/office-documents")
   @SaCheckPermission("document:create")
-  public ApiResponse<Integer> create(@Valid @RequestBody RequestSaveOfficeDocumentDTO request) {
+  public Result<Integer> create(@Valid @RequestBody RequestSaveOfficeDocumentDTO request) {
     return officeDocumentService.create(request);
   }
 
@@ -82,7 +82,7 @@ public class OfficeDocumentController {
    */
   @PatchMapping("/office-documents/{documentId}")
   @SaCheckPermission("document:update")
-  public ApiResponse<String> update(
+  public Result<String> update(
       @PathVariable Integer documentId, @Valid @RequestBody RequestSaveOfficeDocumentDTO request) {
     return officeDocumentService.update(documentId, request);
   }

@@ -1,10 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateInterviewDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestInterviewFeedbackDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateInterviewDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateInterviewDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestInterviewFeedbackDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateInterviewDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedback;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewService;
@@ -40,7 +40,7 @@ public class InterviewController {
    */
   @GetMapping("/interviews")
   @SaCheckPermission("interview:list")
-  public ApiResponse<List<Interview>> list(
+  public Result<List<Interview>> list(
       @RequestParam(required = false) Integer campaignId,
       @RequestParam(required = false) Integer applicationId,
       @RequestParam(required = false) Integer interviewerId,
@@ -56,7 +56,7 @@ public class InterviewController {
    */
   @PostMapping("/interviews")
   @SaCheckPermission("interview:create")
-  public ApiResponse<String> create(@Valid @RequestBody RequestCreateInterviewDTO request) {
+  public Result<String> create(@Valid @RequestBody RequestCreateInterviewDTO request) {
     return interviewService.create(request);
   }
 
@@ -68,7 +68,7 @@ public class InterviewController {
    */
   @GetMapping("/interviews/{interviewId}")
   @SaCheckPermission("interview:detail")
-  public ApiResponse<Interview> detail(@PathVariable Integer interviewId) {
+  public Result<Interview> detail(@PathVariable Integer interviewId) {
     return interviewService.detail(interviewId);
   }
 
@@ -81,7 +81,7 @@ public class InterviewController {
    */
   @PatchMapping("/interviews/{interviewId}")
   @SaCheckPermission("interview:update")
-  public ApiResponse<String> update(
+  public Result<String> update(
       @PathVariable Integer interviewId, @Valid @RequestBody RequestUpdateInterviewDTO request) {
     return interviewService.update(interviewId, request);
   }
@@ -94,7 +94,7 @@ public class InterviewController {
    */
   @PostMapping("/interviews/{interviewId}/confirm")
   @SaCheckPermission("interview:confirm")
-  public ApiResponse<String> confirm(@PathVariable Integer interviewId) {
+  public Result<String> confirm(@PathVariable Integer interviewId) {
     return interviewService.confirm(interviewId);
   }
 
@@ -107,7 +107,7 @@ public class InterviewController {
    */
   @PostMapping("/interviews/{interviewId}/feedback")
   @SaCheckPermission("interview:feedback")
-  public ApiResponse<String> feedback(
+  public Result<String> feedback(
       @PathVariable Integer interviewId, @Valid @RequestBody RequestInterviewFeedbackDTO request) {
     return interviewService.feedback(interviewId, request);
   }
@@ -120,7 +120,7 @@ public class InterviewController {
    */
   @PostMapping("/interviews/{interviewId}/complete")
   @SaCheckPermission("interview:complete")
-  public ApiResponse<String> complete(@PathVariable Integer interviewId) {
+  public Result<String> complete(@PathVariable Integer interviewId) {
     return interviewService.complete(interviewId);
   }
 
@@ -132,7 +132,7 @@ public class InterviewController {
    */
   @GetMapping("/interviews/{interviewId}/feedbacks")
   @SaCheckPermission("interview:detail")
-  public ApiResponse<List<InterviewFeedback>> feedbacks(@PathVariable Integer interviewId) {
+  public Result<List<InterviewFeedback>> feedbacks(@PathVariable Integer interviewId) {
     return interviewService.getFeedbacks(interviewId);
   }
 }

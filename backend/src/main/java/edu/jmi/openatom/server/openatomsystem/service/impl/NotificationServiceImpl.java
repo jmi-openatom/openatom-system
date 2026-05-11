@@ -2,9 +2,9 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateNotificationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseNotificationDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNotificationDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseNotificationVO;
 import edu.jmi.openatom.server.openatomsystem.entity.Notification;
 import edu.jmi.openatom.server.openatomsystem.entity.NotificationReceiver;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
@@ -33,36 +33,36 @@ public class NotificationServiceImpl implements NotificationService {
   private final UserMapper userMapper;
 
   @Override
-  public ApiResponse<List<ResponseNotificationDTO>> currentUserNotifications() {
+  public Result<List<ResponseNotificationVO>> currentUserNotifications() {
     Integer userId = StpUtil.getLoginIdAsInt();
     List<NotificationReceiver> receivers = notificationReceiverMapper.selectByReceiverUserId(userId);
-    if (receivers.isEmpty()) return ApiResponse.success(List.of());
+    if (receivers.isEmpty()) return Result.success(List.of());
     List<Integer> notificationIds = receivers.stream().map(NotificationReceiver::getNotificationId).toList();
     List<Notification> notifications = notificationMapper.selectBatchIds(notificationIds);
     Map<Integer, Notification> notificationMap = notifications.stream().collect(Collectors.toMap(Notification::getId, n -> n));
-    List<ResponseNotificationDTO> result = new ArrayList<>();
+    List<ResponseNotificationVO> result = new ArrayList<>();
     for (NotificationReceiver receiver : receivers) {
       Notification n = notificationMap.get(receiver.getNotificationId());
       if (n != null) {
-        result.add(ResponseNotificationDTO.builder().id(n.getId()).title(n.getTitle()).content(n.getContent())
+        result.add(ResponseNotificationVO.builder().id(n.getId()).title(n.getTitle()).content(n.getContent())
             .type(n.getType()).createdAt(n.getCreatedAt()).readFlag(receiver.getReadFlag()).readAt(receiver.getReadAt()).build());
       }
     }
     result.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
-    return ApiResponse.success(result);
+    return Result.success(result);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> create(RequestCreateNotificationDTO request) {
+  public Result<String> create(RequestCreateNotificationDTO request) {
     if (Boolean.TRUE.equals(request.getIsAll())) { /* System-wide notification */ }
     else {
-      if (request.getReceiverUserIds() == null || request.getReceiverUserIds().isEmpty()) return ApiResponse.error(400, "receiverUserIds不能为空");
-      for (Integer receiverUserId : request.getReceiverUserIds()) { if (userMapper.selectById(receiverUserId) == null) return ApiResponse.error(400, "存在无效的接收用户"); }
+      if (request.getReceiverUserIds() == null || request.getReceiverUserIds().isEmpty()) return Result.error(400, "receiverUserIds不能为空");
+      for (Integer receiverUserId : request.getReceiverUserIds()) { if (userMapper.selectById(receiverUserId) == null) return Result.error(400, "存在无效的接收用户"); }
     }
     Notification notification = Notification.builder().title(request.getTitle()).content(request.getContent()).type(request.getType()).build();
     int row = notificationMapper.insert(notification);
-    if (row <= 0) return ApiResponse.error("通知发送失败");
+    if (row <= 0) return Result.error("通知发送失败");
     if (Boolean.TRUE.equals(request.getIsAll())) {
       List<User> allUsers = userMapper.selectList(null);
       for (User user : allUsers) { notificationReceiverMapper.insert(NotificationReceiver.builder().notificationId(notification.getId()).receiverUserId(user.getId()).readFlag(0).build()); }
@@ -71,37 +71,37 @@ public class NotificationServiceImpl implements NotificationService {
         notificationReceiverMapper.insert(NotificationReceiver.builder().notificationId(notification.getId()).receiverUserId(receiverUserId).readFlag(0).build());
       }
     }
-    return ApiResponse.success("通知发送成功");
+    return Result.success("通知发送成功");
   }
 
   @Override
-  public ApiResponse<String> markRead(Integer notificationId) {
+  public Result<String> markRead(Integer notificationId) {
     Integer userId = StpUtil.getLoginIdAsInt();
     NotificationReceiver receiver = notificationReceiverMapper.selectOneByNotificationAndUser(notificationId, userId);
-    if (receiver == null) return ApiResponse.error(404, "通知不存在");
+    if (receiver == null) return Result.error(404, "通知不存在");
     receiver.setReadFlag(1);
     receiver.setReadAt(Times.now());
     notificationReceiverMapper.updateByNotificationAndUser(receiver, notificationId, userId);
-    return ApiResponse.success("通知已读");
+    return Result.success("通知已读");
   }
 
   @Override
-  public ApiResponse<List<Notification>> listAll() {
-    return ApiResponse.success(notificationMapper.selectAllOrdered());
+  public Result<List<Notification>> listAll() {
+    return Result.success(notificationMapper.selectAllOrdered());
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> delete(Integer notificationId) {
+  public Result<String> delete(Integer notificationId) {
     notificationMapper.deleteById(notificationId);
     notificationReceiverMapper.deleteByNotificationId(notificationId);
-    return ApiResponse.success("删除成功");
+    return Result.success("删除成功");
   }
 
   @Override
-  public ApiResponse<Integer> unreadCount() {
+  public Result<Integer> unreadCount() {
     Integer userId = StpUtil.getLoginIdAsInt();
     Long count = notificationReceiverMapper.countUnread(userId);
-    return ApiResponse.success(count.intValue());
+    return Result.success(count.intValue());
   }
 }

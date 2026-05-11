@@ -1,11 +1,11 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateClubDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateClubDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateClubStatusDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateRecruitmentStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateClubDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateClubDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateClubStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRecruitmentStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.service.ClubService;
 import jakarta.validation.Valid;
@@ -40,7 +40,7 @@ public class ClubController {
    */
   @GetMapping("/clubs")
   @SaCheckPermission("club:list")
-  public ApiResponse<List<Club>> getClubs(
+  public Result<List<Club>> getClubs(
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) String category,
       @RequestParam(required = false) String status,
@@ -56,7 +56,7 @@ public class ClubController {
    */
   @PostMapping("/clubs")
   @SaCheckPermission("club:create")
-  public ApiResponse<String> createClub(
+  public Result<String> createClub(
       @Valid @RequestBody RequestCreateClubDTO requestCreateClubDTO) {
     return clubService.createClub(requestCreateClubDTO);
   }
@@ -69,7 +69,7 @@ public class ClubController {
    */
   @GetMapping("/clubs/{clubId}")
   @SaCheckPermission("club:detail")
-  public ApiResponse<Club> getClubById(@PathVariable Integer clubId) {
+  public Result<Club> getClubById(@PathVariable Integer clubId) {
     return clubService.getClubById(clubId);
   }
 
@@ -82,7 +82,7 @@ public class ClubController {
    */
   @PatchMapping("/clubs/{clubId}")
   @SaCheckPermission("club:update")
-  public ApiResponse<String> updateClub(
+  public Result<String> updateClub(
       @PathVariable Integer clubId, @Valid @RequestBody RequestUpdateClubDTO requestUpdateClubDTO) {
     return clubService.updateClub(clubId, requestUpdateClubDTO);
   }
@@ -96,7 +96,7 @@ public class ClubController {
    */
   @PatchMapping("/clubs/{clubId}/status")
   @SaCheckPermission("club:status:update")
-  public ApiResponse<String> updateStatus(
+  public Result<String> updateStatus(
       @PathVariable Integer clubId,
       @Valid @RequestBody RequestUpdateClubStatusDTO requestUpdateClubStatusDTO) {
     return clubService.updateStatus(clubId, requestUpdateClubStatusDTO);
@@ -111,7 +111,7 @@ public class ClubController {
    */
   @PatchMapping("/clubs/{clubId}/recruitment-status")
   @SaCheckPermission("club:recruitment-status:update")
-  public ApiResponse<String> updateRecruitmentStatus(
+  public Result<String> updateRecruitmentStatus(
       @PathVariable Integer clubId,
       @Valid @RequestBody RequestUpdateRecruitmentStatusDTO requestUpdateRecruitmentStatusDTO) {
     return clubService.updateRecruitmentStatus(clubId, requestUpdateRecruitmentStatusDTO);

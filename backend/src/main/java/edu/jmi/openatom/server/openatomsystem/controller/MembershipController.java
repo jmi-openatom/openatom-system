@@ -1,13 +1,13 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestAssignPositionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestChangeMembershipStatusDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateMembershipDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestFinalDecisionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateMembershipDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseMembershipDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestAssignPositionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestChangeMembershipStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateMembershipDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestFinalDecisionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateMembershipDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
 import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
 import jakarta.validation.Valid;
@@ -40,7 +40,7 @@ public class MembershipController {
    */
   @PostMapping("/applications/{applicationId}/final-decisions")
   @SaCheckPermission("application:final-decision")
-  public ApiResponse<String> finalDecision(
+  public Result<String> finalDecision(
       @PathVariable Integer applicationId, @Valid @RequestBody RequestFinalDecisionDTO request) {
     return membershipService.finalDecision(applicationId, request);
   }
@@ -57,7 +57,7 @@ public class MembershipController {
    */
   @GetMapping("/memberships")
   @SaCheckPermission("membership:list")
-  public ApiResponse<List<ResponseMembershipDTO>> list(
+  public Result<List<ResponseMembershipVO>> list(
       @RequestParam(required = false) Integer clubId,
       @RequestParam(required = false) Integer departmentId,
       @RequestParam(required = false) Integer positionId,
@@ -74,7 +74,7 @@ public class MembershipController {
    */
   @PostMapping("/memberships")
   @SaCheckPermission("membership:create")
-  public ApiResponse<String> create(@Valid @RequestBody RequestCreateMembershipDTO request) {
+  public Result<String> create(@Valid @RequestBody RequestCreateMembershipDTO request) {
     return membershipService.create(request);
   }
 
@@ -86,7 +86,7 @@ public class MembershipController {
    */
   @GetMapping("/memberships/{membershipId}")
   @SaCheckPermission("membership:detail")
-  public ApiResponse<ClubMembership> detail(@PathVariable Integer membershipId) {
+  public Result<ClubMembership> detail(@PathVariable Integer membershipId) {
     return membershipService.detail(membershipId);
   }
 
@@ -99,7 +99,7 @@ public class MembershipController {
    */
   @PatchMapping("/memberships/{membershipId}")
   @SaCheckPermission("membership:update")
-  public ApiResponse<String> update(
+  public Result<String> update(
       @PathVariable Integer membershipId, @Valid @RequestBody RequestUpdateMembershipDTO request) {
     return membershipService.update(membershipId, request);
   }
@@ -113,7 +113,7 @@ public class MembershipController {
    */
   @PostMapping("/memberships/{membershipId}/assign-position")
   @SaCheckPermission("membership:position:assign")
-  public ApiResponse<String> assignPosition(
+  public Result<String> assignPosition(
       @PathVariable Integer membershipId, @Valid @RequestBody RequestAssignPositionDTO request) {
     return membershipService.assignPosition(membershipId, request);
   }
@@ -127,7 +127,7 @@ public class MembershipController {
    */
   @PostMapping("/memberships/{membershipId}/change-status")
   @SaCheckPermission("membership:status:change")
-  public ApiResponse<String> changeStatus(
+  public Result<String> changeStatus(
       @PathVariable Integer membershipId,
       @Valid @RequestBody RequestChangeMembershipStatusDTO request) {
     return membershipService.changeStatus(membershipId, request);

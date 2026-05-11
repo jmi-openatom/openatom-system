@@ -4,13 +4,13 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.bootstrap.RoleSeedTemplate;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateUserDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestResetPasswordDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateUserStatusDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUserUpdate;
-import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseMembershipDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateUserDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestResetPasswordDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateUserStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUserUpdateDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
   private final PasswordService passwordService;
 
   @Override
-  public ApiResponse<PageDataDTO<User>> getUsers(
+  public Result<PageDataVO<User>> getUsers(
       String keyword, UserStatus status, Integer clubId, Long page, Long pageSize) {
     long current = PageRequests.page(page);
     long size = PageRequests.pageSize(pageSize);
@@ -58,28 +58,28 @@ public class UserServiceImpl implements UserService {
       userIds = clubMembershipMapper.selectByClubId(clubId).stream()
           .map(ClubMembership::getUserId).distinct().toList();
       if (userIds.isEmpty()) {
-        return ApiResponse.success(PageDataDTO.<User>builder().list(List.of())
+        return Result.success(PageDataVO.<User>builder().list(List.of())
             .page(current).pageSize(size).total(0L).build());
       }
     }
     Page<User> userPage = userMapper.selectPageByConditions(new Page<>(current, size), keyword, status, userIds);
     List<User> users = userPage.getRecords().stream().map(this::buildSafeUser).toList();
-    return ApiResponse.success(PageDataDTO.<User>builder().list(users)
+    return Result.success(PageDataVO.<User>builder().list(users)
         .page(userPage.getCurrent()).pageSize(userPage.getSize()).total(userPage.getTotal()).build());
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> createUser(RequestCreateUserDTO requestCreateUserDTO) {
-    if (requestCreateUserDTO == null) return ApiResponse.error("请求参数为空");
+  public Result<String> createUser(RequestCreateUserDTO requestCreateUserDTO) {
+    if (requestCreateUserDTO == null) return Result.error("请求参数为空");
     if (isBlank(requestCreateUserDTO.getUsername()) || isBlank(requestCreateUserDTO.getPassword())
         || isBlank(requestCreateUserDTO.getRealName())) {
-      return ApiResponse.error(400, "用户名、密码、真实姓名不能为空");
+      return Result.error(400, "用户名、密码、真实姓名不能为空");
     }
     String studentId = isBlank(requestCreateUserDTO.getStudentNo())
         ? requestCreateUserDTO.getUsername() : requestCreateUserDTO.getStudentNo();
     if (existsByUsernameOrStudentId(requestCreateUserDTO.getUsername(), studentId)) {
-      return ApiResponse.error(400, "用户名或学号已存在");
+      return Result.error(400, "用户名或学号已存在");
     }
     User user = User.builder().userName(requestCreateUserDTO.getUsername()).studentId(studentId)
         .password(passwordService.encode(requestCreateUserDTO.getPassword()))
@@ -91,20 +91,20 @@ public class UserServiceImpl implements UserService {
         .userStatus(requestCreateUserDTO.getStatus() == null ? UserStatus.ACTIVE : requestCreateUserDTO.getStatus())
         .build();
     int row = userMapper.insert(user);
-    if (row <= 0) return ApiResponse.error("用户创建失败");
+    if (row <= 0) return Result.error("用户创建失败");
     bindDefaultRole(user.getId());
     bindDefaultClubMembership(user.getId());
-    return ApiResponse.success("用户创建成功");
+    return Result.success("用户创建成功");
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> importUsers(MultipartFile file) {
-    if (file == null || file.isEmpty()) return ApiResponse.error("上传文件为空");
+  public Result<String> importUsers(MultipartFile file) {
+    if (file == null || file.isEmpty()) return Result.error("上传文件为空");
     try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
       Sheet sheet = workbook.getSheetAt(0);
       int rowCount = sheet.getPhysicalNumberOfRows();
-      if (rowCount <= 1) return ApiResponse.error("Excel 数据为空");
+      if (rowCount <= 1) return Result.error("Excel 数据为空");
       List<User> userList = new ArrayList<>();
       for (int i = 1; i < rowCount; i++) {
         Row row = sheet.getRow(i);
@@ -134,9 +134,9 @@ public class UserServiceImpl implements UserService {
           bindDefaultClubMembership(user.getId());
         }
       }
-      return ApiResponse.success("成功导入 " + userList.size() + " 条用户数据");
+      return Result.success("成功导入 " + userList.size() + " 条用户数据");
     } catch (Exception e) {
-      return ApiResponse.error("Excel 导入失败: " + e.getMessage());
+      return Result.error("Excel 导入失败: " + e.getMessage());
     }
   }
 
@@ -178,19 +178,19 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public ApiResponse<User> infoByUserId(Integer userId) {
+  public Result<User> infoByUserId(Integer userId) {
     Integer targetUserId = userId == null ? StpUtil.getLoginIdAsInt() : userId;
     User user = userMapper.selectById(targetUserId);
-    if (user == null) return ApiResponse.error(404, "用户不存在");
-    return ApiResponse.success(buildSafeUser(user));
+    if (user == null) return Result.error(404, "用户不存在");
+    return Result.success(buildSafeUser(user));
   }
 
   @Override
-  public ApiResponse<String> updateUserInfo(Integer userId, RequestUserUpdate requestUserUpdate) {
-    if (userId == null) return ApiResponse.error(400, "userId不能为空");
-    if (requestUserUpdate == null) return ApiResponse.error("请求参数为空");
+  public Result<String> updateUserInfo(Integer userId, RequestUserUpdateDTO requestUserUpdate) {
+    if (userId == null) return Result.error(400, "userId不能为空");
+    if (requestUserUpdate == null) return Result.error("请求参数为空");
     User user = userMapper.selectById(userId);
-    if (user == null) return ApiResponse.error(404, "用户不存在");
+    if (user == null) return Result.error(404, "用户不存在");
     user.setRealName(requestUserUpdate.getRealName());
     user.setGender(requestUserUpdate.getGender());
     user.setPhone(requestUserUpdate.getPhone());
@@ -202,54 +202,54 @@ public class UserServiceImpl implements UserService {
     user.setClassName(requestUserUpdate.getClassName());
     user.setAvatar(requestUserUpdate.getAvatar());
     int row = userMapper.updateById(user);
-    return row > 0 ? ApiResponse.success("用户信息更新成功") : ApiResponse.error("用户信息更新失败");
+    return row > 0 ? Result.success("用户信息更新成功") : Result.error("用户信息更新失败");
   }
 
   @Override
-  public ApiResponse<String> updateUserStatus(Integer userId, RequestUpdateUserStatusDTO requestUpdateUserStatusDTO) {
-    if (userId == null) return ApiResponse.error(400, "userId不能为空");
+  public Result<String> updateUserStatus(Integer userId, RequestUpdateUserStatusDTO requestUpdateUserStatusDTO) {
+    if (userId == null) return Result.error(400, "userId不能为空");
     if (requestUpdateUserStatusDTO == null || requestUpdateUserStatusDTO.getStatus() == null)
-      return ApiResponse.error(400, "用户状态不能为空");
+      return Result.error(400, "用户状态不能为空");
     User user = userMapper.selectById(userId);
-    if (user == null) return ApiResponse.error(404, "用户不存在");
+    if (user == null) return Result.error(404, "用户不存在");
     user.setUserStatus(requestUpdateUserStatusDTO.getStatus());
     int row = userMapper.updateById(user);
-    return row > 0 ? ApiResponse.success("用户状态更新成功") : ApiResponse.error("用户状态更新失败");
+    return row > 0 ? Result.success("用户状态更新成功") : Result.error("用户状态更新失败");
   }
 
   @Override
-  public ApiResponse<String> resetPassword(Integer userId, RequestResetPasswordDTO requestResetPasswordDTO) {
-    if (userId == null) return ApiResponse.error(400, "userId不能为空");
+  public Result<String> resetPassword(Integer userId, RequestResetPasswordDTO requestResetPasswordDTO) {
+    if (userId == null) return Result.error(400, "userId不能为空");
     if (requestResetPasswordDTO == null || isBlank(requestResetPasswordDTO.getNewPassword()))
-      return ApiResponse.error(400, "新密码不能为空");
+      return Result.error(400, "新密码不能为空");
     User user = userMapper.selectById(userId);
-    if (user == null) return ApiResponse.error(404, "用户不存在");
+    if (user == null) return Result.error(404, "用户不存在");
     user.setPassword(passwordService.encode(requestResetPasswordDTO.getNewPassword()));
     int row = userMapper.updateById(user);
-    return row > 0 ? ApiResponse.success("密码重置成功") : ApiResponse.error("密码重置失败");
+    return row > 0 ? Result.success("密码重置成功") : Result.error("密码重置失败");
   }
 
   @Override
-  public ApiResponse<List<ResponseMembershipDTO>> getUserMemberships(Integer userId) {
-    if (userId == null) return ApiResponse.error(400, "userId不能为空");
+  public Result<List<ResponseMembershipVO>> getUserMemberships(Integer userId) {
+    if (userId == null) return Result.error(400, "userId不能为空");
     User user = userMapper.selectById(userId);
-    if (user == null) return ApiResponse.error(404, "用户不存在");
-    List<ResponseMembershipDTO> memberships = clubMembershipMapper.selectByUserId(userId).stream()
+    if (user == null) return Result.error(404, "用户不存在");
+    List<ResponseMembershipVO> memberships = clubMembershipMapper.selectByUserId(userId).stream()
         .map(this::buildMembershipResponse).toList();
-    return ApiResponse.success(memberships);
+    return Result.success(memberships);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> deleteUser(Integer userId) {
-    if (userId == null) return ApiResponse.error(400, "userId不能为空");
+  public Result<String> deleteUser(Integer userId) {
+    if (userId == null) return Result.error(400, "userId不能为空");
     if (StpUtil.isLogin() && userId.equals(StpUtil.getLoginIdAsInt()))
-      return ApiResponse.error(400, "不能删除当前登录用户");
+      return Result.error(400, "不能删除当前登录用户");
     User user = userMapper.selectById(userId);
-    if (user == null) return ApiResponse.error(404, "用户不存在");
+    if (user == null) return Result.error(404, "用户不存在");
     Long activeMembershipCount = clubMembershipMapper.countActiveByUserId(userId);
     if (activeMembershipCount != null && activeMembershipCount > 0)
-      return ApiResponse.error(400, "请先将该用户从社团中移出");
+      return Result.error(400, "请先将该用户从社团中移出");
     userRoleMapper.deleteByUserId(userId);
     clubMembershipMapper.deleteByUserId(userId);
     activityRegistrationMapper.deleteByUserId(userId);
@@ -258,7 +258,7 @@ public class UserServiceImpl implements UserService {
     clubMapper.nullifyPresidentUserId(userId);
     clubDepartmentMapper.nullifyManagerUserId(userId);
     int rows = userMapper.deleteById(userId);
-    return rows > 0 ? ApiResponse.success("用户已删除") : ApiResponse.error("用户删除失败");
+    return rows > 0 ? Result.success("用户已删除") : Result.error("用户删除失败");
   }
 
   private boolean existsByUsernameOrStudentId(String username, String studentId) {
@@ -294,8 +294,8 @@ public class UserServiceImpl implements UserService {
         .lastLoginAt(user.getLastLoginAt()).build();
   }
 
-  private ResponseMembershipDTO buildMembershipResponse(ClubMembership membership) {
-    return ResponseMembershipDTO.builder().id(membership.getId()).userId(membership.getUserId())
+  private ResponseMembershipVO buildMembershipResponse(ClubMembership membership) {
+    return ResponseMembershipVO.builder().id(membership.getId()).userId(membership.getUserId())
         .clubId(membership.getClubId()).departmentId(membership.getDepartmentId())
         .positionId(membership.getPositionId()).status(membership.getStatus())
         .joinedAt(membership.getJoinedAt()).leftAt(membership.getLeftAt()).build();

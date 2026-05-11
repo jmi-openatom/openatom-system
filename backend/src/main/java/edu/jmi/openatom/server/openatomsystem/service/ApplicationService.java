@@ -1,10 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateApplicationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateApplicationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseApplicationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateApplicationDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateApplicationDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseApplicationVO;
+import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 
 /**
@@ -13,7 +13,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
  * <p>定义入社申请的分页列表, 创建, 查看详情, 更新, 提交和撤回等业务操作
  */
 public interface ApplicationService {
-  ApiResponse<PageDataDTO<ResponseApplicationDTO>> list(
+  Result<PageDataVO<ResponseApplicationVO>> list(
       Integer campaignId,
       Integer clubId,
       String status,
@@ -22,13 +22,13 @@ public interface ApplicationService {
       Long page,
       Long pageSize);
 
-  ApiResponse<Integer> create(RequestCreateApplicationDTO request);
+  Result<Integer> create(RequestCreateApplicationDTO request);
 
-  ApiResponse<MembershipApplication> detail(Integer applicationId);
+  Result<MembershipApplication> detail(Integer applicationId);
 
-  ApiResponse<String> update(Integer applicationId, RequestUpdateApplicationDTO request);
+  Result<String> update(Integer applicationId, RequestUpdateApplicationDTO request);
 
-  ApiResponse<String> submit(Integer applicationId);
+  Result<String> submit(Integer applicationId);
 
-  ApiResponse<String> withdraw(Integer applicationId);
+  Result<String> withdraw(Integer applicationId);
 }

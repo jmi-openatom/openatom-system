@@ -1,8 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateNewRoleDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateRoleDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNewRoleDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRoleDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Role;
 import java.util.List;
 
@@ -12,19 +12,19 @@ import java.util.List;
  * <p>定义角色列表查询, 创建, 查看详情, 更新, 删除, 分配角色权限, 分配用户角色以及查询用户角色等业务操作
  */
 public interface RoleService {
-  ApiResponse<List<Role>> getRoles();
+  Result<List<Role>> getRoles();
 
-  ApiResponse<String> createNewRole(RequestCreateNewRoleDTO requestCreateNewRoleDTO);
+  Result<String> createNewRole(RequestCreateNewRoleDTO requestCreateNewRoleDTO);
 
-  ApiResponse<Role> getRoleByRoleId(Integer roleId);
+  Result<Role> getRoleByRoleId(Integer roleId);
 
-  ApiResponse<String> updateRole(Integer roleId, RequestUpdateRoleDTO requestUpdateRoleDTO);
+  Result<String> updateRole(Integer roleId, RequestUpdateRoleDTO requestUpdateRoleDTO);
 
-  ApiResponse<String> deleteRole(Integer roleId);
+  Result<String> deleteRole(Integer roleId);
 
-  ApiResponse<String> assignRolePermissions(Integer roleId, List<Integer> permissionIds);
+  Result<String> assignRolePermissions(Integer roleId, List<Integer> permissionIds);
 
-  ApiResponse<String> assignUserRoles(Integer userId, List<Integer> roleIds);
+  Result<String> assignUserRoles(Integer userId, List<Integer> roleIds);
 
-  ApiResponse<List<Role>> getUserRoles(Integer userId);
+  Result<List<Role>> getUserRoles(Integer userId);
 }

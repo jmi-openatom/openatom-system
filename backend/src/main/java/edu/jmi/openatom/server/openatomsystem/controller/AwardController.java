@@ -1,9 +1,9 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateAwardDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateAwardDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateAwardDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateAwardDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubAward;
 import edu.jmi.openatom.server.openatomsystem.service.AwardService;
 import jakarta.validation.Valid;
@@ -34,7 +34,7 @@ public class AwardController {
    */
   @GetMapping("/awards")
   @SaCheckPermission("award:list")
-  public ApiResponse<List<ClubAward>> list() {
+  public Result<List<ClubAward>> list() {
     return awardService.list();
   }
 
@@ -46,7 +46,7 @@ public class AwardController {
    */
   @PostMapping("/awards")
   @SaCheckPermission("award:create")
-  public ApiResponse<String> create(@Valid @RequestBody RequestCreateAwardDTO request) {
+  public Result<String> create(@Valid @RequestBody RequestCreateAwardDTO request) {
     return awardService.create(request);
   }
 
@@ -59,7 +59,7 @@ public class AwardController {
    */
   @PatchMapping("/awards/{awardId}")
   @SaCheckPermission("award:update")
-  public ApiResponse<String> update(
+  public Result<String> update(
       @PathVariable Integer awardId, @Valid @RequestBody RequestUpdateAwardDTO request) {
     return awardService.update(awardId, request);
   }
@@ -72,7 +72,7 @@ public class AwardController {
    */
   @DeleteMapping("/awards/{awardId}")
   @SaCheckPermission("award:delete")
-  public ApiResponse<String> delete(@PathVariable Integer awardId) {
+  public Result<String> delete(@PathVariable Integer awardId) {
     return awardService.delete(awardId);
   }
 }

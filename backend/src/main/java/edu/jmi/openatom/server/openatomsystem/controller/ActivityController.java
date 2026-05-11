@@ -1,10 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestActivityRegistrationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateActivityDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateActivityDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestActivityRegistrationDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateActivityDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateActivityDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.ActivityRegistration;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
 import edu.jmi.openatom.server.openatomsystem.service.ActivityService;
@@ -38,7 +38,7 @@ public class ActivityController {
    */
   @GetMapping("/activities")
   @SaCheckPermission("activity:list")
-  public ApiResponse<List<ClubActivity>> list(@RequestParam(required = false) String status) {
+  public Result<List<ClubActivity>> list(@RequestParam(required = false) String status) {
     return activityService.list(status);
   }
 
@@ -50,7 +50,7 @@ public class ActivityController {
    */
   @GetMapping("/activities/{activityId}")
   @SaCheckPermission("activity:detail")
-  public ApiResponse<ClubActivity> detail(@PathVariable Integer activityId) {
+  public Result<ClubActivity> detail(@PathVariable Integer activityId) {
     return activityService.detail(activityId);
   }
 
@@ -62,7 +62,7 @@ public class ActivityController {
    */
   @PostMapping("/activities")
   @SaCheckPermission("activity:create")
-  public ApiResponse<String> create(@Valid @RequestBody RequestCreateActivityDTO request) {
+  public Result<String> create(@Valid @RequestBody RequestCreateActivityDTO request) {
     return activityService.create(request);
   }
 
@@ -75,7 +75,7 @@ public class ActivityController {
    */
   @PatchMapping("/activities/{activityId}")
   @SaCheckPermission("activity:update")
-  public ApiResponse<String> update(
+  public Result<String> update(
       @PathVariable Integer activityId, @Valid @RequestBody RequestUpdateActivityDTO request) {
     return activityService.update(activityId, request);
   }
@@ -88,7 +88,7 @@ public class ActivityController {
    */
   @DeleteMapping("/activities/{activityId}")
   @SaCheckPermission("activity:delete")
-  public ApiResponse<String> delete(@PathVariable Integer activityId) {
+  public Result<String> delete(@PathVariable Integer activityId) {
     return activityService.delete(activityId);
   }
 
@@ -100,7 +100,7 @@ public class ActivityController {
    * @return 操作结果
    */
   @PostMapping("/activities/{activityId}/registrations")
-  public ApiResponse<String> register(
+  public Result<String> register(
       @PathVariable Integer activityId,
       @RequestBody(required = false) RequestActivityRegistrationDTO request) {
     return activityService.register(activityId, request);
@@ -114,7 +114,7 @@ public class ActivityController {
    */
   @GetMapping("/activities/{activityId}/registrations")
   @SaCheckPermission("activity-registration:list")
-  public ApiResponse<List<ActivityRegistration>> registrations(@PathVariable Integer activityId) {
+  public Result<List<ActivityRegistration>> registrations(@PathVariable Integer activityId) {
     return activityService.registrations(activityId);
   }
 }

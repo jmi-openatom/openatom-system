@@ -1,11 +1,11 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateApplicationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateApplicationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseApplicationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateApplicationDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateApplicationDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseApplicationVO;
+import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import edu.jmi.openatom.server.openatomsystem.service.ApplicationService;
 import jakarta.validation.Valid;
@@ -42,7 +42,7 @@ public class ApplicationController {
    */
   @GetMapping("/applications")
   @SaCheckPermission("application:list")
-  public ApiResponse<PageDataDTO<ResponseApplicationDTO>> list(
+  public Result<PageDataVO<ResponseApplicationVO>> list(
       @RequestParam(required = false) Integer campaignId,
       @RequestParam(required = false) Integer clubId,
       @RequestParam(required = false) String status,
@@ -61,7 +61,7 @@ public class ApplicationController {
    * @return 申请表ID
    */
   @PostMapping("/applications")
-  public ApiResponse<Integer> create(@Valid @RequestBody RequestCreateApplicationDTO request) {
+  public Result<Integer> create(@Valid @RequestBody RequestCreateApplicationDTO request) {
     return applicationService.create(request);
   }
 
@@ -73,7 +73,7 @@ public class ApplicationController {
    */
   @GetMapping("/applications/{applicationId}")
   @SaCheckPermission("application:detail")
-  public ApiResponse<MembershipApplication> detail(@PathVariable Integer applicationId) {
+  public Result<MembershipApplication> detail(@PathVariable Integer applicationId) {
     return applicationService.detail(applicationId);
   }
 
@@ -86,7 +86,7 @@ public class ApplicationController {
    */
   @PatchMapping("/applications/{applicationId}")
   @SaCheckPermission("application:update")
-  public ApiResponse<String> update(
+  public Result<String> update(
       @PathVariable Integer applicationId,
       @Valid @RequestBody RequestUpdateApplicationDTO request) {
     return applicationService.update(applicationId, request);
@@ -100,7 +100,7 @@ public class ApplicationController {
    */
   @PostMapping("/applications/{applicationId}/submit")
   @SaCheckPermission("application:submit")
-  public ApiResponse<String> submit(@PathVariable Integer applicationId) {
+  public Result<String> submit(@PathVariable Integer applicationId) {
     return applicationService.submit(applicationId);
   }
 
@@ -112,7 +112,7 @@ public class ApplicationController {
    */
   @PostMapping("/applications/{applicationId}/withdraw")
   @SaCheckPermission("application:withdraw")
-  public ApiResponse<String> withdraw(@PathVariable Integer applicationId) {
+  public Result<String> withdraw(@PathVariable Integer applicationId) {
     return applicationService.withdraw(applicationId);
   }
 }

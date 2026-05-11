@@ -1,11 +1,11 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestChangePassword;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestLoginDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestRegisterDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseCurrentUserDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseLoginDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestChangePasswordDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 
 /**
  * 认证鉴权服务接口
@@ -13,17 +13,17 @@ import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseLoginDTO;
  * <p>定义用户注册, 登录, 刷新令牌, 登出, 获取当前用户信息, 修改密码以及注册开关管理等业务操作
  */
 public interface AuthService {
-  ApiResponse<String> register(RequestRegisterDTO requestRegisterDTO);
+  Result<String> register(RequestRegisterDTO requestRegisterDTO);
 
-  ApiResponse<ResponseLoginDTO> login(RequestLoginDTO requestLoginDTO);
+  Result<ResponseLoginVO> login(RequestLoginDTO requestLoginDTO);
 
-  ApiResponse<ResponseLoginDTO> refreshToken(String refreshToken);
+  Result<ResponseLoginVO> refreshToken(String refreshToken);
 
-  ApiResponse<String> logout(String refreshToken);
+  Result<String> logout(String refreshToken);
 
-  ApiResponse<ResponseCurrentUserDTO> getCurrentUserInfo();
+  Result<ResponseCurrentUserVO> getCurrentUserInfo();
 
-  ApiResponse<Boolean> updateRegisterEnabled(Boolean enabled);
+  Result<Boolean> updateRegisterEnabled(Boolean enabled);
 
-  ApiResponse<String> changePassword(RequestChangePassword requestChangePassword);
+  Result<String> changePassword(RequestChangePasswordDTO requestChangePassword);
 }

@@ -1,10 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestApprovalActionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestBatchApprovalDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateNotificationDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestApprovalActionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBatchApprovalDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNotificationDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.ApprovalRecord;
 import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import edu.jmi.openatom.server.openatomsystem.mapper.ApprovalRecordMapper;
@@ -31,18 +31,18 @@ public class ApprovalServiceImpl implements ApprovalService {
   private final NotificationService notificationService;
 
   @Override
-  public ApiResponse<List<ApprovalRecord>> records(Integer applicationId) {
+  public Result<List<ApprovalRecord>> records(Integer applicationId) {
     if (applicationId == null || applicationMapper.selectById(applicationId) == null)
-      return ApiResponse.error(404, "申请不存在");
-    return ApiResponse.success(approvalRecordMapper.selectByApplicationIdOrdered(applicationId));
+      return Result.error(404, "申请不存在");
+    return Result.success(approvalRecordMapper.selectByApplicationIdOrdered(applicationId));
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> approve(Integer applicationId, RequestApprovalActionDTO request) {
+  public Result<String> approve(Integer applicationId, RequestApprovalActionDTO request) {
     MembershipApplication application = applicationId == null ? null : applicationMapper.selectById(applicationId);
-    if (application == null) return ApiResponse.error(404, "申请不存在");
-    if (!ACTIONS.contains(request.getAction())) return ApiResponse.error(400, "审批动作不合法");
+    if (application == null) return Result.error(404, "申请不存在");
+    if (!ACTIONS.contains(request.getAction())) return Result.error(400, "审批动作不合法");
     approvalRecordMapper.insert(ApprovalRecord.builder().applicationId(applicationId)
         .node(request.getNode()).action(request.getAction()).operatorId(StpUtil.getLoginIdAsInt())
         .comment(request.getComment()).build());
@@ -53,18 +53,18 @@ public class ApprovalServiceImpl implements ApprovalService {
     if (request.getComment() != null && !request.getComment().isBlank()) content += "\n审核意见：" + request.getComment();
     notificationService.create(RequestCreateNotificationDTO.builder().title(title).content(content)
         .type("approval").receiverUserIds(List.of(application.getUserId())).build());
-    return ApiResponse.success("审批处理成功");
+    return Result.success("审批处理成功");
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> batchApprove(RequestBatchApprovalDTO request) {
-    if (request.getApproval() == null) return ApiResponse.error(400, "审批参数不能为空");
+  public Result<String> batchApprove(RequestBatchApprovalDTO request) {
+    if (request.getApproval() == null) return Result.error(400, "审批参数不能为空");
     for (Integer applicationId : request.getApplicationIds()) {
-      ApiResponse<String> response = approve(applicationId, request.getApproval());
-      if (response.getCode() != ApiResponse.SUCCESS_CODE) return response;
+      Result<String> response = approve(applicationId, request.getApproval());
+      if (response.getCode() != Result.SUCCESS_CODE) return response;
     }
-    return ApiResponse.success("批量审批成功");
+    return Result.success("批量审批成功");
   }
 
   private String resolveNextStatus(String currentStatus, RequestApprovalActionDTO request) {

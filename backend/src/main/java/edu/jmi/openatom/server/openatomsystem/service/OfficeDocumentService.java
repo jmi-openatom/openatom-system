@@ -1,8 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestSaveOfficeDocumentDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseOfficeDocumentUserOptionDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveOfficeDocumentDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseOfficeDocumentUserOptionVO;
 import edu.jmi.openatom.server.openatomsystem.entity.OfficeDocument;
 import java.util.List;
 
@@ -12,13 +12,13 @@ import java.util.List;
  * <p>定义公文的列表查询, 用户选项查询, 创建, 更新和导出 docx 等业务操作
  */
 public interface OfficeDocumentService {
-  ApiResponse<List<OfficeDocument>> list(String docType, String keyword);
+  Result<List<OfficeDocument>> list(String docType, String keyword);
 
-  ApiResponse<List<ResponseOfficeDocumentUserOptionDTO>> listUserOptions(String keyword);
+  Result<List<ResponseOfficeDocumentUserOptionVO>> listUserOptions(String keyword);
 
-  ApiResponse<Integer> create(RequestSaveOfficeDocumentDTO request);
+  Result<Integer> create(RequestSaveOfficeDocumentDTO request);
 
-  ApiResponse<String> update(Integer documentId, RequestSaveOfficeDocumentDTO request);
+  Result<String> update(Integer documentId, RequestSaveOfficeDocumentDTO request);
 
   byte[] exportDocx(Integer documentId);
 }

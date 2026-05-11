@@ -1,9 +1,9 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateDepartmentDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateDepartmentDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateDepartmentDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateDepartmentDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubDepartment;
 import edu.jmi.openatom.server.openatomsystem.service.DepartmentService;
 import jakarta.validation.Valid;
@@ -34,7 +34,7 @@ public class DepartmentController {
    * @return 部门列表
    */
   @GetMapping("/clubs/{clubId}/departments")
-  public ApiResponse<List<ClubDepartment>> getDepartmentsByClubId(@PathVariable Integer clubId) {
+  public Result<List<ClubDepartment>> getDepartmentsByClubId(@PathVariable Integer clubId) {
     return departmentService.getDepartmentsByClubId(clubId);
   }
 
@@ -47,7 +47,7 @@ public class DepartmentController {
    */
   @PostMapping("/clubs/{clubId}/departments")
   @SaCheckPermission("department:create")
-  public ApiResponse<String> createDepartment(
+  public Result<String> createDepartment(
       @PathVariable Integer clubId,
       @Valid @RequestBody RequestCreateDepartmentDTO requestCreateDepartmentDTO) {
     return departmentService.createDepartment(clubId, requestCreateDepartmentDTO);
@@ -61,7 +61,7 @@ public class DepartmentController {
    */
   @GetMapping("/departments/{departmentId}")
   @SaCheckPermission("department:detail")
-  public ApiResponse<ClubDepartment> getDepartmentById(@PathVariable Integer departmentId) {
+  public Result<ClubDepartment> getDepartmentById(@PathVariable Integer departmentId) {
     return departmentService.getDepartmentById(departmentId);
   }
 
@@ -74,7 +74,7 @@ public class DepartmentController {
    */
   @PatchMapping("/departments/{departmentId}")
   @SaCheckPermission("department:update")
-  public ApiResponse<String> updateDepartment(
+  public Result<String> updateDepartment(
       @PathVariable Integer departmentId,
       @Valid @RequestBody RequestUpdateDepartmentDTO requestUpdateDepartmentDTO) {
     return departmentService.updateDepartment(departmentId, requestUpdateDepartmentDTO);
@@ -88,7 +88,7 @@ public class DepartmentController {
    */
   @DeleteMapping("/departments/{departmentId}")
   @SaCheckPermission("department:delete")
-  public ApiResponse<String> deleteDepartment(@PathVariable Integer departmentId) {
+  public Result<String> deleteDepartment(@PathVariable Integer departmentId) {
     return departmentService.deleteDepartment(departmentId);
   }
 }

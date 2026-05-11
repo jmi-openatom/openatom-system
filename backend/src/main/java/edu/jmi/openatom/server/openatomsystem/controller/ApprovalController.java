@@ -1,9 +1,9 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestApprovalActionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestBatchApprovalDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestApprovalActionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBatchApprovalDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.ApprovalRecord;
 import edu.jmi.openatom.server.openatomsystem.service.ApprovalService;
 import jakarta.validation.Valid;
@@ -33,7 +33,7 @@ public class ApprovalController {
    */
   @GetMapping("/applications/{applicationId}/approval-records")
   @SaCheckPermission("approval-record:list")
-  public ApiResponse<List<ApprovalRecord>> records(@PathVariable Integer applicationId) {
+  public Result<List<ApprovalRecord>> records(@PathVariable Integer applicationId) {
     return approvalService.records(applicationId);
   }
 
@@ -46,7 +46,7 @@ public class ApprovalController {
    */
   @PostMapping("/applications/{applicationId}/approvals")
   @SaCheckPermission("application:approve")
-  public ApiResponse<String> approve(
+  public Result<String> approve(
       @PathVariable Integer applicationId, @Valid @RequestBody RequestApprovalActionDTO request) {
     return approvalService.approve(applicationId, request);
   }
@@ -59,7 +59,7 @@ public class ApprovalController {
    */
   @PostMapping("/applications/batch-approvals")
   @SaCheckPermission("application:batch-approve")
-  public ApiResponse<String> batchApprove(@Valid @RequestBody RequestBatchApprovalDTO request) {
+  public Result<String> batchApprove(@Valid @RequestBody RequestBatchApprovalDTO request) {
     return approvalService.batchApprove(request);
   }
 }

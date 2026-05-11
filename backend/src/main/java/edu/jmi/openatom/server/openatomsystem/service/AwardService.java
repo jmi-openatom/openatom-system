@@ -1,8 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateAwardDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateAwardDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateAwardDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateAwardDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubAward;
 import java.util.List;
 
@@ -12,11 +12,11 @@ import java.util.List;
  * <p>定义社团奖项的列表查询, 创建, 更新和删除等业务操作
  */
 public interface AwardService {
-  ApiResponse<List<ClubAward>> list();
+  Result<List<ClubAward>> list();
 
-  ApiResponse<String> create(RequestCreateAwardDTO request);
+  Result<String> create(RequestCreateAwardDTO request);
 
-  ApiResponse<String> update(Integer awardId, RequestUpdateAwardDTO request);
+  Result<String> update(Integer awardId, RequestUpdateAwardDTO request);
 
-  ApiResponse<String> delete(Integer awardId);
+  Result<String> delete(Integer awardId);
 }

@@ -1,6 +1,6 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.mapper.LoginLogMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.OperationLogMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.LoginLog;
@@ -25,17 +25,17 @@ public class LogServiceImpl implements LogService {
   private final LoginLogMapper loginLogMapper;
 
   @Override
-  public ApiResponse<List<OperationLog>> getOperationLogs(
+  public Result<List<OperationLog>> getOperationLogs(
       Integer operatorId, String module, String action, String startAt, String endAt) {
     Timestamp startTime = parseTime(startAt);
     Timestamp endTime = parseTime(endAt);
-    return ApiResponse.success(
+    return Result.success(
         operationLogMapper.selectByConditions(operatorId, module, action, startTime, endTime));
   }
 
   @Override
-  public ApiResponse<List<LoginLog>> getLoginLogs() {
-    return ApiResponse.success(loginLogMapper.selectAllOrdered());
+  public Result<List<LoginLog>> getLoginLogs() {
+    return Result.success(loginLogMapper.selectAllOrdered());
   }
 
   private Timestamp parseTime(String value) {

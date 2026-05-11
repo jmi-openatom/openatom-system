@@ -5,10 +5,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateFormSubmissionDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.PageDataDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.response.ResponseFormSubmissionDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateFormSubmissionDTO;
+import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseFormSubmissionVO;
 import edu.jmi.openatom.server.openatomsystem.entity.FormSubmission;
 import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
@@ -48,33 +48,33 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<Integer> create(Integer formId, RequestCreateFormSubmissionDTO request) {
+  public Result<Integer> create(Integer formId, RequestCreateFormSubmissionDTO request) {
     SiteForm form = siteFormMapper.selectById(formId);
-    if (form == null) return ApiResponse.error(404, "表单不存在");
-    if (!List.of("open", "published").contains(form.getStatus())) return ApiResponse.error(400, "当前表单未开放提交");
+    if (form == null) return Result.error(404, "表单不存在");
+    if (!List.of("open", "published").contains(form.getStatus())) return Result.error(400, "当前表单未开放提交");
     Timestamp now = new Timestamp(System.currentTimeMillis());
-    if (form.getStartAt() != null && now.before(form.getStartAt())) return ApiResponse.error(400, "表单收集尚未开始");
-    if (form.getEndAt() != null && now.after(form.getEndAt())) return ApiResponse.error(400, "表单收集已结束");
+    if (form.getStartAt() != null && now.before(form.getStartAt())) return Result.error(400, "表单收集尚未开始");
+    if (form.getEndAt() != null && now.after(form.getEndAt())) return Result.error(400, "表单收集已结束");
     Integer userId = StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null;
-    if (Boolean.TRUE.equals(form.getLoginRequired()) && userId == null) return ApiResponse.error(401, "该表单需要登录后提交");
+    if (Boolean.TRUE.equals(form.getLoginRequired()) && userId == null) return Result.error(401, "该表单需要登录后提交");
     if (userId == null) {
-      if (isBlank(request.getAnonymousName())) return ApiResponse.error(400, "请填写联系人姓名");
-      if (isBlank(request.getAnonymousContact())) return ApiResponse.error(400, "请填写联系方式");
+      if (isBlank(request.getAnonymousName())) return Result.error(400, "请填写联系人姓名");
+      if (isBlank(request.getAnonymousContact())) return Result.error(400, "请填写联系方式");
     }
-    ApiResponse<String> validation = validateFormData(form.getFormSchema(), request.getFormData());
-    if (validation != null) return ApiResponse.error(validation.getCode(), validation.getMessage());
+    Result<String> validation = validateFormData(form.getFormSchema(), request.getFormData());
+    if (validation != null) return Result.error(validation.getCode(), validation.getMessage());
     FormSubmission submission = FormSubmission.builder().formId(formId).clubId(form.getClubId()).userId(userId)
         .anonymousName(trimToNull(request.getAnonymousName())).anonymousContact(trimToNull(request.getAnonymousContact()))
         .formData(Jsons.stringify(request.getFormData())).status("submitted").build();
     int row = formSubmissionMapper.insert(submission);
-    return row > 0 ? ApiResponse.success(submission.getId(), "表单提交成功") : ApiResponse.error("表单提交失败");
+    return row > 0 ? Result.success(submission.getId(), "表单提交成功") : Result.error("表单提交失败");
   }
 
   @Override
-  public ApiResponse<PageDataDTO<ResponseFormSubmissionDTO>> list(Integer formId, String keyword, Long page, Long pageSize) {
-    if (formId == null) return ApiResponse.error(400, "formId不能为空");
+  public Result<PageDataVO<ResponseFormSubmissionVO>> list(Integer formId, String keyword, Long page, Long pageSize) {
+    if (formId == null) return Result.error(400, "formId不能为空");
     SiteForm form = siteFormMapper.selectById(formId);
-    if (form == null) return ApiResponse.error(404, "表单不存在");
+    if (form == null) return Result.error(404, "表单不存在");
     long current = PageRequests.page(page);
     long size = PageRequests.pageSize(pageSize);
     LambdaQueryWrapper<FormSubmission> wrapper = new LambdaQueryWrapper<FormSubmission>()
@@ -89,7 +89,7 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
       }
     }
     Page<FormSubmission> submissionPage = formSubmissionMapper.selectPage(new Page<>(current, size), wrapper);
-    return ApiResponse.success(PageDataDTO.<ResponseFormSubmissionDTO>builder().list(toResponseList(submissionPage.getRecords()))
+    return Result.success(PageDataVO.<ResponseFormSubmissionVO>builder().list(toResponseList(submissionPage.getRecords()))
         .page(submissionPage.getCurrent()).pageSize(submissionPage.getSize()).total(submissionPage.getTotal()).build());
   }
 
@@ -102,7 +102,7 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
     try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
       Sheet sheet = workbook.createSheet(safeSheetName(form.getName()));
       writeHeader(sheet, schema);
-      List<ResponseFormSubmissionDTO> rows = toResponseList(submissions);
+      List<ResponseFormSubmissionVO> rows = toResponseList(submissions);
       for (int i = 0; i < rows.size(); i++) writeRow(sheet.createRow(i + 1), rows.get(i), schema);
       for (int column = 0; column < 4 + schema.size(); column++) sheet.autoSizeColumn(column);
       workbook.write(outputStream);
@@ -117,7 +117,7 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
     for (int i = 0; i < schema.size(); i++) header.createCell(i + 4).setCellValue(asString(schema.get(i).get("label"), "字段" + (i + 1)));
   }
 
-  private void writeRow(Row row, ResponseFormSubmissionDTO submission, List<Map<String, Object>> schema) {
+  private void writeRow(Row row, ResponseFormSubmissionVO submission, List<Map<String, Object>> schema) {
     row.createCell(0).setCellValue(submission.getCreatedAt() == null ? "" : submission.getCreatedAt().toString());
     row.createCell(1).setCellValue(defaultString(submission.getSubmitterName()));
     row.createCell(2).setCellValue(defaultString(submission.getSubmitterAccount()));
@@ -126,31 +126,31 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
     for (int i = 0; i < schema.size(); i++) { String key = asString(schema.get(i).get("key"), ""); row.createCell(i + 4).setCellValue(formatValue(formData.get(key))); }
   }
 
-  private ApiResponse<String> validateFormData(String formSchema, Map<String, Object> formData) {
+  private Result<String> validateFormData(String formSchema, Map<String, Object> formData) {
     Map<String, Object> values = formData == null ? Map.of() : formData;
     for (Map<String, Object> field : Jsons.parseListOfObjects(formSchema)) {
       if (Boolean.TRUE.equals(field.get("required"))) {
         String key = asString(field.get("key"), "");
         if (key.isBlank()) continue;
         Object value = values.get(key);
-        if (value == null || formatValue(value).isBlank()) return ApiResponse.error(400, "请填写" + asString(field.get("label"), key));
+        if (value == null || formatValue(value).isBlank()) return Result.error(400, "请填写" + asString(field.get("label"), key));
       }
     }
     return null;
   }
 
-  private List<ResponseFormSubmissionDTO> toResponseList(List<FormSubmission> submissions) {
+  private List<ResponseFormSubmissionVO> toResponseList(List<FormSubmission> submissions) {
     if (submissions == null || submissions.isEmpty()) return List.of();
     Set<Integer> userIds = submissions.stream().map(FormSubmission::getUserId).filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
     Map<Integer, User> users = userIds.isEmpty() ? Map.of() : userMapper.selectBatchIds(userIds).stream().collect(Collectors.toMap(User::getId, Function.identity()));
     return submissions.stream().map(s -> toResponse(s, users.get(s.getUserId()))).toList();
   }
 
-  private ResponseFormSubmissionDTO toResponse(FormSubmission submission, User user) {
+  private ResponseFormSubmissionVO toResponse(FormSubmission submission, User user) {
     Map<String, Object> formData = new LinkedHashMap<>(Jsons.parseObject(submission.getFormData()));
     String submitterName = user == null ? submission.getAnonymousName() : (isBlank(user.getRealName()) ? user.getUserName() : user.getRealName());
     String contact = user == null ? submission.getAnonymousContact() : firstNonBlank(user.getPhone(), user.getEmail(), submission.getAnonymousContact());
-    return ResponseFormSubmissionDTO.builder().id(submission.getId()).formId(submission.getFormId()).clubId(submission.getClubId())
+    return ResponseFormSubmissionVO.builder().id(submission.getId()).formId(submission.getFormId()).clubId(submission.getClubId())
         .userId(submission.getUserId()).submitterName(submitterName).submitterAccount(user == null ? null : user.getUserName())
         .contact(contact).formData(formData).createdAt(submission.getCreatedAt()).build();
   }

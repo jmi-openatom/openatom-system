@@ -1,7 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateExitApplicationDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateExitApplicationDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.ExitApplication;
 import java.util.List;
 
@@ -11,13 +11,13 @@ import java.util.List;
  * <p>定义退社申请的列表查询, 创建, 查看详情, 审批通过和驳回等业务操作
  */
 public interface ExitApplicationService {
-  ApiResponse<List<ExitApplication>> list();
+  Result<List<ExitApplication>> list();
 
-  ApiResponse<String> create(RequestCreateExitApplicationDTO request);
+  Result<String> create(RequestCreateExitApplicationDTO request);
 
-  ApiResponse<ExitApplication> detail(Integer exitApplicationId);
+  Result<ExitApplication> detail(Integer exitApplicationId);
 
-  ApiResponse<String> approve(Integer exitApplicationId);
+  Result<String> approve(Integer exitApplicationId);
 
-  ApiResponse<String> reject(Integer exitApplicationId, String comment);
+  Result<String> reject(Integer exitApplicationId, String comment);
 }

@@ -3,11 +3,11 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
-import edu.jmi.openatom.server.openatomsystem.dto.ApiResponse;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateInterviewDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestCreateNotificationDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestInterviewFeedbackDTO;
-import edu.jmi.openatom.server.openatomsystem.dto.request.RequestUpdateInterviewDTO;
+import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateInterviewDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNotificationDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestInterviewFeedbackDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateInterviewDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedback;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewInterviewer;
@@ -38,33 +38,33 @@ public class InterviewServiceImpl implements InterviewService {
   private final NotificationService notificationService;
 
   @Override
-  public ApiResponse<List<Interview>> list(Integer campaignId, Integer applicationId, Integer interviewerId, String status) {
+  public Result<List<Interview>> list(Integer campaignId, Integer applicationId, Integer interviewerId, String status) {
     List<Integer> applicationIds = null;
     if (campaignId != null) {
       applicationIds = applicationMapper.selectByCampaignId(campaignId).stream()
           .map(MembershipApplication::getId).toList();
-      if (applicationIds.isEmpty()) return ApiResponse.success(List.of());
+      if (applicationIds.isEmpty()) return Result.success(List.of());
     }
     List<Integer> interviewIds = null;
     if (interviewerId != null) {
       interviewIds = interviewInterviewerMapper.selectByInterviewerId(interviewerId).stream()
           .map(InterviewInterviewer::getInterviewId).toList();
-      if (interviewIds.isEmpty()) return ApiResponse.success(List.of());
+      if (interviewIds.isEmpty()) return Result.success(List.of());
     }
-    return ApiResponse.success(interviewMapper.selectByConditions(applicationId, status, applicationIds, interviewIds));
+    return Result.success(interviewMapper.selectByConditions(applicationId, status, applicationIds, interviewIds));
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> create(RequestCreateInterviewDTO request) {
+  public Result<String> create(RequestCreateInterviewDTO request) {
     MembershipApplication application = applicationMapper.selectById(request.getApplicationId());
-    if (application == null) return ApiResponse.error(404, "申请不存在");
+    if (application == null) return Result.error(404, "申请不存在");
     Interview interview = Interview.builder().applicationId(request.getApplicationId()).round(request.getRound())
         .scheduledStartAt(Times.parseTimestamp(request.getScheduledStartAt()))
         .scheduledEndAt(Times.parseTimestamp(request.getScheduledEndAt()))
         .location(request.getLocation()).mode(request.getMode()).status("pending").build();
     int row = interviewMapper.insert(interview);
-    if (row <= 0) return ApiResponse.error("面试创建失败");
+    if (row <= 0) return Result.error("面试创建失败");
     bindInterviewers(interview.getId(), request.getInterviewerIds());
     application.setStatus("interview_scheduled");
     applicationMapper.updateById(application);
@@ -73,20 +73,20 @@ public class InterviewServiceImpl implements InterviewService {
             request.getScheduledStartAt(), request.getScheduledEndAt(), request.getLocation(),
             "offline".equals(request.getMode()) ? "线下面试" : "线上面试"))
         .type("activity").receiverUserIds(List.of(application.getUserId())).build());
-    return ApiResponse.success("面试创建成功");
+    return Result.success("面试创建成功");
   }
 
   @Override
-  public ApiResponse<Interview> detail(Integer interviewId) {
+  public Result<Interview> detail(Integer interviewId) {
     Interview interview = findInterview(interviewId);
-    return interview == null ? ApiResponse.error(404, "面试不存在") : ApiResponse.success(interview);
+    return interview == null ? Result.error(404, "面试不存在") : Result.success(interview);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public ApiResponse<String> update(Integer interviewId, RequestUpdateInterviewDTO request) {
+  public Result<String> update(Integer interviewId, RequestUpdateInterviewDTO request) {
     Interview interview = findInterview(interviewId);
-    if (interview == null) return ApiResponse.error(404, "面试不存在");
+    if (interview == null) return Result.error(404, "面试不存在");
     if (request.getRound() != null) interview.setRound(request.getRound());
     if (request.getScheduledStartAt() != null) interview.setScheduledStartAt(Times.parseTimestamp(request.getScheduledStartAt()));
     if (request.getScheduledEndAt() != null) interview.setScheduledEndAt(Times.parseTimestamp(request.getScheduledEndAt()));
@@ -95,46 +95,46 @@ public class InterviewServiceImpl implements InterviewService {
     if (request.getStatus() != null) interview.setStatus(request.getStatus());
     interviewMapper.updateById(interview);
     if (request.getInterviewerIds() != null) bindInterviewers(interviewId, request.getInterviewerIds());
-    return ApiResponse.success("面试更新成功");
+    return Result.success("面试更新成功");
   }
 
   @Override
-  public ApiResponse<String> confirm(Integer interviewId) { return changeStatus(interviewId, "confirmed", "面试确认成功"); }
+  public Result<String> confirm(Integer interviewId) { return changeStatus(interviewId, "confirmed", "面试确认成功"); }
 
   @Override
-  public ApiResponse<String> feedback(Integer interviewId, RequestInterviewFeedbackDTO request) {
+  public Result<String> feedback(Integer interviewId, RequestInterviewFeedbackDTO request) {
     Interview interview = findInterview(interviewId);
-    if (interview == null) return ApiResponse.error(404, "面试不存在");
-    if ("completed".equals(interview.getStatus())) return ApiResponse.error(422, "面试已完成，无法提交反馈");
+    if (interview == null) return Result.error(404, "面试不存在");
+    if ("completed".equals(interview.getStatus())) return Result.error(422, "面试已完成，无法提交反馈");
     interviewFeedbackMapper.insert(InterviewFeedback.builder().interviewId(interviewId)
         .interviewerId(StpUtil.getLoginIdAsInt()).scores(Jsons.stringify(request.getScores()))
         .suggestion(request.getSuggestion()).comment(request.getComment()).build());
-    return ApiResponse.success("面试反馈提交成功");
+    return Result.success("面试反馈提交成功");
   }
 
   @Override
-  public ApiResponse<String> complete(Integer interviewId) {
+  public Result<String> complete(Integer interviewId) {
     Interview interview = findInterview(interviewId);
-    if (interview == null) return ApiResponse.error(404, "面试不存在");
-    if ("completed".equals(interview.getStatus())) return ApiResponse.error(422, "面试已完成，无法重复完成");
-    if ("pending".equals(interview.getStatus())) return ApiResponse.error(422, "请先确认面试再进行完成操作");
+    if (interview == null) return Result.error(404, "面试不存在");
+    if ("completed".equals(interview.getStatus())) return Result.error(422, "面试已完成，无法重复完成");
+    if ("pending".equals(interview.getStatus())) return Result.error(422, "请先确认面试再进行完成操作");
     interview.setStatus("completed");
     interviewMapper.updateById(interview);
     MembershipApplication application = applicationMapper.selectById(interview.getApplicationId());
     if (application != null) { application.setStatus("interviewed"); applicationMapper.updateById(application); }
-    return ApiResponse.success("面试已完成");
+    return Result.success("面试已完成");
   }
 
   @Override
-  public ApiResponse<List<InterviewFeedback>> getFeedbacks(Integer interviewId) {
-    return ApiResponse.success(interviewFeedbackMapper.selectByInterviewId(interviewId));
+  public Result<List<InterviewFeedback>> getFeedbacks(Integer interviewId) {
+    return Result.success(interviewFeedbackMapper.selectByInterviewId(interviewId));
   }
 
-  private ApiResponse<String> changeStatus(Integer interviewId, String status, String message) {
+  private Result<String> changeStatus(Integer interviewId, String status, String message) {
     Interview interview = findInterview(interviewId);
-    if (interview == null) return ApiResponse.error(404, "面试不存在");
+    if (interview == null) return Result.error(404, "面试不存在");
     interview.setStatus(status); interviewMapper.updateById(interview);
-    return ApiResponse.success(message);
+    return Result.success(message);
   }
 
   private void bindInterviewers(Integer interviewId, List<Integer> interviewerIds) {
