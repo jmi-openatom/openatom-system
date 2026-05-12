@@ -9,7 +9,6 @@ import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import edu.jmi.openatom.server.openatomsystem.service.ApplicationService;
 import jakarta.validation.Valid;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
@@ -141,13 +140,11 @@ public class ApplicationController {
       @RequestParam(required = false) Integer departmentId,
       @RequestParam(required = false) String keyword) {
     byte[] bytes = applicationService.exportExcel(campaignId, clubId, status, departmentId, keyword);
-    String fileName =
-        URLEncoder.encode("applications.xlsx", StandardCharsets.UTF_8);
     return ResponseEntity.ok()
         .header(
             HttpHeaders.CONTENT_DISPOSITION,
             ContentDisposition.attachment()
-                .filename(fileName, StandardCharsets.UTF_8)
+                .filename("applications.xlsx", StandardCharsets.UTF_8)
                 .build()
                 .toString())
         .contentType(

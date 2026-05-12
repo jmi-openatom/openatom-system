@@ -146,6 +146,9 @@ export const siteFormApi = {
   close(id: string | number): Promise<AxiosResponse> {
     return request.post(`/site-forms/${id}/close`)
   },
+  shareInfo(id: string | number): Promise<AxiosResponse> {
+    return request.get(`/site-forms/${id}/share-info`)
+  },
 }
 
 export const formSubmissionApi = {
@@ -289,6 +292,12 @@ export const membershipApi = {
   },
   changeStatus(id: string | number, data: Record<string, unknown>): Promise<AxiosResponse> {
     return request.post(`/memberships/${id}/change-status`, data)
+  },
+  batchChangeStatus(data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post('/memberships/batch-change-status', data)
+  },
+  batchCreate(data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post('/memberships/batch-create', data)
   },
   forceExit(id: string | number, data: Record<string, unknown> = {}): Promise<AxiosResponse> {
     return request.post(`/memberships/${id}/force-exit`, data)

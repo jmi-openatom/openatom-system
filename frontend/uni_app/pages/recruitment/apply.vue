@@ -190,8 +190,9 @@ async function submit() {
         uni.showToast({title: '申请已提交', icon: 'success'})
         const target = getToken() ? '/pages/progress/index' : '/pages/recruitment/index'
         setTimeout(() => uni.redirectTo({url: target}), 600)
-    } catch {
-        // 错误已在请求拦截器中提示
+    } catch (e: any) {
+        const msg = e?.message || e?.data?.message || '提交失败，请稍后重试'
+        uni.showToast({title: msg, icon: 'none'})
     } finally {
         submitting.value = false
     }

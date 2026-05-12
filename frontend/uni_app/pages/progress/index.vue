@@ -74,7 +74,7 @@ function goLogin() {
 }
 
 function goRecruitment() {
-    uni.reLaunch({url: '/pages/recruitment/index'})
+    uni.navigateTo({url: '/pages/recruitment/index'})
 }
 
 onMounted(() => {

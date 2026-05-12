@@ -77,6 +77,8 @@ public record RoleSeedTemplate(
         SystemPermission.MEMBERSHIP_UPDATE,
         SystemPermission.MEMBERSHIP_POSITION_ASSIGN,
         SystemPermission.MEMBERSHIP_STATUS_CHANGE,
+        SystemPermission.MEMBERSHIP_BATCH_CHANGE_STATUS,
+        SystemPermission.MEMBERSHIP_BATCH_CREATE,
         SystemPermission.EXIT_APPLICATION_LIST,
         SystemPermission.EXIT_APPLICATION_DETAIL,
         SystemPermission.EXIT_APPLICATION_APPROVE,
@@ -86,8 +88,13 @@ public record RoleSeedTemplate(
         SystemPermission.DOCUMENT_CREATE,
         SystemPermission.DOCUMENT_UPDATE,
         SystemPermission.DOCUMENT_EXPORT,
+        SystemPermission.SITE_FORM_LIST,
+        SystemPermission.SITE_FORM_CREATE,
+        SystemPermission.SITE_FORM_DETAIL,
+        SystemPermission.SITE_FORM_UPDATE,
         SystemPermission.NOTIFICATION_LIST,
-        SystemPermission.NOTIFICATION_CREATE);
+        SystemPermission.NOTIFICATION_CREATE,
+        SystemPermission.NOTIFICATION_DELETE);
   }
 
   public static List<String> departmentHeadPermissionCodes() {

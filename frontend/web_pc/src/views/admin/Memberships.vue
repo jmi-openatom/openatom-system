@@ -280,9 +280,10 @@ export default {
     async batchChangeStatus(status) {
       if (!this.selection.length) return
       try {
-        await Promise.all(
-          this.selection.map((item) => membershipApi.changeStatus(item.id, { status })),
-        )
+        await membershipApi.batchChangeStatus({
+          membershipIds: this.selection.map((item) => item.id),
+          status,
+        })
         ElMessage.success(`已批量处理 ${this.selection.length} 条成员状态`)
         this.fetchList()
       } catch {

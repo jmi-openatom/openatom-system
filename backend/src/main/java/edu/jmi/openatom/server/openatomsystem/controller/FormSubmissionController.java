@@ -7,7 +7,6 @@ import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseFormSubmissionVO;
 import edu.jmi.openatom.server.openatomsystem.service.FormSubmissionService;
 import jakarta.validation.Valid;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
@@ -73,13 +72,11 @@ public class FormSubmissionController {
   @SaCheckPermission("site-form:detail")
   public ResponseEntity<byte[]> export(@PathVariable Integer formId) {
     byte[] bytes = formSubmissionService.exportExcel(formId);
-    String fileName =
-        URLEncoder.encode("form-submissions-" + formId + ".xlsx", StandardCharsets.UTF_8);
     return ResponseEntity.ok()
         .header(
             HttpHeaders.CONTENT_DISPOSITION,
             ContentDisposition.attachment()
-                .filename(fileName, StandardCharsets.UTF_8)
+                .filename("form-submissions-" + formId + ".xlsx", StandardCharsets.UTF_8)
                 .build()
                 .toString())
         .contentType(

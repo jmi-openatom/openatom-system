@@ -2,6 +2,8 @@ package edu.jmi.openatom.server.openatomsystem.service;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestAssignPositionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBatchChangeMembershipStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBatchCreateMembershipDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestChangeMembershipStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateMembershipDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestFinalDecisionDTO;
@@ -30,6 +32,10 @@ public interface MembershipService {
   Result<String> assignPosition(Integer membershipId, RequestAssignPositionDTO request);
 
   Result<String> changeStatus(Integer membershipId, RequestChangeMembershipStatusDTO request);
+
+  Result<String> batchChangeStatus(RequestBatchChangeMembershipStatusDTO request);
+
+  Result<String> batchCreate(RequestBatchCreateMembershipDTO request);
 
   Result<String> forceExit(Integer membershipId, String reason);
 }

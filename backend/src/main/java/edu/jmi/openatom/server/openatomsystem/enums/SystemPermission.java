@@ -136,6 +136,10 @@ public enum SystemPermission {
       "api",
       "/applications/{applicationId}/final-decisions",
       "POST"),
+  SITE_FORM_LIST("查询信息收集表单", "site-form:list", "api", "/site-forms", "GET"),
+  SITE_FORM_CREATE("新增信息收集表单", "site-form:create", "api", "/site-forms", "POST"),
+  SITE_FORM_DETAIL("获取表单详情", "site-form:detail", "api", "/site-forms/{formId}", "GET"),
+  SITE_FORM_UPDATE("更新信息收集表单", "site-form:update", "api", "/site-forms/{formId}", "PATCH"),
   MEMBERSHIP_LIST("查询成员列表", "membership:list", "api", "/memberships", "GET"),
   MEMBERSHIP_CREATE("新增成员", "membership:create", "api", "/memberships", "POST"),
   MEMBERSHIP_DETAIL("获取成员详情", "membership:detail", "api", "/memberships/{membershipId}", "GET"),
@@ -151,6 +155,18 @@ public enum SystemPermission {
       "membership:status:change",
       "api",
       "/memberships/{membershipId}/change-status",
+      "POST"),
+  MEMBERSHIP_BATCH_CHANGE_STATUS(
+      "批量修改成员状态",
+      "membership:batch-change-status",
+      "api",
+      "/memberships/batch-change-status",
+      "POST"),
+  MEMBERSHIP_BATCH_CREATE(
+      "批量创建成员",
+      "membership:batch-create",
+      "api",
+      "/memberships/batch-create",
       "POST"),
   EXIT_APPLICATION_LIST("查询退社申请", "exit-application:list", "api", "/exit-applications", "GET"),
   EXIT_APPLICATION_CREATE("提交退社申请", "exit-application:create", "api", "/exit-applications", "POST"),
@@ -178,6 +194,8 @@ public enum SystemPermission {
   NOTIFICATION_CREATE("发送通知", "notification:create", "api", "/notifications", "POST"),
   NOTIFICATION_READ(
       "标记通知已读", "notification:read", "api", "/notifications/{notificationId}/read", "POST"),
+  NOTIFICATION_DELETE(
+      "删除通知", "notification:delete", "api", "/notifications/admin/{notificationId}", "DELETE"),
   DOCUMENT_LIST("查询文书列表", "document:list", "api", "/office-documents", "GET"),
   DOCUMENT_CREATE("创建文书", "document:create", "api", "/office-documents", "POST"),
   DOCUMENT_UPDATE("更新文书", "document:update", "api", "/office-documents/{documentId}", "PATCH"),

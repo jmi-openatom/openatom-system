@@ -88,7 +88,7 @@ jobs:
             # 计算版本号
             BUILD_NUMBER="${{ github.run_number }}"
             SHORT_SHA=$(git rev-parse --short HEAD)
-            PKG_VER=$(node -p "require('./frontend/web_pc/package.json').version" || echo "1.0.0")
+            PKG_VER=$(grep -oP '"version"\s*:\s*"\K[^"]+' frontend/web_pc/package.json || echo "1.0.0")
             APP_VER="v$PKG_VER.$BUILD_NUMBER-$SHORT_SHA"
 
             echo "Step 2: Starting deployment with version: $APP_VER"

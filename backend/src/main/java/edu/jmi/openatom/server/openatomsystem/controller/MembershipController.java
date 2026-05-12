@@ -3,6 +3,8 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestAssignPositionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBatchChangeMembershipStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBatchCreateMembershipDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestChangeMembershipStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateMembershipDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestFinalDecisionDTO;
@@ -102,6 +104,32 @@ public class MembershipController {
   public Result<String> update(
       @PathVariable Integer membershipId, @Valid @RequestBody RequestUpdateMembershipDTO request) {
     return membershipService.update(membershipId, request);
+  }
+
+  /**
+   * 批量变更成员状态
+   *
+   * @param request 批量变更状态请求参数
+   * @return 变更结果
+   */
+  @PostMapping("/memberships/batch-change-status")
+  @SaCheckPermission("membership:batch-change-status")
+  public Result<String> batchChangeStatus(
+      @Valid @RequestBody RequestBatchChangeMembershipStatusDTO request) {
+    return membershipService.batchChangeStatus(request);
+  }
+
+  /**
+   * 批量创建成员关系
+   *
+   * @param request 批量创建成员请求参数
+   * @return 创建结果
+   */
+  @PostMapping("/memberships/batch-create")
+  @SaCheckPermission("membership:batch-create")
+  public Result<String> batchCreate(
+      @Valid @RequestBody RequestBatchCreateMembershipDTO request) {
+    return membershipService.batchCreate(request);
   }
 
   /**

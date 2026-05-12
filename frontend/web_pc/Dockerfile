@@ -11,7 +11,7 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 COPY pnpm-lock.yaml package.json ./
 
 # Install dependencies (utilizing layer caching)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # Copy source code and build
 COPY . .

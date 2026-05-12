@@ -7,8 +7,11 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateSiteFormDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.SiteForm;
 import edu.jmi.openatom.server.openatomsystem.service.SiteFormService;
 import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class SiteFormController {
   private final SiteFormService siteFormService;
+
+  @Value("${app.miniapp.app-id:wx8c6b52ab95da0938}")
+  private String miniappAppId;
 
   /**
    * 获取社团的站点表单列表
@@ -100,5 +106,25 @@ public class SiteFormController {
   @SaCheckPermission("site-form:update")
   public Result<String> close(@PathVariable Integer formId) {
     return siteFormService.close(formId);
+  }
+
+  /**
+   * 获取表单的分享信息（小程序链接）
+   *
+   * @param formId 表单ID
+   * @return 分享信息（包含小程序路径）
+   */
+  @GetMapping("/site-forms/{formId}/share-info")
+  @SaCheckPermission("site-form:detail")
+  public Result<Map<String, Object>> shareInfo(@PathVariable Integer formId) {
+    SiteForm form = siteFormService.detail(formId).getData();
+    if (form == null) return Result.error(404, "表单不存在");
+    Map<String, Object> info = new HashMap<>();
+    info.put("formId", form.getId());
+    info.put("formName", form.getName());
+    info.put("formStatus", form.getStatus());
+    info.put("miniappPath", "pages/forms/index?id=" + form.getId());
+    info.put("miniappAppId", miniappAppId);
+    return Result.success(info);
   }
 }

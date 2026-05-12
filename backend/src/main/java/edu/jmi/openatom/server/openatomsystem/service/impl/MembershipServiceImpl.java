@@ -2,15 +2,19 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.dto.*;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
+import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
+import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
 import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +39,9 @@ public class MembershipServiceImpl implements MembershipService {
   private final ClubDepartmentMapper departmentMapper;
   private final ClubPositionMapper positionMapper;
   private final NotificationService notificationService;
+  private final PasswordService passwordService;
+  private final RoleMapper roleMapper;
+  private final UserRoleMapper userRoleMapper;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -42,21 +49,40 @@ public class MembershipServiceImpl implements MembershipService {
     MembershipApplication application = applicationId == null ? null : applicationMapper.selectById(applicationId);
     if (application == null) return Result.error(404, "申请不存在");
     if (!DECISIONS.contains(request.getDecision())) return Result.error(400, "终审决策不合法");
+    Integer userId = application.getUserId();
+    String credentialInfo = "";
     if ("approved".equals(request.getDecision())) {
-      Result<String> v = validateMembershipRefs(application.getUserId(), application.getClubId(), request.getDepartmentId(), request.getPositionId());
+      if (userId == null) {
+        Map<String, Object> profile = Jsons.parseObject(application.getProfile());
+        String applicantName = readString(profile.get("applicantName"));
+        if (isBlank(applicantName)) applicantName = readString(profile.get("name"));
+        if (isBlank(applicantName)) applicantName = readString(profile.get("realName"));
+        if (isBlank(applicantName)) applicantName = "匿名用户";
+        String password = UUID.randomUUID().toString().substring(0, 8);
+        String username = generateUniqueUsername(applicantName);
+        User user = User.builder().userName(username).realName(applicantName)
+            .studentId(username).password(passwordService.encode(password))
+            .userStatus(UserStatus.ACTIVE).build();
+        userMapper.insert(user);
+        bindDefaultRole(user.getId());
+        userId = user.getId();
+        application.setUserId(userId);
+        credentialInfo = "\n系统已自动为您创建账号：\n用户名：" + username + "\n初始密码：" + password + "\n请登录后及时修改密码并完善个人信息。";
+      }
+      Result<String> v = validateMembershipRefs(userId, application.getClubId(), request.getDepartmentId(), request.getPositionId());
       if (v != null) return v;
-      ensureMembership(application.getUserId(), application.getClubId(), request.getDepartmentId(), request.getPositionId(), "probation", null, null);
+      ensureMembership(userId, application.getClubId(), request.getDepartmentId(), request.getPositionId(), "probation", null, null);
       application.setStatus("final_approved");
     } else if ("waitlisted".equals(request.getDecision())) { application.setStatus("waitlisted"); }
     else { application.setStatus("rejected"); }
     applicationMapper.updateById(application);
     String title = "入会终审结果";
     String content = "您的入会申请终审结果已出：";
-    if ("approved".equals(request.getDecision())) content += "【通过】。恭喜您正式成为社团成员！";
+    if ("approved".equals(request.getDecision())) content += "【通过】。恭喜您正式成为社团成员！" + credentialInfo;
     else if ("waitlisted".equals(request.getDecision())) content += "【候补】。请耐心等待后续通知。";
     else content += "【未通过】。感谢您的关注与参与。";
     if (request.getComment() != null && !request.getComment().isBlank()) content += "\n评价：" + request.getComment();
-    notificationService.create(RequestCreateNotificationDTO.builder().title(title).content(content).type("approval").receiverUserIds(List.of(application.getUserId())).build());
+    notificationService.create(RequestCreateNotificationDTO.builder().title(title).content(content).type("approval").receiverUserIds(List.of(userId)).build());
     return Result.success("终审决策已处理");
   }
 
@@ -123,6 +149,37 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> batchChangeStatus(RequestBatchChangeMembershipStatusDTO request) {
+    if (!STATUSES.contains(request.getStatus())) return Result.error(400, "成员状态不合法");
+    int count = 0;
+    for (Integer id : request.getMembershipIds()) {
+      ClubMembership m = findMembership(id);
+      if (m == null) continue;
+      m.setStatus(request.getStatus());
+      if ("left".equals(request.getStatus())) m.setLeftAt(Times.now());
+      membershipMapper.updateById(m);
+      count++;
+    }
+    return Result.success("已批量更新 " + count + " 条成员状态");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> batchCreate(RequestBatchCreateMembershipDTO request) {
+    int count = 0;
+    for (RequestBatchCreateMembershipDTO.MembershipItem item : request.getMemberships()) {
+      Result<String> v = validateMembershipRefs(item.getUserId(), item.getClubId(), item.getDepartmentId(), item.getPositionId());
+      if (v != null) continue;
+      if (membershipMapper.countActiveNotLeft(item.getUserId(), item.getClubId()) > 0) continue;
+      ensureMembership(item.getUserId(), item.getClubId(), item.getDepartmentId(), item.getPositionId(),
+          item.getStatus() == null ? "probation" : item.getStatus(), item.getFeatured(), item.getSortOrder());
+      count++;
+    }
+    return Result.success("已批量创建 " + count + " 条成员关系");
+  }
+
+  @Override
   public Result<String> forceExit(Integer membershipId, String reason) {
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");
@@ -168,4 +225,23 @@ public class MembershipServiceImpl implements MembershipService {
         .clubId(m.getClubId()).clubName(c == null ? null : c.getName()).departmentId(m.getDepartmentId()).departmentName(d == null ? null : d.getName())
         .positionId(m.getPositionId()).positionName(p == null ? null : p.getName()).status(m.getStatus()).featured(m.getFeatured()).sortOrder(m.getSortOrder()).joinedAt(m.getJoinedAt()).leftAt(m.getLeftAt()).build();
   }
+
+  private String generateUniqueUsername(String applicantName) {
+    String base = applicantName.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fa5]", "").trim();
+    if (isBlank(base)) base = "member";
+    String suffix = UUID.randomUUID().toString().substring(0, 6);
+    return base + "_" + suffix;
+  }
+
+  private void bindDefaultRole(Integer userId) {
+    String roleCode = "probationary_member";
+    Role role = roleMapper.selectByCode(roleCode);
+    if (role == null) throw new IllegalStateException("Default role not initialized: " + roleCode);
+    if (userRoleMapper.selectOneByUserAndRole(userId, role.getId()) == null) {
+      userRoleMapper.insert(UserRole.builder().userId(userId).roleId(role.getId()).build());
+    }
+  }
+
+  private String readString(Object value) { return value == null ? null : String.valueOf(value).trim(); }
+  private boolean isBlank(String value) { return value == null || value.isBlank(); }
 }
