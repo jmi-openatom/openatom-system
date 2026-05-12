@@ -45,6 +45,12 @@ public class GlobalExceptionHandlerAdvice {
     return Result.error(400, e.getMessage());
   }
 
+  @ExceptionHandler(RateLimitExceededException.class)
+  public ResponseEntity<Result<Void>> handleRateLimitExceededException(
+      RateLimitExceededException e) {
+    return ResponseEntity.status(429).body(Result.error(429, e.getMessage()));
+  }
+
   @ExceptionHandler(NoResourceFoundException.class)
   public Result<Void> handleNoResourceFoundException(NoResourceFoundException e) {
     return Result.error(404, "请求路径不存在");

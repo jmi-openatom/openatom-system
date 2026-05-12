@@ -6,6 +6,7 @@ import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.router.SaHttpMethod;
 import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpUtil;
+import edu.jmi.openatom.server.openatomsystem.common.web.ApplicationSubmitRateLimitInterceptor;
 import edu.jmi.openatom.server.openatomsystem.common.web.OperationLogInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class SaTokenConfigure implements WebMvcConfigurer {
 
   private final OperationLogInterceptor operationLogInterceptor;
+  private final ApplicationSubmitRateLimitInterceptor applicationSubmitRateLimitInterceptor;
 
   @Value("${app.cors.allowed-origin-patterns:*}")
   private String[] allowedOriginPatterns;
@@ -36,7 +38,20 @@ public class SaTokenConfigure implements WebMvcConfigurer {
         .excludePathPatterns("/error", "/favicon.ico");
 
     registry
-        .addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
+        .addInterceptor(applicationSubmitRateLimitInterceptor)
+        .addPathPatterns("/applications");
+
+    registry
+        .addInterceptor(
+            new SaInterceptor(
+                handle -> {
+                  String path = SaHolder.getRequest().getRequestPath();
+                  String method = SaHolder.getRequest().getMethod();
+                  if ("/applications".equals(path) && "POST".equalsIgnoreCase(method)) {
+                    return;
+                  }
+                  StpUtil.checkLogin();
+                }))
         .addPathPatterns("/**")
         .excludePathPatterns(
             "/auth/register",

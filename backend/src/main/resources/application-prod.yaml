@@ -59,6 +59,9 @@ sa-token:
 app:
   cors:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:*}
+  rate-limit:
+    application-submit:
+      max-per-second: ${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:5}
 
 logging:
   level:

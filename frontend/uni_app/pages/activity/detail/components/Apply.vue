@@ -1,20 +1,58 @@
 <script lang="ts" setup>
-import {ref} from "vue"
+import {reactive, ref} from "vue"
+import {activityApi} from '@/api'
+
+const props = withDefaults(defineProps<{
+    activityId?: string | number
+    disabled?: boolean
+    title?: string
+}>(), {
+    disabled: false,
+    title: '立即报名',
+})
 
 const show = ref(false)
+const submitting = ref(false)
+const form = reactive({
+    name: '',
+    phone: '',
+    remark: '',
+})
 
-const handleSubmit = () => {
-    console.log("提交报名")
-    // 这里处理你的提交逻辑
-    show.value = false
+const open = () => {
+    if (props.disabled) {
+        uni.showToast({title: '该活动无需报名或暂未开放报名', icon: 'none'})
+        return
+    }
+    show.value = true
+}
+
+const handleSubmit = async () => {
+    if (!props.activityId) return
+    if (!form.name || !form.phone) {
+        uni.showToast({title: '请填写姓名和手机号', icon: 'none'})
+        return
+    }
+    submitting.value = true
+    try {
+        await activityApi.register(props.activityId, {
+            name: form.name,
+            phone: form.phone,
+            remark: form.remark,
+        })
+        uni.showToast({title: '报名成功', icon: 'success'})
+        show.value = false
+    } finally {
+        submitting.value = false
+    }
 }
 </script>
 
 <template>
     <view class="apply">
         <view class="apply__btn-wrap">
-            <tm-button :block="true" color="primary" size="g" @click="show = true">
-                立即报名
+            <tm-button :block="true" :disabled="disabled" color="primary" size="g" @click="open">
+                {{ title }}
             </tm-button>
         </view>
 
@@ -32,15 +70,15 @@ const handleSubmit = () => {
                     <view class="apply__form">
                         <view class="apply__form-item">
                             <text class="apply__label">姓名</text>
-                            <tm-input placeholder="请输入姓名"/>
+                            <tm-input v-model="form.name" placeholder="请输入姓名"/>
                         </view>
                         <view class="apply__form-item">
                             <text class="apply__label">手机号</text>
-                            <tm-input placeholder="请输入手机号" type="number"/>
+                            <tm-input v-model="form.phone" placeholder="请输入手机号" type="number"/>
                         </view>
                         <view class="apply__form-item">
                             <text class="apply__label">备注</text>
-                            <tm-input :height="200" placeholder="选填（如过敏史、特殊需求等）" type="textarea"/>
+                            <tm-input v-model="form.remark" :height="200" placeholder="选填（如过敏史、特殊需求等）" type="textarea"/>
                         </view>
 
                         <view style="height: 100rpx;"></view>
@@ -51,6 +89,7 @@ const handleSubmit = () => {
                     <tm-button
                         block
                         color="primary"
+                        :loading="submitting"
                         size="g"
                         @click="handleSubmit"
                     >
@@ -70,7 +109,7 @@ const handleSubmit = () => {
     left: 0;
     right: 0;
     z-index: 99;
-    padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
+    padding: 20rpx 24rpx 32rpx;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 30%);
 }
 
@@ -106,7 +145,7 @@ const handleSubmit = () => {
 
 /* 抽屉内的固定底部按钮 */
 .drawer-footer {
-    padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+    padding: 24rpx 32rpx 36rpx;
     background-color: #ffffff;
     border-top: 1rpx solid #f1f5f9;
     box-shadow: 0 -4rpx 10rpx rgba(0, 0, 0, 0.02);

@@ -1,6 +1,6 @@
 import {clearSession, getToken} from '@/utils/auth'
 
-const BASE_URL = 'https://api.jmi-openatom.cn/api/v1'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.jmi-openatom.cn/api/v1'
 
 // ---------- types ----------
 

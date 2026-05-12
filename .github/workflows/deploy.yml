@@ -25,7 +25,9 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
-          cache-dependency-path: 'frontend/web_pc/pnpm-lock.yaml'
+          cache-dependency-path: |
+            frontend/web_pc/pnpm-lock.yaml
+            frontend/uni_app/pnpm-lock.yaml
 
       - name: Frontend Build Check
         run: |
@@ -33,6 +35,12 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm run typecheck
           pnpm run build
+
+      - name: UniApp Type Check
+        run: |
+          cd frontend/uni_app
+          pnpm install --frozen-lockfile
+          pnpm run typecheck
 
   backend-check:
     runs-on: ubuntu-latest
@@ -95,7 +103,7 @@ jobs:
             sleep 10
             $COMPOSE_CMD ps
 
-            for service in mysql backend frontend; do
+            for service in mysql redis backend frontend; do
               if ! $COMPOSE_CMD ps "$service" | grep -q "Up"; then
                 echo "Service $service is not running"
                 $COMPOSE_CMD logs --tail=200 "$service" || true

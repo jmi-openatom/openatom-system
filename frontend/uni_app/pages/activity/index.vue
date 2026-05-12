@@ -1,5 +1,5 @@
 <template>
-    <view class="page">
+    <view class="page oa-page-transition">
         <tm-navbar :showNavBack="false" title="活动"/>
 
         <scroll-view
@@ -51,11 +51,12 @@
 import Tabbar from '@/components/Tabbar.vue'
 import ActivityCard from './components/ActivityCard.vue'
 import ActivityEmpty from './components/ActivityEmpty.vue'
-import {activityApi} from '@/api'
+import {siteApi} from '@/api'
 import {onMounted, ref} from 'vue'
 import type {ActivityFilter, ActivityItem, ActivityStatus} from './types'
 import ActivitySkeleton from "@/pages/activity/components/ActivitySkeleton.vue";
 import FilterBar from "@/pages/activity/components/FilterBar.vue";
+import {ensureList, formatDateTime} from '@/utils/format'
 
 const scrollIntoView = ref('')
 
@@ -72,6 +73,14 @@ const refreshing = ref(false)
 const page = ref(1)
 const perPage = 10
 const noMore = ref(false)
+const allActivities = ref<ActivityItem[]>([])
+
+function normalizeActivity(item: any): ActivityItem {
+    return {
+        ...item,
+        date: item.date || formatDateTime(item.activityAt),
+    }
+}
 
 async function fetchActivities(isRefresh = false) {
     if (loading.value) return
@@ -83,16 +92,16 @@ async function fetchActivities(isRefresh = false) {
     }
 
     try {
-        const params: Record<string, unknown> = {
-            page: page.value,
-            perPage,
-        }
-        if (activeFilter.value) {
-            params.status = activeFilter.value
+        if (isRefresh || !allActivities.value.length) {
+            const res = await siteApi.activities()
+            allActivities.value = ensureList<ActivityItem>(res).map(normalizeActivity)
         }
 
-        const res = await activityApi.list(params)
-        const items: ActivityItem[] = Array.isArray(res) ? res : (res as any)?.data || (res as any)?.items || (res as any)?.list || []
+        const filtered = activeFilter.value
+            ? allActivities.value.filter((item) => item.status === activeFilter.value)
+            : allActivities.value
+        const start = (page.value - 1) * perPage
+        const items = filtered.slice(start, start + perPage)
 
         if (isRefresh) {
             list.value = items
@@ -116,6 +125,7 @@ async function fetchActivities(isRefresh = false) {
 function switchFilter(value: ActivityStatus) {
     if (activeFilter.value === value) return
     activeFilter.value = value
+    page.value = 1
     fetchActivities(true)
 }
 

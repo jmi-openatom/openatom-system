@@ -36,7 +36,7 @@
           <div class="campaign-item panel">
             <div>
               <h3>{{ item.name || '招新计划' }}</h3>
-              <p>提交方式：{{ item.loginRequired ? '需要登录' : '支持匿名填写' }}</p>
+              <p>提交方式：无需登录填写</p>
             </div>
             <div class="campaign-item__action">
               <el-tag :type="statusType(item.status)">{{ statusText(item.status) }}</el-tag>

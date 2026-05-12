@@ -42,6 +42,27 @@
             }
         },
         {
+            "path": "pages/recruitment/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "招新"
+            }
+        },
+        {
+            "path": "pages/recruitment/apply",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "入会申请"
+            }
+        },
+        {
+            "path": "pages/progress/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "申请进度"
+            }
+        },
+        {
             "path": "pages/login/index",
             "style": {
                 "navigationStyle": "custom",

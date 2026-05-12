@@ -1,5 +1,5 @@
 <template>
-    <view class="page">
+    <view class="page oa-page-transition">
         <tm-navbar :showNavBack="true" title="活动详情"/>
 
         <scroll-view class="main-scroll" scroll-y>
@@ -24,7 +24,12 @@
             <view class="bottom-pad"/>
         </scroll-view>
 
-        <Apply></Apply>
+        <Apply
+            v-if="detail"
+            :activity-id="detail.id"
+            :disabled="!detail.registrationRequired"
+            :title="detail.registrationRequired ? '立即报名' : '无需报名'"
+        />
 
     </view>
 </template>
@@ -139,6 +144,6 @@ onMounted(() => {
 }
 
 .bottom-pad {
-    height: 100rpx;
+    height: 180rpx;
 }
 </style>

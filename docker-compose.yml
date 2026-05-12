@@ -45,10 +45,12 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - APP_APPLICATION_SUBMIT_MAX_PER_SECOND=${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:-5}
     ports:
       - "8921:8921"
     depends_on:
       - mysql
+      - redis
     networks:
       - openatom-network
     restart: always

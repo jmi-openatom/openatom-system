@@ -20,6 +20,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper
 import edu.jmi.openatom.server.openatomsystem.mapper.RecruitmentCampaignMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.ApplicationService;
+import edu.jmi.openatom.server.openatomsystem.service.ApplicationSubmissionRedisService;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,6 +45,7 @@ public class ApplicationServiceImpl implements ApplicationService {
   private final ClubMapper clubMapper;
   private final ClubDepartmentMapper departmentMapper;
   private final UserMapper userMapper;
+  private final ApplicationSubmissionRedisService applicationSubmissionRedisService;
 
   @Override
   public Result<PageDataVO<ResponseApplicationVO>> list(
@@ -81,6 +83,9 @@ public class ApplicationServiceImpl implements ApplicationService {
         .secondChoiceDepartmentId(request.getSecondChoiceDepartmentId())
         .profile(Jsons.stringify(request.getProfile())).status("submitted").build();
     int row = applicationMapper.insert(application);
+    if (row > 0) {
+      applicationSubmissionRedisService.cacheSubmission(application, request.getProfile());
+    }
     return row > 0 ? Result.success(application.getId(), "入会申请提交成功") : Result.error("入会申请提交失败");
   }
 
@@ -134,8 +139,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     if (campaign == null) return Result.error(404, "招新计划不存在");
     if (!List.of("open", "published").contains(campaign.getStatus())) return Result.error(400, "该招新计划未开放申请");
     Map<String, Object> profile = request.getProfile() == null ? Map.of() : request.getProfile();
-    if (Boolean.TRUE.equals(campaign.getLoginRequired()) && userId == null) return Result.error(401, "该表单需要登录后提交");
-    if (!Boolean.TRUE.equals(campaign.getLoginRequired())) {
+    if (userId == null) {
       if (isBlank(readProfileValue(profile, "applicantName"))) return Result.error(400, "请填写联系人姓名");
       if (isBlank(readProfileValue(profile, "contact"))) return Result.error(400, "请填写联系方式");
     }

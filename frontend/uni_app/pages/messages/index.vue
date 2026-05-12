@@ -1,111 +1,103 @@
 <template>
-    <view class="page">
+    <view class="page oa-page-transition">
         <tm-navbar :showNavBack="false" title="消息"/>
-        <view class="msg-list">
-            <view v-for="msg in messages" :key="msg.id" class="msg-item" @click="onTap(msg)">
-                <view class="msg-avatar">
-                    <text class="msg-avatar-icon">{{ msg.avatar }}</text>
-                </view>
-                <view class="msg-body">
-                    <view class="msg-top">
-                        <text class="msg-name">{{ msg.name }}</text>
-                        <text class="msg-time">{{ msg.time }}</text>
-                    </view>
-                    <text class="msg-preview">{{ msg.preview }}</text>
-                </view>
-                <view v-if="msg.unread" class="msg-badge">{{ msg.unread }}</view>
-            </view>
+        <scroll-view
+            :refresher-enabled="true"
+            :refresher-triggered="refreshing"
+            class="main-scroll"
+            scroll-y
+            @refresherrefresh="refresh"
+        >
+        <MessageSummary :unread-count="unreadCount" @read-all="markAllRead"/>
+        <view v-if="loading && !messages.length" class="loading">加载中...</view>
+        <view v-else-if="messages.length" class="msg-list">
+            <MessageItem
+                v-for="(msg, index) in messages"
+                :key="msg.id"
+                :index="index"
+                :message="msg"
+                @tap="onTap"
+            />
         </view>
-        <Tabbar :activeIndex="2"></Tabbar>
+        <MessageEmpty v-else/>
+        <view class="bottom-pad"/>
+        </scroll-view>
+        <Tabbar :activeIndex="3"></Tabbar>
     </view>
 </template>
 
-<script setup>
-import {ref} from 'vue'
+<script setup lang="ts">
+import {computed, onMounted, ref} from 'vue'
 import Tabbar from "@/components/Tabbar.vue";
+import MessageEmpty from './components/MessageEmpty.vue'
+import MessageItem from './components/MessageItem.vue'
+import MessageSummary from './components/MessageSummary.vue'
+import {notificationApi} from '@/api'
 
-const messages = ref([
-    {id: 1, avatar: '👤', name: '系统通知', time: '10:30', preview: '欢迎加入OpenAtom平台', unread: 1},
-    {id: 2, avatar: '💬', name: '团队协作', time: '昨天', preview: '你的项目有新更新', unread: 3},
-    {id: 3, avatar: '🔔', name: '活动提醒', time: '周三', preview: '社区大会将于明天举行', unread: 0}
-])
+const loading = ref(false)
+const refreshing = ref(false)
+const messages = ref<any[]>([])
+const unreadCount = computed(() => messages.value.filter((item) => item.readFlag === 0).length)
 
-const onTap = (msg) => {
-    uni.showToast({title: `打开 ${msg.name}`, icon: 'none'})
+async function load() {
+    loading.value = true
+    try {
+        const res: any = await notificationApi.myNotifications()
+        messages.value = Array.isArray(res) ? res : []
+    } finally {
+        loading.value = false
+        refreshing.value = false
+    }
 }
+
+function refresh() {
+    refreshing.value = true
+    load()
+}
+
+const onTap = async (msg: any) => {
+    if (msg.readFlag === 0) {
+        await notificationApi.markRead(msg.id)
+        msg.readFlag = 1
+    }
+}
+
+async function markAllRead() {
+    const unread = messages.value.filter((item) => item.readFlag === 0)
+    await Promise.all(unread.map((item) => notificationApi.markRead(item.id)))
+    unread.forEach((item) => {
+        item.readFlag = 1
+    })
+    uni.showToast({title: '已全部标记为已读', icon: 'none'})
+}
+
+onMounted(load)
 </script>
 
 <style scoped>
 .page {
-    min-height: 100vh;
-    padding-bottom: 140rpx;
-    background: #f5f5f5;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: #f7fafc;
+}
+
+.main-scroll {
+    flex: 1;
+    height: 0;
 }
 
 .msg-list {
-    margin: 20rpx 24rpx;
+    padding: 0 24rpx;
 }
 
-.msg-item {
-    display: flex;
-    align-items: center;
-    padding: 24rpx;
-    margin-bottom: 16rpx;
-    background: #fff;
-    border-radius: 12rpx;
-}
-
-.msg-avatar {
-    width: 80rpx;
-    height: 80rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f0f0f0;
-    border-radius: 50%;
-    margin-right: 20rpx;
-    flex-shrink: 0;
-}
-
-.msg-avatar-icon {
-    font-size: 36rpx;
-}
-
-.msg-body {
-    flex: 1;
-}
-
-.msg-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.msg-name {
-    font-size: 30rpx;
-    font-weight: 500;
-}
-
-.msg-time {
-    font-size: 24rpx;
-    color: #999;
-}
-
-.msg-preview {
-    font-size: 26rpx;
-    color: #999;
-    margin-top: 6rpx;
-}
-
-.msg-badge {
-    min-width: 36rpx;
-    height: 36rpx;
-    line-height: 36rpx;
+.loading {
+    padding: 100rpx 40rpx;
     text-align: center;
-    font-size: 22rpx;
-    color: #fff;
-    background: #ee0a24;
-    border-radius: 50%;
-    padding: 0 8rpx;
+    color: #64748b;
+}
+
+.bottom-pad {
+    height: 170rpx;
 }
 </style>

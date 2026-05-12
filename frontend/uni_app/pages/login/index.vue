@@ -1,5 +1,5 @@
 <template>
-    <view class="page">
+    <view class="page oa-page-transition">
         <view class="brand">
             <image class="brand__logo-img" mode="aspectFit" src="/static/logo.png"/>
             <text class="brand__title">开放原子开源社团</text>

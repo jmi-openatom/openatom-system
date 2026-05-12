@@ -1,8 +1,10 @@
 <script setup>
 import {onHide, onLaunch, onShow} from '@dcloudio/uni-app'
+import {routeByDomain} from '@/utils/domainRoute'
 
 onLaunch(() => {
     console.log('App Launch')
+    routeByDomain()
 })
 
 onShow(() => {

@@ -1,5 +1,5 @@
 <template>
-    <view class="page">
+    <view class="page oa-page-transition">
         <tm-navbar :showNavBack="false" title="首页"/>
         <scroll-view
             :scroll-into-view="scrollIntoView"
@@ -82,7 +82,7 @@ async function loadClubHome() {
 }
 
 function goJoin() {
-    uni.switchTab({url: '/pages/profile/index'})
+    uni.reLaunch({url: '/pages/recruitment/index'})
 }
 
 function scrollToActivities() {

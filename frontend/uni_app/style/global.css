@@ -1,4 +1,29 @@
-:root{
-    --topbar-color-light: #f3f3f3;
-    --topbar-text-color-light: #000000;
+.oa-page-transition {
+    animation: oaPageIn 320ms ease-out both;
+}
+
+.oa-animate-in {
+    animation: oaFadeUp 360ms ease both;
+}
+
+@keyframes oaPageIn {
+    from {
+        opacity: 0;
+        transform: translateY(12rpx);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes oaFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(18rpx);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

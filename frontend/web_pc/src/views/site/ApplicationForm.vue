@@ -39,7 +39,7 @@
             type="info"
             show-icon
             :closable="false"
-            title="当前表单要求登录后提交，正在跳转到登录页。"
+            title="当前表单支持登录用户自动关联身份，也支持匿名填写。"
           />
           <el-alert
             v-else-if="!requiresLogin"
@@ -61,7 +61,7 @@
           <el-form-item label="表单名称">
             <el-input :model-value="formMeta.name || '-'" disabled />
           </el-form-item>
-          <template v-if="hasToken">
+          <template v-if="departments.length">
             <el-divider content-position="left">意向选择</el-divider>
             <el-form-item label="第一志愿" prop="firstChoiceDepartmentId">
               <el-select
@@ -180,7 +180,7 @@ export default {
       return Boolean(getToken())
     },
     requiresLogin() {
-      return this.formMeta?.loginRequired !== false
+      return false
     },
     canSubmit() {
       if (!this.formMeta?.id) return false
@@ -212,11 +212,6 @@ export default {
         ...(result?.campaign || {}),
         loginRequired: result?.campaign?.loginRequired !== false,
       }
-      if (this.formMeta.id && this.requiresLogin && !this.hasToken) {
-        ElMessage.warning('当前表单需要登录后填写，正在跳转到登录页')
-        this.$router.replace({ path: '/admin/login', query: { redirect: this.$route.fullPath } })
-        return
-      }
       this.departments = result?.departments || []
       if (!this.departments.length && this.club.id) {
         const deptResult = await clubApi.departments(this.club.id)
@@ -226,28 +221,27 @@ export default {
     },
     buildRules() {
       return {
-        ...(this.requiresLogin
+        ...(this.departments.length
           ? {
               firstChoiceDepartmentId: [
                 { required: true, message: '请选择第一志愿', trigger: 'change' },
               ],
             }
-          : {
-              ...(!this.hasApplicantNameField
-                ? {
-                    'formData.applicantName': [
-                      { required: true, message: '请填写联系人', trigger: 'blur' },
-                    ],
-                  }
-                : {}),
-              ...(!this.hasContactField
-                ? {
-                    'formData.contact': [
-                      { required: true, message: '请填写联系方式', trigger: 'blur' },
-                    ],
-                  }
-                : {}),
-            }),
+          : {}),
+        ...(!this.hasApplicantNameField
+          ? {
+              'formData.applicantName': [
+                { required: true, message: '请填写联系人', trigger: 'blur' },
+              ],
+            }
+          : {}),
+        ...(!this.hasContactField
+          ? {
+              'formData.contact': [
+                { required: true, message: '请填写联系方式', trigger: 'blur' },
+              ],
+            }
+          : {}),
         ...this.dynamicFields.reduce((rules, field) => {
           if (field.required) {
             rules[`formData.${field.key}`] = [
@@ -275,20 +269,13 @@ export default {
     submitForm() {
       this.$refs.formRef.validate(async (valid) => {
         if (!valid) return
-        if (this.requiresLogin && !getToken()) {
-          ElMessage.warning('请先登录后再提交表单')
-          this.$router.push({ path: '/admin/login', query: { redirect: this.$route.fullPath } })
-          return
-        }
         this.submitting = true
         try {
           await applicationApi.create({
             campaignId: this.formMeta.id,
             clubId: this.club.id,
-            firstChoiceDepartmentId: this.hasToken ? this.form.firstChoiceDepartmentId : undefined,
-            secondChoiceDepartmentId: this.hasToken
-              ? this.form.secondChoiceDepartmentId
-              : undefined,
+            firstChoiceDepartmentId: this.form.firstChoiceDepartmentId,
+            secondChoiceDepartmentId: this.form.secondChoiceDepartmentId,
             profile: this.form.formData,
           })
           if (this.hasToken) {

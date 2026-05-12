@@ -14,6 +14,13 @@ export const tabbarList = [
         openType: 'reLaunch' as const
     },
     {
+        title: '招新',
+        icon: 'add-box-line',
+        selectedIcon: 'add-box-line',
+        url: '/pages/recruitment/index',
+        openType: 'reLaunch' as const
+    },
+    {
         title: '消息',
         icon: 'message-2-line',
         selectedIcon: 'message-2-fill',
