@@ -14,12 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -28,14 +26,12 @@ jobs:
           cache-dependency-path: |
             frontend/web_pc/pnpm-lock.yaml
             frontend/uni_app/pnpm-lock.yaml
-
       - name: Frontend Build Check
         run: |
           cd frontend/web_pc
           pnpm install --frozen-lockfile
           pnpm run typecheck
           pnpm run build
-
       - name: UniApp Type Check
         run: |
           cd frontend/uni_app
@@ -46,32 +42,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-
       - name: Backend Build Check
         run: mvn -f backend/pom.xml clean compile
 
   deploy:
-    needs: [frontend-check, backend-check]
-    # Only deploy on push to main
+    needs: [ frontend-check, backend-check ]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: SERVER
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Validate secrets
-        run: |
-          [ -n "${{ secrets.SERVER_HOST }}" ] || (echo "SERVER_HOST is empty" && exit 1)
-          [ -n "${{ secrets.SERVER_USER }}" ] || (echo "SERVER_USER is empty" && exit 1)
-          [ -n "${{ secrets.SERVER_PASSWORD }}" ] || (echo "SERVER_PASSWORD is empty" && exit 1)
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -84,29 +71,38 @@ jobs:
             set -eu
             cd /www/wwwroot/openatom-system || { echo "Directory not found"; exit 1; }
             
-            find . -name ".DS_Store" -delete
-            
             git fetch --all
             git reset --hard origin/main
             
+            # 兼容性处理
             if command -v docker-compose >/dev/null 2>&1; then
               COMPOSE_CMD="docker-compose"
             else
               COMPOSE_CMD="docker compose"
             fi
 
+            # --- 关键修改：彻底停止旧容器，释放 6379 等端口 ---
+            echo "Step 1: Stopping and cleaning up existing containers..."
+            $COMPOSE_CMD down --remove-orphans
+
+            # 计算版本号
             BUILD_NUMBER="${{ github.run_number }}"
             SHORT_SHA=$(git rev-parse --short HEAD)
-            PKG_VER=$(node -p "require('./frontend/web_pc/package.json').version")
+            PKG_VER=$(node -p "require('./frontend/web_pc/package.json').version" || echo "1.0.0")
             APP_VER="v$PKG_VER.$BUILD_NUMBER-$SHORT_SHA"
+
+            echo "Step 2: Starting deployment with version: $APP_VER"
             VITE_APP_VERSION=$APP_VER $COMPOSE_CMD up -d --build
-            sleep 10
+            
+            # 等待启动并检查
+            sleep 15
             $COMPOSE_CMD ps
 
             for service in mysql redis backend frontend; do
-              if ! $COMPOSE_CMD ps "$service" | grep -q "Up"; then
-                echo "Service $service is not running"
-                $COMPOSE_CMD logs --tail=200 "$service" || true
+              if ! $COMPOSE_CMD ps "$service" | grep -iq "Up"; then
+                echo "Critical Error: Service $service is not running!"
+                $COMPOSE_CMD logs --tail=100 "$service"
                 exit 1
               fi
             done
+            echo "Deployment finished successfully."
