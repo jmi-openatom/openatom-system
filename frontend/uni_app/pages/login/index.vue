@@ -75,6 +75,15 @@ async function onLogin(data: LoginFormData) {
 
         uni.showToast({title: '登录成功', icon: 'success'})
         setTimeout(() => {
+            if (needsProfileCompletion(user)) {
+                uni.showModal({
+                    title: '请补全资料',
+                    content: '系统已为你创建账号，请登录后补全手机号、学号、院系等个人信息。',
+                    showCancel: false,
+                    success: () => uni.reLaunch({url: '/pages/profile/index'}),
+                })
+                return
+            }
             uni.navigateBack({
                 fail: () => {
                     uni.reLaunch({url: '/pages/home/index'})
@@ -90,6 +99,11 @@ async function onLogin(data: LoginFormData) {
 
 function goRegister() {
     uni.showToast({title: '注册功能开发中', icon: 'none'})
+}
+
+function needsProfileCompletion(user: Record<string, any> | null) {
+    if (!user) return false
+    return !user.phone || !user.college || !user.major || !user.className
 }
 </script>
 

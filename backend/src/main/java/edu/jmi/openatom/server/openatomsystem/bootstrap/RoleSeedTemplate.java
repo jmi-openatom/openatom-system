@@ -61,6 +61,7 @@ public record RoleSeedTemplate(
         SystemPermission.RECRUITMENT_CAMPAIGN_PUBLISH,
         SystemPermission.RECRUITMENT_CAMPAIGN_CLOSE,
         SystemPermission.APPLICATION_LIST,
+        SystemPermission.APPLICATION_EXPORT,
         SystemPermission.APPLICATION_DETAIL,
         SystemPermission.APPROVAL_RECORD_LIST,
         SystemPermission.APPLICATION_APPROVE,
@@ -92,6 +93,7 @@ public record RoleSeedTemplate(
         SystemPermission.SITE_FORM_CREATE,
         SystemPermission.SITE_FORM_DETAIL,
         SystemPermission.SITE_FORM_UPDATE,
+        SystemPermission.SITE_FORM_EXPORT,
         SystemPermission.NOTIFICATION_LIST,
         SystemPermission.NOTIFICATION_CREATE,
         SystemPermission.NOTIFICATION_DELETE);

@@ -77,7 +77,10 @@ async function load() {
 
 const onMenu = (item: ProfileMenuItem) => {
     if (!item.path) return
-    uni.reLaunch({url: item.path})
+    uni.navigateTo({
+        url: item.path,
+        fail: () => uni.reLaunch({url: item.path}),
+    })
 }
 
 function goLogin() {

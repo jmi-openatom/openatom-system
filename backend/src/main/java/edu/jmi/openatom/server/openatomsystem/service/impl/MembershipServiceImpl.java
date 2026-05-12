@@ -60,8 +60,12 @@ public class MembershipServiceImpl implements MembershipService {
         if (isBlank(applicantName)) applicantName = "匿名用户";
         String password = UUID.randomUUID().toString().substring(0, 8);
         String username = generateUniqueUsername(applicantName);
+        String contact = firstNonBlank(readString(profile.get("contact")), readString(profile.get("phone")), readString(profile.get("email")));
         User user = User.builder().userName(username).realName(applicantName)
-            .studentId(username).password(passwordService.encode(password))
+            .studentId(firstNonBlank(readString(profile.get("studentId")), username))
+            .phone(contact != null && contact.contains("@") ? null : contact)
+            .email(contact != null && contact.contains("@") ? contact : null)
+            .password(passwordService.encode(password))
             .userStatus(UserStatus.ACTIVE).build();
         userMapper.insert(user);
         bindDefaultRole(user.getId());
@@ -82,7 +86,9 @@ public class MembershipServiceImpl implements MembershipService {
     else if ("waitlisted".equals(request.getDecision())) content += "【候补】。请耐心等待后续通知。";
     else content += "【未通过】。感谢您的关注与参与。";
     if (request.getComment() != null && !request.getComment().isBlank()) content += "\n评价：" + request.getComment();
-    notificationService.create(RequestCreateNotificationDTO.builder().title(title).content(content).type("approval").receiverUserIds(List.of(userId)).build());
+    if (userId != null) {
+      notificationService.create(RequestCreateNotificationDTO.builder().title(title).content(content).type("approval").receiverUserIds(List.of(userId)).build());
+    }
     return Result.success("终审决策已处理");
   }
 
@@ -243,5 +249,6 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   private String readString(Object value) { return value == null ? null : String.valueOf(value).trim(); }
+  private String firstNonBlank(String... values) { for (String v : values) if (!isBlank(v)) return v.trim(); return null; }
   private boolean isBlank(String value) { return value == null || value.isBlank(); }
 }

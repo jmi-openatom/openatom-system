@@ -85,13 +85,13 @@ public class SiteController {
   /**
    * 获取报名表单详情
    *
-   * @param campaignId 招新活动ID
+   * @param formId 表单ID
    * @return 表单详情
    */
-  @GetMapping("/site/forms/{campaignId}")
+  @GetMapping("/site/forms/{formId}")
   public Result<ResponseSiteFormDetailVO> getFormDetail(
-      @org.springframework.web.bind.annotation.PathVariable Integer campaignId) {
-    return siteService.getFormDetail(campaignId);
+      @org.springframework.web.bind.annotation.PathVariable Integer formId) {
+    return siteService.getFormDetail(formId);
   }
 
   /**

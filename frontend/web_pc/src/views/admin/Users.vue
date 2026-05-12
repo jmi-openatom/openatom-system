@@ -17,6 +17,13 @@
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
       <div class="toolbar__actions">
+        <el-button
+          v-if="canBatchJoinClub"
+          type="success"
+          :disabled="!selection.length"
+          @click="openBatchJoinDialog"
+          >批量加入社团</el-button
+        >
         <el-upload
           v-if="canImportUsers"
           action="/api/v1/users/import"
@@ -37,7 +44,13 @@
         >
       </div>
     </div>
-    <el-table v-loading="loading" :data="rows" class="admin-table">
+    <el-table
+      v-loading="loading"
+      :data="rows"
+      class="admin-table"
+      @selection-change="selection = $event"
+    >
+      <el-table-column type="selection" width="48" />
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="userName" label="用户名" />
       <el-table-column prop="realName" label="姓名" />
@@ -127,13 +140,38 @@
         <el-button type="primary" :loading="roleSaving" @click="saveUserRoles">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="batchJoinVisible" title="批量加入社团" width="560px">
+      <el-form :model="batchJoinForm" label-width="90px">
+        <el-form-item label="选择人数">
+          <el-input :model-value="String(selection.length)" disabled />
+        </el-form-item>
+        <el-form-item label="社团">
+          <el-select v-model="batchJoinForm.clubId" filterable placeholder="请选择社团">
+            <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="成员状态">
+          <el-select v-model="batchJoinForm.status">
+            <el-option label="正式成员" value="active" />
+            <el-option label="非正式成员" value="probation" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchJoinVisible = false">取消</el-button>
+        <el-button type="primary" :loading="batchJoinSaving" @click="submitBatchJoin"
+          >确认加入</el-button
+        >
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Upload } from '@element-plus/icons-vue'
-import { userApi, rbacApi } from '@/api'
+import { clubApi, membershipApi, userApi, rbacApi } from '@/api'
 import { statusType } from '@/utils/format.ts'
 import { getToken } from '@/utils/auth.ts'
 import { hasPermission } from '@/utils/permission.ts'
@@ -149,6 +187,8 @@ export default {
       saving: false,
       dialogVisible: false,
       rows: [],
+      selection: [],
+      clubs: [],
       total: 0,
       query: { keyword: '', status: '', page: 1, pageSize: 10 },
       form: {},
@@ -157,6 +197,9 @@ export default {
       checkedRoleIds: [],
       roleDialogVisible: false,
       roleSaving: false,
+      batchJoinVisible: false,
+      batchJoinSaving: false,
+      batchJoinForm: { clubId: undefined, status: 'active' },
       rules: {
         username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
         realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
@@ -193,9 +236,13 @@ export default {
     canDeleteUser() {
       return hasPermission('user:delete')
     },
+    canBatchJoinClub() {
+      return hasPermission('membership:batch-create')
+    },
   },
   created() {
     this.fetchList()
+    this.fetchClubs()
   },
   methods: {
     statusType,
@@ -227,6 +274,13 @@ export default {
         this.total = result?.total || this.rows.length
       } finally {
         this.loading = false
+      }
+    },
+    async fetchClubs() {
+      const result = await clubApi.list({ page: 1, pageSize: 100 })
+      this.clubs = result?.list || result || []
+      if (!this.batchJoinForm.clubId && this.clubs.length) {
+        this.batchJoinForm.clubId = this.clubs[0].id
       }
     },
     openDialog(row) {
@@ -305,6 +359,33 @@ export default {
         this.roleDialogVisible = false
       } finally {
         this.roleSaving = false
+      }
+    },
+    openBatchJoinDialog() {
+      if (!this.selection.length) {
+        ElMessage.warning('请先选择用户')
+        return
+      }
+      this.batchJoinVisible = true
+    },
+    async submitBatchJoin() {
+      if (!this.batchJoinForm.clubId) {
+        ElMessage.error('请选择社团')
+        return
+      }
+      this.batchJoinSaving = true
+      try {
+        await membershipApi.batchCreate({
+          memberships: this.selection.map((user) => ({
+            userId: user.id,
+            clubId: this.batchJoinForm.clubId,
+            status: this.batchJoinForm.status,
+          })),
+        })
+        ElMessage.success(`已提交 ${this.selection.length} 位用户加入社团`)
+        this.batchJoinVisible = false
+      } finally {
+        this.batchJoinSaving = false
       }
     },
   },

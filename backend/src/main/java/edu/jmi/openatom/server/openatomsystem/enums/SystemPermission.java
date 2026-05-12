@@ -102,6 +102,7 @@ public enum SystemPermission {
   AWARD_DELETE("删除获奖经历", "award:delete", "api", "/awards/{awardId}", "DELETE"),
   APPLICATION_LIST("查询入会申请", "application:list", "api", "/applications", "GET"),
   APPLICATION_CREATE("提交入会申请", "application:create", "api", "/applications", "POST"),
+  APPLICATION_EXPORT("导出入会申请", "application:export", "api", "/applications/export", "GET"),
   APPLICATION_DETAIL(
       "获取入会申请详情", "application:detail", "api", "/applications/{applicationId}", "GET"),
   APPLICATION_UPDATE(
@@ -140,6 +141,8 @@ public enum SystemPermission {
   SITE_FORM_CREATE("新增信息收集表单", "site-form:create", "api", "/site-forms", "POST"),
   SITE_FORM_DETAIL("获取表单详情", "site-form:detail", "api", "/site-forms/{formId}", "GET"),
   SITE_FORM_UPDATE("更新信息收集表单", "site-form:update", "api", "/site-forms/{formId}", "PATCH"),
+  SITE_FORM_EXPORT(
+      "导出表单提交数据", "site-form:export", "api", "/site-forms/{formId}/submissions/export", "GET"),
   MEMBERSHIP_LIST("查询成员列表", "membership:list", "api", "/memberships", "GET"),
   MEMBERSHIP_CREATE("新增成员", "membership:create", "api", "/memberships", "POST"),
   MEMBERSHIP_DETAIL("获取成员详情", "membership:detail", "api", "/memberships/{membershipId}", "GET"),

@@ -61,13 +61,9 @@ public class ApplicationServiceImpl implements ApplicationService {
     List<Integer> userIds = null;
     if (keyword != null && !keyword.isBlank()) {
       userIds = userMapper.searchByNameKeyword(keyword).stream().map(User::getId).toList();
-      if (userIds.isEmpty()) {
-        return Result.success(PageDataVO.<ResponseApplicationVO>builder()
-            .list(List.of()).page(current).pageSize(size).total(0L).build());
-      }
     }
     Page<MembershipApplication> applicationPage = applicationMapper.selectPageByConditions(
-        new Page<>(current, size), campaignId, clubId, status, departmentId, userIds);
+        new Page<>(current, size), campaignId, clubId, status, departmentId, keyword, userIds);
     return Result.success(PageDataVO.<ResponseApplicationVO>builder()
         .list(toResponseList(applicationPage.getRecords())).page(applicationPage.getCurrent())
         .pageSize(applicationPage.getSize()).total(applicationPage.getTotal()).build());
@@ -137,7 +133,7 @@ public class ApplicationServiceImpl implements ApplicationService {
       userIds = userMapper.searchByNameKeyword(keyword).stream().map(User::getId).toList();
     }
     List<MembershipApplication> applications =
-        applicationMapper.selectAllByConditions(campaignId, clubId, status, departmentId, userIds);
+        applicationMapper.selectAllByConditions(campaignId, clubId, status, departmentId, keyword, userIds);
     List<ResponseApplicationVO> rows = toResponseList(applications);
     try (XSSFWorkbook workbook = new XSSFWorkbook();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {

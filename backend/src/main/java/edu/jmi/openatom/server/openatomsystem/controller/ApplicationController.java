@@ -132,7 +132,7 @@ public class ApplicationController {
    * @return Excel文件响应
    */
   @GetMapping("/applications/export")
-  @SaCheckPermission("application:list")
+  @SaCheckPermission("application:export")
   public ResponseEntity<byte[]> export(
       @RequestParam(required = false) Integer campaignId,
       @RequestParam(required = false) Integer clubId,

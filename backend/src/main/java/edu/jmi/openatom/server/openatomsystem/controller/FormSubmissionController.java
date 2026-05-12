@@ -69,7 +69,7 @@ public class FormSubmissionController {
    * @return Excel文件响应
    */
   @GetMapping("/site-forms/{formId}/submissions/export")
-  @SaCheckPermission("site-form:detail")
+  @SaCheckPermission("site-form:export")
   public ResponseEntity<byte[]> export(@PathVariable Integer formId) {
     byte[] bytes = formSubmissionService.exportExcel(formId);
     return ResponseEntity.ok()

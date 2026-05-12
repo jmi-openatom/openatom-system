@@ -47,6 +47,7 @@ public interface MembershipApplicationMapper extends BaseMapper<MembershipApplic
       Integer clubId,
       String status,
       Integer departmentId,
+      String keyword,
       List<Integer> userIds) {
     LambdaQueryWrapper<MembershipApplication> wrapper = new LambdaQueryWrapper<>();
     wrapper
@@ -60,13 +61,20 @@ public interface MembershipApplicationMapper extends BaseMapper<MembershipApplic
                     .eq(MembershipApplication::getFirstChoiceDepartmentId, departmentId)
                     .or()
                     .eq(MembershipApplication::getSecondChoiceDepartmentId, departmentId))
-        .in(userIds != null && !userIds.isEmpty(), MembershipApplication::getUserId, userIds)
+        .and(
+            keyword != null && !keyword.isBlank(),
+            query -> {
+              if (userIds != null && !userIds.isEmpty()) {
+                query.in(MembershipApplication::getUserId, userIds).or();
+              }
+              query.like(MembershipApplication::getProfile, keyword.trim());
+            })
         .orderByDesc(MembershipApplication::getId);
     return selectPage(page, wrapper);
   }
   /** 按条件查询所有申请（不分页，用于导出） */
   default List<MembershipApplication> selectAllByConditions(
-      Integer campaignId, Integer clubId, String status, Integer departmentId, List<Integer> userIds) {
+      Integer campaignId, Integer clubId, String status, Integer departmentId, String keyword, List<Integer> userIds) {
     LambdaQueryWrapper<MembershipApplication> wrapper = new LambdaQueryWrapper<>();
     wrapper
         .eq(campaignId != null, MembershipApplication::getCampaignId, campaignId)
@@ -79,7 +87,14 @@ public interface MembershipApplicationMapper extends BaseMapper<MembershipApplic
                     .eq(MembershipApplication::getFirstChoiceDepartmentId, departmentId)
                     .or()
                     .eq(MembershipApplication::getSecondChoiceDepartmentId, departmentId))
-        .in(userIds != null && !userIds.isEmpty(), MembershipApplication::getUserId, userIds)
+        .and(
+            keyword != null && !keyword.isBlank(),
+            query -> {
+              if (userIds != null && !userIds.isEmpty()) {
+                query.in(MembershipApplication::getUserId, userIds).or();
+              }
+              query.like(MembershipApplication::getProfile, keyword.trim());
+            })
         .orderByDesc(MembershipApplication::getId);
     return selectList(wrapper);
   }

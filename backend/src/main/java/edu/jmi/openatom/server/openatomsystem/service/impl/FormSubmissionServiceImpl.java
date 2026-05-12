@@ -155,7 +155,12 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
         .contact(contact).formData(formData).createdAt(submission.getCreatedAt()).build();
   }
 
-  private String safeSheetName(String value) { String name = defaultString(value); if (name.isBlank()) return "表单记录"; return name.replaceAll("[\\\\/?*\\[\\]:]]", "_"); }
+  private String safeSheetName(String value) {
+    String name = defaultString(value);
+    if (name.isBlank()) return "表单记录";
+    String safeName = name.replaceAll("[\\\\/?*\\[\\]:]", "_");
+    return safeName.length() > 31 ? safeName.substring(0, 31) : safeName;
+  }
 
   private String formatValue(Object value) {
     if (value == null) return "";

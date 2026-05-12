@@ -49,7 +49,9 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       - name: Backend Build Check
-        run: mvn -f backend/pom.xml clean compile
+        run: |
+          cd backend
+          ./mvnw -q -DskipTests compile
 
   deploy:
     needs: [ frontend-check, backend-check ]
