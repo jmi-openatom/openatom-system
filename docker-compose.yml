@@ -3,18 +3,15 @@ services:
     image: mysql:8.0
     container_name: openatom-mysql
     environment:
-      # 数据库初始化配置
       MYSQL_DATABASE: openatom-system
+      # 使用变量，如果变量未定义则使用默认值
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root123456}
       MYSQL_USER: ${DB_USERNAME:-openatom-system}
       MYSQL_PASSWORD: ${DB_PASSWORD:-5JS7XaFfJGhXBH2j}
     volumes:
-      # 数据持久化和初始化脚本
       - mysql_data:/var/lib/mysql
       - ./backend/db/create_table.sql:/docker-entrypoint-initdb.d/create_table.sql
     ports:
-      # 关键修改：将宿主机的 3307 映射到容器的 3306
-      # 这样你连接服务器 IP:3307 就能访问到这个 Docker 里的 MySQL
       - "3307:3306"
     networks:
       - openatom-network
@@ -23,7 +20,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: openatom-redis
-    command: redis-server --requirepass ${REDIS_PASSWORD:-}
+    # 修复点：添加默认密码 'openatom123'，防止变量为空导致报错
+    # 同时开启 --appendonly yes 确保数据持久化
+    command: redis-server --requirepass ${REDIS_PASSWORD:-openatom123} --appendonly yes
     volumes:
       - redis_data:/data
     ports:
@@ -38,13 +37,14 @@ services:
       dockerfile: Dockerfile
     container_name: openatom-backend
     environment:
-      # 注意：容器间通信依然使用服务名 mysql 和内部端口 3306
+      # 数据库连接：注意使用服务名 'mysql'
       - DB_URL=jdbc:mysql://mysql:3306/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
       - DB_USERNAME=${DB_USERNAME:-openatom-system}
       - DB_PASSWORD=${DB_PASSWORD:-5JS7XaFfJGhXBH2j}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      # 修复点：确保后端连接 Redis 的密码与上面一致
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-openatom123}
       - APP_APPLICATION_SUBMIT_MAX_PER_SECOND=${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:-5}
     ports:
       - "8921:8921"
