@@ -144,6 +144,7 @@ export default {
       records: [],
       activities: [],
       members: [],
+      liveTimer: null,
       memberKeyword: '',
       previewRow: null,
       query: { status: '' },
@@ -163,6 +164,9 @@ export default {
   created() {
     this.fetchList()
     this.loadOptions()
+  },
+  beforeUnmount() {
+    this.stopLiveRefresh()
   },
   methods: {
     formatDateTime,
@@ -223,6 +227,7 @@ export default {
     openPreview(row) {
       this.previewRow = row
       this.previewVisible = true
+      this.startLiveRefresh(row.id)
     },
     qrUrl(payload) {
       return `https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=16&data=${encodeURIComponent(payload || '')}`
@@ -230,11 +235,33 @@ export default {
     async openRecords(row) {
       this.records = await checkInApi.records(row.id)
       this.recordsVisible = true
+      this.startLiveRefresh(row.id)
     },
     async closeSession(row) {
       await checkInApi.close(row.id)
       ElMessage.success('签到已关闭')
       this.fetchList()
+    },
+    startLiveRefresh(sessionId) {
+      this.stopLiveRefresh()
+      this.liveTimer = window.setInterval(async () => {
+        if (!this.previewVisible && !this.recordsVisible) {
+          this.stopLiveRefresh()
+          return
+        }
+        const [detail, records] = await Promise.all([
+          this.previewVisible ? checkInApi.detail(sessionId) : Promise.resolve(null),
+          this.recordsVisible ? checkInApi.records(sessionId) : Promise.resolve(null),
+        ])
+        if (detail) this.previewRow = detail
+        if (records) this.records = records
+      }, 3000)
+    },
+    stopLiveRefresh() {
+      if (this.liveTimer) {
+        window.clearInterval(this.liveTimer)
+        this.liveTimer = null
+      }
     },
   },
 }

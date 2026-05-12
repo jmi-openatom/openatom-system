@@ -131,8 +131,9 @@ public class CheckInServiceImpl implements CheckInService {
       record = CheckInRecord.builder().sessionId(session.getId()).userId(userId)
           .checkinAt(now).source("miniapp_scan").status("checked").build();
       recordMapper.insert(record);
+      return Result.success(toRecordVO(userMapper.selectById(userId), record), "签到成功");
     }
-    return Result.success(toRecordVO(userMapper.selectById(userId), record), "签到成功");
+    return Result.success(toRecordVO(userMapper.selectById(userId), record), "已签到，无需重复签到");
   }
 
   private ResponseCheckInSessionVO toSessionVO(CheckInSession session) {
