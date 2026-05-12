@@ -64,6 +64,26 @@ public interface MembershipApplicationMapper extends BaseMapper<MembershipApplic
         .orderByDesc(MembershipApplication::getId);
     return selectPage(page, wrapper);
   }
+  /** 按条件查询所有申请（不分页，用于导出） */
+  default List<MembershipApplication> selectAllByConditions(
+      Integer campaignId, Integer clubId, String status, Integer departmentId, List<Integer> userIds) {
+    LambdaQueryWrapper<MembershipApplication> wrapper = new LambdaQueryWrapper<>();
+    wrapper
+        .eq(campaignId != null, MembershipApplication::getCampaignId, campaignId)
+        .eq(clubId != null, MembershipApplication::getClubId, clubId)
+        .eq(status != null && !status.isBlank(), MembershipApplication::getStatus, status)
+        .and(
+            departmentId != null,
+            query ->
+                query
+                    .eq(MembershipApplication::getFirstChoiceDepartmentId, departmentId)
+                    .or()
+                    .eq(MembershipApplication::getSecondChoiceDepartmentId, departmentId))
+        .in(userIds != null && !userIds.isEmpty(), MembershipApplication::getUserId, userIds)
+        .orderByDesc(MembershipApplication::getId);
+    return selectList(wrapper);
+  }
+
   /** 清空 userId (用户被删除时) */
   default void nullifyUserId(Integer userId) {
     update(

@@ -96,8 +96,8 @@ function initForm() {
     dynamicFields.value.forEach((field) => {
         formData[field.key] = ''
     })
-    if (!hasApplicantNameField.value) formData.applicantName = ''
-    if (!hasContactField.value) formData.contact = ''
+    formData.applicantName = ''
+    formData.contact = ''
 }
 
 async function load() {
@@ -143,20 +143,37 @@ function validate() {
         return false
     }
     const requiredFields = dynamicFields.value.filter((field) => field.required)
-    const missing = requiredFields.find((field) => !formData[field.key])
+    const missing = requiredFields.find((field) => !(formData[field.key] || '').trim())
     if (missing) {
         uni.showToast({title: `请填写${missing.label || missing.key}`, icon: 'none'})
         return false
     }
-    if (!hasApplicantNameField.value && !formData.applicantName) {
+    if (!(formData.applicantName || '').trim()) {
         uni.showToast({title: '请填写姓名', icon: 'none'})
         return false
     }
-    if (!hasContactField.value && !formData.contact) {
+    if (!(formData.contact || '').trim()) {
         uni.showToast({title: '请填写联系方式', icon: 'none'})
         return false
     }
     return true
+}
+
+function buildProfile() {
+    const profile: Record<string, any> = {}
+    dynamicFields.value.forEach((field) => {
+        const val = formData[field.key]
+        if (val !== undefined && val !== null && val !== '') {
+            profile[field.key] = val
+        }
+    })
+    if (!hasApplicantNameField.value && formData.applicantName) {
+        profile.applicantName = formData.applicantName
+    }
+    if (!hasContactField.value && formData.contact) {
+        profile.contact = formData.contact
+    }
+    return profile
 }
 
 async function submit() {
@@ -164,15 +181,17 @@ async function submit() {
     submitting.value = true
     try {
         await applicationApi.create({
-            campaignId: campaign.value.id,
-            clubId: club.value.id,
-            firstChoiceDepartmentId: firstChoiceDepartmentId.value || undefined,
-            secondChoiceDepartmentId: secondChoiceDepartmentId.value || undefined,
-            profile: {...formData},
+            campaignId: Number(campaign.value.id),
+            clubId: Number(club.value.id),
+            firstChoiceDepartmentId: firstChoiceDepartmentId.value ? Number(firstChoiceDepartmentId.value) : undefined,
+            secondChoiceDepartmentId: secondChoiceDepartmentId.value ? Number(secondChoiceDepartmentId.value) : undefined,
+            profile: buildProfile(),
         })
         uni.showToast({title: '申请已提交', icon: 'success'})
         const target = getToken() ? '/pages/progress/index' : '/pages/recruitment/index'
         setTimeout(() => uni.redirectTo({url: target}), 600)
+    } catch {
+        // 错误已在请求拦截器中提示
     } finally {
         submitting.value = false
     }

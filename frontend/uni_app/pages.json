@@ -68,6 +68,13 @@
                 "navigationStyle": "custom",
                 "navigationBarTitleText": "登录"
             }
+        },
+        {
+            "path": "pages/forms/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "信息收集"
+            }
         }
     ],
     "globalStyle": {

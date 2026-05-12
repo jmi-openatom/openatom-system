@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateApplicationDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateApplicationDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
@@ -28,6 +30,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 /**
@@ -122,6 +127,41 @@ public class ApplicationServiceImpl implements ApplicationService {
     application.setStatus("cancelled");
     int row = applicationMapper.updateById(application);
     return row > 0 ? Result.success("申请撤回成功") : Result.error("申请撤回失败");
+  }
+
+  @Override
+  public byte[] exportExcel(
+      Integer campaignId, Integer clubId, String status, Integer departmentId, String keyword) {
+    List<Integer> userIds = null;
+    if (keyword != null && !keyword.isBlank()) {
+      userIds = userMapper.searchByNameKeyword(keyword).stream().map(User::getId).toList();
+    }
+    List<MembershipApplication> applications =
+        applicationMapper.selectAllByConditions(campaignId, clubId, status, departmentId, userIds);
+    List<ResponseApplicationVO> rows = toResponseList(applications);
+    try (XSSFWorkbook workbook = new XSSFWorkbook();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+      Sheet sheet = workbook.createSheet("入会申请");
+      Row header = sheet.createRow(0);
+      String[] headers = {"申请ID", "申请人", "社团", "意向部门", "状态", "提交时间", "表单内容"};
+      for (int i = 0; i < headers.length; i++) header.createCell(i).setCellValue(headers[i]);
+      for (int i = 0; i < rows.size(); i++) {
+        Row row = sheet.createRow(i + 1);
+        ResponseApplicationVO vo = rows.get(i);
+        row.createCell(0).setCellValue(vo.getId() == null ? 0 : vo.getId());
+        row.createCell(1).setCellValue(defaultString(vo.getApplicantName()));
+        row.createCell(2).setCellValue(defaultString(vo.getClubName()));
+        row.createCell(3).setCellValue(defaultString(vo.getPreferredDepartment()));
+        row.createCell(4).setCellValue(defaultString(vo.getStatus()));
+        row.createCell(5).setCellValue(vo.getCreatedAt() == null ? "" : vo.getCreatedAt().toString());
+        row.createCell(6).setCellValue(Jsons.stringify(vo.getProfile()));
+      }
+      for (int col = 0; col < headers.length; col++) sheet.autoSizeColumn(col);
+      workbook.write(outputStream);
+      return outputStream.toByteArray();
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Excel 导出失败");
+    }
   }
 
   private Result<String> changeStatus(Integer applicationId, String requiredStatus, String targetStatus, String message) {
@@ -221,4 +261,5 @@ public class ApplicationServiceImpl implements ApplicationService {
   }
 
   private String readString(Object value) { return value == null ? null : String.valueOf(value).trim(); }
+  private String defaultString(String value) { return value == null ? "" : value; }
 }

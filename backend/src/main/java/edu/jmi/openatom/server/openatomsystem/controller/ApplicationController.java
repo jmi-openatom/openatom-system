@@ -9,7 +9,13 @@ import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import edu.jmi.openatom.server.openatomsystem.service.ApplicationService;
 import jakarta.validation.Valid;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -114,5 +120,39 @@ public class ApplicationController {
   @SaCheckPermission("application:withdraw")
   public Result<String> withdraw(@PathVariable Integer applicationId) {
     return applicationService.withdraw(applicationId);
+  }
+
+  /**
+   * 导出入会申请数据为Excel
+   *
+   * @param campaignId 招新活动ID
+   * @param clubId 社团ID
+   * @param status 申请状态
+   * @param departmentId 部门ID
+   * @param keyword 关键词
+   * @return Excel文件响应
+   */
+  @GetMapping("/applications/export")
+  @SaCheckPermission("application:list")
+  public ResponseEntity<byte[]> export(
+      @RequestParam(required = false) Integer campaignId,
+      @RequestParam(required = false) Integer clubId,
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) Integer departmentId,
+      @RequestParam(required = false) String keyword) {
+    byte[] bytes = applicationService.exportExcel(campaignId, clubId, status, departmentId, keyword);
+    String fileName =
+        URLEncoder.encode("applications.xlsx", StandardCharsets.UTF_8);
+    return ResponseEntity.ok()
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            ContentDisposition.attachment()
+                .filename(fileName, StandardCharsets.UTF_8)
+                .build()
+                .toString())
+        .contentType(
+            MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+        .body(bytes);
   }
 }

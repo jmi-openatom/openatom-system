@@ -18,9 +18,24 @@
         </el-select>
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
-      <el-button type="primary" :icon="Plus" @click="openDialog()">新增成员</el-button>
+      <div class="toolbar__actions">
+        <el-button
+          type="success"
+          :disabled="!selection.length"
+          @click="batchChangeStatus('active')"
+          >批量转正式</el-button
+        >
+        <el-button
+          type="warning"
+          :disabled="!selection.length"
+          @click="batchChangeStatus('suspended')"
+          >批量暂停</el-button
+        >
+        <el-button type="primary" :icon="Plus" @click="openDialog()">新增成员</el-button>
+      </div>
     </div>
-    <el-table v-loading="loading" :data="rows" class="admin-table">
+    <el-table v-loading="loading" :data="rows" class="admin-table" @selection-change="selection = $event">
+      <el-table-column type="selection" width="48" />
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column label="成员" min-width="150">
         <template #default="{ row }">{{
@@ -165,6 +180,7 @@ export default {
       Search,
       loading: false,
       rows: [],
+      selection: [],
       clubs: [],
       departments: [],
       positions: [],
@@ -260,6 +276,18 @@ export default {
       await membershipApi.changeStatus(row.id, { status })
       ElMessage.success('成员状态已更新')
       this.fetchList()
+    },
+    async batchChangeStatus(status) {
+      if (!this.selection.length) return
+      try {
+        await Promise.all(
+          this.selection.map((item) => membershipApi.changeStatus(item.id, { status })),
+        )
+        ElMessage.success(`已批量处理 ${this.selection.length} 条成员状态`)
+        this.fetchList()
+      } catch {
+        ElMessage.error('部分操作失败')
+      }
     },
     async forceExit(row) {
       await ElMessageBox.confirm(

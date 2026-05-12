@@ -233,6 +233,9 @@ export const applicationApi = {
   withdraw(id: string | number): Promise<AxiosResponse> {
     return request.post(`/applications/${id}/withdraw`)
   },
+  export(params?: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.get('/applications/export', { params, responseType: 'blob' })
+  },
 }
 
 export const approvalApi = {

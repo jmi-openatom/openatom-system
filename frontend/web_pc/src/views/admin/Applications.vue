@@ -24,6 +24,7 @@
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
       <div class="toolbar__actions">
+        <el-button type="info" :loading="exporting" @click="exportExcel">导出 Excel</el-button>
         <el-button
           type="success"
           :disabled="!batchApproveCandidates.length"
@@ -414,6 +415,7 @@ export default {
     return {
       Search,
       loading: false,
+      exporting: false,
       rows: [],
       total: 0,
       selection: [],
@@ -717,6 +719,30 @@ export default {
       if (Number.isNaN(date.getTime())) return ''
       const pad = (num) => String(num).padStart(2, '0')
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    },
+    async exportExcel() {
+      this.exporting = true
+      try {
+        const blob = await applicationApi.export({
+          campaignId: this.query.campaignId || undefined,
+          clubId: this.query.clubId || undefined,
+          status: this.query.status || undefined,
+          keyword: this.query.keyword || undefined,
+        })
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = '入会申请记录.xlsx'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+        ElMessage.success('Excel 已开始下载')
+      } catch (e) {
+        console.error('导出失败', e)
+      } finally {
+        this.exporting = false
+      }
     },
   },
   computed: {

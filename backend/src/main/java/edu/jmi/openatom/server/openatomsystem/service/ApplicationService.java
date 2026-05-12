@@ -10,7 +10,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 /**
  * 入社申请服务接口
  *
- * <p>定义入社申请的分页列表, 创建, 查看详情, 更新, 提交和撤回等业务操作
+ * <p>定义入社申请的分页列表, 创建, 查看详情, 更新, 提交, 撤回和导出等业务操作
  */
 public interface ApplicationService {
   Result<PageDataVO<ResponseApplicationVO>> list(
@@ -31,4 +31,11 @@ public interface ApplicationService {
   Result<String> submit(Integer applicationId);
 
   Result<String> withdraw(Integer applicationId);
+
+  byte[] exportExcel(
+      Integer campaignId,
+      Integer clubId,
+      String status,
+      Integer departmentId,
+      String keyword);
 }

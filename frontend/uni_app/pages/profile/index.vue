@@ -1,24 +1,26 @@
 <template>
     <view class="page oa-page-transition">
         <tm-navbar :showNavBack="false" title="我的"/>
-        <ProfileHeader
-            :avatar-text="avatarText"
-            :is-login="isLogin"
-            :user-name="userName"
-            @login="goLogin"
-        />
+        <scroll-view class="page" scroll-y>
+            <ProfileHeader
+                :avatar-text="avatarText"
+                :is-login="isLogin"
+                :user-name="userName"
+                @login="goLogin"
+            />
 
-        <ProfileMenu :menus="menus" @select="onMenu"/>
+            <ProfileMenu :menus="menus" @select="onMenu"/>
 
-        <view v-if="isLogin" class="logout-wrap">
-            <button class="logout-button" @click="onLogout">退出登录</button>
-        </view>
+            <view v-if="isLogin" class="logout-wrap">
+                <button class="logout-button" @click="onLogout">退出登录</button>
+            </view>
+        </scroll-view>
 
         <Tabbar :activeIndex="4"></Tabbar>
     </view>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import {computed, onMounted, ref} from 'vue'
 import Tabbar from "@/components/Tabbar.vue";
 import ProfileHeader from './components/ProfileHeader.vue'
@@ -52,17 +54,25 @@ async function load() {
     try {
         const me: any = await authApi.me()
         user.value = me?.user || me || {}
-        setSession({accessToken: getToken() || '', user: user.value, roles: me?.roles || [], permissions: me?.permissions || []})
-    } catch {}
+        setSession({
+            accessToken: getToken() || '',
+            user: user.value,
+            roles: me?.roles || [],
+            permissions: me?.permissions || []
+        })
+    } catch {
+    }
     try {
         const res: any = await notificationApi.unreadCount()
         unread.value = Number(res || 0)
         store.setUnreadCount(unread.value)
-    } catch {}
+    } catch {
+    }
     try {
         const progress: any = await siteApi.progress()
         applicationCount.value = progress?.applications?.length || 0
-    } catch {}
+    } catch {
+    }
 }
 
 const onMenu = (item: ProfileMenuItem) => {
@@ -80,7 +90,8 @@ const onLogout = () => {
         content: '确定要退出登录吗？',
         success: (res) => {
             if (res.confirm) {
-                authApi.logout().catch(() => {})
+                authApi.logout().catch(() => {
+                })
                 clearSession()
                 store.logout()
                 user.value = {}
@@ -97,7 +108,9 @@ onMounted(load)
 
 <style scoped>
 .page {
-    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    height: 92vh;
     padding-bottom: 140rpx;
     background: #f7fafc;
 }

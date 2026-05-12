@@ -483,12 +483,14 @@ export default {
       })
     },
     async copyFormLink(row) {
-      const link = `${window.location.origin}${this.$router.resolve({ path: `/forms/${row.id}` }).href}`
+      const webLink = `${window.location.origin}${this.$router.resolve({ path: `/apply/${row.id}` }).href}`
+      const mpPath = `/pages/recruitment/apply?id=${row.id}`
+      const fullText = `Web链接: ${webLink}\n小程序路径: ${mpPath}`
       try {
-        await navigator.clipboard.writeText(link)
-        ElMessage.success('填写链接已复制')
+        await navigator.clipboard.writeText(fullText)
+        ElMessage.success('报名链接和小程序路径已复制')
       } catch {
-        ElMessage.info(link)
+        ElMessage.info(fullText)
       }
     },
     previewSchema(row) {

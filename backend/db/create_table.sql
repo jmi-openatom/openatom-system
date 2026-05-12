@@ -1777,6 +1777,12 @@ SELECT '标记通知已读',
        'api',
        '/notifications/{notificationId}/read',
        'POST' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'notification:read');
+INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
+SELECT '删除通知',
+       'notification:delete',
+       'api',
+       '/notifications/admin/{notificationId}',
+       'DELETE' WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'notification:delete');
 
 -- 文书管理
 INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
