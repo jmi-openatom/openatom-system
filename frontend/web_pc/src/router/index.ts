@@ -14,6 +14,7 @@ const adminFallbackRoutes = [
   '/admin/form-submissions',
   '/admin/office-documents',
   '/admin/activities',
+  '/admin/check-ins',
   '/admin/awards',
   '/admin/applications',
   '/admin/interviews',
@@ -160,6 +161,12 @@ const routes = [
         name: 'admin-activities',
         meta: { permissions: ['activity:list'] },
         component: () => import('../views/admin/Activities.vue'),
+      },
+      {
+        path: 'check-ins',
+        name: 'admin-check-ins',
+        meta: { permissions: ['check-in:list'] },
+        component: () => import('../views/admin/CheckIns.vue'),
       },
       {
         path: 'awards',

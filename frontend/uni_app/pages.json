@@ -75,6 +75,13 @@
                 "navigationStyle": "custom",
                 "navigationBarTitleText": "信息收集"
             }
+        },
+        {
+            "path": "pages/checkin/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "扫码签到"
+            }
         }
     ],
     "globalStyle": {

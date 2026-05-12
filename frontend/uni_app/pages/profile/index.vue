@@ -44,6 +44,7 @@ const userName = computed(() => user.value.realName || user.value.userName || us
 const avatarText = computed(() => String(userName.value || 'U').slice(0, 1).toUpperCase())
 const menus = computed<ProfileMenuItem[]>(() => [
     {icon: 'P', label: '我的申请', path: '/pages/progress/index', badge: applicationCount.value || ''},
+    {icon: 'S', label: '扫码签到', path: '/pages/checkin/index'},
     {icon: 'J', label: '招新报名', path: '/pages/recruitment/index'},
     {icon: 'M', label: '消息通知', path: '/pages/messages/index', badge: unread.value || ''},
     {icon: 'A', label: '近期活动', path: '/pages/activity/index'},

@@ -205,6 +205,24 @@ export const activityApi = {
   },
 }
 
+export const checkInApi = {
+  list(params?: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.get('/check-ins', { params })
+  },
+  detail(id: string | number): Promise<AxiosResponse> {
+    return request.get(`/check-ins/${id}`)
+  },
+  create(data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post('/check-ins', data)
+  },
+  close(id: string | number): Promise<AxiosResponse> {
+    return request.post(`/check-ins/${id}/close`)
+  },
+  records(id: string | number): Promise<AxiosResponse> {
+    return request.get(`/check-ins/${id}/records`)
+  },
+}
+
 export const awardApi = {
   list(): Promise<AxiosResponse> {
     return request.get('/awards')

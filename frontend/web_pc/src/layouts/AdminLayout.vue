@@ -127,6 +127,12 @@ export default {
           icon: Calendar,
           permissions: ['activity:list'],
         },
+        {
+          path: '/admin/check-ins',
+          label: '扫码签到',
+          icon: Tickets,
+          permissions: ['check-in:list'],
+        },
         { path: '/admin/awards', label: '获奖经历', icon: Trophy, permissions: ['award:list'] },
         {
           path: '/admin/applications',

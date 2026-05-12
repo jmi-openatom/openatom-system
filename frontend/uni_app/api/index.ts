@@ -221,6 +221,12 @@ export const activityApi = {
   },
 }
 
+export const checkInApi = {
+  scan(token: string) {
+    return request.post('/site/check-ins/scan', { token })
+  },
+}
+
 // ---------- awardApi ----------
 
 export const awardApi = {

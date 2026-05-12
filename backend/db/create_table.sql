@@ -1020,6 +1020,53 @@ CREATE TABLE IF NOT EXISTS `activity_registration`
     ) ENGINE = InnoDB
     DEFAULT CHARSET = utf8mb4 COMMENT ='活动报名表';
 
+CREATE TABLE IF NOT EXISTS `checkin_session`
+(
+    `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `club_id` INT NOT NULL COMMENT '社团ID',
+    `activity_id` INT DEFAULT NULL COMMENT '关联活动ID',
+    `title` VARCHAR(120) NOT NULL COMMENT '签到标题',
+    `location` VARCHAR(120) DEFAULT NULL COMMENT '签到地点',
+    `start_at` TIMESTAMP NULL DEFAULT NULL COMMENT '签到开始时间',
+    `end_at` TIMESTAMP NULL DEFAULT NULL COMMENT '签到结束时间',
+    `status` VARCHAR(30) DEFAULT 'open' COMMENT '状态: draft/open/closed',
+    `token` VARCHAR(64) NOT NULL COMMENT '扫码签到令牌',
+    `created_by` INT DEFAULT NULL COMMENT '创建人',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_checkin_session_token` (`token`),
+    KEY `idx_checkin_session_club` (`club_id`),
+    KEY `idx_checkin_session_activity` (`activity_id`),
+    KEY `idx_checkin_session_status` (`status`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='内部签到场次表';
+
+CREATE TABLE IF NOT EXISTS `checkin_target`
+(
+    `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `session_id` INT NOT NULL COMMENT '签到场次ID',
+    `user_id` INT NOT NULL COMMENT '发放用户ID',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_checkin_target_user` (`session_id`, `user_id`),
+    KEY `idx_checkin_target_session` (`session_id`),
+    KEY `idx_checkin_target_user` (`user_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='内部签到发放人员表';
+
+CREATE TABLE IF NOT EXISTS `checkin_record`
+(
+    `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `session_id` INT NOT NULL COMMENT '签到场次ID',
+    `user_id` INT NOT NULL COMMENT '签到用户ID',
+    `checkin_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '签到时间',
+    `source` VARCHAR(40) DEFAULT 'miniapp_scan' COMMENT '签到来源',
+    `status` VARCHAR(30) DEFAULT 'checked' COMMENT '签到状态',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_checkin_record_user` (`session_id`, `user_id`),
+    KEY `idx_checkin_record_session` (`session_id`),
+    KEY `idx_checkin_record_user` (`user_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='内部签到记录表';
+
 -- 社团比赛获奖表
 CREATE TABLE IF NOT EXISTS `club_award`
 (
