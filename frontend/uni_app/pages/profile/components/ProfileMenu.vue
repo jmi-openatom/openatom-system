@@ -15,6 +15,7 @@ export interface ProfileMenuItem {
     label: string
     path?: string
     badge?: string | number
+    action?: string
 }
 
 defineProps<{

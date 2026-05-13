@@ -58,6 +58,13 @@
       <el-table-column prop="className" label="班级" />
       <el-table-column prop="phone" label="手机号" />
       <el-table-column prop="email" label="邮箱" />
+      <el-table-column label="微信" width="100">
+        <template #default="{ row }">
+          <el-tag :type="row.miniappOpenid ? 'success' : 'info'">
+            {{ row.miniappOpenid ? '已绑定' : '未绑定' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="userStatus" label="状态" width="110">
         <template #default="{ row }">
           <el-tag :type="statusType(row.userStatus)">{{ statusText(row.userStatus) }}</el-tag>

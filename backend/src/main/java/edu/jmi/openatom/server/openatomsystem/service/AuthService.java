@@ -20,6 +20,8 @@ public interface AuthService {
 
   Result<ResponseLoginVO> miniappLogin(RequestMiniappLoginDTO requestMiniappLoginDTO);
 
+  Result<String> bindMiniapp(RequestMiniappLoginDTO requestMiniappLoginDTO);
+
   Result<ResponseLoginVO> refreshToken(String refreshToken);
 
   Result<String> logout(String refreshToken);

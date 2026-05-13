@@ -55,6 +55,12 @@ public class AuthController {
     return authService.miniappLogin(requestMiniappLoginDTO);
   }
 
+  @PostMapping("/miniapp-bind")
+  public Result<String> bindMiniapp(
+      @Valid @RequestBody RequestMiniappLoginDTO requestMiniappLoginDTO) {
+    return authService.bindMiniapp(requestMiniappLoginDTO);
+  }
+
   /**
    * 刷新令牌
    *

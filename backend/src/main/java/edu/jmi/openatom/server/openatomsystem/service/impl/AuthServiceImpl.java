@@ -162,6 +162,37 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> bindMiniapp(RequestMiniappLoginDTO requestMiniappLoginDTO) {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录后绑定微信");
+    if (requestMiniappLoginDTO == null || requestMiniappLoginDTO.getCode() == null
+        || requestMiniappLoginDTO.getCode().isBlank()) {
+      return Result.error("小程序登录code不能为空");
+    }
+    if (miniappAppId == null || miniappAppId.isBlank() || miniappAppSecret == null || miniappAppSecret.isBlank()) {
+      return Result.error(503, "小程序快捷登录未配置");
+    }
+    Map<String, Object> session = requestMiniappSession(requestMiniappLoginDTO.getCode().trim());
+    String openid = asString(session.get("openid"));
+    if (openid == null) {
+      return Result.error(401, asString(session.get("errmsg"), "小程序授权失败"));
+    }
+    Integer currentUserId = StpUtil.getLoginIdAsInt();
+    User currentUser = userMapper.selectById(currentUserId);
+    if (currentUser == null) return Result.error(404, "用户不存在");
+    User boundUser = userMapper.selectByMiniappOpenid(openid);
+    if (boundUser != null && !boundUser.getId().equals(currentUserId)) {
+      return Result.error(409, "该微信已绑定其他账号");
+    }
+    currentUser.setMiniappOpenid(openid);
+    if (currentUser.getWechatUnionid() == null && session.get("unionid") != null) {
+      currentUser.setWechatUnionid(asString(session.get("unionid")));
+    }
+    userMapper.updateById(currentUser);
+    return Result.success("微信绑定成功");
+  }
+
+  @Override
   public Result<ResponseLoginVO> refreshToken(String refreshToken) {
     if (refreshToken == null || refreshToken.isBlank()) {
       return Result.error("refreshToken不能为空");
@@ -384,6 +415,7 @@ public class AuthServiceImpl implements AuthService {
         .gender(user.getGender()).phone(user.getPhone()).email(user.getEmail())
         .studentId(user.getStudentId()).college(user.getCollege()).major(user.getMajor())
         .grade(user.getGrade()).avatar(user.getAvatar()).userStatus(user.getUserStatus())
+        .miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
         .createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt()).build();
   }
 
@@ -398,6 +430,10 @@ public class AuthServiceImpl implements AuthService {
   private String asString(Object value, String fallback) {
     String stringValue = value == null ? null : String.valueOf(value);
     return stringValue == null || stringValue.isBlank() ? fallback : stringValue;
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
   }
 
   private String getRefreshTokenKey(String refreshToken) { return REFRESH_TOKEN_KEY_PREFIX + refreshToken; }

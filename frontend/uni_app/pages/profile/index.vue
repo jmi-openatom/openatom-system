@@ -34,6 +34,7 @@ interface ProfileMenuItem {
     label: string
     path?: string
     badge?: string | number
+    action?: string
 }
 
 const user = ref<Record<string, any>>(getCurrentUser())
@@ -48,6 +49,11 @@ const menus = computed<ProfileMenuItem[]>(() => [
     {icon: 'J', label: '招新报名', path: '/pages/recruitment/index'},
     {icon: 'M', label: '消息通知', path: '/pages/messages/index', badge: unread.value || ''},
     {icon: 'A', label: '近期活动', path: '/pages/activity/index'},
+    {
+        icon: 'W',
+        label: user.value.miniappOpenid ? '微信已绑定' : '绑定微信',
+        action: user.value.miniappOpenid ? undefined : 'bindWechat',
+    },
 ])
 
 async function load() {
@@ -77,11 +83,41 @@ async function load() {
 }
 
 const onMenu = (item: ProfileMenuItem) => {
+    if (item.action === 'bindWechat') {
+        bindWechat()
+        return
+    }
     if (!item.path) return
     uni.navigateTo({
         url: item.path,
         fail: () => uni.reLaunch({url: item.path}),
     })
+}
+
+async function bindWechat() {
+    if (!isLogin.value) {
+        goLogin()
+        return
+    }
+    try {
+        const loginResult: any = await new Promise((resolve, reject) => {
+            uni.login({
+                provider: 'weixin',
+                success: resolve,
+                fail: reject,
+            })
+        })
+        const code = loginResult?.code || ''
+        if (!code) {
+            uni.showToast({title: '微信授权失败', icon: 'none'})
+            return
+        }
+        await authApi.miniappBind({code})
+        uni.showToast({title: '绑定成功', icon: 'success'})
+        await load()
+    } catch {
+        // request interceptor already shows the error
+    }
 }
 
 function goLogin() {
