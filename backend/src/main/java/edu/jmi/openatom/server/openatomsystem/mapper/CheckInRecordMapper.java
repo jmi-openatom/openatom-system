@@ -22,4 +22,8 @@ public interface CheckInRecordMapper extends BaseMapper<CheckInRecord> {
             .eq(CheckInRecord::getSessionId, sessionId)
             .orderByDesc(CheckInRecord::getCheckinAt));
   }
+
+  default int deleteBySessionId(Integer sessionId) {
+    return delete(new LambdaQueryWrapper<CheckInRecord>().eq(CheckInRecord::getSessionId, sessionId));
+  }
 }

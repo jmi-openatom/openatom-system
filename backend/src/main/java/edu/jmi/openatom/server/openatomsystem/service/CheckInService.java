@@ -16,6 +16,8 @@ public interface CheckInService {
 
   Result<String> close(Integer sessionId);
 
+  Result<String> delete(Integer sessionId);
+
   Result<List<ResponseCheckInRecordVO>> records(Integer sessionId);
 
   Result<ResponseCheckInRecordVO> scan(RequestCheckInScanDTO request);

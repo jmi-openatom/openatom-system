@@ -19,7 +19,9 @@ import edu.jmi.openatom.server.openatomsystem.service.UserService;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -106,26 +108,39 @@ public class UserServiceImpl implements UserService {
       int rowCount = sheet.getPhysicalNumberOfRows();
       if (rowCount <= 1) return Result.error("Excel 数据为空");
       List<User> userList = new ArrayList<>();
+      Set<String> importedLoginIds = new LinkedHashSet<>();
+      int skippedInvalidCount = 0;
+      int skippedDuplicateCount = 0;
       for (int i = 1; i < rowCount; i++) {
         Row row = sheet.getRow(i);
         if (row == null) continue;
-        String userName = getCellValue(row.getCell(0));
-        String realName = getCellValue(row.getCell(1));
-        String studentId = getCellValue(row.getCell(2));
-        String phone = getCellValue(row.getCell(3));
-        String email = getCellValue(row.getCell(4));
-        String college = getCellValue(row.getCell(5));
-        String major = getCellValue(row.getCell(6));
-        String grade = getCellValue(row.getCell(7));
-        String className = getCellValue(row.getCell(8));
-        if (isBlank(userName) || isBlank(realName)) continue;
+        String userName = normalizeCellValue(row.getCell(0));
+        String realName = normalizeCellValue(row.getCell(1));
+        String studentId = normalizeCellValue(row.getCell(2));
+        String phone = normalizeCellValue(row.getCell(3));
+        String email = normalizeCellValue(row.getCell(4));
+        String college = normalizeCellValue(row.getCell(5));
+        String major = normalizeCellValue(row.getCell(6));
+        String grade = normalizeCellValue(row.getCell(7));
+        String className = normalizeCellValue(row.getCell(8));
+        if (isBlank(userName) || isBlank(realName)) {
+          skippedInvalidCount++;
+          continue;
+        }
         if (isBlank(studentId)) studentId = userName;
-        if (existsByUsernameOrStudentId(userName, studentId)) continue;
+        if (existsByUsernameOrStudentId(userName, studentId)
+            || importedLoginIds.contains(userName)
+            || importedLoginIds.contains(studentId)) {
+          skippedDuplicateCount++;
+          continue;
+        }
         User user = User.builder().userName(userName).realName(realName).studentId(studentId)
             .phone(phone).email(email).college(college).major(major).grade(grade)
             .className(className).password(passwordService.encode("123456"))
             .userStatus(UserStatus.ACTIVE).build();
         userList.add(user);
+        importedLoginIds.add(userName);
+        importedLoginIds.add(studentId);
       }
       if (!userList.isEmpty()) {
         for (User user : userList) {
@@ -134,7 +149,14 @@ public class UserServiceImpl implements UserService {
           bindDefaultClubMembership(user.getId());
         }
       }
-      return Result.success("成功导入 " + userList.size() + " 条用户数据");
+      String message = "成功导入 " + userList.size() + " 条用户数据";
+      int skippedCount = skippedInvalidCount + skippedDuplicateCount;
+      if (skippedCount > 0) {
+        message += "，跳过 " + skippedCount + " 条";
+        if (skippedDuplicateCount > 0) message += "，其中重复 " + skippedDuplicateCount + " 条";
+        if (skippedInvalidCount > 0) message += "，必填缺失 " + skippedInvalidCount + " 条";
+      }
+      return Result.success(message);
     } catch (Exception e) {
       return Result.error("Excel 导入失败: " + e.getMessage());
     }
@@ -175,6 +197,10 @@ public class UserServiceImpl implements UserService {
       case FORMULA: return cell.getCellFormula();
       default: return "";
     }
+  }
+
+  private String normalizeCellValue(Cell cell) {
+    return getCellValue(cell).trim();
   }
 
   @Override

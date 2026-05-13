@@ -84,6 +84,7 @@ public record RoleSeedTemplate(
         SystemPermission.CHECK_IN_DETAIL,
         SystemPermission.CHECK_IN_CREATE,
         SystemPermission.CHECK_IN_UPDATE,
+        SystemPermission.CHECK_IN_DELETE,
         SystemPermission.CHECK_IN_RECORDS,
         SystemPermission.EXIT_APPLICATION_LIST,
         SystemPermission.EXIT_APPLICATION_DETAIL,

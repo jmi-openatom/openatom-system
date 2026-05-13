@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,6 +45,12 @@ public class CheckInController {
   @SaCheckPermission("check-in:update")
   public Result<String> close(@PathVariable Integer sessionId) {
     return checkInService.close(sessionId);
+  }
+
+  @DeleteMapping("/check-ins/{sessionId}")
+  @SaCheckPermission("check-in:delete")
+  public Result<String> delete(@PathVariable Integer sessionId) {
+    return checkInService.delete(sessionId);
   }
 
   @GetMapping("/check-ins/{sessionId}/records")

@@ -218,6 +218,9 @@ export const checkInApi = {
   close(id: string | number): Promise<AxiosResponse> {
     return request.post(`/check-ins/${id}/close`)
   },
+  delete(id: string | number): Promise<AxiosResponse> {
+    return request.delete(`/check-ins/${id}`)
+  },
   records(id: string | number): Promise<AxiosResponse> {
     return request.get(`/check-ins/${id}/records`)
   },

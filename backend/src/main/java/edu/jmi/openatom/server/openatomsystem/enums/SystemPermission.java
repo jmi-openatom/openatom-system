@@ -100,6 +100,7 @@ public enum SystemPermission {
   CHECK_IN_DETAIL("获取内部签到详情", "check-in:detail", "api", "/check-ins/{sessionId}", "GET"),
   CHECK_IN_CREATE("发布内部签到", "check-in:create", "api", "/check-ins", "POST"),
   CHECK_IN_UPDATE("关闭内部签到", "check-in:update", "api", "/check-ins/{sessionId}/close", "POST"),
+  CHECK_IN_DELETE("删除内部签到", "check-in:delete", "api", "/check-ins/{sessionId}", "DELETE"),
   CHECK_IN_RECORDS(
       "查询内部签到记录", "check-in:records", "api", "/check-ins/{sessionId}/records", "GET"),
   AWARD_LIST("查询获奖经历", "award:list", "api", "/awards", "GET"),

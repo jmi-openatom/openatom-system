@@ -109,6 +109,17 @@ public class CheckInServiceImpl implements CheckInService {
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> delete(Integer sessionId) {
+    CheckInSession session = findSession(sessionId);
+    if (session == null) return Result.error(404, "签到不存在");
+    recordMapper.deleteBySessionId(sessionId);
+    targetMapper.deleteBySessionId(sessionId);
+    int rows = sessionMapper.deleteById(sessionId);
+    return rows > 0 ? Result.success("签到已删除") : Result.error("签到删除失败");
+  }
+
+  @Override
   public Result<List<ResponseCheckInRecordVO>> records(Integer sessionId) {
     CheckInSession session = findSession(sessionId);
     if (session == null) return Result.error(404, "签到不存在");

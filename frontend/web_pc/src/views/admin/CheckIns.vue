@@ -30,11 +30,12 @@
           <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="280" fixed="right">
+      <el-table-column label="操作" width="340" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openPreview(row)">全屏预览</el-button>
           <el-button link type="success" @click="openRecords(row)">记录</el-button>
           <el-button v-if="row.status === 'open'" link type="danger" @click="closeSession(row)">关闭</el-button>
+          <el-button link type="danger" @click="deleteSession(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -151,7 +152,7 @@
 </template>
 
 <script>
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { activityApi, checkInApi, membershipApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
@@ -283,6 +284,17 @@ export default {
     async closeSession(row) {
       await checkInApi.close(row.id)
       ElMessage.success('签到已关闭')
+      this.fetchList()
+    },
+    async deleteSession(row) {
+      await ElMessageBox.confirm(
+        `确定删除“${row.title}”吗？删除后签到名单和签到记录都会被清除。`,
+        '删除签到',
+        { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+      )
+      await checkInApi.delete(row.id)
+      ElMessage.success('签到已删除')
+      if (this.previewRow?.id === row.id) this.previewVisible = false
       this.fetchList()
     },
     startLiveRefresh(sessionId) {
