@@ -122,6 +122,12 @@ export default {
           permissions: ['document:list'],
         },
         {
+          path: '/admin/leaves',
+          label: '请假审批',
+          icon: DocumentChecked,
+          permissions: ['leave-application:list'],
+        },
+        {
           path: '/admin/activities',
           label: '活动管理',
           icon: Calendar,

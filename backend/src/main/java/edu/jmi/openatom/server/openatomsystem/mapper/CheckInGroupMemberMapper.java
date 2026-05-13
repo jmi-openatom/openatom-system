@@ -15,4 +15,11 @@ public interface CheckInGroupMemberMapper extends BaseMapper<CheckInGroupMember>
   default int deleteByGroupId(Integer groupId) {
     return delete(new LambdaQueryWrapper<CheckInGroupMember>().eq(CheckInGroupMember::getGroupId, groupId));
   }
+
+  default int deleteByGroupIdAndUserId(Integer groupId, Integer userId) {
+    return delete(
+        new LambdaQueryWrapper<CheckInGroupMember>()
+            .eq(CheckInGroupMember::getGroupId, groupId)
+            .eq(CheckInGroupMember::getUserId, userId));
+  }
 }

@@ -103,6 +103,21 @@ public enum SystemPermission {
   CHECK_IN_DELETE("删除内部签到", "check-in:delete", "api", "/check-ins/{sessionId}", "DELETE"),
   CHECK_IN_RECORDS(
       "查询内部签到记录", "check-in:records", "api", "/check-ins/{sessionId}/records", "GET"),
+  CHECK_IN_GROUP_MEMBER_DELETE(
+      "移除签到分组成员",
+      "check-in:group-member-delete",
+      "api",
+      "/check-in-groups/{groupId}/members/{userId}",
+      "DELETE"),
+  LEAVE_APPLICATION_LIST("查询请假申请", "leave-application:list", "api", "/leave-applications", "GET"),
+  LEAVE_APPLICATION_DETAIL(
+      "获取请假详情", "leave-application:detail", "api", "/leave-applications/{leaveApplicationId}", "GET"),
+  LEAVE_APPLICATION_REVIEW(
+      "审批请假申请",
+      "leave-application:review",
+      "api",
+      "/leave-applications/{leaveApplicationId}/review",
+      "POST"),
   AWARD_LIST("查询获奖经历", "award:list", "api", "/awards", "GET"),
   AWARD_CREATE("创建获奖经历", "award:create", "api", "/awards", "POST"),
   AWARD_UPDATE("更新获奖经历", "award:update", "api", "/awards/{awardId}", "PATCH"),

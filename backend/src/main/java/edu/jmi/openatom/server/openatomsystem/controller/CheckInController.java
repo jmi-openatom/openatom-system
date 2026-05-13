@@ -67,6 +67,12 @@ public class CheckInController {
     return checkInService.deleteGroup(groupId);
   }
 
+  @DeleteMapping("/check-in-groups/{groupId}/members/{userId}")
+  @SaCheckPermission("check-in:group-member-delete")
+  public Result<String> removeGroupMember(@PathVariable Integer groupId, @PathVariable Integer userId) {
+    return checkInService.removeGroupMember(groupId, userId);
+  }
+
   @GetMapping("/check-ins/{sessionId}")
   @SaCheckPermission("check-in:detail")
   public Result<ResponseCheckInSessionVO> detail(@PathVariable Integer sessionId) {

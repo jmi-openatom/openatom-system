@@ -13,6 +13,7 @@ const adminFallbackRoutes = [
   '/admin/site-forms',
   '/admin/form-submissions',
   '/admin/office-documents',
+  '/admin/leaves',
   '/admin/activities',
   '/admin/check-ins',
   '/admin/awards',
@@ -96,6 +97,12 @@ const routes = [
         component: () => import('../views/site/Notifications.vue'),
       },
       {
+        path: 'leaves',
+        name: 'site-leaves',
+        meta: { requiresSiteLogin: true },
+        component: () => import('../views/site/Leaves.vue'),
+      },
+      {
         path: 'check-in/scan',
         name: 'site-check-in-scan',
         component: () => import('../views/site/CheckInScan.vue'),
@@ -160,6 +167,12 @@ const routes = [
         name: 'admin-office-documents',
         meta: { permissions: ['document:list'] },
         component: () => import('../views/admin/OfficeDocuments.vue'),
+      },
+      {
+        path: 'leaves',
+        name: 'admin-leaves',
+        meta: { permissions: ['leave-application:list'] },
+        component: () => import('../views/admin/Leaves.vue'),
       },
       {
         path: 'activities',

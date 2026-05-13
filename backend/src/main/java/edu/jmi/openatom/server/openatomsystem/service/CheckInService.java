@@ -25,6 +25,8 @@ public interface CheckInService {
 
   Result<String> deleteGroup(Integer groupId);
 
+  Result<String> removeGroupMember(Integer groupId, Integer userId);
+
   Result<ResponseCheckInSessionVO> detail(Integer sessionId);
 
   Result<Integer> create(RequestCreateCheckInSessionDTO request);

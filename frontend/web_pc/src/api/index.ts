@@ -224,6 +224,9 @@ export const checkInApi = {
   deleteGroup(id: string | number): Promise<AxiosResponse> {
     return request.delete(`/check-in-groups/${id}`)
   },
+  removeGroupMember(id: string | number, userId: string | number): Promise<AxiosResponse> {
+    return request.delete(`/check-in-groups/${id}/members/${userId}`)
+  },
   detail(id: string | number): Promise<AxiosResponse> {
     return request.get(`/check-ins/${id}`)
   },
@@ -247,6 +250,27 @@ export const checkInApi = {
   },
   scan(data: Record<string, unknown>): Promise<AxiosResponse> {
     return request.post('/site/check-ins/scan', data)
+  },
+}
+
+export const leaveApplicationApi = {
+  list(params?: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.get('/leave-applications', { params })
+  },
+  mine(): Promise<AxiosResponse> {
+    return request.get('/site/leave-applications')
+  },
+  detail(id: string | number): Promise<AxiosResponse> {
+    return request.get(`/leave-applications/${id}`)
+  },
+  siteDetail(id: string | number): Promise<AxiosResponse> {
+    return request.get(`/site/leave-applications/${id}`)
+  },
+  create(data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post('/site/leave-applications', data)
+  },
+  review(id: string | number, data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post(`/leave-applications/${id}/review`, data)
   },
 }
 

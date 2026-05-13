@@ -14,6 +14,7 @@
           <router-link to="/activities">活动</router-link>
           <router-link to="/apply">入会申请</router-link>
           <router-link to="/progress">我的申请</router-link>
+          <router-link to="/leaves">请假</router-link>
           <router-link to="/check-in/scan">扫码签到</router-link>
         </nav>
         <div class="site-header__actions">

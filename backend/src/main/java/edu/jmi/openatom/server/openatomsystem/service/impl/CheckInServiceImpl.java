@@ -129,6 +129,15 @@ public class CheckInServiceImpl implements CheckInService {
   }
 
   @Override
+  public Result<String> removeGroupMember(Integer groupId, Integer userId) {
+    CheckInGroup group = findGroup(groupId);
+    if (group == null) return Result.error(404, "签到分组不存在");
+    if (userId == null || userId <= 0) return Result.error(400, "成员不合法");
+    int rows = groupMemberMapper.deleteByGroupIdAndUserId(groupId, userId);
+    return rows > 0 ? Result.success("成员已移出分组") : Result.error(404, "成员不在该分组中");
+  }
+
+  @Override
   public Result<ResponseCheckInSessionVO> detail(Integer sessionId) {
     CheckInSession session = findSession(sessionId);
     return session == null ? Result.error(404, "签到不存在") : Result.success(toSessionVO(session));

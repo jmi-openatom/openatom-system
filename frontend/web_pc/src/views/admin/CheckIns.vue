@@ -119,6 +119,19 @@
         <el-table-column prop="studentId" label="学号" min-width="140" />
         <el-table-column prop="className" label="班级" min-width="130" />
       </el-table>
+      <template v-if="groupForm.id">
+        <el-divider content-position="left">当前组内成员</el-divider>
+        <el-table :data="selectedGroupMembers" height="180">
+          <el-table-column prop="realName" label="姓名" min-width="140" />
+          <el-table-column prop="studentId" label="学号" min-width="140" />
+          <el-table-column prop="className" label="班级" min-width="130" />
+          <el-table-column label="操作" width="120">
+            <template #default="{ row }">
+              <el-button link type="danger" @click="removeGroupMember(row)">移出</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
       <el-divider content-position="left">已有分组</el-divider>
       <el-table :data="groups" height="260">
         <el-table-column prop="name" label="分组名称" min-width="180" />
@@ -273,6 +286,10 @@ export default {
       const selected = new Set((this.records || []).map((item) => item.userId))
       return this.members.filter((item) => !selected.has(item.id))
     },
+    selectedGroupMembers() {
+      const selected = new Set(this.groupForm.userIds || [])
+      return this.members.filter((item) => selected.has(item.id))
+    },
   },
   created() {
     this.fetchList()
@@ -392,6 +409,19 @@ export default {
       ElMessage.success('分组已删除')
       this.groups = (await checkInApi.groups()) || []
       if (this.groupForm.id === row.id) this.resetGroupForm()
+    },
+    async removeGroupMember(row) {
+      if (!this.groupForm.id) return
+      await ElMessageBox.confirm(`确定将“${this.displayUserName(row)}”移出当前分组吗？`, '移出成员', { type: 'warning' })
+      await checkInApi.removeGroupMember(this.groupForm.id, row.id)
+      ElMessage.success('成员已移出')
+      this.groupForm.userIds = this.groupForm.userIds.filter((id) => id !== row.id)
+      this.groups = (await checkInApi.groups()) || []
+      const selected = new Set(this.groupForm.userIds)
+      this.$nextTick(() => {
+        this.$refs.groupUserTableRef?.clearSelection()
+        this.members.forEach((item) => this.$refs.groupUserTableRef?.toggleRowSelection(item, selected.has(item.id)))
+      })
     },
     save() {
       this.$refs.formRef.validate(async (valid) => {
