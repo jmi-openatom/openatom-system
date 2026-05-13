@@ -10,43 +10,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 内部签到场次 */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName("checkin_session")
-public class CheckInSession {
+@TableName("checkin_group_member")
+public class CheckInGroupMember {
   @TableId(value = "id", type = IdType.AUTO)
   private Integer id;
-
-  @TableField("club_id")
-  private Integer clubId;
-
-  @TableField("activity_id")
-  private Integer activityId;
 
   @TableField("group_id")
   private Integer groupId;
 
-  private String title;
-  private String location;
-
-  @TableField("start_at")
-  private Timestamp startAt;
-
-  @TableField("end_at")
-  private Timestamp endAt;
-
-  private String status;
-  private String token;
-
-  @TableField("created_by")
-  private Integer createdBy;
+  @TableField("user_id")
+  private Integer userId;
 
   @TableField("created_at")
   private Timestamp createdAt;
-
-  @TableField("updated_at")
-  private Timestamp updatedAt;
 }

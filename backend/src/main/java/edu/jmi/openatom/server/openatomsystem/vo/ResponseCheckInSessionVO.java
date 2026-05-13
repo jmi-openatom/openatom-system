@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 public class ResponseCheckInSessionVO {
   private Integer id;
   private Integer activityId;
+  private Integer groupId;
   private String title;
   private String activityTitle;
   private String location;

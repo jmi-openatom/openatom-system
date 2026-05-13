@@ -1037,6 +1037,7 @@ CREATE TABLE IF NOT EXISTS `checkin_session`
     `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `club_id` INT NOT NULL COMMENT '社团ID',
     `activity_id` INT DEFAULT NULL COMMENT '关联活动ID',
+    `group_id` INT DEFAULT NULL COMMENT '签到分组ID',
     `title` VARCHAR(120) NOT NULL COMMENT '签到标题',
     `location` VARCHAR(120) DEFAULT NULL COMMENT '签到地点',
     `start_at` TIMESTAMP NULL DEFAULT NULL COMMENT '签到开始时间',
@@ -1050,8 +1051,32 @@ CREATE TABLE IF NOT EXISTS `checkin_session`
     UNIQUE KEY `uk_checkin_session_token` (`token`),
     KEY `idx_checkin_session_club` (`club_id`),
     KEY `idx_checkin_session_activity` (`activity_id`),
+    KEY `idx_checkin_session_group` (`group_id`),
     KEY `idx_checkin_session_status` (`status`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='内部签到场次表';
+
+CREATE TABLE IF NOT EXISTS `checkin_group`
+(
+    `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `club_id` INT NOT NULL COMMENT '社团ID',
+    `name` VARCHAR(120) NOT NULL COMMENT '分组名称',
+    `created_by` INT DEFAULT NULL COMMENT '创建人',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_checkin_group_club` (`club_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='签到分组表';
+
+CREATE TABLE IF NOT EXISTS `checkin_group_member`
+(
+    `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `group_id` INT NOT NULL COMMENT '签到分组ID',
+    `user_id` INT NOT NULL COMMENT '用户ID',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_checkin_group_member_user` (`group_id`, `user_id`),
+    KEY `idx_checkin_group_member_group` (`group_id`),
+    KEY `idx_checkin_group_member_user` (`user_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='签到分组成员表';
 
 CREATE TABLE IF NOT EXISTS `checkin_target`
 (

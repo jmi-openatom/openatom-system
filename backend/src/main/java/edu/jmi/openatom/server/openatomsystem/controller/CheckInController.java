@@ -2,10 +2,14 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInGroupDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInRecordStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInScanDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInTargetsDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateCheckInSessionDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.service.CheckInService;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInGroupVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInRecordVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInSessionVO;
 import jakarta.validation.Valid;
@@ -13,8 +17,10 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +40,31 @@ public class CheckInController {
   @SaCheckPermission("check-in:create")
   public Result<List<User>> userOptions(@RequestParam(required = false) String keyword) {
     return checkInService.userOptions(keyword);
+  }
+
+  @GetMapping("/check-in-groups")
+  @SaCheckPermission("check-in:create")
+  public Result<List<ResponseCheckInGroupVO>> groups() {
+    return checkInService.groups();
+  }
+
+  @PostMapping("/check-in-groups")
+  @SaCheckPermission("check-in:create")
+  public Result<Integer> createGroup(@Valid @RequestBody RequestCheckInGroupDTO request) {
+    return checkInService.createGroup(request);
+  }
+
+  @PutMapping("/check-in-groups/{groupId}")
+  @SaCheckPermission("check-in:create")
+  public Result<String> updateGroup(
+      @PathVariable Integer groupId, @Valid @RequestBody RequestCheckInGroupDTO request) {
+    return checkInService.updateGroup(groupId, request);
+  }
+
+  @DeleteMapping("/check-in-groups/{groupId}")
+  @SaCheckPermission("check-in:create")
+  public Result<String> deleteGroup(@PathVariable Integer groupId) {
+    return checkInService.deleteGroup(groupId);
   }
 
   @GetMapping("/check-ins/{sessionId}")
@@ -60,10 +91,26 @@ public class CheckInController {
     return checkInService.delete(sessionId);
   }
 
+  @PostMapping("/check-ins/{sessionId}/targets")
+  @SaCheckPermission("check-in:update")
+  public Result<String> addTargets(
+      @PathVariable Integer sessionId, @Valid @RequestBody RequestCheckInTargetsDTO request) {
+    return checkInService.addTargets(sessionId, request);
+  }
+
   @GetMapping("/check-ins/{sessionId}/records")
   @SaCheckPermission("check-in:records")
   public Result<List<ResponseCheckInRecordVO>> records(@PathVariable Integer sessionId) {
     return checkInService.records(sessionId);
+  }
+
+  @PatchMapping("/check-ins/{sessionId}/records/{userId}")
+  @SaCheckPermission("check-in:update")
+  public Result<ResponseCheckInRecordVO> updateRecordStatus(
+      @PathVariable Integer sessionId,
+      @PathVariable Integer userId,
+      @Valid @RequestBody RequestCheckInRecordStatusDTO request) {
+    return checkInService.updateRecordStatus(sessionId, userId, request);
   }
 
   @PostMapping("/site/check-ins/scan")

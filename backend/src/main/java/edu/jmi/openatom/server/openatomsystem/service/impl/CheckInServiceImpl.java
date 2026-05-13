@@ -3,14 +3,21 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInGroupDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInRecordStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInScanDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInTargetsDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateCheckInSessionDTO;
+import edu.jmi.openatom.server.openatomsystem.entity.CheckInGroup;
+import edu.jmi.openatom.server.openatomsystem.entity.CheckInGroupMember;
 import edu.jmi.openatom.server.openatomsystem.entity.CheckInRecord;
 import edu.jmi.openatom.server.openatomsystem.entity.CheckInSession;
 import edu.jmi.openatom.server.openatomsystem.entity.CheckInTarget;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
+import edu.jmi.openatom.server.openatomsystem.mapper.CheckInGroupMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.CheckInGroupMemberMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.CheckInRecordMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.CheckInSessionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.CheckInTargetMapper;
@@ -18,6 +25,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubActivityMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.CheckInService;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInGroupVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInRecordVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInSessionVO;
 import java.nio.charset.StandardCharsets;
@@ -48,6 +56,8 @@ public class CheckInServiceImpl implements CheckInService {
   private final ClubMapper clubMapper;
   private final ClubActivityMapper activityMapper;
   private final UserMapper userMapper;
+  private final CheckInGroupMapper groupMapper;
+  private final CheckInGroupMemberMapper groupMemberMapper;
   private final CheckInSessionMapper sessionMapper;
   private final CheckInTargetMapper targetMapper;
   private final CheckInRecordMapper recordMapper;
@@ -68,6 +78,57 @@ public class CheckInServiceImpl implements CheckInService {
   }
 
   @Override
+  public Result<List<ResponseCheckInGroupVO>> groups() {
+    Club club = defaultClub();
+    if (club == null) return Result.error(404, "默认社团不存在");
+    return Result.success(groupMapper.selectByClubId(club.getId()).stream().map(this::toGroupVO).toList());
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<Integer> createGroup(RequestCheckInGroupDTO request) {
+    Club club = defaultClub();
+    if (club == null) return Result.error(404, "默认社团不存在");
+    List<Integer> userIds = sanitizeTargetUserIds(request.getUserIds());
+    if (userIds.isEmpty()) return Result.error(400, "请选择组内人员");
+    Result<String> validResult = validateUsers(userIds);
+    if (validResult.getCode() != Result.SUCCESS_CODE) return Result.error(validResult.getCode(), validResult.getMessage());
+    CheckInGroup group = CheckInGroup.builder()
+        .clubId(club.getId())
+        .name(request.getName().trim())
+        .createdBy(StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null)
+        .build();
+    groupMapper.insert(group);
+    replaceGroupMembers(group.getId(), userIds);
+    return Result.success(group.getId(), "签到分组已创建");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> updateGroup(Integer groupId, RequestCheckInGroupDTO request) {
+    CheckInGroup group = findGroup(groupId);
+    if (group == null) return Result.error(404, "签到分组不存在");
+    List<Integer> userIds = sanitizeTargetUserIds(request.getUserIds());
+    if (userIds.isEmpty()) return Result.error(400, "请选择组内人员");
+    Result<String> validResult = validateUsers(userIds);
+    if (validResult.getCode() != Result.SUCCESS_CODE) return Result.error(validResult.getCode(), validResult.getMessage());
+    group.setName(request.getName().trim());
+    groupMapper.updateById(group);
+    replaceGroupMembers(groupId, userIds);
+    return Result.success("签到分组已更新");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> deleteGroup(Integer groupId) {
+    CheckInGroup group = findGroup(groupId);
+    if (group == null) return Result.error(404, "签到分组不存在");
+    groupMemberMapper.deleteByGroupId(groupId);
+    groupMapper.deleteById(groupId);
+    return Result.success("签到分组已删除");
+  }
+
+  @Override
   public Result<ResponseCheckInSessionVO> detail(Integer sessionId) {
     CheckInSession session = findSession(sessionId);
     return session == null ? Result.error(404, "签到不存在") : Result.success(toSessionVO(session));
@@ -80,18 +141,21 @@ public class CheckInServiceImpl implements CheckInService {
     if (club == null) return Result.error(404, "默认社团不存在");
     String status = normalizeStatus(request.getStatus());
     if (status == null) return Result.error(400, "签到状态不合法");
-    List<Integer> targetUserIds = sanitizeTargetUserIds(request.getTargetUserIds());
+    List<Integer> targetUserIds = resolveTargetUserIds(request.getGroupId(), request.getTargetUserIds());
     if (targetUserIds.isEmpty()) return Result.error(400, "请选择发放人员");
-    for (Integer userId : targetUserIds) {
-      if (userMapper.selectById(userId) == null) return Result.error(400, "存在无效的发放人员");
-    }
+    Result<String> validResult = validateUsers(targetUserIds);
+    if (validResult.getCode() != Result.SUCCESS_CODE) return Result.error(validResult.getCode(), validResult.getMessage());
     if (request.getActivityId() != null) {
       ClubActivity activity = activityMapper.selectOneByIdAndClubId(request.getActivityId(), club.getId());
       if (activity == null) return Result.error(404, "活动不存在");
     }
+    if (request.getGroupId() != null && findGroup(request.getGroupId()) == null) {
+      return Result.error(404, "签到分组不存在");
+    }
     CheckInSession session = CheckInSession.builder()
         .clubId(club.getId())
         .activityId(request.getActivityId())
+        .groupId(request.getGroupId())
         .title(request.getTitle().trim())
         .location(trimToNull(request.getLocation()))
         .startAt(Times.parseTimestamp(request.getStartAt()))
@@ -128,6 +192,26 @@ public class CheckInServiceImpl implements CheckInService {
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> addTargets(Integer sessionId, RequestCheckInTargetsDTO request) {
+    CheckInSession session = findSession(sessionId);
+    if (session == null) return Result.error(404, "签到不存在");
+    List<Integer> userIds = sanitizeTargetUserIds(request.getUserIds());
+    if (userIds.isEmpty()) return Result.error(400, "请选择人员");
+    Result<String> validResult = validateUsers(userIds);
+    if (validResult.getCode() != Result.SUCCESS_CODE) return Result.error(validResult.getCode(), validResult.getMessage());
+    int added = 0;
+    for (Integer userId : userIds) {
+      CheckInTarget exists = targetMapper.selectOneBySessionAndUser(sessionId, userId);
+      if (exists == null) {
+        targetMapper.insert(CheckInTarget.builder().sessionId(sessionId).userId(userId).build());
+        added++;
+      }
+    }
+    return Result.success("已添加 " + added + " 人");
+  }
+
+  @Override
   public Result<List<ResponseCheckInRecordVO>> records(Integer sessionId) {
     CheckInSession session = findSession(sessionId);
     if (session == null) return Result.error(404, "签到不存在");
@@ -136,6 +220,35 @@ public class CheckInServiceImpl implements CheckInService {
     Map<Integer, CheckInRecord> recordMap = records.stream().collect(Collectors.toMap(CheckInRecord::getUserId, Function.identity(), (a, b) -> a));
     Map<Integer, User> users = loadUsers(targets.stream().map(CheckInTarget::getUserId).toList());
     return Result.success(targets.stream().map(target -> toRecordVO(users.get(target.getUserId()), recordMap.get(target.getUserId()))).toList());
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseCheckInRecordVO> updateRecordStatus(
+      Integer sessionId, Integer userId, RequestCheckInRecordStatusDTO request) {
+    CheckInSession session = findSession(sessionId);
+    if (session == null) return Result.error(404, "签到不存在");
+    if (userMapper.selectById(userId) == null) return Result.error(404, "用户不存在");
+    CheckInTarget target = targetMapper.selectOneBySessionAndUser(sessionId, userId);
+    if (target == null) return Result.error(404, "该用户不在本次签到名单中");
+    String status = request.getStatus();
+    if (!"checked".equals(status) && !"pending".equals(status)) return Result.error(400, "签到状态不合法");
+    CheckInRecord record = recordMapper.selectOneBySessionAndUser(sessionId, userId);
+    if ("pending".equals(status)) {
+      if (record != null) recordMapper.deleteById(record.getId());
+      return Result.success(toRecordVO(userMapper.selectById(userId), null), "已标记为未签到");
+    }
+    if (record == null) {
+      record = CheckInRecord.builder().sessionId(sessionId).userId(userId)
+          .checkinAt(Times.now()).source("manual").status("checked").build();
+      recordMapper.insert(record);
+    } else {
+      record.setStatus("checked");
+      record.setCheckinAt(Times.now());
+      record.setSource("manual");
+      recordMapper.updateById(record);
+    }
+    return Result.success(toRecordVO(userMapper.selectById(userId), record), "已标记为已签到");
   }
 
   @Override
@@ -166,7 +279,7 @@ public class CheckInServiceImpl implements CheckInService {
     int checkedCount = recordMapper.selectBySessionId(session.getId()).size();
     ClubActivity activity = session.getActivityId() == null ? null : activityMapper.selectById(session.getActivityId());
     return ResponseCheckInSessionVO.builder()
-        .id(session.getId()).activityId(session.getActivityId())
+        .id(session.getId()).activityId(session.getActivityId()).groupId(session.getGroupId())
         .activityTitle(activity == null ? null : activity.getTitle())
         .title(session.getTitle()).location(session.getLocation())
         .startAt(session.getStartAt()).endAt(session.getEndAt())
@@ -195,12 +308,31 @@ public class CheckInServiceImpl implements CheckInService {
         .className(user.getClassName()).userStatus(user.getUserStatus()).build();
   }
 
+  private ResponseCheckInGroupVO toGroupVO(CheckInGroup group) {
+    List<Integer> userIds = groupMemberMapper.selectByGroupId(group.getId()).stream()
+        .map(CheckInGroupMember::getUserId).toList();
+    return ResponseCheckInGroupVO.builder()
+        .id(group.getId())
+        .name(group.getName())
+        .memberCount(userIds.size())
+        .userIds(userIds)
+        .build();
+  }
+
   private CheckInSession findSession(Integer sessionId) {
     if (sessionId == null) return null;
     Club club = defaultClub();
     if (club == null) return null;
     CheckInSession session = sessionMapper.selectById(sessionId);
     return session != null && club.getId().equals(session.getClubId()) ? session : null;
+  }
+
+  private CheckInGroup findGroup(Integer groupId) {
+    if (groupId == null) return null;
+    Club club = defaultClub();
+    if (club == null) return null;
+    CheckInGroup group = groupMapper.selectById(groupId);
+    return group != null && club.getId().equals(group.getClubId()) ? group : null;
   }
 
   private Map<Integer, User> loadUsers(List<Integer> userIds) {
@@ -216,6 +348,31 @@ public class CheckInServiceImpl implements CheckInService {
   private List<Integer> sanitizeTargetUserIds(List<Integer> values) {
     if (values == null) return List.of();
     return values.stream().filter(id -> id != null && id > 0).collect(Collectors.toCollection(LinkedHashSet::new)).stream().toList();
+  }
+
+  private List<Integer> resolveTargetUserIds(Integer groupId, List<Integer> values) {
+    LinkedHashSet<Integer> ids = new LinkedHashSet<>(sanitizeTargetUserIds(values));
+    if (groupId != null) {
+      groupMemberMapper.selectByGroupId(groupId).stream()
+          .map(CheckInGroupMember::getUserId)
+          .filter(id -> id != null && id > 0)
+          .forEach(ids::add);
+    }
+    return ids.stream().toList();
+  }
+
+  private Result<String> validateUsers(List<Integer> userIds) {
+    for (Integer userId : userIds) {
+      if (userMapper.selectById(userId) == null) return Result.error(400, "存在无效人员");
+    }
+    return Result.success();
+  }
+
+  private void replaceGroupMembers(Integer groupId, List<Integer> userIds) {
+    groupMemberMapper.deleteByGroupId(groupId);
+    for (Integer userId : userIds) {
+      groupMemberMapper.insert(CheckInGroupMember.builder().groupId(groupId).userId(userId).build());
+    }
   }
 
   private String normalizeStatus(String status) {

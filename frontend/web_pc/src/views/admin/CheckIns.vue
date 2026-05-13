@@ -9,7 +9,10 @@
         </el-select>
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
-      <el-button type="primary" :icon="Plus" @click="openDialog">发布签到</el-button>
+      <div class="toolbar__actions">
+        <el-button @click="openGroupManager">签到分组</el-button>
+        <el-button type="primary" :icon="Plus" @click="openDialog">发布签到</el-button>
+      </div>
     </div>
 
     <el-table v-loading="loading" :data="rows" class="admin-table">
@@ -68,6 +71,11 @@
               <el-option v-for="item in activities" :key="item.id" :label="item.title" :value="item.id" />
             </el-select>
           </el-form-item>
+          <el-form-item label="签到分组">
+            <el-select v-model="form.groupId" clearable filterable placeholder="可选，自动带入组内人员" @change="applyGroupToForm">
+              <el-option v-for="item in groups" :key="item.id" :label="`${item.name}（${item.memberCount || 0}人）`" :value="item.id" />
+            </el-select>
+          </el-form-item>
         </div>
         <el-divider content-position="left">发放人员</el-divider>
         <div class="member-toolbar">
@@ -93,6 +101,35 @@
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="save">发布</el-button>
       </template>
+    </el-dialog>
+
+    <el-dialog v-model="groupVisible" title="签到分组" width="980px">
+      <div class="member-toolbar">
+        <el-input v-model="groupForm.name" placeholder="分组名称" style="width: 220px" />
+        <el-input v-model="groupKeyword" clearable placeholder="搜索人员姓名/学号" style="width: 260px" />
+        <el-button @click="selectAllGroupUsers">全选当前人员</el-button>
+        <el-button @click="clearGroupSelection">清空</el-button>
+        <el-button type="primary" :loading="groupSaving" @click="saveGroup">{{ groupForm.id ? '更新分组' : '创建分组' }}</el-button>
+        <el-button v-if="groupForm.id" @click="resetGroupForm">新建</el-button>
+      </div>
+      <el-table :data="filteredGroupUsers" height="280" @selection-change="handleGroupSelection" ref="groupUserTableRef">
+        <el-table-column type="selection" width="48" />
+        <el-table-column prop="realName" label="姓名" min-width="140" />
+        <el-table-column prop="userName" label="用户名" min-width="140" />
+        <el-table-column prop="studentId" label="学号" min-width="140" />
+        <el-table-column prop="className" label="班级" min-width="130" />
+      </el-table>
+      <el-divider content-position="left">已有分组</el-divider>
+      <el-table :data="groups" height="260">
+        <el-table-column prop="name" label="分组名称" min-width="180" />
+        <el-table-column prop="memberCount" label="人数" width="100" />
+        <el-table-column label="操作" width="180">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="editGroup(row)">编辑</el-button>
+            <el-button link type="danger" @click="deleteGroup(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </el-dialog>
 
     <el-dialog v-model="previewVisible" fullscreen class="checkin-preview">
@@ -138,7 +175,13 @@
       </div>
     </el-dialog>
 
-    <el-dialog v-model="recordsVisible" title="签到记录" width="860px">
+    <el-dialog v-model="recordsVisible" title="签到记录" width="980px">
+      <div class="member-toolbar" v-if="recordsRow">
+        <el-select v-model="appendUserIds" multiple filterable placeholder="中途添加人员" style="width: 360px">
+          <el-option v-for="item in appendableUsers" :key="item.id" :label="displayUserName(item)" :value="item.id" />
+        </el-select>
+        <el-button type="primary" @click="addTargetsToSession">添加人员</el-button>
+      </div>
       <el-table :data="records">
         <el-table-column prop="realName" label="姓名" min-width="120" />
         <el-table-column prop="studentId" label="学号" min-width="140" />
@@ -150,6 +193,13 @@
         </el-table-column>
         <el-table-column label="签到时间" min-width="180">
           <template #default="{ row }">{{ formatDateTime(row.checkinAt) || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="140">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="toggleRecordStatus(row)">
+              {{ row.status === 'checked' ? '改未签到' : '改已签到' }}
+            </el-button>
+          </template>
         </el-table-column>
       </el-table>
     </el-dialog>
@@ -172,18 +222,25 @@ export default {
       loading: false,
       saving: false,
       dialogVisible: false,
+      groupVisible: false,
       previewVisible: false,
       recordsVisible: false,
       rows: [],
       records: [],
+      recordsRow: null,
       previewRecords: [],
       activities: [],
+      groups: [],
       members: [],
+      appendUserIds: [],
       liveTimer: null,
       memberKeyword: '',
+      groupKeyword: '',
       previewRow: null,
       query: { status: '' },
-      form: { title: '', status: 'open', startAt: '', endAt: '', location: '', activityId: undefined, targetUserIds: [] },
+      form: { title: '', status: 'open', startAt: '', endAt: '', location: '', activityId: undefined, groupId: undefined, targetUserIds: [] },
+      groupForm: { id: null, name: '', userIds: [] },
+      groupSaving: false,
       rules: { title: [{ required: true, message: '请输入签到标题', trigger: 'blur' }] },
     }
   },
@@ -202,6 +259,19 @@ export default {
     },
     pendingRecords() {
       return this.previewRecords.filter((item) => item.status !== 'checked')
+    },
+    filteredGroupUsers() {
+      const keyword = this.groupKeyword.trim()
+      if (!keyword) return this.members
+      return this.members.filter((item) =>
+        [item.realName, item.userName, item.studentId, item.college, item.major, item.className].some((value) =>
+          String(value || '').includes(keyword),
+        ),
+      )
+    },
+    appendableUsers() {
+      const selected = new Set((this.records || []).map((item) => item.userId))
+      return this.members.filter((item) => !selected.has(item.id))
     },
   },
   created() {
@@ -232,15 +302,17 @@ export default {
       }
     },
     async loadOptions() {
-      const [activities, users] = await Promise.all([
+      const [activities, users, groups] = await Promise.all([
         activityApi.list({ status: 'published' }),
         checkInApi.userOptions(),
+        checkInApi.groups(),
       ])
       this.activities = activities || []
       this.members = (users || []).filter((item) => item.id)
+      this.groups = groups || []
     },
     openDialog() {
-      this.form = { title: '', status: 'open', startAt: '', endAt: '', location: '', activityId: undefined, targetUserIds: [] }
+      this.form = { title: '', status: 'open', startAt: '', endAt: '', location: '', activityId: undefined, groupId: undefined, targetUserIds: [] }
       this.memberKeyword = ''
       this.dialogVisible = true
       this.$nextTick(() => this.$refs.memberTableRef?.clearSelection())
@@ -251,6 +323,75 @@ export default {
     selectAllMembers() {
       this.$refs.memberTableRef?.clearSelection()
       this.filteredMembers.forEach((row) => this.$refs.memberTableRef?.toggleRowSelection(row, true))
+    },
+    applyGroupToForm(groupId) {
+      const group = this.groups.find((item) => item.id === groupId)
+      this.form.targetUserIds = group?.userIds ? [...group.userIds] : []
+      this.$nextTick(() => {
+        this.$refs.memberTableRef?.clearSelection()
+        const selected = new Set(this.form.targetUserIds)
+        this.members.forEach((row) => this.$refs.memberTableRef?.toggleRowSelection(row, selected.has(row.id)))
+      })
+    },
+    openGroupManager() {
+      this.resetGroupForm()
+      this.groupVisible = true
+    },
+    resetGroupForm() {
+      this.groupForm = { id: null, name: '', userIds: [] }
+      this.groupKeyword = ''
+      this.$nextTick(() => this.$refs.groupUserTableRef?.clearSelection())
+    },
+    handleGroupSelection(selection) {
+      this.groupForm.userIds = selection.map((item) => item.id)
+    },
+    selectAllGroupUsers() {
+      this.$refs.groupUserTableRef?.clearSelection()
+      this.filteredGroupUsers.forEach((row) => this.$refs.groupUserTableRef?.toggleRowSelection(row, true))
+    },
+    clearGroupSelection() {
+      this.groupForm.userIds = []
+      this.$refs.groupUserTableRef?.clearSelection()
+    },
+    editGroup(row) {
+      this.groupForm = { id: row.id, name: row.name, userIds: [...(row.userIds || [])] }
+      const selected = new Set(this.groupForm.userIds)
+      this.$nextTick(() => {
+        this.$refs.groupUserTableRef?.clearSelection()
+        this.members.forEach((item) => this.$refs.groupUserTableRef?.toggleRowSelection(item, selected.has(item.id)))
+      })
+    },
+    async saveGroup() {
+      if (!this.groupForm.name.trim()) {
+        ElMessage.error('请输入分组名称')
+        return
+      }
+      if (!this.groupForm.userIds.length) {
+        ElMessage.error('请选择组内人员')
+        return
+      }
+      this.groupSaving = true
+      try {
+        const payload = { name: this.groupForm.name.trim(), userIds: this.groupForm.userIds }
+        if (this.groupForm.id) {
+          await checkInApi.updateGroup(this.groupForm.id, payload)
+          ElMessage.success('分组已更新')
+        } else {
+          await checkInApi.createGroup(payload)
+          ElMessage.success('分组已创建')
+        }
+        this.groups = (await checkInApi.groups()) || []
+        this.resetGroupForm()
+      } finally {
+        this.groupSaving = false
+      }
+    },
+    async deleteGroup(row) {
+      await ElMessageBox.confirm(`确定删除分组“${row.name}”吗？`, '删除分组', { type: 'warning' })
+      await checkInApi.deleteGroup(row.id)
+      ElMessage.success('分组已删除')
+      this.groups = (await checkInApi.groups()) || []
+      if (this.groupForm.id === row.id) this.resetGroupForm()
     },
     save() {
       this.$refs.formRef.validate(async (valid) => {
@@ -284,9 +425,14 @@ export default {
       return `${window.location.origin}/check-in/scan?t=${token}`
     },
     async openRecords(row) {
+      this.recordsRow = row
+      this.appendUserIds = []
       this.records = await checkInApi.records(row.id)
       this.recordsVisible = true
       this.startLiveRefresh(row.id)
+    },
+    displayUserName(row) {
+      return `${row.realName || row.userName || row.studentId || row.id}${row.studentId ? ` / ${row.studentId}` : ''}`
     },
     displayRecordName(row) {
       return row.realName || row.userName || row.studentId || `用户 ${row.userId || '-'}`
@@ -305,6 +451,23 @@ export default {
       await checkInApi.delete(row.id)
       ElMessage.success('签到已删除')
       if (this.previewRow?.id === row.id) this.previewVisible = false
+      this.fetchList()
+    },
+    async addTargetsToSession() {
+      if (!this.recordsRow || !this.appendUserIds.length) return
+      await checkInApi.addTargets(this.recordsRow.id, { userIds: this.appendUserIds })
+      ElMessage.success('人员已添加')
+      this.appendUserIds = []
+      this.records = await checkInApi.records(this.recordsRow.id)
+      this.fetchList()
+    },
+    async toggleRecordStatus(row) {
+      if (!this.recordsRow) return
+      const status = row.status === 'checked' ? 'pending' : 'checked'
+      await checkInApi.updateRecordStatus(this.recordsRow.id, row.userId, { status })
+      ElMessage.success(status === 'checked' ? '已改为已签到' : '已改为未签到')
+      this.records = await checkInApi.records(this.recordsRow.id)
+      if (this.previewVisible) this.previewRecords = this.records
       this.fetchList()
     },
     startLiveRefresh(sessionId) {

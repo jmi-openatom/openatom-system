@@ -212,6 +212,18 @@ export const checkInApi = {
   userOptions(params?: Record<string, unknown>): Promise<AxiosResponse> {
     return request.get('/check-ins/user-options', { params })
   },
+  groups(): Promise<AxiosResponse> {
+    return request.get('/check-in-groups')
+  },
+  createGroup(data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post('/check-in-groups', data)
+  },
+  updateGroup(id: string | number, data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.put(`/check-in-groups/${id}`, data)
+  },
+  deleteGroup(id: string | number): Promise<AxiosResponse> {
+    return request.delete(`/check-in-groups/${id}`)
+  },
   detail(id: string | number): Promise<AxiosResponse> {
     return request.get(`/check-ins/${id}`)
   },
@@ -224,8 +236,14 @@ export const checkInApi = {
   delete(id: string | number): Promise<AxiosResponse> {
     return request.delete(`/check-ins/${id}`)
   },
+  addTargets(id: string | number, data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post(`/check-ins/${id}/targets`, data)
+  },
   records(id: string | number): Promise<AxiosResponse> {
     return request.get(`/check-ins/${id}/records`)
+  },
+  updateRecordStatus(id: string | number, userId: string | number, data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.patch(`/check-ins/${id}/records/${userId}`, data)
   },
   scan(data: Record<string, unknown>): Promise<AxiosResponse> {
     return request.post('/site/check-ins/scan', data)
