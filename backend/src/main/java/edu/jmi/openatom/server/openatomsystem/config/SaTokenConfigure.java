@@ -56,6 +56,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
         .excludePathPatterns(
             "/auth/register",
             "/auth/login",
+            "/auth/miniapp-login",
             "/auth/refresh-token",
             "/site/**",
             "/clubs/{clubId}/departments");

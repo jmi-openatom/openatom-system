@@ -86,8 +86,8 @@ async function onMiniappLogin() {
         }
         const res: any = await authApi.miniappLogin({code})
         finishLogin(res)
-    } catch {
-        uni.showToast({title: '微信登录失败，请重试', icon: 'none'})
+    } catch (error: any) {
+        uni.showToast({title: error?.message || '微信登录失败，请重试', icon: 'none'})
     } finally {
         wechatSubmitting.value = false
     }

@@ -414,7 +414,8 @@ public class AuthServiceImpl implements AuthService {
     return User.builder().id(user.getId()).userName(user.getUserName()).realName(user.getRealName())
         .gender(user.getGender()).phone(user.getPhone()).email(user.getEmail())
         .studentId(user.getStudentId()).college(user.getCollege()).major(user.getMajor())
-        .grade(user.getGrade()).avatar(user.getAvatar()).userStatus(user.getUserStatus())
+        .grade(user.getGrade()).className(user.getClassName()).avatar(user.getAvatar())
+        .userStatus(user.getUserStatus())
         .miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
         .createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt()).build();
   }
