@@ -810,6 +810,10 @@ export default {
   .hero__content {
     grid-column: 1 / -1;
   }
+
+  .brief-grid {
+    width: 100%;
+  }
 }
 
 @media (max-width: 720px) {
@@ -832,6 +836,22 @@ export default {
 
   .hero p {
     font-size: 16px;
+  }
+
+  .hero__actions .el-button {
+    flex: 1 1 160px;
+  }
+
+  .activity-carousel :deep(.el-carousel__container) {
+    height: 430px !important;
+  }
+
+  .activity-carousel-item {
+    width: 86vw;
+  }
+
+  .activity-image {
+    height: 230px;
   }
 
   .section {

@@ -14,6 +14,7 @@
           <router-link to="/activities">活动</router-link>
           <router-link to="/apply">入会申请</router-link>
           <router-link to="/progress">我的申请</router-link>
+          <router-link to="/check-in/scan">扫码签到</router-link>
         </nav>
         <div class="site-header__actions">
           <el-button
@@ -291,6 +292,54 @@ export default {
 
 /* 响应式 */
 @media (max-width: 900px) {
+  .site-header__inner {
+    min-height: auto;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .brand {
+    flex: 1 1 calc(100% - 132px);
+    min-width: 0;
+  }
+
+  .brand strong,
+  .brand small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .site-header__actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  .site-header__actions :deep(.el-button) {
+    padding: 8px 10px;
+  }
+
+  .site-nav {
+    order: 3;
+    flex: 1 0 100%;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .site-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .site-nav a {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    background: rgba(239, 246, 255, 0.72);
+  }
+
   .site-footer__inner {
     flex-direction: column;
     align-items: center;
@@ -300,6 +349,12 @@ export default {
 
   .site-footer__info {
     text-align: center;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-header__actions :deep(.el-button span) {
+    display: none;
   }
 }
 </style>

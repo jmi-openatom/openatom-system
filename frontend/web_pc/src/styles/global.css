@@ -170,6 +170,10 @@ textarea {
 }
 
 @media (max-width: 760px) {
+  .container {
+    width: min(100% - 24px, 1180px);
+  }
+
   .page-title {
     font-size: 24px;
   }
@@ -183,8 +187,63 @@ textarea {
     flex-direction: column;
   }
 
+  .toolbar__filters {
+    width: 100%;
+  }
+
   .toolbar__filters .el-input,
   .toolbar__filters .el-select {
     width: 100% !important;
+  }
+
+  .admin-page {
+    padding: 8px 0;
+  }
+
+  .admin-table,
+  .el-table {
+    width: 100%;
+  }
+
+  .el-table {
+    font-size: 13px;
+  }
+
+  .el-table .cell {
+    padding: 0 8px;
+  }
+
+  .el-dialog {
+    width: calc(100% - 24px) !important;
+    max-width: calc(100% - 24px);
+    margin-top: 8vh !important;
+  }
+
+  .el-dialog.is-fullscreen {
+    width: 100% !important;
+    max-width: 100%;
+    margin: 0 !important;
+  }
+
+  .el-dialog__body {
+    padding: 16px;
+  }
+
+  .el-form-item {
+    margin-bottom: 16px;
+  }
+
+  .el-form:not(.el-form--label-top) .el-form-item {
+    display: block;
+  }
+
+  .el-form:not(.el-form--label-top) .el-form-item__label {
+    width: auto !important;
+    justify-content: flex-start;
+    margin-bottom: 6px;
+  }
+
+  .el-form:not(.el-form--label-top) .el-form-item__content {
+    margin-left: 0 !important;
   }
 }

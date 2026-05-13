@@ -95,7 +95,7 @@
           <el-button size="large" @click="previewVisible = false">退出全屏</el-button>
         </div>
         <div class="preview-content">
-          <p class="preview-kicker">小程序扫码签到</p>
+          <p class="preview-kicker">手机网页扫码签到</p>
           <h1>{{ previewRow.title }}</h1>
           <p class="preview-meta">{{ formatRange(previewRow.startAt, previewRow.endAt) }} · {{ previewRow.location || '现场签到' }}</p>
           <img class="qr-image" :src="qrUrl(previewRow.qrPayload)" alt="签到二维码" />
@@ -332,5 +332,40 @@ export default {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 24px 70px rgba(15, 23, 42, .14);
+}
+
+@media (max-width: 760px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .member-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .member-toolbar .el-input {
+    width: 100% !important;
+  }
+
+  .preview-top {
+    padding: 14px;
+  }
+
+  .preview-content {
+    padding: 3vh 16px 6vh;
+  }
+
+  .preview-kicker,
+  .preview-meta,
+  .preview-token,
+  .preview-count {
+    font-size: 15px;
+  }
+
+  .qr-image {
+    width: min(82vw, 360px);
+    height: min(82vw, 360px);
+  }
 }
 </style>

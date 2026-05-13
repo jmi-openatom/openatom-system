@@ -95,6 +95,12 @@ const routes = [
         meta: { requiresSiteLogin: true },
         component: () => import('../views/site/Notifications.vue'),
       },
+      {
+        path: 'check-in/scan',
+        name: 'site-check-in-scan',
+        meta: { requiresSiteLogin: true },
+        component: () => import('../views/site/CheckInScan.vue'),
+      },
     ],
   },
   {

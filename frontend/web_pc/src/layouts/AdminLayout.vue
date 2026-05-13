@@ -314,10 +314,67 @@ export default {
 }
 
 @media (max-width: 900px) {
+  .admin-shell {
+    display: block;
+  }
+
   .admin-aside,
   .admin-header {
     margin-left: 12px;
     margin-right: 12px;
+  }
+
+  .admin-aside {
+    width: auto !important;
+    margin-top: 12px;
+    border-radius: 20px;
+  }
+
+  .admin-brand,
+  .admin-aside__footer {
+    display: none;
+  }
+
+  .admin-menu {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 10px;
+    scrollbar-width: none;
+  }
+
+  .admin-menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-menu :deep(.el-menu-item) {
+    flex: 0 0 auto;
+    height: 40px;
+    margin: 0;
+    padding: 0 12px;
+    line-height: 40px;
+  }
+
+  .admin-header {
+    height: auto;
+    min-height: 66px;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .admin-header h1 {
+    font-size: 18px;
+  }
+
+  .admin-header p {
+    display: none;
+  }
+
+  .admin-header__actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .admin-main {

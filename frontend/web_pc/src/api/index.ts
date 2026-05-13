@@ -221,6 +221,9 @@ export const checkInApi = {
   records(id: string | number): Promise<AxiosResponse> {
     return request.get(`/check-ins/${id}/records`)
   },
+  scan(data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post('/site/check-ins/scan', data)
+  },
 }
 
 export const awardApi = {
