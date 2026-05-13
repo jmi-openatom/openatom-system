@@ -49,6 +49,12 @@ public class User {
 
   private String avatar;
 
+  @TableField("miniapp_openid")
+  private String miniappOpenid;
+
+  @TableField("wechat_unionid")
+  private String wechatUnionid;
+
   @TableField("user_status")
   private UserStatus userStatus;
 

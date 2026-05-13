@@ -77,6 +77,11 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
   private void ensureUserColumns() {
     addColumnIfAbsent(
         "tb_user", "class_name", "VARCHAR(100) DEFAULT NULL COMMENT '班级' AFTER `grade` ");
+    addColumnIfAbsent(
+        "tb_user", "miniapp_openid", "VARCHAR(80) DEFAULT NULL COMMENT '微信小程序openid' AFTER `avatar`");
+    addColumnIfAbsent(
+        "tb_user", "wechat_unionid", "VARCHAR(80) DEFAULT NULL COMMENT '微信unionid' AFTER `miniapp_openid`");
+    addIndexIfAbsent("tb_user", "uk_miniapp_openid", "UNIQUE KEY `uk_miniapp_openid` (`miniapp_openid`)");
   }
 
   private void ensureRecruitmentCampaignColumns() {
@@ -270,6 +275,14 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     jdbcTemplate.execute(
         "ALTER TABLE `" + tableName + "` ADD COLUMN `" + columnName + "` " + definition);
     log.info("Added missing column: {}.{}", tableName, columnName);
+  }
+
+  private void addIndexIfAbsent(String tableName, String indexName, String definition) {
+    if (!tableExists(tableName) || indexExists(tableName, indexName)) {
+      return;
+    }
+    jdbcTemplate.execute("ALTER TABLE `" + tableName + "` ADD " + definition);
+    log.info("Added missing index: {}.{}", tableName, indexName);
   }
 
   private boolean tableExists(String tableName) {

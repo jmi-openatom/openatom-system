@@ -49,6 +49,12 @@ public class AuthController {
     return authService.login(requestLoginDTO);
   }
 
+  @PostMapping("/miniapp-login")
+  public Result<ResponseLoginVO> miniappLogin(
+      @Valid @RequestBody RequestMiniappLoginDTO requestMiniappLoginDTO) {
+    return authService.miniappLogin(requestMiniappLoginDTO);
+  }
+
   /**
    * 刷新令牌
    *

@@ -34,6 +34,12 @@ public interface UserMapper extends BaseMapper<User> {
             .eq(User::getUserName, loginName));
   }
 
+  /** 按小程序 openid 查询用户 */
+  default User selectByMiniappOpenid(String openid) {
+    if (openid == null || openid.isBlank()) return null;
+    return selectOne(new LambdaQueryWrapper<User>().eq(User::getMiniappOpenid, openid).last("LIMIT 1"));
+  }
+
   /** 模糊搜索用户（用户名/真实姓名/学号/手机/邮箱） */
   default List<User> searchByKeyword(String keyword) {
     return selectList(

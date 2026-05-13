@@ -17,10 +17,11 @@
 import {checkInApi} from '@/api'
 import {getToken} from '@/utils/auth'
 import {computed, ref} from 'vue'
-import {onLoad} from '@dcloudio/uni-app'
+import {onLoad, onShow} from '@dcloudio/uni-app'
 
 const token = ref('')
 const submitting = ref(false)
+const PENDING_CHECKIN_TOKEN = 'openatom_pending_checkin_token'
 const title = computed(() => submitting.value ? '正在签到' : '内部签到')
 const desc = ref('请使用小程序扫描后台全屏预览中的签到二维码。')
 
@@ -38,9 +39,11 @@ async function submit(value: string) {
     }
     if (!getToken()) {
         uni.showToast({title: '请先登录后签到', icon: 'none'})
+        uni.setStorageSync(PENDING_CHECKIN_TOKEN, normalized)
         uni.navigateTo({url: '/pages/login/index'})
         return
     }
+    uni.removeStorageSync(PENDING_CHECKIN_TOKEN)
     submitting.value = true
     try {
         const res: any = await checkInApi.scan(normalized)
@@ -65,6 +68,15 @@ onLoad((options?: { token?: string }) => {
     token.value = options?.token || ''
     if (token.value) {
         submit(token.value)
+    }
+})
+
+onShow(() => {
+    if (submitting.value || !getToken()) return
+    const pending = uni.getStorageSync(PENDING_CHECKIN_TOKEN)
+    if (typeof pending === 'string' && pending) {
+        token.value = pending
+        submit(pending)
     }
 })
 </script>

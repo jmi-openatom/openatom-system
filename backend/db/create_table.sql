@@ -69,6 +69,14 @@ CREATE TABLE IF NOT EXISTS `tb_user`
 (
     255
 ) DEFAULT NULL COMMENT '头像URL',
+    `miniapp_openid` VARCHAR
+(
+    80
+) DEFAULT NULL COMMENT '微信小程序openid',
+    `wechat_unionid` VARCHAR
+(
+    80
+) DEFAULT NULL COMMENT '微信unionid',
     `user_status` TINYINT DEFAULT 1 COMMENT '用户状态: 1-active, 0-disabled, 2-locked',
     `create_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `last_login_at` TIMESTAMP NULL DEFAULT NULL COMMENT '最后登录时间',
@@ -83,6 +91,10 @@ CREATE TABLE IF NOT EXISTS `tb_user`
     UNIQUE KEY `uk_student_id`
 (
     `student_id`
+),
+    UNIQUE KEY `uk_miniapp_openid`
+(
+    `miniapp_openid`
 ),
     KEY `idx_user_status`
 (

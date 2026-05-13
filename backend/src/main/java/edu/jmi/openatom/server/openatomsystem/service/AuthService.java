@@ -3,6 +3,7 @@ package edu.jmi.openatom.server.openatomsystem.service;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestChangePasswordDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
@@ -16,6 +17,8 @@ public interface AuthService {
   Result<String> register(RequestRegisterDTO requestRegisterDTO);
 
   Result<ResponseLoginVO> login(RequestLoginDTO requestLoginDTO);
+
+  Result<ResponseLoginVO> miniappLogin(RequestMiniappLoginDTO requestMiniappLoginDTO);
 
   Result<ResponseLoginVO> refreshToken(String refreshToken);
 

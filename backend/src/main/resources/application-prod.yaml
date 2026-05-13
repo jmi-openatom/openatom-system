@@ -57,6 +57,9 @@ sa-token:
   is-log: ${SA_TOKEN_LOG_ENABLED:false}
 
 app:
+  miniapp:
+    app-id: ${APP_MINIAPP_APP_ID:wx8c6b52ab95da0938}
+    app-secret: ${APP_MINIAPP_APP_SECRET:d15542dcaa23b92191962235dacef7b9}
   cors:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:*}
   rate-limit:

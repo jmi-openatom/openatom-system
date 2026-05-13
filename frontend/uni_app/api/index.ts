@@ -35,6 +35,9 @@ export const authApi = {
   login(data: Record<string, unknown>) {
     return request.post('/auth/login', data)
   },
+  miniappLogin(data: Record<string, unknown>) {
+    return request.post('/auth/miniapp-login', data)
+  },
   register(data: Record<string, unknown>) {
     return request.post('/auth/register', data)
   },

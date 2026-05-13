@@ -9,9 +9,20 @@
         <LoginForm
             :initial-password="remembered.password"
             :initial-username="remembered.username"
-            :loading="submitting"
+            :loading="accountSubmitting"
             @submit="onLogin"
         />
+
+        <view class="quick-login">
+            <view class="divider">
+                <view class="divider__line"></view>
+                <text class="divider__text">快捷登录</text>
+                <view class="divider__line"></view>
+            </view>
+            <button class="wechat-button" :disabled="wechatSubmitting" @tap="onMiniappLogin">
+                {{ wechatSubmitting ? '登录中...' : '微信一键登录' }}
+            </button>
+        </view>
 
         <!--        <view class="footer">-->
         <!--            <text class="footer__text">还没有账号？</text>-->
@@ -28,7 +39,8 @@ import store from '@/store'
 import {onMounted, reactive, ref} from 'vue'
 import type {LoginFormData} from './types'
 
-const submitting = ref(false)
+const accountSubmitting = ref(false)
+const wechatSubmitting = ref(false)
 
 const remembered = reactive({
     username: '',
@@ -44,57 +56,88 @@ onMounted(() => {
 })
 
 async function onLogin(data: LoginFormData) {
-    submitting.value = true
+    accountSubmitting.value = true
     try {
         const res: any = await authApi.login({
             username: data.username,
             password: data.password,
         })
 
-        const token = res?.accessToken || res?.token || ''
-        const refreshToken = res?.refreshToken || ''
-        const user = res?.user || res?.info || null
-
-        setSession({
-            accessToken: token,
-            refreshToken,
-            user,
-            roles: res?.roles || [],
-            permissions: res?.permissions || [],
-        })
-
-        store.setToken(token)
-        if (user) {
-            store.setUserInfo(user)
-        }
-
         setRememberedLogin({
             username: data.username,
             password: data.password,
         })
-
-        uni.showToast({title: '登录成功', icon: 'success'})
-        setTimeout(() => {
-            if (needsProfileCompletion(user)) {
-                uni.showModal({
-                    title: '请补全资料',
-                    content: '系统已为你创建账号，请登录后补全手机号、学号、院系等个人信息。',
-                    showCancel: false,
-                    success: () => uni.reLaunch({url: '/pages/profile/index'}),
-                })
-                return
-            }
-            uni.navigateBack({
-                fail: () => {
-                    uni.reLaunch({url: '/pages/home/index'})
-                },
-            })
-        }, 400)
+        finishLogin(res)
     } catch {
         // error toast handled by request interceptor
     } finally {
-        submitting.value = false
+        accountSubmitting.value = false
     }
+}
+
+async function onMiniappLogin() {
+    wechatSubmitting.value = true
+    try {
+        const loginResult: any = await uniLogin()
+        const code = loginResult?.code || ''
+        if (!code) {
+            uni.showToast({title: '微信登录失败，请重试', icon: 'none'})
+            return
+        }
+        const res: any = await authApi.miniappLogin({code})
+        finishLogin(res)
+    } catch {
+        uni.showToast({title: '微信登录失败，请重试', icon: 'none'})
+    } finally {
+        wechatSubmitting.value = false
+    }
+}
+
+function uniLogin() {
+    return new Promise((resolve, reject) => {
+        uni.login({
+            provider: 'weixin',
+            success: resolve,
+            fail: reject,
+        })
+    })
+}
+
+function finishLogin(res: any) {
+    const token = res?.accessToken || res?.token || ''
+    const refreshToken = res?.refreshToken || ''
+    const user = res?.user || res?.info || null
+
+    setSession({
+        accessToken: token,
+        refreshToken,
+        user,
+        roles: res?.roles || [],
+        permissions: res?.permissions || [],
+    })
+
+    store.setToken(token)
+    if (user) {
+        store.setUserInfo(user)
+    }
+
+    uni.showToast({title: '登录成功', icon: 'success'})
+    setTimeout(() => {
+        if (needsProfileCompletion(user)) {
+            uni.showModal({
+                title: '请补全资料',
+                content: '系统已为你创建账号，请登录后补全手机号、学号、院系等个人信息。',
+                showCancel: false,
+                success: () => uni.reLaunch({url: '/pages/profile/index'}),
+            })
+            return
+        }
+        uni.navigateBack({
+            fail: () => {
+                uni.reLaunch({url: '/pages/home/index'})
+            },
+        })
+    }, 400)
 }
 
 function goRegister() {
@@ -174,5 +217,41 @@ function needsProfileCompletion(user: Record<string, any> | null) {
     font-size: 26rpx;
     font-weight: 600;
     color: #1769e8;
+}
+
+.quick-login {
+    padding: 0 48rpx;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 18rpx;
+    margin: 8rpx 0 28rpx;
+}
+
+.divider__line {
+    flex: 1;
+    height: 1rpx;
+    background: #dbe6f5;
+}
+
+.divider__text {
+    color: #94a3b8;
+    font-size: 24rpx;
+}
+
+.wechat-button {
+    height: 92rpx;
+    line-height: 92rpx;
+    border-radius: 999rpx;
+    color: #fff;
+    background: #07c160;
+    font-size: 30rpx;
+    font-weight: 700;
+}
+
+.wechat-button::after {
+    border: 0;
 }
 </style>

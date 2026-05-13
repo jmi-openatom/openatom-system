@@ -5,10 +5,12 @@ import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.bootstrap.RoleSeedTemplate;
+import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.web.ClientIpResolver;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestChangePasswordDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
@@ -18,15 +20,23 @@ import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -45,6 +55,7 @@ public class AuthServiceImpl implements AuthService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
   private static final String REFRESH_TOKEN_KEY_PREFIX = "openatom:refresh:token:";
   private static final String REFRESH_USER_KEY_PREFIX = "openatom:refresh:user:";
+  private static final String MINIAPP_SESSION_URL = "https://api.weixin.qq.com/sns/jscode2session";
 
   private final UserMapper userMapper;
   private final UserRoleMapper userRoleMapper;
@@ -57,6 +68,13 @@ public class AuthServiceImpl implements AuthService {
   private final PasswordService passwordService;
   private final ClientIpResolver clientIpResolver;
   private final RegistrationSettingService registrationSettingService;
+  private final HttpClient httpClient = HttpClient.newHttpClient();
+
+  @Value("${app.miniapp.app-id:}")
+  private String miniappAppId;
+
+  @Value("${app.miniapp.app-secret:}")
+  private String miniappAppSecret;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -115,6 +133,32 @@ public class AuthServiceImpl implements AuthService {
     upgradePasswordIfNecessary(user, requestLoginDTO.getPassword());
     recordLoginLog(user.getId());
     return Result.success(createLoginResponse(user), "登陆成功");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseLoginVO> miniappLogin(RequestMiniappLoginDTO requestMiniappLoginDTO) {
+    if (requestMiniappLoginDTO == null || requestMiniappLoginDTO.getCode() == null
+        || requestMiniappLoginDTO.getCode().isBlank()) {
+      return Result.error("小程序登录code不能为空");
+    }
+    if (miniappAppId == null || miniappAppId.isBlank() || miniappAppSecret == null || miniappAppSecret.isBlank()) {
+      return Result.error(503, "小程序快捷登录未配置");
+    }
+    Map<String, Object> session = requestMiniappSession(requestMiniappLoginDTO.getCode().trim());
+    String openid = asString(session.get("openid"));
+    if (openid == null) {
+      return Result.error(401, asString(session.get("errmsg"), "小程序授权失败"));
+    }
+    User user = userMapper.selectByMiniappOpenid(openid);
+    if (user == null) {
+      user = createMiniappUser(openid, asString(session.get("unionid")));
+    } else if (user.getWechatUnionid() == null && session.get("unionid") != null) {
+      user.setWechatUnionid(asString(session.get("unionid")));
+      userMapper.updateById(user);
+    }
+    recordLoginLog(user.getId());
+    return Result.success(createLoginResponse(user), "微信登录成功");
   }
 
   @Override
@@ -209,6 +253,51 @@ public class AuthServiceImpl implements AuthService {
         .user(buildSafeUser(user)).roles(snapshot.roles()).permissions(snapshot.permissions()).build();
   }
 
+  private Map<String, Object> requestMiniappSession(String code) {
+    try {
+      String url = MINIAPP_SESSION_URL
+          + "?appid=" + encode(miniappAppId)
+          + "&secret=" + encode(miniappAppSecret)
+          + "&js_code=" + encode(code)
+          + "&grant_type=authorization_code";
+      HttpRequest request = HttpRequest.newBuilder(URI.create(url)).GET().build();
+      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      return Jsons.parseObject(response.body());
+    } catch (Exception e) {
+      log.warn("Miniapp login request failed", e);
+      return Map.of("errmsg", "小程序授权服务不可用");
+    }
+  }
+
+  private User createMiniappUser(String openid, String unionid) {
+    String username = uniqueMiniappUsername(openid);
+    User user = User.builder()
+        .userName(username)
+        .password(passwordService.encode(UUID.randomUUID().toString()))
+        .realName("微信用户")
+        .miniappOpenid(openid)
+        .wechatUnionid(unionid)
+        .build();
+    userMapper.insert(user);
+    Result<String> roleResult = bindProbationaryMemberRole(user.getId());
+    if (roleResult.getCode() != Result.SUCCESS_CODE) throw new IllegalStateException(roleResult.getMessage());
+    Result<String> membershipResult = bindDefaultClubMembership(user.getId());
+    if (membershipResult.getCode() != Result.SUCCESS_CODE) throw new IllegalStateException(membershipResult.getMessage());
+    return user;
+  }
+
+  private String uniqueMiniappUsername(String openid) {
+    String suffix = openid.length() > 18 ? openid.substring(openid.length() - 18) : openid;
+    String base = "wx_" + suffix.replaceAll("[^A-Za-z0-9_]", "");
+    if (base.length() < 4) base = "wx_user";
+    String candidate = base;
+    int index = 1;
+    while (userMapper.selectByStudentIdOrUserName(candidate) != null) {
+      candidate = base + "_" + index++;
+    }
+    return candidate;
+  }
+
   private AuthSnapshot buildAuthSnapshot(Integer userId) {
     List<UserRole> userRoles = userRoleMapper.selectByUserId(userId);
     List<Integer> roleIds = userRoles.stream().map(UserRole::getRoleId).distinct().collect(Collectors.toList());
@@ -296,6 +385,19 @@ public class AuthServiceImpl implements AuthService {
         .studentId(user.getStudentId()).college(user.getCollege()).major(user.getMajor())
         .grade(user.getGrade()).avatar(user.getAvatar()).userStatus(user.getUserStatus())
         .createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt()).build();
+  }
+
+  private String encode(String value) {
+    return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
+  }
+
+  private String asString(Object value) {
+    return asString(value, null);
+  }
+
+  private String asString(Object value, String fallback) {
+    String stringValue = value == null ? null : String.valueOf(value);
+    return stringValue == null || stringValue.isBlank() ? fallback : stringValue;
   }
 
   private String getRefreshTokenKey(String refreshToken) { return REFRESH_TOKEN_KEY_PREFIX + refreshToken; }
