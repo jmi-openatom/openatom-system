@@ -20,7 +20,6 @@ public class ResponseCheckInSessionVO {
   private Timestamp startAt;
   private Timestamp endAt;
   private String status;
-  private String token;
   private String qrPayload;
   private Integer targetCount;
   private Integer checkedCount;

@@ -143,7 +143,12 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
     if (submissions == null || submissions.isEmpty()) return List.of();
     Set<Integer> userIds = submissions.stream().map(FormSubmission::getUserId).filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
     Map<Integer, User> users = userIds.isEmpty() ? Map.of() : userMapper.selectBatchIds(userIds).stream().collect(Collectors.toMap(User::getId, Function.identity()));
-    return submissions.stream().map(s -> toResponse(s, users.get(s.getUserId()))).toList();
+    return submissions.stream().map(s -> toResponse(s, userForSubmission(s, users))).toList();
+  }
+
+  private User userForSubmission(FormSubmission submission, Map<Integer, User> users) {
+    Integer userId = submission.getUserId();
+    return userId == null ? null : users.get(userId);
   }
 
   private ResponseFormSubmissionVO toResponse(FormSubmission submission, User user) {

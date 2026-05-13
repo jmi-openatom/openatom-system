@@ -20,7 +20,11 @@ import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.CheckInService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInRecordVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInSessionVO;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
+import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +41,9 @@ public class CheckInServiceImpl implements CheckInService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
   private static final List<String> STATUSES = List.of("draft", "open", "closed");
   private static final String PAYLOAD_PREFIX = "openatom-checkin:";
+  private static final String ROTATING_PAYLOAD_PREFIX = "openatom-checkin-v2:";
+  private static final long ROTATING_TOKEN_WINDOW_SECONDS = 30L;
+  private static final long ROTATING_TOKEN_GRACE_WINDOWS = 10L;
 
   private final ClubMapper clubMapper;
   private final ClubActivityMapper activityMapper;
@@ -116,8 +123,7 @@ public class CheckInServiceImpl implements CheckInService {
   @Transactional(rollbackFor = Exception.class)
   public Result<ResponseCheckInRecordVO> scan(RequestCheckInScanDTO request) {
     if (!StpUtil.isLogin()) return Result.error(401, "请先登录后签到");
-    String token = normalizeToken(request.getToken());
-    CheckInSession session = token == null ? null : sessionMapper.selectByToken(token);
+    CheckInSession session = resolveSession(request.getToken());
     if (session == null) return Result.error(404, "签到码无效");
     if (!"open".equals(session.getStatus())) return Result.error(400, "签到未开放或已关闭");
     Timestamp now = Times.now();
@@ -145,8 +151,7 @@ public class CheckInServiceImpl implements CheckInService {
         .activityTitle(activity == null ? null : activity.getTitle())
         .title(session.getTitle()).location(session.getLocation())
         .startAt(session.getStartAt()).endAt(session.getEndAt())
-        .status(session.getStatus()).token(session.getToken())
-        .qrPayload(PAYLOAD_PREFIX + session.getToken())
+        .status(session.getStatus()).qrPayload(rotatingPayload(session))
         .targetCount(targets.size()).checkedCount(checkedCount)
         .targetUserIds(targets.stream().map(CheckInTarget::getUserId).toList())
         .build();
@@ -196,6 +201,51 @@ public class CheckInServiceImpl implements CheckInService {
     if (token == null) return null;
     String trimmed = token.trim();
     return trimmed.startsWith(PAYLOAD_PREFIX) ? trimmed.substring(PAYLOAD_PREFIX.length()) : trimmed;
+  }
+
+  private CheckInSession resolveSession(String rawToken) {
+    if (rawToken == null || rawToken.isBlank()) return null;
+    String trimmed = rawToken.trim();
+    if (trimmed.startsWith(ROTATING_PAYLOAD_PREFIX)) return resolveRotatingSession(trimmed);
+    String token = normalizeToken(trimmed);
+    return token == null ? null : sessionMapper.selectByToken(token);
+  }
+
+  private CheckInSession resolveRotatingSession(String payload) {
+    String[] parts = payload.substring(ROTATING_PAYLOAD_PREFIX.length()).split(":");
+    if (parts.length != 3) return null;
+    Integer sessionId;
+    long window;
+    try {
+      sessionId = Integer.valueOf(parts[0]);
+      window = Long.parseLong(parts[1]);
+    } catch (NumberFormatException e) {
+      return null;
+    }
+    long currentWindow = currentTokenWindow();
+    if (window < currentWindow - ROTATING_TOKEN_GRACE_WINDOWS || window > currentWindow + 1) return null;
+    CheckInSession session = findSession(sessionId);
+    if (session == null) return null;
+    return parts[2].equals(rotatingSignature(session, window)) ? session : null;
+  }
+
+  private String rotatingPayload(CheckInSession session) {
+    long window = currentTokenWindow();
+    return ROTATING_PAYLOAD_PREFIX + session.getId() + ":" + window + ":" + rotatingSignature(session, window);
+  }
+
+  private long currentTokenWindow() {
+    return System.currentTimeMillis() / 1000L / ROTATING_TOKEN_WINDOW_SECONDS;
+  }
+
+  private String rotatingSignature(CheckInSession session, long window) {
+    String source = session.getId() + ":" + session.getToken() + ":" + window;
+    try {
+      byte[] digest = MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8));
+      return HexFormat.of().formatHex(digest).substring(0, 24);
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 unavailable", e);
+    }
   }
 
   private String trimToNull(String value) {
