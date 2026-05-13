@@ -71,8 +71,8 @@
         </div>
         <el-divider content-position="left">发放人员</el-divider>
         <div class="member-toolbar">
-          <el-input v-model="memberKeyword" clearable placeholder="搜索成员姓名/学号" style="width: 260px" />
-          <el-button @click="selectAllMembers">全选当前成员</el-button>
+          <el-input v-model="memberKeyword" clearable placeholder="搜索人员姓名/学号" style="width: 260px" />
+          <el-button @click="selectAllMembers">全选当前人员</el-button>
           <el-button @click="form.targetUserIds = []">清空</el-button>
           <span class="muted-line">已选择 {{ form.targetUserIds.length }} 人</span>
         </div>
@@ -80,8 +80,13 @@
           <el-table-column type="selection" width="48" />
           <el-table-column prop="realName" label="姓名" min-width="140" />
           <el-table-column prop="userName" label="用户名" min-width="140" />
-          <el-table-column prop="status" label="成员状态" width="110" />
-          <el-table-column prop="departmentName" label="部门" min-width="130" />
+          <el-table-column prop="studentId" label="学号" min-width="140" />
+          <el-table-column prop="className" label="班级" min-width="130" />
+          <el-table-column prop="userStatus" label="状态" width="110">
+            <template #default="{ row }">
+              <el-tag :type="statusType(row.userStatus)">{{ userStatusText(row.userStatus) }}</el-tag>
+            </template>
+          </el-table-column>
         </el-table>
       </el-form>
       <template #footer>
@@ -154,7 +159,7 @@
 <script>
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { activityApi, checkInApi, membershipApi } from '@/api'
+import { activityApi, checkInApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
 import { qrSvgDataUrl } from '@/utils/qr.ts'
 
@@ -187,7 +192,9 @@ export default {
       const keyword = this.memberKeyword.trim()
       if (!keyword) return this.members
       return this.members.filter((item) =>
-        [item.realName, item.userName, item.studentId, item.departmentName].some((value) => String(value || '').includes(keyword)),
+        [item.realName, item.userName, item.studentId, item.college, item.major, item.className].some((value) =>
+          String(value || '').includes(keyword),
+        ),
       )
     },
     checkedRecords() {
@@ -210,6 +217,9 @@ export default {
     statusText(status) {
       return { draft: '草稿', open: '进行中', closed: '已关闭' }[status] || status || '-'
     },
+    userStatusText(status) {
+      return { active: '启用', disabled: '禁用', locked: '锁定' }[status] || status || '-'
+    },
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '不限'} - ${formatDateTime(endAt) || '不限'}`
     },
@@ -222,12 +232,12 @@ export default {
       }
     },
     async loadOptions() {
-      const [activities, members] = await Promise.all([
+      const [activities, users] = await Promise.all([
         activityApi.list({ status: 'published' }),
-        membershipApi.list({ status: 'active' }),
+        checkInApi.userOptions(),
       ])
       this.activities = activities || []
-      this.members = (members || []).filter((item) => item.userId).map((item) => ({ ...item, id: item.userId }))
+      this.members = (users || []).filter((item) => item.id)
     },
     openDialog() {
       this.form = { title: '', status: 'open', startAt: '', endAt: '', location: '', activityId: undefined, targetUserIds: [] }
@@ -236,7 +246,7 @@ export default {
       this.$nextTick(() => this.$refs.memberTableRef?.clearSelection())
     },
     handleMemberSelection(selection) {
-      this.form.targetUserIds = selection.map((item) => item.userId)
+      this.form.targetUserIds = selection.map((item) => item.id)
     },
     selectAllMembers() {
       this.$refs.memberTableRef?.clearSelection()

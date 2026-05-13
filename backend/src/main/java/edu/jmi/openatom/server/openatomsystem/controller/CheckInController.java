@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInScanDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateCheckInSessionDTO;
+import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.service.CheckInService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInRecordVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInSessionVO;
@@ -27,6 +28,12 @@ public class CheckInController {
   @SaCheckPermission("check-in:list")
   public Result<List<ResponseCheckInSessionVO>> list(@RequestParam(required = false) String status) {
     return checkInService.list(status);
+  }
+
+  @GetMapping("/check-ins/user-options")
+  @SaCheckPermission("check-in:create")
+  public Result<List<User>> userOptions(@RequestParam(required = false) String keyword) {
+    return checkInService.userOptions(keyword);
   }
 
   @GetMapping("/check-ins/{sessionId}")

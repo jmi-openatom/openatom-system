@@ -60,6 +60,14 @@ public class CheckInServiceImpl implements CheckInService {
   }
 
   @Override
+  public Result<List<User>> userOptions(String keyword) {
+    List<User> users = keyword == null || keyword.isBlank()
+        ? userMapper.selectList(null)
+        : userMapper.selectOptionsByKeyword(keyword.trim());
+    return Result.success(users.stream().map(this::buildSafeUser).toList());
+  }
+
+  @Override
   public Result<ResponseCheckInSessionVO> detail(Integer sessionId) {
     CheckInSession session = findSession(sessionId);
     return session == null ? Result.error(404, "签到不存在") : Result.success(toSessionVO(session));
@@ -178,6 +186,13 @@ public class CheckInServiceImpl implements CheckInService {
         .status(record == null ? "pending" : record.getStatus())
         .checkinAt(record == null ? null : record.getCheckinAt())
         .build();
+  }
+
+  private User buildSafeUser(User user) {
+    return User.builder().id(user.getId()).userName(user.getUserName()).realName(user.getRealName())
+        .phone(user.getPhone()).email(user.getEmail()).studentId(user.getStudentId())
+        .college(user.getCollege()).major(user.getMajor()).grade(user.getGrade())
+        .className(user.getClassName()).userStatus(user.getUserStatus()).build();
   }
 
   private CheckInSession findSession(Integer sessionId) {

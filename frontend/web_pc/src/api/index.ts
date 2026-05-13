@@ -209,6 +209,9 @@ export const checkInApi = {
   list(params?: Record<string, unknown>): Promise<AxiosResponse> {
     return request.get('/check-ins', { params })
   },
+  userOptions(params?: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.get('/check-ins/user-options', { params })
+  },
   detail(id: string | number): Promise<AxiosResponse> {
     return request.get(`/check-ins/${id}`)
   },
