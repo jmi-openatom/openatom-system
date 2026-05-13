@@ -1,6 +1,6 @@
 <template>
   <el-container class="admin-shell">
-    <el-aside class="admin-aside" width="232px">
+    <el-aside class="admin-aside" width="248px">
       <div class="admin-brand">
         <span class="admin-brand__mark">OA</span>
         <div>
@@ -13,8 +13,8 @@
         :default-active="$route.path"
         class="admin-menu"
         background-color="transparent"
-        text-color="#475569"
-        active-text-color="#2563eb"
+        text-color="#333333"
+        active-text-color="#ffffff"
       >
         <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
           <el-icon>
@@ -29,9 +29,17 @@
     </el-aside>
     <el-container>
       <el-header class="admin-header">
-        <div>
-          <h1>{{ pageTitle }}</h1>
-          <p>统一维护社团、用户、审批、面试与权限数据</p>
+        <div class="admin-header__title">
+          <el-button
+            class="admin-mobile-menu-btn"
+            circle
+            :icon="Menu"
+            @click="mobileMenuVisible = true"
+          />
+          <div>
+            <h1>{{ pageTitle }}</h1>
+            <p>统一维护社团、用户、审批、面试与权限数据</p>
+          </div>
         </div>
         <div class="admin-header__actions">
           <el-button :icon="HomeFilled" @click="$router.push('/')">官网</el-button>
@@ -54,6 +62,28 @@
         <router-view />
       </el-main>
     </el-container>
+    <el-drawer
+      v-model="mobileMenuVisible"
+      class="admin-mobile-drawer"
+      direction="ltr"
+      size="84%"
+      title="管理后台"
+    >
+      <el-menu
+        router
+        :default-active="$route.path"
+        class="admin-drawer-menu"
+        @select="mobileMenuVisible = false"
+      >
+        <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
+          <el-icon>
+            <component :is="item.icon" />
+          </el-icon>
+          <span>{{ item.label }}</span>
+        </el-menu-item>
+      </el-menu>
+      <span class="version-tag">{{ version }}</span>
+    </el-drawer>
   </el-container>
 </template>
 
@@ -68,6 +98,7 @@ import {
   HomeFilled,
   List,
   Lock,
+  Menu,
   MessageBox,
   OfficeBuilding,
   Tickets,
@@ -85,6 +116,8 @@ export default {
     return {
       ArrowDown,
       HomeFilled,
+      Menu,
+      mobileMenuVisible: false,
       user: getCurrentUser(),
       version: __APP_VERSION__,
       menus: [
@@ -126,6 +159,12 @@ export default {
           label: '请假审批',
           icon: DocumentChecked,
           permissions: ['leave-application:list'],
+        },
+        {
+          path: '/admin/school-calendar',
+          label: '校历设置',
+          icon: Calendar,
+          permissions: ['school-calendar:manage'],
         },
         {
           path: '/admin/activities',
@@ -208,73 +247,115 @@ export default {
 <style scoped>
 .admin-shell {
   min-height: 100vh;
-  background: transparent;
+  background: #f5f5f7;
 }
 
 .admin-aside {
-  margin: 16px 0 16px 16px;
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: var(--oa-shadow);
-  backdrop-filter: blur(18px);
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  margin: 0;
+  border: 0;
+  border-right: 1px solid #e0e0e0;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+  backdrop-filter: none;
+  animation: adminRailIn 0.42s ease both;
 }
 
 .admin-brand {
   display: flex;
-  height: 72px;
+  min-height: 76px;
   align-items: center;
   gap: 12px;
-  padding: 0 18px;
-  color: var(--oa-text);
+  padding: 16px 18px 14px;
+  color: #1d1d1f;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .admin-brand__mark {
   display: grid;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   place-items: center;
-  color: #fff;
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
-  border-radius: 14px;
-  font-weight: 800;
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+  color: #ffffff;
+  background: #1d1d1f;
+  border: 1px solid #1d1d1f;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.admin-brand strong {
+  display: block;
+  color: #1d1d1f;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0;
 }
 
 .admin-brand small {
   display: block;
-  margin-top: 2px;
-  color: #64748b;
+  margin-top: 5px;
+  color: #7a7a7a;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .admin-menu {
-  padding: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px 10px;
+  overflow-y: auto;
   border-right: 0;
+  scrollbar-width: none;
+}
+
+.admin-menu::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-header {
   display: flex;
-  height: 72px;
+  height: 52px;
   align-items: center;
   justify-content: space-between;
-  margin: 16px 16px 0 16px;
+  margin: 0;
   padding: 0 22px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 24px;
-  box-shadow: var(--oa-shadow);
-  backdrop-filter: blur(18px);
+  background: rgba(245, 245, 247, 0.82);
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  animation: adminTopIn 0.36s ease both;
+}
+
+.admin-header__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-mobile-menu-btn {
+  display: none;
+  flex: 0 0 auto;
 }
 
 .admin-header h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .admin-header p {
   margin: 4px 0 0;
   color: var(--oa-muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .admin-header__actions {
@@ -284,39 +365,105 @@ export default {
 }
 
 .admin-main {
-  padding: 16px;
-  background: transparent;
+  padding: 24px;
+  background: #f5f5f7;
 }
 
 .admin-menu :deep(.el-menu-item) {
-  margin-bottom: 6px;
-  height: 46px;
-  line-height: 46px;
+  height: 42px;
+  padding: 0 12px !important;
+  margin: 2px 0;
+  line-height: 42px;
+  color: #7a7a7a;
+  border-radius: 12px;
+  font-size: 14px;
+  letter-spacing: 0;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.admin-menu :deep(.el-menu-item .el-icon) {
+  width: 20px;
+  margin-right: 12px;
+  color: currentColor;
+  font-size: 18px;
+}
+
+.admin-menu :deep(.el-menu-item span) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-menu :deep(.el-menu-item:hover) {
-  background: rgba(37, 99, 235, 0.08);
+  background: #f5f5f7;
+  color: #1d1d1f;
+  transform: translateX(2px);
 }
 
 .admin-menu :deep(.el-menu-item.is-active) {
-  background: rgba(37, 99, 235, 0.1);
-  font-weight: 600;
+  background: #1d1d1f;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.admin-menu :deep(.el-menu-item.is-active:hover) {
+  background: #000000;
+  color: #ffffff;
+}
+
+@keyframes adminRailIn {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes adminTopIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .admin-aside__footer {
   display: flex;
+  margin-top: auto;
   justify-content: center;
-  padding: 12px 16px 18px;
+  padding: 14px 16px 18px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.admin-drawer-menu {
+  margin-bottom: 16px;
+  border-right: 0;
+}
+
+.admin-drawer-menu :deep(.el-menu-item) {
+  height: 48px;
+  margin-bottom: 8px;
+  border-radius: 18px;
 }
 
 .version-tag {
-  background: #f1f5f9;
-  color: #64748b;
-  padding: 2px 8px;
+  background: #f5f5f7;
+  color: #7a7a7a;
+  padding: 5px 10px;
   border-radius: 999px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e0e0e0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
+  line-height: 1;
 }
 
 @media (max-width: 900px) {
@@ -324,50 +471,30 @@ export default {
     display: block;
   }
 
-  .admin-aside,
   .admin-header {
-    margin-left: 12px;
-    margin-right: 12px;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .admin-aside {
-    width: auto !important;
-    margin-top: 12px;
-    border-radius: 20px;
-  }
-
-  .admin-brand,
-  .admin-aside__footer {
     display: none;
-  }
-
-  .admin-menu {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    padding: 10px;
-    scrollbar-width: none;
-  }
-
-  .admin-menu::-webkit-scrollbar {
-    display: none;
-  }
-
-  .admin-menu :deep(.el-menu-item) {
-    flex: 0 0 auto;
-    height: 40px;
-    margin: 0;
-    padding: 0 12px;
-    line-height: 40px;
   }
 
   .admin-header {
     height: auto;
     min-height: 66px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 12px;
     padding: 14px;
-    border-radius: 20px;
+    border-radius: 0;
+  }
+
+  .admin-header__title {
+    flex: 1 1 auto;
+  }
+
+  .admin-mobile-menu-btn {
+    display: inline-flex;
   }
 
   .admin-header h1 {
@@ -379,12 +506,40 @@ export default {
   }
 
   .admin-header__actions {
-    width: 100%;
-    justify-content: space-between;
+    flex: 0 0 auto;
+    justify-content: flex-end;
   }
 
   .admin-main {
     padding: 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-header {
+    margin: 0;
+    padding: 10px;
+  }
+
+  .admin-header__actions {
+    gap: 6px;
+  }
+
+  .admin-header__actions :deep(.el-button span) {
+    display: none;
+  }
+
+  .admin-header__actions :deep(.el-button) {
+    width: 40px;
+    padding: 8px;
+  }
+
+  .admin-header__actions :deep(.el-button + .el-button) {
+    margin-left: 0;
+  }
+
+  .admin-main {
+    padding: 10px;
   }
 }
 </style>

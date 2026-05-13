@@ -34,6 +34,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     ensureFormSubmissionTable();
     ensureCheckInTables();
     ensureLeaveApplicationTable();
+    ensureSchoolCalendarTables();
     ensureOfficeDocumentTable();
     ensureOperationLogColumns();
   }
@@ -311,6 +312,37 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             KEY `idx_leave_application_user` (`user_id`),
             KEY `idx_leave_application_status` (`status`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='请假申请表'
+        """);
+  }
+
+  private void ensureSchoolCalendarTables() {
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `school_calendar_setting`
+        (
+            `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+            `start_date` DATE NOT NULL COMMENT '开学日期',
+            `week_count` INT NOT NULL COMMENT '学期周数',
+            `updated_by` INT DEFAULT NULL COMMENT '更新人',
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+            `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            PRIMARY KEY (`id`)
+        ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='校历基础设置表'
+        """);
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `school_calendar_adjustment`
+        (
+            `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+            `calendar_date` DATE NOT NULL COMMENT '调休日期',
+            `type` VARCHAR(20) NOT NULL COMMENT '类型: workday/restday',
+            `reason` VARCHAR(255) DEFAULT NULL COMMENT '调休说明',
+            `updated_by` INT DEFAULT NULL COMMENT '更新人',
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+            `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uk_school_calendar_adjustment_date` (`calendar_date`)
+        ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='校历调休表'
         """);
   }
 

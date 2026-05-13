@@ -191,17 +191,14 @@ export default {
   display: grid;
   place-items: center;
   padding: 32px;
-  background:
-    radial-gradient(circle at left top, rgba(147, 197, 253, 0.34), transparent 34%),
-    radial-gradient(circle at right center, rgba(191, 219, 254, 0.56), transparent 28%),
-    linear-gradient(180deg, #f8fbff 0%, #edf4ff 100%);
+  background: #ffffff;
 }
 
 .login-panel {
   display: grid;
-  width: min(980px, 100%);
-  grid-template-columns: 1fr 390px;
-  gap: 28px;
+  width: min(1040px, 100%);
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 48px;
   align-items: center;
 }
 
@@ -214,31 +211,36 @@ export default {
   width: 54px;
   height: 54px;
   place-items: center;
-  color: #fff;
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
-  border-radius: 16px;
-  font-weight: 800;
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.18);
+  color: #ffffff;
+  background: #1d1d1f;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: none;
 }
 
 .login-copy h1 {
   margin: 18px 0 12px;
-  font-size: 42px;
-  letter-spacing: -0.03em;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: 0;
 }
 
 .login-copy p {
   max-width: 520px;
-  color: #475569;
-  line-height: 1.8;
+  color: #7a7a7a;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.5;
 }
 
 .login-card {
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow: 0 24px 60px rgba(37, 99, 235, 0.12);
-  backdrop-filter: blur(16px);
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .full-btn {
@@ -257,7 +259,7 @@ export default {
   justify-content: flex-end;
   gap: 10px;
   margin-bottom: 10px;
-  color: #64748b;
+  color: #7a7a7a;
   font-size: 13px;
 }
 
@@ -266,7 +268,7 @@ export default {
 }
 
 .login-card :deep(.el-tabs__nav-wrap::after) {
-  background-color: rgba(219, 230, 245, 0.9);
+  background-color: rgba(224, 224, 224, 0.9);
 }
 
 .login-card :deep(.el-tabs__item.is-active) {
@@ -276,6 +278,20 @@ export default {
 @media (max-width: 860px) {
   .login-panel {
     grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .login-copy {
+    text-align: center;
+  }
+
+  .login-logo {
+    margin: 0 auto;
+  }
+
+  .login-copy p {
+    margin-right: auto;
+    margin-left: auto;
   }
 }
 </style>

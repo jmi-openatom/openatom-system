@@ -233,28 +233,36 @@ export default {
 
 <style scoped>
 .site-page {
-  padding: 28px 0 64px;
+  padding: 64px 0 80px;
+  background: #f5f5f7;
 }
 
 .leave-page {
   display: grid;
-  gap: 18px;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
 }
 
 .leave-main,
 .leave-history {
   min-width: 0;
-  padding: 24px;
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: var(--oa-shadow);
+  padding: 32px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+  animation: oaFadeUp 0.44s ease both;
 }
 
 .section-head h1 {
   margin: 14px 0 8px;
-  font-size: 34px;
-  line-height: 1.2;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1.1;
 }
 
 .section-head p,
@@ -314,15 +322,16 @@ export default {
 .date-title {
   align-items: center;
   padding: 0 4px 10px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .leave-card {
   margin-top: 12px;
   padding: 16px;
-  border: 1px solid #dbe6f5;
-  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   background: #fff;
+  animation: oaFadeUp 0.34s ease both;
 }
 
 .leave-card__top strong,
@@ -351,9 +360,9 @@ export default {
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid #dbe6f5;
+  border: 1px solid #e0e0e0;
   border-radius: 10px;
-  background: #f8fafc;
+  background: #f5f5f7;
 }
 
 .flow-steps {
@@ -380,7 +389,7 @@ export default {
   .leave-main,
   .leave-history {
     padding: 16px;
-    border-radius: 14px;
+    border-radius: 18px;
   }
 
   .section-head h1 {

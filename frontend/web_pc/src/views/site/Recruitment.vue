@@ -120,15 +120,17 @@ export default {
 
 <style scoped>
 .site-page {
-  padding: 34px 0;
+  padding: 64px 0 80px;
+  background: #f5f5f7;
 }
 
 .campaign-item {
   display: flex;
   justify-content: space-between;
   gap: 18px;
-  padding: 20px;
-  border-radius: 22px;
+  padding: 24px;
+  border-radius: 18px;
+  animation: oaFadeUp 0.44s ease both;
 }
 
 .campaign-item h3 {
@@ -154,6 +156,10 @@ export default {
 }
 
 .site-page :deep(.el-timeline-item__tail) {
-  border-left-color: rgba(147, 197, 253, 0.8);
+  border-left-color: #e0e0e0;
+}
+
+.site-page :deep(.el-timeline-item__timestamp) {
+  color: #7a7a7a;
 }
 </style>

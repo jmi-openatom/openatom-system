@@ -14,6 +14,7 @@ const adminFallbackRoutes = [
   '/admin/form-submissions',
   '/admin/office-documents',
   '/admin/leaves',
+  '/admin/school-calendar',
   '/admin/activities',
   '/admin/check-ins',
   '/admin/awards',
@@ -103,11 +104,16 @@ const routes = [
         component: () => import('../views/site/Leaves.vue'),
       },
       {
-        path: 'check-in/scan',
-        name: 'site-check-in-scan',
-        component: () => import('../views/site/CheckInScan.vue'),
+        path: 'calendar',
+        name: 'site-calendar',
+        component: () => import('../views/site/SchoolCalendar.vue'),
       },
     ],
+  },
+  {
+    path: '/check-in/scan',
+    name: 'site-check-in-scan',
+    component: () => import('../views/site/CheckInScan.vue'),
   },
   {
     path: '/admin/login',
@@ -173,6 +179,12 @@ const routes = [
         name: 'admin-leaves',
         meta: { permissions: ['leave-application:list'] },
         component: () => import('../views/admin/Leaves.vue'),
+      },
+      {
+        path: 'school-calendar',
+        name: 'admin-school-calendar',
+        meta: { permissions: ['school-calendar:manage'] },
+        component: () => import('../views/admin/SchoolCalendar.vue'),
       },
       {
         path: 'activities',

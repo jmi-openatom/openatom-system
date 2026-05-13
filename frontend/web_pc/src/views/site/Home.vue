@@ -4,7 +4,7 @@
       <div aria-hidden="true" class="hero__mesh"></div>
       <div class="container hero__inner">
         <div class="hero__content">
-          <el-tag class="hero__tag" effect="plain">开放原子计算机社团</el-tag>
+          <el-tag class="hero__tag" effect="plain">JMI-OPENATOM</el-tag>
           <h1>{{ club.name || '正在读取社团数据' }}</h1>
           <p>
             {{ club.description || '正在从数据库加载社团介绍、活动、成员和比赛获奖信息。' }}
@@ -25,20 +25,16 @@
         </div>
 
         <div class="command-panel">
-          <div class="panel-topline">
-            <span>社团概况</span>
-            <strong>持续更新</strong>
-          </div>
-          <div v-if="metrics.length" class="signal-grid" role="list" aria-label="社团关键指标">
+          <div v-if="metrics.length" aria-label="社团关键指标" class="signal-grid" role="list">
             <div
               v-for="metric in metrics"
               :key="metric.label"
-              class="signal-card"
               :class="`signal-card--${metricTone(metric.label)}`"
+              class="signal-card"
               role="listitem"
             >
               <div class="signal-card__head">
-                <el-icon class="signal-card__icon" aria-hidden="true">
+                <el-icon aria-hidden="true" class="signal-card__icon">
                   <component :is="metricIcon(metric.label)" />
                 </el-icon>
                 <span class="signal-card__label">{{ metric.label }}</span>
@@ -74,7 +70,7 @@
     </section>
 
     <section id="activities" class="activity-band">
-      <div class="container section">
+      <div class="activity-shell section">
         <div class="section-heading reveal-block">
           <span>近期活动</span>
           <h2>最新活动</h2>
@@ -104,7 +100,7 @@
               </div>
 
               <div class="activity-image">
-                <img :src="activity.coverUrl" :alt="activity.title" />
+                <img :alt="activity.title" :src="activity.coverUrl" />
               </div>
             </article>
           </el-carousel-item>
@@ -164,19 +160,10 @@
 
 <script>
 import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { markRaw, nextTick } from 'vue'
-import { siteApi } from '@/api'
-import {
-  Calendar,
-  Collection,
-  Cpu,
-  DataAnalysis,
-  Lightning,
-  Monitor,
-  Trophy,
-  UserFilled,
-} from '@element-plus/icons-vue'
+import {ScrollTrigger} from 'gsap/ScrollTrigger'
+import {markRaw, nextTick} from 'vue'
+import {siteApi} from '@/api'
+import {Calendar, Collection, Cpu, DataAnalysis, Lightning, Monitor, Trophy, UserFilled,} from '@element-plus/icons-vue'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -337,21 +324,16 @@ export default {
   display: flex;
   align-items: center;
   color: var(--oa-text);
-  background:
-    radial-gradient(circle at top left, rgba(147, 197, 253, 0.3), transparent 34%),
-    radial-gradient(circle at right center, rgba(191, 219, 254, 0.54), transparent 30%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(240, 247, 255, 0.92));
+  background: #f5f5f7;
 }
 
 .hero__mesh {
   position: absolute;
   inset: 0;
   opacity: 0.5;
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-image: none;
   background-size: 54px 54px;
-  mask-image: radial-gradient(circle at center, #000 48%, transparent 100%);
+  mask-image: none;
 }
 
 .hero__inner {
@@ -366,7 +348,7 @@ export default {
 .hero__tag {
   height: 34px;
   padding: 0 14px;
-  border: 1px solid rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(29, 29, 31, 0.12);
   color: var(--oa-primary-dark);
   background: rgba(255, 255, 255, 0.76);
 }
@@ -376,13 +358,13 @@ export default {
   max-width: 720px;
   font-size: 56px;
   line-height: 1.12;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 .hero p {
   max-width: 650px;
   margin: 0;
-  color: #475569;
+  color: #7a7a7a;
   font-size: 18px;
   line-height: 1.9;
 }
@@ -396,11 +378,11 @@ export default {
 
 .command-panel {
   padding: 22px;
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 24px;
+  border: 1px solid rgba(224, 224, 224, 0.95);
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 22px 60px rgba(37, 99, 235, 0.12);
-  backdrop-filter: blur(18px);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .panel-topline,
@@ -412,7 +394,7 @@ export default {
 .panel-topline {
   justify-content: space-between;
   margin-bottom: 18px;
-  color: #64748b;
+  color: #7a7a7a;
   font-size: 13px;
 }
 
@@ -430,17 +412,15 @@ export default {
   position: relative;
   min-height: 122px;
   padding: 16px;
-  border: 1px solid rgba(219, 230, 245, 0.95);
+  border: 1px solid rgba(224, 224, 224, 0.95);
   border-radius: 18px;
-  background: linear-gradient(180deg, #ffffff, #f7fbff);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  background: #f5f5f7;
+  transition: border-color 0.2s ease;
 }
 
 .signal-card:hover {
-  border-color: rgba(147, 197, 253, 0.65);
-  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.08);
+  border-color: rgba(29, 29, 31, 0.65);
+  box-shadow: none;
 }
 
 .signal-card__head {
@@ -458,7 +438,7 @@ export default {
 
 .signal-card__label {
   display: block;
-  color: #64748b;
+  color: #7a7a7a;
   font-size: 13px;
   line-height: 1.35;
 }
@@ -466,49 +446,49 @@ export default {
 .signal-card__value {
   display: block;
   margin: 10px 0 8px;
-  color: #0f172a;
+  color: #1d1d1f;
   font-size: 34px;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .signal-card__note {
   display: block;
-  color: #94a3b8;
+  color: #7a7a7a;
   font-size: 12px;
   line-height: 1.45;
 }
 
 .signal-card--members {
-  background: linear-gradient(180deg, #ffffff, #eff6ff);
+  background: #f5f5f7;
 }
 
 .signal-card--members .signal-card__icon {
-  color: #2563eb;
+  color: #1d1d1f;
 }
 
 .signal-card--activity {
-  background: linear-gradient(180deg, #ffffff, #f0fdf4);
+  background: #f5f5f7;
 }
 
 .signal-card--activity .signal-card__icon {
-  color: #16a34a;
+  color: #1d1d1f;
 }
 
 .signal-card--award {
-  background: linear-gradient(180deg, #ffffff, #fffbeb);
+  background: #f5f5f7;
 }
 
 .signal-card--award .signal-card__icon {
-  color: #d97706;
+  color: #1d1d1f;
 }
 
 .signal-card--recruit {
-  background: linear-gradient(180deg, #ffffff, #faf5ff);
+  background: #f5f5f7;
 }
 
 .signal-card--recruit .signal-card__icon {
-  color: #7c3aed;
+  color: #1d1d1f;
 }
 
 .terminal-strip {
@@ -519,10 +499,10 @@ export default {
 
 .terminal-strip span {
   padding: 6px 10px;
-  border: 1px solid rgba(191, 219, 254, 0.9);
+  border: 1px solid rgba(224, 224, 224, 0.9);
   border-radius: 999px;
   color: var(--oa-primary-dark);
-  background: #eff6ff;
+  background: #f5f5f7;
   font-size: 12px;
 }
 
@@ -537,22 +517,22 @@ export default {
 .section-heading span {
   color: var(--oa-primary-dark);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .section-heading h2 {
   margin: 10px 0;
-  color: #0f172a;
+  color: #1d1d1f;
   font-size: 32px;
   line-height: 1.25;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .section-heading p {
   margin: 0;
-  color: #64748b;
+  color: #7a7a7a;
   line-height: 1.8;
 }
 
@@ -573,18 +553,17 @@ export default {
 .person-card,
 .award-card,
 .activity-item {
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 22px;
+  border: 1px solid rgba(224, 224, 224, 0.95);
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 18px 42px rgba(37, 99, 235, 0.08);
-  backdrop-filter: blur(16px);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .activity-item {
   cursor: pointer;
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease,
     border-color 0.2s ease;
 }
 
@@ -592,9 +571,9 @@ export default {
 .brief-card:hover,
 .person-card:hover,
 .award-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 20px 44px rgba(37, 99, 235, 0.12);
-  border-color: rgba(147, 197, 253, 0.95);
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(29, 29, 31, 0.95);
 }
 
 .brief-card {
@@ -604,9 +583,9 @@ export default {
 .brief-card .el-icon {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: 18px;
   color: var(--oa-primary-dark);
-  background: #eff6ff;
+  background: #f5f5f7;
   font-size: 24px;
 }
 
@@ -615,7 +594,7 @@ export default {
 .person-card h3,
 .award-card h3 {
   margin: 16px 0 8px;
-  color: #111827;
+  color: #1d1d1f;
 }
 
 .brief-card p,
@@ -623,14 +602,12 @@ export default {
 .person-card p,
 .award-card p {
   margin: 0;
-  color: #64748b;
+  color: #7a7a7a;
   line-height: 1.7;
 }
 
 .activity-band {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0)),
-    linear-gradient(180deg, #eff6ff, #f7fbff);
+  background: #f5f5f7;
 }
 
 .activity-timeline {
@@ -650,7 +627,7 @@ export default {
 .activity-item time {
   color: var(--oa-primary-dark);
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .activity-item h3 {
@@ -674,16 +651,16 @@ export default {
   width: 52px;
   height: 52px;
   place-items: center;
-  border-radius: 16px;
+  border-radius: 18px;
   color: #ffffff;
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  background: #f5f5f7;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .person-card small {
   margin-top: auto;
-  color: #475569;
+  color: #7a7a7a;
   line-height: 1.6;
 }
 
@@ -705,14 +682,14 @@ export default {
   width: 120px;
   height: 120px;
   content: '';
-  border: 1px solid rgba(147, 197, 253, 0.6);
+  border: 1px solid rgba(29, 29, 31, 0.6);
   border-radius: 50%;
 }
 
 .award-card__year {
-  color: #3b82f6;
+  color: #1d1d1f;
   font-size: 30px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .award-card strong {
@@ -723,12 +700,6 @@ export default {
 
 .activity-carousel {
   margin-top: 16px;
-}
-
-#activities .container {
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
 }
 
 .activity-carousel-item{
@@ -755,7 +726,7 @@ export default {
 .activity-card h3 {
   font-size: 1.5rem;
   color: var(--oa-text);
-  font-weight: 800;
+  font-weight: 600;
   margin: 6px 0;
 }
 
@@ -792,11 +763,303 @@ export default {
   width: auto;
   height: 40px;
   font-size: 16px;
-  font-weight: 550;
+  font-weight: 600;
   padding: 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* DESIGN.md full-page rewrite: product-tile rhythm, no SaaS chrome. */
+.home-page {
+  background: #ffffff;
+}
+
+.hero {
+  min-height: calc(100vh - 44px);
+  background: #ffffff;
+}
+
+.hero__mesh {
+  display: none;
+}
+
+.hero__inner {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 48px;
+  padding: 80px 0;
+  text-align: center;
+}
+
+.hero__content {
+  max-width: 900px;
+}
+
+.hero__tag {
+  height: auto;
+  padding: 8px 14px;
+  border-color: #f0f0f0;
+  border-radius: 999px;
+  color: #333333;
+  background: #fafafc;
+}
+
+.hero h1 {
+  max-width: 960px;
+  margin: 18px auto 14px;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: 0;
+}
+
+.hero p {
+  max-width: 760px;
+  margin: 0 auto;
+  color: #1d1d1f;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.hero__actions {
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.command-panel {
+  width: min(960px, 100%);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-topline {
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  color: #7a7a7a;
+  font-size: 12px;
+}
+
+.signal-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
+}
+
+.signal-card,
+.signal-card--members,
+.signal-card--activity,
+.signal-card--award,
+.signal-card--recruit {
+  min-height: 150px;
+  padding: 24px;
+  border: 0;
+  border-radius: 0;
+  background: #fafafc;
+}
+
+.signal-card:hover {
+  border-color: transparent;
+}
+
+.signal-card__head {
+  justify-content: center;
+}
+
+.signal-card__value {
+  margin: 14px 0 8px;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 40px;
+  font-weight: 600;
+}
+
+.terminal-strip {
+  justify-content: center;
+}
+
+.section {
+  width: 100%;
+  padding: 80px max(24px, calc((100vw - 1180px) / 2));
+}
+
+.club-brief {
+  max-width: none;
+  background: #f5f5f7;
+}
+
+.people-section {
+  max-width: none;
+  background: #ffffff;
+}
+
+.achievements-section {
+  max-width: none;
+  background: #f5f5f7;
+}
+
+.section-heading {
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.section-heading span {
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.section-heading h2 {
+  margin: 10px 0;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.section-heading p {
+  color: #7a7a7a;
+  font-size: 17px;
+  line-height: 1.47;
+}
+
+.brief-grid,
+.people-grid,
+.award-grid {
+  width: min(1180px, 100%);
+  margin: 32px auto 0;
+  gap: 20px;
+}
+
+.brief-card,
+.person-card,
+.award-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.brief-card:hover,
+.person-card:hover,
+.award-card:hover {
+  border-color: #1d1d1f;
+}
+
+.brief-card .el-icon,
+.avatar {
+  color: #ffffff;
+  background: #1d1d1f;
+  border-radius: 8px;
+}
+
+.activity-band {
+  background: #272729;
+  color: #ffffff;
+}
+
+.activity-shell {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  min-height: 560px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 96px 24px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.activity-band .section-heading {
+  width: min(760px, 100%);
+  max-width: none;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.activity-band .section-heading span,
+.activity-band .section-heading h2 {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.activity-band .section-heading h2,
+.activity-band .activity-card h3 {
+  color: #ffffff;
+}
+
+.activity-band .section-heading span,
+.activity-band .activity-card time {
+  color: #ffffff;
+}
+
+.activity-band .activity-card p {
+  color: #cccccc;
+}
+
+.activity-band :deep(.el-empty) {
+  width: min(440px, 100%);
+  margin: 40px auto 0;
+  padding: 28px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.activity-band :deep(.el-empty__image) {
+  filter: grayscale(1) invert(1);
+  opacity: 0.82;
+}
+
+.activity-band :deep(.el-empty__description) {
+  margin-top: 16px;
+  color: #f5f5f7;
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.activity-carousel {
+  width: min(1180px, 100%);
+  margin: 32px auto 0;
+}
+
+.activity-card {
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #2a2a2c;
+}
+
+.activity-image {
+  width: 100%;
+  height: 380px;
+  padding: 0;
+  margin: 18px 0 0;
+}
+
+.activity-image img {
+  display: block;
+  box-shadow: var(--oa-product-shadow);
+}
+
+.award-card::after {
+  display: none;
 }
 
 @media (max-width: 1040px) {
@@ -850,6 +1113,17 @@ export default {
     width: 86vw;
   }
 
+  .activity-shell {
+    min-height: 460px;
+    padding: 64px 20px;
+  }
+
+  .activity-band .section-heading span,
+  .activity-band .section-heading h2,
+  .activity-band :deep(.el-empty__description) {
+    white-space: normal;
+  }
+
   .activity-image {
     height: 230px;
   }
@@ -864,6 +1138,10 @@ export default {
 
   .activity-item {
     align-items: start;
+  }
+
+  .signal-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>

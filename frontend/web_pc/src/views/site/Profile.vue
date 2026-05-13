@@ -167,14 +167,26 @@ export default {
 
 <style scoped>
 .site-page {
-  padding: 40px 0;
+  padding: 64px 0 80px;
+  background: #f5f5f7;
 }
 
 .profile-grid {
   display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 24px;
+  grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+  gap: 1px;
   align-items: start;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
+}
+
+.profile-grid :deep(.el-card) {
+  min-height: 100%;
+  border: 0 !important;
+  border-radius: 0 !important;
+  animation: oaFadeUp 0.44s ease both;
 }
 
 .card-header {

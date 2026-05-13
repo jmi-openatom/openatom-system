@@ -214,19 +214,27 @@ export default {
 </script>
 
 <style scoped>
-/* 样式完全保留你之前的定义 */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 1px;
+  overflow: hidden;
+  margin-bottom: 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
 }
 
 .stat-card {
   display: flex;
+  min-height: 152px;
   align-items: center;
   gap: 14px;
-  padding: 20px;
+  padding: 24px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  animation: oaFadeUp 0.42s ease both;
 }
 
 .stat-card .el-icon {
@@ -242,13 +250,29 @@ export default {
 .stat-card strong {
   display: block;
   margin-top: 4px;
-  font-size: 28px;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.1;
 }
 
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
+}
+
+.dashboard-grid > br {
+  display: none;
+}
+
+.dashboard-grid :deep(.el-card) {
+  border: 0 !important;
+  border-radius: 0 !important;
 }
 
 @media (max-width: 1050px) {

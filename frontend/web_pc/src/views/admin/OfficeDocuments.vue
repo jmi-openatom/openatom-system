@@ -433,7 +433,7 @@ export default {
 
 <style scoped>
 .office-documents-page {
-  padding: 20px;
+  padding: 24px;
 }
 
 .toolbar__actions {
@@ -444,7 +444,16 @@ export default {
 .office-layout {
   display: grid;
   grid-template-columns: 340px minmax(0, 1fr);
-  gap: 16px;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
+}
+
+.office-layout :deep(.el-card) {
+  border: 0 !important;
+  border-radius: 0 !important;
 }
 
 .office-list-card,
@@ -461,25 +470,31 @@ export default {
 .office-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #e0e0e0;
 }
 
 .office-list-item {
-  padding: 14px;
-  border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  padding: 16px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  animation: oaFadeUp 0.34s ease both;
+  transition: background-color 0.2s ease;
 }
 
 .office-list-item.is-active {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: #1d1d1f;
+  background: #f5f5f7;
 }
 
 .office-list-item__title {
-  font-weight: 700;
-  color: #0f172a;
+  font-weight: 600;
+  color: #1d1d1f;
 }
 
 .office-list-item__meta {

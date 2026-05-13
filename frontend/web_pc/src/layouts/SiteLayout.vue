@@ -15,8 +15,10 @@
           <router-link to="/apply">入会申请</router-link>
           <router-link to="/progress">我的申请</router-link>
           <router-link to="/leaves">请假</router-link>
+          <router-link to="/calendar">校历</router-link>
           <router-link to="/check-in/scan">扫码签到</router-link>
         </nav>
+        <el-button class="mobile-menu-btn" circle :icon="Menu" @click="mobileNavVisible = true" />
         <div class="site-header__actions">
           <el-button
             v-if="isLoggedIn"
@@ -48,6 +50,38 @@
       </div>
     </header>
 
+    <el-drawer
+      v-model="mobileNavVisible"
+      class="mobile-nav-drawer"
+      direction="rtl"
+      size="82%"
+      title="导航"
+    >
+      <nav class="mobile-nav">
+        <a href="/#overview" @click="mobileNavVisible = false">概览</a>
+        <router-link to="/activities" @click="mobileNavVisible = false">活动</router-link>
+        <router-link to="/apply" @click="mobileNavVisible = false">入会申请</router-link>
+        <router-link to="/progress" @click="mobileNavVisible = false">我的申请</router-link>
+        <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>
+        <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
+        <router-link to="/check-in/scan" @click="mobileNavVisible = false">扫码签到</router-link>
+        <router-link
+          v-if="isLoggedIn"
+          to="/notifications"
+          @click="mobileNavVisible = false"
+        >
+          通知
+        </router-link>
+        <router-link v-if="isLoggedIn" to="/profile" @click="mobileNavVisible = false">
+          个人中心
+        </router-link>
+        <router-link v-else to="/admin/login" @click="mobileNavVisible = false">登录</router-link>
+        <router-link v-if="showAdminEntry" to="/admin" @click="mobileNavVisible = false">
+          管理员后台
+        </router-link>
+      </nav>
+    </el-drawer>
+
     <main class="site-main">
       <router-view />
     </main>
@@ -74,7 +108,7 @@
 </template>
 
 <script lang="ts">
-import { Bell, Setting, UserFilled } from '@element-plus/icons-vue'
+import { Bell, Menu, Setting, UserFilled } from '@element-plus/icons-vue'
 import { markRaw } from 'vue'
 import { getToken } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
@@ -87,6 +121,8 @@ export default {
       Setting: markRaw(Setting),
       UserFilled: markRaw(UserFilled),
       Bell: markRaw(Bell),
+      Menu: markRaw(Menu),
+      mobileNavVisible: false,
       unreadCount: 0,
       unreadTimer: null as any,
       version: __APP_VERSION__,
@@ -128,7 +164,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f8fafc;
+  background: #ffffff;
 }
 
 /* Header 样式 */
@@ -137,16 +173,18 @@ export default {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.8);
-  border-bottom: 1px solid #e2e8f0;
-  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: saturate(180%) blur(18px);
+  animation: navDrop 0.38s ease both;
 }
 
 .site-header__inner {
   display: flex;
-  min-height: 76px;
+  min-height: 58px;
   align-items: center;
-  gap: 26px;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 /* 主体内容：撑开空间 */
@@ -157,10 +195,10 @@ export default {
 /* --- Footer 完整样式 --- */
 .site-footer {
   flex-shrink: 0;
-  padding: 48px 0 32px;
-  background: #ffffff;
-  border-top: 1px solid #e2e8f0;
-  color: #64748b;
+  padding: 64px 0;
+  background: #f5f5f7;
+  border-top: 0;
+  color: #333333;
 }
 
 .site-footer__inner {
@@ -178,20 +216,20 @@ export default {
 .site-footer__logo {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
-  filter: grayscale(0.2);
+  border-radius: 8px;
+  filter: grayscale(1) contrast(1.05);
 }
 
 .brand-text .name {
   display: block;
   font-size: 16px;
   font-weight: 600;
-  color: #1e293b;
+  color: #1d1d1f;
 }
 
 .brand-text .slogan {
   font-size: 12px;
-  color: #94a3b8;
+  color: #7a7a7a;
 }
 
 .site-footer__info {
@@ -205,7 +243,7 @@ export default {
 
 .copyright {
   font-size: 12px;
-  color: #cbd5e1;
+  color: #7a7a7a;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -213,55 +251,125 @@ export default {
 }
 
 .version-tag {
-  background: #f1f5f9;
-  color: #94a3b8;
+  background: #ffffff;
+  color: #7a7a7a;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 999px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e0e0e0;
 }
 
 /* 通用样式 */
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex: 0 0 auto;
+  gap: 9px;
   text-decoration: none;
 }
 
 .brand__mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  filter: grayscale(1) contrast(1.08);
 }
 
 .brand strong {
   display: block;
-  color: #0f172a;
+  color: #1d1d1f;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.15;
 }
 
 .brand small {
-  color: #64748b;
+  display: block;
+  margin-top: 2px;
+  color: #7a7a7a;
+  font-size: 10px;
+  line-height: 1;
 }
 
 .site-nav {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
-  gap: 8px;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.mobile-menu-btn {
+  display: none;
+  flex: 0 0 auto;
+  border-color: #d2d2d7 !important;
+  background: #ffffff !important;
+  color: #1d1d1f !important;
 }
 
 .site-nav a {
-  padding: 8px 16px;
-  color: #334155;
+  padding: 9px 11px;
+  color: #333333;
   text-decoration: none;
-  border-radius: 20px;
-  transition: 0.3s;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  opacity: 0.86;
+  white-space: nowrap;
+  transition:
+    color 0.16s ease,
+    opacity 0.16s ease,
+    background-color 0.16s ease;
 }
 
 .site-nav a:hover {
-  background: #eff6ff;
-  color: #2563eb;
+  background: #f5f5f7;
+  color: #000000;
+  opacity: 1;
+}
+
+.site-nav a.router-link-active {
+  background: #1d1d1f;
+  color: #ffffff;
+  opacity: 1;
+}
+
+.site-header__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-header__actions :deep(.el-button) {
+  min-height: 36px;
+  padding: 8px 13px;
+  border-color: #d2d2d7;
+  background: #ffffff;
+  color: #1d1d1f;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.site-header__actions :deep(.el-button:hover) {
+  border-color: #1d1d1f;
+  color: #000000;
+}
+
+.site-header__actions :deep(.el-button--primary) {
+  border-color: #1d1d1f;
+  background: #1d1d1f;
+  color: #ffffff;
+}
+
+.site-header__actions :deep(.el-button--primary:hover) {
+  border-color: #000000;
+  background: #000000;
+  color: #ffffff;
 }
 
 .nav-notification {
@@ -275,15 +383,18 @@ export default {
 
 .notification-btn {
   border: none !important;
-  background: transparent !important;
+  background: #f5f5f7 !important;
   font-size: 20px;
-  color: #64748b;
-  transition: all 0.3s;
+  color: #1d1d1f;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
 }
 
 .notification-btn:hover {
-  color: #2563eb;
-  background: #eff6ff !important;
+  color: #000000;
+  background: #ededf0 !important;
 }
 
 .notification-btn :deep(.el-badge__content.is-fixed.is-dot) {
@@ -291,18 +402,51 @@ export default {
   top: 2px;
 }
 
+.mobile-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-nav a {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  padding: 0 14px;
+  color: #1d1d1f;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  font-weight: 400;
+}
+
+@keyframes navDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* 响应式 */
 @media (max-width: 900px) {
   .site-header__inner {
-    min-height: auto;
-    flex-wrap: wrap;
+    min-height: 52px;
+    flex-wrap: nowrap;
     gap: 12px;
-    padding: 12px 0;
+    padding: 10px 0;
   }
 
   .brand {
-    flex: 1 1 calc(100% - 132px);
+    flex: 1 1 auto;
     min-width: 0;
+  }
+
+  .brand__mark {
+    width: 28px;
+    height: 28px;
   }
 
   .brand strong,
@@ -323,22 +467,11 @@ export default {
   }
 
   .site-nav {
-    order: 3;
-    flex: 1 0 100%;
-    gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: none;
-  }
-
-  .site-nav::-webkit-scrollbar {
     display: none;
   }
 
-  .site-nav a {
-    flex: 0 0 auto;
-    padding: 8px 12px;
-    background: rgba(239, 246, 255, 0.72);
+  .mobile-menu-btn {
+    display: inline-flex;
   }
 
   .site-footer__inner {
@@ -354,7 +487,24 @@ export default {
 }
 
 @media (max-width: 560px) {
+  .site-header__actions {
+    gap: 6px;
+  }
+
   .site-header__actions :deep(.el-button span) {
+    display: none;
+  }
+
+  .site-header__actions :deep(.el-button) {
+    width: 40px;
+    padding: 8px;
+  }
+
+  .site-header__actions :deep(.el-button + .el-button) {
+    margin-left: 0;
+  }
+
+  .brand small {
     display: none;
   }
 }

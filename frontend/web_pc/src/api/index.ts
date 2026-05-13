@@ -280,6 +280,24 @@ export const leaveApplicationApi = {
   },
 }
 
+export const schoolCalendarApi = {
+  detail(): Promise<AxiosResponse> {
+    return request.get('/school-calendar')
+  },
+  siteDetail(): Promise<AxiosResponse> {
+    return request.get('/site/school-calendar')
+  },
+  save(data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post('/school-calendar', data)
+  },
+  saveAdjustment(data: Record<string, unknown>): Promise<AxiosResponse> {
+    return request.post('/school-calendar/adjustments', data)
+  },
+  deleteAdjustment(id: string | number): Promise<AxiosResponse> {
+    return request.delete(`/school-calendar/adjustments/${id}`)
+  },
+}
+
 export const awardApi = {
   list(): Promise<AxiosResponse> {
     return request.get('/awards')

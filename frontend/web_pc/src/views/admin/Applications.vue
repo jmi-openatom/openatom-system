@@ -861,9 +861,9 @@ export default {
 .record-comment {
   margin-top: 8px;
   padding: 8px 12px;
-  background: #f8fafc;
+  background: #f5f5f7;
   border-radius: 6px;
   font-size: 13px;
-  color: #475569;
+  color: #7a7a7a;
 }
 </style>

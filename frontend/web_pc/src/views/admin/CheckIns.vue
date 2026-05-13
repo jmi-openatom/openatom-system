@@ -145,48 +145,50 @@
       </el-table>
     </el-dialog>
 
-    <el-dialog v-model="previewVisible" fullscreen class="checkin-preview">
-      <div v-if="previewRow" class="preview-screen">
-        <div class="preview-top">
-          <el-button size="large" @click="previewVisible = false">退出全屏</el-button>
-        </div>
-        <div class="preview-content">
-          <section class="preview-qr">
-            <p class="preview-kicker">微信扫码网页签到</p>
-            <h1>{{ previewRow.title }}</h1>
-            <p class="preview-meta">{{ formatRange(previewRow.startAt, previewRow.endAt) }} · {{ previewRow.location || '现场签到' }}</p>
-            <img class="qr-image" :src="qrUrl(checkInUrl(previewRow.qrPayload))" alt="签到二维码" />
-            <p class="preview-count">已签到 {{ checkedRecords.length }} / {{ previewRecords.length || previewRow.targetCount || 0 }}</p>
-          </section>
-          <section class="preview-roster">
-            <div class="roster-column roster-column--pending">
-              <div class="roster-head">
-                <span>未签到</span>
-                <strong>{{ pendingRecords.length }}</strong>
-              </div>
-              <div class="roster-list">
-                <div v-for="item in pendingRecords" :key="`pending-${item.userId}`" class="roster-item">
-                  {{ displayRecordName(item) }}
+    <Teleport to="body">
+      <div v-if="previewVisible && previewRow" class="checkin-preview-overlay">
+        <div class="preview-screen">
+          <div class="preview-top">
+            <el-button size="large" @click="previewVisible = false">退出全屏</el-button>
+          </div>
+          <div class="preview-content">
+            <section class="preview-qr">
+              <p class="preview-kicker">微信扫码网页签到</p>
+              <h1>{{ previewRow.title }}</h1>
+              <p class="preview-meta">{{ formatRange(previewRow.startAt, previewRow.endAt) }} · {{ previewRow.location || '现场签到' }}</p>
+              <img class="qr-image" :src="qrUrl(checkInUrl(previewRow.qrPayload))" alt="签到二维码" />
+              <p class="preview-count">已签到 {{ checkedRecords.length }} / {{ previewRecords.length || previewRow.targetCount || 0 }}</p>
+            </section>
+            <section class="preview-roster">
+              <div class="roster-column roster-column--pending">
+                <div class="roster-head">
+                  <span>未签到</span>
+                  <strong>{{ pendingRecords.length }}</strong>
                 </div>
-                <el-empty v-if="!pendingRecords.length" :image-size="72" description="已全部签到" />
-              </div>
-            </div>
-            <div class="roster-column roster-column--checked">
-              <div class="roster-head">
-                <span>已签到</span>
-                <strong>{{ checkedRecords.length }}</strong>
-              </div>
-              <div class="roster-list">
-                <div v-for="item in checkedRecords" :key="`checked-${item.userId}`" class="roster-item">
-                  {{ displayRecordName(item) }}
+                <div class="roster-list">
+                  <div v-for="item in pendingRecords" :key="`pending-${item.userId}`" class="roster-item">
+                    {{ displayRecordName(item) }}
+                  </div>
+                  <el-empty v-if="!pendingRecords.length" :image-size="72" description="已全部签到" />
                 </div>
-                <el-empty v-if="!checkedRecords.length" :image-size="72" description="暂无签到" />
               </div>
-            </div>
-          </section>
+              <div class="roster-column roster-column--checked">
+                <div class="roster-head">
+                  <span>已签到</span>
+                  <strong>{{ checkedRecords.length }}</strong>
+                </div>
+                <div class="roster-list">
+                  <div v-for="item in checkedRecords" :key="`checked-${item.userId}`" class="roster-item">
+                    {{ displayRecordName(item) }}
+                  </div>
+                  <el-empty v-if="!checkedRecords.length" :image-size="72" description="暂无签到" />
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
-    </el-dialog>
+    </Teleport>
 
     <el-dialog v-model="recordsVisible" title="签到记录" width="980px">
       <div class="member-toolbar" v-if="recordsRow">
@@ -295,8 +297,14 @@ export default {
     this.fetchList()
     this.loadOptions()
   },
+  watch: {
+    previewVisible(value) {
+      document.body.style.overflow = value ? 'hidden' : ''
+    },
+  },
   beforeUnmount() {
     this.stopLiveRefresh()
+    document.body.style.overflow = ''
   },
   methods: {
     formatDateTime,
@@ -546,13 +554,28 @@ export default {
   margin-bottom: 12px;
 }
 
+.checkin-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: #f5f5f7;
+  overflow: hidden;
+}
+
 .preview-screen {
+  width: 100vw;
   min-height: 100vh;
-  color: #0f172a;
-  background: radial-gradient(circle at top, #e0f2fe 0, #f8fafc 42%, #ffffff 100%);
+  min-height: 100dvh;
+  color: #1d1d1f;
+  background: #f5f5f7;
+  overflow: hidden;
 }
 
 .preview-top {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 3;
   padding: 24px;
   text-align: right;
 }
@@ -562,8 +585,9 @@ export default {
   grid-template-columns: minmax(420px, 0.92fr) minmax(520px, 1.08fr);
   align-items: stretch;
   gap: 16px;
-  min-height: calc(100vh - 96px);
-  padding: 2vh 32px 5vh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 4vh 32px;
 }
 
 .preview-qr {
@@ -586,18 +610,18 @@ export default {
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(219, 230, 245, 0.95);
+  border: 1px solid rgba(224, 224, 224, 0.95);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 18px 50px rgba(15, 23, 42, .08);
+  box-shadow: none;
 }
 
 .roster-column--pending {
-  border-color: rgba(245, 158, 11, .36);
+  border-color: rgba(224, 224, 224, .36);
 }
 
 .roster-column--checked {
-  border-color: rgba(22, 163, 74, .28);
+  border-color: rgba(224, 224, 224, .28);
 }
 
 .roster-head {
@@ -605,10 +629,10 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px;
-  border-bottom: 1px solid #e2e8f0;
-  color: #0f172a;
+  border-bottom: 1px solid #e0e0e0;
+  color: #1d1d1f;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .roster-head strong {
@@ -617,19 +641,19 @@ export default {
   height: 38px;
   place-items: center;
   border-radius: 999px;
-  background: #eff6ff;
-  color: #2563eb;
+  background: #f5f5f7;
+  color: #1d1d1f;
   font-size: 22px;
 }
 
 .roster-column--pending .roster-head strong {
-  background: #fffbeb;
-  color: #d97706;
+  background: #f5f5f7;
+  color: #1d1d1f;
 }
 
 .roster-column--checked .roster-head strong {
-  background: #dcfce7;
-  color: #16a34a;
+  background: #f5f5f7;
+  color: #1d1d1f;
 }
 
 .roster-list {
@@ -645,18 +669,18 @@ export default {
   overflow: hidden;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #f8fafc;
-  color: #0f172a;
+  background: #f5f5f7;
+  color: #1d1d1f;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .preview-kicker {
-  color: #2563eb;
+  color: #1d1d1f;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .preview-content h1 {
@@ -667,7 +691,7 @@ export default {
 .preview-meta,
 .preview-count {
   margin: 0;
-  color: #475569;
+  color: #7a7a7a;
   font-size: 20px;
 }
 
@@ -677,7 +701,7 @@ export default {
   padding: 18px;
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, .14);
+  box-shadow: none;
 }
 
 @media (max-width: 760px) {
@@ -695,12 +719,16 @@ export default {
   }
 
   .preview-top {
-    padding: 14px;
+    top: 10px;
+    right: 10px;
+    padding: 0;
   }
 
   .preview-content {
     grid-template-columns: 1fr;
-    padding: 3vh 16px 6vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    padding: 72px 16px 24px;
   }
 
   .preview-roster {

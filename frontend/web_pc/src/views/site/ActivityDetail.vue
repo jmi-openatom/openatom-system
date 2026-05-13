@@ -149,26 +149,32 @@ export default {
 
 <style scoped>
 .detail-hero {
-  padding: 44px 0 50px;
-  color: #fff;
-  background: linear-gradient(135deg, #0f172a, #0f766e);
+  padding: 80px 0;
+  color: #ffffff;
+  background: #272729;
 }
 
 .detail-hero .el-button {
-  color: #d1fae5;
+  color: #ffffff;
 }
 
 .detail-hero h1 {
   max-width: 860px;
   margin: 20px 0 12px;
-  font-size: 44px;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: 0;
 }
 
 .detail-hero p {
   max-width: 760px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.78);
-  line-height: 1.8;
+  color: #cccccc;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.5;
 }
 
 .detail-hero__meta {
@@ -183,14 +189,14 @@ export default {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 28px;
-  padding: 34px 0 58px;
+  padding: 48px 0 80px;
 }
 
 .markdown-body,
 .signup-panel {
-  background: #fff;
+  background: #ffffff;
   border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  border-radius: 18px;
   padding: 26px;
 }
 
@@ -198,25 +204,25 @@ export default {
 .markdown-body :deep(h2),
 .markdown-body :deep(h3) {
   margin-top: 0;
-  color: #0f172a;
+  color: #1d1d1f;
 }
 
 .markdown-body :deep(p),
 .markdown-body :deep(li) {
-  color: #475569;
+  color: #7a7a7a;
   line-height: 1.9;
 }
 
 .markdown-body :deep(code) {
   padding: 2px 6px;
-  background: #f1f5f9;
+  background: #fafafc;
   border-radius: 4px;
 }
 
 .signup-panel {
   align-self: start;
   position: sticky;
-  top: 88px;
+  top: 72px;
 }
 
 .signup-panel h2 {

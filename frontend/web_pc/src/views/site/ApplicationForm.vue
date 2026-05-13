@@ -319,19 +319,32 @@ export default {
 
 <style scoped>
 .site-page {
-  padding: 34px 0;
+  padding: 64px 0 80px;
+  background: #f5f5f7;
 }
 
 .apply-grid {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
+}
+
+.apply-grid > div,
+.apply-grid > .el-card {
+  min-height: 100%;
+  padding: 32px;
+  background: #ffffff;
+  animation: oaFadeUp 0.44s ease both;
 }
 
 .apply-note {
   margin-top: 24px;
   padding: 20px;
-  border-radius: 22px;
+  border-radius: 8px;
 }
 
 .apply-note h3 {
@@ -351,7 +364,8 @@ export default {
 }
 
 .apply-grid :deep(.el-card) {
-  border-radius: 24px;
+  border: 0 !important;
+  border-radius: 0 !important;
 }
 
 .apply-grid :deep(.el-card__body) {

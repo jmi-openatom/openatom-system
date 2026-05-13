@@ -139,7 +139,17 @@ export default {
 .role-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 430px;
-  gap: 16px;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
+}
+
+.role-grid :deep(.el-card) {
+  min-height: 100%;
+  border: 0 !important;
+  border-radius: 0 !important;
 }
 
 .card-header {

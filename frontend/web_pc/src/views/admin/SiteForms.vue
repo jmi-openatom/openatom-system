@@ -639,14 +639,19 @@ export default {
 
 .designer-list {
   display: grid;
-  gap: 16px;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
 }
 
 .designer-card {
-  padding: 16px;
-  background: #fafafa;
-  border: 1px solid var(--oa-border);
-  border-radius: 10px;
+  padding: 18px;
+  background: #ffffff;
+  border: 0;
+  border-radius: 0;
+  animation: oaFadeUp 0.34s ease both;
 }
 
 .designer-card__header {

@@ -79,71 +79,75 @@ export default {
 
 <style scoped>
 .activities-page {
-  min-height: 70vh;
-  background: transparent;
+  min-height: calc(100vh - 44px);
+  background: #f5f5f7;
 }
 
 .activities-hero {
-  background:
-    radial-gradient(circle at left top, rgba(147, 197, 253, 0.3), transparent 32%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(240, 247, 255, 0.96));
-  border-bottom: 1px solid rgba(219, 230, 245, 0.9);
+  background: #ffffff;
+  border-bottom: 0;
 }
 
 .activities-hero__inner {
-  min-height: 260px;
+  min-height: 420px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .activities-hero h1 {
   margin: 18px 0 12px;
-  font-size: 48px;
-  letter-spacing: -0.03em;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: 0;
 }
 
 .activities-hero p {
   max-width: 720px;
   margin: 0;
-  color: #475569;
-  line-height: 1.8;
+  color: #7a7a7a;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.5;
 }
 
 .activities-list {
-  padding: 34px 0 56px;
+  width: min(980px, calc(100% - 48px));
+  padding: 64px 0 80px;
 }
 
 .activity-row {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr) auto;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
   align-items: center;
   gap: 22px;
-  padding: 22px;
-  margin-bottom: 14px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 22px;
-  box-shadow: var(--oa-shadow);
-  backdrop-filter: blur(14px);
+  padding: 24px;
+  margin-bottom: 1px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  box-shadow: none;
+  backdrop-filter: none;
   cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+  animation: oaFadeUp 0.44s ease both;
+  transition: border-color 0.2s ease;
 }
 
 .activity-row:hover {
-  transform: translateY(-3px);
-  border-color: rgba(147, 197, 253, 0.95);
-  box-shadow: 0 18px 36px rgba(37, 99, 235, 0.12);
+  transform: none;
+  border-color: rgba(29, 29, 31, 0.95);
+  box-shadow: none;
 }
 
 .activity-row__date {
   display: grid;
   height: 74px;
   place-items: center;
-  background: #eff6ff;
-  border-radius: 18px;
+  background: #f5f5f7;
+  border-radius: 8px;
   color: var(--oa-primary-dark);
 }
 
@@ -153,7 +157,7 @@ export default {
 }
 
 .activity-row__date span {
-  color: #475569;
+  color: #7a7a7a;
 }
 
 .activity-row__meta {
@@ -166,8 +170,10 @@ export default {
 
 .activity-row h2 {
   margin: 10px 0 8px;
-  font-size: 22px;
-  letter-spacing: -0.02em;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .activity-row p {

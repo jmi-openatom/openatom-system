@@ -283,6 +283,6 @@ onMounted(fetchList)
 .notification-detail .content {
   line-height: 1.6;
   white-space: pre-wrap;
-  color: #475569;
+  color: #7a7a7a;
 }
 </style>

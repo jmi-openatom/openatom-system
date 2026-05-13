@@ -91,46 +91,53 @@ export default {
 
 <style scoped>
 .site-page {
-  padding: 34px 0;
+  padding: 64px 0 80px;
+  background: #f5f5f7;
 }
 
 .club-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin-top: 24px;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
 }
 
 .club-card {
   display: flex;
+  flex-direction: column;
   gap: 16px;
-  min-height: 178px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 22px;
-  box-shadow: var(--oa-shadow);
-  backdrop-filter: blur(14px);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+  min-height: 260px;
+  padding: 24px;
+  background: #ffffff;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  animation: oaFadeUp 0.44s ease both;
+  transition: background-color 0.2s ease;
 }
 
 .club-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(147, 197, 253, 0.95);
-  box-shadow: 0 18px 36px rgba(37, 99, 235, 0.12);
+  transform: none;
+  background: #fafafc;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .club-card__logo {
   display: grid;
   flex: 0 0 58px;
+  width: 58px;
   height: 58px;
   place-items: center;
-  color: #fff;
-  background: linear-gradient(135deg, #60a5fa, #2563eb);
-  border-radius: 16px;
-  font-weight: 800;
+  color: #ffffff;
+  background: #1d1d1f;
+  border-radius: 8px;
+  font-weight: 600;
 }
 
 .club-card__body {
@@ -147,7 +154,7 @@ export default {
 .club-card h3 {
   margin: 0;
   font-size: 18px;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 .club-card p {
@@ -161,7 +168,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  color: #64748b;
+  color: #7a7a7a;
   font-size: 13px;
 }
 

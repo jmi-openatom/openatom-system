@@ -247,15 +247,20 @@ export default {
 
 .leave-groups {
   display: grid;
-  gap: 18px;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
 }
 
 .date-group {
-  padding: 18px;
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: var(--oa-shadow);
+  padding: 24px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+  animation: oaFadeUp 0.42s ease both;
 }
 
 .date-title strong {
@@ -272,9 +277,10 @@ export default {
 .leave-card {
   min-width: 0;
   padding: 16px;
-  border: 1px solid #dbe6f5;
-  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   background: #fff;
+  animation: oaFadeUp 0.34s ease both;
 }
 
 .leave-card__top,
@@ -317,9 +323,9 @@ export default {
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid #dbe6f5;
+  border: 1px solid #e0e0e0;
   border-radius: 10px;
-  background: #f8fafc;
+  background: #f5f5f7;
 }
 
 .flow-strip {
@@ -332,19 +338,19 @@ export default {
 .flow-dot {
   padding: 5px 10px;
   border-radius: 999px;
-  color: #64748b;
-  background: #f1f5f9;
+  color: #7a7a7a;
+  background: #fafafc;
   font-size: 12px;
 }
 
 .flow-dot--done {
-  color: #047857;
-  background: #ecfdf5;
+  color: #1d1d1f;
+  background: #f5f5f7;
 }
 
 .flow-dot--process {
-  color: #2563eb;
-  background: #eff6ff;
+  color: #1d1d1f;
+  background: #f5f5f7;
 }
 
 .card-actions {

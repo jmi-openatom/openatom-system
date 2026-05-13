@@ -123,27 +123,42 @@ export default {
 
 <style scoped>
 .scan-page {
-  padding: 42px 0 72px;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
+  background: #f5f5f7;
+  overflow: hidden;
 }
 
 .scan-shell {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 32px;
 }
 
 .scan-panel {
-  width: min(100%, 560px);
-  padding: 26px;
-  border: 1px solid rgba(219, 230, 245, 0.95);
+  width: min(100%, 620px);
+  padding: 48px;
+  border: 1px solid #e0e0e0;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: var(--oa-shadow);
-  backdrop-filter: blur(16px);
+  background: #ffffff;
+  box-shadow: none;
+  backdrop-filter: none;
+  animation: oaScaleIn 0.42s ease both;
+  text-align: center;
 }
 
 .scan-heading h1 {
   margin: 14px 0 10px;
-  font-size: 34px;
+  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: 0;
 }
 
 .scan-heading p {
@@ -158,11 +173,11 @@ export default {
   justify-items: center;
   margin-top: 24px;
   padding: 42px 18px;
-  color: #475569;
+  color: #7a7a7a;
   text-align: center;
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 18px;
-  background: linear-gradient(180deg, #f8fafc, #eff6ff);
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f5f5f7;
 }
 
 .status-card .el-icon {
@@ -171,7 +186,7 @@ export default {
 }
 
 .status-card strong {
-  color: #0f172a;
+  color: #1d1d1f;
   font-size: 22px;
 }
 
@@ -180,11 +195,11 @@ export default {
 }
 
 .status-card--success {
-  background: linear-gradient(180deg, #f0fdf4, #dcfce7);
+  background: #f5f5f7;
 }
 
 .status-card--success .el-icon {
-  color: #16a34a;
+  color: #1d1d1f;
 }
 
 .result-detail {
@@ -198,7 +213,7 @@ export default {
   justify-content: space-between;
   gap: 16px;
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #e0e0e0;
 }
 
 .result-detail dt {
@@ -207,7 +222,7 @@ export default {
 
 .result-detail dd {
   margin: 0;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .retry-actions {
@@ -216,11 +231,19 @@ export default {
 
 @media (max-width: 860px) {
   .scan-page {
-    padding: 20px 0 44px;
+    overflow-y: auto;
+  }
+
+  .scan-shell {
+    align-items: stretch;
+    padding: 16px;
   }
 
   .scan-panel {
-    padding: 18px;
+    display: grid;
+    align-content: center;
+    min-height: calc(100dvh - 32px);
+    padding: 22px;
   }
 
   .scan-heading h1 {

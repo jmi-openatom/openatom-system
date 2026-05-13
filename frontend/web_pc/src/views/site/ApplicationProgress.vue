@@ -248,12 +248,13 @@ export default {
 
 <style scoped>
 .site-page {
-  padding: 34px 0;
+  padding: 64px 0 80px;
+  background: #f5f5f7;
 }
 
 .progress-page {
   display: grid;
-  gap: 18px;
+  gap: 20px;
 }
 
 .progress-header {
@@ -261,6 +262,11 @@ export default {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  padding: 48px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  animation: oaFadeUp 0.42s ease both;
 }
 
 .progress-header__actions {
@@ -270,11 +276,17 @@ export default {
 
 .progress-list {
   display: grid;
-  gap: 18px;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #e0e0e0;
 }
 
 .progress-card {
-  border-radius: 22px;
+  border: 0;
+  border-radius: 0;
+  animation: oaFadeUp 0.44s ease both;
 }
 
 .progress-card__header {
@@ -286,7 +298,7 @@ export default {
 
 .progress-card__title {
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .progress-card__meta {
@@ -307,9 +319,9 @@ export default {
 
 .summary-item {
   padding: 14px 16px;
-  background: #f7fbff;
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 16px;
+  background: #f5f5f7;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
 }
 
 .summary-item__label {
@@ -330,9 +342,9 @@ export default {
 
 .interview-item {
   padding: 16px;
-  background: #f7fbff;
-  border: 1px solid rgba(219, 230, 245, 0.95);
-  border-radius: 16px;
+  background: #f5f5f7;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
 }
 
 .interview-item__top {
@@ -346,7 +358,7 @@ export default {
 .interview-item__meta {
   display: grid;
   gap: 8px;
-  color: #475569;
+  color: #7a7a7a;
 }
 
 @media (max-width: 900px) {
@@ -363,7 +375,7 @@ export default {
 .interview-feedback {
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px dashed rgba(219, 230, 245, 0.6);
+  border-top: 1px dashed rgba(224, 224, 224, 0.6);
 }
 
 .feedback-bubble {
@@ -371,8 +383,8 @@ export default {
   padding: 10px 14px;
   border-radius: 12px;
   font-size: 14px;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  color: #7a7a7a;
+  border: 1px solid #e0e0e0;
 }
 
 .approval-history {
@@ -395,27 +407,27 @@ export default {
   top: 16px;
   bottom: -20px;
   width: 1px;
-  background: #e2e8f0;
+  background: #e0e0e0;
 }
 
 .record-dot {
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: #cbd5e1;
+  background: #e0e0e0;
   margin-top: 6px;
   flex-shrink: 0;
   z-index: 1;
 }
 
 .is-approve .record-dot {
-  background: #10b981;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  background: #1d1d1f;
+  box-shadow: none;
 }
 
 .is-reject .record-dot {
-  background: #ef4444;
-  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+  background: #1d1d1f;
+  box-shadow: none;
 }
 
 .record-content {
@@ -441,8 +453,8 @@ export default {
 
 .record-comment {
   font-size: 14px;
-  color: #475569;
-  background: #f8fafc;
+  color: #7a7a7a;
+  background: #f5f5f7;
   padding: 8px 12px;
   border-radius: 8px;
   margin: 0;
