@@ -11,40 +11,57 @@
       </div>
     </div>
 
-    <el-table v-loading="loading" :data="rows" class="admin-table">
-      <el-table-column label="申请人" min-width="160">
-        <template #default="{ row }">
-          <strong>{{ row.realName || row.userName || '-' }}</strong>
-          <p class="muted-line">{{ row.studentId || '-' }}</p>
-        </template>
-      </el-table-column>
-      <el-table-column label="请假内容" min-width="240">
-        <template #default="{ row }">
-          <strong>{{ row.title }}</strong>
-          <p class="muted-line">{{ row.reason }}</p>
-        </template>
-      </el-table-column>
-      <el-table-column label="时间" min-width="220">
-        <template #default="{ row }">{{ formatRange(row.startAt, row.endAt) }}</template>
-      </el-table-column>
-      <el-table-column label="附件" width="90">
-        <template #default="{ row }">{{ (row.attachments || []).length }} 个</template>
-      </el-table-column>
-      <el-table-column label="状态" width="110">
-        <template #default="{ row }">
-          <el-tag :type="leaveStatusType(row.status)">{{ leaveStatusText(row.status) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="210" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row)">查看流程</el-button>
-          <el-button v-if="row.status === 'submitted'" link type="success" @click="openReview(row, 'approve')">通过</el-button>
-          <el-button v-if="row.status === 'submitted'" link type="danger" @click="openReview(row, 'reject')">驳回</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
     <el-empty v-if="!loading && !rows.length" description="暂无请假申请" />
+
+    <div v-loading="loading" class="leave-groups">
+      <section v-for="group in groupedRows" :key="group.date" class="date-group">
+        <div class="date-title">
+          <div>
+            <strong>{{ group.label }}</strong>
+            <p>{{ group.items.length }} 条请假申请</p>
+          </div>
+        </div>
+
+        <div class="leave-card-list">
+          <article v-for="row in group.items" :key="row.id" class="leave-card">
+            <div class="leave-card__top">
+              <div>
+                <strong>{{ row.title }}</strong>
+                <p>{{ row.realName || row.userName || '-' }} / {{ row.studentId || '-' }}</p>
+              </div>
+              <el-tag :type="leaveStatusType(row.status)">{{ leaveStatusText(row.status) }}</el-tag>
+            </div>
+
+            <p class="reason-text">{{ row.reason }}</p>
+            <p class="muted-line">{{ formatRange(row.startAt, row.endAt) }}</p>
+
+            <div v-if="imageAttachments(row).length" class="image-grid">
+              <el-image
+                v-for="file in imageAttachments(row)"
+                :key="file.name"
+                class="leave-image"
+                fit="cover"
+                :src="file.content"
+                :preview-src-list="imagePreviewList(row)"
+                preview-teleported
+              />
+            </div>
+
+            <div class="flow-strip">
+              <span v-for="step in row.approvalFlow || []" :key="step.node" :class="`flow-dot flow-dot--${step.status}`">
+                {{ step.node }}
+              </span>
+            </div>
+
+            <div class="card-actions">
+              <el-button link type="primary" @click="openDetail(row)">查看流程</el-button>
+              <el-button v-if="row.status === 'submitted'" link type="success" @click="openReview(row, 'approve')">通过</el-button>
+              <el-button v-if="row.status === 'submitted'" link type="danger" @click="openReview(row, 'reject')">驳回</el-button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
 
     <el-dialog v-model="detailVisible" title="请假审批流程" width="760px">
       <template v-if="current">
@@ -56,7 +73,7 @@
           <el-tag :type="leaveStatusType(current.status)">{{ leaveStatusText(current.status) }}</el-tag>
         </div>
         <p class="reason-text">{{ current.reason }}</p>
-        <el-steps direction="vertical" :active="flowActive" finish-status="success" process-status="process">
+        <el-steps direction="vertical" :active="flowActive(current)" finish-status="success" process-status="process">
           <el-step
             v-for="step in current.approvalFlow || []"
             :key="step.node"
@@ -64,17 +81,17 @@
             :description="stepDescription(step)"
           />
         </el-steps>
-        <el-divider content-position="left">附件</el-divider>
-        <div class="attachment-list">
-          <a
-            v-for="file in current.attachments || []"
+        <el-divider content-position="left">图片附件</el-divider>
+        <div class="dialog-image-grid">
+          <el-image
+            v-for="file in imageAttachments(current)"
             :key="file.name"
-            :href="file.content"
-            :download="file.name"
-            target="_blank"
-          >
-            {{ file.name }}
-          </a>
+            class="dialog-image"
+            fit="cover"
+            :src="file.content"
+            :preview-src-list="imagePreviewList(current)"
+            preview-teleported
+          />
         </div>
       </template>
     </el-dialog>
@@ -118,10 +135,14 @@ export default {
     }
   },
   computed: {
-    flowActive() {
-      if (!this.current) return 0
-      if (this.current.status === 'submitted') return 1
-      return 3
+    groupedRows() {
+      const groups = new Map()
+      ;(this.rows || []).forEach((item) => {
+        const key = this.dateKey(item.startAt || item.createdAt)
+        if (!groups.has(key)) groups.set(key, { date: key, label: this.dateLabel(item.startAt || item.createdAt), items: [] })
+        groups.get(key).items.push(item)
+      })
+      return Array.from(groups.values())
     },
   },
   created() {
@@ -139,12 +160,33 @@ export default {
     leaveStatusType(status) {
       return { submitted: 'warning', approved: 'success', rejected: 'danger' }[status] || 'info'
     },
+    flowActive(item) {
+      if (!item) return 0
+      return item.status === 'submitted' ? 1 : 3
+    },
     formatRange(startAt, endAt) {
       return `${formatDateTime(startAt) || '不限'} - ${formatDateTime(endAt) || '不限'}`
     },
     stepDescription(step) {
       const parts = [this.formatDateTime(step.time), step.comment].filter(Boolean)
       return parts.join(' / ')
+    },
+    dateKey(value) {
+      if (!value) return 'unknown'
+      return String(value).slice(0, 10)
+    },
+    dateLabel(value) {
+      const key = this.dateKey(value)
+      return key === 'unknown' ? '未设置日期' : key
+    },
+    imageAttachments(item) {
+      return (item.attachments || []).filter((file) => this.isImage(file))
+    },
+    imagePreviewList(item) {
+      return this.imageAttachments(item).map((file) => file.content)
+    },
+    isImage(file) {
+      return String(file?.type || '').startsWith('image/') || String(file?.content || '').startsWith('data:image/')
     },
     async fetchList() {
       this.loading = true
@@ -191,40 +233,152 @@ export default {
 </script>
 
 <style scoped>
-.muted-line {
+.muted-line,
+.date-title p,
+.detail-head p {
   margin: 4px 0 0;
   color: var(--oa-muted);
   font-size: 13px;
 }
 
+.leave-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.date-group {
+  padding: 18px;
+  border: 1px solid rgba(219, 230, 245, 0.95);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--oa-shadow);
+}
+
+.date-title strong {
+  font-size: 18px;
+}
+
+.leave-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.leave-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #dbe6f5;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.leave-card__top,
 .detail-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 14px;
+}
+
+.leave-card__top strong,
+.detail-head h3 {
+  overflow-wrap: anywhere;
+}
+
+.reason-text {
+  margin: 12px 0 0;
+  color: var(--oa-muted);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.image-grid,
+.dialog-image-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.image-grid {
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+}
+
+.dialog-image-grid {
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+}
+
+.leave-image,
+.dialog-image {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid #dbe6f5;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.flow-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.flow-dot {
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #64748b;
+  background: #f1f5f9;
+  font-size: 12px;
+}
+
+.flow-dot--done {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.flow-dot--process {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .detail-head h3 {
   margin: 0 0 6px;
 }
 
-.detail-head p,
-.reason-text {
-  color: var(--oa-muted);
-}
+@media (max-width: 760px) {
+  .date-group {
+    padding: 14px;
+  }
 
-.reason-text {
-  margin: 12px 0 18px;
-  line-height: 1.7;
-}
+  .leave-card-list {
+    grid-template-columns: 1fr;
+  }
 
-.attachment-list {
-  display: grid;
-  gap: 8px;
-}
+  .leave-card__top,
+  .detail-head {
+    gap: 10px;
+  }
 
-.attachment-list a {
-  color: var(--oa-primary);
-  text-decoration: none;
+  .leave-card__top :deep(.el-tag),
+  .detail-head :deep(.el-tag) {
+    flex: 0 0 auto;
+  }
+
+  .image-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .card-actions {
+    justify-content: flex-start;
+  }
 }
 </style>
