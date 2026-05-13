@@ -1,8 +1,8 @@
-const VERSION = 10
+const VERSION = 6
 const SIZE = VERSION * 4 + 17
-const DATA_CODEWORDS = 274
+const DATA_CODEWORDS = 136
 const ECC_CODEWORDS_PER_BLOCK = 18
-const ALIGNMENT_POSITIONS = [6, 28, 50]
+const ALIGNMENT_POSITIONS = [6, 34]
 const FORMAT_BITS_L_MASK_0 = 0x77c4
 
 const EXP = new Array<number>(512)
@@ -69,7 +69,7 @@ class BitBuffer {
 
 function createDataCodewords(text: string): number[] {
   const bytes = Array.from(new TextEncoder().encode(text))
-  if (bytes.length > 271) throw new Error('二维码内容过长')
+  if (bytes.length > 133) throw new Error('二维码内容过长')
   const buffer = new BitBuffer()
   buffer.push(0b0100, 4)
   buffer.push(bytes.length, 16)
@@ -85,7 +85,7 @@ function createDataCodewords(text: string): number[] {
 }
 
 function createFinalCodewords(dataCodewords: number[]): number[] {
-  const blockSizes = [68, 68, 69, 69]
+  const blockSizes = [68, 68]
   const blocks = blockSizes.map((size, index) => {
     const start = blockSizes.slice(0, index).reduce((sum, item) => sum + item, 0)
     const data = dataCodewords.slice(start, start + size)
@@ -148,7 +148,7 @@ function createMatrix(): { modules: boolean[][]; reserved: boolean[][] } {
 
   set(SIZE - 8, 8, true)
   reserveFormatAreas(reserved)
-  drawVersionInfo(modules, reserved)
+  if (VERSION >= 7) drawVersionInfo(modules, reserved)
   return { modules, reserved }
 }
 

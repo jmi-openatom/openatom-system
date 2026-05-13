@@ -75,11 +75,12 @@ export default {
   },
   watch: {
     '$route.query.token': 'loadRouteToken',
+    '$route.query.t': 'loadRouteToken',
   },
   methods: {
     formatDateTime,
     loadRouteToken() {
-      const routeToken = this.extractToken(this.$route.query.token)
+      const routeToken = this.extractToken(this.$route.query.t || this.$route.query.token)
       const token = routeToken || localStorage.getItem(PENDING_CHECK_IN_TOKEN) || ''
       if (routeToken) this.hideTokenFromAddressBar()
       this.routeToken = token
@@ -98,6 +99,7 @@ export default {
     hideTokenFromAddressBar() {
       const url = new URL(window.location.href)
       url.searchParams.delete('token')
+      url.searchParams.delete('t')
       window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
     },
     extractToken(value) {

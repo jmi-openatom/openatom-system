@@ -269,9 +269,8 @@ export default {
       return qrSvgDataUrl(payload || '')
     },
     checkInUrl(payload) {
-      const url = new URL('/check-in/scan', window.location.origin)
-      url.searchParams.set('token', payload || '')
-      return url.toString()
+      const token = encodeURIComponent(payload || '')
+      return `${window.location.origin}/check-in/scan?t=${token}`
     },
     async openRecords(row) {
       this.records = await checkInApi.records(row.id)

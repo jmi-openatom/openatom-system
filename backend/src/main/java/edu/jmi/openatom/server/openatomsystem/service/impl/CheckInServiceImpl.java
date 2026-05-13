@@ -41,7 +41,7 @@ public class CheckInServiceImpl implements CheckInService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
   private static final List<String> STATUSES = List.of("draft", "open", "closed");
   private static final String PAYLOAD_PREFIX = "openatom-checkin:";
-  private static final String ROTATING_PAYLOAD_PREFIX = "openatom-checkin-v2:";
+  private static final String ROTATING_PAYLOAD_PREFIX = "oaci2:";
   private static final long ROTATING_TOKEN_WINDOW_SECONDS = 30L;
   private static final long ROTATING_TOKEN_GRACE_WINDOWS = 10L;
 
@@ -242,7 +242,7 @@ public class CheckInServiceImpl implements CheckInService {
     String source = session.getId() + ":" + session.getToken() + ":" + window;
     try {
       byte[] digest = MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8));
-      return HexFormat.of().formatHex(digest).substring(0, 24);
+      return HexFormat.of().formatHex(digest).substring(0, 16);
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("SHA-256 unavailable", e);
     }
