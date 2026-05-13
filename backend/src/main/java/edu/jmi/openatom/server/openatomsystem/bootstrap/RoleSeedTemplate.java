@@ -90,6 +90,7 @@ public record RoleSeedTemplate(
         SystemPermission.LEAVE_APPLICATION_LIST,
         SystemPermission.LEAVE_APPLICATION_DETAIL,
         SystemPermission.LEAVE_APPLICATION_REVIEW,
+        SystemPermission.LEAVE_APPLICATION_DELETE,
         SystemPermission.EXIT_APPLICATION_LIST,
         SystemPermission.EXIT_APPLICATION_DETAIL,
         SystemPermission.EXIT_APPLICATION_APPROVE,

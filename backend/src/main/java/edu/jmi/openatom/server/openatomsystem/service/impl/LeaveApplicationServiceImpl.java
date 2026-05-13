@@ -89,6 +89,15 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     return Result.success("approve".equals(action) ? "请假申请已通过" : "请假申请已驳回");
   }
 
+  @Override
+  public Result<String> delete(Integer leaveApplicationId) {
+    LeaveApplication application = find(leaveApplicationId);
+    if (application == null) return Result.error(404, "请假申请不存在");
+    if (!canDelete(application)) return Result.error(403, "无权删除该请假申请");
+    leaveApplicationMapper.deleteById(leaveApplicationId);
+    return Result.success("请假记录已删除");
+  }
+
   private LeaveApplication find(Integer id) {
     return id == null ? null : leaveApplicationMapper.selectById(id);
   }
@@ -99,6 +108,12 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     return currentUserId.equals(application.getUserId())
         || StpUtil.hasPermission("leave-application:detail")
         || StpUtil.hasPermission("leave-application:list");
+  }
+
+  private boolean canDelete(LeaveApplication application) {
+    if (!StpUtil.isLogin()) return false;
+    Integer currentUserId = StpUtil.getLoginIdAsInt();
+    return currentUserId.equals(application.getUserId()) || StpUtil.hasPermission("leave-application:delete");
   }
 
   private ResponseLeaveApplicationVO toVO(LeaveApplication application) {

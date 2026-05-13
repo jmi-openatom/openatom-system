@@ -5,7 +5,7 @@
         <div class="section-head">
           <el-tag effect="plain">请假申请</el-tag>
           <h1>我的请假</h1>
-          <p>提交请假理由和图片后，可实时查看审批流程。</p>
+          <p>提交请假理由和图片后，可查看审批流程。</p>
         </div>
 
         <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="leave-form">
@@ -47,7 +47,7 @@
         <div class="history-head">
           <div>
             <strong>请假记录</strong>
-            <p>按请假日期归档，审批流程会自动刷新。</p>
+            <p>按请假日期归档，提交或删除后会更新列表。</p>
           </div>
           <el-button link type="primary" :icon="Refresh" @click="fetchMine">刷新</el-button>
         </div>
@@ -91,6 +91,9 @@
                 :description="stepDescription(step)"
               />
             </el-steps>
+            <div class="card-actions">
+              <el-button link type="danger" @click="deleteLeave(item)">删除记录</el-button>
+            </div>
           </article>
         </div>
       </section>
@@ -99,7 +102,7 @@
 </template>
 
 <script>
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { leaveApplicationApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
@@ -111,7 +114,6 @@ export default {
       Plus,
       Refresh,
       rows: [],
-      timer: null,
       saving: false,
       uploadFiles: [],
       form: { title: '', reason: '', startAt: '', endAt: '', attachments: [] },
@@ -135,10 +137,6 @@ export default {
   },
   created() {
     this.fetchMine()
-    this.timer = window.setInterval(this.fetchMine, 3000)
-  },
-  beforeUnmount() {
-    if (this.timer) window.clearInterval(this.timer)
   },
   methods: {
     formatDateTime,
@@ -219,6 +217,16 @@ export default {
         }
       })
     },
+    async deleteLeave(item) {
+      await ElMessageBox.confirm(`确定删除“${item.title}”这条请假记录吗？`, '删除请假记录', {
+        type: 'warning',
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+      })
+      await leaveApplicationApi.siteRemove(item.id)
+      ElMessage.success('请假记录已删除')
+      await this.fetchMine()
+    },
   },
 }
 </script>
@@ -265,12 +273,14 @@ export default {
 
 .form-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(220px, 0.9fr) minmax(220px, 0.9fr);
-  gap: 14px;
+  grid-template-columns: 1fr;
+  gap: 0;
+  max-width: 760px;
 }
 
 .leave-form {
   margin-top: 22px;
+  max-width: 860px;
 }
 
 .upload-tip {
@@ -350,16 +360,16 @@ export default {
   margin-top: 16px;
 }
 
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
 .flow-steps :deep(.el-step__description) {
   padding-right: 0;
   line-height: 1.5;
   overflow-wrap: anywhere;
-}
-
-@media (max-width: 980px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 760px) {

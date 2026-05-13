@@ -57,6 +57,7 @@
               <el-button link type="primary" @click="openDetail(row)">查看流程</el-button>
               <el-button v-if="row.status === 'submitted'" link type="success" @click="openReview(row, 'approve')">通过</el-button>
               <el-button v-if="row.status === 'submitted'" link type="danger" @click="openReview(row, 'reject')">驳回</el-button>
+              <el-button link type="danger" @click="deleteLeave(row)">删除</el-button>
             </div>
           </article>
         </div>
@@ -113,7 +114,7 @@
 </template>
 
 <script>
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { leaveApplicationApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
@@ -129,7 +130,6 @@ export default {
       reviewVisible: false,
       rows: [],
       current: null,
-      timer: null,
       query: { status: '' },
       reviewForm: { id: null, action: 'approve', comment: '' },
     }
@@ -147,10 +147,6 @@ export default {
   },
   created() {
     this.fetchList()
-    this.timer = window.setInterval(this.refreshOpenDetail, 3000)
-  },
-  beforeUnmount() {
-    if (this.timer) window.clearInterval(this.timer)
   },
   methods: {
     formatDateTime,
@@ -200,12 +196,6 @@ export default {
       this.current = await leaveApplicationApi.detail(row.id)
       this.detailVisible = true
     },
-    async refreshOpenDetail() {
-      await this.fetchList()
-      if (this.detailVisible && this.current?.id) {
-        this.current = await leaveApplicationApi.detail(this.current.id)
-      }
-    },
     openReview(row, action) {
       this.reviewForm = { id: row.id, action, comment: '' }
       this.reviewVisible = true
@@ -227,6 +217,20 @@ export default {
       } finally {
         this.reviewing = false
       }
+    },
+    async deleteLeave(row) {
+      await ElMessageBox.confirm(`确定删除“${row.title}”这条请假记录吗？`, '删除请假记录', {
+        type: 'warning',
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+      })
+      await leaveApplicationApi.remove(row.id)
+      ElMessage.success('请假记录已删除')
+      if (this.current?.id === row.id) {
+        this.detailVisible = false
+        this.current = null
+      }
+      await this.fetchList()
     },
   },
 }

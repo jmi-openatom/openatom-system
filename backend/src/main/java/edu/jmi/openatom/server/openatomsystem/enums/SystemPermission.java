@@ -118,6 +118,12 @@ public enum SystemPermission {
       "api",
       "/leave-applications/{leaveApplicationId}/review",
       "POST"),
+  LEAVE_APPLICATION_DELETE(
+      "删除请假申请",
+      "leave-application:delete",
+      "api",
+      "/leave-applications/{leaveApplicationId}",
+      "DELETE"),
   AWARD_LIST("查询获奖经历", "award:list", "api", "/awards", "GET"),
   AWARD_CREATE("创建获奖经历", "award:create", "api", "/awards", "POST"),
   AWARD_UPDATE("更新获奖经历", "award:update", "api", "/awards/{awardId}", "PATCH"),

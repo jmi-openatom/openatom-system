@@ -272,6 +272,12 @@ export const leaveApplicationApi = {
   review(id: string | number, data: Record<string, unknown>): Promise<AxiosResponse> {
     return request.post(`/leave-applications/${id}/review`, data)
   },
+  remove(id: string | number): Promise<AxiosResponse> {
+    return request.delete(`/leave-applications/${id}`)
+  },
+  siteRemove(id: string | number): Promise<AxiosResponse> {
+    return request.delete(`/site/leave-applications/${id}`)
+  },
 }
 
 export const awardApi = {

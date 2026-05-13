@@ -16,4 +16,6 @@ public interface LeaveApplicationService {
   Result<Integer> create(RequestCreateLeaveApplicationDTO request);
 
   Result<String> review(Integer leaveApplicationId, RequestReviewLeaveApplicationDTO request);
+
+  Result<String> delete(Integer leaveApplicationId);
 }

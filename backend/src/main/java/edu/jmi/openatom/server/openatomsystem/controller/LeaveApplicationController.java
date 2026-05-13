@@ -9,6 +9,7 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseLeaveApplicationVO;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,5 +55,16 @@ public class LeaveApplicationController {
       @PathVariable Integer leaveApplicationId,
       @Valid @RequestBody RequestReviewLeaveApplicationDTO request) {
     return leaveApplicationService.review(leaveApplicationId, request);
+  }
+
+  @DeleteMapping("/leave-applications/{leaveApplicationId}")
+  @SaCheckPermission("leave-application:delete")
+  public Result<String> delete(@PathVariable Integer leaveApplicationId) {
+    return leaveApplicationService.delete(leaveApplicationId);
+  }
+
+  @DeleteMapping("/site/leave-applications/{leaveApplicationId}")
+  public Result<String> siteDelete(@PathVariable Integer leaveApplicationId) {
+    return leaveApplicationService.delete(leaveApplicationId);
   }
 }
