@@ -77,12 +77,15 @@ const statusText = computed(() => {
 
 function loadRouteToken() {
   const rawToken = extractToken(route.query.t || route.query.token)
-  const token = rawToken || localStorage.getItem(PENDING_CHECK_IN_TOKEN) || ''
-  if (rawToken) hideTokenFromAddressBar()
+  const savedToken = localStorage.getItem(PENDING_CHECK_IN_TOKEN) || ''
+  const token = rawToken || savedToken
+  if (rawToken) {
+    localStorage.setItem(PENDING_CHECK_IN_TOKEN, rawToken)
+    hideTokenFromAddressBar()
+  }
   routeToken.value = token
   if (!token) return
   if (!getToken()) {
-    localStorage.setItem(PENDING_CHECK_IN_TOKEN, token)
     router.replace({ path: '/admin/login', query: { redirect: '/check-in/scan' } })
     return
   }
