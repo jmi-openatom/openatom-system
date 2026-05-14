@@ -49,7 +49,7 @@
 
       <br />
 
-      <el-card shadow="never" style="grid-column: span 2">
+      <el-card v-if="canManageRegistration" shadow="never" style="grid-column: span 2">
         <div style="display: flex; align-items: center; justify-content: space-between">
           <span>前端用户注册功能</span>
           <el-switch
@@ -63,14 +63,14 @@
       </el-card>
     </div>
 
-    <el-empty v-else description="当前账号没有可展示的概览数据权限" />
+    <el-empty v-if="showEmptyState" description="当前账号没有可展示的概览数据权限" />
   </ViewPage>
 </template>
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import { DocumentChecked, OfficeBuilding, User, UserFilled } from '@element-plus/icons-vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, markRaw, onMounted, ref, type Component } from 'vue'
 import {
   applicationApi,
   authApi,
@@ -86,8 +86,18 @@ import {
   interviewStatusText,
   statusType,
 } from '@/utils/format.ts'
-import { hasAnyPermission } from '@/utils/permission.ts'
+import { hasAdminAccess, hasAnyPermission } from '@/utils/permission.ts'
 import { ElMessage } from 'element-plus'
+
+type DashboardStatKey = 'users' | 'clubs' | 'applications' | 'memberships'
+
+type DashboardStat = {
+  key: DashboardStatKey
+  label: string
+  value: number | string
+  icon: Component
+  permissions: string[]
+}
 
 const switchLoading = ref(false)
 
@@ -95,9 +105,38 @@ const applications = ref<any[]>([])
 
 const interviews = ref<any[]>([])
 
-const stats = ref<any>()
+const stats = ref<DashboardStat[]>([
+  {
+    key: 'users',
+    label: '用户总数',
+    value: '--',
+    icon: markRaw(User),
+    permissions: ['user:list'],
+  },
+  {
+    key: 'clubs',
+    label: '社团数量',
+    value: '--',
+    icon: markRaw(OfficeBuilding),
+    permissions: ['club:list'],
+  },
+  {
+    key: 'applications',
+    label: '待审核申请',
+    value: '--',
+    icon: markRaw(DocumentChecked),
+    permissions: ['application:list'],
+  },
+  {
+    key: 'memberships',
+    label: '成员总数',
+    value: '--',
+    icon: markRaw(UserFilled),
+    permissions: ['membership:list'],
+  },
+])
 
-const registerEnabled = ref<any>()
+const registerEnabled = ref(false)
 
 const visibleStats = computed(() => {
   return stats.value.filter((item) => hasAnyPermission(item.permissions))
@@ -111,18 +150,39 @@ const canViewInterviews = computed(() => {
   return hasAnyPermission(['interview:list'])
 })
 
-const hasDashboardSections = computed(() => {
-  return canViewApplications.value || canViewInterviews.value
+const canManageRegistration = computed(() => {
+  return hasAdminAccess()
 })
 
-function countValue(result: any) {
-  if (!result) {
-    return '--'
+const hasDashboardSections = computed(() => {
+  return canViewApplications.value || canViewInterviews.value || canManageRegistration.value
+})
+
+const showEmptyState = computed(() => {
+  return !visibleStats.value.length && !hasDashboardSections.value
+})
+
+function ensureList(result: any) {
+  if (Array.isArray(result)) {
+    return result
   }
-  return result.total ?? (result.list || result || []).length
+  if (Array.isArray(result?.list)) {
+    return result.list
+  }
+  return []
 }
 
-function setStatValue(key: any, value: any) {
+function countValue(result: any) {
+  if (result == null) {
+    return '--'
+  }
+  if (typeof result?.total === 'number') {
+    return result.total
+  }
+  return ensureList(result).length
+}
+
+function setStatValue(key: DashboardStatKey, value: number | string) {
   const target = stats.value.find((item) => item.key === key)
   if (target) {
     target.value = value
@@ -130,31 +190,36 @@ function setStatValue(key: any, value: any) {
 }
 
 async function loadDashboard() {
-  // 保持你原来的 Promise.all 请求逻辑
-  const [users, clubs, applications, memberships, interviews] = await Promise.all([
-    hasAnyPermission(['user:list'])
-      ? userApi.list({ page: 1, pageSize: 1 })
-      : Promise.resolve(null),
-    hasAnyPermission(['club:list'])
-      ? clubApi.list({ page: 1, pageSize: 1 })
-      : Promise.resolve(null),
-    canViewApplications.value
-      ? applicationApi.list({ page: 1, pageSize: 8 })
-      : Promise.resolve(null),
-    hasAnyPermission(['membership:list'])
-      ? membershipApi.list({
-          page: 1,
-          pageSize: 1,
-        })
-      : Promise.resolve(null),
-    canViewInterviews.value ? interviewApi.list({ page: 1, pageSize: 8 }) : Promise.resolve(null),
-  ])
-  setStatValue('users', countValue(users))
-  setStatValue('clubs', countValue(clubs))
-  setStatValue('applications', countValue(applications))
-  setStatValue('memberships', countValue(memberships))
-  applications.value = applications?.list || applications || []
-  interviews.value = interviews?.list || interviews || []
+  try {
+    const [users, clubs, applicationResult, memberships, interviewResult] = await Promise.all([
+      hasAnyPermission(['user:list'])
+        ? userApi.list({ page: 1, pageSize: 1 })
+        : Promise.resolve(null),
+      hasAnyPermission(['club:list'])
+        ? clubApi.list({ page: 1, pageSize: 1 })
+        : Promise.resolve(null),
+      canViewApplications.value
+        ? applicationApi.list({ page: 1, pageSize: 8 })
+        : Promise.resolve(null),
+      hasAnyPermission(['membership:list'])
+        ? membershipApi.list({
+            page: 1,
+            pageSize: 1,
+          })
+        : Promise.resolve(null),
+      canViewInterviews.value ? interviewApi.list({ page: 1, pageSize: 8 }) : Promise.resolve(null),
+    ])
+    setStatValue('users', countValue(users))
+    setStatValue('clubs', countValue(clubs))
+    setStatValue('applications', countValue(applicationResult))
+    setStatValue('memberships', countValue(memberships))
+    applications.value = ensureList(applicationResult)
+    interviews.value = ensureList(interviewResult)
+  } catch (error) {
+    console.error('加载概览数据失败', error)
+    applications.value = []
+    interviews.value = []
+  }
 }
 
 async function fetchRegisterEnabled() {
