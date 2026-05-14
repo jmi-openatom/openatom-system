@@ -3,9 +3,7 @@
     <header class="site-header">
       <div class="container site-header__inner">
         <router-link class="brand" to="/">
-            <div style="height:50px;">
-                <LiquidLogo :image-url="imageUrl" />
-            </div>
+            <img alt="徽标" class="site-footer__logo" src="/logo.png" />
           <span>
             <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
@@ -87,9 +85,7 @@
     <footer class="site-footer">
       <div class="container site-footer__inner">
         <div class="site-footer__brand">
-            <div style="height:80px;">
-                <LiquidLogo :image-url="imageUrl" />
-            </div>
+          <img alt="徽标" class="site-footer__logo" src="/logo.png" />
           <div class="brand-text">
             <span class="name">开放原子开源社团</span>
             <span class="slogan">Open Atom Open Source Club</span>
@@ -135,7 +131,6 @@ const unreadCount = ref(0)
 const unreadTimer = ref(null as any)
 
 const version = ref(__APP_VERSION__)
-const imageUrl = "/public/logo.svg";
 const isLoggedIn = computed(() => {
   return Boolean(getToken())
 })
