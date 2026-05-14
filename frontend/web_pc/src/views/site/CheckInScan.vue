@@ -51,7 +51,7 @@ import { ElMessage } from 'element-plus'
 import { Link, Loading, Refresh, Select } from '@element-plus/icons-vue'
 import { checkInApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
-import { getToken } from '@/utils/auth.ts'
+import { clearSession, getToken } from '@/utils/auth.ts'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -75,6 +75,11 @@ const statusText = computed(() => {
   return '微信扫一扫管理员大屏二维码后会自动打开本页并完成签到。'
 })
 
+function redirectToLogin() {
+  clearSession()
+  router.replace({ path: '/admin/login', query: { redirect: route.fullPath } })
+}
+
 function loadRouteToken() {
   const rawToken = extractToken(route.query.t || route.query.token)
   const savedToken = localStorage.getItem(PENDING_CHECK_IN_TOKEN) || ''
@@ -85,7 +90,7 @@ function loadRouteToken() {
   routeToken.value = token
   if (!token) return
   if (!getToken()) {
-    router.replace({ path: '/admin/login', query: { redirect: route.fullPath } })
+    redirectToLogin()
     return
   }
   autoSubmitting.value = true
@@ -120,6 +125,8 @@ async function submitToken(value: any) {
   } catch (error: any) {
     if ([401, 40100].includes(Number(error?.code || error?.response?.status))) {
       localStorage.setItem(PENDING_CHECK_IN_TOKEN, token)
+      redirectToLogin()
+      return
     }
     throw error
   } finally {
