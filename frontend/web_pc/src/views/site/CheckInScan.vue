@@ -76,9 +76,9 @@ const statusText = computed(() => {
 })
 
 function loadRouteToken() {
-  const routeToken = extractToken(route.query.t || route.query.token)
-  const token = routeToken || localStorage.getItem(PENDING_CHECK_IN_TOKEN) || ''
-  if (routeToken) hideTokenFromAddressBar()
+  const rawToken = extractToken(route.query.t || route.query.token)
+  const token = rawToken || localStorage.getItem(PENDING_CHECK_IN_TOKEN) || ''
+  if (rawToken) hideTokenFromAddressBar()
   routeToken.value = token
   if (!token) return
   if (!getToken()) {

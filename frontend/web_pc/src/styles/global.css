@@ -23,9 +23,16 @@
   --input: 0 0% 88%;
   --ring: 240 3% 12%;
   --radius: 0.5rem;
-  --oa-primary: #1d1d1f;
-  --oa-primary-dark: #000000;
-  --oa-primary-soft: #f5f5f7;
+  --oa-primary: #0f172a;
+  --oa-primary-dark: #020617;
+  --oa-primary-soft: #e0f2fe;
+  --oa-accent: #06b6d4;
+  --oa-accent-2: #22c55e;
+  --oa-warm: #f59e0b;
+  --oa-gradient: linear-gradient(135deg, #0f172a 0%, #0e7490 48%, #16a34a 100%);
+  --oa-hero-gradient: radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.24), transparent 32%),
+    radial-gradient(circle at 86% 18%, rgba(34, 197, 94, 0.16), transparent 34%),
+    linear-gradient(180deg, #f8fbff 0%, #edf7ff 42%, #ffffff 100%);
   --oa-primary-on-dark: #ffffff;
   --oa-focus-ring: rgba(29, 29, 31, 0.12);
   --oa-text: #1d1d1f;
@@ -33,9 +40,9 @@
   --oa-muted-dark: #cccccc;
   --oa-border: #e0e0e0;
   --oa-divider: #f0f0f0;
-  --oa-bg: #f5f5f7;
-  --oa-surface: #ffffff;
-  --oa-panel: #ffffff;
+  --oa-bg: #eef6ff;
+  --oa-surface: rgba(255, 255, 255, 0.86);
+  --oa-panel: rgba(255, 255, 255, 0.9);
   --oa-radius: 18px;
   --oa-radius-sm: 8px;
   --oa-radius-md: 11px;
@@ -46,6 +53,7 @@
   --oa-dark-tile-2: #2a2a2c;
   --oa-dark-tile-3: #252527;
   --oa-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --oa-site-header-height: 60px;
   --el-color-primary: #1d1d1f;
   --el-color-primary-dark-2: #000000;
   --el-color-primary-light-3: #4b4b4f;
@@ -92,14 +100,13 @@ html {
 body {
   margin: 0;
   color: var(--oa-text);
-  background: var(--oa-bg);
+  background: var(--oa-hero-gradient);
   font-family:
-    'SF Pro Text',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
+    'Avenir Next',
+    'DIN Alternate',
     'PingFang SC',
     'Microsoft YaHei',
+    system-ui,
     sans-serif;
   font-size: 17px;
   line-height: 1.47;
@@ -107,6 +114,11 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+}
+
+::selection {
+  color: #ffffff;
+  background: rgba(14, 116, 144, 0.86);
 }
 
 a {
@@ -117,6 +129,11 @@ a {
 .container {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
+}
+
+.site-screen-section {
+  position: relative;
+  min-height: calc(100svh - var(--oa-site-header-height));
 }
 
 .page-title {

@@ -6,6 +6,7 @@
     <HomeActivitiesSection :activities="activities" :loading="loading" />
     <HomePeopleSection :people="people" :loading="loading" />
     <HomeAwardsSection :awards="awards" :loading="loading" />
+      <Test />
   </ViewPage>
 </template>
 
@@ -22,6 +23,7 @@ import HomeHero from '@/components/site/home/HomeHero.vue'
 import HomeOverviewPage from '@/components/site/home/HomeOverviewPage.vue'
 import HomePeopleSection from '@/components/site/home/HomePeopleSection.vue'
 import { SmoothCursor } from '@/components/ui/smooth-cursor'
+import Test from '@/components/site/home/Test.vue'
 
 gsap.registerPlugin(ScrollTrigger)
 

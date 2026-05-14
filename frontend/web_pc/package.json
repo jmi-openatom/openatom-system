@@ -14,15 +14,20 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
     "@inspira-ui/plugins": "^0.0.2",
+    "@vueuse/core": "^14.3.0",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cobe": "^2.0.1",
     "element-plus": "^2.9.3",
     "gsap": "^3.15.0",
     "lucide-vue-next": "^1.0.0",
+    "motion-v": "^2.2.1",
     "tailwind-merge": "^3.6.0",
+    "theme-colors": "^0.1.0",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "vue-use-spring": "^0.3.3"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
