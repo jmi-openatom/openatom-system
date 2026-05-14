@@ -81,7 +81,7 @@ function loadRouteToken() {
   const token = rawToken || savedToken
   if (rawToken) {
     localStorage.setItem(PENDING_CHECK_IN_TOKEN, rawToken)
-    hideTokenFromAddressBar()
+    if (getToken()) hideTokenFromAddressBar()
   }
   routeToken.value = token
   if (!token) return
