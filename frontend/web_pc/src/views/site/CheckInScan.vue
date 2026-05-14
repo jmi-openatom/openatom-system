@@ -81,19 +81,19 @@ function loadRouteToken() {
   const token = rawToken || savedToken
   if (rawToken) {
     localStorage.setItem(PENDING_CHECK_IN_TOKEN, rawToken)
-    if (getToken()) hideTokenFromAddressBar()
   }
   routeToken.value = token
   if (!token) return
   if (!getToken()) {
-    router.replace({ path: '/admin/login', query: { redirect: '/check-in/scan' } })
+    router.replace({ path: '/admin/login', query: { redirect: route.fullPath } })
     return
   }
-  localStorage.removeItem(PENDING_CHECK_IN_TOKEN)
   autoSubmitting.value = true
-  submitToken(token).finally(() => {
-    autoSubmitting.value = false
-  })
+  submitToken(token)
+    .catch(() => undefined)
+    .finally(() => {
+      autoSubmitting.value = false
+    })
 }
 
 function hideTokenFromAddressBar() {
@@ -114,7 +114,14 @@ async function submitToken(value: any) {
   submitting.value = true
   try {
     result.value = await checkInApi.scan({ token })
+    localStorage.removeItem(PENDING_CHECK_IN_TOKEN)
+    hideTokenFromAddressBar()
     ElMessage.success('签到成功')
+  } catch (error: any) {
+    if ([401, 40100].includes(Number(error?.code || error?.response?.status))) {
+      localStorage.setItem(PENDING_CHECK_IN_TOKEN, token)
+    }
+    throw error
   } finally {
     submitting.value = false
   }
@@ -124,9 +131,7 @@ onMounted(() => {
   loadRouteToken()
 })
 
-watch(() => route.query.token, loadRouteToken)
-
-watch(() => route.query.t, loadRouteToken)
+watch(() => [route.query.token, route.query.t], loadRouteToken)
 </script>
 
 <style scoped>

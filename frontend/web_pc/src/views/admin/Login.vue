@@ -121,6 +121,12 @@ const canManageRegister = computed(() => {
   return hasRole('super_admin')
 })
 
+function loginRedirectTarget() {
+  const redirect = route.query.redirect
+  const value = Array.isArray(redirect) ? redirect[0] : redirect
+  return value || (hasAdminAccess() ? '/admin/dashboard' : '/progress')
+}
+
 async function fetchRegisterEnabled() {
   registerEnabled.value = Boolean(await siteApi.registerEnabled())
   if (!registerEnabled.value && activeTab.value === 'register') {
@@ -145,7 +151,7 @@ function handleLogin() {
       }
       setSession(result)
       ElMessage.success('登录成功')
-      router.replace(route.query.redirect || (hasAdminAccess() ? '/admin/dashboard' : '/progress'))
+      router.replace(loginRedirectTarget())
     } finally {
       loading.value = false
     }
@@ -178,7 +184,7 @@ function handleRegister() {
       }
       setSession(result)
       ElMessage.success('注册成功')
-      router.replace(hasAdminAccess() ? '/admin/dashboard' : '/progress')
+      router.replace(loginRedirectTarget())
     } finally {
       loading.value = false
     }
