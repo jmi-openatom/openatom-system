@@ -1,5 +1,5 @@
 <template>
-  <div class="site-page">
+  <ViewPage class="site-page">
     <section class="container leave-page">
       <div class="leave-main">
         <div class="section-head">
@@ -21,7 +21,12 @@
             </el-form-item>
           </div>
           <el-form-item label="请假理由" prop="reason">
-            <el-input v-model="form.reason" type="textarea" :rows="4" placeholder="请说明具体原因" />
+            <el-input
+              v-model="form.reason"
+              type="textarea"
+              :rows="4"
+              placeholder="请说明具体原因"
+            />
           </el-form-item>
           <el-form-item label="图片附件" prop="attachments">
             <el-upload
@@ -38,7 +43,9 @@
             <p class="upload-tip">支持手机拍照或相册选择，最多 5 张，审批人可直接查看原图。</p>
           </el-form-item>
           <el-form-item class="submit-row">
-            <el-button class="submit-button" type="primary" :loading="saving" @click="submit">提交申请</el-button>
+            <el-button class="submit-button" type="primary" :loading="saving" @click="submit"
+              >提交申请</el-button
+            >
           </el-form-item>
         </el-form>
       </div>
@@ -66,7 +73,9 @@
                 <strong>{{ item.title }}</strong>
                 <p>{{ formatRange(item.startAt, item.endAt) }}</p>
               </div>
-              <el-tag :type="leaveStatusType(item.status)">{{ leaveStatusText(item.status) }}</el-tag>
+              <el-tag :type="leaveStatusType(item.status)">{{
+                leaveStatusText(item.status)
+              }}</el-tag>
             </div>
 
             <p class="reason-text">{{ item.reason }}</p>
@@ -83,7 +92,13 @@
               />
             </div>
 
-            <el-steps class="flow-steps" direction="vertical" :active="flowActive(item)" finish-status="success" process-status="process">
+            <el-steps
+              class="flow-steps"
+              direction="vertical"
+              :active="flowActive(item)"
+              finish-status="success"
+              process-status="process"
+            >
               <el-step
                 v-for="step in item.approvalFlow || []"
                 :key="step.node"
@@ -98,137 +113,154 @@
         </div>
       </section>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { leaveApplicationApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
+import { computed, onMounted, ref } from 'vue'
 
-export default {
-  name: 'SiteLeaves',
-  data() {
-    return {
-      Plus,
-      Refresh,
-      rows: [],
-      saving: false,
-      uploadFiles: [],
-      form: { title: '', reason: '', startAt: '', endAt: '', attachments: [] },
-      rules: {
-        title: [{ required: true, message: '请输入请假标题', trigger: 'blur' }],
-        reason: [{ required: true, message: '请填写请假理由', trigger: 'blur' }],
-        attachments: [{ required: true, type: 'array', min: 1, message: '请上传图片附件', trigger: 'change' }],
-      },
-    }
-  },
-  computed: {
-    groupedRows() {
-      const groups = new Map()
-      ;(this.rows || []).forEach((item) => {
-        const key = this.dateKey(item.startAt || item.createdAt)
-        if (!groups.has(key)) groups.set(key, { date: key, label: this.dateLabel(item.startAt || item.createdAt), items: [] })
-        groups.get(key).items.push(item)
-      })
-      return Array.from(groups.values())
-    },
-  },
-  created() {
-    this.fetchMine()
-  },
-  methods: {
-    formatDateTime,
-    leaveStatusText(status) {
-      return { submitted: '待审批', approved: '已通过', rejected: '已驳回' }[status] || status || '-'
-    },
-    leaveStatusType(status) {
-      return { submitted: 'warning', approved: 'success', rejected: 'danger' }[status] || 'info'
-    },
-    flowActive(item) {
-      if (!item) return 0
-      return item.status === 'submitted' ? 1 : 3
-    },
-    formatRange(startAt, endAt) {
-      return `${formatDateTime(startAt) || '不限'} - ${formatDateTime(endAt) || '不限'}`
-    },
-    stepDescription(step) {
-      const parts = [this.formatDateTime(step.time), step.comment].filter(Boolean)
-      return parts.join(' / ')
-    },
-    dateKey(value) {
-      if (!value) return 'unknown'
-      return String(value).slice(0, 10)
-    },
-    dateLabel(value) {
-      const key = this.dateKey(value)
-      return key === 'unknown' ? '未设置日期' : key
-    },
-    imageAttachments(item) {
-      return (item.attachments || []).filter((file) => this.isImage(file))
-    },
-    imagePreviewList(item) {
-      return this.imageAttachments(item).map((file) => file.content)
-    },
-    isImage(file) {
-      return String(file?.type || '').startsWith('image/') || String(file?.content || '').startsWith('data:image/')
-    },
-    async fetchMine() {
-      this.rows = (await leaveApplicationApi.mine()) || []
-    },
-    handleAttachmentChange(file, fileList) {
-      const raw = file.raw
-      if (!raw) return false
-      if (!raw.type.startsWith('image/')) {
-        ElMessage.error('请上传图片文件')
-        this.uploadFiles = fileList.filter((item) => item.uid !== file.uid)
-        return false
-      }
-      this.uploadFiles = fileList
-      const reader = new FileReader()
-      reader.onload = () => {
-        file.url = reader.result
-        this.uploadFiles = fileList
-        const next = this.form.attachments.filter((item) => item.name !== raw.name)
-        next.push({ name: raw.name, type: raw.type, size: raw.size, content: reader.result })
-        this.form.attachments = next
-      }
-      reader.readAsDataURL(raw)
-      return false
-    },
-    handleAttachmentRemove(file, fileList) {
-      this.uploadFiles = fileList
-      const name = file.name
-      this.form.attachments = this.form.attachments.filter((item) => item.name !== name)
-    },
-    submit() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        this.saving = true
-        try {
-          await leaveApplicationApi.create(this.form)
-          ElMessage.success('请假申请已提交')
-          this.form = { title: '', reason: '', startAt: '', endAt: '', attachments: [] }
-          this.uploadFiles = []
-          await this.fetchMine()
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-    async deleteLeave(item) {
-      await ElMessageBox.confirm(`确定删除“${item.title}”这条请假记录吗？`, '删除请假记录', {
-        type: 'warning',
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-      })
-      await leaveApplicationApi.siteRemove(item.id)
-      ElMessage.success('请假记录已删除')
-      await this.fetchMine()
-    },
-  },
+const rows = ref<any[]>([])
+
+const saving = ref(false)
+
+const uploadFiles = ref<any[]>([])
+
+const form = ref({ title: '', reason: '', startAt: '', endAt: '', attachments: [] })
+
+const rules = ref({
+  title: [{ required: true, message: '请输入请假标题', trigger: 'blur' }],
+  reason: [{ required: true, message: '请填写请假理由', trigger: 'blur' }],
+  attachments: [
+    { required: true, type: 'array', min: 1, message: '请上传图片附件', trigger: 'change' },
+  ],
+})
+
+const formRef = ref<any>()
+
+const groupedRows = computed(() => {
+  const groups = new Map()
+  ;(rows.value || []).forEach((item) => {
+    const key = dateKey(item.startAt || item.createdAt)
+    if (!groups.has(key))
+      groups.set(key, { date: key, label: dateLabel(item.startAt || item.createdAt), items: [] })
+    groups.get(key).items.push(item)
+  })
+  return Array.from(groups.values())
+})
+
+function leaveStatusText(status: any) {
+  return { submitted: '待审批', approved: '已通过', rejected: '已驳回' }[status] || status || '-'
 }
+
+function leaveStatusType(status: any) {
+  return { submitted: 'warning', approved: 'success', rejected: 'danger' }[status] || 'info'
+}
+
+function flowActive(item: any) {
+  if (!item) return 0
+  return item.status === 'submitted' ? 1 : 3
+}
+
+function formatRange(startAt: any, endAt: any) {
+  return `${formatDateTime(startAt) || '不限'} - ${formatDateTime(endAt) || '不限'}`
+}
+
+function stepDescription(step: any) {
+  const parts = [formatDateTime(step.time), step.comment].filter(Boolean)
+  return parts.join(' / ')
+}
+
+function dateKey(value: any) {
+  if (!value) return 'unknown'
+  return String(value).slice(0, 10)
+}
+
+function dateLabel(value: any) {
+  const key = dateKey(value)
+  return key === 'unknown' ? '未设置日期' : key
+}
+
+function imageAttachments(item: any) {
+  return (item.attachments || []).filter((file) => isImage(file))
+}
+
+function imagePreviewList(item: any) {
+  return imageAttachments(item).map((file) => file.content)
+}
+
+function isImage(file: any) {
+  return (
+    String(file?.type || '').startsWith('image/') ||
+    String(file?.content || '').startsWith('data:image/')
+  )
+}
+
+async function fetchMine() {
+  rows.value = (await leaveApplicationApi.mine()) || []
+}
+
+function handleAttachmentChange(file: any, fileList: any) {
+  const raw = file.raw
+  if (!raw) return false
+  if (!raw.type.startsWith('image/')) {
+    ElMessage.error('请上传图片文件')
+    uploadFiles.value = fileList.filter((item) => item.uid !== file.uid)
+    return false
+  }
+  uploadFiles.value = fileList
+  const reader = new FileReader()
+  reader.onload = () => {
+    file.url = reader.result
+    uploadFiles.value = fileList
+    const next = form.value.attachments.filter((item) => item.name !== raw.name)
+    next.push({ name: raw.name, type: raw.type, size: raw.size, content: reader.result })
+    form.value.attachments = next
+  }
+  reader.readAsDataURL(raw)
+  return false
+}
+
+function handleAttachmentRemove(file: any, fileList: any) {
+  uploadFiles.value = fileList
+  const name = file.name
+  form.value.attachments = form.value.attachments.filter((item) => item.name !== name)
+}
+
+function submit() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    saving.value = true
+    try {
+      await leaveApplicationApi.create(form.value)
+      ElMessage.success('请假申请已提交')
+      form.value = { title: '', reason: '', startAt: '', endAt: '', attachments: [] }
+      uploadFiles.value = []
+      await fetchMine()
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+async function deleteLeave(item: any) {
+  await ElMessageBox.confirm(`确定删除“${item.title}”这条请假记录吗？`, '删除请假记录', {
+    type: 'warning',
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+  })
+  await leaveApplicationApi.siteRemove(item.id)
+  ElMessage.success('请假记录已删除')
+  await fetchMine()
+}
+
+onMounted(() => {
+  fetchMine()
+})
 </script>
 
 <style scoped>
@@ -259,7 +291,12 @@ export default {
 
 .section-head h1 {
   margin: 14px 0 8px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 48px;
   font-weight: 600;
   line-height: 1.1;

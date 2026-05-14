@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-page">
+  <ViewPage class="admin-page">
     <div v-if="visibleStats.length" class="stat-grid">
       <div v-for="item in visibleStats" :key="item.label" class="stat-card panel">
         <el-icon>
@@ -64,11 +64,13 @@
     </div>
 
     <el-empty v-else description="当前账号没有可展示的概览数据权限" />
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { DocumentChecked, OfficeBuilding, User, UserFilled } from '@element-plus/icons-vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   applicationApi,
   authApi,
@@ -87,130 +89,100 @@ import {
 import { hasAnyPermission } from '@/utils/permission.ts'
 import { ElMessage } from 'element-plus'
 
-export default {
-  name: 'AdminDashboard',
-  data() {
-    return {
-      // 新增状态
-      registerEnabled: false,
-      switchLoading: false,
-      // 原始统计配置
-      stats: [
-        { key: 'users', label: '用户数量', value: '--', icon: User, permissions: ['user:list'] },
-        {
-          key: 'clubs',
-          label: '社团数量',
-          value: '--',
-          icon: OfficeBuilding,
-          permissions: ['club:list'],
-        },
-        {
-          key: 'applications',
-          label: '申请数量',
-          value: '--',
-          icon: DocumentChecked,
-          permissions: ['application:list'],
-        },
-        {
-          key: 'memberships',
-          label: '成员数量',
-          value: '--',
-          icon: UserFilled,
-          permissions: ['membership:list'],
-        },
-      ],
-      applications: [],
-      interviews: [],
-    }
-  },
-  computed: {
-    visibleStats() {
-      return this.stats.filter((item) => hasAnyPermission(item.permissions))
-    },
-    canViewApplications() {
-      return hasAnyPermission(['application:list'])
-    },
-    canViewInterviews() {
-      return hasAnyPermission(['interview:list'])
-    },
-    hasDashboardSections() {
-      return this.canViewApplications || this.canViewInterviews
-    },
-  },
-  created() {
-    this.loadDashboard()
-    this.fetchRegisterEnabled() // 页面加载时获取初始状态
-  },
-  methods: {
-    applicationStatusText,
-    formatDateTime,
-    interviewStatusText,
-    statusType,
-    countValue(result) {
-      if (!result) {
-        return '--'
-      }
-      return result.total ?? (result.list || result || []).length
-    },
-    setStatValue(key, value) {
-      const target = this.stats.find((item) => item.key === key)
-      if (target) {
-        target.value = value
-      }
-    },
-    async loadDashboard() {
-      // 保持你原来的 Promise.all 请求逻辑
-      const [users, clubs, applications, memberships, interviews] = await Promise.all([
-        hasAnyPermission(['user:list'])
-          ? userApi.list({ page: 1, pageSize: 1 })
-          : Promise.resolve(null),
-        hasAnyPermission(['club:list'])
-          ? clubApi.list({ page: 1, pageSize: 1 })
-          : Promise.resolve(null),
-        this.canViewApplications
-          ? applicationApi.list({ page: 1, pageSize: 8 })
-          : Promise.resolve(null),
-        hasAnyPermission(['membership:list'])
-          ? membershipApi.list({
-              page: 1,
-              pageSize: 1,
-            })
-          : Promise.resolve(null),
-        this.canViewInterviews
-          ? interviewApi.list({ page: 1, pageSize: 8 })
-          : Promise.resolve(null),
-      ])
-      this.setStatValue('users', this.countValue(users))
-      this.setStatValue('clubs', this.countValue(clubs))
-      this.setStatValue('applications', this.countValue(applications))
-      this.setStatValue('memberships', this.countValue(memberships))
-      this.applications = applications?.list || applications || []
-      this.interviews = interviews?.list || interviews || []
-    },
-    // 获取当前注册状态
-    async fetchRegisterEnabled() {
-      try {
-        this.registerEnabled = Boolean(await siteApi.registerEnabled())
-      } catch (e) {
-        console.error('获取注册状态失败', e)
-      }
-    },
-    // 修复切换方法
-    async handleRegisterSwitch(value) {
-      this.switchLoading = true
-      try {
-        await authApi.updateRegisterEnabled(value)
-        ElMessage.success(value ? '已开启注册' : '已关闭注册')
-      } catch (error) {
-        // 如果后端更新失败，UI 状态回滚
-        this.registerEnabled = !value
-        ElMessage.error('操作失败')
-      } finally {
-        this.switchLoading = false
-      }
-    },
-  },
+const switchLoading = ref(false)
+
+const applications = ref<any[]>([])
+
+const interviews = ref<any[]>([])
+
+const stats = ref<any>()
+
+const registerEnabled = ref<any>()
+
+const visibleStats = computed(() => {
+  return stats.value.filter((item) => hasAnyPermission(item.permissions))
+})
+
+const canViewApplications = computed(() => {
+  return hasAnyPermission(['application:list'])
+})
+
+const canViewInterviews = computed(() => {
+  return hasAnyPermission(['interview:list'])
+})
+
+const hasDashboardSections = computed(() => {
+  return canViewApplications.value || canViewInterviews.value
+})
+
+function countValue(result: any) {
+  if (!result) {
+    return '--'
+  }
+  return result.total ?? (result.list || result || []).length
 }
+
+function setStatValue(key: any, value: any) {
+  const target = stats.value.find((item) => item.key === key)
+  if (target) {
+    target.value = value
+  }
+}
+
+async function loadDashboard() {
+  // 保持你原来的 Promise.all 请求逻辑
+  const [users, clubs, applications, memberships, interviews] = await Promise.all([
+    hasAnyPermission(['user:list'])
+      ? userApi.list({ page: 1, pageSize: 1 })
+      : Promise.resolve(null),
+    hasAnyPermission(['club:list'])
+      ? clubApi.list({ page: 1, pageSize: 1 })
+      : Promise.resolve(null),
+    canViewApplications.value
+      ? applicationApi.list({ page: 1, pageSize: 8 })
+      : Promise.resolve(null),
+    hasAnyPermission(['membership:list'])
+      ? membershipApi.list({
+          page: 1,
+          pageSize: 1,
+        })
+      : Promise.resolve(null),
+    canViewInterviews.value ? interviewApi.list({ page: 1, pageSize: 8 }) : Promise.resolve(null),
+  ])
+  setStatValue('users', countValue(users))
+  setStatValue('clubs', countValue(clubs))
+  setStatValue('applications', countValue(applications))
+  setStatValue('memberships', countValue(memberships))
+  applications.value = applications?.list || applications || []
+  interviews.value = interviews?.list || interviews || []
+}
+
+async function fetchRegisterEnabled() {
+  try {
+    registerEnabled.value = Boolean(await siteApi.registerEnabled())
+  } catch (e) {
+    console.error('获取注册状态失败', e)
+  }
+}
+
+async function handleRegisterSwitch(value: any) {
+  switchLoading.value = true
+  try {
+    await authApi.updateRegisterEnabled(value)
+    ElMessage.success(value ? '已开启注册' : '已关闭注册')
+  } catch (error) {
+    // 如果后端更新失败，UI 状态回滚
+    registerEnabled.value = !value
+    ElMessage.error('操作失败')
+  } finally {
+    switchLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadDashboard()
+  fetchRegisterEnabled() // 页面加载时获取初始状态
+})
 </script>
 
 <style scoped>
@@ -250,7 +222,12 @@ export default {
 .stat-card strong {
   display: block;
   margin-top: 4px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 40px;
   font-weight: 600;
   line-height: 1.1;

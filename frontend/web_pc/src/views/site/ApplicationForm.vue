@@ -1,5 +1,5 @@
 <template>
-  <div class="site-page">
+  <ViewPage class="site-page">
     <section class="container apply-grid">
       <div>
         <h1 class="page-title">入会申请表</h1>
@@ -150,171 +150,182 @@
         </el-form>
       </el-card>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage } from 'element-plus'
 import { applicationApi, clubApi, siteApi } from '@/api'
 import { getToken } from '@/utils/auth.ts'
 import { formatDateTime } from '@/utils/format.ts'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-export default {
-  name: 'SiteApplicationForm',
-  data() {
-    return {
-      club: {},
-      formMeta: {},
-      departments: [],
-      submitting: false,
-      form: {
-        firstChoiceDepartmentId: undefined,
-        secondChoiceDepartmentId: undefined,
-        formData: {},
-      },
-      rules: {},
-    }
-  },
-  computed: {
-    hasToken() {
-      return Boolean(getToken())
-    },
-    requiresLogin() {
-      return false
-    },
-    canSubmit() {
-      if (!this.formMeta?.id) return false
-      if (['closed', 'archived'].includes(this.formMeta.status)) return false
-      if (this.formMeta.applyStartAt && new Date(this.formMeta.applyStartAt).getTime() > Date.now())
-        return false
-      if (!this.formMeta.applyEndAt) return true
-      return new Date(this.formMeta.applyEndAt).getTime() >= Date.now()
-    },
-    dynamicFields() {
-      return this.parseSchema(this.formMeta?.formSchema)
-    },
-    hasApplicantNameField() {
-      return this.dynamicFields.some((field) => field.key === 'applicantName')
-    },
-    hasContactField() {
-      return this.dynamicFields.some((field) => field.key === 'contact')
-    },
-  },
-  created() {
-    this.loadFormDetail()
-  },
-  methods: {
-    formatDateTime,
-    async loadFormDetail() {
-      const result = await siteApi.recruitmentDetail(this.$route.params.id)
-      this.club = result?.club || {}
-      this.formMeta = {
-        ...(result?.campaign || {}),
-        loginRequired: result?.campaign?.loginRequired !== false,
-      }
-      this.departments = result?.departments || []
-      if (!this.departments.length && this.club.id) {
-        const deptResult = await clubApi.departments(this.club.id)
-        this.departments = deptResult?.list || deptResult || []
-      }
-      this.resetForm()
-    },
-    buildRules() {
-      return {
-        ...(this.departments.length
-          ? {
-              firstChoiceDepartmentId: [
-                { required: true, message: '请选择第一志愿', trigger: 'change' },
-              ],
-            }
-          : {}),
-        ...(!this.hasApplicantNameField
-          ? {
-              'formData.applicantName': [
-                { required: true, message: '请填写联系人', trigger: 'blur' },
-              ],
-            }
-          : {}),
-        ...(!this.hasContactField
-          ? {
-              'formData.contact': [
-                { required: true, message: '请填写联系方式', trigger: 'blur' },
-              ],
-            }
-          : {}),
-        ...this.dynamicFields.reduce((rules, field) => {
-          if (field.required) {
-            rules[`formData.${field.key}`] = [
-              {
-                required: true,
-                message: `请填写${field.label || field.key}`,
-                trigger: 'blur',
-              },
-            ]
-          }
-          return rules
-        }, {}),
-      }
-    },
-    parseSchema(value) {
-      if (Array.isArray(value)) return value.filter((item) => item && item.key)
-      if (!value) return []
-      try {
-        const parsed = JSON.parse(value)
-        return Array.isArray(parsed) ? parsed.filter((item) => item && item.key) : []
-      } catch {
-        return []
-      }
-    },
-    submitForm() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        this.submitting = true
-        try {
-          await applicationApi.create({
-            campaignId: this.formMeta.id,
-            clubId: this.club.id,
-            firstChoiceDepartmentId: this.form.firstChoiceDepartmentId,
-            secondChoiceDepartmentId: this.form.secondChoiceDepartmentId,
-            profile: this.form.formData,
-          })
-          if (this.hasToken) {
-            ElMessage.success('入会申请已提交，请在“我的申请”中关注进度')
-          } else {
-            ElMessage.success('入会申请已提交')
-          }
-          this.resetForm()
-          if (this.hasToken) {
-            this.$router.push('/progress')
-          }
-        } finally {
-          this.submitting = false
-        }
-      })
-    },
-    resetForm() {
-      const formData = {}
-      this.dynamicFields.forEach((field) => {
-        formData[field.key] = ''
-      })
-      if (!this.hasApplicantNameField) {
-        formData.applicantName = ''
-      }
-      if (!this.hasContactField) {
-        formData.contact = ''
-      }
-      this.form = {
-        firstChoiceDepartmentId: undefined,
-        secondChoiceDepartmentId: undefined,
-        formData,
-      }
-      this.rules = this.buildRules()
-    },
-    formatRange(startAt, endAt) {
-      return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
-    },
-  },
+const club = ref<Record<string, any>>({})
+
+const formMeta = ref<Record<string, any>>({})
+
+const departments = ref<any[]>([])
+
+const submitting = ref(false)
+
+const form = ref({
+  firstChoiceDepartmentId: undefined,
+  secondChoiceDepartmentId: undefined,
+  formData: {},
+})
+
+const rules = ref<Record<string, any>>({})
+
+const formRef = ref<any>()
+
+const router = useRouter()
+
+const route = useRoute()
+
+const hasToken = computed(() => {
+  return Boolean(getToken())
+})
+
+const requiresLogin = computed(() => {
+  return false
+})
+
+const canSubmit = computed(() => {
+  if (!formMeta.value?.id) return false
+  if (['closed', 'archived'].includes(formMeta.value.status)) return false
+  if (formMeta.value.applyStartAt && new Date(formMeta.value.applyStartAt).getTime() > Date.now())
+    return false
+  if (!formMeta.value.applyEndAt) return true
+  return new Date(formMeta.value.applyEndAt).getTime() >= Date.now()
+})
+
+const dynamicFields = computed(() => {
+  return parseSchema(formMeta.value?.formSchema)
+})
+
+const hasApplicantNameField = computed(() => {
+  return dynamicFields.value.some((field) => field.key === 'applicantName')
+})
+
+const hasContactField = computed(() => {
+  return dynamicFields.value.some((field) => field.key === 'contact')
+})
+
+async function loadFormDetail() {
+  const result = await siteApi.recruitmentDetail(route.params.id)
+  club.value = result?.club || {}
+  formMeta.value = {
+    ...(result?.campaign || {}),
+    loginRequired: result?.campaign?.loginRequired !== false,
+  }
+  departments.value = result?.departments || []
+  if (!departments.value.length && club.value.id) {
+    const deptResult = await clubApi.departments(club.value.id)
+    departments.value = deptResult?.list || deptResult || []
+  }
+  resetForm()
 }
+
+function buildRules() {
+  return {
+    ...(departments.value.length
+      ? {
+          firstChoiceDepartmentId: [
+            { required: true, message: '请选择第一志愿', trigger: 'change' },
+          ],
+        }
+      : {}),
+    ...(!hasApplicantNameField.value
+      ? {
+          'formData.applicantName': [{ required: true, message: '请填写联系人', trigger: 'blur' }],
+        }
+      : {}),
+    ...(!hasContactField.value
+      ? {
+          'formData.contact': [{ required: true, message: '请填写联系方式', trigger: 'blur' }],
+        }
+      : {}),
+    ...dynamicFields.value.reduce((rules, field) => {
+      if (field.required) {
+        rules[`formData.${field.key}`] = [
+          {
+            required: true,
+            message: `请填写${field.label || field.key}`,
+            trigger: 'blur',
+          },
+        ]
+      }
+      return rules
+    }, {}),
+  }
+}
+
+function parseSchema(value: any) {
+  if (Array.isArray(value)) return value.filter((item) => item && item.key)
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed.filter((item) => item && item.key) : []
+  } catch {
+    return []
+  }
+}
+
+function submitForm() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    submitting.value = true
+    try {
+      await applicationApi.create({
+        campaignId: formMeta.value.id,
+        clubId: club.value.id,
+        firstChoiceDepartmentId: form.value.firstChoiceDepartmentId,
+        secondChoiceDepartmentId: form.value.secondChoiceDepartmentId,
+        profile: form.value.formData,
+      })
+      if (hasToken.value) {
+        ElMessage.success('入会申请已提交，请在“我的申请”中关注进度')
+      } else {
+        ElMessage.success('入会申请已提交')
+      }
+      resetForm()
+      if (hasToken.value) {
+        router.push('/progress')
+      }
+    } finally {
+      submitting.value = false
+    }
+  })
+}
+
+function resetForm() {
+  const formData = {}
+  dynamicFields.value.forEach((field) => {
+    formData[field.key] = ''
+  })
+  if (!hasApplicantNameField.value) {
+    formData.applicantName = ''
+  }
+  if (!hasContactField.value) {
+    formData.contact = ''
+  }
+  form.value = {
+    firstChoiceDepartmentId: undefined,
+    secondChoiceDepartmentId: undefined,
+    formData,
+  }
+  rules.value = buildRules()
+}
+
+function formatRange(startAt: any, endAt: any) {
+  return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
+}
+
+onMounted(() => {
+  loadFormDetail()
+})
 </script>
 
 <style scoped>

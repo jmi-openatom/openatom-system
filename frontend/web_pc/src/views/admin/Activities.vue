@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-select
           v-model="query.status"
@@ -17,7 +17,7 @@
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
       <el-button type="primary" :icon="Plus" @click="openDialog()">新增活动</el-button>
-    </div>
+    </ViewToolbar>
 
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column prop="title" label="活动" min-width="220">
@@ -130,14 +130,17 @@
         </el-table-column>
       </el-table>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { activityApi } from '@/api/index.ts'
 import { formatDateTime, statusType } from '@/utils/format.ts'
+import { onMounted, ref } from 'vue'
 
 const defaultFields = [
   { label: '姓名', type: 'text', required: true },
@@ -145,116 +148,123 @@ const defaultFields = [
   { label: '备注', type: 'textarea', required: false },
 ]
 
-export default {
-  name: 'AdminActivities',
-  data() {
-    return {
-      Plus,
-      Refresh,
-      loading: false,
-      saving: false,
-      dialogVisible: false,
-      registrationVisible: false,
-      rows: [],
-      registrations: [],
-      query: { status: '' },
-      form: {},
-      registrationFieldsText: '',
-      rules: {
-        title: [{ required: true, message: '请输入活动标题', trigger: 'blur' }],
-      },
-    }
-  },
-  created() {
-    this.fetchList()
-  },
-  methods: {
-    formatDateTime,
-    statusType,
-    statusText(status) {
-      return (
-        { draft: '草稿', published: '已发布', closed: '已关闭', cancelled: '已取消' }[status] ||
-        status ||
-        '-'
-      )
-    },
-    async fetchList() {
-      this.loading = true
-      try {
-        this.rows = (await activityApi.list(this.query)) || []
-      } finally {
-        this.loading = false
-      }
-    },
-    openDialog(row) {
-      this.form = row
-        ? {
-            ...row,
-            activityAt: this.toInputTime(row.activityAt),
-            endAt: this.toInputTime(row.endAt),
-            registrationStartAt: this.toInputTime(row.registrationStartAt),
-            registrationEndAt: this.toInputTime(row.registrationEndAt),
-          }
-        : {
-            title: '',
-            status: 'draft',
-            summary: '',
-            descriptionMarkdown: '# 活动介绍\n\n',
-            registrationRequired: false,
-          }
-      this.registrationFieldsText = this.prettyFields(row?.registrationFields || defaultFields)
-      this.dialogVisible = true
-    },
-    save() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        let fields = null
-        if (this.form.registrationRequired) {
-          try {
-            fields = JSON.parse(this.registrationFieldsText || '[]')
-          } catch {
-            ElMessage.warning('自定义字段必须是 JSON 数组')
-            return
-          }
-        }
-        this.saving = true
-        try {
-          const payload = { ...this.form, registrationFields: fields }
-          if (payload.id) await activityApi.update(payload.id, payload)
-          else await activityApi.create(payload)
-          ElMessage.success('保存成功')
-          this.dialogVisible = false
-          this.fetchList()
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-    async remove(row) {
-      await activityApi.remove(row.id)
-      ElMessage.success('活动已删除')
-      this.fetchList()
-    },
-    async openRegistrations(row) {
-      this.registrations = await activityApi.registrations(row.id)
-      this.registrationVisible = true
-    },
-    toInputTime(value) {
-      if (!value) return ''
-      const date = new Date(value)
-      const offset = date.getTimezoneOffset() * 60000
-      return new Date(date.getTime() - offset).toISOString().slice(0, 16)
-    },
-    prettyFields(value) {
-      try {
-        const parsed = typeof value === 'string' ? JSON.parse(value || '[]') : value
-        return JSON.stringify(parsed || [], null, 2)
-      } catch {
-        return JSON.stringify(defaultFields, null, 2)
-      }
-    },
-  },
+const loading = ref(false)
+
+const saving = ref(false)
+
+const dialogVisible = ref(false)
+
+const registrationVisible = ref(false)
+
+const rows = ref<any[]>([])
+
+const registrations = ref<any[]>([])
+
+const query = ref({ status: '' })
+
+const form = ref<Record<string, any>>({})
+
+const registrationFieldsText = ref('')
+
+const rules = ref({
+  title: [{ required: true, message: '请输入活动标题', trigger: 'blur' }],
+})
+
+const formRef = ref<any>()
+
+function statusText(status: any) {
+  return (
+    { draft: '草稿', published: '已发布', closed: '已关闭', cancelled: '已取消' }[status] ||
+    status ||
+    '-'
+  )
 }
+
+async function fetchList() {
+  loading.value = true
+  try {
+    rows.value = (await activityApi.list(query.value)) || []
+  } finally {
+    loading.value = false
+  }
+}
+
+function openDialog(row: any) {
+  form.value = row
+    ? {
+        ...row,
+        activityAt: toInputTime(row.activityAt),
+        endAt: toInputTime(row.endAt),
+        registrationStartAt: toInputTime(row.registrationStartAt),
+        registrationEndAt: toInputTime(row.registrationEndAt),
+      }
+    : {
+        title: '',
+        status: 'draft',
+        summary: '',
+        descriptionMarkdown: '# 活动介绍\n\n',
+        registrationRequired: false,
+      }
+  registrationFieldsText.value = prettyFields(row?.registrationFields || defaultFields)
+  dialogVisible.value = true
+}
+
+function save() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    let fields = null
+    if (form.value.registrationRequired) {
+      try {
+        fields = JSON.parse(registrationFieldsText.value || '[]')
+      } catch {
+        ElMessage.warning('自定义字段必须是 JSON 数组')
+        return
+      }
+    }
+    saving.value = true
+    try {
+      const payload = { ...form.value, registrationFields: fields }
+      if (payload.id) await activityApi.update(payload.id, payload)
+      else await activityApi.create(payload)
+      ElMessage.success('保存成功')
+      dialogVisible.value = false
+      fetchList()
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+async function remove(row: any) {
+  await activityApi.remove(row.id)
+  ElMessage.success('活动已删除')
+  fetchList()
+}
+
+async function openRegistrations(row: any) {
+  registrations.value = await activityApi.registrations(row.id)
+  registrationVisible.value = true
+}
+
+function toInputTime(value: any) {
+  if (!value) return ''
+  const date = new Date(value)
+  const offset = date.getTimezoneOffset() * 60000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+}
+
+function prettyFields(value: any) {
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value || '[]') : value
+    return JSON.stringify(parsed || [], null, 2)
+  } catch {
+    return JSON.stringify(defaultFields, null, 2)
+  }
+}
+
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <style scoped>

@@ -1,15 +1,21 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
-        <el-select v-model="query.status" clearable placeholder="审批状态" style="width: 150px" @change="fetchList">
+        <el-select
+          v-model="query.status"
+          clearable
+          placeholder="审批状态"
+          style="width: 150px"
+          @change="fetchList"
+        >
           <el-option label="待审批" value="submitted" />
           <el-option label="已通过" value="approved" />
           <el-option label="已驳回" value="rejected" />
         </el-select>
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
-    </div>
+    </ViewToolbar>
 
     <el-empty v-if="!loading && !rows.length" description="暂无请假申请" />
 
@@ -48,15 +54,31 @@
             </div>
 
             <div class="flow-strip">
-              <span v-for="step in row.approvalFlow || []" :key="step.node" :class="`flow-dot flow-dot--${step.status}`">
+              <span
+                v-for="step in row.approvalFlow || []"
+                :key="step.node"
+                :class="`flow-dot flow-dot--${step.status}`"
+              >
                 {{ step.node }}
               </span>
             </div>
 
             <div class="card-actions">
               <el-button link type="primary" @click="openDetail(row)">查看流程</el-button>
-              <el-button v-if="row.status === 'submitted'" link type="success" @click="openReview(row, 'approve')">通过</el-button>
-              <el-button v-if="row.status === 'submitted'" link type="danger" @click="openReview(row, 'reject')">驳回</el-button>
+              <el-button
+                v-if="row.status === 'submitted'"
+                link
+                type="success"
+                @click="openReview(row, 'approve')"
+                >通过</el-button
+              >
+              <el-button
+                v-if="row.status === 'submitted'"
+                link
+                type="danger"
+                @click="openReview(row, 'reject')"
+                >驳回</el-button
+              >
               <el-button link type="danger" @click="deleteLeave(row)">删除</el-button>
             </div>
           </article>
@@ -69,12 +91,21 @@
         <div class="detail-head">
           <div>
             <h3>{{ current.title }}</h3>
-            <p>{{ current.realName || current.userName || '-' }} / {{ current.studentId || '-' }}</p>
+            <p>
+              {{ current.realName || current.userName || '-' }} / {{ current.studentId || '-' }}
+            </p>
           </div>
-          <el-tag :type="leaveStatusType(current.status)">{{ leaveStatusText(current.status) }}</el-tag>
+          <el-tag :type="leaveStatusType(current.status)">{{
+            leaveStatusText(current.status)
+          }}</el-tag>
         </div>
         <p class="reason-text">{{ current.reason }}</p>
-        <el-steps direction="vertical" :active="flowActive(current)" finish-status="success" process-status="process">
+        <el-steps
+          direction="vertical"
+          :active="flowActive(current)"
+          finish-status="success"
+          process-status="process"
+        >
           <el-step
             v-for="step in current.approvalFlow || []"
             :key="step.node"
@@ -97,143 +128,174 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="reviewVisible" :title="reviewForm.action === 'approve' ? '通过请假' : '驳回请假'" width="520px">
+    <el-dialog
+      v-model="reviewVisible"
+      :title="reviewForm.action === 'approve' ? '通过请假' : '驳回请假'"
+      width="520px"
+    >
       <el-form label-width="86px">
         <el-form-item label="审批意见">
-          <el-input v-model="reviewForm.comment" type="textarea" :rows="4" placeholder="可填写审批意见" />
+          <el-input
+            v-model="reviewForm.comment"
+            type="textarea"
+            :rows="4"
+            placeholder="可填写审批意见"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="reviewVisible = false">取消</el-button>
-        <el-button :type="reviewForm.action === 'approve' ? 'success' : 'danger'" :loading="reviewing" @click="submitReview">
+        <el-button
+          :type="reviewForm.action === 'approve' ? 'success' : 'danger'"
+          :loading="reviewing"
+          @click="submitReview"
+        >
           确认{{ reviewForm.action === 'approve' ? '通过' : '驳回' }}
         </el-button>
       </template>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { leaveApplicationApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
+import { computed, onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminLeaves',
-  data() {
-    return {
-      Refresh,
-      loading: false,
-      reviewing: false,
-      detailVisible: false,
-      reviewVisible: false,
-      rows: [],
-      current: null,
-      query: { status: '' },
-      reviewForm: { id: null, action: 'approve', comment: '' },
-    }
-  },
-  computed: {
-    groupedRows() {
-      const groups = new Map()
-      ;(this.rows || []).forEach((item) => {
-        const key = this.dateKey(item.startAt || item.createdAt)
-        if (!groups.has(key)) groups.set(key, { date: key, label: this.dateLabel(item.startAt || item.createdAt), items: [] })
-        groups.get(key).items.push(item)
-      })
-      return Array.from(groups.values())
-    },
-  },
-  created() {
-    this.fetchList()
-  },
-  methods: {
-    formatDateTime,
-    leaveStatusText(status) {
-      return { submitted: '待审批', approved: '已通过', rejected: '已驳回' }[status] || status || '-'
-    },
-    leaveStatusType(status) {
-      return { submitted: 'warning', approved: 'success', rejected: 'danger' }[status] || 'info'
-    },
-    flowActive(item) {
-      if (!item) return 0
-      return item.status === 'submitted' ? 1 : 3
-    },
-    formatRange(startAt, endAt) {
-      return `${formatDateTime(startAt) || '不限'} - ${formatDateTime(endAt) || '不限'}`
-    },
-    stepDescription(step) {
-      const parts = [this.formatDateTime(step.time), step.comment].filter(Boolean)
-      return parts.join(' / ')
-    },
-    dateKey(value) {
-      if (!value) return 'unknown'
-      return String(value).slice(0, 10)
-    },
-    dateLabel(value) {
-      const key = this.dateKey(value)
-      return key === 'unknown' ? '未设置日期' : key
-    },
-    imageAttachments(item) {
-      return (item.attachments || []).filter((file) => this.isImage(file))
-    },
-    imagePreviewList(item) {
-      return this.imageAttachments(item).map((file) => file.content)
-    },
-    isImage(file) {
-      return String(file?.type || '').startsWith('image/') || String(file?.content || '').startsWith('data:image/')
-    },
-    async fetchList() {
-      this.loading = true
-      try {
-        this.rows = (await leaveApplicationApi.list(this.query)) || []
-      } finally {
-        this.loading = false
-      }
-    },
-    async openDetail(row) {
-      this.current = await leaveApplicationApi.detail(row.id)
-      this.detailVisible = true
-    },
-    openReview(row, action) {
-      this.reviewForm = { id: row.id, action, comment: '' }
-      this.reviewVisible = true
-    },
-    async submitReview() {
-      if (!this.reviewForm.id) return
-      this.reviewing = true
-      try {
-        await leaveApplicationApi.review(this.reviewForm.id, {
-          action: this.reviewForm.action,
-          comment: this.reviewForm.comment,
-        })
-        ElMessage.success(this.reviewForm.action === 'approve' ? '已通过' : '已驳回')
-        this.reviewVisible = false
-        await this.fetchList()
-        if (this.current?.id === this.reviewForm.id) {
-          this.current = await leaveApplicationApi.detail(this.reviewForm.id)
-        }
-      } finally {
-        this.reviewing = false
-      }
-    },
-    async deleteLeave(row) {
-      await ElMessageBox.confirm(`确定删除“${row.title}”这条请假记录吗？`, '删除请假记录', {
-        type: 'warning',
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-      })
-      await leaveApplicationApi.remove(row.id)
-      ElMessage.success('请假记录已删除')
-      if (this.current?.id === row.id) {
-        this.detailVisible = false
-        this.current = null
-      }
-      await this.fetchList()
-    },
-  },
+const loading = ref(false)
+
+const reviewing = ref(false)
+
+const detailVisible = ref(false)
+
+const reviewVisible = ref(false)
+
+const rows = ref<any[]>([])
+
+const current = ref<any>(null)
+
+const query = ref({ status: '' })
+
+const reviewForm = ref({ id: null, action: 'approve', comment: '' })
+
+const groupedRows = computed(() => {
+  const groups = new Map()
+  ;(rows.value || []).forEach((item) => {
+    const key = dateKey(item.startAt || item.createdAt)
+    if (!groups.has(key))
+      groups.set(key, { date: key, label: dateLabel(item.startAt || item.createdAt), items: [] })
+    groups.get(key).items.push(item)
+  })
+  return Array.from(groups.values())
+})
+
+function leaveStatusText(status: any) {
+  return { submitted: '待审批', approved: '已通过', rejected: '已驳回' }[status] || status || '-'
 }
+
+function leaveStatusType(status: any) {
+  return { submitted: 'warning', approved: 'success', rejected: 'danger' }[status] || 'info'
+}
+
+function flowActive(item: any) {
+  if (!item) return 0
+  return item.status === 'submitted' ? 1 : 3
+}
+
+function formatRange(startAt: any, endAt: any) {
+  return `${formatDateTime(startAt) || '不限'} - ${formatDateTime(endAt) || '不限'}`
+}
+
+function stepDescription(step: any) {
+  const parts = [formatDateTime(step.time), step.comment].filter(Boolean)
+  return parts.join(' / ')
+}
+
+function dateKey(value: any) {
+  if (!value) return 'unknown'
+  return String(value).slice(0, 10)
+}
+
+function dateLabel(value: any) {
+  const key = dateKey(value)
+  return key === 'unknown' ? '未设置日期' : key
+}
+
+function imageAttachments(item: any) {
+  return (item.attachments || []).filter((file) => isImage(file))
+}
+
+function imagePreviewList(item: any) {
+  return imageAttachments(item).map((file) => file.content)
+}
+
+function isImage(file: any) {
+  return (
+    String(file?.type || '').startsWith('image/') ||
+    String(file?.content || '').startsWith('data:image/')
+  )
+}
+
+async function fetchList() {
+  loading.value = true
+  try {
+    rows.value = (await leaveApplicationApi.list(query.value)) || []
+  } finally {
+    loading.value = false
+  }
+}
+
+async function openDetail(row: any) {
+  current.value = await leaveApplicationApi.detail(row.id)
+  detailVisible.value = true
+}
+
+function openReview(row: any, action: any) {
+  reviewForm.value = { id: row.id, action, comment: '' }
+  reviewVisible.value = true
+}
+
+async function submitReview() {
+  if (!reviewForm.value.id) return
+  reviewing.value = true
+  try {
+    await leaveApplicationApi.review(reviewForm.value.id, {
+      action: reviewForm.value.action,
+      comment: reviewForm.value.comment,
+    })
+    ElMessage.success(reviewForm.value.action === 'approve' ? '已通过' : '已驳回')
+    reviewVisible.value = false
+    await fetchList()
+    if (current.value?.id === reviewForm.value.id) {
+      current.value = await leaveApplicationApi.detail(reviewForm.value.id)
+    }
+  } finally {
+    reviewing.value = false
+  }
+}
+
+async function deleteLeave(row: any) {
+  await ElMessageBox.confirm(`确定删除“${row.title}”这条请假记录吗？`, '删除请假记录', {
+    type: 'warning',
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+  })
+  await leaveApplicationApi.remove(row.id)
+  ElMessage.success('请假记录已删除')
+  if (current.value?.id === row.id) {
+    detailVisible.value = false
+    current.value = null
+  }
+  await fetchList()
+}
+
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <style scoped>

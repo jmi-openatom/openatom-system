@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page office-documents-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page office-documents-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-select
           v-model="query.docType"
@@ -25,7 +25,7 @@
         <el-button @click="openCreate('leave_note')">新增假条</el-button>
         <el-button type="primary" @click="openCreate('venue_application')">新增场地申请</el-button>
       </div>
-    </div>
+    </ViewToolbar>
 
     <div class="office-layout">
       <el-card shadow="never" class="office-list-card">
@@ -198,13 +198,16 @@
         </el-form>
       </el-card>
     </div>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { officeDocumentApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
+import { onMounted, ref } from 'vue'
 
 function createLeaveForm() {
   return {
@@ -246,189 +249,204 @@ function createVenueForm() {
   }
 }
 
-export default {
-  name: 'AdminOfficeDocuments',
-  data() {
-    return {
-      loading: false,
-      saving: false,
-      userLoading: false,
-      exportingId: null,
-      rows: [],
-      currentId: null,
-      userOptions: [],
-      query: {
-        docType: '',
-        keyword: '',
-      },
-      form: createLeaveForm(),
-      rules: {
-        docType: [{ required: true, message: '请选择单据类型', trigger: 'change' }],
-        title: [{ required: true, message: '请输入单据标题', trigger: 'blur' }],
-        memberIds: [{ required: true, message: '请至少选择一名人员', trigger: 'change' }],
-        reason: [{ required: true, message: '请填写请假事由', trigger: 'blur' }],
-        venueName: [{ required: true, message: '请填写场地名称', trigger: 'blur' }],
-        contactName: [{ required: true, message: '请填写联系人', trigger: 'blur' }],
-      },
-    }
-  },
-  created() {
-    this.fetchList()
-    this.searchUsers('')
-  },
-  methods: {
-    formatDateTime,
-    typeText(type) {
-      return (
-        {
-          leave_note: '假条',
-          venue_application: '场地申请表',
-        }[type] ||
-        type ||
-        '-'
-      )
-    },
-    userLabel(user) {
-      return `${user.realName || '未命名'} / ${user.studentId || '-'} / ${user.major || user.college || '-'}`
-    },
-    async fetchList() {
-      this.loading = true
-      try {
-        this.rows = (await officeDocumentApi.list(this.query)) || []
-      } finally {
-        this.loading = false
-      }
-    },
-    async searchUsers(keyword) {
-      this.userLoading = true
-      try {
-        this.userOptions = (await officeDocumentApi.userOptions({ keyword })) || []
-      } finally {
-        this.userLoading = false
-      }
-    },
-    openCreate(type) {
-      this.currentId = null
-      this.form = type === 'venue_application' ? createVenueForm() : createLeaveForm()
-      this.form.documentDate = this.today()
-    },
-    handleDocTypeChange(type) {
-      const currentTitle = this.form.title
-      const currentMembers = [...(this.form.memberIds || [])]
-      this.form = type === 'venue_application' ? createVenueForm() : createLeaveForm()
-      this.form.title = currentTitle
-      this.form.memberIds = currentMembers
-      this.form.documentDate = this.today()
-    },
-    editRow(row) {
-      this.currentId = row.id
-      const payload = this.parsePayload(row.payload)
-      this.form = {
-        id: row.id,
-        docType: row.docType,
-        title: row.title,
-        ...payload,
-      }
-      if (!Array.isArray(this.form.memberIds)) {
-        this.form.memberIds = []
-      }
-      if (!this.form.documentDate) {
-        this.form.documentDate = this.today()
-      }
-    },
-    parsePayload(payload) {
-      if (!payload) return {}
-      if (typeof payload === 'object') return payload
-      try {
-        return JSON.parse(payload)
-      } catch {
-        return {}
-      }
-    },
-    buildPayload() {
-      if (this.form.docType === 'leave_note') {
-        return {
-          memberIds: this.form.memberIds,
-          salutation: this.form.salutation,
-          leaveStartDate: this.form.leaveStartDate,
-          leaveEndDate: this.form.leaveEndDate,
-          timeRange: this.form.timeRange,
-          venueName: this.form.venueName,
-          reason: this.form.reason,
-          departmentName: this.form.departmentName,
-          documentDate: this.form.documentDate,
-        }
-      }
-      return {
-        memberIds: this.form.memberIds,
-        formTitle: this.form.formTitle,
-        applyMode: this.form.applyMode,
-        venueName: this.form.venueName,
-        contactName: this.form.contactName,
-        contactPhone: this.form.contactPhone,
-        teacherName: this.form.teacherName,
-        teacherPhone: this.form.teacherPhone,
-        startDate: this.form.startDate,
-        endDate: this.form.endDate,
-        totalHours: this.form.totalHours,
-        dailySchedule: this.form.dailySchedule,
-        projectTypes: this.form.projectTypes,
-        projectDescription: this.form.projectDescription,
-        documentDate: this.form.documentDate,
-      }
-    },
-    save() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        this.saving = true
-        try {
-          const payload = {
-            docType: this.form.docType,
-            title: this.form.title,
-            payload: this.buildPayload(),
-          }
-          if (this.form.id) {
-            await officeDocumentApi.update(this.form.id, payload)
-            ElMessage.success('单据已更新')
-          } else {
-            const id = await officeDocumentApi.create(payload)
-            this.form.id = id
-            this.currentId = id
-            ElMessage.success('单据已创建')
-          }
-          await this.fetchList()
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-    async exportRow(row) {
-      const id = row.id || this.form.id
-      if (!id) return
-      this.exportingId = id
-      try {
-        const blob = await officeDocumentApi.export(id)
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `${row.title || this.form.title || '文书'}.docx`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
-        ElMessage.success('Word 已开始下载')
-      } finally {
-        this.exportingId = null
-      }
-    },
-    resetForm() {
-      this.openCreate(this.form.docType)
-    },
-    today() {
-      return new Date().toISOString().slice(0, 10)
-    },
-  },
+const loading = ref(false)
+
+const saving = ref(false)
+
+const userLoading = ref(false)
+
+const exportingId = ref<any>(null)
+
+const rows = ref<any[]>([])
+
+const currentId = ref<any>(null)
+
+const userOptions = ref<any[]>([])
+
+const query = ref({
+  docType: '',
+  keyword: '',
+})
+
+const form = ref(createLeaveForm())
+
+const rules = ref({
+  docType: [{ required: true, message: '请选择单据类型', trigger: 'change' }],
+  title: [{ required: true, message: '请输入单据标题', trigger: 'blur' }],
+  memberIds: [{ required: true, message: '请至少选择一名人员', trigger: 'change' }],
+  reason: [{ required: true, message: '请填写请假事由', trigger: 'blur' }],
+  venueName: [{ required: true, message: '请填写场地名称', trigger: 'blur' }],
+  contactName: [{ required: true, message: '请填写联系人', trigger: 'blur' }],
+})
+
+const formRef = ref<any>()
+
+function typeText(type: any) {
+  return (
+    {
+      leave_note: '假条',
+      venue_application: '场地申请表',
+    }[type] ||
+    type ||
+    '-'
+  )
 }
+
+function userLabel(user: any) {
+  return `${user.realName || '未命名'} / ${user.studentId || '-'} / ${user.major || user.college || '-'}`
+}
+
+async function fetchList() {
+  loading.value = true
+  try {
+    rows.value = (await officeDocumentApi.list(query.value)) || []
+  } finally {
+    loading.value = false
+  }
+}
+
+async function searchUsers(keyword: any) {
+  userLoading.value = true
+  try {
+    userOptions.value = (await officeDocumentApi.userOptions({ keyword })) || []
+  } finally {
+    userLoading.value = false
+  }
+}
+
+function openCreate(type: any) {
+  currentId.value = null
+  form.value = type === 'venue_application' ? createVenueForm() : createLeaveForm()
+  form.value.documentDate = today()
+}
+
+function handleDocTypeChange(type: any) {
+  const currentTitle = form.value.title
+  const currentMembers = [...(form.value.memberIds || [])]
+  form.value = type === 'venue_application' ? createVenueForm() : createLeaveForm()
+  form.value.title = currentTitle
+  form.value.memberIds = currentMembers
+  form.value.documentDate = today()
+}
+
+function editRow(row: any) {
+  currentId.value = row.id
+  const payload = parsePayload(row.payload)
+  form.value = {
+    id: row.id,
+    docType: row.docType,
+    title: row.title,
+    ...payload,
+  }
+  if (!Array.isArray(form.value.memberIds)) {
+    form.value.memberIds = []
+  }
+  if (!form.value.documentDate) {
+    form.value.documentDate = today()
+  }
+}
+
+function parsePayload(payload: any) {
+  if (!payload) return {}
+  if (typeof payload === 'object') return payload
+  try {
+    return JSON.parse(payload)
+  } catch {
+    return {}
+  }
+}
+
+function buildPayload() {
+  if (form.value.docType === 'leave_note') {
+    return {
+      memberIds: form.value.memberIds,
+      salutation: form.value.salutation,
+      leaveStartDate: form.value.leaveStartDate,
+      leaveEndDate: form.value.leaveEndDate,
+      timeRange: form.value.timeRange,
+      venueName: form.value.venueName,
+      reason: form.value.reason,
+      departmentName: form.value.departmentName,
+      documentDate: form.value.documentDate,
+    }
+  }
+  return {
+    memberIds: form.value.memberIds,
+    formTitle: form.value.formTitle,
+    applyMode: form.value.applyMode,
+    venueName: form.value.venueName,
+    contactName: form.value.contactName,
+    contactPhone: form.value.contactPhone,
+    teacherName: form.value.teacherName,
+    teacherPhone: form.value.teacherPhone,
+    startDate: form.value.startDate,
+    endDate: form.value.endDate,
+    totalHours: form.value.totalHours,
+    dailySchedule: form.value.dailySchedule,
+    projectTypes: form.value.projectTypes,
+    projectDescription: form.value.projectDescription,
+    documentDate: form.value.documentDate,
+  }
+}
+
+function save() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    saving.value = true
+    try {
+      const payload = {
+        docType: form.value.docType,
+        title: form.value.title,
+        payload: buildPayload(),
+      }
+      if (form.value.id) {
+        await officeDocumentApi.update(form.value.id, payload)
+        ElMessage.success('单据已更新')
+      } else {
+        const id = await officeDocumentApi.create(payload)
+        form.value.id = id
+        currentId.value = id
+        ElMessage.success('单据已创建')
+      }
+      await fetchList()
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+async function exportRow(row: any) {
+  const id = row.id || form.value.id
+  if (!id) return
+  exportingId.value = id
+  try {
+    const blob = await officeDocumentApi.export(id)
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${row.title || form.value.title || '文书'}.docx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('Word 已开始下载')
+  } finally {
+    exportingId.value = null
+  }
+}
+
+function resetForm() {
+  openCreate(form.value.docType)
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+onMounted(() => {
+  fetchList()
+  searchUsers('')
+})
 </script>
 
 <style scoped>

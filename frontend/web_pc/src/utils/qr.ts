@@ -1,4 +1,4 @@
-import QRCode from '@/vendor/qrcode-browser.js'
+import QRCode from '@/vendor/qrcode-browser.ts'
 
 export function qrSvgDataUrl(text: string): string {
   const qr = QRCode.create(text, {
@@ -11,7 +11,7 @@ export function qrSvgDataUrl(text: string): string {
   const rects: string[] = []
   qr.modules.data.forEach((dark: number, index: number) => {
     if (!dark) return
-    const x = (index % size + quiet) * cell
+    const x = ((index % size) + quiet) * cell
     const y = (Math.floor(index / size) + quiet) * cell
     rects.push(`<rect x="${x}" y="${y}" width="${cell}" height="${cell}"/>`)
   })

@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-select
           v-model="selectedClubId"
@@ -29,7 +29,7 @@
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
       <el-button type="primary" :icon="Plus" @click="openDialog()">新增岗位</el-button>
-    </div>
+    </ViewToolbar>
 
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column prop="id" label="ID" width="80" />
@@ -114,148 +114,164 @@
         <el-button type="primary" :loading="saving" @click="save">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { clubApi, positionApi, rbacApi } from '@/api'
+import { onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminPositions',
-  data() {
-    return {
-      Plus,
-      Refresh,
-      loading: false,
-      saving: false,
-      dialogVisible: false,
-      clubs: [],
-      departments: [],
-      dialogDepartments: [],
-      roles: [],
-      selectedClubId: '',
-      query: { departmentId: undefined },
-      rows: [],
-      form: {},
-      rules: {
-        clubId: [{ required: true, message: '请选择社团', trigger: 'change' }],
-        name: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
-      },
-    }
-  },
-  async created() {
-    await Promise.all([this.loadClubs(), this.loadRoles()])
-    if (this.selectedClubId) {
-      await this.handleClubChange(this.selectedClubId)
-    }
-  },
-  methods: {
-    async loadClubs() {
-      const result = await clubApi.list({ page: 1, pageSize: 100 })
-      this.clubs = result?.list || result || []
-      if (!this.selectedClubId && this.clubs.length) {
-        this.selectedClubId = this.clubs[0].id
-      }
-    },
-    async loadRoles() {
-      const result = await rbacApi.roles({ page: 1, pageSize: 100 })
-      this.roles = result?.list || result || []
-    },
-    async handleClubChange(clubId) {
-      await this.loadDepartments(clubId)
-      this.query.departmentId = undefined
-      await this.fetchList()
-    },
-    async loadDepartments(clubId = this.selectedClubId) {
-      if (!clubId) {
-        this.departments = []
-        this.dialogDepartments = []
-        return
-      }
-      const result = await clubApi.departments(clubId)
-      const departments = result?.list || result || []
-      if (clubId === this.selectedClubId) {
-        this.departments = departments
-      }
-      if (clubId === this.form.clubId || clubId === this.selectedClubId) {
-        this.dialogDepartments = departments
-      }
-    },
-    async fetchList() {
-      if (!this.selectedClubId) {
-        this.rows = []
-        return
-      }
-      this.loading = true
-      try {
-        const result = await clubApi.positions(this.selectedClubId)
-        const list = result?.list || result || []
-        this.rows = this.query.departmentId
-          ? list.filter((item) => item.departmentId === this.query.departmentId)
-          : list
-      } finally {
-        this.loading = false
-      }
-    },
-    openDialog(row) {
-      this.form = row
-        ? {
-            ...row,
-            clubId: row.clubId,
-            departmentId: row.departmentId,
-            roleIds: row.roleIds || [],
-          }
-        : {
-            clubId: this.selectedClubId,
-            departmentId: undefined,
-            name: '',
-            maxCount: undefined,
-            roleIds: [],
-          }
-      this.dialogDepartments = this.form.clubId === this.selectedClubId ? this.departments : []
-      this.loadDepartments(this.form.clubId)
-      this.dialogVisible = true
-    },
-    async save() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        this.saving = true
-        try {
-          const payload = {
-            departmentId: this.form.departmentId,
-            name: this.form.name,
-            maxCount: this.form.maxCount,
-            roleIds: this.form.roleIds,
-          }
-          if (this.form.id) {
-            await positionApi.update(this.form.id, payload)
-          } else {
-            await positionApi.create(this.form.clubId, payload)
-          }
-          ElMessage.success('岗位已保存')
-          this.dialogVisible = false
-          this.selectedClubId = this.form.clubId
-          await this.handleClubChange(this.selectedClubId)
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-    async remove(row) {
-      await positionApi.remove(row.id)
-      ElMessage.success('岗位已删除')
-      this.fetchList()
-    },
-    departmentName(departmentId) {
-      return this.departments.find((item) => item.id === departmentId)?.name || '通用岗位'
-    },
-    roleNames(roleIds) {
-      return (roleIds || [])
-        .map((roleId) => this.roles.find((item) => item.id === roleId)?.name)
-        .filter(Boolean)
-    },
-  },
+const loading = ref(false)
+
+const saving = ref(false)
+
+const dialogVisible = ref(false)
+
+const clubs = ref<any[]>([])
+
+const departments = ref<any[]>([])
+
+const dialogDepartments = ref<any[]>([])
+
+const roles = ref<any[]>([])
+
+const selectedClubId = ref('')
+
+const query = ref({ departmentId: undefined })
+
+const rows = ref<any[]>([])
+
+const form = ref<Record<string, any>>({})
+
+const rules = ref({
+  clubId: [{ required: true, message: '请选择社团', trigger: 'change' }],
+  name: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }],
+})
+
+const formRef = ref<any>()
+
+async function loadClubs() {
+  const result = await clubApi.list({ page: 1, pageSize: 100 })
+  clubs.value = result?.list || result || []
+  if (!selectedClubId.value && clubs.value.length) {
+    selectedClubId.value = clubs.value[0].id
+  }
 }
+
+async function loadRoles() {
+  const result = await rbacApi.roles({ page: 1, pageSize: 100 })
+  roles.value = result?.list || result || []
+}
+
+async function handleClubChange(clubId: any) {
+  await loadDepartments(clubId)
+  query.value.departmentId = undefined
+  await fetchList()
+}
+
+async function loadDepartments(clubId: any) {
+  if (!clubId) {
+    departments.value = []
+    dialogDepartments.value = []
+    return
+  }
+  const result = await clubApi.departments(clubId)
+  const departments = result?.list || result || []
+  if (clubId === selectedClubId.value) {
+    departments.value = departments
+  }
+  if (clubId === form.value.clubId || clubId === selectedClubId.value) {
+    dialogDepartments.value = departments
+  }
+}
+
+async function fetchList() {
+  if (!selectedClubId.value) {
+    rows.value = []
+    return
+  }
+  loading.value = true
+  try {
+    const result = await clubApi.positions(selectedClubId.value)
+    const list = result?.list || result || []
+    rows.value = query.value.departmentId
+      ? list.filter((item) => item.departmentId === query.value.departmentId)
+      : list
+  } finally {
+    loading.value = false
+  }
+}
+
+function openDialog(row: any) {
+  form.value = row
+    ? {
+        ...row,
+        clubId: row.clubId,
+        departmentId: row.departmentId,
+        roleIds: row.roleIds || [],
+      }
+    : {
+        clubId: selectedClubId.value,
+        departmentId: undefined,
+        name: '',
+        maxCount: undefined,
+        roleIds: [],
+      }
+  dialogDepartments.value = form.value.clubId === selectedClubId.value ? departments.value : []
+  loadDepartments(form.value.clubId)
+  dialogVisible.value = true
+}
+
+async function save() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    saving.value = true
+    try {
+      const payload = {
+        departmentId: form.value.departmentId,
+        name: form.value.name,
+        maxCount: form.value.maxCount,
+        roleIds: form.value.roleIds,
+      }
+      if (form.value.id) {
+        await positionApi.update(form.value.id, payload)
+      } else {
+        await positionApi.create(form.value.clubId, payload)
+      }
+      ElMessage.success('岗位已保存')
+      dialogVisible.value = false
+      selectedClubId.value = form.value.clubId
+      await handleClubChange(selectedClubId.value)
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+async function remove(row: any) {
+  await positionApi.remove(row.id)
+  ElMessage.success('岗位已删除')
+  fetchList()
+}
+
+function departmentName(departmentId: any) {
+  return departments.value.find((item) => item.id === departmentId)?.name || '通用岗位'
+}
+
+function roleNames(roleIds: any) {
+  return (roleIds || [])
+    .map((roleId) => roles.value.find((item) => item.id === roleId)?.name)
+    .filter(Boolean)
+}
+
+onMounted(async () => {
+  await Promise.all([loadClubs(), loadRoles()])
+  if (selectedClubId.value) {
+    await handleClubChange(selectedClubId.value)
+  }
+})
 </script>

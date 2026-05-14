@@ -1,318 +1,129 @@
 <template>
-  <div v-loading="loading" class="home-page">
-    <section id="overview" class="hero">
-      <div aria-hidden="true" class="hero__mesh"></div>
-      <div class="container hero__inner">
-        <div class="hero__content">
-          <el-tag class="hero__tag" effect="plain">JMI-OPENATOM</el-tag>
-          <h1>{{ club.name || '正在读取社团数据' }}</h1>
-          <p>
-            {{ club.description || '正在从数据库加载社团介绍、活动、成员和比赛获奖信息。' }}
-          </p>
-          <div class="hero__actions">
-            <el-button
-              :icon="DataAnalysis"
-              size="large"
-              type="primary"
-              @click="scrollTo('activities')"
-            >
-              查看活动
-            </el-button>
-            <el-button :icon="UserFilled" size="large" @click="scrollTo('people')"
-              >了解成员</el-button
-            >
-          </div>
-        </div>
-
-        <div class="command-panel">
-          <div v-if="metrics.length" aria-label="社团关键指标" class="signal-grid" role="list">
-            <div
-              v-for="metric in metrics"
-              :key="metric.label"
-              :class="`signal-card--${metricTone(metric.label)}`"
-              class="signal-card"
-              role="listitem"
-            >
-              <div class="signal-card__head">
-                <el-icon aria-hidden="true" class="signal-card__icon">
-                  <component :is="metricIcon(metric.label)" />
-                </el-icon>
-                <span class="signal-card__label">{{ metric.label }}</span>
-              </div>
-              <strong class="signal-card__value">{{ metric.value }}</strong>
-              <small class="signal-card__note">{{ metric.note }}</small>
-            </div>
-          </div>
-          <el-empty v-else :image-size="72" description="暂无社团统计数据" />
-          <div v-if="techStack.length" class="terminal-strip">
-            <span v-for="item in stack" :key="item">{{ item }}</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="container section club-brief">
-      <div class="section-heading reveal-block">
-        <span>社团概览</span>
-        <h2>{{ club.name || '社团' }}的主要方向</h2>
-        <p>从部门分工到日常活动，页面内容尽量保持清晰、真实，方便快速了解社团正在做什么。</p>
-      </div>
-      <div class="brief-grid">
-        <article v-for="item in focusAreas" :key="item.title" class="brief-card reveal-card">
-          <el-icon>
-            <component :is="focusIcon(item.icon)" />
-          </el-icon>
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.description }}</p>
-        </article>
-      </div>
-      <el-empty v-if="!focusAreas.length && !loading" description="暂无社团部门数据" />
-    </section>
-
-    <section id="activities" class="activity-band">
-      <div class="activity-shell section">
-        <div class="section-heading reveal-block">
-          <span>近期活动</span>
-          <h2>最新活动</h2>
-        </div>
-
-        <el-carousel
-          v-if="activities.length"
-          :interval="4000"
-          arrow="always"
-          class="activity-carousel"
-          height="600px"
-          type="card"
-        >
-          <el-carousel-item
-              v-for="activity in activities"
-              :key="activity.title"
-              class="activity-carousel-item"
-          >
-            <article
-              class="activity-card reveal-card"
-              @click="$router.push(`/activities/${activity.id}`)"
-            >
-              <time>{{ activity.date }}</time>
-              <div>
-                <h3>{{ activity.title }}</h3>
-                <p>{{ activity.description }}</p>
-              </div>
-
-              <div class="activity-image">
-                <img :alt="activity.title" :src="activity.coverUrl" />
-              </div>
-            </article>
-          </el-carousel-item>
-        </el-carousel>
-
-        <el-empty v-if="!activities.length && !loading" description="暂无活动数据" />
-      </div>
-    </section>
-
-    <section id="people" class="container section people-section">
-      <div class="section-heading reveal-block">
-        <span>成员信息</span>
-        <h2>主要人员</h2>
-        <p>{{ people.length ? `当前展示 ${people.length} 位成员` : '暂无成员信息' }}</p>
-      </div>
-      <div class="people-grid">
-        <article
-          v-for="person in people"
-          :key="person.userId || person.name"
-          class="person-card reveal-card"
-        >
-          <div class="avatar">{{ person.initial }}</div>
-          <div>
-            <h3>{{ person.name }}</h3>
-            <p>{{ person.role }}</p>
-          </div>
-          <small>{{ person.focus }}</small>
-        </article>
-      </div>
-      <el-empty v-if="!people.length && !loading" description="暂无主要人员数据" />
-    </section>
-
-    <section id="achievements" class="container section achievements-section">
-      <div class="section-heading reveal-block">
-        <span>成果展示</span>
-        <h2>比赛获奖展示</h2>
-        <p>{{ awards.length ? `当前展示 ${awards.length} 项获奖记录` : '暂无获奖记录' }}</p>
-      </div>
-      <div class="award-grid">
-        <article
-          v-for="award in awards"
-          :key="award.id || `${award.year}-${award.title}`"
-          class="award-card reveal-card"
-        >
-          <div class="award-card__year">{{ award.year }}</div>
-          <h3>{{ award.title }}</h3>
-          <p>{{ award.competitionName }}</p>
-          <strong>{{ award.awardLevel }}</strong
-          ><br /><br />
-          <small>{{ award.teamName }}</small>
-        </article>
-      </div>
-      <el-empty v-if="!awards.length && !loading" description="暂无比赛获奖数据" />
-    </section>
-  </div>
+  <ViewPage class="home-page" :loading="loading">
+    <HomeHero :cool-down-time="heroMorphCoolDownTime" :morph-time="heroMorphTime" :texts="texts" />
+    <HomeOverviewPage :metrics="metrics" :tech-stack="techStack" @scroll-to="scrollTo" />
+    <HomeFocusSection :club="club" :focus-areas="focusAreas" :loading="loading" />
+    <HomeActivitiesSection :activities="activities" :loading="loading" />
+    <HomePeopleSection :people="people" :loading="loading" />
+    <HomeAwardsSection :awards="awards" :loading="loading" />
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import gsap from 'gsap'
-import {ScrollTrigger} from 'gsap/ScrollTrigger'
-import {markRaw, nextTick} from 'vue'
-import {siteApi} from '@/api'
-import {Calendar, Collection, Cpu, DataAnalysis, Lightning, Monitor, Trophy, UserFilled,} from '@element-plus/icons-vue'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { siteApi } from '@/api'
+import HomeActivitiesSection from '@/components/site/home/HomeActivitiesSection.vue'
+import HomeAwardsSection from '@/components/site/home/HomeAwardsSection.vue'
+import HomeFocusSection from '@/components/site/home/HomeFocusSection.vue'
+import HomeHero from '@/components/site/home/HomeHero.vue'
+import HomeOverviewPage from '@/components/site/home/HomeOverviewPage.vue'
+import HomePeopleSection from '@/components/site/home/HomePeopleSection.vue'
+import { SmoothCursor } from '@/components/ui/smooth-cursor'
 
 gsap.registerPlugin(ScrollTrigger)
 
-const icons = {
-  Calendar: markRaw(Calendar),
-  Collection: markRaw(Collection),
-  Cpu: markRaw(Cpu),
-  DataAnalysis: markRaw(DataAnalysis),
-  Lightning: markRaw(Lightning),
-  Monitor: markRaw(Monitor),
-  Trophy: markRaw(Trophy),
-  UserFilled: markRaw(UserFilled),
+const loading = ref(false)
+
+const club = ref<Record<string, any>>({})
+
+const metrics = ref<any[]>([])
+
+const techStack = ref<any[]>([])
+
+const focusAreas = ref<any[]>([])
+
+const activities = ref<any[]>([])
+
+const people = ref<any[]>([])
+
+const awards = ref<any[]>([])
+
+const animationContext = ref<any>()
+
+const instance = getCurrentInstance()
+
+const texts = ['开放原子开源社团', '江苏海事职业技术学院', 'JMI-OPENATOM']
+
+const heroMorphTime = 1.5
+
+const heroMorphCoolDownTime = 1
+async function loadClubHome() {
+  loading.value = true
+  try {
+    const data = await siteApi.clubHome()
+    club.value = data.club || {}
+    metrics.value = data.metrics || []
+    techStack.value = data.techStack || []
+    focusAreas.value = data.focusAreas || []
+    activities.value = data.activities || []
+    people.value = data.people || []
+    awards.value = data.awards || []
+  } catch (error) {
+    club.value = {}
+    metrics.value = []
+    techStack.value = []
+    focusAreas.value = []
+    activities.value = []
+    people.value = []
+    awards.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
-export default {
-  name: 'SiteHome',
-  data() {
-    return {
-      DataAnalysis: icons.DataAnalysis,
-      UserFilled: icons.UserFilled,
-      loading: false,
-      club: {},
-      metrics: [],
-      techStack: [],
-      focusAreas: [],
-      activities: [],
-      people: [],
-      awards: [],
-    }
-  },
-  computed: {
-    stack() {
-      return this.techStack
-    },
-  },
-  async mounted() {
-    await this.loadClubHome()
-    await nextTick()
-    this.animationContext = gsap.context(() => {
-      gsap.from('.hero__content > *', {
-        y: 28,
-        opacity: 0,
-        duration: 0.8,
-        ease: 'power3.out',
-        stagger: 0.12,
-      })
-      gsap.from('.command-panel', {
+function scrollTo(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+onMounted(async () => {
+  await loadClubHome()
+  await nextTick()
+  animationContext.value = gsap.context(() => {
+    gsap.from('.hero__content > *', {
+      y: 28,
+      opacity: 0,
+      duration: 0.8,
+      ease: 'power3.out',
+      stagger: 0.12,
+    })
+    gsap.from('.command-panel', {
+      y: 34,
+      opacity: 0,
+      duration: 0.9,
+      delay: 0.2,
+      ease: 'power3.out',
+    })
+    gsap.to('.hero__mesh', {
+      backgroundPosition: '120px 80px',
+      duration: 10,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut',
+    })
+    gsap.utils.toArray('.reveal-block, .reveal-card').forEach((element) => {
+      gsap.from(element as gsap.TweenTarget, {
         y: 34,
         opacity: 0,
-        duration: 0.9,
-        delay: 0.2,
-        ease: 'power3.out',
+        duration: 0.7,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: element,
+          start: 'top 84%',
+        },
       })
-      gsap.to('.hero__mesh', {
-        backgroundPosition: '120px 80px',
-        duration: 10,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut',
-      })
-      gsap.utils.toArray('.reveal-block, .reveal-card').forEach((element) => {
-        gsap.from(element, {
-          y: 34,
-          opacity: 0,
-          duration: 0.7,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: element,
-            start: 'top 84%',
-          },
-        })
-      })
-    }, this.$el)
-  },
-  beforeUnmount() {
-    this.animationContext?.revert()
-  },
-  methods: {
-    async loadClubHome() {
-      this.loading = true
-      try {
-        const data = await siteApi.clubHome()
-        this.club = data.club || {}
-        this.metrics = data.metrics || []
-        this.techStack = data.techStack || []
-        this.focusAreas = data.focusAreas || []
-        this.activities = data.activities || []
-        this.people = data.people || []
-        this.awards = data.awards || []
-      } catch (error) {
-        this.club = {}
-        this.metrics = []
-        this.techStack = []
-        this.focusAreas = []
-        this.activities = []
-        this.people = []
-        this.awards = []
-      } finally {
-        this.loading = false
-      }
-    },
-    scrollTo(id) {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    },
-    focusIcon(name) {
-      const iconMap = {
-        monitor: icons.Monitor,
-        cpu: icons.Cpu,
-        lightning: icons.Lightning,
-      }
-      return iconMap[name] || icons.Monitor
-    },
-    statusType(status) {
-      if (status === 'published') {
-        return 'success'
-      }
-      if (status === 'draft') {
-        return 'warning'
-      }
-      return 'info'
-    },
-    statusText(status) {
-      return (
-        { draft: '草稿', published: '已发布', closed: '已关闭', cancelled: '已取消' }[status] ||
-        status ||
-        '-'
-      )
-    },
-    metricIcon(label) {
-      if (!label) return icons.DataAnalysis
-      if (label.includes('成员')) return icons.UserFilled
-      if (label.includes('活动')) return icons.Calendar
-      if (label.includes('获奖')) return icons.Trophy
-      if (label.includes('招新')) return icons.Collection
-      return icons.DataAnalysis
-    },
-    metricTone(label) {
-      if (!label) return 'default'
-      if (label.includes('成员')) return 'members'
-      if (label.includes('活动')) return 'activity'
-      if (label.includes('获奖')) return 'award'
-      if (label.includes('招新')) return 'recruit'
-      return 'default'
-    },
-  },
-}
+    })
+  }, instance?.proxy?.$el)
+})
+
+onBeforeUnmount(() => {
+  animationContext.value?.revert()
+})
 </script>
 
-<style scoped>
+<style>
 .home-page {
   overflow: hidden;
   background: transparent;
@@ -374,6 +185,20 @@ export default {
   flex-wrap: wrap;
   gap: 14px;
   margin-top: 30px;
+}
+
+.home-overview-page {
+  display: flex;
+  min-height: 72vh;
+  align-items: center;
+  background: #ffffff;
+}
+
+.home-overview-page__inner {
+  display: grid;
+  justify-items: center;
+  gap: 28px;
+  padding: 80px 0;
 }
 
 .command-panel {
@@ -702,7 +527,7 @@ export default {
   margin-top: 16px;
 }
 
-.activity-carousel-item{
+.activity-carousel-item {
   width: 800px;
 }
 
@@ -750,7 +575,7 @@ export default {
   height: 400px;
   flex-shrink: 0;
   padding: 5px;
-  margin: 0 auto
+  margin: 0 auto;
 }
 
 .activity-image img {
@@ -793,7 +618,14 @@ export default {
 }
 
 .hero__content {
-  max-width: 900px;
+  width: 100%;
+  max-width: none;
+}
+
+.home-hero__morph {
+  width: min(1180px, calc(100vw - 48px));
+  max-width: none;
+  min-height: 1.1em;
 }
 
 .hero__tag {
@@ -808,7 +640,12 @@ export default {
 .hero h1 {
   max-width: 960px;
   margin: 18px auto 14px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 56px;
   font-weight: 600;
   line-height: 1.07;
@@ -828,7 +665,7 @@ export default {
 .hero__actions {
   justify-content: center;
   gap: 12px;
-  margin-top: 28px;
+  margin-top: 0;
 }
 
 .command-panel {
@@ -878,7 +715,12 @@ export default {
 
 .signal-card__value {
   margin: 14px 0 8px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 40px;
   font-weight: 600;
 }
@@ -923,7 +765,12 @@ export default {
 
 .section-heading h2 {
   margin: 10px 0;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 40px;
   font-weight: 600;
   line-height: 1.1;

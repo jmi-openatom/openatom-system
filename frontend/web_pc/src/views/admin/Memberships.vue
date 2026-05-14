@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-input
           v-model="query.keyword"
@@ -19,10 +19,7 @@
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
       <div class="toolbar__actions">
-        <el-button
-          type="success"
-          :disabled="!selection.length"
-          @click="batchChangeStatus('active')"
+        <el-button type="success" :disabled="!selection.length" @click="batchChangeStatus('active')"
           >批量转正式</el-button
         >
         <el-button
@@ -33,8 +30,13 @@
         >
         <el-button type="primary" :icon="Plus" @click="openDialog()">新增成员</el-button>
       </div>
-    </div>
-    <el-table v-loading="loading" :data="rows" class="admin-table" @selection-change="selection = $event">
+    </ViewToolbar>
+    <el-table
+      v-loading="loading"
+      :data="rows"
+      class="admin-table"
+      @selection-change="selection = $event"
+    >
       <el-table-column type="selection" width="48" />
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column label="成员" min-width="150">
@@ -162,159 +164,174 @@
         <el-button type="primary" @click="submitAssign">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { clubApi, membershipApi } from '@/api'
 import { membershipStatusText, statusType } from '@/utils/format.ts'
 import { hasPermission } from '@/utils/permission.ts'
+import { computed, onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminMemberships',
-  data() {
-    return {
-      Plus,
-      Search,
-      loading: false,
-      rows: [],
-      selection: [],
-      clubs: [],
-      departments: [],
-      positions: [],
-      currentClubId: undefined,
-      currentClubName: '',
-      query: { keyword: '', status: '', page: 1, pageSize: 20 },
-      dialogVisible: false,
-      assignVisible: false,
-      form: {
-        userId: undefined,
-        clubId: undefined,
-        departmentId: undefined,
-        positionId: undefined,
-        featured: false,
-        sortOrder: 0,
-      },
-      assignForm: {
-        membershipId: '',
-        memberName: '',
-        departmentId: undefined,
-        positionId: undefined,
-      },
-    }
-  },
-  async created() {
-    await this.loadOptions()
-    this.fetchList()
-  },
-  computed: {
-    canForceExit() {
-      return hasPermission('membership:force-exit')
-    },
-  },
-  methods: {
-    membershipStatusText,
-    statusType,
-    async fetchList() {
-      this.loading = true
-      try {
-        const result = await membershipApi.list({ ...this.query, clubId: this.currentClubId })
-        this.rows = result?.list || result || []
-      } finally {
-        this.loading = false
-      }
-    },
-    async loadOptions() {
-      const clubResult = await clubApi.list({})
-      this.clubs = clubResult?.list || clubResult || []
-      const defaultClub = this.clubs.find((item) => item.code === 'JMI-OPENATOM') || this.clubs[0]
-      this.currentClubId = defaultClub?.id
-      this.currentClubName = defaultClub?.name || '默认社团'
-      if (!this.currentClubId) return
-      this.departments = await clubApi.departments(this.currentClubId)
-      this.positions = await clubApi.positions(this.currentClubId)
-    },
-    openDialog() {
-      this.form = {
-        userId: undefined,
-        clubId: this.currentClubId,
-        departmentId: undefined,
-        positionId: undefined,
-        featured: false,
-        sortOrder: 0,
-        status: 'probation',
-      }
-      this.dialogVisible = true
-    },
-    async createMembership() {
-      await membershipApi.create(this.form)
-      ElMessage.success('成员已创建')
-      this.dialogVisible = false
-      this.fetchList()
-    },
-    openAssign(row) {
-      this.assignForm = {
-        membershipId: row.id,
-        memberName: row.realName || row.userName || `用户 ${row.userId}`,
-        departmentId: row.departmentId,
-        positionId: row.positionId,
-      }
-      this.assignVisible = true
-    },
-    async submitAssign() {
-      await membershipApi.update(this.assignForm.membershipId, {
-        departmentId: this.assignForm.departmentId,
-        positionId: this.assignForm.positionId,
-      })
-      ElMessage.success('岗位已更新')
-      this.assignVisible = false
-      this.fetchList()
-    },
-    async changeStatus(row, status) {
-      await membershipApi.changeStatus(row.id, { status })
-      ElMessage.success('成员状态已更新')
-      this.fetchList()
-    },
-    async batchChangeStatus(status) {
-      if (!this.selection.length) return
-      try {
-        await membershipApi.batchChangeStatus({
-          membershipIds: this.selection.map((item) => item.id),
-          status,
-        })
-        ElMessage.success(`已批量处理 ${this.selection.length} 条成员状态`)
-        this.fetchList()
-      } catch {
-        ElMessage.error('部分操作失败')
-      }
-    },
-    async forceExit(row) {
-      await ElMessageBox.confirm(
-        `确认将 ${row.realName || row.userName || `用户 ${row.userId}`} 移出社团？`,
-        '提示',
-        { type: 'warning' },
-      )
-      await membershipApi.forceExit(row.id, { reason: '管理员移出社团' })
-      ElMessage.success('已移出社团')
-      this.fetchList()
-    },
-    async toggleFeatured(row) {
-      await this.updateDisplay(row)
-    },
-    async updateDisplay(row) {
-      await membershipApi.update(row.id, { featured: row.featured, sortOrder: row.sortOrder || 0 })
-      ElMessage.success('官网展示已更新')
-    },
-    filteredPositions(departmentId) {
-      if (!departmentId) return this.positions
-      return this.positions.filter((item) => item.departmentId === departmentId)
-    },
-    positionLabel(position) {
-      const department = this.departments.find((item) => item.id === position.departmentId)
-      return department ? `${department.name} / ${position.name}` : position.name
-    },
-  },
+const loading = ref(false)
+
+const rows = ref<any[]>([])
+
+const selection = ref<any[]>([])
+
+const clubs = ref<any[]>([])
+
+const departments = ref<any[]>([])
+
+const positions = ref<any[]>([])
+
+const currentClubId = ref(undefined)
+
+const currentClubName = ref('')
+
+const query = ref({ keyword: '', status: '', page: 1, pageSize: 20 })
+
+const dialogVisible = ref(false)
+
+const assignVisible = ref(false)
+
+const form = ref({
+  userId: undefined,
+  clubId: undefined,
+  departmentId: undefined,
+  positionId: undefined,
+  featured: false,
+  sortOrder: 0,
+})
+
+const assignForm = ref({
+  membershipId: '',
+  memberName: '',
+  departmentId: undefined,
+  positionId: undefined,
+})
+
+const canForceExit = computed(() => {
+  return hasPermission('membership:force-exit')
+})
+
+async function fetchList() {
+  loading.value = true
+  try {
+    const result = await membershipApi.list({ ...query.value, clubId: currentClubId.value })
+    rows.value = result?.list || result || []
+  } finally {
+    loading.value = false
+  }
 }
+
+async function loadOptions() {
+  const clubResult = await clubApi.list({})
+  clubs.value = clubResult?.list || clubResult || []
+  const defaultClub = clubs.value.find((item) => item.code === 'JMI-OPENATOM') || clubs.value[0]
+  currentClubId.value = defaultClub?.id
+  currentClubName.value = defaultClub?.name || '默认社团'
+  if (!currentClubId.value) return
+  departments.value = await clubApi.departments(currentClubId.value)
+  positions.value = await clubApi.positions(currentClubId.value)
+}
+
+function openDialog() {
+  form.value = {
+    userId: undefined,
+    clubId: currentClubId.value,
+    departmentId: undefined,
+    positionId: undefined,
+    featured: false,
+    sortOrder: 0,
+    status: 'probation',
+  }
+  dialogVisible.value = true
+}
+
+async function createMembership() {
+  await membershipApi.create(form.value)
+  ElMessage.success('成员已创建')
+  dialogVisible.value = false
+  fetchList()
+}
+
+function openAssign(row: any) {
+  assignForm.value = {
+    membershipId: row.id,
+    memberName: row.realName || row.userName || `用户 ${row.userId}`,
+    departmentId: row.departmentId,
+    positionId: row.positionId,
+  }
+  assignVisible.value = true
+}
+
+async function submitAssign() {
+  await membershipApi.update(assignForm.value.membershipId, {
+    departmentId: assignForm.value.departmentId,
+    positionId: assignForm.value.positionId,
+  })
+  ElMessage.success('岗位已更新')
+  assignVisible.value = false
+  fetchList()
+}
+
+async function changeStatus(row: any, status: any) {
+  await membershipApi.changeStatus(row.id, { status })
+  ElMessage.success('成员状态已更新')
+  fetchList()
+}
+
+async function batchChangeStatus(status: any) {
+  if (!selection.value.length) return
+  try {
+    await membershipApi.batchChangeStatus({
+      membershipIds: selection.value.map((item) => item.id),
+      status,
+    })
+    ElMessage.success(`已批量处理 ${selection.value.length} 条成员状态`)
+    fetchList()
+  } catch {
+    ElMessage.error('部分操作失败')
+  }
+}
+
+async function forceExit(row: any) {
+  await ElMessageBox.confirm(
+    `确认将 ${row.realName || row.userName || `用户 ${row.userId}`} 移出社团？`,
+    '提示',
+    { type: 'warning' },
+  )
+  await membershipApi.forceExit(row.id, { reason: '管理员移出社团' })
+  ElMessage.success('已移出社团')
+  fetchList()
+}
+
+async function toggleFeatured(row: any) {
+  await updateDisplay(row)
+}
+
+async function updateDisplay(row: any) {
+  await membershipApi.update(row.id, { featured: row.featured, sortOrder: row.sortOrder || 0 })
+  ElMessage.success('官网展示已更新')
+}
+
+function filteredPositions(departmentId: any) {
+  if (!departmentId) return positions.value
+  return positions.value.filter((item) => item.departmentId === departmentId)
+}
+
+function positionLabel(position: any) {
+  const department = departments.value.find((item) => item.id === position.departmentId)
+  return department ? `${department.name} / ${position.name}` : position.name
+}
+
+onMounted(async () => {
+  await loadOptions()
+  fetchList()
+})
 </script>

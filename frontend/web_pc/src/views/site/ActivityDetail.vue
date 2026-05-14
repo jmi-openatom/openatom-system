@@ -1,5 +1,5 @@
 <template>
-  <div v-loading="loading" class="activity-detail">
+  <ViewPage class="activity-detail" :loading="loading">
     <section class="detail-hero">
       <div class="container">
         <el-button text @click="$router.back()">返回活动</el-button>
@@ -64,87 +64,91 @@
         </template>
       </aside>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage } from 'element-plus'
 import { activityApi, siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { getToken } from '@/utils/auth.ts'
 import { renderMarkdown } from '@/utils/markdown.ts'
 import { hasRole } from '@/utils/permission.ts'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-export default {
-  name: 'SiteActivityDetail',
-  data() {
-    return {
-      loading: false,
-      submitting: false,
-      activity: {},
-      form: {},
-    }
-  },
-  computed: {
-    html() {
-      return renderMarkdown(this.activity.descriptionMarkdown || this.activity.summary || '')
-    },
-    fields() {
-      try {
-        const parsed =
-          typeof this.activity.registrationFields === 'string'
-            ? JSON.parse(this.activity.registrationFields || '[]')
-            : this.activity.registrationFields
-        return Array.isArray(parsed) ? parsed : []
-      } catch {
-        return []
-      }
-    },
-    signupBlockedMessage() {
-      if (!this.activity.registrationRequired) return ''
-      if (!getToken()) return '请先登录后再报名'
-      if (!hasRole('formal_member')) return '无权限，请先加入社团'
-      return ''
-    },
-  },
-  created() {
-    this.fetchDetail()
-  },
-  methods: {
-    formatDateTime,
-    async fetchDetail() {
-      this.loading = true
-      try {
-        this.activity = await siteApi.activityDetail(this.$route.params.id)
-      } finally {
-        this.loading = false
-      }
-    },
-    async submit() {
-      if (!getToken()) {
-        ElMessage.warning('请先登录后再报名')
-        this.$router.push({ path: '/admin/login', query: { redirect: this.$route.fullPath } })
-        return
-      }
-      if (!hasRole('formal_member')) {
-        ElMessage.warning('无权限，请先加入社团')
-        return
-      }
-      const missing = this.fields.find((field) => field.required && !this.form[field.label])
-      if (missing) {
-        ElMessage.warning(`请填写${missing.label}`)
-        return
-      }
-      this.submitting = true
-      try {
-        await activityApi.register(this.activity.id, { formData: this.form })
-        ElMessage.success('报名已提交')
-      } finally {
-        this.submitting = false
-      }
-    },
-  },
+const loading = ref(false)
+
+const submitting = ref(false)
+
+const activity = ref<Record<string, any>>({})
+
+const form = ref<Record<string, any>>({})
+
+const router = useRouter()
+
+const route = useRoute()
+
+const html = computed(() => {
+  return renderMarkdown(activity.value.descriptionMarkdown || activity.value.summary || '')
+})
+
+const fields = computed(() => {
+  try {
+    const parsed =
+      typeof activity.value.registrationFields === 'string'
+        ? JSON.parse(activity.value.registrationFields || '[]')
+        : activity.value.registrationFields
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+})
+
+const signupBlockedMessage = computed(() => {
+  if (!activity.value.registrationRequired) return ''
+  if (!getToken()) return '请先登录后再报名'
+  if (!hasRole('formal_member')) return '无权限，请先加入社团'
+  return ''
+})
+
+async function fetchDetail() {
+  loading.value = true
+  try {
+    activity.value = await siteApi.activityDetail(route.params.id)
+  } finally {
+    loading.value = false
+  }
 }
+
+async function submit() {
+  if (!getToken()) {
+    ElMessage.warning('请先登录后再报名')
+    router.push({ path: '/admin/login', query: { redirect: route.fullPath } })
+    return
+  }
+  if (!hasRole('formal_member')) {
+    ElMessage.warning('无权限，请先加入社团')
+    return
+  }
+  const missing = fields.value.find((field) => field.required && !form.value[field.label])
+  if (missing) {
+    ElMessage.warning(`请填写${missing.label}`)
+    return
+  }
+  submitting.value = true
+  try {
+    await activityApi.register(activity.value.id, { formData: form.value })
+    ElMessage.success('报名已提交')
+  } finally {
+    submitting.value = false
+  }
+}
+
+onMounted(() => {
+  fetchDetail()
+})
 </script>
 
 <style scoped>
@@ -161,7 +165,12 @@ export default {
 .detail-hero h1 {
   max-width: 860px;
   margin: 20px 0 12px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 56px;
   font-weight: 600;
   line-height: 1.07;

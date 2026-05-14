@@ -3,7 +3,9 @@
     <header class="site-header">
       <div class="container site-header__inner">
         <router-link class="brand" to="/">
-          <img alt="徽标" class="brand__mark" src="/logo.png" />
+            <div style="height:50px;">
+                <LiquidLogo :image-url="imageUrl" />
+            </div>
           <span>
             <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
@@ -65,11 +67,7 @@
         <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>
         <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
         <router-link to="/check-in/scan" @click="mobileNavVisible = false">扫码签到</router-link>
-        <router-link
-          v-if="isLoggedIn"
-          to="/notifications"
-          @click="mobileNavVisible = false"
-        >
+        <router-link v-if="isLoggedIn" to="/notifications" @click="mobileNavVisible = false">
           通知
         </router-link>
         <router-link v-if="isLoggedIn" to="/profile" @click="mobileNavVisible = false">
@@ -89,7 +87,9 @@
     <footer class="site-footer">
       <div class="container site-footer__inner">
         <div class="site-footer__brand">
-          <img alt="徽标" class="site-footer__logo" src="/logo.png" />
+            <div style="height:80px;">
+                <LiquidLogo :image-url="imageUrl" />
+            </div>
           <div class="brand-text">
             <span class="name">开放原子开源社团</span>
             <span class="slogan">Open Atom Open Source Club</span>
@@ -107,55 +107,62 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Bell, Menu, Setting, UserFilled } from '@element-plus/icons-vue'
-import { markRaw } from 'vue'
+<script setup lang="ts">
+import {
+  Bell as BellIcon,
+  Menu as MenuIcon,
+  Setting as SettingIcon,
+  UserFilled as UserFilledIcon,
+} from '@element-plus/icons-vue'
+import { computed, markRaw, onBeforeUnmount, onMounted, ref } from 'vue'
 import { getToken } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
 import { notificationApi } from '@/api'
+import {LiquidLogo} from "@/components/ui/liquid-logo";
 
-export default {
-  name: 'SiteLayout',
-  data() {
-    return {
-      Setting: markRaw(Setting),
-      UserFilled: markRaw(UserFilled),
-      Bell: markRaw(Bell),
-      Menu: markRaw(Menu),
-      mobileNavVisible: false,
-      unreadCount: 0,
-      unreadTimer: null as any,
-      version: __APP_VERSION__,
-    }
-  },
-  computed: {
-    isLoggedIn() {
-      return Boolean(getToken())
-    },
-    showAdminEntry() {
-      return hasAdminAccess()
-    },
-  },
-  created() {
-    if (this.isLoggedIn) {
-      this.fetchUnreadCount()
-      this.unreadTimer = setInterval(this.fetchUnreadCount, 30000)
-    }
-  },
-  beforeUnmount() {
-    if (this.unreadTimer) clearInterval(this.unreadTimer)
-  },
-  methods: {
-    async fetchUnreadCount() {
-      try {
-        const count = await notificationApi.unreadCount()
-        this.unreadCount = typeof count === 'number' ? count : 0
-      } catch (e) {
-        // ignore
-      }
-    },
-  },
+const Setting = markRaw(SettingIcon)
+
+const UserFilled = markRaw(UserFilledIcon)
+
+const Bell = markRaw(BellIcon)
+
+const Menu = markRaw(MenuIcon)
+
+const mobileNavVisible = ref(false)
+
+const unreadCount = ref(0)
+
+const unreadTimer = ref(null as any)
+
+const version = ref(__APP_VERSION__)
+const imageUrl = "/public/logo.svg";
+const isLoggedIn = computed(() => {
+  return Boolean(getToken())
+})
+
+const showAdminEntry = computed(() => {
+  return hasAdminAccess()
+})
+
+async function fetchUnreadCount() {
+  try {
+    const count = await notificationApi.unreadCount()
+    unreadCount.value = typeof count === 'number' ? count : 0
+  } catch (e) {
+    // ignore
+  }
 }
+
+onMounted(() => {
+  if (isLoggedIn.value) {
+    fetchUnreadCount()
+    unreadTimer.value = setInterval(fetchUnreadCount, 30000)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (unreadTimer.value) clearInterval(unreadTimer.value)
+})
 </script>
 
 <style scoped>

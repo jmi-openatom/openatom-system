@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-input
           v-model="query.applicationId"
@@ -36,7 +36,7 @@
           >批量完成</el-button
         >
       </div>
-    </div>
+    </ViewToolbar>
     <el-table
       v-loading="loading"
       :data="rows"
@@ -354,283 +354,299 @@
         >
       </template>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { interviewApi } from '@/api'
 import { formatDateTime, interviewStatusText, statusType } from '@/utils/format.ts'
+import { computed, onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminInterviews',
-  data() {
-    return {
-      Search,
-      loading: false,
-      rows: [],
-      selection: [],
-      query: { applicationId: '', status: '' },
-      // 批量确认
-      batchConfirmVisible: false,
-      batchConfirmSubmitting: false,
-      batchConfirmForm: {},
-      // 批量反馈
-      batchFeedbackVisible: false,
-      batchFeedbackSubmitting: false,
-      batchFeedbackForm: {
-        scores: { communication: 3, professional: 3, overall: 3 },
-        suggestion: 'approve',
-        comment: '',
-      },
-      // 批量完成
-      batchCompleteVisible: false,
-      batchCompleteSubmitting: false,
-      batchCompleteForm: {},
-      // 单个反馈
-      feedbackVisible: false,
-      feedbackSubmitting: false,
-      feedbackForm: {
-        interviewId: '',
-        applicationId: '',
-        round: 0,
-        location: '',
-        scores: { communication: 3, professional: 3, overall: 3 },
-        suggestion: 'approve',
-        comment: '',
-      },
-      // 查看反馈
-      feedbacksVisible: false,
-      feedbacksLoading: false,
-      feedbackRecords: [],
-      viewingFeedbacksInterviewId: null,
-      viewingFeedbacksStatus: '',
-      // 单个完成
-      completeConfirmVisible: false,
-      completeSubmitting: false,
-      completingInterview: null,
-      completingHasFeedback: false,
-    }
-  },
-  created() {
-    this.fetchList()
-  },
-  methods: {
-    formatDateTime,
-    statusType,
-    interviewStatusText,
-    suggestionText(suggestion) {
-      if (suggestion === 'approve') return '推荐通过'
-      if (suggestion === 'waitlist') return '待定'
-      if (suggestion === 'reject') return '淘汰'
-      return suggestion || '-'
-    },
-    suggestionType(suggestion) {
-      if (suggestion === 'approve') return 'success'
-      if (suggestion === 'reject') return 'danger'
-      if (suggestion === 'waitlist') return 'warning'
-      return 'info'
-    },
-    async fetchList() {
-      this.loading = true
-      try {
-        const applicationId = this.query.applicationId
-          ? Number(this.query.applicationId)
-          : undefined
-        const result = await interviewApi.list({
-          applicationId: Number.isNaN(applicationId) ? undefined : applicationId,
-          status: this.query.status || undefined,
-        })
-        this.rows = result?.list || result || []
-      } finally {
-        this.loading = false
-      }
-    },
+const loading = ref(false)
 
-    // ---- 批量确认 ----
-    openBatchConfirm() {
-      if (!this.batchConfirmCandidates.length) {
-        ElMessage.warning('请选择待确认的面试')
-        return
-      }
-      this.batchConfirmVisible = true
-    },
-    async submitBatchConfirm() {
-      if (this.batchConfirmSubmitting) return
-      this.batchConfirmSubmitting = true
-      try {
-        await Promise.all(this.batchConfirmCandidates.map((item) => interviewApi.confirm(item.id)))
-        ElMessage.success(`已批量确认 ${this.batchConfirmCandidates.length} 场面试`)
-        this.batchConfirmVisible = false
-        this.fetchList()
-      } finally {
-        this.batchConfirmSubmitting = false
-      }
-    },
+const rows = ref<any[]>([])
 
-    // ---- 批量反馈 ----
-    openBatchFeedback() {
-      if (!this.batchFeedbackCandidates.length) {
-        ElMessage.warning('请选择可反馈的面试')
-        return
-      }
-      this.batchFeedbackForm = {
-        scores: { communication: 3, professional: 3, overall: 3 },
-        suggestion: 'approve',
-        comment: '',
-      }
-      this.batchFeedbackVisible = true
-    },
-    async submitBatchFeedback() {
-      if (this.batchFeedbackSubmitting) return
-      this.batchFeedbackSubmitting = true
-      try {
-        await Promise.all(
-          this.batchFeedbackCandidates.map((item) =>
-            interviewApi.feedback(item.id, {
-              scores: { ...this.batchFeedbackForm.scores },
-              suggestion: this.batchFeedbackForm.suggestion,
-              comment: this.batchFeedbackForm.comment || undefined,
-            }),
-          ),
-        )
-        ElMessage.success(`已批量反馈 ${this.batchFeedbackCandidates.length} 场面试`)
-        this.batchFeedbackVisible = false
-        this.fetchList()
-      } finally {
-        this.batchFeedbackSubmitting = false
-      }
-    },
+const selection = ref<any[]>([])
 
-    // ---- 批量完成 ----
-    openBatchComplete() {
-      if (!this.batchCompleteCandidates.length) {
-        ElMessage.warning('请选择可完成的面试')
-        return
-      }
-      this.batchCompleteVisible = true
-    },
-    async submitBatchComplete() {
-      if (this.batchCompleteSubmitting) return
-      this.batchCompleteSubmitting = true
-      try {
-        await Promise.all(
-          this.batchCompleteCandidates.map((item) => interviewApi.complete(item.id)),
-        )
-        ElMessage.success(`已批量完成 ${this.batchCompleteCandidates.length} 场面试`)
-        this.batchCompleteVisible = false
-        this.fetchList()
-      } finally {
-        this.batchCompleteSubmitting = false
-      }
-    },
+const query = ref({ applicationId: '', status: '' })
 
-    // ---- 单个操作 ----
-    async confirmInterview(row) {
-      await interviewApi.confirm(row.id)
-      ElMessage.success('面试已确认')
-      this.fetchList()
-    },
-    openFeedback(row) {
-      this.feedbackForm = {
-        interviewId: row.id,
-        applicationId: row.applicationId,
-        round: row.round,
-        location: row.location,
-        scores: { communication: 3, professional: 3, overall: 3 },
-        suggestion: 'approve',
-        comment: '',
-      }
-      this.feedbackVisible = true
-    },
-    async submitFeedback() {
-      if (this.feedbackSubmitting) return
-      this.feedbackSubmitting = true
-      try {
-        await interviewApi.feedback(this.feedbackForm.interviewId, {
-          scores: { ...this.feedbackForm.scores },
-          suggestion: this.feedbackForm.suggestion,
-          comment: this.feedbackForm.comment,
-        })
-        ElMessage.success('反馈已提交')
-        this.feedbackVisible = false
-        this.fetchList()
-      } finally {
-        this.feedbackSubmitting = false
-      }
-    },
-    async viewFeedbacks(row) {
-      this.viewingFeedbacksInterviewId = row.id
-      this.viewingFeedbacksStatus = row.status
-      this.feedbacksVisible = true
-      this.feedbacksLoading = true
-      try {
-        const result = await interviewApi.feedbacks(row.id)
-        this.feedbackRecords = (result?.list || result || []).map((item) => {
-          let scoresObj = {}
-          if (item.scores) {
-            try {
-              scoresObj = typeof item.scores === 'string' ? JSON.parse(item.scores) : item.scores
-            } catch (e) {
-              console.error('Failed to parse scores', e)
-            }
-          }
-          return { ...item, scoresObj }
-        })
-      } catch (e) {
-        console.error('Failed to fetch feedbacks', e)
-        this.feedbackRecords = []
-      } finally {
-        this.feedbacksLoading = false
-      }
-    },
-    async checkHasFeedback(interviewId) {
-      try {
-        const result = await interviewApi.feedbacks(interviewId)
-        const list = result?.list || result || []
-        return list.length > 0
-      } catch (e) {
-        return false
-      }
-    },
-    async openCompleteConfirm(row) {
-      this.completingInterview = row
-      this.completeConfirmVisible = true
-      const hasFeedback = await this.checkHasFeedback(row.id)
-      this.completingHasFeedback = hasFeedback
-    },
-    async submitComplete() {
-      if (this.completeSubmitting) return
-      this.completeSubmitting = true
-      try {
-        await interviewApi.complete(this.completingInterview.id)
-        ElMessage.success('面试已完成')
-        this.completeConfirmVisible = false
-        this.fetchList()
-      } finally {
-        this.completeSubmitting = false
-      }
-    },
-  },
-  computed: {
-    currentFeedbackApplicationId() {
-      return this.feedbackForm.applicationId || '-'
-    },
-    batchConfirmCandidates() {
-      return this.selection.filter((item) => item.status === 'pending')
-    },
-    batchFeedbackCandidates() {
-      return this.selection.filter((item) => item.status !== 'completed')
-    },
-    batchCompleteCandidates() {
-      return this.selection.filter((item) => item.status !== 'completed')
-    },
-    batchCompleteAlertTitle() {
-      return '完成面试后，对应申请将进入[已面试]状态，可进行终审决策。'
-    },
-  },
+const batchConfirmSubmitting = ref(false)
+
+const batchConfirmForm = ref<Record<string, any>>({})
+
+const batchFeedbackSubmitting = ref(false)
+
+const batchFeedbackForm = ref({
+  scores: { communication: 3, professional: 3, overall: 3 },
+  suggestion: 'approve',
+  comment: '',
+})
+
+const batchCompleteSubmitting = ref(false)
+
+const batchCompleteForm = ref<Record<string, any>>({})
+
+const feedbackSubmitting = ref(false)
+
+const feedbackForm = ref({
+  interviewId: '',
+  applicationId: '',
+  round: 0,
+  location: '',
+  scores: { communication: 3, professional: 3, overall: 3 },
+  suggestion: 'approve',
+  comment: '',
+})
+
+const feedbacksLoading = ref(false)
+
+const feedbackRecords = ref<any[]>([])
+
+const viewingFeedbacksInterviewId = ref<any>(null)
+
+const viewingFeedbacksStatus = ref('')
+
+const completeSubmitting = ref(false)
+
+const completingInterview = ref<any>(null)
+
+const completingHasFeedback = ref(false)
+
+const batchConfirmVisible = ref<any>()
+
+const batchFeedbackVisible = ref<any>()
+
+const batchCompleteVisible = ref<any>()
+
+const feedbackVisible = ref<any>()
+
+const feedbacksVisible = ref<any>()
+
+const completeConfirmVisible = ref<any>()
+
+const currentFeedbackApplicationId = computed(() => {
+  return feedbackForm.value.applicationId || '-'
+})
+
+const batchConfirmCandidates = computed(() => {
+  return selection.value.filter((item) => item.status === 'pending')
+})
+
+const batchFeedbackCandidates = computed(() => {
+  return selection.value.filter((item) => item.status !== 'completed')
+})
+
+const batchCompleteCandidates = computed(() => {
+  return selection.value.filter((item) => item.status !== 'completed')
+})
+
+const batchCompleteAlertTitle = computed(() => {
+  return '完成面试后，对应申请将进入[已面试]状态，可进行终审决策。'
+})
+
+function suggestionText(suggestion: any) {
+  if (suggestion === 'approve') return '推荐通过'
+  if (suggestion === 'waitlist') return '待定'
+  if (suggestion === 'reject') return '淘汰'
+  return suggestion || '-'
 }
+
+function suggestionType(suggestion: any) {
+  if (suggestion === 'approve') return 'success'
+  if (suggestion === 'reject') return 'danger'
+  if (suggestion === 'waitlist') return 'warning'
+  return 'info'
+}
+
+async function fetchList() {
+  loading.value = true
+  try {
+    const applicationId = query.value.applicationId ? Number(query.value.applicationId) : undefined
+    const result = await interviewApi.list({
+      applicationId: Number.isNaN(applicationId) ? undefined : applicationId,
+      status: query.value.status || undefined,
+    })
+    rows.value = result?.list || result || []
+  } finally {
+    loading.value = false
+  }
+}
+
+function openBatchConfirm() {
+  if (!batchConfirmCandidates.value.length) {
+    ElMessage.warning('请选择待确认的面试')
+    return
+  }
+  batchConfirmVisible.value = true
+}
+
+async function submitBatchConfirm() {
+  if (batchConfirmSubmitting.value) return
+  batchConfirmSubmitting.value = true
+  try {
+    await Promise.all(batchConfirmCandidates.value.map((item) => interviewApi.confirm(item.id)))
+    ElMessage.success(`已批量确认 ${batchConfirmCandidates.value.length} 场面试`)
+    batchConfirmVisible.value = false
+    fetchList()
+  } finally {
+    batchConfirmSubmitting.value = false
+  }
+}
+
+function openBatchFeedback() {
+  if (!batchFeedbackCandidates.value.length) {
+    ElMessage.warning('请选择可反馈的面试')
+    return
+  }
+  batchFeedbackForm.value = {
+    scores: { communication: 3, professional: 3, overall: 3 },
+    suggestion: 'approve',
+    comment: '',
+  }
+  batchFeedbackVisible.value = true
+}
+
+async function submitBatchFeedback() {
+  if (batchFeedbackSubmitting.value) return
+  batchFeedbackSubmitting.value = true
+  try {
+    await Promise.all(
+      batchFeedbackCandidates.value.map((item) =>
+        interviewApi.feedback(item.id, {
+          scores: { ...batchFeedbackForm.value.scores },
+          suggestion: batchFeedbackForm.value.suggestion,
+          comment: batchFeedbackForm.value.comment || undefined,
+        }),
+      ),
+    )
+    ElMessage.success(`已批量反馈 ${batchFeedbackCandidates.value.length} 场面试`)
+    batchFeedbackVisible.value = false
+    fetchList()
+  } finally {
+    batchFeedbackSubmitting.value = false
+  }
+}
+
+function openBatchComplete() {
+  if (!batchCompleteCandidates.value.length) {
+    ElMessage.warning('请选择可完成的面试')
+    return
+  }
+  batchCompleteVisible.value = true
+}
+
+async function submitBatchComplete() {
+  if (batchCompleteSubmitting.value) return
+  batchCompleteSubmitting.value = true
+  try {
+    await Promise.all(batchCompleteCandidates.value.map((item) => interviewApi.complete(item.id)))
+    ElMessage.success(`已批量完成 ${batchCompleteCandidates.value.length} 场面试`)
+    batchCompleteVisible.value = false
+    fetchList()
+  } finally {
+    batchCompleteSubmitting.value = false
+  }
+}
+
+async function confirmInterview(row: any) {
+  await interviewApi.confirm(row.id)
+  ElMessage.success('面试已确认')
+  fetchList()
+}
+
+function openFeedback(row: any) {
+  feedbackForm.value = {
+    interviewId: row.id,
+    applicationId: row.applicationId,
+    round: row.round,
+    location: row.location,
+    scores: { communication: 3, professional: 3, overall: 3 },
+    suggestion: 'approve',
+    comment: '',
+  }
+  feedbackVisible.value = true
+}
+
+async function submitFeedback() {
+  if (feedbackSubmitting.value) return
+  feedbackSubmitting.value = true
+  try {
+    await interviewApi.feedback(feedbackForm.value.interviewId, {
+      scores: { ...feedbackForm.value.scores },
+      suggestion: feedbackForm.value.suggestion,
+      comment: feedbackForm.value.comment,
+    })
+    ElMessage.success('反馈已提交')
+    feedbackVisible.value = false
+    fetchList()
+  } finally {
+    feedbackSubmitting.value = false
+  }
+}
+
+async function viewFeedbacks(row: any) {
+  viewingFeedbacksInterviewId.value = row.id
+  viewingFeedbacksStatus.value = row.status
+  feedbacksVisible.value = true
+  feedbacksLoading.value = true
+  try {
+    const result = await interviewApi.feedbacks(row.id)
+    feedbackRecords.value = (result?.list || result || []).map((item) => {
+      let scoresObj = {}
+      if (item.scores) {
+        try {
+          scoresObj = typeof item.scores === 'string' ? JSON.parse(item.scores) : item.scores
+        } catch (e) {
+          console.error('Failed to parse scores', e)
+        }
+      }
+      return { ...item, scoresObj }
+    })
+  } catch (e) {
+    console.error('Failed to fetch feedbacks', e)
+    feedbackRecords.value = []
+  } finally {
+    feedbacksLoading.value = false
+  }
+}
+
+async function checkHasFeedback(interviewId: any) {
+  try {
+    const result = await interviewApi.feedbacks(interviewId)
+    const list = result?.list || result || []
+    return list.length > 0
+  } catch (e) {
+    return false
+  }
+}
+
+async function openCompleteConfirm(row: any) {
+  completingInterview.value = row
+  completeConfirmVisible.value = true
+  const hasFeedback = await checkHasFeedback(row.id)
+  completingHasFeedback.value = hasFeedback
+}
+
+async function submitComplete() {
+  if (completeSubmitting.value) return
+  completeSubmitting.value = true
+  try {
+    await interviewApi.complete(completingInterview.value.id)
+    ElMessage.success('面试已完成')
+    completeConfirmVisible.value = false
+    fetchList()
+  } finally {
+    completeSubmitting.value = false
+  }
+}
+
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <style scoped>

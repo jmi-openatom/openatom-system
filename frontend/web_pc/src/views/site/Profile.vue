@@ -1,5 +1,5 @@
 <template>
-  <div class="site-page">
+  <ViewPage class="site-page">
     <section class="container profile-grid">
       <el-card class="profile-card" shadow="never">
         <template #header>
@@ -79,90 +79,95 @@
         </div>
       </template>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { authApi, siteApi } from '@/api'
 import { getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
 import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
 import { ElMessage } from 'element-plus'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-export default {
-  name: 'SiteProfile',
-  data() {
-    return {
-      user: getCurrentUser() || {},
-      applications: [],
-      // 修改密码相关
-      passwordDialogVisible: false,
-      submitting: false,
-      passwordForm: {
-        oldPassword: '',
-        newPassword: '',
-      },
-      passwordRules: {
-        oldPassword: [{ required: true, message: '请输入旧密码', trigger: 'blur' }],
-        newPassword: [
-          { required: true, message: '请输入新密码', trigger: 'blur' },
-          { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' },
-        ],
-      },
-    }
-  },
-  computed: {
-    isLogin() {
-      return Boolean(getToken())
-    },
-  },
-  created() {
-    if (this.isLogin) {
-      this.fetchProfile()
-      this.fetchApplications()
-    }
-  },
-  methods: {
-    applicationStatusText,
-    formatDateTime,
-    statusType,
-    async fetchProfile() {
-      const result = await authApi.me()
-      if (result?.user) {
-        this.user = result.user
-        setSession({ accessToken: getToken(), user: this.user })
-      }
-    },
-    async fetchApplications() {
-      const result = await siteApi.progress()
-      this.applications = result?.applications || []
-    },
-    async logout() {
-      await authApi.logout()
-      localStorage.clear()
-      this.$router.push('/admin/login')
-    },
-    // 提交密码修改
-    async submitPassword() {
-      this.$refs.pwdFormRef.validate(async (valid) => {
-        if (!valid) return
-        try {
-          this.submitting = true
-          await authApi.updatePassword(this.passwordForm)
-          ElMessage.success('密码更新成功，请使用新密码重新登录')
-          this.passwordDialogVisible = false
-          this.logout() // 强制重新登录以保证安全
-        } catch (error) {
-          console.error('修改失败:', error)
-        } finally {
-          this.submitting = false
-        }
-      })
-    },
-    resetForm() {
-      this.$refs.pwdFormRef?.resetFields()
-    },
-  },
+const user = ref(getCurrentUser() || {})
+
+const applications = ref<any[]>([])
+
+const submitting = ref(false)
+
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+})
+
+const passwordRules = ref({
+  oldPassword: [{ required: true, message: '请输入旧密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' },
+  ],
+})
+
+const passwordDialogVisible = ref<any>()
+
+const pwdFormRef = ref<any>()
+
+const router = useRouter()
+
+const route = useRoute()
+
+const isLogin = computed(() => {
+  return Boolean(getToken())
+})
+
+async function fetchProfile() {
+  const result = await authApi.me()
+  if (result?.user) {
+    user.value = result.user
+    setSession({ accessToken: getToken(), user: user.value })
+  }
 }
+
+async function fetchApplications() {
+  const result = await siteApi.progress()
+  applications.value = result?.applications || []
+}
+
+async function logout() {
+  await authApi.logout()
+  localStorage.clear()
+  router.push('/admin/login')
+}
+
+async function submitPassword() {
+  pwdFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    try {
+      submitting.value = true
+      await authApi.updatePassword(passwordForm.value)
+      ElMessage.success('密码更新成功，请使用新密码重新登录')
+      passwordDialogVisible.value = false
+      logout() // 强制重新登录以保证安全
+    } catch (error) {
+      console.error('修改失败:', error)
+    } finally {
+      submitting.value = false
+    }
+  })
+}
+
+function resetForm() {
+  pwdFormRef.value?.resetFields()
+}
+
+onMounted(() => {
+  if (isLogin.value) {
+    fetchProfile()
+    fetchApplications()
+  }
+})
 </script>
 
 <style scoped>

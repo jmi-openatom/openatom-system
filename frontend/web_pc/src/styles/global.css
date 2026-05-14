@@ -1,4 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
+  --background: 0 0% 96%;
+  --foreground: 240 3% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 3% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 3% 12%;
+  --primary: 240 3% 12%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 11% 96%;
+  --secondary-foreground: 240 3% 12%;
+  --muted: 240 11% 96%;
+  --muted-foreground: 0 0% 48%;
+  --accent: 240 11% 96%;
+  --accent-foreground: 240 3% 12%;
+  --destructive: 0 0% 0%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 88%;
+  --input: 0 0% 88%;
+  --ring: 240 3% 12%;
+  --radius: 0.5rem;
   --oa-primary: #1d1d1f;
   --oa-primary-dark: #000000;
   --oa-primary-soft: #f5f5f7;
@@ -69,8 +93,14 @@ body {
   margin: 0;
   color: var(--oa-text);
   background: var(--oa-bg);
-  font-family: 'SF Pro Text', system-ui, -apple-system, BlinkMacSystemFont, 'PingFang SC',
-    'Microsoft YaHei', sans-serif;
+  font-family:
+    'SF Pro Text',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
   font-size: 17px;
   line-height: 1.47;
   letter-spacing: 0;
@@ -91,7 +121,12 @@ a {
 
 .page-title {
   margin: 0 0 17px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 40px;
   font-weight: 600;
   line-height: 1.1;
@@ -100,7 +135,12 @@ a {
 
 .section-title {
   margin: 0;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 40px;
   font-weight: 600;
   line-height: 1.1;
@@ -729,7 +769,12 @@ a:hover {
 .section-heading h2,
 .page-title,
 .section-title {
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-weight: 600;
   letter-spacing: 0;
 }

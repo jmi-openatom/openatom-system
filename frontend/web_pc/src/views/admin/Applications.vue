@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-input
           v-model="query.keyword"
@@ -50,7 +50,7 @@
           >批量终审</el-button
         >
       </div>
-    </div>
+    </ViewToolbar>
     <el-table
       v-loading="loading"
       :data="rows"
@@ -400,424 +400,465 @@
         >
       </template>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { applicationApi, approvalApi, clubApi, interviewApi, membershipApi } from '@/api'
 import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
+import { computed, onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminApplications',
-  data() {
+const loading = ref(false)
+
+const exporting = ref(false)
+
+const rows = ref<any[]>([])
+
+const total = ref(0)
+
+const selection = ref<any[]>([])
+
+const query = ref({ keyword: '', status: '', page: 1, pageSize: 10 })
+
+const approvalVisible = ref(false)
+
+const approvalForm = ref({ applicationId: '', action: 'approve', comment: '' })
+
+const batchPreScreenVisible = ref(false)
+
+const batchPreScreenForm = ref({ action: 'approve', comment: '' })
+
+const profileVisible = ref(false)
+
+const currentProfileRow = ref<any>(null)
+
+const interviewVisible = ref(false)
+
+const interviewForm = ref({
+  applicationId: '',
+  round: 1,
+  scheduledStartAt: '',
+  scheduledEndAt: '',
+  location: '',
+  mode: 'offline',
+})
+
+const batchInterviewVisible = ref(false)
+
+const batchInterviewSubmitting = ref(false)
+
+const batchInterviewTargets = ref<any[]>([])
+
+const batchInterviewForm = ref({
+  scheduledStartAt: '',
+  durationMinutes: 30,
+  gapMinutes: 10,
+  location: '',
+  mode: 'offline',
+})
+
+const finalVisible = ref(false)
+
+const finalSubmitting = ref(false)
+
+const finalForm = ref({
+  applicationId: '',
+  clubId: '',
+  decision: 'approved',
+  departmentId: undefined,
+  positionId: undefined,
+  comment: '',
+})
+
+const batchFinalVisible = ref(false)
+
+const batchFinalSubmitting = ref(false)
+
+const batchFinalTargets = ref<any[]>([])
+
+const batchFinalForm = ref({
+  decision: 'approved',
+  comment: '',
+})
+
+const departments = ref<any[]>([])
+
+const positions = ref<any[]>([])
+
+const approvalRecords = ref<any[]>([])
+
+const batchApproveCandidates = computed(() => {
+  return selection.value.filter((item) => canPreScreen(item))
+})
+
+const batchInterviewCandidates = computed(() => {
+  return selection.value.filter((item) => canScheduleInterview(item))
+})
+
+const batchFinalCandidates = computed(() => {
+  return selection.value.filter((item) => canFinalDecision(item))
+})
+
+const batchInterviewPreview = computed(() => {
+  const duration = Number(batchInterviewForm.value.durationMinutes) || 30
+  const gap = Number(batchInterviewForm.value.gapMinutes) || 0
+  const baseTime = batchInterviewForm.value.scheduledStartAt
+    ? new Date(batchInterviewForm.value.scheduledStartAt).getTime()
+    : Number.NaN
+  return batchInterviewTargets.value.map((item, index) => {
+    const startTime = Number.isNaN(baseTime)
+      ? ''
+      : toDateTimeValue(baseTime + index * (duration + gap) * 60 * 1000)
+    const endTime = startTime
+      ? toDateTimeValue(new Date(startTime).getTime() + duration * 60 * 1000)
+      : ''
     return {
-      Search,
-      loading: false,
-      exporting: false,
-      rows: [],
-      total: 0,
-      selection: [],
-      query: { keyword: '', status: '', page: 1, pageSize: 10 },
-      approvalVisible: false,
-      approvalForm: { applicationId: '', action: 'approve', comment: '' },
-      batchPreScreenVisible: false,
-      batchPreScreenForm: { action: 'approve', comment: '' },
-      profileVisible: false,
-      currentProfileRow: null,
-      interviewVisible: false,
-      interviewForm: {
-        applicationId: '',
-        round: 1,
-        scheduledStartAt: '',
-        scheduledEndAt: '',
-        location: '',
-        mode: 'offline',
-      },
-      batchInterviewVisible: false,
-      batchInterviewSubmitting: false,
-      batchInterviewTargets: [],
-      batchInterviewForm: {
-        scheduledStartAt: '',
-        durationMinutes: 30,
-        gapMinutes: 10,
-        location: '',
-        mode: 'offline',
-      },
-      finalVisible: false,
-      finalSubmitting: false,
-      finalForm: {
-        applicationId: '',
-        clubId: '',
-        decision: 'approved',
-        departmentId: undefined,
-        positionId: undefined,
-        comment: '',
-      },
-      batchFinalVisible: false,
-      batchFinalSubmitting: false,
-      batchFinalTargets: [],
-      batchFinalForm: {
-        decision: 'approved',
-        comment: '',
-      },
-      departments: [],
-      positions: [],
-      approvalRecords: [],
+      order: index + 1,
+      applicationId: item.id,
+      applicantName: item.applicantName || `申请 ${item.id}`,
+      preferredDepartment: item.preferredDepartment || '未选择部门',
+      scheduledStartAt: startTime,
+      scheduledEndAt: endTime,
     }
-  },
-  created() {
-    this.fetchList()
-  },
-  methods: {
-    formatDateTime,
-    statusType,
-    applicationStatusText,
-    approvalLabel(action) {
-      if (action === 'approve') return '通过'
-      if (action === 'reject') return '驳回'
-      if (action === 'transfer') return '转交'
-      if (action === 'request_more_info') return '补充材料'
-      return action || '-'
-    },
-    canPreScreen(row) {
-      return ['draft', 'submitted', 'pre_screen_rejected'].includes(row?.status)
-    },
-    canScheduleInterview(row) {
-      return ['pre_screen_passed'].includes(row?.status)
-    },
-    canFinalDecision(row) {
-      return ['interviewed'].includes(row?.status)
-    },
-    async openProfile(row) {
-      this.currentProfileRow = row
-      this.approvalRecords = []
-      this.profileVisible = true
-      try {
-        const records = await approvalApi.records(row.id)
-        this.approvalRecords = records || []
-      } catch (e) {
-        console.error('Failed to fetch approval records', e)
-      }
-    },
-    async fetchList() {
-      this.loading = true
-      try {
-        const result = await applicationApi.list(this.query)
-        this.rows = result?.list || result || []
-        this.total = result?.total || this.rows.length
-      } finally {
-        this.loading = false
-      }
-    },
-    openApproval(row, action) {
-      this.approvalForm = { applicationId: row.id, action, comment: '' }
-      this.approvalVisible = true
-    },
-    async submitApproval() {
-      await approvalApi.approve(this.approvalForm.applicationId, {
-        action: this.approvalForm.action,
-        node: 'pre_screen',
-        comment: this.approvalForm.comment,
-      })
-      ElMessage.success('审批已提交')
-      this.approvalVisible = false
-      this.fetchList()
-    },
-    openBatchPreScreen(action) {
-      if (!this.batchApproveCandidates.length) {
-        ElMessage.warning('请选择可初审的申请')
-        return
-      }
-      this.batchPreScreenForm = { action, comment: action === 'approve' ? '批量通过' : '批量驳回' }
-      this.batchPreScreenVisible = true
-    },
-    async submitBatchPreScreen() {
-      await approvalApi.batch({
-        applicationIds: this.batchApproveCandidates.map((item) => item.id),
-        approval: {
-          action: this.batchPreScreenForm.action,
-          node: 'pre_screen',
-          comment: this.batchPreScreenForm.comment || undefined,
-        },
-      })
-      ElMessage.success(
-        `批量${this.approvalLabel(this.batchPreScreenForm.action)}完成，已处理 ${this.batchApproveCandidates.length} 条`,
-      )
-      this.batchPreScreenVisible = false
-      this.fetchList()
-    },
-    openInterview(row) {
-      this.interviewForm = {
-        applicationId: row.id,
-        round: 1,
-        scheduledStartAt: '',
-        scheduledEndAt: '',
-        location: '',
-        mode: 'offline',
-      }
-      this.interviewVisible = true
-    },
-    openBatchInterview() {
-      if (!this.batchInterviewCandidates.length) {
-        ElMessage.warning('请选择可安排面试的申请')
-        return
-      }
-      this.batchInterviewTargets = [...this.batchInterviewCandidates]
-      this.batchInterviewForm = {
-        scheduledStartAt: '',
-        durationMinutes: 30,
-        gapMinutes: 10,
-        location: '',
-        mode: 'offline',
-      }
-      this.batchInterviewVisible = true
-    },
-    async createInterview() {
-      await interviewApi.create(this.interviewForm)
-      ElMessage.success('面试已安排')
-      this.interviewVisible = false
-      this.fetchList()
-    },
-    async submitBatchInterview() {
-      if (this.batchInterviewSubmitting) return
-      if (!this.batchInterviewForm.scheduledStartAt) {
-        ElMessage.error('请选择首场开始时间')
-        return
-      }
-      this.batchInterviewSubmitting = true
-      try {
-        await Promise.all(
-          this.batchInterviewPreview.map((item) =>
-            interviewApi.create({
-              applicationId: item.applicationId,
-              round: 1,
-              scheduledStartAt: item.scheduledStartAt,
-              scheduledEndAt: item.scheduledEndAt,
-              location: this.batchInterviewForm.location,
-              mode: this.batchInterviewForm.mode,
-            }),
-          ),
-        )
-        ElMessage.success(`已批量安排 ${this.batchInterviewTargets.length} 场面试`)
-        this.batchInterviewVisible = false
-        this.fetchList()
-      } finally {
-        this.batchInterviewSubmitting = false
-      }
-    },
-    async openFinalDecision(row) {
-      this.finalForm = {
-        applicationId: row.id,
-        clubId: row.clubId,
-        decision: 'approved',
-        departmentId: row.firstChoiceDepartmentId || undefined,
-        positionId: undefined,
-        comment: '',
-      }
-      this.departments = []
-      this.positions = []
-      if (row.clubId) {
-        const [departments, positions] = await Promise.all([
-          clubApi.departments(row.clubId),
-          clubApi.positions(row.clubId),
-        ])
-        this.departments = departments || []
-        this.positions = positions || []
-      }
-      this.finalVisible = true
-    },
-    openBatchFinalDecision() {
-      if (!this.batchFinalCandidates.length) {
-        ElMessage.warning('请选择可终审的申请')
-        return
-      }
-      this.batchFinalTargets = [...this.batchFinalCandidates]
-      this.batchFinalForm = {
-        decision: 'approved',
-        comment: '',
-      }
-      this.batchFinalVisible = true
-    },
-    prettifyProfileKey(key) {
-      return (
-        {
-          applicantName: '联系人',
-          name: '姓名',
-          realName: '姓名',
-          contact: '联系方式',
-          studentId: '学号/工号',
-          reason: '申请理由',
-          strengths: '个人优势',
-        }[key] || key
-      )
-    },
-    async submitFinalDecision() {
-      if (this.finalSubmitting) return
-      if (this.finalForm.decision === 'approved') {
-        if (!this.finalForm.departmentId) {
-          ElMessage.error('请选择部门')
-          return
-        }
-      }
-      this.finalSubmitting = true
-      try {
-        await membershipApi.finalDecision(this.finalForm.applicationId, {
-          decision: this.finalForm.decision,
-          departmentId:
-            this.finalForm.decision === 'approved' ? this.finalForm.departmentId : undefined,
-          positionId:
-            this.finalForm.decision === 'approved' ? this.finalForm.positionId : undefined,
-          comment: this.finalForm.comment,
-        })
-        ElMessage.success('终审已提交')
-        this.finalVisible = false
-        this.fetchList()
-      } finally {
-        this.finalSubmitting = false
-      }
-    },
-    async submitBatchFinalDecision() {
-      if (this.batchFinalSubmitting) return
-      const targets =
-        this.batchFinalForm.decision === 'approved'
-          ? this.batchFinalTargets.filter((item) => item.firstChoiceDepartmentId)
-          : this.batchFinalTargets
-      const skippedCount = this.batchFinalTargets.length - targets.length
-      if (!targets.length) {
-        ElMessage.warning('没有可提交的终审记录')
-        return
-      }
-      this.batchFinalSubmitting = true
-      try {
-        await Promise.all(
-          targets.map((item) =>
-            membershipApi.finalDecision(item.id, {
-              decision: this.batchFinalForm.decision,
-              departmentId:
-                this.batchFinalForm.decision === 'approved'
-                  ? item.firstChoiceDepartmentId
-                  : undefined,
-              comment: this.batchFinalForm.comment,
-            }),
-          ),
-        )
-        ElMessage.success(
-          skippedCount
-            ? `批量终审完成，已处理 ${targets.length} 条，跳过 ${skippedCount} 条`
-            : `批量终审完成，已处理 ${targets.length} 条`,
-        )
-        this.batchFinalVisible = false
-        this.fetchList()
-      } finally {
-        this.batchFinalSubmitting = false
-      }
-    },
-    toDateTimeValue(value) {
-      const date = value instanceof Date ? value : new Date(value)
-      if (Number.isNaN(date.getTime())) return ''
-      const pad = (num) => String(num).padStart(2, '0')
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-    },
-    async exportExcel() {
-      this.exporting = true
-      try {
-        const blob = await applicationApi.export({
-          campaignId: this.query.campaignId || undefined,
-          clubId: this.query.clubId || undefined,
-          status: this.query.status || undefined,
-          keyword: this.query.keyword || undefined,
-        })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = '入会申请记录.xlsx'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
-        ElMessage.success('Excel 已开始下载')
-      } catch (e) {
-        console.error('导出失败', e)
-      } finally {
-        this.exporting = false
-      }
-    },
-  },
-  computed: {
-    batchApproveCandidates() {
-      return this.selection.filter((item) => this.canPreScreen(item))
-    },
-    batchInterviewCandidates() {
-      return this.selection.filter((item) => this.canScheduleInterview(item))
-    },
-    batchFinalCandidates() {
-      return this.selection.filter((item) => this.canFinalDecision(item))
-    },
-    batchInterviewPreview() {
-      const duration = Number(this.batchInterviewForm.durationMinutes) || 30
-      const gap = Number(this.batchInterviewForm.gapMinutes) || 0
-      const baseTime = this.batchInterviewForm.scheduledStartAt
-        ? new Date(this.batchInterviewForm.scheduledStartAt).getTime()
-        : Number.NaN
-      return this.batchInterviewTargets.map((item, index) => {
-        const startTime = Number.isNaN(baseTime)
-          ? ''
-          : this.toDateTimeValue(baseTime + index * (duration + gap) * 60 * 1000)
-        const endTime = startTime
-          ? this.toDateTimeValue(new Date(startTime).getTime() + duration * 60 * 1000)
-          : ''
-        return {
-          order: index + 1,
-          applicationId: item.id,
-          applicantName: item.applicantName || `申请 ${item.id}`,
-          preferredDepartment: item.preferredDepartment || '未选择部门',
-          scheduledStartAt: startTime,
-          scheduledEndAt: endTime,
-        }
-      })
-    },
-    batchFinalPreview() {
-      return this.batchFinalTargets.map((item, index) => {
-        const firstChoiceDepartmentName = item.firstChoiceDepartmentName || '未选择'
-        const resultText =
-          this.batchFinalForm.decision === 'approved'
-            ? item.firstChoiceDepartmentId
-              ? `录用至 ${firstChoiceDepartmentName}`
-              : '跳过（未选择第一志愿部门）'
-            : this.batchFinalForm.decision === 'waitlisted'
-              ? '候补'
-              : '拒绝'
-        return {
-          order: index + 1,
-          applicationId: item.id,
-          applicantName: item.applicantName || `申请 ${item.id}`,
-          firstChoiceDepartmentName,
-          resultText,
-        }
-      })
-    },
-    availablePositions() {
-      if (!this.finalForm.departmentId) return this.positions
-      return this.positions.filter((item) => item.departmentId === this.finalForm.departmentId)
-    },
-    profileEntries() {
-      const profile = this.currentProfileRow?.profile || {}
-      return Object.entries(profile)
-        .filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '')
-        .map(([key, value]) => ({
-          key,
-          label: this.prettifyProfileKey(key),
-          value: Array.isArray(value)
-            ? value.join(' / ')
-            : typeof value === 'object'
-              ? JSON.stringify(value)
-              : String(value),
-        }))
-    },
-  },
+  })
+})
+
+const batchFinalPreview = computed(() => {
+  return batchFinalTargets.value.map((item, index) => {
+    const firstChoiceDepartmentName = item.firstChoiceDepartmentName || '未选择'
+    const resultText =
+      batchFinalForm.value.decision === 'approved'
+        ? item.firstChoiceDepartmentId
+          ? `录用至 ${firstChoiceDepartmentName}`
+          : '跳过（未选择第一志愿部门）'
+        : batchFinalForm.value.decision === 'waitlisted'
+          ? '候补'
+          : '拒绝'
+    return {
+      order: index + 1,
+      applicationId: item.id,
+      applicantName: item.applicantName || `申请 ${item.id}`,
+      firstChoiceDepartmentName,
+      resultText,
+    }
+  })
+})
+
+const availablePositions = computed(() => {
+  if (!finalForm.value.departmentId) return positions.value
+  return positions.value.filter((item) => item.departmentId === finalForm.value.departmentId)
+})
+
+const profileEntries = computed(() => {
+  const profile = currentProfileRow.value?.profile || {}
+  return Object.entries(profile)
+    .filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '')
+    .map(([key, value]) => ({
+      key,
+      label: prettifyProfileKey(key),
+      value: Array.isArray(value)
+        ? value.join(' / ')
+        : typeof value === 'object'
+          ? JSON.stringify(value)
+          : String(value),
+    }))
+})
+
+function approvalLabel(action: any) {
+  if (action === 'approve') return '通过'
+  if (action === 'reject') return '驳回'
+  if (action === 'transfer') return '转交'
+  if (action === 'request_more_info') return '补充材料'
+  return action || '-'
 }
+
+function canPreScreen(row: any) {
+  return ['draft', 'submitted', 'pre_screen_rejected'].includes(row?.status)
+}
+
+function canScheduleInterview(row: any) {
+  return ['pre_screen_passed'].includes(row?.status)
+}
+
+function canFinalDecision(row: any) {
+  return ['interviewed'].includes(row?.status)
+}
+
+async function openProfile(row: any) {
+  currentProfileRow.value = row
+  approvalRecords.value = []
+  profileVisible.value = true
+  try {
+    const records = await approvalApi.records(row.id)
+    approvalRecords.value = records || []
+  } catch (e) {
+    console.error('Failed to fetch approval records', e)
+  }
+}
+
+async function fetchList() {
+  loading.value = true
+  try {
+    const result = await applicationApi.list(query.value)
+    rows.value = result?.list || result || []
+    total.value = result?.total || rows.value.length
+  } finally {
+    loading.value = false
+  }
+}
+
+function openApproval(row: any, action: any) {
+  approvalForm.value = { applicationId: row.id, action, comment: '' }
+  approvalVisible.value = true
+}
+
+async function submitApproval() {
+  await approvalApi.approve(approvalForm.value.applicationId, {
+    action: approvalForm.value.action,
+    node: 'pre_screen',
+    comment: approvalForm.value.comment,
+  })
+  ElMessage.success('审批已提交')
+  approvalVisible.value = false
+  fetchList()
+}
+
+function openBatchPreScreen(action: any) {
+  if (!batchApproveCandidates.value.length) {
+    ElMessage.warning('请选择可初审的申请')
+    return
+  }
+  batchPreScreenForm.value = { action, comment: action === 'approve' ? '批量通过' : '批量驳回' }
+  batchPreScreenVisible.value = true
+}
+
+async function submitBatchPreScreen() {
+  await approvalApi.batch({
+    applicationIds: batchApproveCandidates.value.map((item) => item.id),
+    approval: {
+      action: batchPreScreenForm.value.action,
+      node: 'pre_screen',
+      comment: batchPreScreenForm.value.comment || undefined,
+    },
+  })
+  ElMessage.success(
+    `批量${approvalLabel(batchPreScreenForm.value.action)}完成，已处理 ${batchApproveCandidates.value.length} 条`,
+  )
+  batchPreScreenVisible.value = false
+  fetchList()
+}
+
+function openInterview(row: any) {
+  interviewForm.value = {
+    applicationId: row.id,
+    round: 1,
+    scheduledStartAt: '',
+    scheduledEndAt: '',
+    location: '',
+    mode: 'offline',
+  }
+  interviewVisible.value = true
+}
+
+function openBatchInterview() {
+  if (!batchInterviewCandidates.value.length) {
+    ElMessage.warning('请选择可安排面试的申请')
+    return
+  }
+  batchInterviewTargets.value = [...batchInterviewCandidates.value]
+  batchInterviewForm.value = {
+    scheduledStartAt: '',
+    durationMinutes: 30,
+    gapMinutes: 10,
+    location: '',
+    mode: 'offline',
+  }
+  batchInterviewVisible.value = true
+}
+
+async function createInterview() {
+  await interviewApi.create(interviewForm.value)
+  ElMessage.success('面试已安排')
+  interviewVisible.value = false
+  fetchList()
+}
+
+async function submitBatchInterview() {
+  if (batchInterviewSubmitting.value) return
+  if (!batchInterviewForm.value.scheduledStartAt) {
+    ElMessage.error('请选择首场开始时间')
+    return
+  }
+  batchInterviewSubmitting.value = true
+  try {
+    await Promise.all(
+      batchInterviewPreview.value.map((item) =>
+        interviewApi.create({
+          applicationId: item.applicationId,
+          round: 1,
+          scheduledStartAt: item.scheduledStartAt,
+          scheduledEndAt: item.scheduledEndAt,
+          location: batchInterviewForm.value.location,
+          mode: batchInterviewForm.value.mode,
+        }),
+      ),
+    )
+    ElMessage.success(`已批量安排 ${batchInterviewTargets.value.length} 场面试`)
+    batchInterviewVisible.value = false
+    fetchList()
+  } finally {
+    batchInterviewSubmitting.value = false
+  }
+}
+
+async function openFinalDecision(row: any) {
+  finalForm.value = {
+    applicationId: row.id,
+    clubId: row.clubId,
+    decision: 'approved',
+    departmentId: row.firstChoiceDepartmentId || undefined,
+    positionId: undefined,
+    comment: '',
+  }
+  departments.value = []
+  positions.value = []
+  if (row.clubId) {
+    const [departments, positions] = await Promise.all([
+      clubApi.departments(row.clubId),
+      clubApi.positions(row.clubId),
+    ])
+    departments.value = departments || []
+    positions.value = positions || []
+  }
+  finalVisible.value = true
+}
+
+function openBatchFinalDecision() {
+  if (!batchFinalCandidates.value.length) {
+    ElMessage.warning('请选择可终审的申请')
+    return
+  }
+  batchFinalTargets.value = [...batchFinalCandidates.value]
+  batchFinalForm.value = {
+    decision: 'approved',
+    comment: '',
+  }
+  batchFinalVisible.value = true
+}
+
+function prettifyProfileKey(key: any) {
+  return (
+    {
+      applicantName: '联系人',
+      name: '姓名',
+      realName: '姓名',
+      contact: '联系方式',
+      studentId: '学号/工号',
+      reason: '申请理由',
+      strengths: '个人优势',
+    }[key] || key
+  )
+}
+
+async function submitFinalDecision() {
+  if (finalSubmitting.value) return
+  if (finalForm.value.decision === 'approved') {
+    if (!finalForm.value.departmentId) {
+      ElMessage.error('请选择部门')
+      return
+    }
+  }
+  finalSubmitting.value = true
+  try {
+    await membershipApi.finalDecision(finalForm.value.applicationId, {
+      decision: finalForm.value.decision,
+      departmentId:
+        finalForm.value.decision === 'approved' ? finalForm.value.departmentId : undefined,
+      positionId: finalForm.value.decision === 'approved' ? finalForm.value.positionId : undefined,
+      comment: finalForm.value.comment,
+    })
+    ElMessage.success('终审已提交')
+    finalVisible.value = false
+    fetchList()
+  } finally {
+    finalSubmitting.value = false
+  }
+}
+
+async function submitBatchFinalDecision() {
+  if (batchFinalSubmitting.value) return
+  const targets =
+    batchFinalForm.value.decision === 'approved'
+      ? batchFinalTargets.value.filter((item) => item.firstChoiceDepartmentId)
+      : batchFinalTargets.value
+  const skippedCount = batchFinalTargets.value.length - targets.length
+  if (!targets.length) {
+    ElMessage.warning('没有可提交的终审记录')
+    return
+  }
+  batchFinalSubmitting.value = true
+  try {
+    await Promise.all(
+      targets.map((item) =>
+        membershipApi.finalDecision(item.id, {
+          decision: batchFinalForm.value.decision,
+          departmentId:
+            batchFinalForm.value.decision === 'approved' ? item.firstChoiceDepartmentId : undefined,
+          comment: batchFinalForm.value.comment,
+        }),
+      ),
+    )
+    ElMessage.success(
+      skippedCount
+        ? `批量终审完成，已处理 ${targets.length} 条，跳过 ${skippedCount} 条`
+        : `批量终审完成，已处理 ${targets.length} 条`,
+    )
+    batchFinalVisible.value = false
+    fetchList()
+  } finally {
+    batchFinalSubmitting.value = false
+  }
+}
+
+function toDateTimeValue(value: any) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const pad = (num) => String(num).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+async function exportExcel() {
+  exporting.value = true
+  try {
+    const blob = await applicationApi.export({
+      campaignId: query.value.campaignId || undefined,
+      clubId: query.value.clubId || undefined,
+      status: query.value.status || undefined,
+      keyword: query.value.keyword || undefined,
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '入会申请记录.xlsx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('Excel 已开始下载')
+  } catch (e) {
+    console.error('导出失败', e)
+  } finally {
+    exporting.value = false
+  }
+}
+
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <style scoped>

@@ -1,11 +1,11 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
       <el-button type="primary" :icon="Plus" @click="openDialog()">新增获奖</el-button>
-    </div>
+    </ViewToolbar>
 
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column prop="awardYear" label="年份" width="100" />
@@ -61,79 +61,83 @@
         <el-button type="primary" :loading="saving" @click="save">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { awardApi } from '@/api'
+import { onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminAwards',
-  data() {
-    return {
-      Plus,
-      Refresh,
-      loading: false,
-      saving: false,
-      dialogVisible: false,
-      rows: [],
-      form: {},
-      rules: {
-        title: [{ required: true, message: '请输入获奖标题', trigger: 'blur' }],
-        competitionName: [{ required: true, message: '请输入比赛名称', trigger: 'blur' }],
-      },
-    }
-  },
-  created() {
-    this.fetchList()
-  },
-  methods: {
-    async fetchList() {
-      this.loading = true
-      try {
-        this.rows = (await awardApi.list()) || []
-      } finally {
-        this.loading = false
-      }
-    },
-    openDialog(row) {
-      this.form = row
-        ? { ...row }
-        : {
-            title: '',
-            competitionName: '',
-            awardLevel: '',
-            awardYear: new Date().getFullYear(),
-            teamName: '',
-            description: '',
-            sortOrder: 0,
-          }
-      this.dialogVisible = true
-    },
-    save() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        this.saving = true
-        try {
-          if (this.form.id) await awardApi.update(this.form.id, this.form)
-          else await awardApi.create(this.form)
-          ElMessage.success('保存成功')
-          this.dialogVisible = false
-          this.fetchList()
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-    async remove(row) {
-      await awardApi.remove(row.id)
-      ElMessage.success('获奖经历已删除')
-      this.fetchList()
-    },
-  },
+const loading = ref(false)
+
+const saving = ref(false)
+
+const dialogVisible = ref(false)
+
+const rows = ref<any[]>([])
+
+const form = ref<Record<string, any>>({})
+
+const rules = ref({
+  title: [{ required: true, message: '请输入获奖标题', trigger: 'blur' }],
+  competitionName: [{ required: true, message: '请输入比赛名称', trigger: 'blur' }],
+})
+
+const formRef = ref<any>()
+
+async function fetchList() {
+  loading.value = true
+  try {
+    rows.value = (await awardApi.list()) || []
+  } finally {
+    loading.value = false
+  }
 }
+
+function openDialog(row: any) {
+  form.value = row
+    ? { ...row }
+    : {
+        title: '',
+        competitionName: '',
+        awardLevel: '',
+        awardYear: new Date().getFullYear(),
+        teamName: '',
+        description: '',
+        sortOrder: 0,
+      }
+  dialogVisible.value = true
+}
+
+function save() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    saving.value = true
+    try {
+      if (form.value.id) await awardApi.update(form.value.id, form.value)
+      else await awardApi.create(form.value)
+      ElMessage.success('保存成功')
+      dialogVisible.value = false
+      fetchList()
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+async function remove(row: any) {
+  await awardApi.remove(row.id)
+  ElMessage.success('获奖经历已删除')
+  fetchList()
+}
+
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <style scoped>

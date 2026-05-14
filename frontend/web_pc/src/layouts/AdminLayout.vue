@@ -87,7 +87,9 @@
   </el-container>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowDown,
   Bell,
@@ -110,137 +112,131 @@ import { authApi } from '@/api'
 import { clearSession, getCurrentUser } from '@/utils/auth.ts'
 import { hasAnyPermission } from '@/utils/permission.ts'
 
-export default {
-  name: 'AdminLayout',
-  data() {
-    return {
-      ArrowDown,
-      HomeFilled,
-      Menu,
-      mobileMenuVisible: false,
-      user: getCurrentUser(),
-      version: __APP_VERSION__,
-      menus: [
-        { path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: [] },
-        { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
-        {
-          path: '/admin/clubs',
-          label: '社团管理',
-          icon: OfficeBuilding,
-          permissions: ['club:list'],
-        },
-        { path: '/admin/positions', label: '岗位管理', icon: List, permissions: ['position:list'] },
-        {
-          path: '/admin/recruitment-campaigns',
-          label: '招新计划',
-          icon: DocumentChecked,
-          permissions: ['recruitment-campaign:list'],
-        },
-        {
-          path: '/admin/site-forms',
-          label: '表单管理',
-          icon: DocumentChecked,
-          permissions: ['site-form:list'],
-        },
-        {
-          path: '/admin/form-submissions',
-          label: '表单记录',
-          icon: Tickets,
-          permissions: ['site-form:detail'],
-        },
-        {
-          path: '/admin/office-documents',
-          label: '文书中心',
-          icon: DocumentChecked,
-          permissions: ['document:list'],
-        },
-        {
-          path: '/admin/leaves',
-          label: '请假审批',
-          icon: DocumentChecked,
-          permissions: ['leave-application:list'],
-        },
-        {
-          path: '/admin/school-calendar',
-          label: '校历设置',
-          icon: Calendar,
-          permissions: ['school-calendar:manage'],
-        },
-        {
-          path: '/admin/activities',
-          label: '活动管理',
-          icon: Calendar,
-          permissions: ['activity:list'],
-        },
-        {
-          path: '/admin/check-ins',
-          label: '扫码签到',
-          icon: Tickets,
-          permissions: ['check-in:list'],
-        },
-        { path: '/admin/awards', label: '获奖经历', icon: Trophy, permissions: ['award:list'] },
-        {
-          path: '/admin/applications',
-          label: '入会申请',
-          icon: DocumentChecked,
-          permissions: ['application:list'],
-        },
-        {
-          path: '/admin/interviews',
-          label: '面试管理',
-          icon: MessageBox,
-          permissions: ['interview:list'],
-        },
-        {
-          path: '/admin/memberships',
-          label: '成员管理',
-          icon: UserFilled,
-          permissions: ['membership:list'],
-        },
-        {
-          path: '/admin/roles',
-          label: '角色权限',
-          icon: Lock,
-          permissions: ['role:list', 'permission:list'],
-        },
-        {
-          path: '/admin/logs',
-          label: '系统日志',
-          icon: List,
-          permissions: ['log:operation:list', 'log:login:list'],
-        },
-        {
-          path: '/admin/notifications',
-          label: '通知管理',
-          icon: Bell,
-          permissions: ['notification:list'],
-        },
-        { path: '/', label: '返回官网', icon: Connection, permissions: [] },
-      ],
-    }
+const mobileMenuVisible = ref(false)
+
+const user = ref(getCurrentUser())
+
+const version = ref(__APP_VERSION__)
+
+const menus = ref([
+  { path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: [] },
+  { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
+  {
+    path: '/admin/clubs',
+    label: '社团管理',
+    icon: OfficeBuilding,
+    permissions: ['club:list'],
   },
-  computed: {
-    visibleMenus() {
-      return this.menus.filter(
-        (item) => item.path === '/' || hasAnyPermission(item.permissions || []),
-      )
-    },
-    pageTitle() {
-      const current = this.menus.find((item) => item.path === this.$route.path)
-      return current ? current.label : '管理后台'
-    },
+  { path: '/admin/positions', label: '岗位管理', icon: List, permissions: ['position:list'] },
+  {
+    path: '/admin/recruitment-campaigns',
+    label: '招新计划',
+    icon: DocumentChecked,
+    permissions: ['recruitment-campaign:list'],
   },
-  methods: {
-    async handleCommand(command: string) {
-      if (command !== 'logout') return
-      try {
-        await authApi.logout()
-      } finally {
-        clearSession()
-        this.$router.replace('/admin/login')
-      }
-    },
+  {
+    path: '/admin/site-forms',
+    label: '表单管理',
+    icon: DocumentChecked,
+    permissions: ['site-form:list'],
   },
+  {
+    path: '/admin/form-submissions',
+    label: '表单记录',
+    icon: Tickets,
+    permissions: ['site-form:detail'],
+  },
+  {
+    path: '/admin/office-documents',
+    label: '文书中心',
+    icon: DocumentChecked,
+    permissions: ['document:list'],
+  },
+  {
+    path: '/admin/leaves',
+    label: '请假审批',
+    icon: DocumentChecked,
+    permissions: ['leave-application:list'],
+  },
+  {
+    path: '/admin/school-calendar',
+    label: '校历设置',
+    icon: Calendar,
+    permissions: ['school-calendar:manage'],
+  },
+  {
+    path: '/admin/activities',
+    label: '活动管理',
+    icon: Calendar,
+    permissions: ['activity:list'],
+  },
+  {
+    path: '/admin/check-ins',
+    label: '扫码签到',
+    icon: Tickets,
+    permissions: ['check-in:list'],
+  },
+  { path: '/admin/awards', label: '获奖经历', icon: Trophy, permissions: ['award:list'] },
+  {
+    path: '/admin/applications',
+    label: '入会申请',
+    icon: DocumentChecked,
+    permissions: ['application:list'],
+  },
+  {
+    path: '/admin/interviews',
+    label: '面试管理',
+    icon: MessageBox,
+    permissions: ['interview:list'],
+  },
+  {
+    path: '/admin/memberships',
+    label: '成员管理',
+    icon: UserFilled,
+    permissions: ['membership:list'],
+  },
+  {
+    path: '/admin/roles',
+    label: '角色权限',
+    icon: Lock,
+    permissions: ['role:list', 'permission:list'],
+  },
+  {
+    path: '/admin/logs',
+    label: '系统日志',
+    icon: List,
+    permissions: ['log:operation:list', 'log:login:list'],
+  },
+  {
+    path: '/admin/notifications',
+    label: '通知管理',
+    icon: Bell,
+    permissions: ['notification:list'],
+  },
+  { path: '/', label: '返回官网', icon: Connection, permissions: [] },
+])
+
+const router = useRouter()
+
+const route = useRoute()
+
+const visibleMenus = computed(() => {
+  return menus.value.filter((item) => item.path === '/' || hasAnyPermission(item.permissions || []))
+})
+
+const pageTitle = computed(() => {
+  const current = menus.value.find((item) => item.path === route.path)
+  return current ? current.label : '管理后台'
+})
+
+async function handleCommand(command: string) {
+  if (command !== 'logout') return
+  try {
+    await authApi.logout()
+  } finally {
+    clearSession()
+    router.replace('/admin/login')
+  }
 }
 </script>
 

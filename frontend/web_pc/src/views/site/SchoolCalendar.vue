@@ -1,10 +1,12 @@
 <template>
-  <div class="calendar-page">
+  <ViewPage class="calendar-page">
     <section class="container calendar-shell">
       <div class="section-head">
         <el-tag effect="plain">校历</el-tag>
         <h1>学期校历</h1>
-        <p v-if="calendar.startDate">{{ calendar.startDate }} 至 {{ calendar.endDate }}，共 {{ calendar.weekCount }} 周。</p>
+        <p v-if="calendar.startDate">
+          {{ calendar.startDate }} 至 {{ calendar.endDate }}，共 {{ calendar.weekCount }} 周。
+        </p>
         <p v-else>校历暂未发布。</p>
       </div>
 
@@ -16,7 +18,10 @@
             v-for="day in week.days"
             :key="day.date"
             class="day-cell"
-            :class="{ 'day-cell--rest': day.restDay, 'day-cell--adjusted': day.source === 'adjustment' }"
+            :class="{
+              'day-cell--rest': day.restDay,
+              'day-cell--adjusted': day.source === 'adjustment',
+            }"
           >
             <strong>{{ day.dayName }}</strong>
             <span>{{ day.date.slice(5) }}</span>
@@ -26,33 +31,29 @@
         </div>
       </div>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { schoolCalendarApi } from '@/api'
+import { computed, onMounted, ref } from 'vue'
 
-export default {
-  name: 'SiteSchoolCalendar',
-  data() {
-    return {
-      calendar: { days: [] },
-    }
-  },
-  computed: {
-    weekGroups() {
-      const groups = new Map()
-      ;(this.calendar.days || []).forEach((day) => {
-        if (!groups.has(day.weekIndex)) groups.set(day.weekIndex, { weekIndex: day.weekIndex, days: [] })
-        groups.get(day.weekIndex).days.push(day)
-      })
-      return Array.from(groups.values())
-    },
-  },
-  async created() {
-    this.calendar = (await schoolCalendarApi.siteDetail()) || { days: [] }
-  },
-}
+const calendar = ref({ days: [] })
+
+const weekGroups = computed(() => {
+  const groups = new Map()
+  ;(calendar.value.days || []).forEach((day) => {
+    if (!groups.has(day.weekIndex))
+      groups.set(day.weekIndex, { weekIndex: day.weekIndex, days: [] })
+    groups.get(day.weekIndex).days.push(day)
+  })
+  return Array.from(groups.values())
+})
+
+onMounted(async () => {
+  calendar.value = (await schoolCalendarApi.siteDetail()) || { days: [] }
+})
 </script>
 
 <style scoped>
@@ -81,7 +82,12 @@ export default {
 
 .section-head h1 {
   margin: 14px 0 8px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 48px;
   font-weight: 600;
   line-height: 1.1;

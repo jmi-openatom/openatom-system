@@ -1,5 +1,5 @@
 <template>
-  <div class="scan-page">
+  <ViewPage class="scan-page">
     <section class="container scan-shell">
       <div class="scan-panel">
         <div class="scan-heading">
@@ -31,94 +31,99 @@
         </dl>
 
         <div v-if="routeToken && !result" class="retry-actions">
-          <el-button :icon="Refresh" :loading="submitting" type="primary" @click="submitToken(routeToken)">
+          <el-button
+            :icon="Refresh"
+            :loading="submitting"
+            type="primary"
+            @click="submitToken(routeToken)"
+          >
             重新提交
           </el-button>
         </div>
       </div>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage } from 'element-plus'
 import { Link, Loading, Refresh, Select } from '@element-plus/icons-vue'
 import { checkInApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { getToken } from '@/utils/auth.ts'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const PENDING_CHECK_IN_TOKEN = 'openatom_pending_checkin_token'
 
-export default {
-  name: 'SiteCheckInScan',
-  data() {
-    return {
-      Link,
-      Loading,
-      Refresh,
-      Select,
-      routeToken: '',
-      submitting: false,
-      autoSubmitting: false,
-      result: null,
-    }
-  },
-  computed: {
-    statusText() {
-      if (this.result) return '签到信息已提交，无需重复操作。'
-      if (this.autoSubmitting) return '正在通过微信扫码带入的签到信息自动提交。'
-      return '微信扫一扫管理员大屏二维码后会自动打开本页并完成签到。'
-    },
-  },
-  created() {
-    this.loadRouteToken()
-  },
-  watch: {
-    '$route.query.token': 'loadRouteToken',
-    '$route.query.t': 'loadRouteToken',
-  },
-  methods: {
-    formatDateTime,
-    loadRouteToken() {
-      const routeToken = this.extractToken(this.$route.query.t || this.$route.query.token)
-      const token = routeToken || localStorage.getItem(PENDING_CHECK_IN_TOKEN) || ''
-      if (routeToken) this.hideTokenFromAddressBar()
-      this.routeToken = token
-      if (!token) return
-      if (!getToken()) {
-        localStorage.setItem(PENDING_CHECK_IN_TOKEN, token)
-        this.$router.replace({ path: '/admin/login', query: { redirect: '/check-in/scan' } })
-        return
-      }
-      localStorage.removeItem(PENDING_CHECK_IN_TOKEN)
-      this.autoSubmitting = true
-      this.submitToken(token).finally(() => {
-        this.autoSubmitting = false
-      })
-    },
-    hideTokenFromAddressBar() {
-      const url = new URL(window.location.href)
-      url.searchParams.delete('token')
-      url.searchParams.delete('t')
-      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
-    },
-    extractToken(value) {
-      if (Array.isArray(value)) return String(value[0] || '').trim()
-      return String(value || '').trim()
-    },
-    async submitToken(value) {
-      const token = this.extractToken(value)
-      if (!token || this.submitting) return
-      this.submitting = true
-      try {
-        this.result = await checkInApi.scan({ token })
-        ElMessage.success('签到成功')
-      } finally {
-        this.submitting = false
-      }
-    },
-  },
+const routeToken = ref('')
+
+const submitting = ref(false)
+
+const autoSubmitting = ref(false)
+
+const result = ref<any>(null)
+
+const router = useRouter()
+
+const route = useRoute()
+
+const statusText = computed(() => {
+  if (result.value) return '签到信息已提交，无需重复操作。'
+  if (autoSubmitting.value) return '正在通过微信扫码带入的签到信息自动提交。'
+  return '微信扫一扫管理员大屏二维码后会自动打开本页并完成签到。'
+})
+
+function loadRouteToken() {
+  const routeToken = extractToken(route.query.t || route.query.token)
+  const token = routeToken || localStorage.getItem(PENDING_CHECK_IN_TOKEN) || ''
+  if (routeToken) hideTokenFromAddressBar()
+  routeToken.value = token
+  if (!token) return
+  if (!getToken()) {
+    localStorage.setItem(PENDING_CHECK_IN_TOKEN, token)
+    router.replace({ path: '/admin/login', query: { redirect: '/check-in/scan' } })
+    return
+  }
+  localStorage.removeItem(PENDING_CHECK_IN_TOKEN)
+  autoSubmitting.value = true
+  submitToken(token).finally(() => {
+    autoSubmitting.value = false
+  })
 }
+
+function hideTokenFromAddressBar() {
+  const url = new URL(window.location.href)
+  url.searchParams.delete('token')
+  url.searchParams.delete('t')
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+}
+
+function extractToken(value: any) {
+  if (Array.isArray(value)) return String(value[0] || '').trim()
+  return String(value || '').trim()
+}
+
+async function submitToken(value: any) {
+  const token = extractToken(value)
+  if (!token || submitting.value) return
+  submitting.value = true
+  try {
+    result.value = await checkInApi.scan({ token })
+    ElMessage.success('签到成功')
+  } finally {
+    submitting.value = false
+  }
+}
+
+onMounted(() => {
+  loadRouteToken()
+})
+
+watch(() => route.query.token, loadRouteToken)
+
+watch(() => route.query.t, loadRouteToken)
 </script>
 
 <style scoped>
@@ -154,7 +159,12 @@ export default {
 
 .scan-heading h1 {
   margin: 14px 0 10px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 56px;
   font-weight: 600;
   line-height: 1.07;

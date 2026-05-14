@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-select
           v-if="clubs.length > 1"
@@ -37,7 +37,7 @@
         @click="exportExcel"
         >导出 Excel
       </el-button>
-    </div>
+    </ViewToolbar>
 
     <el-alert
       v-if="currentForm"
@@ -110,152 +110,170 @@
         </el-descriptions>
       </div>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { clubApi, formSubmissionApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
-export default {
-  name: 'AdminFormSubmissions',
-  data() {
-    return {
-      Refresh,
-      clubs: [],
-      forms: [],
-      selectedClubId: '',
-      selectedFormId: '',
-      keyword: '',
-      loading: false,
-      exporting: false,
-      rows: [],
-      page: 1,
-      pageSize: 10,
-      total: 0,
-      detailVisible: false,
-      detailRow: null,
-    }
-  },
-  computed: {
-    currentForm() {
-      return this.forms.find((item) => item.id === this.selectedFormId) || null
-    },
-    currentSchema() {
-      return this.parseSchema(this.currentForm?.formSchema)
-    },
-    previewEntries() {
-      const values = this.detailRow?.formData || {}
-      return this.currentSchema.map((field) => ({
-        key: field.key,
-        label: field.label || field.key,
-        value: this.formatValue(values[field.key]),
-      }))
-    },
-  },
-  async created() {
-    const queryClubId = Number(this.$route.query.clubId || '')
-    if (queryClubId) {
-      this.selectedClubId = queryClubId
-    }
-    const queryFormId = Number(this.$route.query.formId || '')
-    if (queryFormId) {
-      this.selectedFormId = queryFormId
-    }
-    await this.loadClubs()
-  },
-  methods: {
-    formatDateTime,
-    async loadClubs() {
-      const result = await clubApi.list({ page: 1, pageSize: 100 })
-      this.clubs = result?.list || result || []
-      if (!this.selectedClubId && this.clubs.length) {
-        this.selectedClubId = this.clubs[0].id
-      }
-      await this.handleClubChange(this.selectedClubId)
-    },
-    async handleClubChange(clubId) {
-      if (!clubId) {
-        this.forms = []
-        this.selectedFormId = ''
-        this.rows = []
-        return
-      }
-      const result = await clubApi.siteForms(clubId)
-      this.forms = result?.list || result || []
-      const hasCurrent = this.forms.some((item) => item.id === this.selectedFormId)
-      if (!hasCurrent) {
-        this.selectedFormId = this.forms[0]?.id || ''
-      }
-      this.page = 1
-      await this.fetchList()
-    },
-    async fetchList() {
-      if (!this.selectedFormId) {
-        this.rows = []
-        this.total = 0
-        return
-      }
-      this.loading = true
-      try {
-        const result = await formSubmissionApi.list(this.selectedFormId, {
-          keyword: this.keyword || undefined,
-          page: this.page,
-          pageSize: this.pageSize,
-        })
-        this.rows = result?.list || []
-        this.total = result?.total || 0
-      } finally {
-        this.loading = false
-      }
-    },
-    async exportExcel() {
-      if (!this.selectedFormId) return
-      this.exporting = true
-      try {
-        const blob = await formSubmissionApi.export(this.selectedFormId)
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `${this.currentForm?.name || '表单记录'}.xlsx`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
-        ElMessage.success('Excel 已开始下载')
-      } finally {
-        this.exporting = false
-      }
-    },
-    handlePageChange(page) {
-      this.page = page
-      this.fetchList()
-    },
-    openDetail(row) {
-      this.detailRow = row
-      this.detailVisible = true
-    },
-    parseSchema(value) {
-      if (Array.isArray(value)) return value
-      if (!value) return []
-      try {
-        return JSON.parse(value)
-      } catch {
-        return []
-      }
-    },
-    formatValue(value) {
-      if (Array.isArray(value)) return value.join(' / ')
-      if (value && typeof value === 'object') return JSON.stringify(value)
-      return value || '-'
-    },
-    formatRange(startAt, endAt) {
-      return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
-    },
-  },
+const clubs = ref<any[]>([])
+
+const forms = ref<any[]>([])
+
+const selectedClubId = ref('')
+
+const selectedFormId = ref('')
+
+const keyword = ref('')
+
+const loading = ref(false)
+
+const exporting = ref(false)
+
+const rows = ref<any[]>([])
+
+const page = ref(1)
+
+const pageSize = ref(10)
+
+const total = ref(0)
+
+const detailVisible = ref(false)
+
+const detailRow = ref<any>(null)
+
+const route = useRoute()
+
+const currentForm = computed(() => {
+  return forms.value.find((item) => item.id === selectedFormId.value) || null
+})
+
+const currentSchema = computed(() => {
+  return parseSchema(currentForm.value?.formSchema)
+})
+
+const previewEntries = computed(() => {
+  const values = detailRow.value?.formData || {}
+  return currentSchema.value.map((field) => ({
+    key: field.key,
+    label: field.label || field.key,
+    value: formatValue(values[field.key]),
+  }))
+})
+
+async function loadClubs() {
+  const result = await clubApi.list({ page: 1, pageSize: 100 })
+  clubs.value = result?.list || result || []
+  if (!selectedClubId.value && clubs.value.length) {
+    selectedClubId.value = clubs.value[0].id
+  }
+  await handleClubChange(selectedClubId.value)
 }
+
+async function handleClubChange(clubId: any) {
+  if (!clubId) {
+    forms.value = []
+    selectedFormId.value = ''
+    rows.value = []
+    return
+  }
+  const result = await clubApi.siteForms(clubId)
+  forms.value = result?.list || result || []
+  const hasCurrent = forms.value.some((item) => item.id === selectedFormId.value)
+  if (!hasCurrent) {
+    selectedFormId.value = forms.value[0]?.id || ''
+  }
+  page.value = 1
+  await fetchList()
+}
+
+async function fetchList() {
+  if (!selectedFormId.value) {
+    rows.value = []
+    total.value = 0
+    return
+  }
+  loading.value = true
+  try {
+    const result = await formSubmissionApi.list(selectedFormId.value, {
+      keyword: keyword.value || undefined,
+      page: page.value,
+      pageSize: pageSize.value,
+    })
+    rows.value = result?.list || []
+    total.value = result?.total || 0
+  } finally {
+    loading.value = false
+  }
+}
+
+async function exportExcel() {
+  if (!selectedFormId.value) return
+  exporting.value = true
+  try {
+    const blob = await formSubmissionApi.export(selectedFormId.value)
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${currentForm.value?.name || '表单记录'}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('Excel 已开始下载')
+  } finally {
+    exporting.value = false
+  }
+}
+
+function handlePageChange(page: any) {
+  page.value = page
+  fetchList()
+}
+
+function openDetail(row: any) {
+  detailRow.value = row
+  detailVisible.value = true
+}
+
+function parseSchema(value: any) {
+  if (Array.isArray(value)) return value
+  if (!value) return []
+  try {
+    return JSON.parse(value)
+  } catch {
+    return []
+  }
+}
+
+function formatValue(value: any) {
+  if (Array.isArray(value)) return value.join(' / ')
+  if (value && typeof value === 'object') return JSON.stringify(value)
+  return value || '-'
+}
+
+function formatRange(startAt: any, endAt: any) {
+  return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
+}
+
+onMounted(async () => {
+  const queryClubId = Number(route.query.clubId || '')
+  if (queryClubId) {
+    selectedClubId.value = queryClubId
+  }
+  const queryFormId = Number(route.query.formId || '')
+  if (queryFormId) {
+    selectedFormId.value = queryFormId
+  }
+  await loadClubs()
+})
 </script>
 
 <style scoped>

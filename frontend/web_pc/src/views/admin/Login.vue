@@ -1,5 +1,5 @@
 <template>
-  <div class="login-page">
+  <ViewPage class="login-page">
     <div class="login-panel">
       <div class="login-copy">
         <span class="login-logo">OA</span>
@@ -60,12 +60,15 @@
         </el-tabs>
       </el-card>
     </div>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage } from 'element-plus'
 import { authApi, siteApi } from '@/api'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   clearRememberedLogin,
   getRememberedLogin,
@@ -74,115 +77,121 @@ import {
 } from '@/utils/auth.ts'
 import { hasAdminAccess, hasRole } from '@/utils/permission.ts'
 
-export default {
-  name: 'AdminLogin',
-  data() {
-    return {
-      activeTab: 'login',
-      registerEnabled: false,
-      loading: false,
-      rememberPassword: false,
-      loginForm: {
-        username: '',
-        password: '',
-      },
-      registerForm: {
-        username: '',
-        password: '',
-        realName: '',
-        phone: '',
-        email: '',
-      },
-      loginRules: {
-        username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-        password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-      },
-      registerRules: {
-        username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-        realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-        password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-      },
-    }
-  },
-  computed: {
-    canManageRegister() {
-      return hasRole('super_admin')
-    },
-  },
-  async created() {
-    const rememberedLogin = getRememberedLogin()
-    this.loginForm.username = rememberedLogin.username || ''
-    this.loginForm.password = rememberedLogin.password || ''
-    this.rememberPassword = Boolean(rememberedLogin.remember)
-    await this.fetchRegisterEnabled()
-  },
-  methods: {
-    async fetchRegisterEnabled() {
-      this.registerEnabled = Boolean(await siteApi.registerEnabled())
-      if (!this.registerEnabled && this.activeTab === 'register') {
-        this.activeTab = 'login'
-      }
-    },
+const activeTab = ref('login')
 
-    handleLogin() {
-      this.$refs.loginRef.validate(async (valid) => {
-        if (!valid) return
-        this.loading = true
-        try {
-          const result = await authApi.login(this.loginForm)
-          if (this.rememberPassword) {
-            setRememberedLogin({
-              username: this.loginForm.username,
-              password: this.loginForm.password,
-              remember: true,
-            })
-          } else {
-            clearRememberedLogin()
-          }
-          setSession(result)
-          ElMessage.success('登录成功')
-          this.$router.replace(
-            this.$route.query.redirect || (hasAdminAccess() ? '/admin/dashboard' : '/progress'),
-          )
-        } finally {
-          this.loading = false
-        }
-      })
-    },
-    handleRegister() {
-      if (!this.registerEnabled) {
-        ElMessage.warning('当前已关闭注册，请联系管理员开通')
-        this.activeTab = 'login'
-        return
-      }
-      this.$refs.registerRef.validate(async (valid) => {
-        if (!valid) return
-        this.loading = true
-        try {
-          await authApi.register(this.registerForm)
-          const result = await authApi.login({
-            username: this.registerForm.username,
-            password: this.registerForm.password,
-          })
-          if (this.rememberPassword) {
-            setRememberedLogin({
-              username: this.registerForm.username,
-              password: this.registerForm.password,
-              remember: true,
-            })
-          } else {
-            clearRememberedLogin()
-          }
-          setSession(result)
-          ElMessage.success('注册成功')
-          this.$router.replace(hasAdminAccess() ? '/admin/dashboard' : '/progress')
-        } finally {
-          this.loading = false
-        }
-      })
-    },
-  },
+const registerEnabled = ref(false)
+
+const loading = ref(false)
+
+const rememberPassword = ref(false)
+
+const loginForm = ref({
+  username: '',
+  password: '',
+})
+
+const registerForm = ref({
+  username: '',
+  password: '',
+  realName: '',
+  phone: '',
+  email: '',
+})
+
+const loginRules = ref({
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+})
+
+const registerRules = ref({
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+})
+
+const loginRef = ref<any>()
+
+const registerRef = ref<any>()
+
+const router = useRouter()
+
+const route = useRoute()
+
+const canManageRegister = computed(() => {
+  return hasRole('super_admin')
+})
+
+async function fetchRegisterEnabled() {
+  registerEnabled.value = Boolean(await siteApi.registerEnabled())
+  if (!registerEnabled.value && activeTab.value === 'register') {
+    activeTab.value = 'login'
+  }
 }
+
+function handleLogin() {
+  loginRef.value.validate(async (valid) => {
+    if (!valid) return
+    loading.value = true
+    try {
+      const result = await authApi.login(loginForm.value)
+      if (rememberPassword.value) {
+        setRememberedLogin({
+          username: loginForm.value.username,
+          password: loginForm.value.password,
+          remember: true,
+        })
+      } else {
+        clearRememberedLogin()
+      }
+      setSession(result)
+      ElMessage.success('登录成功')
+      router.replace(route.query.redirect || (hasAdminAccess() ? '/admin/dashboard' : '/progress'))
+    } finally {
+      loading.value = false
+    }
+  })
+}
+
+function handleRegister() {
+  if (!registerEnabled.value) {
+    ElMessage.warning('当前已关闭注册，请联系管理员开通')
+    activeTab.value = 'login'
+    return
+  }
+  registerRef.value.validate(async (valid) => {
+    if (!valid) return
+    loading.value = true
+    try {
+      await authApi.register(registerForm.value)
+      const result = await authApi.login({
+        username: registerForm.value.username,
+        password: registerForm.value.password,
+      })
+      if (rememberPassword.value) {
+        setRememberedLogin({
+          username: registerForm.value.username,
+          password: registerForm.value.password,
+          remember: true,
+        })
+      } else {
+        clearRememberedLogin()
+      }
+      setSession(result)
+      ElMessage.success('注册成功')
+      router.replace(hasAdminAccess() ? '/admin/dashboard' : '/progress')
+    } finally {
+      loading.value = false
+    }
+  })
+}
+
+onMounted(async () => {
+  const rememberedLogin = getRememberedLogin()
+  loginForm.value.username = rememberedLogin.username || ''
+  loginForm.value.password = rememberedLogin.password || ''
+  rememberPassword.value = Boolean(rememberedLogin.remember)
+  await fetchRegisterEnabled()
+})
 </script>
 
 <style scoped>
@@ -220,7 +229,12 @@ export default {
 
 .login-copy h1 {
   margin: 18px 0 12px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 56px;
   font-weight: 600;
   line-height: 1.07;

@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-select
           v-if="clubs.length > 1"
@@ -28,7 +28,7 @@
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
       <el-button type="primary" :icon="Plus" @click="openDialog()">新增计划</el-button>
-    </div>
+    </ViewToolbar>
 
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column prop="name" label="计划名称" min-width="220" />
@@ -263,14 +263,18 @@
         </el-table-column>
       </el-table>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { campaignApi, clubApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
+import { nextTick, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const defaultFormSchema = [
   { key: 'name', label: '姓名', type: 'text', required: true, placeholder: '请输入姓名' },
@@ -284,419 +288,461 @@ function toInputTime(value) {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16)
 }
 
-export default {
-  name: 'AdminRecruitmentCampaigns',
-  data() {
-    return {
-      Plus,
-      Refresh,
-      loading: false,
-      saving: false,
-      dialogVisible: false,
-      previewVisible: false,
-      clubs: [],
-      selectedClubId: '',
-      rows: [],
-      query: { status: '' },
-      form: {},
-      previewFields: [],
-      schemaFields: [],
-      draggedFieldIndex: -1,
-      gradeOptions: [
-        { label: '大一', value: 'freshman' },
-        { label: '大二', value: 'sophomore' },
-        { label: '大三', value: 'junior' },
-        { label: '大四', value: 'senior' },
-        { label: '研究生', value: 'graduate' },
-        { label: '其他', value: 'other' },
-      ],
-      fieldTypeOptions: [
-        { label: '单行输入', value: 'text' },
-        { label: '多行输入', value: 'textarea' },
-        { label: '下拉选择', value: 'select' },
-      ],
-      rules: {
-        clubId: [{ required: true, message: '请选择社团', trigger: 'change' }],
-        name: [{ required: true, message: '请输入招新计划名称', trigger: 'blur' }],
-        applyStartAt: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
-        applyEndAt: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
-      },
-    }
-  },
-  created() {
-    this.loadClubs()
-  },
-  methods: {
-    statusType,
-    async loadClubs() {
-      const result = await clubApi.list({ page: 1, pageSize: 100 })
-      this.clubs = result?.list || result || []
-      if (!this.selectedClubId && this.clubs.length) {
-        this.selectedClubId = this.clubs[0].id
-      }
-      await this.fetchList()
-    },
-    async fetchList() {
-      if (!this.selectedClubId) {
-        this.rows = []
-        return
-      }
-      this.loading = true
-      try {
-        const result = await clubApi.campaigns(this.selectedClubId)
-        const list = result?.list || result || []
-        this.rows = this.query.status
-          ? list.filter((item) => item.status === this.query.status)
-          : list
-      } finally {
-        this.loading = false
-      }
-    },
-    statusText(status) {
-      return (
-        {
-          draft: '草稿',
-          published: '已发布',
-          open: '收集中',
-          closed: '已结束',
-          archived: '已归档',
-        }[status] ||
-        status ||
-        '-'
-      )
-    },
-    formatRange(startAt, endAt) {
-      return `${formatDateTime(startAt) || '-'} - ${formatDateTime(endAt) || '-'}`
-    },
-    formatTargetGrades(value) {
-      const labels = {
-        freshman: '大一',
-        sophomore: '大二',
-        junior: '大三',
-        senior: '大四',
-        graduate: '研究生',
-        other: '其他',
-      }
-      const grades = this.parseJsonMaybe(value, [])
-      if (!Array.isArray(grades) || !grades.length) return '不限'
-      return grades.map((item) => labels[item] || item).join(' / ')
-    },
-    createEmptyForm() {
-      return {
-        clubId: this.selectedClubId || '',
-        name: '',
-        status: 'draft',
-        loginRequired: true,
-        applyStartAt: '',
-        applyEndAt: '',
-        interviewStartAt: '',
-        interviewEndAt: '',
-        resultPublishAt: '',
-        targetGrades: [],
-        maxApplicants: undefined,
-      }
-    },
-    openDialog(row) {
-      this.form = row
-        ? {
-            ...row,
-            clubId: row.clubId,
-            status: row.status || 'draft',
-            loginRequired: row.loginRequired !== false,
-            applyStartAt: toInputTime(row.applyStartAt),
-            applyEndAt: toInputTime(row.applyEndAt),
-            interviewStartAt: toInputTime(row.interviewStartAt),
-            interviewEndAt: toInputTime(row.interviewEndAt),
-            resultPublishAt: toInputTime(row.resultPublishAt),
-            targetGrades: this.parseJsonMaybe(row.targetGrades, []),
-            maxApplicants: row.maxApplicants || undefined,
-          }
-        : this.createEmptyForm()
-      this.schemaFields = this.normalizeSchema(row?.formSchema || defaultFormSchema)
-      this.dialogVisible = true
-      this.$nextTick(() => {
-        this.$refs.formRef?.clearValidate()
-      })
-    },
-    handleDialogClosed() {
-      this.draggedFieldIndex = -1
-      this.form = this.createEmptyForm()
-      this.schemaFields = []
-      this.$refs.formRef?.clearValidate()
-    },
-    async save() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        if (!this.validateSchedule()) {
-          return
-        }
-        const formSchema = this.buildFormSchema()
-        if (!formSchema) {
-          return
-        }
-        const payload = {
-          id: this.form.id,
-          clubId: this.form.clubId,
-          name: this.form.name,
-          status: this.form.status,
-          loginRequired: this.form.loginRequired,
-          applyStartAt: this.form.applyStartAt,
-          applyEndAt: this.form.applyEndAt,
-          interviewStartAt: this.form.interviewStartAt || null,
-          interviewEndAt: this.form.interviewEndAt || null,
-          resultPublishAt: this.form.resultPublishAt || null,
-          targetGrades: this.form.targetGrades || [],
-          maxApplicants: this.form.maxApplicants || null,
-          formSchema,
-        }
+const loading = ref(false)
 
-        this.saving = true
-        try {
-          if (payload.id) {
-            await campaignApi.update(payload.id, payload)
-          } else {
-            await campaignApi.create(payload.clubId, payload)
-          }
-          ElMessage.success('招新计划已保存')
-          this.dialogVisible = false
-          this.selectedClubId = payload.clubId
-          await this.fetchList()
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-    async publish(row) {
-      await campaignApi.publish(row.id)
-      ElMessage.success('招新计划已发布')
-      this.fetchList()
-    },
-    async closeCampaign(row) {
-      await campaignApi.close(row.id)
-      ElMessage.success('招新计划已结束')
-      this.fetchList()
-    },
-    openSubmissions(row) {
-      this.$router.push({
-        path: '/admin/form-submissions',
-        query: { campaignId: row.id, clubId: row.clubId },
-      })
-    },
-    async copyFormLink(row) {
-      const webLink = `${window.location.origin}${this.$router.resolve({ path: `/apply/${row.id}` }).href}`
-      const mpPath = `/pages/recruitment/apply?id=${row.id}`
-      const fullText = `Web链接: ${webLink}\n小程序路径: ${mpPath}`
-      try {
-        await navigator.clipboard.writeText(fullText)
-        ElMessage.success('报名链接和小程序路径已复制')
-      } catch {
-        ElMessage.info(fullText)
+const saving = ref(false)
+
+const dialogVisible = ref(false)
+
+const previewVisible = ref(false)
+
+const clubs = ref<any[]>([])
+
+const selectedClubId = ref('')
+
+const rows = ref<any[]>([])
+
+const query = ref({ status: '' })
+
+const form = ref<Record<string, any>>({})
+
+const previewFields = ref<any[]>([])
+
+const schemaFields = ref<any[]>([])
+
+const draggedFieldIndex = ref(-1)
+
+const gradeOptions = ref([
+  { label: '大一', value: 'freshman' },
+  { label: '大二', value: 'sophomore' },
+  { label: '大三', value: 'junior' },
+  { label: '大四', value: 'senior' },
+  { label: '研究生', value: 'graduate' },
+  { label: '其他', value: 'other' },
+])
+
+const fieldTypeOptions = ref([
+  { label: '单行输入', value: 'text' },
+  { label: '多行输入', value: 'textarea' },
+  { label: '下拉选择', value: 'select' },
+])
+
+const rules = ref({
+  clubId: [{ required: true, message: '请选择社团', trigger: 'change' }],
+  name: [{ required: true, message: '请输入招新计划名称', trigger: 'blur' }],
+  applyStartAt: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
+  applyEndAt: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
+})
+
+const formRef = ref<any>()
+
+const router = useRouter()
+
+const route = useRoute()
+
+async function loadClubs() {
+  const result = await clubApi.list({ page: 1, pageSize: 100 })
+  clubs.value = result?.list || result || []
+  if (!selectedClubId.value && clubs.value.length) {
+    selectedClubId.value = clubs.value[0].id
+  }
+  await fetchList()
+}
+
+async function fetchList() {
+  if (!selectedClubId.value) {
+    rows.value = []
+    return
+  }
+  loading.value = true
+  try {
+    const result = await clubApi.campaigns(selectedClubId.value)
+    const list = result?.list || result || []
+    rows.value = query.value.status
+      ? list.filter((item) => item.status === query.value.status)
+      : list
+  } finally {
+    loading.value = false
+  }
+}
+
+function statusText(status: any) {
+  return (
+    {
+      draft: '草稿',
+      published: '已发布',
+      open: '收集中',
+      closed: '已结束',
+      archived: '已归档',
+    }[status] ||
+    status ||
+    '-'
+  )
+}
+
+function formatRange(startAt: any, endAt: any) {
+  return `${formatDateTime(startAt) || '-'} - ${formatDateTime(endAt) || '-'}`
+}
+
+function formatTargetGrades(value: any) {
+  const labels = {
+    freshman: '大一',
+    sophomore: '大二',
+    junior: '大三',
+    senior: '大四',
+    graduate: '研究生',
+    other: '其他',
+  }
+  const grades = parseJsonMaybe(value, [])
+  if (!Array.isArray(grades) || !grades.length) return '不限'
+  return grades.map((item) => labels[item] || item).join(' / ')
+}
+
+function createEmptyForm() {
+  return {
+    clubId: selectedClubId.value || '',
+    name: '',
+    status: 'draft',
+    loginRequired: true,
+    applyStartAt: '',
+    applyEndAt: '',
+    interviewStartAt: '',
+    interviewEndAt: '',
+    resultPublishAt: '',
+    targetGrades: [],
+    maxApplicants: undefined,
+  }
+}
+
+function openDialog(row: any) {
+  form.value = row
+    ? {
+        ...row,
+        clubId: row.clubId,
+        status: row.status || 'draft',
+        loginRequired: row.loginRequired !== false,
+        applyStartAt: toInputTime(row.applyStartAt),
+        applyEndAt: toInputTime(row.applyEndAt),
+        interviewStartAt: toInputTime(row.interviewStartAt),
+        interviewEndAt: toInputTime(row.interviewEndAt),
+        resultPublishAt: toInputTime(row.resultPublishAt),
+        targetGrades: parseJsonMaybe(row.targetGrades, []),
+        maxApplicants: row.maxApplicants || undefined,
       }
-    },
-    previewSchema(row) {
-      this.previewFields = this.normalizeSchema(row?.formSchema || defaultFormSchema)
-      this.previewVisible = true
-    },
-    addField(type) {
-      this.schemaFields.push(this.createField(type))
-    },
-    removeField(index) {
-      this.schemaFields.splice(index, 1)
-    },
-    useDefaultFields() {
-      this.schemaFields = this.normalizeSchema(defaultFormSchema)
-    },
-    createField(type = 'text') {
-      return {
-        uid: this.nextUid(),
-        key: '',
-        label: '',
-        type,
-        required: false,
-        placeholder: '',
-        options: type === 'select' ? [this.createOption()] : [],
+    : createEmptyForm()
+  schemaFields.value = normalizeSchema(row?.formSchema || defaultFormSchema)
+  dialogVisible.value = true
+  nextTick(() => {
+    formRef.value?.clearValidate()
+  })
+}
+
+function handleDialogClosed() {
+  draggedFieldIndex.value = -1
+  form.value = createEmptyForm()
+  schemaFields.value = []
+  formRef.value?.clearValidate()
+}
+
+async function save() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    if (!validateSchedule()) {
+      return
+    }
+    const formSchema = buildFormSchema()
+    if (!formSchema) {
+      return
+    }
+    const payload = {
+      id: form.value.id,
+      clubId: form.value.clubId,
+      name: form.value.name,
+      status: form.value.status,
+      loginRequired: form.value.loginRequired,
+      applyStartAt: form.value.applyStartAt,
+      applyEndAt: form.value.applyEndAt,
+      interviewStartAt: form.value.interviewStartAt || null,
+      interviewEndAt: form.value.interviewEndAt || null,
+      resultPublishAt: form.value.resultPublishAt || null,
+      targetGrades: form.value.targetGrades || [],
+      maxApplicants: form.value.maxApplicants || null,
+      formSchema,
+    }
+
+    saving.value = true
+    try {
+      if (payload.id) {
+        await campaignApi.update(payload.id, payload)
+      } else {
+        await campaignApi.create(payload.clubId, payload)
       }
-    },
-    createOption(option = {}) {
-      return {
-        uid: this.nextUid(),
-        label: option.label || '',
-        value: option.value || '',
-      }
-    },
-    addOption(field) {
-      field.options.push(this.createOption())
-    },
-    removeOption(field, optionIndex) {
-      field.options.splice(optionIndex, 1)
-    },
-    handleTypeChange(field) {
-      if (field.type === 'select') {
-        field.options = field.options?.length ? field.options : [this.createOption()]
-        return
-      }
-      field.options = []
-    },
-    handleDragStart(index) {
-      this.draggedFieldIndex = index
-    },
-    handleDragEnd() {
-      this.draggedFieldIndex = -1
-    },
-    handleDrop(index) {
-      if (this.draggedFieldIndex < 0 || this.draggedFieldIndex === index) return
-      const [moved] = this.schemaFields.splice(this.draggedFieldIndex, 1)
-      this.schemaFields.splice(index, 0, moved)
-      this.draggedFieldIndex = -1
-    },
-    fillFieldKey(field) {
-      if (field.key) return
-      field.key = this.generateFieldKey(field.label)
-    },
-    generateFieldKey(label) {
-      const base =
-        String(label || '')
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '_')
-          .replace(/^_+|_+$/g, '') || `field_${this.schemaFields.length + 1}`
-      let key = base
-      let index = 1
-      while (this.schemaFields.some((item) => item.key === key)) {
-        index += 1
-        key = `${base}_${index}`
-      }
-      return key
-    },
-    buildFormSchema() {
-      if (!this.schemaFields.length) {
-        ElMessage.warning('请至少配置一个招新计划字段')
+      ElMessage.success('招新计划已保存')
+      dialogVisible.value = false
+      selectedClubId.value = payload.clubId
+      await fetchList()
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+async function publish(row: any) {
+  await campaignApi.publish(row.id)
+  ElMessage.success('招新计划已发布')
+  fetchList()
+}
+
+async function closeCampaign(row: any) {
+  await campaignApi.close(row.id)
+  ElMessage.success('招新计划已结束')
+  fetchList()
+}
+
+function openSubmissions(row: any) {
+  router.push({
+    path: '/admin/form-submissions',
+    query: { campaignId: row.id, clubId: row.clubId },
+  })
+}
+
+async function copyFormLink(row: any) {
+  const webLink = `${window.location.origin}${router.resolve({ path: `/apply/${row.id}` }).href}`
+  const mpPath = `/pages/recruitment/apply?id=${row.id}`
+  const fullText = `Web链接: ${webLink}\n小程序路径: ${mpPath}`
+  try {
+    await navigator.clipboard.writeText(fullText)
+    ElMessage.success('报名链接和小程序路径已复制')
+  } catch {
+    ElMessage.info(fullText)
+  }
+}
+
+function previewSchema(row: any) {
+  previewFields.value = normalizeSchema(row?.formSchema || defaultFormSchema)
+  previewVisible.value = true
+}
+
+function addField(type: any) {
+  schemaFields.value.push(createField(type))
+}
+
+function removeField(index: any) {
+  schemaFields.value.splice(index, 1)
+}
+
+function useDefaultFields() {
+  schemaFields.value = normalizeSchema(defaultFormSchema)
+}
+
+function createField(type: any) {
+  return {
+    uid: nextUid(),
+    key: '',
+    label: '',
+    type,
+    required: false,
+    placeholder: '',
+    options: type === 'select' ? [createOption()] : [],
+  }
+}
+
+function createOption(option: any) {
+  return {
+    uid: nextUid(),
+    label: option.label || '',
+    value: option.value || '',
+  }
+}
+
+function addOption(field: any) {
+  field.options.push(createOption())
+}
+
+function removeOption(field: any, optionIndex: any) {
+  field.options.splice(optionIndex, 1)
+}
+
+function handleTypeChange(field: any) {
+  if (field.type === 'select') {
+    field.options = field.options?.length ? field.options : [createOption()]
+    return
+  }
+  field.options = []
+}
+
+function handleDragStart(index: any) {
+  draggedFieldIndex.value = index
+}
+
+function handleDragEnd() {
+  draggedFieldIndex.value = -1
+}
+
+function handleDrop(index: any) {
+  if (draggedFieldIndex.value < 0 || draggedFieldIndex.value === index) return
+  const [moved] = schemaFields.value.splice(draggedFieldIndex.value, 1)
+  schemaFields.value.splice(index, 0, moved)
+  draggedFieldIndex.value = -1
+}
+
+function fillFieldKey(field: any) {
+  if (field.key) return
+  field.key = generateFieldKey(field.label)
+}
+
+function generateFieldKey(label: any) {
+  const base =
+    String(label || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || `field_${schemaFields.value.length + 1}`
+  let key = base
+  let index = 1
+  while (schemaFields.value.some((item) => item.key === key)) {
+    index += 1
+    key = `${base}_${index}`
+  }
+  return key
+}
+
+function buildFormSchema() {
+  if (!schemaFields.value.length) {
+    ElMessage.warning('请至少配置一个招新计划字段')
+    return null
+  }
+  const keys = new Set()
+  const schema = []
+  for (const [index, field] of schemaFields.value.entries()) {
+    if (!field.label?.trim()) {
+      ElMessage.warning(`第 ${index + 1} 个字段缺少名称`)
+      return null
+    }
+    if (!field.key?.trim()) {
+      ElMessage.warning(`第 ${index + 1} 个字段缺少 Key`)
+      return null
+    }
+    if (keys.has(field.key.trim())) {
+      ElMessage.warning(`字段 Key 不能重复：${field.key}`)
+      return null
+    }
+    keys.add(field.key.trim())
+    if (field.type === 'select') {
+      const options = (field.options || [])
+        .map((option) => ({
+          label: option.label?.trim() || option.value?.trim(),
+          value: option.value?.trim() || option.label?.trim(),
+        }))
+        .filter((option) => option.label && option.value)
+      if (!options.length) {
+        ElMessage.warning(`字段“${field.label}”至少需要一个下拉选项`)
         return null
       }
-      const keys = new Set()
-      const schema = []
-      for (const [index, field] of this.schemaFields.entries()) {
-        if (!field.label?.trim()) {
-          ElMessage.warning(`第 ${index + 1} 个字段缺少名称`)
-          return null
-        }
-        if (!field.key?.trim()) {
-          ElMessage.warning(`第 ${index + 1} 个字段缺少 Key`)
-          return null
-        }
-        if (keys.has(field.key.trim())) {
-          ElMessage.warning(`字段 Key 不能重复：${field.key}`)
-          return null
-        }
-        keys.add(field.key.trim())
-        if (field.type === 'select') {
-          const options = (field.options || [])
-            .map((option) => ({
-              label: option.label?.trim() || option.value?.trim(),
-              value: option.value?.trim() || option.label?.trim(),
-            }))
-            .filter((option) => option.label && option.value)
-          if (!options.length) {
-            ElMessage.warning(`字段“${field.label}”至少需要一个下拉选项`)
-            return null
-          }
-          schema.push({
-            key: field.key.trim(),
-            label: field.label.trim(),
-            type: field.type,
-            required: Boolean(field.required),
-            placeholder: field.placeholder?.trim() || '',
-            options,
-          })
-          continue
-        }
-        schema.push({
-          key: field.key.trim(),
-          label: field.label.trim(),
-          type: field.type,
-          required: Boolean(field.required),
-          placeholder: field.placeholder?.trim() || '',
-        })
-      }
-      return schema
-    },
-    validateSchedule() {
-      const applyStart = this.parseTimeValue(this.form.applyStartAt)
-      const applyEnd = this.parseTimeValue(this.form.applyEndAt)
-      const interviewStart = this.parseTimeValue(this.form.interviewStartAt)
-      const interviewEnd = this.parseTimeValue(this.form.interviewEndAt)
-      const resultPublishAt = this.parseTimeValue(this.form.resultPublishAt)
-
-      if (applyStart && applyEnd && applyStart >= applyEnd) {
-        ElMessage.warning('结束时间必须晚于开始时间')
-        return false
-      }
-      if ((interviewStart && !interviewEnd) || (!interviewStart && interviewEnd)) {
-        ElMessage.warning('请完整填写面试开始和结束时间')
-        return false
-      }
-      if (interviewStart && interviewEnd && interviewStart >= interviewEnd) {
-        ElMessage.warning('面试结束时间必须晚于面试开始时间')
-        return false
-      }
-      if (applyEnd && interviewStart && interviewStart < applyEnd) {
-        ElMessage.warning('面试开始时间不能早于招新计划结束时间')
-        return false
-      }
-      if (interviewEnd && resultPublishAt && resultPublishAt < interviewEnd) {
-        ElMessage.warning('结果公布时间不能早于面试结束时间')
-        return false
-      }
-      return true
-    },
-    parseTimeValue(value) {
-      if (!value) return null
-      const time = new Date(value).getTime()
-      return Number.isNaN(time) ? null : time
-    },
-    normalizeSchema(value) {
-      const parsed = this.parseJsonMaybe(value, defaultFormSchema)
-      return (parsed || []).map((field) => ({
-        uid: this.nextUid(),
-        key: field.key || '',
-        label: field.label || '',
-        type: ['text', 'textarea', 'select'].includes(field.type) ? field.type : 'text',
+      schema.push({
+        key: field.key.trim(),
+        label: field.label.trim(),
+        type: field.type,
         required: Boolean(field.required),
-        placeholder: field.placeholder || '',
-        options:
-          field.type === 'select'
-            ? (field.options || []).map((option) =>
-                this.createOption(
-                  typeof option === 'object' ? option : { label: option, value: option },
-                ),
-              )
-            : [],
-      }))
-    },
-    typeText(type) {
-      return { text: '单行输入', textarea: '多行输入', select: '下拉选择' }[type] || type
-    },
-    formatOptions(options) {
-      if (!Array.isArray(options) || !options.length) return ''
-      return options
-        .map((item) => (typeof item === 'object' ? item.label || item.value : item))
-        .filter(Boolean)
-        .join(' / ')
-    },
-    parseJsonMaybe(value, fallback) {
-      if (Array.isArray(value)) return value
-      if (!value) return fallback
-      try {
-        return JSON.parse(value)
-      } catch {
-        return fallback
-      }
-    },
-    nextUid() {
-      return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-    },
-  },
+        placeholder: field.placeholder?.trim() || '',
+        options,
+      })
+      continue
+    }
+    schema.push({
+      key: field.key.trim(),
+      label: field.label.trim(),
+      type: field.type,
+      required: Boolean(field.required),
+      placeholder: field.placeholder?.trim() || '',
+    })
+  }
+  return schema
 }
+
+function validateSchedule() {
+  const applyStart = parseTimeValue(form.value.applyStartAt)
+  const applyEnd = parseTimeValue(form.value.applyEndAt)
+  const interviewStart = parseTimeValue(form.value.interviewStartAt)
+  const interviewEnd = parseTimeValue(form.value.interviewEndAt)
+  const resultPublishAt = parseTimeValue(form.value.resultPublishAt)
+
+  if (applyStart && applyEnd && applyStart >= applyEnd) {
+    ElMessage.warning('结束时间必须晚于开始时间')
+    return false
+  }
+  if ((interviewStart && !interviewEnd) || (!interviewStart && interviewEnd)) {
+    ElMessage.warning('请完整填写面试开始和结束时间')
+    return false
+  }
+  if (interviewStart && interviewEnd && interviewStart >= interviewEnd) {
+    ElMessage.warning('面试结束时间必须晚于面试开始时间')
+    return false
+  }
+  if (applyEnd && interviewStart && interviewStart < applyEnd) {
+    ElMessage.warning('面试开始时间不能早于招新计划结束时间')
+    return false
+  }
+  if (interviewEnd && resultPublishAt && resultPublishAt < interviewEnd) {
+    ElMessage.warning('结果公布时间不能早于面试结束时间')
+    return false
+  }
+  return true
+}
+
+function parseTimeValue(value: any) {
+  if (!value) return null
+  const time = new Date(value).getTime()
+  return Number.isNaN(time) ? null : time
+}
+
+function normalizeSchema(value: any) {
+  const parsed = parseJsonMaybe(value, defaultFormSchema)
+  return (parsed || []).map((field) => ({
+    uid: nextUid(),
+    key: field.key || '',
+    label: field.label || '',
+    type: ['text', 'textarea', 'select'].includes(field.type) ? field.type : 'text',
+    required: Boolean(field.required),
+    placeholder: field.placeholder || '',
+    options:
+      field.type === 'select'
+        ? (field.options || []).map((option) =>
+            createOption(typeof option === 'object' ? option : { label: option, value: option }),
+          )
+        : [],
+  }))
+}
+
+function typeText(type: any) {
+  return { text: '单行输入', textarea: '多行输入', select: '下拉选择' }[type] || type
+}
+
+function formatOptions(options: any) {
+  if (!Array.isArray(options) || !options.length) return ''
+  return options
+    .map((item) => (typeof item === 'object' ? item.label || item.value : item))
+    .filter(Boolean)
+    .join(' / ')
+}
+
+function parseJsonMaybe(value: any, fallback: any) {
+  if (Array.isArray(value)) return value
+  if (!value) return fallback
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
+
+function nextUid() {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+onMounted(() => {
+  loadClubs()
+})
 </script>
 
 <style scoped>

@@ -1,5 +1,5 @@
 <template>
-  <div class="activities-page" v-loading="loading">
+  <ViewPage class="activities-page" :loading="loading">
     <section class="activities-hero">
       <div class="container activities-hero__inner">
         <div>
@@ -37,44 +37,41 @@
       </article>
       <el-empty v-if="!rows.length && !loading" description="暂无已发布活动" />
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { siteApi } from '@/api/index.ts'
 import { formatDateTime } from '@/utils/format.ts'
+import { onMounted, ref } from 'vue'
 
-export default {
-  name: 'SiteActivities',
-  data() {
-    return {
-      loading: false,
-      rows: [],
-    }
-  },
-  created() {
-    this.fetchList()
-  },
-  methods: {
-    async fetchList() {
-      this.loading = true
-      try {
-        this.rows = (await siteApi.activities()) || []
-      } finally {
-        this.loading = false
-      }
-    },
-    day(value) {
-      if (!value) return '--'
-      return new Date(value).getDate().toString().padStart(2, '0')
-    },
-    month(value) {
-      if (!value) return '待定'
-      return `${new Date(value).getMonth() + 1}月`
-    },
-    formatDateTime,
-  },
+const loading = ref(false)
+
+const rows = ref<any[]>([])
+
+async function fetchList() {
+  loading.value = true
+  try {
+    rows.value = (await siteApi.activities()) || []
+  } finally {
+    loading.value = false
+  }
 }
+
+function day(value: any) {
+  if (!value) return '--'
+  return new Date(value).getDate().toString().padStart(2, '0')
+}
+
+function month(value: any) {
+  if (!value) return '待定'
+  return `${new Date(value).getMonth() + 1}月`
+}
+
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <style scoped>
@@ -98,7 +95,12 @@ export default {
 
 .activities-hero h1 {
   margin: 18px 0 12px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 56px;
   font-weight: 600;
   line-height: 1.07;
@@ -170,7 +172,12 @@ export default {
 
 .activity-row h2 {
   margin: 10px 0 8px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 28px;
   font-weight: 600;
   letter-spacing: 0;

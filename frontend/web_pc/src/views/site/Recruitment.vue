@@ -1,7 +1,7 @@
 <template>
-  <div class="site-page">
+  <ViewPage class="site-page">
     <section class="container">
-      <div class="toolbar">
+      <ViewToolbar>
         <div>
           <h1 class="page-title">入会申请</h1>
           <p class="section-subtitle">填写招新表单，开启你的社团之旅。</p>
@@ -19,7 +19,7 @@
           </el-select>
           <el-button type="primary" :icon="Refresh" @click="loadAll">刷新</el-button>
         </div>
-      </div>
+      </ViewToolbar>
 
       <el-empty v-if="!selectedClubId && !loading" description="请先选择社团" />
       <el-empty
@@ -48,74 +48,74 @@
         </el-timeline-item>
       </el-timeline>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { clubApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
+import { onMounted, ref } from 'vue'
 
-export default {
-  name: 'SiteRecruitment',
-  data() {
-    return {
-      Refresh,
-      loading: false,
-      clubs: [],
-      campaigns: [],
-      selectedClubId: '',
+const loading = ref(false)
+
+const clubs = ref<any[]>([])
+
+const campaigns = ref<any[]>([])
+
+const selectedClubId = ref('')
+
+async function loadAll() {
+  loading.value = true
+  try {
+    const result = await clubApi.list({ status: 'active' })
+    clubs.value = result?.list || result || []
+    if (!selectedClubId.value && clubs.value.length) {
+      selectedClubId.value = clubs.value[0].id
     }
-  },
-  created() {
-    this.loadAll()
-  },
-  methods: {
-    statusType,
-    async loadAll() {
-      this.loading = true
-      try {
-        const result = await clubApi.list({ status: 'active' })
-        this.clubs = result?.list || result || []
-        if (!this.selectedClubId && this.clubs.length) {
-          this.selectedClubId = this.clubs[0].id
-        }
-        if (this.selectedClubId) {
-          await this.fetchCampaigns()
-        }
-      } finally {
-        this.loading = false
-      }
-    },
-    async fetchCampaigns() {
-      if (!this.selectedClubId) return
-      this.loading = true
-      try {
-        const result = await clubApi.campaigns(this.selectedClubId)
-        const list = result?.list || result || []
-        this.campaigns = list.filter((item) => ['open', 'published'].includes(item.status))
-      } finally {
-        this.loading = false
-      }
-    },
-    formatRange(item) {
-      return `${formatDateTime(item.applyStartAt)} - ${formatDateTime(item.applyEndAt)}`
-    },
-    statusText(status) {
-      return (
-        {
-          draft: '草稿',
-          published: '已发布',
-          open: '收集中',
-          closed: '已结束',
-          archived: '已归档',
-        }[status] ||
-        status ||
-        '-'
-      )
-    },
-  },
+    if (selectedClubId.value) {
+      await fetchCampaigns()
+    }
+  } finally {
+    loading.value = false
+  }
 }
+
+async function fetchCampaigns() {
+  if (!selectedClubId.value) return
+  loading.value = true
+  try {
+    const result = await clubApi.campaigns(selectedClubId.value)
+    const list = result?.list || result || []
+    campaigns.value = list.filter((item) => ['open', 'published'].includes(item.status))
+  } finally {
+    loading.value = false
+  }
+}
+
+function formatRange(item: any) {
+  return `${formatDateTime(item.applyStartAt)} - ${formatDateTime(item.applyEndAt)}`
+}
+
+function statusText(status: any) {
+  return (
+    {
+      draft: '草稿',
+      published: '已发布',
+      open: '收集中',
+      closed: '已结束',
+      archived: '已归档',
+    }[status] ||
+    status ||
+    '-'
+  )
+}
+
+onMounted(() => {
+  loadAll()
+})
 </script>
 
 <style scoped>

@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-input
           v-model="keyword"
@@ -15,7 +15,7 @@
           >发布通知</el-button
         >
       </div>
-    </div>
+    </ViewToolbar>
 
     <el-table v-loading="loading" :data="filteredRows" class="admin-table">
       <el-table-column prop="id" label="ID" width="80" />
@@ -111,10 +111,12 @@
         </div>
       </div>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
 <script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ref, computed, onMounted } from 'vue'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'

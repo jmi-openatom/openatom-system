@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-page role-grid">
+  <ViewPage class="admin-page role-grid">
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
@@ -63,76 +63,82 @@
         <el-button type="primary" @click="saveRole">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { rbacApi } from '@/api'
+import { onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminRoles',
-  data() {
-    return {
-      Plus,
-      roleLoading: false,
-      roles: [],
-      permissions: [],
-      currentRole: {},
-      checkedPermissionIds: [],
-      roleVisible: false,
-      roleForm: {},
-    }
-  },
-  created() {
-    this.fetchRoles()
-    this.fetchPermissions()
-  },
-  methods: {
-    async fetchRoles() {
-      this.roleLoading = true
-      try {
-        const result = await rbacApi.roles({ page: 1, pageSize: 100 })
-        this.roles = result?.list || result || []
-      } finally {
-        this.roleLoading = false
-      }
-    },
-    async fetchPermissions() {
-      const result = await rbacApi.permissions({ page: 1, pageSize: 200 })
-      this.permissions = result?.list || result || []
-    },
-    selectRole(row) {
-      this.currentRole = row
-      // 如果后端角色详情返回 permissions，可直接回填；否则让管理员重新勾选。
-      this.checkedPermissionIds = (row.permissions || []).map((item) => item.id)
-    },
-    openRole(row) {
-      this.roleForm = row ? { ...row } : { name: '', code: '', description: '' }
-      this.roleVisible = true
-    },
-    async saveRole() {
-      if (this.roleForm.id) await rbacApi.updateRole(this.roleForm.id, this.roleForm)
-      else await rbacApi.createRole(this.roleForm)
-      ElMessage.success('角色已保存')
-      this.roleVisible = false
-      this.fetchRoles()
-    },
-    async deleteRole(row) {
-      await ElMessageBox.confirm(`确认删除角色 ${row.name}？`, '提示')
-      await rbacApi.deleteRole(row.id)
-      ElMessage.success('角色已删除')
-      this.fetchRoles()
-    },
-    async savePermissions() {
-      await rbacApi.assignRolePermissions(this.currentRole.id, {
-        permissionIds: this.checkedPermissionIds,
-      })
-      ElMessage.success('权限已保存')
-    },
-  },
+const roleLoading = ref(false)
+
+const roles = ref<any[]>([])
+
+const permissions = ref<any[]>([])
+
+const currentRole = ref<Record<string, any>>({})
+
+const checkedPermissionIds = ref<any[]>([])
+
+const roleVisible = ref(false)
+
+const roleForm = ref<Record<string, any>>({})
+
+async function fetchRoles() {
+  roleLoading.value = true
+  try {
+    const result = await rbacApi.roles({ page: 1, pageSize: 100 })
+    roles.value = result?.list || result || []
+  } finally {
+    roleLoading.value = false
+  }
 }
+
+async function fetchPermissions() {
+  const result = await rbacApi.permissions({ page: 1, pageSize: 200 })
+  permissions.value = result?.list || result || []
+}
+
+function selectRole(row: any) {
+  currentRole.value = row
+  // 如果后端角色详情返回 permissions，可直接回填；否则让管理员重新勾选。
+  checkedPermissionIds.value = (row.permissions || []).map((item) => item.id)
+}
+
+function openRole(row: any) {
+  roleForm.value = row ? { ...row } : { name: '', code: '', description: '' }
+  roleVisible.value = true
+}
+
+async function saveRole() {
+  if (roleForm.value.id) await rbacApi.updateRole(roleForm.value.id, roleForm.value)
+  else await rbacApi.createRole(roleForm.value)
+  ElMessage.success('角色已保存')
+  roleVisible.value = false
+  fetchRoles()
+}
+
+async function deleteRole(row: any) {
+  await ElMessageBox.confirm(`确认删除角色 ${row.name}？`, '提示')
+  await rbacApi.deleteRole(row.id)
+  ElMessage.success('角色已删除')
+  fetchRoles()
+}
+
+async function savePermissions() {
+  await rbacApi.assignRolePermissions(currentRole.value.id, {
+    permissionIds: checkedPermissionIds.value,
+  })
+  ElMessage.success('权限已保存')
+}
+
+onMounted(() => {
+  fetchRoles()
+  fetchPermissions()
+})
 </script>
 
 <style scoped>

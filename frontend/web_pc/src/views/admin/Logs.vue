@@ -1,10 +1,10 @@
 <template>
-  <div class="admin-page">
+  <ViewPage class="admin-page">
     <el-tabs v-model="activeTab" @tab-change="fetchList">
       <el-tab-pane label="操作日志" name="operation" />
       <el-tab-pane label="登录日志" name="login" />
     </el-tabs>
-    <div class="toolbar">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-input
           v-model="query.keyword"
@@ -15,7 +15,7 @@
         />
         <el-button :icon="Search" type="primary" @click="fetchList">查询</el-button>
       </div>
-    </div>
+    </ViewToolbar>
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column label="ID" prop="id" width="80" />
       <el-table-column v-if="activeTab === 'operation'" label="操作" prop="action" />
@@ -45,45 +45,42 @@
       layout="total, prev, pager, next, sizes"
       @change="fetchList"
     />
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { Search } from '@element-plus/icons-vue'
 import { logApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
+import { onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminLogs',
-  data() {
-    return {
-      Search,
-      activeTab: 'operation',
-      loading: false,
-      rows: [],
-      total: 0,
-      query: { keyword: '', page: 1, pageSize: 20 },
-    }
-  },
-  created() {
-    this.fetchList()
-  },
-  methods: {
-    formatDateTime,
-    statusType,
-    async fetchList() {
-      this.loading = true
-      try {
-        const api = this.activeTab === 'operation' ? logApi.operation : logApi.login
-        const result = await api(this.query)
-        this.rows = result?.list || result || []
-        this.total = result?.total || this.rows.length
-      } finally {
-        this.loading = false
-      }
-    },
-  },
+const activeTab = ref('operation')
+
+const loading = ref(false)
+
+const rows = ref<any[]>([])
+
+const total = ref(0)
+
+const query = ref({ keyword: '', page: 1, pageSize: 20 })
+
+async function fetchList() {
+  loading.value = true
+  try {
+    const api = activeTab.value === 'operation' ? logApi.operation : logApi.login
+    const result = await api(query.value)
+    rows.value = result?.list || result || []
+    total.value = result?.total || rows.value.length
+  } finally {
+    loading.value = false
+  }
 }
+
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <style scoped>

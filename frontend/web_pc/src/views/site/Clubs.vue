@@ -1,7 +1,7 @@
 <template>
-  <div class="site-page">
+  <ViewPage class="site-page">
     <section class="container">
-      <div class="toolbar">
+      <ViewToolbar>
         <div>
           <h1 class="page-title">社团库</h1>
           <p class="section-subtitle">查看已上线社团，了解分类、介绍与当前招新状态。</p>
@@ -21,7 +21,7 @@
           </el-select>
           <el-button type="primary" :icon="Search" @click="fetchClubs">查询</el-button>
         </div>
-      </div>
+      </ViewToolbar>
 
       <el-skeleton :loading="loading" animated :rows="6">
         <div class="club-grid">
@@ -44,49 +44,45 @@
         </div>
       </el-skeleton>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { Search } from '@element-plus/icons-vue'
 import { clubApi } from '@/api'
 import { recruitmentStatusText, statusType } from '@/utils/format.ts'
+import { onMounted, ref } from 'vue'
 
-export default {
-  name: 'SiteClubs',
-  data() {
-    return {
-      Search,
-      loading: false,
-      clubs: [],
-      query: {
-        keyword: '',
-        category: '',
-        status: 'enabled',
-      },
-    }
-  },
-  created() {
-    this.fetchClubs()
-  },
-  methods: {
-    recruitmentStatusText,
-    statusType,
-    shortName(name) {
-      return (name || '社团').slice(0, 2)
-    },
-    async fetchClubs() {
-      this.loading = true
-      try {
-        const result = await clubApi.list(this.query)
-        // 兼容后端分页和普通数组两类返回结构。
-        this.clubs = result?.list || result || []
-      } finally {
-        this.loading = false
-      }
-    },
-  },
+const loading = ref(false)
+
+const clubs = ref<any[]>([])
+
+const query = ref({
+  keyword: '',
+  category: '',
+  status: 'enabled',
+})
+
+function shortName(name: any) {
+  return (name || '社团').slice(0, 2)
 }
+
+async function fetchClubs() {
+  loading.value = true
+  try {
+    const result = await clubApi.list(query.value)
+    // 兼容后端分页和普通数组两类返回结构。
+    clubs.value = result?.list || result || []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchClubs()
+})
 </script>
 
 <style scoped>

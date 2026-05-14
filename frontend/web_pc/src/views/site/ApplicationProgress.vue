@@ -1,5 +1,5 @@
 <template>
-  <div class="site-page">
+  <ViewPage class="site-page">
     <section class="container progress-page">
       <div class="progress-header">
         <div>
@@ -119,12 +119,15 @@
         </el-card>
       </div>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { authApi, siteApi } from '@/api'
 import { getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   applicationStatusText,
   formatDateTime,
@@ -132,118 +135,120 @@ import {
   statusType,
 } from '@/utils/format.ts'
 
-export default {
-  name: 'SiteApplicationProgress',
-  data() {
-    return {
-      loading: false,
-      user: getCurrentUser(),
-      applications: [],
-    }
-  },
-  computed: {
-    isLogin() {
-      return Boolean(getToken())
-    },
-    displayName() {
-      return this.user.realName || this.user.userName || '当前用户'
-    },
-  },
-  created() {
-    if (this.isLogin) {
-      this.fetchCurrentUser()
-      this.fetchProgress()
-    }
-  },
-  methods: {
-    formatDateTime,
-    statusType,
-    async fetchCurrentUser() {
-      const result = await authApi.me()
-      this.user = result?.user || result || {}
-      setSession({
-        accessToken: getToken(),
-        user: this.user,
-        roles: result?.roles || [],
-        permissions: result?.permissions || [],
-      })
-    },
-    async fetchProgress() {
-      if (!this.isLogin) return
-      this.loading = true
-      try {
-        const result = await siteApi.progress()
-        this.applications = result?.applications || []
-      } finally {
-        this.loading = false
-      }
-    },
-    goLogin() {
-      this.$router.push({ path: '/admin/login', query: { redirect: this.$route.fullPath } })
-    },
-    applicationStatusText,
-    interviewStatusText,
-    interviewModeText(mode) {
-      return (
-        {
-          offline: '线下',
-          online: '线上',
-        }[mode] ||
-        mode ||
-        '未设置'
-      )
-    },
-    applicationStatusHint(status) {
-      return (
-        {
-          draft: '申请还未正式提交',
-          submitted: '申请已提交，等待审核',
-          reviewing: '管理员正在审核你的申请材料',
-          approved: '申请已通过初筛，等待安排面试',
-          pre_screen_passed: '申请已通过初筛，等待安排面试',
-          pre_screen_rejected: '初审未通过，可留意后续招新批次',
-          interview_scheduled: '已安排面试，请按时参加',
-          interviewed: '面试已完成，等待最终结果',
-          final_approved: '恭喜，你已通过入会流程',
-          waitlisted: '你已进入候补，请等待后续通知',
-          rejected: '本次申请未通过，可关注后续批次',
-          cancelled: '你已主动撤回该申请',
-        }[status] || '请留意后续通知'
-      )
-    },
-    applicationStep(status) {
-      return (
-        {
-          draft: 0,
-          submitted: 1,
-          reviewing: 1,
-          approved: 2,
-          pre_screen_passed: 2,
-          pre_screen_rejected: 4,
-          interview_scheduled: 3,
-          interviewed: 3,
-          final_approved: 4,
-          waitlisted: 4,
-          rejected: 4,
-          cancelled: 4,
-        }[status] ?? 1
-      )
-    },
-    formatRange(startAt, endAt) {
-      return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
-    },
-    approvalActionText(action) {
-      return (
-        {
-          approve: '审核通过',
-          reject: '审核驳回',
-          transfer: '申请转交',
-          request_more_info: '补充材料',
-        }[action] || action
-      )
-    },
-  },
+const loading = ref(false)
+
+const user = ref(getCurrentUser())
+
+const applications = ref<any[]>([])
+
+const router = useRouter()
+
+const route = useRoute()
+
+const isLogin = computed(() => {
+  return Boolean(getToken())
+})
+
+const displayName = computed(() => {
+  return user.value.realName || user.value.userName || '当前用户'
+})
+
+async function fetchCurrentUser() {
+  const result = await authApi.me()
+  user.value = result?.user || result || {}
+  setSession({
+    accessToken: getToken(),
+    user: user.value,
+    roles: result?.roles || [],
+    permissions: result?.permissions || [],
+  })
 }
+
+async function fetchProgress() {
+  if (!isLogin.value) return
+  loading.value = true
+  try {
+    const result = await siteApi.progress()
+    applications.value = result?.applications || []
+  } finally {
+    loading.value = false
+  }
+}
+
+function goLogin() {
+  router.push({ path: '/admin/login', query: { redirect: route.fullPath } })
+}
+
+function interviewModeText(mode: any) {
+  return (
+    {
+      offline: '线下',
+      online: '线上',
+    }[mode] ||
+    mode ||
+    '未设置'
+  )
+}
+
+function applicationStatusHint(status: any) {
+  return (
+    {
+      draft: '申请还未正式提交',
+      submitted: '申请已提交，等待审核',
+      reviewing: '管理员正在审核你的申请材料',
+      approved: '申请已通过初筛，等待安排面试',
+      pre_screen_passed: '申请已通过初筛，等待安排面试',
+      pre_screen_rejected: '初审未通过，可留意后续招新批次',
+      interview_scheduled: '已安排面试，请按时参加',
+      interviewed: '面试已完成，等待最终结果',
+      final_approved: '恭喜，你已通过入会流程',
+      waitlisted: '你已进入候补，请等待后续通知',
+      rejected: '本次申请未通过，可关注后续批次',
+      cancelled: '你已主动撤回该申请',
+    }[status] || '请留意后续通知'
+  )
+}
+
+function applicationStep(status: any) {
+  return (
+    {
+      draft: 0,
+      submitted: 1,
+      reviewing: 1,
+      approved: 2,
+      pre_screen_passed: 2,
+      pre_screen_rejected: 4,
+      interview_scheduled: 3,
+      interviewed: 3,
+      final_approved: 4,
+      waitlisted: 4,
+      rejected: 4,
+      cancelled: 4,
+    }[status] ?? 1
+  )
+}
+
+function formatRange(startAt: any, endAt: any) {
+  return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
+}
+
+function approvalActionText(action: any) {
+  return (
+    {
+      approve: '审核通过',
+      reject: '审核驳回',
+      transfer: '申请转交',
+      request_more_info: '补充材料',
+    }[action] || action
+  )
+}
+
+onMounted(() => {
+  if (isLogin.value) {
+    fetchCurrentUser()
+    fetchProgress()
+  }
+})
 </script>
 
 <style scoped>

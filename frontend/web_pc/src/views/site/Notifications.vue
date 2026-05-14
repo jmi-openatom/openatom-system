@@ -1,5 +1,5 @@
 <template>
-  <div class="notifications-page">
+  <ViewPage class="notifications-page">
     <section class="notifications-hero">
       <div class="notifications-hero__copy">
         <span>通知中心</span>
@@ -25,12 +25,7 @@
         </div>
         <h2>收件箱</h2>
         <p>{{ unreadCount ? `还有 ${unreadCount} 条消息需要查看` : '当前所有消息均已读' }}</p>
-        <el-button
-          v-if="unreadCount"
-          type="primary"
-          :icon="CircleCheck"
-          @click="markAllAsRead"
-        >
+        <el-button v-if="unreadCount" type="primary" :icon="CircleCheck" @click="markAllAsRead">
           全部标记为已读
         </el-button>
       </aside>
@@ -61,10 +56,11 @@
         </article>
       </div>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
 <script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { computed, ref, onMounted } from 'vue'
 import { Bell, CircleCheck } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -152,7 +148,12 @@ onMounted(fetchNotifications)
 
 .notifications-hero__copy h1 {
   margin: 0 0 8px;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 48px;
   font-weight: 600;
   line-height: 1.1;
@@ -187,7 +188,12 @@ onMounted(fetchNotifications)
 
 .notifications-hero__stats strong {
   color: #1d1d1f;
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   font-size: 46px;
   font-weight: 600;
   line-height: 1;

@@ -1,6 +1,6 @@
 <template>
-  <div class="admin-page">
-    <div class="toolbar">
+  <ViewPage class="admin-page">
+    <ViewToolbar>
       <div class="toolbar__filters">
         <el-input
           v-model="query.keyword"
@@ -16,7 +16,7 @@
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
       <el-button type="primary" :icon="Plus" @click="openDialog()">新增社团</el-button>
-    </div>
+    </ViewToolbar>
     <el-table v-loading="loading" :data="rows" class="admin-table">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="社团名称" min-width="160" />
@@ -78,79 +78,82 @@
         <el-button type="primary" :loading="saving" @click="saveClub">保存</el-button>
       </template>
     </el-dialog>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { clubApi } from '@/api'
 import { clubStatusText, recruitmentStatusText, statusType } from '@/utils/format.ts'
+import { onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminClubs',
-  data() {
-    return {
-      Plus,
-      Search,
-      loading: false,
-      saving: false,
-      dialogVisible: false,
-      rows: [],
-      total: 0,
-      query: { keyword: '', status: '', page: 1, pageSize: 10 },
-      form: {},
-      rules: {
-        name: [{ required: true, message: '请输入社团名称', trigger: 'blur' }],
-        code: [{ required: true, message: '请输入社团编号', trigger: 'blur' }],
-      },
-    }
-  },
-  created() {
-    this.fetchList()
-  },
-  methods: {
-    clubStatusText,
-    recruitmentStatusText,
-    statusType,
-    async fetchList() {
-      this.loading = true
-      try {
-        const result = await clubApi.list(this.query)
-        this.rows = result?.list || result || []
-        this.total = result?.total || this.rows.length
-      } finally {
-        this.loading = false
-      }
-    },
-    openDialog(row) {
-      this.form = row
-        ? { ...row }
-        : { name: '', code: '', category: '', presidentUserId: undefined, description: '' }
-      this.dialogVisible = true
-    },
-    saveClub() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        this.saving = true
-        try {
-          if (this.form.id) await clubApi.update(this.form.id, this.form)
-          else await clubApi.create(this.form)
-          ElMessage.success('保存成功')
-          this.dialogVisible = false
-          this.fetchList()
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-    async changeRecruitment(row, status) {
-      await clubApi.updateRecruitmentStatus(row.id, status)
-      ElMessage.success('招新状态已更新')
-      this.fetchList()
-    },
-  },
+const loading = ref(false)
+
+const saving = ref(false)
+
+const dialogVisible = ref(false)
+
+const rows = ref<any[]>([])
+
+const total = ref(0)
+
+const query = ref({ keyword: '', status: '', page: 1, pageSize: 10 })
+
+const form = ref<Record<string, any>>({})
+
+const rules = ref({
+  name: [{ required: true, message: '请输入社团名称', trigger: 'blur' }],
+  code: [{ required: true, message: '请输入社团编号', trigger: 'blur' }],
+})
+
+const formRef = ref<any>()
+
+async function fetchList() {
+  loading.value = true
+  try {
+    const result = await clubApi.list(query.value)
+    rows.value = result?.list || result || []
+    total.value = result?.total || rows.value.length
+  } finally {
+    loading.value = false
+  }
 }
+
+function openDialog(row: any) {
+  form.value = row
+    ? { ...row }
+    : { name: '', code: '', category: '', presidentUserId: undefined, description: '' }
+  dialogVisible.value = true
+}
+
+function saveClub() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    saving.value = true
+    try {
+      if (form.value.id) await clubApi.update(form.value.id, form.value)
+      else await clubApi.create(form.value)
+      ElMessage.success('保存成功')
+      dialogVisible.value = false
+      fetchList()
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+async function changeRecruitment(row: any, status: any) {
+  await clubApi.updateRecruitmentStatus(row.id, status)
+  ElMessage.success('招新状态已更新')
+  fetchList()
+}
+
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <style scoped>

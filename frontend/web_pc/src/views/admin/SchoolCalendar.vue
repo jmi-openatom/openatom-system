@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-page school-calendar-page">
+  <ViewPage class="admin-page school-calendar-page">
     <section class="setting-panel">
       <div class="panel-head">
         <div>
@@ -10,13 +10,20 @@
 
       <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="calendar-form">
         <el-form-item label="开学日期" prop="startDate">
-          <el-date-picker v-model="form.startDate" type="date" value-format="YYYY-MM-DD" placeholder="选择开学日期" />
+          <el-date-picker
+            v-model="form.startDate"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="选择开学日期"
+          />
         </el-form-item>
         <el-form-item label="学期周数" prop="weekCount">
           <el-input-number v-model="form.weekCount" :min="1" :max="60" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="saving" @click="saveCalendar">保存并生成校历</el-button>
+          <el-button type="primary" :loading="saving" @click="saveCalendar"
+            >保存并生成校历</el-button
+          >
         </el-form-item>
       </el-form>
     </section>
@@ -31,7 +38,12 @@
 
       <el-form class="adjustment-form" label-width="92px">
         <el-form-item label="日期">
-          <el-date-picker v-model="adjustment.date" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" />
+          <el-date-picker
+            v-model="adjustment.date"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="选择日期"
+          />
         </el-form-item>
         <el-form-item label="类型">
           <el-segmented v-model="adjustment.type" :options="adjustmentOptions" />
@@ -49,7 +61,9 @@
       <div class="panel-head">
         <div>
           <h2>校历预览</h2>
-          <p v-if="calendar.startDate">{{ calendar.startDate }} 至 {{ calendar.endDate }}，共 {{ calendar.weekCount }} 周</p>
+          <p v-if="calendar.startDate">
+            {{ calendar.startDate }} 至 {{ calendar.endDate }}，共 {{ calendar.weekCount }} 周
+          </p>
           <p v-else>尚未设置校历。</p>
         </div>
         <el-button :icon="Refresh" @click="fetchCalendar">刷新</el-button>
@@ -63,7 +77,10 @@
             v-for="day in week.days"
             :key="day.date"
             class="day-cell"
-            :class="{ 'day-cell--rest': day.restDay, 'day-cell--adjusted': day.source === 'adjustment' }"
+            :class="{
+              'day-cell--rest': day.restDay,
+              'day-cell--adjusted': day.source === 'adjustment',
+            }"
           >
             <strong>{{ day.dayName }}</strong>
             <span>{{ day.date.slice(5) }}</span>
@@ -73,75 +90,78 @@
         </div>
       </div>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { schoolCalendarApi } from '@/api'
+import { computed, onMounted, ref } from 'vue'
 
-export default {
-  name: 'AdminSchoolCalendar',
-  data() {
-    return {
-      Refresh,
-      saving: false,
-      calendar: { days: [] },
-      form: { startDate: '', weekCount: 20 },
-      adjustment: { date: '', type: 'workday', reason: '' },
-      adjustmentOptions: [
-        { label: '设为上课日', value: 'workday' },
-        { label: '设为休息日', value: 'restday' },
-      ],
-      rules: {
-        startDate: [{ required: true, message: '请选择开学日期', trigger: 'change' }],
-        weekCount: [{ required: true, message: '请输入周数', trigger: 'change' }],
-      },
-    }
-  },
-  computed: {
-    weekGroups() {
-      const groups = new Map()
-      ;(this.calendar.days || []).forEach((day) => {
-        if (!groups.has(day.weekIndex)) groups.set(day.weekIndex, { weekIndex: day.weekIndex, days: [] })
-        groups.get(day.weekIndex).days.push(day)
-      })
-      return Array.from(groups.values())
-    },
-  },
-  created() {
-    this.fetchCalendar()
-  },
-  methods: {
-    async fetchCalendar() {
-      this.calendar = (await schoolCalendarApi.detail()) || { days: [] }
-      this.form.startDate = this.calendar.startDate || ''
-      this.form.weekCount = this.calendar.weekCount || 20
-    },
-    saveCalendar() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        this.saving = true
-        try {
-          this.calendar = await schoolCalendarApi.save(this.form)
-          ElMessage.success('校历已生成')
-        } finally {
-          this.saving = false
-        }
-      })
-    },
-    async saveAdjustment() {
-      if (!this.adjustment.date) {
-        ElMessage.error('请选择调休日期')
-        return
-      }
-      this.calendar = await schoolCalendarApi.saveAdjustment(this.adjustment)
-      ElMessage.success('调休已保存')
-      this.adjustment = { date: '', type: 'workday', reason: '' }
-    },
-  },
+const saving = ref(false)
+
+const calendar = ref({ days: [] })
+
+const form = ref({ startDate: '', weekCount: 20 })
+
+const adjustment = ref({ date: '', type: 'workday', reason: '' })
+
+const adjustmentOptions = ref([
+  { label: '设为上课日', value: 'workday' },
+  { label: '设为休息日', value: 'restday' },
+])
+
+const rules = ref({
+  startDate: [{ required: true, message: '请选择开学日期', trigger: 'change' }],
+  weekCount: [{ required: true, message: '请输入周数', trigger: 'change' }],
+})
+
+const formRef = ref<any>()
+
+const weekGroups = computed(() => {
+  const groups = new Map()
+  ;(calendar.value.days || []).forEach((day) => {
+    if (!groups.has(day.weekIndex))
+      groups.set(day.weekIndex, { weekIndex: day.weekIndex, days: [] })
+    groups.get(day.weekIndex).days.push(day)
+  })
+  return Array.from(groups.values())
+})
+
+async function fetchCalendar() {
+  calendar.value = (await schoolCalendarApi.detail()) || { days: [] }
+  form.value.startDate = calendar.value.startDate || ''
+  form.value.weekCount = calendar.value.weekCount || 20
 }
+
+function saveCalendar() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    saving.value = true
+    try {
+      calendar.value = await schoolCalendarApi.save(form.value)
+      ElMessage.success('校历已生成')
+    } finally {
+      saving.value = false
+    }
+  })
+}
+
+async function saveAdjustment() {
+  if (!adjustment.value.date) {
+    ElMessage.error('请选择调休日期')
+    return
+  }
+  calendar.value = await schoolCalendarApi.saveAdjustment(adjustment.value)
+  ElMessage.success('调休已保存')
+  adjustment.value = { date: '', type: 'workday', reason: '' }
+}
+
+onMounted(() => {
+  fetchCalendar()
+})
 </script>
 
 <style scoped>

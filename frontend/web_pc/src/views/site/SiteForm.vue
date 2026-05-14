@@ -1,5 +1,5 @@
 <template>
-  <div class="site-page">
+  <ViewPage class="site-page">
     <section class="container apply-grid">
       <div>
         <h1 class="page-title">表单填写</h1>
@@ -120,202 +120,213 @@
         </el-form>
       </el-card>
     </section>
-  </div>
+  </ViewPage>
 </template>
 
-<script>
+<script setup lang="ts">
+import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage } from 'element-plus'
 import { formSubmissionApi, clubApi, siteApi } from '@/api'
 import { getToken } from '@/utils/auth.ts'
 import { formatDateTime } from '@/utils/format.ts'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-export default {
-  name: 'SiteForm',
-  data() {
-    return {
-      club: {},
-      formMeta: {},
-      departments: [],
-      submitting: false,
-      form: {
-        formData: {},
-      },
-      rules: {},
-    }
-  },
-  computed: {
-    hasToken() {
-      return Boolean(getToken())
-    },
-    requiresLogin() {
-      return this.formMeta?.loginRequired !== false
-    },
-    canSubmit() {
-      if (!this.formMeta?.id) return false
-      if (['closed', 'archived'].includes(this.formMeta.status)) return false
-      if (this.formMeta.startAt && new Date(this.formMeta.startAt).getTime() > Date.now())
-        return false
-      if (!this.formMeta.endAt) return true
-      return new Date(this.formMeta.endAt).getTime() >= Date.now()
-    },
-    dynamicFields() {
-      return this.parseSchema(this.formMeta?.formSchema)
-    },
-    hasApplicantNameField() {
-      return Boolean(this.findApplicantFieldKey())
-    },
-    hasContactField() {
-      return Boolean(this.findContactFieldKey())
-    },
-  },
-  created() {
-    this.loadFormDetail()
-  },
-  methods: {
-    formatDateTime,
-    async loadFormDetail() {
-      const result = await siteApi.formDetail(this.$route.params.id)
-      this.club = result?.club || {}
-      this.formMeta = {
-        ...(result?.form || {}),
-        loginRequired: result?.form?.loginRequired !== false,
-      }
-      if (this.formMeta.id && this.requiresLogin && !this.hasToken) {
-        ElMessage.warning('当前表单需要登录后填写，正在跳转到登录页')
-        this.$router.replace({ path: '/admin/login', query: { redirect: this.$route.fullPath } })
-        return
-      }
-      if (this.club.id) {
-        const deptResult = await clubApi.departments(this.club.id)
-        this.departments = deptResult?.list || deptResult || []
-      }
-      this.resetForm()
-    },
-    buildRules() {
-      const applicantFieldKey = this.findApplicantFieldKey()
-      const contactFieldKey = this.findContactFieldKey()
-      return {
-        ...(this.requiresLogin
-          ? {}
-          : {
-              ...(applicantFieldKey
-                ? {
-                    [`formData.${applicantFieldKey}`]: [
-                      { required: true, message: '请填写联系人', trigger: 'blur' },
-                    ],
-                  }
-                : {
-                    'formData.anonymousName': [
-                      { required: true, message: '请填写联系人', trigger: 'blur' },
-                    ],
-                  }),
-              ...(contactFieldKey
-                ? {
-                    [`formData.${contactFieldKey}`]: [
-                      { required: true, message: '请填写联系方式', trigger: 'blur' },
-                    ],
-                  }
-                : {
-                    'formData.anonymousContact': [
-                      { required: true, message: '请填写联系方式', trigger: 'blur' },
-                    ],
-                  }),
-            }),
-        ...this.dynamicFields.reduce((rules, field) => {
-          if (field.required) {
-            rules[`formData.${field.key}`] = [
-              {
-                required: true,
-                message: `请填写${field.label || field.key}`,
-                trigger: 'blur',
-              },
-            ]
-          }
-          return rules
-        }, {}),
-      }
-    },
-    parseSchema(value) {
-      if (Array.isArray(value)) return value.filter((item) => item && item.key)
-      if (!value) return []
-      try {
-        const parsed = JSON.parse(value)
-        return Array.isArray(parsed) ? parsed.filter((item) => item && item.key) : []
-      } catch {
-        return []
-      }
-    },
-    submitForm() {
-      this.$refs.formRef.validate(async (valid) => {
-        if (!valid) return
-        if (this.requiresLogin && !getToken()) {
-          ElMessage.warning('请先登录后再提交表单')
-          this.$router.push({ path: '/admin/login', query: { redirect: this.$route.fullPath } })
-          return
-        }
-        this.submitting = true
-        try {
-          const anonymousName = this.resolveAnonymousName()
-          const anonymousContact = this.resolveAnonymousContact()
-          await formSubmissionApi.create(this.formMeta.id, {
-            anonymousName,
-            anonymousContact,
-            formData: this.form.formData,
-          })
-          ElMessage.success('表单已提交')
-          this.resetForm()
-        } finally {
-          this.submitting = false
-        }
-      })
-    },
-    resetForm() {
-      const formData = {}
-      this.dynamicFields.forEach((field) => {
-        formData[field.key] = ''
-      })
-      if (!this.hasApplicantNameField) {
-        formData.anonymousName = ''
-      }
-      if (!this.hasContactField) {
-        formData.anonymousContact = ''
-      }
-      this.form = {
-        formData,
-      }
-      this.rules = this.buildRules()
-    },
-    formatRange(startAt, endAt) {
-      return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
-    },
-    findApplicantFieldKey() {
-      const candidates = ['anonymousName', 'applicantName', 'name', 'realName']
-      const field = this.dynamicFields.find((item) => candidates.includes(item.key))
-      return field?.key || ''
-    },
-    findContactFieldKey() {
-      const candidates = ['anonymousContact', 'contact', 'phone', 'email', 'wechat']
-      const field = this.dynamicFields.find((item) => candidates.includes(item.key))
-      return field?.key || ''
-    },
-    resolveAnonymousName() {
-      const applicantFieldKey = this.findApplicantFieldKey()
-      return (
-        this.form.formData.anonymousName ||
-        this.form.formData[applicantFieldKey] ||
-        ''
-      ).trim()
-    },
-    resolveAnonymousContact() {
-      const contactFieldKey = this.findContactFieldKey()
-      return (
-        this.form.formData.anonymousContact ||
-        this.form.formData[contactFieldKey] ||
-        ''
-      ).trim()
-    },
-  },
+const club = ref<Record<string, any>>({})
+
+const formMeta = ref<Record<string, any>>({})
+
+const departments = ref<any[]>([])
+
+const submitting = ref(false)
+
+const form = ref({
+  formData: {},
+})
+
+const rules = ref<Record<string, any>>({})
+
+const formRef = ref<any>()
+
+const router = useRouter()
+
+const route = useRoute()
+
+const hasToken = computed(() => {
+  return Boolean(getToken())
+})
+
+const requiresLogin = computed(() => {
+  return formMeta.value?.loginRequired !== false
+})
+
+const canSubmit = computed(() => {
+  if (!formMeta.value?.id) return false
+  if (['closed', 'archived'].includes(formMeta.value.status)) return false
+  if (formMeta.value.startAt && new Date(formMeta.value.startAt).getTime() > Date.now())
+    return false
+  if (!formMeta.value.endAt) return true
+  return new Date(formMeta.value.endAt).getTime() >= Date.now()
+})
+
+const dynamicFields = computed(() => {
+  return parseSchema(formMeta.value?.formSchema)
+})
+
+const hasApplicantNameField = computed(() => {
+  return Boolean(findApplicantFieldKey())
+})
+
+const hasContactField = computed(() => {
+  return Boolean(findContactFieldKey())
+})
+
+async function loadFormDetail() {
+  const result = await siteApi.formDetail(route.params.id)
+  club.value = result?.club || {}
+  formMeta.value = {
+    ...(result?.form || {}),
+    loginRequired: result?.form?.loginRequired !== false,
+  }
+  if (formMeta.value.id && requiresLogin.value && !hasToken.value) {
+    ElMessage.warning('当前表单需要登录后填写，正在跳转到登录页')
+    router.replace({ path: '/admin/login', query: { redirect: route.fullPath } })
+    return
+  }
+  if (club.value.id) {
+    const deptResult = await clubApi.departments(club.value.id)
+    departments.value = deptResult?.list || deptResult || []
+  }
+  resetForm()
 }
+
+function buildRules() {
+  const applicantFieldKey = findApplicantFieldKey()
+  const contactFieldKey = findContactFieldKey()
+  return {
+    ...(requiresLogin.value
+      ? {}
+      : {
+          ...(applicantFieldKey
+            ? {
+                [`formData.${applicantFieldKey}`]: [
+                  { required: true, message: '请填写联系人', trigger: 'blur' },
+                ],
+              }
+            : {
+                'formData.anonymousName': [
+                  { required: true, message: '请填写联系人', trigger: 'blur' },
+                ],
+              }),
+          ...(contactFieldKey
+            ? {
+                [`formData.${contactFieldKey}`]: [
+                  { required: true, message: '请填写联系方式', trigger: 'blur' },
+                ],
+              }
+            : {
+                'formData.anonymousContact': [
+                  { required: true, message: '请填写联系方式', trigger: 'blur' },
+                ],
+              }),
+        }),
+    ...dynamicFields.value.reduce((rules, field) => {
+      if (field.required) {
+        rules[`formData.${field.key}`] = [
+          {
+            required: true,
+            message: `请填写${field.label || field.key}`,
+            trigger: 'blur',
+          },
+        ]
+      }
+      return rules
+    }, {}),
+  }
+}
+
+function parseSchema(value: any) {
+  if (Array.isArray(value)) return value.filter((item) => item && item.key)
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed.filter((item) => item && item.key) : []
+  } catch {
+    return []
+  }
+}
+
+function submitForm() {
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    if (requiresLogin.value && !getToken()) {
+      ElMessage.warning('请先登录后再提交表单')
+      router.push({ path: '/admin/login', query: { redirect: route.fullPath } })
+      return
+    }
+    submitting.value = true
+    try {
+      const anonymousName = resolveAnonymousName()
+      const anonymousContact = resolveAnonymousContact()
+      await formSubmissionApi.create(formMeta.value.id, {
+        anonymousName,
+        anonymousContact,
+        formData: form.value.formData,
+      })
+      ElMessage.success('表单已提交')
+      resetForm()
+    } finally {
+      submitting.value = false
+    }
+  })
+}
+
+function resetForm() {
+  const formData = {}
+  dynamicFields.value.forEach((field) => {
+    formData[field.key] = ''
+  })
+  if (!hasApplicantNameField.value) {
+    formData.anonymousName = ''
+  }
+  if (!hasContactField.value) {
+    formData.anonymousContact = ''
+  }
+  form.value = {
+    formData,
+  }
+  rules.value = buildRules()
+}
+
+function formatRange(startAt: any, endAt: any) {
+  return `${formatDateTime(startAt) || '-'} 至 ${formatDateTime(endAt) || '-'}`
+}
+
+function findApplicantFieldKey() {
+  const candidates = ['anonymousName', 'applicantName', 'name', 'realName']
+  const field = dynamicFields.value.find((item) => candidates.includes(item.key))
+  return field?.key || ''
+}
+
+function findContactFieldKey() {
+  const candidates = ['anonymousContact', 'contact', 'phone', 'email', 'wechat']
+  const field = dynamicFields.value.find((item) => candidates.includes(item.key))
+  return field?.key || ''
+}
+
+function resolveAnonymousName() {
+  const applicantFieldKey = findApplicantFieldKey()
+  return (form.value.formData.anonymousName || form.value.formData[applicantFieldKey] || '').trim()
+}
+
+function resolveAnonymousContact() {
+  const contactFieldKey = findContactFieldKey()
+  return (form.value.formData.anonymousContact || form.value.formData[contactFieldKey] || '').trim()
+}
+
+onMounted(() => {
+  loadFormDetail()
+})
 </script>
 
 <style scoped>
