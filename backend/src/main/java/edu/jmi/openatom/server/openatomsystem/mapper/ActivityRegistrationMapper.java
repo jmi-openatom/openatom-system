@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 /**
  * 活动报名数据访问层
- *
+ *测试
  * <p>提供对活动报名记录(ActivityRegistration)的数据库操作, 包括按活动和用户查询报名, 按活动ID查询报名列表以及按用户ID删除报名等功能
  */
 @Mapper
