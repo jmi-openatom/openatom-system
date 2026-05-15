@@ -31,8 +31,8 @@ OpenAtom System 是一个基于 Spring Boot 3 + Vue 3 Option 的社团/组织管
 
 ### 后端启动
 
-1. 导入数据库：执行 `db/create_table.sql`。
-2. 修改配置：在 `src/main/resources/application-dev.yaml` 中配置数据库连接。
+1. 本地开发如使用独立 MySQL，可执行 `backend/db/create_table.sql` 初始化。
+2. 修改配置：在 `backend/src/main/resources/application-dev.yaml` 中配置数据库连接。
 3. 运行 `OpenatomSystemApplication`。
 
 ### 前端启动
@@ -57,9 +57,11 @@ docker-compose up -d --build
 
 该命令将启动：
 
-- **MySQL**: 暴露端口 3306
+- **MySQL**: 宿主机暴露端口 3307（容器内仍为 3306）
 - **Backend**: 暴露端口 8921
 - **Frontend**: 暴露端口 80 (集成 Nginx 反向代理)
+
+Docker / 生产环境不再依赖 MySQL 容器首次启动时导入 SQL。后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
 
 ## 🔄 持续集成与部署 (CI/CD)
 
@@ -77,7 +79,8 @@ docker-compose up -d --build
 
 - `src/`: 后端 Java 源代码
 - `frontend/`: 前端 Vue 源代码
-- `db/`: 数据库初始化与变更脚本
+- `backend/db/`: 手工初始化脚本
+- `backend/src/main/resources/db/migration/`: 生产环境自动执行的 Flyway 迁移脚本
 - `docs/`: PRD 及 API 文档
 - `Dockerfile`: 后端容器化配置
 - `docker-compose.yml`: 全栈编排配置

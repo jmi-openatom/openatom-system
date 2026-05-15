@@ -40,6 +40,9 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
   }
 
   private void fixAdminPassword() {
+    if (!tableExists("tb_user")) {
+      return;
+    }
     // 修正错误的 admin 初始化密码哈希 (240be... 是错误的 admin123456 哈希)
     int updated =
         jdbcTemplate.update(

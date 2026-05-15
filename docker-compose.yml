@@ -9,7 +9,6 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD:-5JS7XaFfJGhXBH2j}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/db/create_table.sql:/docker-entrypoint-initdb.d/create_table.sql
     ports:
       - "3307:3306"
     healthcheck:

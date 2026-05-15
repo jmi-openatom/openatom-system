@@ -1,6 +1,8 @@
 spring:
   application:
     name: openatom-system
+  flyway:
+    enabled: false
   datasource:
     url: ${DB_URL:jdbc:mysql://156.239.2.231:3307/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${DB_USERNAME:root}
