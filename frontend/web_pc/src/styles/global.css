@@ -256,8 +256,8 @@ a {
 }
 
 .container {
-  width: min(1180px, calc(100% - 32px));
-  margin: 0 auto;
+    width: min(1520px, calc(100% - 32px));
+    margin: 0 auto;
 }
 
 .site-screen-section {

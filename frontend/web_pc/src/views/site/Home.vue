@@ -875,7 +875,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: #ffffff;
+  background: #f5f5f7;
 }
 
 .achievements-section {
@@ -885,7 +885,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: #f5f5f7;
+  background: #ffffff;
 }
 
 .section-heading {
