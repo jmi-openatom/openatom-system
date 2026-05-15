@@ -63,6 +63,8 @@ docker-compose up -d --build
 
 Docker / 生产环境不再依赖 MySQL 容器首次启动时导入 SQL。后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
 
+当前接入方式采用保守切换：已有生产库首次接入 Flyway 时会先 baseline 到版本 `1`，现存历史兼容逻辑仍由应用内的 `SchemaCompatibilityInitializer` 兜底；从后续新增数据库变更开始，再按 `V2__...sql`、`V3__...sql` 的方式持续演进。
+
 ## 🔄 持续集成与部署 (CI/CD)
 
 项目使用 GitHub Actions 实现自动化部署。每当代码推送到 `main` 分支时，会自动触发服务器同步。
