@@ -1,10 +1,12 @@
 <template>
     <el-tooltip :content="tooltip" placement="bottom">
+
+
         <el-button
             :aria-label="tooltip"
-            circle
             class="theme-toggle"
             @click="toggleTheme"
+            style="border-radius: 50%;"
         >
             <el-icon :size="10">
                 <component :is="themeIcon" />

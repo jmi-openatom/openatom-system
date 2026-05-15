@@ -231,16 +231,6 @@ function createHomeAnimations() {
       })
     })
 
-    gsap.to('.activity-band', {
-      backgroundColor: '#111114',
-      scrollTrigger: {
-        trigger: '.activity-band',
-        start: 'top 72%',
-        end: 'top 30%',
-        scrub: true,
-      },
-    })
-
     ScrollTrigger.refresh()
   }, instance?.proxy?.$el)
 }
@@ -870,16 +860,31 @@ onBeforeUnmount(() => {
 
 .club-brief {
   max-width: none;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   background: #f5f5f7;
 }
 
 .people-section {
   max-width: none;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   background: #ffffff;
 }
 
 .achievements-section {
   max-width: none;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   background: #f5f5f7;
 }
 
@@ -947,15 +952,18 @@ onBeforeUnmount(() => {
 }
 
 .activity-band {
-  background: #272729;
-  color: #ffffff;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  color: #1d1d1f;
 }
 
 .activity-shell {
   display: flex;
   width: 100%;
   max-width: none;
-  min-height: 560px;
+  min-height: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -981,35 +989,34 @@ onBeforeUnmount(() => {
 
 .activity-band .section-heading h2,
 .activity-band .activity-card h3 {
-  color: #ffffff;
+  color: #1d1d1f;
 }
 
 .activity-band .section-heading span,
 .activity-band .activity-card time {
-  color: #ffffff;
+  color: var(--oa-primary-dark);
 }
 
 .activity-band .activity-card p {
-  color: #cccccc;
+  color: #7a7a7a;
 }
 
 .activity-band :deep(.el-empty) {
   width: min(440px, 100%);
   margin: 40px auto 0;
   padding: 28px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(224, 224, 224, 0.95);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
+  background: #fafafc;
 }
 
 .activity-band :deep(.el-empty__image) {
-  filter: grayscale(1) invert(1);
   opacity: 0.82;
 }
 
 .activity-band :deep(.el-empty__description) {
   margin-top: 16px;
-  color: #f5f5f7;
+  color: #7a7a7a;
   font-size: 16px;
   line-height: 1.5;
   white-space: nowrap;
@@ -1022,9 +1029,9 @@ onBeforeUnmount(() => {
 
 .activity-card {
   overflow: hidden;
-  border: 0;
-  border-radius: 0;
-  background: #2a2a2c;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #ffffff;
 }
 
 .activity-image {
@@ -1154,6 +1161,11 @@ onBeforeUnmount(() => {
 
 .home-overview-page {
   position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
 }
 
