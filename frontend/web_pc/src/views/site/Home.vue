@@ -44,7 +44,7 @@ const animationContext = ref<any>()
 
 const instance = getCurrentInstance()
 
-const texts = ['开放原子开源社团', 'JMI-OPENATOM','信息工程学院']
+const texts = ['开放原子开源社团', 'JMI-OPENATOM']
 
 const heroMorphTime = 0.86
 
