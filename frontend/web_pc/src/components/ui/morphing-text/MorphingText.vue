@@ -18,7 +18,7 @@ interface Props {
 }
 const textIndex = ref(0)
 const morph = ref(0)
-const coolDown = ref(0)
+const coolDown = ref(props.coolDownTime)
 const time = ref(new Date())
 
 const text1Ref = ref<HTMLSpanElement>()
@@ -27,11 +27,11 @@ const text2Ref = ref<HTMLSpanElement>()
 function setStyles(fraction: number) {
   if (!text1Ref.value || !text2Ref.value) return
 
-  text2Ref.value.style.filter = `blur(${Math.min(8 / fraction - 8, 100)}px)`
+  text2Ref.value.style.filter = `blur(${Math.min(4.8 / fraction - 4.8, 40)}px)`
   text2Ref.value.style.opacity = `${fraction ** 0.4 * 100}%`
 
   const invertedFraction = 1 - fraction
-  text1Ref.value.style.filter = `blur(${Math.min(8 / invertedFraction - 8, 100)}px)`
+  text1Ref.value.style.filter = `blur(${Math.min(4.8 / invertedFraction - 4.8, 40)}px)`
   text1Ref.value.style.opacity = `${invertedFraction ** 0.4 * 100}%`
 
   text1Ref.value.textContent = props.texts[textIndex.value % props.texts.length]
@@ -85,6 +85,10 @@ function animate() {
 }
 
 onMounted(() => {
+  if (text1Ref.value && text2Ref.value) {
+    text1Ref.value.textContent = props.texts[0] || ''
+    text2Ref.value.textContent = props.texts[0] || ''
+  }
   animate()
 })
 

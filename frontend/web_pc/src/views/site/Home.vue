@@ -6,7 +6,6 @@
     <HomeActivitiesSection :activities="activities" :loading="loading" />
     <HomePeopleSection :people="people" :loading="loading" />
     <HomeAwardsSection :awards="awards" :loading="loading" />
-      <Test />
   </ViewPage>
 </template>
 
@@ -22,8 +21,6 @@ import HomeFocusSection from '@/components/site/home/HomeFocusSection.vue'
 import HomeHero from '@/components/site/home/HomeHero.vue'
 import HomeOverviewPage from '@/components/site/home/HomeOverviewPage.vue'
 import HomePeopleSection from '@/components/site/home/HomePeopleSection.vue'
-import { SmoothCursor } from '@/components/ui/smooth-cursor'
-import Test from '@/components/site/home/Test.vue'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -49,9 +46,9 @@ const instance = getCurrentInstance()
 
 const texts = ['开放原子开源社团', '江苏海事职业技术学院', 'JMI-OPENATOM']
 
-const heroMorphTime = 1.5
+const heroMorphTime = 0.86
 
-const heroMorphCoolDownTime = 1
+const heroMorphCoolDownTime = 2.4
 async function loadClubHome() {
   loading.value = true
   try {
@@ -80,44 +77,178 @@ function scrollTo(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-onMounted(async () => {
-  await loadClubHome()
-  await nextTick()
+function animateMetricValue(element: HTMLElement) {
+  const rawText = element.textContent?.trim() || ''
+  const match = rawText.match(/\d+(?:\.\d+)?/)
+  if (!match) return
+
+  const targetValue = Number(match[0])
+  if (!Number.isFinite(targetValue)) return
+
+  const startIndex = match.index || 0
+  const decimals = match[0].includes('.') ? match[0].split('.')[1]?.length || 0 : 0
+  const prefix = rawText.slice(0, startIndex)
+  const suffix = rawText.slice(startIndex + match[0].length)
+  const counter = { value: 0 }
+
+  gsap.to(counter, {
+    value: targetValue,
+    duration: 1.35,
+    ease: 'power2.out',
+    scrollTrigger: {
+      trigger: element,
+      start: 'top 88%',
+      once: true,
+    },
+    onUpdate: () => {
+      element.textContent = `${prefix}${counter.value.toFixed(decimals)}${suffix}`
+    },
+  })
+}
+
+function createHomeAnimations() {
   animationContext.value = gsap.context(() => {
-    gsap.from('.hero__content > *', {
-      y: 28,
-      opacity: 0,
-      duration: 0.8,
-      ease: 'power3.out',
-      stagger: 0.12,
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (prefersReducedMotion) {
+      ScrollTrigger.refresh()
+      return
+    }
+
+    const heroTimeline = gsap.timeline({
+      defaults: {
+        ease: 'power4.out',
+      },
     })
+
+    heroTimeline
+      .from('.hero', {
+        clipPath: 'inset(0 0 18% 0)',
+        duration: 1.05,
+      })
+      .from(
+        '.hero__map',
+        {
+          opacity: 0,
+          scale: 1.04,
+          duration: 1.2,
+        },
+        0,
+      )
+      .from(
+        '.hero__content',
+        {
+          y: 48,
+          opacity: 0,
+          filter: 'blur(14px)',
+          duration: 1,
+        },
+        0.32,
+      )
+
+    gsap.to('.home-hero__morph', {
+      y: -26,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.8,
+      },
+    })
+
+    gsap.from('.hero__actions .el-button', {
+      y: 26,
+      opacity: 0,
+      scale: 0.94,
+      duration: 0.72,
+      ease: 'back.out(1.7)',
+      stagger: 0.09,
+      scrollTrigger: {
+        trigger: '.home-overview-page',
+        start: 'top 68%',
+      },
+    })
+
     gsap.from('.command-panel', {
-      y: 34,
+      y: 46,
       opacity: 0,
+      filter: 'blur(10px)',
       duration: 0.9,
-      delay: 0.2,
       ease: 'power3.out',
+      scrollTrigger: {
+        trigger: '.command-panel',
+        start: 'top 82%',
+      },
     })
-    gsap.to('.hero__mesh', {
-      backgroundPosition: '120px 80px',
-      duration: 10,
-      repeat: -1,
-      yoyo: true,
-      ease: 'sine.inOut',
-    })
-    gsap.utils.toArray('.reveal-block, .reveal-card').forEach((element) => {
-      gsap.from(element as gsap.TweenTarget, {
-        y: 34,
+
+    gsap.utils.toArray<HTMLElement>('.signal-card').forEach((element, index) => {
+      gsap.from(element, {
+        y: 36,
         opacity: 0,
-        duration: 0.7,
-        ease: 'power2.out',
+        scale: 0.92,
+        duration: 0.72,
+        ease: 'back.out(1.5)',
+        delay: index * 0.05,
         scrollTrigger: {
           trigger: element,
-          start: 'top 84%',
+          start: 'top 88%',
         },
       })
     })
+
+    gsap.utils.toArray<HTMLElement>('.signal-card__value').forEach(animateMetricValue)
+
+    gsap.utils.toArray<HTMLElement>('.reveal-block').forEach((element) => {
+      gsap.from(element, {
+        y: 58,
+        opacity: 0,
+        filter: 'blur(12px)',
+        duration: 0.86,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: element,
+          start: 'top 82%',
+        },
+      })
+    })
+
+    gsap.utils.toArray<HTMLElement>('.reveal-card').forEach((element, index) => {
+      gsap.from(element, {
+        y: 64,
+        opacity: 0,
+        rotateX: -8,
+        scale: 0.96,
+        transformPerspective: 900,
+        transformOrigin: '50% 100%',
+        duration: 0.78,
+        ease: 'power3.out',
+        delay: (index % 4) * 0.05,
+        scrollTrigger: {
+          trigger: element,
+          start: 'top 86%',
+        },
+      })
+    })
+
+    gsap.to('.activity-band', {
+      backgroundColor: '#111114',
+      scrollTrigger: {
+        trigger: '.activity-band',
+        start: 'top 72%',
+        end: 'top 30%',
+        scrub: true,
+      },
+    })
+
+    ScrollTrigger.refresh()
   }, instance?.proxy?.$el)
+}
+
+onMounted(async () => {
+  await loadClubHome()
+  await nextTick()
+  createHomeAnimations()
 })
 
 onBeforeUnmount(() => {
@@ -127,6 +258,7 @@ onBeforeUnmount(() => {
 
 <style>
 .home-page {
+  animation: none;
   overflow: hidden;
   background: transparent;
 }
@@ -911,6 +1043,166 @@ onBeforeUnmount(() => {
   display: none;
 }
 
+.hero {
+  min-height: 100svh;
+  overflow: hidden;
+  color: #0f172a;
+  background: #f8fbff;
+  isolation: isolate;
+}
+
+.hero__map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 1;
+}
+
+.hero::before {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  content: '';
+  background: transparent;
+  pointer-events: none;
+}
+
+.hero::after {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 3;
+  height: 14%;
+  content: '';
+  background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.72) 82%, #ffffff 100%);
+  pointer-events: none;
+}
+
+.hero__glass {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(5px) saturate(1.12);
+  pointer-events: none;
+}
+
+.hero__inner {
+  z-index: 4;
+  min-height: 100svh;
+  align-content: center;
+  place-items: center;
+  padding: clamp(72px, 10vh, 112px) 0 clamp(96px, 13vh, 140px);
+}
+
+.hero__content {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  width: min(100%, 1060px);
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 14px 6px 8px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #334155;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(16px);
+  font-size: 13px;
+}
+
+.hero__logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.home-hero__morph {
+  width: min(100%, 980px, calc(100vw - 48px));
+  height: clamp(82px, 9vw, 118px);
+  min-height: clamp(82px, 9vw, 118px);
+  color: #0f172a;
+  filter: none;
+  font-size: clamp(44px, 6.8vw, 92px);
+  font-weight: 700;
+  line-height: 0.98;
+}
+
+.home-hero__morph span {
+  background: linear-gradient(90deg, #020617 0%, #0f766e 46%, #1d4ed8 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.hero__subtitle {
+  max-width: 660px;
+  margin: 0 auto;
+  color: #475569;
+  font-size: 18px;
+  line-height: 1.7;
+  letter-spacing: 0;
+}
+
+.home-overview-page {
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+}
+
+.signal-card,
+.brief-card,
+.person-card,
+.award-card,
+.activity-card {
+  transition:
+    transform 0.26s ease,
+    border-color 0.26s ease,
+    box-shadow 0.26s ease;
+  will-change: transform;
+}
+
+.signal-card {
+  overflow: hidden;
+}
+
+.signal-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  content: '';
+  background: linear-gradient(90deg, #00d1ff, #7cffb2);
+  opacity: 0.78;
+}
+
+.signal-card--award::before {
+  background: linear-gradient(90deg, #f7c948, #ff8f70);
+}
+
+.signal-card--recruit::before {
+  background: linear-gradient(90deg, #a78bfa, #00d1ff);
+}
+
+.signal-card:hover,
+.brief-card:hover,
+.person-card:hover,
+.award-card:hover,
+.activity-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
+}
+
+.activity-card {
+  border-radius: 8px;
+}
+
 @media (max-width: 1040px) {
   .hero__inner,
   .brief-grid,
@@ -930,7 +1222,16 @@ onBeforeUnmount(() => {
 
 @media (max-width: 720px) {
   .hero {
-    min-height: auto;
+    min-height: 88svh;
+  }
+
+  .hero__inner {
+    min-height: 88svh;
+    padding: 72px 0 108px;
+  }
+
+  .home-hero__morph {
+    min-height: 96px;
   }
 
   .hero__inner,

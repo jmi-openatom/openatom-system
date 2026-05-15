@@ -27,7 +27,7 @@
         <span class="version-tag">{{ version }}</span>
       </div>
     </el-aside>
-    <el-container>
+    <el-container class="admin-content">
       <el-header class="admin-header">
         <div class="admin-header__title">
           <el-button
@@ -242,12 +242,24 @@ async function handleCommand(command: string) {
 
 <style scoped>
 .admin-shell {
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background: #f5f5f7;
+}
+
+.admin-content {
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .admin-aside {
   display: flex;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  flex: 0 0 248px;
   height: 100vh;
   flex-direction: column;
   margin: 0;
@@ -315,6 +327,7 @@ async function handleCommand(command: string) {
 
 .admin-header {
   display: flex;
+  flex-shrink: 0;
   height: 52px;
   align-items: center;
   justify-content: space-between;
@@ -361,7 +374,11 @@ async function handleCommand(command: string) {
 }
 
 .admin-main {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #f5f5f7;
 }
 
@@ -465,6 +482,14 @@ async function handleCommand(command: string) {
 @media (max-width: 900px) {
   .admin-shell {
     display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .admin-content {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
   .admin-header {
@@ -508,6 +533,7 @@ async function handleCommand(command: string) {
 
   .admin-main {
     padding: 12px;
+    overflow: visible;
   }
 }
 

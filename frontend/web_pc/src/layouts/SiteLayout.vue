@@ -1,6 +1,11 @@
 <template>
-  <div class="site-shell">
-    <header class="site-header">
+  <div class="site-shell" :class="{ 'site-shell--home': isHomeRoute }">
+    <header
+      :aria-hidden="!headerVisible"
+      :class="{ 'site-header--hidden': !headerVisible, 'site-header--home': isHomeRoute }"
+      class="site-header"
+      v-bind="!headerVisible ? { inert: '' } : {}"
+    >
       <div class="container site-header__inner">
         <router-link class="brand" to="/">
             <img alt="徽标" class="site-footer__logo" src="/logo.png" />
@@ -110,11 +115,11 @@ import {
   Setting as SettingIcon,
   UserFilled as UserFilledIcon,
 } from '@element-plus/icons-vue'
-import { computed, markRaw, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { getToken } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
 import { notificationApi } from '@/api'
-import {LiquidLogo} from "@/components/ui/liquid-logo";
 
 const Setting = markRaw(SettingIcon)
 
@@ -131,6 +136,17 @@ const unreadCount = ref(0)
 const unreadTimer = ref(null as any)
 
 const version = ref(__APP_VERSION__)
+
+const route = useRoute()
+
+const hasScrolledPastHeroTop = ref(false)
+
+const isHomeRoute = computed(() => route.name === 'site-home')
+
+const headerVisible = computed(() => {
+  return !isHomeRoute.value || hasScrolledPastHeroTop.value || mobileNavVisible.value
+})
+
 const isLoggedIn = computed(() => {
   return Boolean(getToken())
 })
@@ -148,14 +164,29 @@ async function fetchUnreadCount() {
   }
 }
 
+function updateHeaderState() {
+  hasScrolledPastHeroTop.value = window.scrollY > 72
+}
+
 onMounted(() => {
+  updateHeaderState()
+  window.addEventListener('scroll', updateHeaderState, { passive: true })
   if (isLoggedIn.value) {
     fetchUnreadCount()
     unreadTimer.value = setInterval(fetchUnreadCount, 30000)
   }
 })
 
+watch(
+  () => route.fullPath,
+  async () => {
+    await nextTick()
+    updateHeaderState()
+  },
+)
+
 onBeforeUnmount(() => {
+  window.removeEventListener('scroll', updateHeaderState)
   if (unreadTimer.value) clearInterval(unreadTimer.value)
 })
 </script>
@@ -163,25 +194,65 @@ onBeforeUnmount(() => {
 <style scoped>
 /* 页面整体布局：Flex 垂直排布 */
 .site-shell {
+  --oa-site-header-height: 60px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background: #ffffff;
 }
 
+.site-shell:not(.site-shell--home) .site-main {
+  padding-top: var(--oa-site-header-height);
+}
+
 /* Header 样式 */
 .site-header {
   flex-shrink: 0;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.86);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  backdrop-filter: saturate(180%) blur(18px);
-  animation: navDrop 0.38s ease both;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.68);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 16px 46px rgba(15, 23, 42, 0.08);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  backdrop-filter: blur(24px) saturate(190%);
+  transform: translateY(0);
+  opacity: 1;
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.22s ease,
+    background-color 0.22s ease,
+    box-shadow 0.22s ease;
+  will-change: transform, opacity;
+}
+
+.site-header::before {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.44)),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.08), transparent 36%, rgba(34, 197, 94, 0.07));
+  pointer-events: none;
+}
+
+.site-header--home {
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.1);
+}
+
+.site-header--hidden {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(calc(-100% - 12px));
 }
 
 .site-header__inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   min-height: 58px;
   align-items: center;
@@ -434,6 +505,10 @@ onBeforeUnmount(() => {
 
 /* 响应式 */
 @media (max-width: 900px) {
+  .site-shell {
+    --oa-site-header-height: 72px;
+  }
+
   .site-header__inner {
     min-height: 52px;
     flex-wrap: nowrap;
