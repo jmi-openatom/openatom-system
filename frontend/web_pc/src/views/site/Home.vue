@@ -44,7 +44,7 @@ const animationContext = ref<any>()
 
 const instance = getCurrentInstance()
 
-const texts = ['开放原子开源社团', '江苏海事职业技术学院', 'JMI-OPENATOM']
+const texts = ['开放原子开源社团', 'JMI-OPENATOM','信息工程学院']
 
 const heroMorphTime = 0.86
 
@@ -1082,7 +1082,7 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: 1;
   background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(5px) saturate(1.12);
+  backdrop-filter: blur(2px) saturate(1.12);
   pointer-events: none;
 }
 

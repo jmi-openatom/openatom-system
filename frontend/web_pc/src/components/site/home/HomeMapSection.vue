@@ -45,7 +45,7 @@ let earthRotationTimer: number | undefined
 let nextCampusHoldTimer: number | undefined
 let rotationFrame: number | undefined
 
-const CAMPUS_CENTER: [number, number] = [118.8823, 31.9108]
+const CAMPUS_CENTER: [number, number] = [118.903, 31.920]
 const EARTH_CENTER: [number, number] = [-40, 26]
 const CAMPUS_GLOBE_CENTER: [number, number] = [CAMPUS_CENTER[0], 26]
 const CAMPUS_HOLD_MS = 15000
@@ -55,7 +55,7 @@ const FLY_TO_CAMPUS_MS = 5600
 
 const earthCamera = {
   center: EARTH_CENTER,
-  zoom: 1.72,
+  zoom: 1.3,
   pitch: 0,
   bearing: 0,
 } satisfies CameraOptions
@@ -63,8 +63,8 @@ const earthCamera = {
 const campusCamera = {
   center: CAMPUS_CENTER,
   zoom: 16.25,
-  pitch: 68,
-  bearing: -34,
+  pitch: 0,
+  bearing: 0,
 } satisfies CameraOptions
 
 function mapFog(theme: ResolvedTheme) {
