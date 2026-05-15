@@ -85,7 +85,7 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import { authApi, siteApi } from '@/api'
-import { getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
+import { clearSession, getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
 import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
@@ -137,7 +137,7 @@ async function fetchApplications() {
 
 async function logout() {
   await authApi.logout()
-  localStorage.clear()
+  clearSession()
   router.push('/admin/login')
 }
 

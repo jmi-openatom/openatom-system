@@ -13,8 +13,8 @@
         :default-active="$route.path"
         class="admin-menu"
         background-color="transparent"
-        text-color="#333333"
-        active-text-color="#ffffff"
+        text-color="var(--oa-muted)"
+        active-text-color="var(--oa-active-text)"
       >
         <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
           <el-icon>
@@ -42,6 +42,7 @@
           </div>
         </div>
         <div class="admin-header__actions">
+          <ThemeToggle />
           <el-button :icon="HomeFilled" @click="$router.push('/')">官网</el-button>
           <el-dropdown @command="handleCommand">
             <el-button type="primary">
@@ -111,6 +112,7 @@ import {
 import { authApi } from '@/api'
 import { clearSession, getCurrentUser } from '@/utils/auth.ts'
 import { hasAnyPermission } from '@/utils/permission.ts'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
 const mobileMenuVisible = ref(false)
 
@@ -245,7 +247,8 @@ async function handleCommand(command: string) {
   height: 100vh;
   min-height: 100vh;
   overflow: hidden;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-text);
 }
 
 .admin-content {
@@ -264,9 +267,9 @@ async function handleCommand(command: string) {
   flex-direction: column;
   margin: 0;
   border: 0;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid var(--oa-border);
   border-radius: 0;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   box-shadow: none;
   backdrop-filter: none;
   animation: adminRailIn 0.42s ease both;
@@ -278,8 +281,8 @@ async function handleCommand(command: string) {
   align-items: center;
   gap: 12px;
   padding: 16px 18px 14px;
-  color: #1d1d1f;
-  border-bottom: 1px solid #f0f0f0;
+  color: var(--oa-text);
+  border-bottom: 1px solid var(--oa-divider);
 }
 
 .admin-brand__mark {
@@ -287,9 +290,9 @@ async function handleCommand(command: string) {
   width: 38px;
   height: 38px;
   place-items: center;
-  color: #ffffff;
-  background: #1d1d1f;
-  border: 1px solid #1d1d1f;
+  color: var(--oa-active-text);
+  background: var(--oa-active-bg);
+  border: 1px solid var(--oa-active-bg);
   border-radius: 10px;
   font-weight: 600;
   font-size: 14px;
@@ -297,7 +300,7 @@ async function handleCommand(command: string) {
 
 .admin-brand strong {
   display: block;
-  color: #1d1d1f;
+  color: var(--oa-text);
   font-size: 18px;
   font-weight: 600;
   line-height: 1.15;
@@ -307,7 +310,7 @@ async function handleCommand(command: string) {
 .admin-brand small {
   display: block;
   margin-top: 5px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 12px;
   line-height: 1;
 }
@@ -333,9 +336,9 @@ async function handleCommand(command: string) {
   justify-content: space-between;
   margin: 0;
   padding: 0 22px;
-  background: rgba(245, 245, 247, 0.82);
+  background: var(--oa-admin-header-bg);
   border: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--oa-header-border);
   border-radius: 0;
   box-shadow: none;
   backdrop-filter: none;
@@ -379,7 +382,7 @@ async function handleCommand(command: string) {
   padding: 24px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .admin-menu :deep(.el-menu-item) {
@@ -387,7 +390,7 @@ async function handleCommand(command: string) {
   padding: 0 12px !important;
   margin: 2px 0;
   line-height: 42px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   border-radius: 12px;
   font-size: 14px;
   letter-spacing: 0;
@@ -411,20 +414,20 @@ async function handleCommand(command: string) {
 }
 
 .admin-menu :deep(.el-menu-item:hover) {
-  background: #f5f5f7;
-  color: #1d1d1f;
+  background: var(--oa-nav-hover-bg);
+  color: var(--oa-text);
   transform: translateX(2px);
 }
 
 .admin-menu :deep(.el-menu-item.is-active) {
-  background: #1d1d1f;
-  color: #ffffff;
+  background: var(--oa-active-bg);
+  color: var(--oa-active-text);
   font-weight: 500;
 }
 
 .admin-menu :deep(.el-menu-item.is-active:hover) {
-  background: #000000;
-  color: #ffffff;
+  background: var(--oa-active-hover-bg);
+  color: var(--oa-active-text);
 }
 
 @keyframes adminRailIn {
@@ -454,7 +457,7 @@ async function handleCommand(command: string) {
   margin-top: auto;
   justify-content: center;
   padding: 14px 16px 18px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--oa-divider);
 }
 
 .admin-drawer-menu {
@@ -469,11 +472,11 @@ async function handleCommand(command: string) {
 }
 
 .version-tag {
-  background: #f5f5f7;
-  color: #7a7a7a;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-muted);
   padding: 5px 10px;
   border-radius: 999px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   line-height: 1;

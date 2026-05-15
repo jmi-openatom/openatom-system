@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: light;
   --background: 0 0% 96%;
   --foreground: 240 3% 12%;
   --card: 0 0% 100%;
@@ -43,6 +44,32 @@
   --oa-bg: #eef6ff;
   --oa-surface: rgba(255, 255, 255, 0.86);
   --oa-panel: rgba(255, 255, 255, 0.9);
+  --oa-page-bg: #ffffff;
+  --oa-page-soft-bg: #f5f5f7;
+  --oa-elevated-bg: #ffffff;
+  --oa-text-soft: #333333;
+  --oa-active-bg: #1d1d1f;
+  --oa-active-hover-bg: #000000;
+  --oa-active-text: #ffffff;
+  --oa-button-bg: #ffffff;
+  --oa-button-subtle-bg: #f5f5f7;
+  --oa-button-hover-bg: #ededf0;
+  --oa-button-border: #d2d2d7;
+  --oa-button-hover-border: #1d1d1f;
+  --oa-button-text: #1d1d1f;
+  --oa-button-hover-text: #000000;
+  --oa-nav-hover-bg: #f5f5f7;
+  --oa-header-bg: rgba(255, 255, 255, 0.68);
+  --oa-header-home-bg: rgba(255, 255, 255, 0.62);
+  --oa-header-border: rgba(148, 163, 184, 0.22);
+  --oa-header-shadow: 0 16px 46px rgba(15, 23, 42, 0.08);
+  --oa-header-home-shadow: 0 18px 48px rgba(15, 23, 42, 0.1);
+  --oa-header-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.44)),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.08), transparent 36%, rgba(34, 197, 94, 0.07));
+  --oa-admin-header-bg: rgba(245, 245, 247, 0.82);
+  --oa-map-bg: #f8fbff;
+  --oa-map-fallback: radial-gradient(circle at 50% 45%, rgba(59, 130, 246, 0.12), transparent 38%),
+    radial-gradient(circle at 52% 44%, rgba(20, 184, 166, 0.08), transparent 54%), #f8fbff;
   --oa-radius: 18px;
   --oa-radius-sm: 8px;
   --oa-radius-md: 11px;
@@ -84,6 +111,108 @@
   --el-mask-color: rgba(0, 0, 0, 0.28);
   --el-box-shadow-light: none;
   --el-box-shadow: none;
+}
+
+html.dark {
+  color-scheme: dark;
+  --background: 222 47% 8%;
+  --foreground: 210 40% 96%;
+  --card: 222 39% 11%;
+  --card-foreground: 210 40% 96%;
+  --popover: 222 39% 11%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 210 40% 96%;
+  --primary-foreground: 222 47% 8%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 96%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 96%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 33% 22%;
+  --input: 217 33% 22%;
+  --ring: 188 86% 53%;
+  --oa-primary: #e5e7eb;
+  --oa-primary-dark: #f8fafc;
+  --oa-primary-soft: #082f49;
+  --oa-accent: #22d3ee;
+  --oa-accent-2: #34d399;
+  --oa-warm: #fbbf24;
+  --oa-gradient: linear-gradient(135deg, #e2e8f0 0%, #22d3ee 48%, #34d399 100%);
+  --oa-hero-gradient: radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.16), transparent 34%),
+    radial-gradient(circle at 86% 18%, rgba(52, 211, 153, 0.12), transparent 36%),
+    linear-gradient(180deg, #020617 0%, #0f172a 48%, #111827 100%);
+  --oa-primary-on-dark: #ffffff;
+  --oa-focus-ring: rgba(34, 211, 238, 0.22);
+  --oa-text: #f8fafc;
+  --oa-muted: #94a3b8;
+  --oa-muted-dark: #cbd5e1;
+  --oa-border: #334155;
+  --oa-divider: #1e293b;
+  --oa-bg: #0f172a;
+  --oa-surface: rgba(15, 23, 42, 0.86);
+  --oa-panel: rgba(17, 24, 39, 0.92);
+  --oa-page-bg: #020617;
+  --oa-page-soft-bg: #0f172a;
+  --oa-elevated-bg: #111827;
+  --oa-text-soft: #cbd5e1;
+  --oa-active-bg: #f8fafc;
+  --oa-active-hover-bg: #e2e8f0;
+  --oa-active-text: #020617;
+  --oa-button-bg: #111827;
+  --oa-button-subtle-bg: #1e293b;
+  --oa-button-hover-bg: #263449;
+  --oa-button-border: #334155;
+  --oa-button-hover-border: #64748b;
+  --oa-button-text: #e5e7eb;
+  --oa-button-hover-text: #ffffff;
+  --oa-nav-hover-bg: #1e293b;
+  --oa-header-bg: rgba(2, 6, 23, 0.74);
+  --oa-header-home-bg: rgba(2, 6, 23, 0.68);
+  --oa-header-border: rgba(148, 163, 184, 0.2);
+  --oa-header-shadow: 0 16px 46px rgba(0, 0, 0, 0.28);
+  --oa-header-home-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+  --oa-header-overlay: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.44)),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.08), transparent 36%, rgba(52, 211, 153, 0.07));
+  --oa-admin-header-bg: rgba(15, 23, 42, 0.84);
+  --oa-map-bg: #020617;
+  --oa-map-fallback: radial-gradient(circle at 50% 45%, rgba(34, 211, 238, 0.12), transparent 38%),
+    radial-gradient(circle at 52% 44%, rgba(52, 211, 153, 0.08), transparent 54%), #020617;
+  --oa-product-shadow: 3px 8px 34px rgba(0, 0, 0, 0.5);
+  --oa-dark-tile: #111827;
+  --oa-dark-tile-2: #0f172a;
+  --oa-dark-tile-3: #020617;
+  --el-color-primary: #e5e7eb;
+  --el-color-primary-dark-2: #ffffff;
+  --el-color-primary-light-3: #cbd5e1;
+  --el-color-primary-light-5: #94a3b8;
+  --el-color-primary-light-7: #475569;
+  --el-color-primary-light-8: #334155;
+  --el-color-primary-light-9: #1e293b;
+  --el-color-success: #34d399;
+  --el-color-success-light-9: #052e2b;
+  --el-color-warning: #fbbf24;
+  --el-color-warning-light-9: #422006;
+  --el-color-danger: #f87171;
+  --el-color-danger-light-9: #450a0a;
+  --el-color-info: #94a3b8;
+  --el-color-info-light-9: #1e293b;
+  --el-bg-color: #111827;
+  --el-bg-color-page: #0f172a;
+  --el-bg-color-overlay: #111827;
+  --el-border-color: #334155;
+  --el-border-color-light: #1e293b;
+  --el-border-color-lighter: #182133;
+  --el-text-color-primary: #f8fafc;
+  --el-text-color-regular: #cbd5e1;
+  --el-text-color-secondary: #94a3b8;
+  --el-fill-color: #1e293b;
+  --el-fill-color-light: #111827;
+  --el-fill-color-lighter: #0f172a;
+  --el-fill-color-blank: #111827;
+  --el-mask-color: rgba(0, 0, 0, 0.58);
 }
 
 * {
@@ -305,59 +434,61 @@ svg {
 }
 
 .el-button:not(.el-button--primary):not(.is-link):not(.is-text) {
-  --el-button-bg-color: #ffffff;
-  --el-button-border-color: #d2d2d7;
-  --el-button-text-color: #1d1d1f;
-  --el-button-hover-bg-color: #f5f5f7;
-  --el-button-hover-border-color: #1d1d1f;
-  --el-button-hover-text-color: #000000;
-  --el-button-active-bg-color: #ededf0;
-  --el-button-active-border-color: #000000;
-  --el-button-active-text-color: #000000;
+  --el-button-bg-color: var(--oa-button-bg);
+  --el-button-border-color: var(--oa-button-border);
+  --el-button-text-color: var(--oa-button-text);
+  --el-button-hover-bg-color: var(--oa-button-hover-bg);
+  --el-button-hover-border-color: var(--oa-button-hover-border);
+  --el-button-hover-text-color: var(--oa-button-hover-text);
+  --el-button-active-bg-color: var(--oa-button-hover-bg);
+  --el-button-active-border-color: var(--oa-button-hover-border);
+  --el-button-active-text-color: var(--oa-button-hover-text);
 }
 
 .el-button--primary {
-  --el-button-bg-color: var(--oa-primary);
-  --el-button-border-color: var(--oa-primary);
-  --el-button-hover-bg-color: #000000;
-  --el-button-hover-border-color: #000000;
-  --el-button-active-bg-color: var(--oa-primary);
-  --el-button-active-border-color: var(--oa-primary);
-  --el-button-text-color: #ffffff;
+  --el-button-bg-color: var(--oa-active-bg);
+  --el-button-border-color: var(--oa-active-bg);
+  --el-button-hover-bg-color: var(--oa-active-hover-bg);
+  --el-button-hover-border-color: var(--oa-active-hover-bg);
+  --el-button-active-bg-color: var(--oa-active-bg);
+  --el-button-active-border-color: var(--oa-active-bg);
+  --el-button-text-color: var(--oa-active-text);
+  --el-button-hover-text-color: var(--oa-active-text);
+  --el-button-active-text-color: var(--oa-active-text);
 }
 
 .el-button--primary.is-plain {
-  --el-button-bg-color: #ffffff;
-  --el-button-border-color: #d2d2d7;
-  --el-button-hover-bg-color: #1d1d1f;
-  --el-button-hover-border-color: #1d1d1f;
-  --el-button-active-bg-color: #000000;
-  --el-button-active-border-color: #000000;
-  --el-button-text-color: #1d1d1f;
-  --el-button-hover-text-color: #ffffff;
-  --el-button-active-text-color: #ffffff;
+  --el-button-bg-color: var(--oa-button-bg);
+  --el-button-border-color: var(--oa-button-border);
+  --el-button-hover-bg-color: var(--oa-active-bg);
+  --el-button-hover-border-color: var(--oa-active-bg);
+  --el-button-active-bg-color: var(--oa-active-hover-bg);
+  --el-button-active-border-color: var(--oa-active-hover-bg);
+  --el-button-text-color: var(--oa-button-text);
+  --el-button-hover-text-color: var(--oa-active-text);
+  --el-button-active-text-color: var(--oa-active-text);
 }
 
 .el-button.is-link,
 .el-button--primary.is-link {
-  --el-button-text-color: #1d1d1f;
-  --el-button-hover-text-color: #000000;
-  --el-button-active-text-color: #000000;
+  --el-button-text-color: var(--oa-text);
+  --el-button-hover-text-color: var(--oa-button-hover-text);
+  --el-button-active-text-color: var(--oa-button-hover-text);
 }
 
 .el-button--success,
 .el-button--warning,
 .el-button--info,
 .el-button--danger {
-  --el-button-bg-color: #ffffff;
-  --el-button-border-color: #d2d2d7;
-  --el-button-text-color: #1d1d1f;
-  --el-button-hover-bg-color: #1d1d1f;
-  --el-button-hover-border-color: #1d1d1f;
-  --el-button-hover-text-color: #ffffff;
-  --el-button-active-bg-color: #000000;
-  --el-button-active-border-color: #000000;
-  --el-button-active-text-color: #ffffff;
+  --el-button-bg-color: var(--oa-button-bg);
+  --el-button-border-color: var(--oa-button-border);
+  --el-button-text-color: var(--oa-button-text);
+  --el-button-hover-bg-color: var(--oa-active-bg);
+  --el-button-hover-border-color: var(--oa-active-bg);
+  --el-button-hover-text-color: var(--oa-active-text);
+  --el-button-active-bg-color: var(--oa-active-hover-bg);
+  --el-button-active-border-color: var(--oa-active-hover-bg);
+  --el-button-active-text-color: var(--oa-active-text);
 }
 
 .el-button--primary:focus-visible,
@@ -396,7 +527,7 @@ svg {
 .el-message-box,
 .el-popover,
 .el-popper {
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   backdrop-filter: none;
 }
 
@@ -406,7 +537,7 @@ svg {
 .el-date-editor.el-input__wrapper,
 .el-input-number .el-input__wrapper {
   border-radius: 12px;
-  background: #ffffff !important;
+  background: var(--el-fill-color-blank) !important;
   box-shadow: 0 0 0 1px var(--oa-border) inset !important;
   transition:
     background-color 0.16s ease,
@@ -425,7 +556,7 @@ svg {
 .el-input.is-disabled .el-input__wrapper,
 .el-textarea.is-disabled .el-textarea__inner,
 .el-select .el-select__wrapper.is-disabled {
-  background: #f5f5f7 !important;
+  background: var(--el-fill-color) !important;
   box-shadow: 0 0 0 1px var(--oa-divider) inset !important;
 }
 
@@ -434,8 +565,8 @@ svg {
 }
 
 .el-table th.el-table__cell {
-  background: #f5f5f7;
-  color: #333333;
+  background: var(--el-fill-color);
+  color: var(--el-text-color-regular);
 }
 
 .el-table {
@@ -458,26 +589,26 @@ svg {
 .el-checkbox__input.is-indeterminate .el-checkbox__inner,
 .el-radio__input.is-checked .el-radio__inner,
 .el-switch.is-checked .el-switch__core {
-  background: #1d1d1f !important;
-  border-color: #1d1d1f !important;
+  background: var(--oa-active-bg) !important;
+  border-color: var(--oa-active-bg) !important;
 }
 
 .el-checkbox__input.is-checked + .el-checkbox__label,
 .el-radio__input.is-checked + .el-radio__label {
-  color: #1d1d1f !important;
+  color: var(--oa-text) !important;
 }
 
 .el-checkbox__inner:hover,
 .el-radio__inner:hover,
 .el-switch__core:hover {
-  border-color: #1d1d1f !important;
+  border-color: var(--oa-button-hover-border) !important;
 }
 
 .el-select-dropdown__item.is-selected,
 .el-dropdown-menu__item:not(.is-disabled):focus,
 .el-dropdown-menu__item:not(.is-disabled):hover {
-  background: #f5f5f7 !important;
-  color: #1d1d1f !important;
+  background: var(--oa-nav-hover-bg) !important;
+  color: var(--oa-text) !important;
 }
 
 .el-select-dropdown__item.is-hovering,
@@ -485,24 +616,24 @@ svg {
 .el-cascader-node.in-active-path,
 .el-cascader-node.is-active,
 .el-cascader-node.is-selectable.in-checked-path {
-  background: #f5f5f7 !important;
-  color: #1d1d1f !important;
+  background: var(--oa-nav-hover-bg) !important;
+  color: var(--oa-text) !important;
 }
 
 .el-pagination button,
 .el-pagination .el-pager li {
   border-radius: 999px;
-  color: #333333;
+  color: var(--oa-text-soft);
 }
 
 .el-pagination .el-pager li.is-active {
-  background: #1d1d1f;
-  color: #ffffff;
+  background: var(--oa-active-bg);
+  color: var(--oa-active-text);
 }
 
 .el-pagination button:hover,
 .el-pagination .el-pager li:hover {
-  color: #000000;
+  color: var(--oa-text);
 }
 
 .el-link,
@@ -512,9 +643,9 @@ a:hover {
 }
 
 .el-tag {
-  --el-tag-bg-color: #fafafc;
+  --el-tag-bg-color: var(--el-fill-color-light);
   --el-tag-border-color: var(--oa-divider);
-  --el-tag-text-color: #333333;
+  --el-tag-text-color: var(--oa-text-soft);
   font-weight: 400;
 }
 
@@ -523,9 +654,9 @@ a:hover {
 .el-tag--warning,
 .el-tag--danger,
 .el-tag--info {
-  --el-tag-bg-color: #fafafc;
-  --el-tag-border-color: #e0e0e0;
-  --el-tag-text-color: #333333;
+  --el-tag-bg-color: var(--el-fill-color-light);
+  --el-tag-border-color: var(--oa-border);
+  --el-tag-text-color: var(--oa-text-soft);
 }
 
 .el-tabs__active-bar {
@@ -538,26 +669,26 @@ a:hover {
 }
 
 .el-alert {
-  --el-alert-bg-color: #fafafc;
-  border: 1px solid #e0e0e0;
-  color: #333333;
+  --el-alert-bg-color: var(--el-fill-color-light);
+  border: 1px solid var(--oa-border);
+  color: var(--oa-text-soft);
 }
 
 .el-alert .el-alert__title,
 .el-alert .el-alert__description {
-  color: #333333;
+  color: var(--oa-text-soft);
 }
 
 .el-alert__icon,
 .el-message__icon,
 .el-notification__icon,
 .el-loading-spinner .path {
-  color: #1d1d1f !important;
-  stroke: #1d1d1f !important;
+  color: var(--oa-text) !important;
+  stroke: var(--oa-text) !important;
 }
 
 .el-loading-mask {
-  background-color: rgba(255, 255, 255, 0.72) !important;
+  background-color: color-mix(in srgb, var(--oa-page-bg) 72%, transparent) !important;
   backdrop-filter: blur(8px);
 }
 
@@ -567,7 +698,7 @@ a:hover {
 }
 
 .el-empty__description {
-  color: #7a7a7a;
+  color: var(--oa-muted);
 }
 
 .el-step__head.is-process,
@@ -576,20 +707,20 @@ a:hover {
 .el-step__title.is-finish,
 .el-step__description.is-process,
 .el-step__description.is-finish {
-  color: #1d1d1f !important;
-  border-color: #1d1d1f !important;
+  color: var(--oa-text) !important;
+  border-color: var(--oa-text) !important;
 }
 
 .el-step__line {
-  background-color: #e0e0e0 !important;
+  background-color: var(--oa-border) !important;
 }
 
 .el-timeline-item__node {
-  background: #1d1d1f !important;
+  background: var(--oa-active-bg) !important;
 }
 
 .el-timeline-item__tail {
-  border-left-color: #e0e0e0 !important;
+  border-left-color: var(--oa-border) !important;
 }
 
 .el-upload,
@@ -598,25 +729,25 @@ a:hover {
 }
 
 .el-upload-dragger {
-  background: #fafafc !important;
-  border-color: #d2d2d7 !important;
+  background: var(--el-fill-color-light) !important;
+  border-color: var(--oa-button-border) !important;
   border-radius: var(--oa-radius) !important;
 }
 
 .el-upload-dragger:hover {
-  border-color: #1d1d1f !important;
+  border-color: var(--oa-button-hover-border) !important;
 }
 
 .el-progress-bar__inner {
-  background-color: #1d1d1f !important;
+  background-color: var(--oa-active-bg) !important;
 }
 
 .el-date-table td.current:not(.disabled) .el-date-table-cell__text,
 .el-date-table td.today .el-date-table-cell__text,
 .el-month-table td.current:not(.disabled) .cell,
 .el-year-table td.current:not(.disabled) .cell {
-  background: #1d1d1f !important;
-  color: #ffffff !important;
+  background: var(--oa-active-bg) !important;
+  color: var(--oa-active-text) !important;
 }
 
 .el-picker-panel__icon-btn:hover,
@@ -624,7 +755,7 @@ a:hover {
 .el-year-table td .cell:hover,
 .el-month-table td .cell:hover,
 .el-date-table td.available:hover {
-  color: #1d1d1f !important;
+  color: var(--oa-text) !important;
 }
 
 .el-overlay {
@@ -634,18 +765,18 @@ a:hover {
 .el-dialog__header,
 .el-drawer__header,
 .el-message-box__header {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--oa-divider);
 }
 
 .el-dialog__footer,
 .el-drawer__footer,
 .el-message-box__btns {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--oa-divider);
 }
 
 .el-message,
 .el-notification {
-  border-color: #e0e0e0 !important;
+  border-color: var(--oa-border) !important;
   border-radius: var(--oa-radius) !important;
   box-shadow: none !important;
 }
@@ -666,7 +797,7 @@ a:hover {
 .calendar-page,
 .activities-page {
   min-height: calc(100vh - 44px);
-  background: #ffffff;
+  background: var(--oa-page-bg);
 }
 
 .site-page > .container,
@@ -686,7 +817,7 @@ a:hover {
   display: grid;
   gap: 18px;
   min-height: calc(100vh - 52px);
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .toolbar {
@@ -694,7 +825,7 @@ a:hover {
   align-items: flex-start;
   padding: 20px 22px;
   margin-bottom: 0;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   border: 1px solid var(--oa-border);
   border-radius: var(--oa-radius);
   animation: oaFadeUp 0.42s ease both;
@@ -706,7 +837,7 @@ a:hover {
 
 .admin-page > .toolbar::before {
   display: block;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   content: '管理视图';
   font-size: 12px;
   line-height: 1;
@@ -748,7 +879,7 @@ a:hover {
 .brief-card,
 .person-card,
 .award-card {
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   border: 1px solid var(--oa-border);
   box-shadow: none;
   animation: oaFadeUp 0.5s ease both;
@@ -799,7 +930,7 @@ a:hover {
 .activities-list,
 .detail-grid,
 .preview-screen {
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .activity-item:hover,
@@ -1039,4 +1170,308 @@ a:hover {
   .el-message-box {
     width: calc(100% - 24px) !important;
   }
+}
+
+html.dark body,
+html.dark #app {
+  background: var(--oa-page-bg);
+  color: var(--oa-text);
+}
+
+html.dark .site-page,
+html.dark .activities-page,
+html.dark .notifications-page,
+html.dark .scan-page,
+html.dark .calendar-page,
+html.dark .admin-page,
+html.dark .checkin-preview-overlay,
+html.dark .preview-screen {
+  background: var(--oa-page-soft-bg) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .home-page,
+html.dark .hero,
+html.dark .home-overview-page {
+  background: var(--oa-page-bg) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .hero::after {
+  background: linear-gradient(180deg, transparent 0%, rgba(2, 6, 23, 0.72) 82%, var(--oa-page-bg) 100%) !important;
+}
+
+html.dark .hero__glass {
+  background: rgba(2, 6, 23, 0.18) !important;
+}
+
+html.dark .club-brief,
+html.dark .achievements-section,
+html.dark .activity-band {
+  background: var(--oa-page-soft-bg) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .people-section {
+  background: var(--oa-page-bg) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .progress-list,
+html.dark .leave-page,
+html.dark .profile-grid,
+html.dark .apply-grid,
+html.dark .calendar-shell,
+html.dark .club-grid,
+html.dark .signal-grid,
+html.dark .stat-grid,
+html.dark .dashboard-grid,
+html.dark .office-layout,
+html.dark .office-list,
+html.dark .designer-list,
+html.dark .school-calendar-page,
+html.dark .leave-groups,
+html.dark .role-grid {
+  background: var(--oa-divider) !important;
+  border-color: var(--oa-border) !important;
+}
+
+html.dark .progress-header,
+html.dark .leave-main,
+html.dark .leave-history,
+html.dark .apply-grid > div,
+html.dark .apply-grid > .el-card,
+html.dark .section-head,
+html.dark .week-card,
+html.dark .activities-hero,
+html.dark .activity-row,
+html.dark .club-card,
+html.dark .markdown-body,
+html.dark .signup-panel,
+html.dark .scan-panel,
+html.dark .notifications-hero__copy,
+html.dark .notifications-hero__stats,
+html.dark .notification-summary,
+html.dark .notification-item,
+html.dark .empty-state,
+html.dark .stat-card,
+html.dark .office-list-item,
+html.dark .designer-card,
+html.dark .setting-panel,
+html.dark .calendar-preview,
+html.dark .date-group,
+html.dark .leave-card,
+html.dark .date-group,
+html.dark .roster-column,
+html.dark .feedback-bubble,
+html.dark .profile-panel,
+html.dark .record-comment,
+html.dark .toolbar,
+html.dark .panel,
+html.dark .el-card,
+html.dark .el-table,
+html.dark .el-dialog,
+html.dark .el-drawer,
+html.dark .el-message-box,
+html.dark .el-popover,
+html.dark .el-popper {
+  background: var(--oa-elevated-bg) !important;
+  border-color: var(--oa-border) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .el-table,
+html.dark .el-table tr,
+html.dark .el-table td.el-table__cell,
+html.dark .el-table th.el-table__cell,
+html.dark .el-table__body,
+html.dark .el-table__body-wrapper,
+html.dark .el-table__header-wrapper,
+html.dark .el-table__inner-wrapper,
+html.dark .el-table__empty-block,
+html.dark .el-table__expanded-cell {
+  background: var(--oa-elevated-bg) !important;
+  border-color: var(--oa-border) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .el-table th.el-table__cell,
+html.dark .el-table__row:hover > td.el-table__cell,
+html.dark .el-table__body tr.hover-row > td.el-table__cell {
+  background: var(--oa-button-subtle-bg) !important;
+}
+
+html.dark .el-input__wrapper,
+html.dark .el-textarea__inner,
+html.dark .el-select__wrapper,
+html.dark .el-date-editor.el-input__wrapper,
+html.dark .el-input-number .el-input__wrapper,
+html.dark .el-upload-dragger,
+html.dark .el-picker-panel,
+html.dark .el-select-dropdown,
+html.dark .el-dropdown-menu,
+html.dark .el-cascader__dropdown {
+  background: var(--oa-elevated-bg) !important;
+  border-color: var(--oa-border) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .el-input__inner,
+html.dark .el-textarea__inner,
+html.dark .el-select__placeholder,
+html.dark .el-select__selected-item,
+html.dark .el-form-item__label,
+html.dark .el-checkbox__label,
+html.dark .el-radio__label,
+html.dark .el-descriptions__label,
+html.dark .el-descriptions__content {
+  color: var(--oa-text) !important;
+}
+
+html.dark .summary-item,
+html.dark .interview-item,
+html.dark .leave-image,
+html.dark .dialog-image,
+html.dark .status-card,
+html.dark .status-card--success,
+html.dark .day-cell,
+html.dark .day-cell--rest,
+html.dark .activity-row__date,
+html.dark .signal-card,
+html.dark .signal-card--members,
+html.dark .signal-card--activity,
+html.dark .signal-card--award,
+html.dark .signal-card--recruit,
+html.dark .terminal-strip span,
+html.dark .brief-card,
+html.dark .person-card,
+html.dark .award-card,
+html.dark .activity-card,
+html.dark .hero__tag,
+html.dark .hero__eyebrow,
+html.dark .command-panel,
+html.dark .item-icon.activity,
+html.dark .item-icon.approval,
+html.dark .item-icon.other,
+html.dark .item-time,
+html.dark .flow-dot,
+html.dark .flow-dot--done,
+html.dark .flow-dot--process,
+html.dark .week-title,
+html.dark .roster-head strong,
+html.dark .roster-column--pending .roster-head strong,
+html.dark .roster-column--checked .roster-head strong,
+html.dark .roster-item,
+html.dark .qr-image,
+html.dark .apply-note {
+  background: var(--oa-button-subtle-bg) !important;
+  border-color: var(--oa-border) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .activity-band {
+  background: var(--oa-dark-tile) !important;
+}
+
+html.dark .activity-band .activity-card {
+  background: var(--oa-dark-tile-2) !important;
+}
+
+html.dark .section-heading h2,
+html.dark .section-heading span,
+html.dark .hero p,
+html.dark .hero__subtitle,
+html.dark .home-hero__morph,
+html.dark .signal-card__value,
+html.dark .brief-card h3,
+html.dark .activity-item h3,
+html.dark .person-card h3,
+html.dark .award-card h3,
+html.dark .award-card__year,
+html.dark .activities-hero h1,
+html.dark .notifications-hero__copy h1,
+html.dark .notifications-hero__stats strong,
+html.dark .notification-summary h2,
+html.dark .item-title,
+html.dark .status-card strong,
+html.dark .day-cell small,
+html.dark .day-cell span,
+html.dark .day-cell--rest small,
+html.dark .office-list-item__title,
+html.dark .preview-screen,
+html.dark .preview-kicker,
+html.dark .roster-head,
+html.dark .roster-head strong {
+  color: var(--oa-text) !important;
+}
+
+html.dark .activities-hero p,
+html.dark .panel-topline,
+html.dark .signal-card__label,
+html.dark .signal-card__note,
+html.dark .section-heading p,
+html.dark .brief-card p,
+html.dark .activity-item p,
+html.dark .person-card p,
+html.dark .award-card p,
+html.dark .person-card small,
+html.dark .activity-row__date span,
+html.dark .interview-item__meta,
+html.dark .feedback-bubble,
+html.dark .record-comment,
+html.dark .notifications-hero__copy span,
+html.dark .notifications-hero__copy p,
+html.dark .notifications-hero__stats span,
+html.dark .notification-summary p,
+html.dark .item-content,
+html.dark .item-time,
+html.dark .preview-meta,
+html.dark .preview-count {
+  color: var(--oa-muted) !important;
+}
+
+html.dark .home-hero__morph span {
+  background: linear-gradient(90deg, #f8fafc 0%, #5eead4 48%, #38bdf8 100%) !important;
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  color: transparent !important;
+}
+
+html.dark .brief-card .el-icon,
+html.dark .avatar,
+html.dark .club-card__logo,
+html.dark .summary-icon,
+html.dark .unread-pill,
+html.dark .login-logo,
+html.dark .admin-brand__mark {
+  background: var(--oa-active-bg) !important;
+  color: var(--oa-active-text) !important;
+}
+
+html.dark .notification-item.is-unread,
+html.dark .day-cell--adjusted {
+  border-color: var(--oa-active-bg) !important;
+}
+
+html.dark .activity-row:hover,
+html.dark .brief-card:hover,
+html.dark .person-card:hover,
+html.dark .award-card:hover,
+html.dark .activity-card:hover,
+html.dark .club-card:hover,
+html.dark .notification-item:hover {
+  border-color: var(--oa-active-bg) !important;
+}
+
+html.dark .approval-record:not(:last-child)::after {
+  background: var(--oa-border) !important;
+}
+
+html.dark .record-dot {
+  background: var(--oa-border) !important;
+}
+
+html.dark .is-approve .record-dot,
+html.dark .is-reject .record-dot {
+  background: var(--oa-active-bg) !important;
 }

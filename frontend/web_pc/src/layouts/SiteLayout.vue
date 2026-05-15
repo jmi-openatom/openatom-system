@@ -8,7 +8,7 @@
     >
       <div class="container site-header__inner">
         <router-link class="brand" to="/">
-            <img alt="徽标" class="site-footer__logo" src="/logo.png" />
+          <img alt="徽标" class="site-footer__logo" src="/logo.png" />
           <span>
             <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
@@ -25,6 +25,7 @@
         </nav>
         <el-button class="mobile-menu-btn" circle :icon="Menu" @click="mobileNavVisible = true" />
         <div class="site-header__actions">
+          <ThemeToggle />
           <el-button
             v-if="isLoggedIn"
             circle
@@ -120,6 +121,7 @@ import { useRoute } from 'vue-router'
 import { getToken } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
 import { notificationApi } from '@/api'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
 const Setting = markRaw(SettingIcon)
 
@@ -198,7 +200,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--oa-page-bg);
+  color: var(--oa-text);
 }
 
 .site-shell:not(.site-shell--home) .site-main {
@@ -214,9 +217,9 @@ onBeforeUnmount(() => {
   right: 0;
   z-index: 20;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.68);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow: 0 16px 46px rgba(15, 23, 42, 0.08);
+  background: var(--oa-header-bg);
+  border-bottom: 1px solid var(--oa-header-border);
+  box-shadow: var(--oa-header-shadow);
   -webkit-backdrop-filter: blur(24px) saturate(190%);
   backdrop-filter: blur(24px) saturate(190%);
   transform: translateY(0);
@@ -233,15 +236,13 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   content: '';
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.44)),
-    linear-gradient(90deg, rgba(6, 182, 212, 0.08), transparent 36%, rgba(34, 197, 94, 0.07));
+  background: var(--oa-header-overlay);
   pointer-events: none;
 }
 
 .site-header--home {
-  background: rgba(255, 255, 255, 0.62);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.1);
+  background: var(--oa-header-home-bg);
+  box-shadow: var(--oa-header-home-shadow);
 }
 
 .site-header--hidden {
@@ -269,9 +270,9 @@ onBeforeUnmount(() => {
 .site-footer {
   flex-shrink: 0;
   padding: 64px 0;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
   border-top: 0;
-  color: #333333;
+  color: var(--oa-text-soft);
 }
 
 .site-footer__inner {
@@ -297,12 +298,12 @@ onBeforeUnmount(() => {
   display: block;
   font-size: 16px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .brand-text .slogan {
   font-size: 12px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
 }
 
 .site-footer__info {
@@ -316,7 +317,7 @@ onBeforeUnmount(() => {
 
 .copyright {
   font-size: 12px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -324,13 +325,13 @@ onBeforeUnmount(() => {
 }
 
 .version-tag {
-  background: #ffffff;
-  color: #7a7a7a;
+  background: var(--oa-elevated-bg);
+  color: var(--oa-muted);
   padding: 2px 6px;
   border-radius: 999px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
 }
 
 /* 通用样式 */
@@ -351,7 +352,7 @@ onBeforeUnmount(() => {
 
 .brand strong {
   display: block;
-  color: #1d1d1f;
+  color: var(--oa-text);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0;
@@ -361,7 +362,7 @@ onBeforeUnmount(() => {
 .brand small {
   display: block;
   margin-top: 2px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 10px;
   line-height: 1;
 }
@@ -378,14 +379,14 @@ onBeforeUnmount(() => {
 .mobile-menu-btn {
   display: none;
   flex: 0 0 auto;
-  border-color: #d2d2d7 !important;
-  background: #ffffff !important;
-  color: #1d1d1f !important;
+  border-color: var(--oa-button-border) !important;
+  background: var(--oa-button-bg) !important;
+  color: var(--oa-button-text) !important;
 }
 
 .site-nav a {
   padding: 9px 11px;
-  color: #333333;
+  color: var(--oa-text-soft);
   text-decoration: none;
   border-radius: 999px;
   font-size: 12px;
@@ -400,14 +401,14 @@ onBeforeUnmount(() => {
 }
 
 .site-nav a:hover {
-  background: #f5f5f7;
-  color: #000000;
+  background: var(--oa-nav-hover-bg);
+  color: var(--oa-text);
   opacity: 1;
 }
 
 .site-nav a.router-link-active {
-  background: #1d1d1f;
-  color: #ffffff;
+  background: var(--oa-active-bg);
+  color: var(--oa-active-text);
   opacity: 1;
 }
 
@@ -421,28 +422,28 @@ onBeforeUnmount(() => {
 .site-header__actions :deep(.el-button) {
   min-height: 36px;
   padding: 8px 13px;
-  border-color: #d2d2d7;
-  background: #ffffff;
-  color: #1d1d1f;
+  border-color: var(--oa-button-border);
+  background: var(--oa-button-bg);
+  color: var(--oa-button-text);
   font-size: 12px;
   line-height: 1;
 }
 
 .site-header__actions :deep(.el-button:hover) {
-  border-color: #1d1d1f;
-  color: #000000;
+  border-color: var(--oa-button-hover-border);
+  color: var(--oa-button-hover-text);
 }
 
 .site-header__actions :deep(.el-button--primary) {
-  border-color: #1d1d1f;
-  background: #1d1d1f;
-  color: #ffffff;
+  border-color: var(--oa-active-bg);
+  background: var(--oa-active-bg);
+  color: var(--oa-active-text);
 }
 
 .site-header__actions :deep(.el-button--primary:hover) {
-  border-color: #000000;
-  background: #000000;
-  color: #ffffff;
+  border-color: var(--oa-active-hover-bg);
+  background: var(--oa-active-hover-bg);
+  color: var(--oa-active-text);
 }
 
 .nav-notification {
@@ -456,9 +457,9 @@ onBeforeUnmount(() => {
 
 .notification-btn {
   border: none !important;
-  background: #f5f5f7 !important;
+  background: var(--oa-button-subtle-bg) !important;
   font-size: 20px;
-  color: #1d1d1f;
+  color: var(--oa-button-text);
   transition:
     background-color 0.16s ease,
     color 0.16s ease,
@@ -466,8 +467,8 @@ onBeforeUnmount(() => {
 }
 
 .notification-btn:hover {
-  color: #000000;
-  background: #ededf0 !important;
+  color: var(--oa-button-hover-text);
+  background: var(--oa-button-hover-bg) !important;
 }
 
 .notification-btn :deep(.el-badge__content.is-fixed.is-dot) {
@@ -485,9 +486,9 @@ onBeforeUnmount(() => {
   min-height: 48px;
   align-items: center;
   padding: 0 14px;
-  color: #1d1d1f;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
+  color: var(--oa-text);
+  background: var(--oa-elevated-bg);
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
   font-weight: 400;
 }

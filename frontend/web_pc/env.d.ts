@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_APP_TITLE: string
   readonly VITE_MAPBOX_ACCESS_TOKEN?: string
   readonly VITE_MAPBOX_STYLE?: string
+  readonly VITE_MAPBOX_LIGHT_STYLE?: string
+  readonly VITE_MAPBOX_DARK_STYLE?: string
 }
 
 declare const __APP_VERSION__: string

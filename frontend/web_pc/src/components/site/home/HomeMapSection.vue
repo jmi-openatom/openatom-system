@@ -11,7 +11,8 @@
 
 <script setup lang="ts">
 import type { CameraOptions, Layer, Map } from 'mapbox-gl'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useTheme, type ResolvedTheme } from '@/composables/useTheme'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
 const props = withDefaults(
@@ -25,9 +26,18 @@ const props = withDefaults(
 
 const mapContainer = ref<HTMLElement>()
 const mapError = ref('')
+const { resolvedTheme } = useTheme()
 
 const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || 'pk.eyJ1IjoiYWlydmVuaGUiLCJhIjoiY21vdmE2YTR5MDByczJxb2d1a3VuZzVwbSJ9.Q3Vok4PZRYqICAn6Uk4j8A'
-const mapboxStyle = import.meta.env.VITE_MAPBOX_STYLE?.trim() || 'mapbox://styles/mapbox/light-v11'
+const mapboxLightStyle =
+  import.meta.env.VITE_MAPBOX_LIGHT_STYLE?.trim() ||
+  import.meta.env.VITE_MAPBOX_STYLE?.trim() ||
+  'mapbox://styles/mapbox/light-v11'
+const mapboxDarkStyle =
+  import.meta.env.VITE_MAPBOX_DARK_STYLE?.trim() || 'mapbox://styles/mapbox/dark-v11'
+const mapboxStyle = computed(() => {
+  return resolvedTheme.value === 'dark' ? mapboxDarkStyle : mapboxLightStyle
+})
 
 let map: Map | null = null
 let campusHoldTimer: number | undefined
@@ -57,6 +67,44 @@ const campusCamera = {
   bearing: -34,
 } satisfies CameraOptions
 
+function mapFog(theme: ResolvedTheme) {
+  if (theme === 'dark') {
+    return {
+      color: '#0f172a',
+      'high-color': '#164e63',
+      'horizon-blend': 0.16,
+      'space-color': '#020617',
+      'star-intensity': 0.36,
+    }
+  }
+
+  return {
+    color: '#edf7ff',
+    'high-color': '#b9dcff',
+    'horizon-blend': 0.18,
+    'space-color': '#d9ecff',
+    'star-intensity': 0,
+  }
+}
+
+function buildingColors(theme: ResolvedTheme) {
+  if (theme === 'dark') {
+    return {
+      low: '#1e293b',
+      middle: '#164e63',
+      high: '#0f766e',
+      opacity: 0.68,
+    }
+  }
+
+  return {
+    low: '#dbeafe',
+    middle: '#bae6fd',
+    high: '#99f6e4',
+    opacity: 0.74,
+  }
+}
+
 function addTerrain() {
   if (!map || map.getSource('oa-terrain')) return
 
@@ -67,13 +115,7 @@ function addTerrain() {
     maxzoom: 14,
   })
   map.setTerrain({ source: 'oa-terrain', exaggeration: 1.35 })
-  map.setFog({
-    color: '#edf7ff',
-    'high-color': '#b9dcff',
-    'horizon-blend': 0.18,
-    'space-color': '#d9ecff',
-    'star-intensity': 0,
-  })
+  map.setFog(mapFog(resolvedTheme.value))
 }
 
 function addBuildings() {
@@ -83,6 +125,7 @@ function addBuildings() {
   const labelLayer = layers.find((layer: any) => {
     return layer.type === 'symbol' && layer.layout?.['text-field']
   }) as Layer | undefined
+  const colors = buildingColors(resolvedTheme.value)
 
   try {
     map.addLayer(
@@ -99,11 +142,11 @@ function addBuildings() {
             ['linear'],
             ['get', 'height'],
             0,
-            '#dbeafe',
+            colors.low,
             80,
-            '#bae6fd',
+            colors.middle,
             180,
-            '#99f6e4',
+            colors.high,
           ],
           'fill-extrusion-height': [
             'interpolate',
@@ -123,7 +166,7 @@ function addBuildings() {
             15,
             ['coalesce', ['get', 'min_height'], 0],
           ],
-          'fill-extrusion-opacity': 0.74,
+          'fill-extrusion-opacity': colors.opacity,
         },
       },
       labelLayer?.id,
@@ -131,6 +174,20 @@ function addBuildings() {
   } catch (error) {
     // Some custom Mapbox styles do not expose the composite building source.
   }
+}
+
+function restoreStyleOverlays() {
+  if (!map) return
+  addTerrain()
+  addBuildings()
+}
+
+function switchMapStyle() {
+  if (!map) return
+
+  mapError.value = ''
+  map.setStyle(mapboxStyle.value)
+  map.once('style.load', restoreStyleOverlays)
 }
 
 function clearMapTimers() {
@@ -226,7 +283,7 @@ onMounted(async () => {
   mapboxgl.accessToken = mapboxToken
   map = new mapboxgl.Map({
     container: mapContainer.value,
-    style: mapboxStyle,
+    style: mapboxStyle.value,
     center: campusCamera.center,
     zoom: campusCamera.zoom,
     pitch: campusCamera.pitch,
@@ -248,6 +305,10 @@ onMounted(async () => {
   })
 })
 
+watch(mapboxStyle, () => {
+  switchMapStyle()
+})
+
 onBeforeUnmount(() => {
   clearMapTimers()
   map?.remove()
@@ -262,7 +323,7 @@ onBeforeUnmount(() => {
   height: 100svh;
   min-height: 720px;
   overflow: hidden;
-  background: #f8fbff;
+  background: var(--oa-map-bg);
 }
 
 .map-canvas {
@@ -276,17 +337,14 @@ onBeforeUnmount(() => {
   z-index: 0;
   height: 100%;
   min-height: 0;
-  background: #f8fbff;
+  background: var(--oa-map-bg);
 }
 
 .map-fallback {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background:
-    radial-gradient(circle at 50% 45%, rgba(59, 130, 246, 0.12), transparent 38%),
-    radial-gradient(circle at 52% 44%, rgba(20, 184, 166, 0.08), transparent 54%),
-    #f8fbff;
+  background: var(--oa-map-fallback);
   background-size:
     auto,
     auto;
@@ -301,7 +359,7 @@ onBeforeUnmount(() => {
 
 :deep(.mapboxgl-ctrl-attrib) {
   border-radius: 8px 0 0 0;
-  background: rgba(255, 255, 255, 0.78);
+  background: color-mix(in srgb, var(--oa-elevated-bg) 78%, transparent);
   backdrop-filter: blur(12px);
 }
 

@@ -1,5 +1,6 @@
 <template>
   <ViewPage class="login-page">
+    <ThemeToggle class="login-theme-toggle" />
     <div class="login-panel">
       <div class="login-copy">
         <span class="login-logo">OA</span>
@@ -65,6 +66,7 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { ElMessage } from 'element-plus'
 import { authApi, siteApi } from '@/api'
 import { computed, onMounted, ref } from 'vue'
@@ -202,11 +204,19 @@ onMounted(async () => {
 
 <style scoped>
 .login-page {
+  position: relative;
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 32px;
-  background: #ffffff;
+  background: var(--oa-page-bg);
+}
+
+.login-theme-toggle {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
 }
 
 .login-panel {
@@ -226,8 +236,8 @@ onMounted(async () => {
   width: 54px;
   height: 54px;
   place-items: center;
-  color: #ffffff;
-  background: #1d1d1f;
+  color: var(--oa-active-text);
+  background: var(--oa-active-bg);
   border-radius: 8px;
   font-weight: 600;
   box-shadow: none;
@@ -249,16 +259,16 @@ onMounted(async () => {
 
 .login-copy p {
   max-width: 520px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 24px;
   font-weight: 300;
   line-height: 1.5;
 }
 
 .login-card {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   box-shadow: none;
   backdrop-filter: none;
 }
@@ -279,7 +289,7 @@ onMounted(async () => {
   justify-content: flex-end;
   gap: 10px;
   margin-bottom: 10px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 13px;
 }
 
@@ -288,7 +298,7 @@ onMounted(async () => {
 }
 
 .login-card :deep(.el-tabs__nav-wrap::after) {
-  background-color: rgba(224, 224, 224, 0.9);
+  background-color: var(--oa-border);
 }
 
 .login-card :deep(.el-tabs__item.is-active) {
