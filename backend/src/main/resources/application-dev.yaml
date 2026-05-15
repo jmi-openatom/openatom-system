@@ -2,14 +2,14 @@ spring:
   application:
     name: openatom-system
   datasource:
-    url: ${DB_URL:jdbc:mysql://82.39.213.37:3307/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    url: ${DB_URL:jdbc:mysql://156.239.2.231:3307/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   data:
     redis:
-      host: ${REDIS_HOST:82.39.213.37}
+      host: ${REDIS_HOST:156.239.2.231}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       database: ${REDIS_DATABASE:0}
