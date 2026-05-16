@@ -11,13 +11,13 @@ defineProps<Props>();
 
 <template>
   <figure
-    class="relative w-64 cursor-pointer overflow-hidden rounded-xl border border-gray-950/10 bg-white/60 p-4 shadow-sm backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:border-blue-400/30 hover:bg-blue-50/40 hover:shadow-md dark:border-gray-50/10 dark:bg-gray-50/5 dark:hover:border-blue-400/20 dark:hover:bg-blue-950/20"
+    class="relative w-64 cursor-pointer overflow-hidden rounded-xl border border-gray-950/10 bg-white/60 p-4 shadow-sm backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:border-blue-400/30 hover:bg-blue-50/40 hover:shadow-md dark:border-white/10 dark:bg-white/[0.035] dark:hover:border-white/20 dark:hover:bg-white/[0.06]"
   >
     <div class="flex flex-row items-center gap-3">
       <div class="relative shrink-0">
         <img
           :src="img"
-          class="size-10 rounded-full object-cover ring-2 ring-blue-100 dark:ring-blue-900/50"
+          class="size-10 rounded-full object-cover ring-2 ring-blue-100 dark:ring-white/10"
           width="40"
           height="40"
           alt=""
@@ -28,7 +28,7 @@ defineProps<Props>();
         <span class="truncate text-sm font-semibold text-neutral-800 dark:text-white">
           {{ name }}
         </span>
-        <p class="truncate text-xs font-medium text-blue-500 dark:text-blue-400">
+        <p class="truncate text-xs font-medium text-blue-500 dark:text-neutral-400">
           {{ username }}
         </p>
       </div>

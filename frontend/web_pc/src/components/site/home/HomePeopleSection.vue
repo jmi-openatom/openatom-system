@@ -119,8 +119,8 @@ const secondRow = computed(() =>
 }
 
 :global(.dark) .people-stats {
-  background: linear-gradient(135deg, #1e293b, #0f172a);
-  border-color: #334155;
+  background: linear-gradient(135deg, #18181b, #111113);
+  border-color: #2c2c2e;
 }
 
 .people-stat-item {
@@ -151,6 +151,21 @@ const secondRow = computed(() =>
   box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
 }
 
+:global(.dark) .people-stat-dot--blue {
+  background: #f5f5f7;
+  box-shadow: 0 0 8px rgba(245, 245, 247, 0.24);
+}
+
+:global(.dark) .people-stat-dot--green {
+  background: #d4d4d8;
+  box-shadow: 0 0 8px rgba(212, 212, 216, 0.22);
+}
+
+:global(.dark) .people-stat-dot--purple {
+  background: #a1a1aa;
+  box-shadow: 0 0 8px rgba(161, 161, 170, 0.2);
+}
+
 .people-stat-value {
   font-size: 20px;
   font-weight: 700;
@@ -159,7 +174,7 @@ const secondRow = computed(() =>
 }
 
 :global(.dark) .people-stat-value {
-  color: #f1f5f9;
+  color: #f5f5f7;
 }
 
 .people-stat-label {
@@ -168,7 +183,7 @@ const secondRow = computed(() =>
 }
 
 :global(.dark) .people-stat-label {
-  color: #94a3b8;
+  color: #a1a1aa;
 }
 
 .people-stat-divider {
@@ -179,7 +194,7 @@ const secondRow = computed(() =>
 }
 
 :global(.dark) .people-stat-divider {
-  background: #475569;
+  background: #3a3a3c;
 }
 
 /* --- Marquee Wrapper --- */
@@ -229,7 +244,7 @@ const secondRow = computed(() =>
 }
 
 :global(.dark) .people-cta {
-  color: #94a3b8;
+  color: #a1a1aa;
 }
 
 .people-cta-link {

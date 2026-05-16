@@ -193,7 +193,17 @@ function animateSwitch(index: number) {
   }, 0.2)
 
   if (nextCard) {
+    const nextContent = nextCard.querySelector('.activity-stage__content')
+
     timeline
+      .set(
+        nextContent,
+        {
+          y: 0,
+          opacity: 1,
+        },
+        0.2,
+      )
       .fromTo(
         nextCard.querySelector('.activity-stage__wipe'),
         {

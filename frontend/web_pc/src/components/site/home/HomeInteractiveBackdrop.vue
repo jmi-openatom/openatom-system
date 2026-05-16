@@ -53,10 +53,10 @@ const activeTo = gsap.quickTo(pointer, 'active', {
 function colors() {
   if (resolvedTheme.value === 'dark') {
     return {
-      dot: 'rgba(226, 232, 240, 0.18)',
-      dotActive: 'rgba(248, 250, 252, 0.62)',
-      line: 'rgba(226, 232, 240, 0.18)',
-      ring: 'rgba(248, 250, 252, 0.28)',
+      dot: 'rgba(228, 228, 231, 0.16)',
+      dotActive: 'rgba(245, 245, 247, 0.62)',
+      line: 'rgba(228, 228, 231, 0.18)',
+      ring: 'rgba(245, 245, 247, 0.28)',
     }
   }
 

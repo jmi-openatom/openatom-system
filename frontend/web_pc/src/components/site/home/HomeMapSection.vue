@@ -70,11 +70,11 @@ const campusCamera = {
 function mapFog(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
-      color: '#0f172a',
-      'high-color': '#164e63',
+      color: '#111113',
+      'high-color': '#2c2c2e',
       'horizon-blend': 0.16,
-      'space-color': '#020617',
-      'star-intensity': 0.36,
+      'space-color': '#09090b',
+      'star-intensity': 0.28,
     }
   }
 
@@ -90,9 +90,9 @@ function mapFog(theme: ResolvedTheme) {
 function buildingColors(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
-      low: '#1e293b',
-      middle: '#164e63',
-      high: '#0f766e',
+      low: '#1c1c1e',
+      middle: '#2c2c2e',
+      high: '#3a3a3c',
       opacity: 0.68,
     }
   }
