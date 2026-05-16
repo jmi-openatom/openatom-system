@@ -5,8 +5,10 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestChangePasswordDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
+import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 认证鉴权服务接口
@@ -31,4 +33,8 @@ public interface AuthService {
   Result<Boolean> updateRegisterEnabled(Boolean enabled);
 
   Result<String> changePassword(RequestChangePasswordDTO requestChangePassword);
+
+  Result<User> updateAvatar(MultipartFile file, String avatarBaseUrl);
+
+  Result<User> removeAvatar();
 }

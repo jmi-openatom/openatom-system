@@ -3,11 +3,14 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.*;
+import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * 认证授权控制器
@@ -119,5 +124,23 @@ public class AuthController {
   public Result<String> changePassword(
       @RequestBody RequestChangePasswordDTO requestChangePassword) {
     return authService.changePassword(requestChangePassword);
+  }
+
+  /** Uploads the current user's avatar. */
+  @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @SaCheckPermission("auth:me")
+  public Result<User> uploadAvatar(@RequestParam("file") MultipartFile file) {
+    String avatarBaseUrl =
+        ServletUriComponentsBuilder.fromCurrentContextPath()
+            .path("/files/avatars/")
+            .toUriString();
+    return authService.updateAvatar(file, avatarBaseUrl);
+  }
+
+  /** Clears the current user's avatar and falls back to the generated surname avatar. */
+  @DeleteMapping("/avatar")
+  @SaCheckPermission("auth:me")
+  public Result<User> removeAvatar() {
+    return authService.removeAvatar();
   }
 }

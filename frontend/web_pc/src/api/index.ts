@@ -45,6 +45,14 @@ export const authApi = {
   updatePassword(data: Record<string, unknown>): Promise<any> {
     return request.patch('/auth/password', data)
   },
+  uploadAvatar(file: File): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/auth/avatar', formData)
+  },
+  removeAvatar(): Promise<any> {
+    return request.delete('/auth/avatar')
+  },
 }
 
 export const userApi = {

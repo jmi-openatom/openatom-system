@@ -3,6 +3,7 @@ build/
 target/
 dist/
 log/
+uploads/
 
 # dependency package
 node_modules/

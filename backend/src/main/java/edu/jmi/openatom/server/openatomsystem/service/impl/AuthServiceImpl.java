@@ -17,9 +17,11 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import edu.jmi.openatom.server.openatomsystem.service.AvatarStorageService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -41,6 +43,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 用户认证授权实现类
@@ -66,6 +69,7 @@ public class AuthServiceImpl implements AuthService {
   private final ClubMembershipMapper clubMembershipMapper;
   private final LoginLogMapper loginLogMapper;
   private final PasswordService passwordService;
+  private final AvatarStorageService avatarStorageService;
   private final ClientIpResolver clientIpResolver;
   private final RegistrationSettingService registrationSettingService;
   private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -270,6 +274,40 @@ public class AuthServiceImpl implements AuthService {
     userMapper.updateById(user);
     StpUtil.logout();
     return Result.success("密码更新成功");
+  }
+
+  @Override
+  public Result<User> updateAvatar(MultipartFile file, String avatarBaseUrl) {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+    if (avatarBaseUrl == null || avatarBaseUrl.isBlank()) return Result.error(500, "头像地址生成失败");
+    int id = StpUtil.getLoginIdAsInt();
+    User user = userMapper.selectById(id);
+    if (user == null) return Result.error(404, "用户不存在");
+    String oldAvatar = user.getAvatar();
+    try {
+      AvatarStorageService.StoredAvatar storedAvatar = avatarStorageService.store(file);
+      user.setAvatar(avatarBaseUrl + storedAvatar.getFileName());
+      int row = userMapper.updateById(user);
+      if (row <= 0) return Result.error("头像更新失败");
+      avatarStorageService.deleteByAvatarUrl(oldAvatar);
+      return Result.success(buildSafeUser(user), "头像更新成功");
+    } catch (IOException e) {
+      return Result.error(400, e.getMessage());
+    }
+  }
+
+  @Override
+  public Result<User> removeAvatar() {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+    int id = StpUtil.getLoginIdAsInt();
+    User user = userMapper.selectById(id);
+    if (user == null) return Result.error(404, "用户不存在");
+    String oldAvatar = user.getAvatar();
+    user.setAvatar(null);
+    int row = userMapper.updateById(user);
+    if (row <= 0) return Result.error("头像移除失败");
+    avatarStorageService.deleteByAvatarUrl(oldAvatar);
+    return Result.success(buildSafeUser(user), "已恢复默认头像");
   }
 
   private ResponseLoginVO createLoginResponse(User user) {

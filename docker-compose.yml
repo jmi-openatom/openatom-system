@@ -55,6 +55,8 @@ services:
       - APP_APPLICATION_SUBMIT_MAX_PER_SECOND=${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:-5}
     ports:
       - "8921:8921"
+    volumes:
+      - avatar_data:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -86,3 +88,4 @@ networks:
 volumes:
   mysql_data:
   redis_data:
+  avatar_data:

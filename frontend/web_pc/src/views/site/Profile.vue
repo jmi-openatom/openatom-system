@@ -9,6 +9,36 @@
           </div>
         </template>
 
+        <div class="profile-avatar">
+          <UserAvatar :name="displayName" :size="88" :src="String(user.avatar || '')" />
+          <div>
+            <strong>{{ displayName }}</strong>
+            <span>未上传头像时，将显示姓氏默认头像</span>
+          </div>
+        </div>
+
+        <input
+          ref="avatarInputRef"
+          accept="image/jpeg,image/png"
+          hidden
+          type="file"
+          @change="handleAvatarChange"
+        />
+
+        <div class="avatar-actions">
+          <el-button :loading="avatarUploading" plain type="primary" @click="chooseAvatar">
+            上传头像
+          </el-button>
+          <el-button
+            v-if="user.avatar"
+            :loading="avatarUploading"
+            plain
+            @click="removeAvatar"
+          >
+            恢复默认
+          </el-button>
+        </div>
+
         <el-descriptions :column="1" border>
           <el-descriptions-item label="用户名">{{ user.userName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="姓名">{{ user.realName || '-' }}</el-descriptions-item>
@@ -84,6 +114,7 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { authApi, siteApi } from '@/api'
 import { clearSession, getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
 import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
@@ -96,6 +127,8 @@ const user = ref(getCurrentUser() || {})
 const applications = ref<any[]>([])
 
 const submitting = ref(false)
+const avatarUploading = ref(false)
+const avatarInputRef = ref<HTMLInputElement>()
 
 const passwordForm = ref({
   oldPassword: '',
@@ -122,6 +155,8 @@ const isLogin = computed(() => {
   return Boolean(getToken())
 })
 
+const displayName = computed(() => String(user.value.realName || user.value.userName || '用户'))
+
 async function fetchProfile() {
   const result = await authApi.me()
   if (result?.user) {
@@ -139,6 +174,46 @@ async function logout() {
   await authApi.logout()
   clearSession()
   router.push('/admin/login')
+}
+
+function chooseAvatar() {
+  avatarInputRef.value?.click()
+}
+
+async function handleAvatarChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  if (!['image/jpeg', 'image/png'].includes(file.type)) {
+    ElMessage.warning('仅支持 JPG 或 PNG 头像')
+    return
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.warning('头像图片不能超过 2MB')
+    return
+  }
+  try {
+    avatarUploading.value = true
+    const nextUser = await authApi.uploadAvatar(file)
+    user.value = nextUser || user.value
+    setSession({ accessToken: getToken() || undefined, user: user.value })
+    ElMessage.success('头像更新成功')
+  } finally {
+    avatarUploading.value = false
+  }
+}
+
+async function removeAvatar() {
+  try {
+    avatarUploading.value = true
+    const nextUser = await authApi.removeAvatar()
+    user.value = nextUser || user.value
+    setSession({ accessToken: getToken() || undefined, user: user.value })
+    ElMessage.success('已恢复默认头像')
+  } finally {
+    avatarUploading.value = false
+  }
 }
 
 async function submitPassword() {
@@ -198,6 +273,34 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.profile-avatar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.profile-avatar div {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-avatar strong {
+  color: #1d1d1f;
+  font-size: 20px;
+}
+
+.profile-avatar span {
+  color: #7a7a7a;
+  font-size: 13px;
+}
+
+.avatar-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
 }
 
 .btn-group {

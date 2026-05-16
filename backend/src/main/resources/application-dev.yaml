@@ -47,3 +47,5 @@ app:
   rate-limit:
     application-submit:
       max-per-second: ${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:5}
+  avatar:
+    storage-dir: ${APP_AVATAR_STORAGE_DIR:./uploads/avatars}

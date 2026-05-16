@@ -1381,6 +1381,101 @@ html.dark .people-section {
   color: var(--oa-text) !important;
 }
 
+html.dark .people-stats {
+  background: rgba(23, 23, 25, 0.86) !important;
+  border-color: #2c2c2e !important;
+}
+
+html.dark .people-stat-dot--blue {
+  background: #f5f5f7 !important;
+  box-shadow: 0 0 8px rgba(245, 245, 247, 0.24) !important;
+}
+
+html.dark .people-stat-dot--green {
+  background: #d4d4d8 !important;
+  box-shadow: 0 0 8px rgba(212, 212, 216, 0.22) !important;
+}
+
+html.dark .people-stat-dot--purple {
+  background: #a1a1aa !important;
+  box-shadow: 0 0 8px rgba(161, 161, 170, 0.2) !important;
+}
+
+html.dark .people-stat-value {
+  color: var(--oa-text) !important;
+}
+
+html.dark .people-stat-label,
+html.dark .people-cta {
+  color: var(--oa-muted) !important;
+}
+
+html.dark .people-stat-divider {
+  background: #3a3a3c !important;
+}
+
+html.dark .people-marquee-gradient--left {
+  background: linear-gradient(to right, var(--oa-page-bg), transparent) !important;
+}
+
+html.dark .people-marquee-gradient--right {
+  background: linear-gradient(to left, var(--oa-page-bg), transparent) !important;
+}
+
+html.dark .people-person {
+  border-color: rgba(245, 245, 247, 0.1) !important;
+}
+
+html.dark .people-person::before,
+html.dark .people-wall::before,
+html.dark .people-wall::after {
+  background: rgba(245, 245, 247, 0.12) !important;
+}
+
+html.dark .people-person__index {
+  color: rgba(245, 245, 247, 0.34) !important;
+}
+
+html.dark .people-person__portrait {
+  background: var(--oa-elevated-bg) !important;
+}
+
+html.dark .people-person__meta strong {
+  color: var(--oa-text) !important;
+}
+
+html.dark .people-person__meta span {
+  color: rgba(245, 245, 247, 0.58) !important;
+}
+
+html.dark .people-person__meta p {
+  color: rgba(245, 245, 247, 0.46) !important;
+}
+
+html.dark .people-person:hover {
+  background: rgba(245, 245, 247, 0.04) !important;
+}
+
+html.dark .people-person:hover::before {
+  background: var(--oa-text) !important;
+}
+
+html.dark .people-wall__fade--left {
+  background: linear-gradient(to right, var(--oa-page-bg) 0%, transparent 100%) !important;
+}
+
+html.dark .people-wall__fade--right {
+  background: linear-gradient(to left, var(--oa-page-bg) 0%, transparent 100%) !important;
+}
+
+html.dark .profile-avatar strong {
+  color: var(--oa-text) !important;
+}
+
+html.dark .profile-avatar span {
+  color: var(--oa-muted) !important;
+}
+
 html.dark .progress-list,
 html.dark .leave-page,
 html.dark .profile-grid,

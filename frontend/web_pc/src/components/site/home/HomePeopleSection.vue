@@ -25,32 +25,30 @@
         </div>
       </div>
 
-      <!-- Marquee Carousel -->
-      <div class="people-marquee-wrapper">
-        <Marquee pause-on-hover class="[--duration:20s] [--gap:6rem]">
-          <ReviewCard
-            v-for="person in firstRow"
+      <div class="people-wall">
+        <div class="people-wall__track" role="list">
+          <article
+            v-for="(person, index) in mappedPeople"
             :key="person.userId || person.name"
-            :img="person.img"
-            :name="person.name"
-            :username="person.username"
-            :body="person.body"
-            style="margin-left: 10px;"
-          />
-        </Marquee>
-        <Marquee reverse pause-on-hover class="[--duration:20s] [--gap:6rem]">
-          <ReviewCard
-            v-for="person in secondRow"
-            :key="person.userId || person.name"
-            :img="person.img"
-            :name="person.name"
-            :username="person.username"
-            :body="person.body"
-            style="margin-left: 10px;"
-          />
-        </Marquee>
-        <div class="people-marquee-gradient people-marquee-gradient--left" />
-        <div class="people-marquee-gradient people-marquee-gradient--right" />
+            class="people-person"
+            role="listitem"
+          >
+            <span class="people-person__index">{{ formatMemberIndex(index) }}</span>
+
+            <div class="people-person__portrait">
+              <UserAvatar :name="person.name" :size="112" :src="person.avatar" />
+            </div>
+
+            <div class="people-person__meta">
+              <strong>{{ person.name }}</strong>
+              <span>{{ person.username || '成员' }}</span>
+              <p>{{ person.body || '共同推动社团发展' }}</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="people-wall__fade people-wall__fade--left" />
+        <div class="people-wall__fade people-wall__fade--right" />
       </div>
 
     </div>
@@ -59,7 +57,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Marquee, ReviewCard } from '@/components/ui/marquee'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
 
 const props = defineProps<{
@@ -71,7 +69,7 @@ const mappedPeople = computed(() =>
   props.people.map((person) => ({
     userId: person.userId,
     name: person.name,
-    img: `https://avatar.vercel.sh/${encodeURIComponent(person.name || 'user')}`,
+    avatar: person.avatar || '',
     username: person.role || '',
     body: person.focus || '',
   })),
@@ -86,18 +84,9 @@ const uniqueRoles = computed(() => {
   return [...roles]
 })
 
-const advisors = computed(() =>
-  props.people.filter(
-    (p) => p.role && (p.role.includes('指导') || p.role.includes('老师')),
-  ),
-)
-
-const firstRow = computed(() =>
-  mappedPeople.value.slice(0, Math.ceil(mappedPeople.value.length / 2)),
-)
-const secondRow = computed(() =>
-  mappedPeople.value.slice(Math.ceil(mappedPeople.value.length / 2)),
-)
+function formatMemberIndex(index: number) {
+  return String(index + 1).padStart(2, '0')
+}
 </script>
 
 <style scoped>
@@ -108,19 +97,16 @@ const secondRow = computed(() =>
 /* --- Stats Bar --- */
 .people-stats {
   display: flex;
+  width: fit-content;
+  max-width: 100%;
   align-items: center;
   justify-content: center;
   gap: 32px;
-  margin-bottom: 40px;
-  padding: 18px 32px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  border: 1px solid #e2e8f0;
-}
-
-:global(.dark) .people-stats {
-  background: linear-gradient(135deg, #18181b, #111113);
-  border-color: #2c2c2e;
+  margin: 0 auto 40px;
+  padding: 18px 28px;
+  border: 1px solid #e0e0e0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .people-stat-item {
@@ -151,21 +137,6 @@ const secondRow = computed(() =>
   box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
 }
 
-:global(.dark) .people-stat-dot--blue {
-  background: #f5f5f7;
-  box-shadow: 0 0 8px rgba(245, 245, 247, 0.24);
-}
-
-:global(.dark) .people-stat-dot--green {
-  background: #d4d4d8;
-  box-shadow: 0 0 8px rgba(212, 212, 216, 0.22);
-}
-
-:global(.dark) .people-stat-dot--purple {
-  background: #a1a1aa;
-  box-shadow: 0 0 8px rgba(161, 161, 170, 0.2);
-}
-
 .people-stat-value {
   font-size: 20px;
   font-weight: 700;
@@ -173,17 +144,9 @@ const secondRow = computed(() =>
   line-height: 1;
 }
 
-:global(.dark) .people-stat-value {
-  color: #f5f5f7;
-}
-
 .people-stat-label {
   font-size: 13px;
   color: #64748b;
-}
-
-:global(.dark) .people-stat-label {
-  color: #a1a1aa;
 }
 
 .people-stat-divider {
@@ -193,46 +156,175 @@ const secondRow = computed(() =>
   flex-shrink: 0;
 }
 
-:global(.dark) .people-stat-divider {
-  background: #3a3a3c;
-}
-
-/* --- Marquee Wrapper --- */
-.people-marquee-wrapper {
+.people-wall {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
   width: 100%;
-  margin-top: 8px;
+  margin-top: 10px;
+  overflow: hidden;
 }
 
-.people-marquee-gradient {
+.people-wall__track {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.people-wall__track::-webkit-scrollbar {
+  display: none;
+}
+
+.people-person {
+  position: relative;
+  display: grid;
+  min-width: 232px;
+  min-height: 360px;
+  flex: 0 0 232px;
+  align-content: space-between;
+  gap: 20px;
+  padding: 22px 24px 24px;
+  border-right: 1px solid rgba(15, 23, 42, 0.1);
+  scroll-snap-align: start;
+  transition:
+    flex-basis 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    min-width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.28s ease;
+}
+
+.people-person:first-child {
+  border-left: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.people-person::before {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  left: 24px;
+  height: 1px;
+  content: '';
+  background: rgba(15, 23, 42, 0.12);
+  transition:
+    right 0.32s ease,
+    left 0.32s ease,
+    background-color 0.32s ease;
+}
+
+.people-person__index {
+  color: rgba(15, 23, 42, 0.34);
+  font-size: 12px;
+  letter-spacing: 0.24em;
+}
+
+.people-person__portrait {
+  position: relative;
+  display: grid;
+  width: 112px;
+  height: 112px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ffffff;
+  filter: grayscale(1);
+  transition:
+    width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.28s ease,
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.people-person__meta {
+  display: grid;
+  gap: 8px;
+}
+
+.people-person__meta strong {
+  color: #1d1d1f;
+  font-family:
+    'SF Pro Display',
+    system-ui,
+    sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.people-person__meta span {
+  color: rgba(15, 23, 42, 0.56);
+  font-size: 14px;
+}
+
+.people-person__meta p {
+  max-width: 180px;
+  margin: 10px 0 0;
+  color: rgba(15, 23, 42, 0.48);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.people-person:hover {
+  min-width: 286px;
+  flex-basis: 286px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.people-person:hover::before {
+  right: 0;
+  left: 0;
+  background: #1d1d1f;
+}
+
+.people-person:hover .people-person__portrait {
+  width: 148px;
+  height: 148px;
+  filter: grayscale(0);
+  transform: translateY(-6px);
+}
+
+.people-person:hover .people-person__portrait :deep(.user-avatar) {
+  width: 148px;
+  height: 148px;
+}
+
+.people-wall__fade {
   pointer-events: none;
   position: absolute;
   inset-y: 0;
-  width: 33.333%;
-  z-index: 1;
+  z-index: 2;
+  width: min(18vw, 180px);
 }
 
-.people-marquee-gradient--left {
+.people-wall__fade--left {
   left: 0;
-  background: linear-gradient(to right, #f5f5f7, transparent);
+  background: linear-gradient(to right, #f5f5f7 0%, transparent 100%);
 }
 
-.people-marquee-gradient--right {
+.people-wall__fade--right {
   right: 0;
-  background: linear-gradient(to left, #f5f5f7, transparent);
+  background: linear-gradient(to left, #f5f5f7 0%, transparent 100%);
 }
 
-:global(.dark) .people-marquee-gradient--left {
-  background: linear-gradient(to right, #0a0a0a, transparent);
+.people-wall::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  content: '';
+  background: rgba(15, 23, 42, 0.1);
 }
 
-:global(.dark) .people-marquee-gradient--right {
-  background: linear-gradient(to left, #0a0a0a, transparent);
+.people-wall::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  content: '';
+  background: rgba(15, 23, 42, 0.1);
+  z-index: 1;
 }
 
 /* --- CTA --- */
@@ -241,10 +333,6 @@ const secondRow = computed(() =>
   text-align: center;
   font-size: 14px;
   color: #64748b;
-}
-
-:global(.dark) .people-cta {
-  color: #a1a1aa;
 }
 
 .people-cta-link {
@@ -257,5 +345,37 @@ const secondRow = computed(() =>
 .people-cta-link:hover {
   color: #2563eb;
   text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .people-stats {
+    width: 100%;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .people-person,
+  .people-person:hover {
+    min-width: 220px;
+    min-height: 320px;
+    flex-basis: 220px;
+  }
+
+  .people-person:hover .people-person__portrait {
+    width: 112px;
+    height: 112px;
+    transform: none;
+  }
+
+  .people-person:hover .people-person__portrait :deep(.user-avatar) {
+    width: 112px;
+    height: 112px;
+  }
+
+  .people-wall__fade {
+    width: 48px;
+  }
 }
 </style>
