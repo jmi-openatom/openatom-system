@@ -26,25 +26,33 @@
       </div>
 
       <div class="people-wall">
-        <div class="people-wall__track" role="list">
-          <article
-            v-for="(person, index) in mappedPeople"
-            :key="person.userId || person.name"
-            class="people-person"
-            role="listitem"
+        <div class="people-wall__marquee">
+          <div
+            v-for="copy in 2"
+            :key="copy"
+            class="people-wall__group"
+            role="list"
+            :aria-hidden="copy === 2 ? 'true' : undefined"
           >
-            <span class="people-person__index">{{ formatMemberIndex(index) }}</span>
+            <article
+              v-for="(person, index) in mappedPeople"
+              :key="`${copy}-${person.userId || person.name}`"
+              class="people-person"
+              role="listitem"
+            >
+              <span class="people-person__index">{{ formatMemberIndex(index) }}</span>
 
-            <div class="people-person__portrait">
-              <UserAvatar :name="person.name" :size="112" :src="person.avatar" />
-            </div>
+              <div class="people-person__portrait">
+                <UserAvatar :name="person.name" :size="112" :src="person.avatar" />
+              </div>
 
-            <div class="people-person__meta">
-              <strong>{{ person.name }}</strong>
-              <span>{{ person.username || '成员' }}</span>
-              <p>{{ person.body || '共同推动社团发展' }}</p>
-            </div>
-          </article>
+              <div class="people-person__meta">
+                <strong>{{ person.name }}</strong>
+                <span>{{ person.username || '成员' }}</span>
+                <p>{{ person.body || '共同推动社团发展' }}</p>
+              </div>
+            </article>
+          </div>
         </div>
 
         <div class="people-wall__fade people-wall__fade--left" />
@@ -163,18 +171,23 @@ function formatMemberIndex(index: number) {
   overflow: hidden;
 }
 
-.people-wall__track {
+.people-wall__marquee {
   display: flex;
   align-items: stretch;
   gap: 0;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
+  width: max-content;
+  animation: people-wall-flow 42s linear infinite;
+  will-change: transform;
 }
 
-.people-wall__track::-webkit-scrollbar {
-  display: none;
+.people-wall:hover .people-wall__marquee {
+  animation-play-state: paused;
+}
+
+.people-wall__group {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
 }
 
 .people-person {
@@ -187,11 +200,20 @@ function formatMemberIndex(index: number) {
   gap: 20px;
   padding: 22px 24px 24px;
   border-right: 1px solid rgba(15, 23, 42, 0.1);
-  scroll-snap-align: start;
   transition:
     flex-basis 0.34s cubic-bezier(0.22, 1, 0.36, 1),
     min-width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.28s ease;
+}
+
+@keyframes people-wall-flow {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 .people-person:first-child {
@@ -376,6 +398,12 @@ function formatMemberIndex(index: number) {
 
   .people-wall__fade {
     width: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .people-wall__marquee {
+    animation: none;
   }
 }
 </style>

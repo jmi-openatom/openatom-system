@@ -52,6 +52,20 @@ public class AvatarStorageService {
     return Optional.of(new AvatarResource(resource, mediaTypeOf(fileName)));
   }
 
+  public boolean isManagedAvatarUrl(String avatarUrl) {
+    if (avatarUrl == null || avatarUrl.isBlank()) return false;
+    String fileName = avatarUrl.substring(avatarUrl.lastIndexOf('/') + 1);
+    return isSafeFileName(fileName);
+  }
+
+  public boolean existsByAvatarUrl(String avatarUrl) {
+    if (!isManagedAvatarUrl(avatarUrl)) return false;
+    String fileName = avatarUrl.substring(avatarUrl.lastIndexOf('/') + 1);
+    Path root = root();
+    Path target = root.resolve(fileName).normalize();
+    return target.getParent().equals(root) && Files.exists(target) && Files.isRegularFile(target);
+  }
+
   public void deleteByAvatarUrl(String avatarUrl) {
     if (avatarUrl == null || avatarUrl.isBlank()) return;
     String fileName = avatarUrl.substring(avatarUrl.lastIndexOf('/') + 1);

@@ -195,9 +195,13 @@ async function handleAvatarChange(event: Event) {
   }
   try {
     avatarUploading.value = true
-    const nextUser = await authApi.uploadAvatar(file)
-    user.value = nextUser || user.value
+    await authApi.uploadAvatar(file)
+    await fetchProfile()
     setSession({ accessToken: getToken() || undefined, user: user.value })
+    if (user.value.avatar && !(await canLoadImage(String(user.value.avatar)))) {
+      ElMessage.warning('头像已保存，但图片暂时无法访问，请检查后端头像文件服务')
+      return
+    }
     ElMessage.success('头像更新成功')
   } finally {
     avatarUploading.value = false
@@ -235,6 +239,15 @@ async function submitPassword() {
 
 function resetForm() {
   pwdFormRef.value?.resetFields()
+}
+
+function canLoadImage(src: string) {
+  return new Promise<boolean>((resolve) => {
+    const image = new Image()
+    image.onload = () => resolve(true)
+    image.onerror = () => resolve(false)
+    image.src = src
+  })
 }
 
 onMounted(() => {

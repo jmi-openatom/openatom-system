@@ -6,6 +6,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestResetPasswordDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateUserStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUserUpdateDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseAvatarHealthVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
@@ -40,4 +41,8 @@ public interface UserService {
   Result<List<ResponseMembershipVO>> getUserMemberships(Integer userId);
 
   Result<String> deleteUser(Integer userId);
+
+  Result<ResponseAvatarHealthVO> getAvatarHealth();
+
+  Result<Integer> cleanupInvalidAvatars();
 }

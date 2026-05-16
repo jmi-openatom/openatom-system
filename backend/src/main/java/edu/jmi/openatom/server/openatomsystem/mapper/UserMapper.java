@@ -124,4 +124,11 @@ public interface UserMapper extends BaseMapper<User> {
     wrapper.orderByDesc(User::getId);
     return selectPage(page, wrapper);
   }
+
+  default List<User> selectUsersWithAvatar() {
+    return selectList(
+        new LambdaQueryWrapper<User>()
+            .isNotNull(User::getAvatar)
+            .ne(User::getAvatar, ""));
+  }
 }

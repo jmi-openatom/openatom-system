@@ -80,6 +80,12 @@ export const userApi = {
   assignRoles(id: string | number, data: Record<string, unknown>): Promise<any> {
     return request.post(`/users/${id}/roles`, data)
   },
+  avatarHealth(): Promise<any> {
+    return request.get('/users/avatars/health')
+  },
+  cleanupInvalidAvatars(): Promise<any> {
+    return request.post('/users/avatars/cleanup')
+  },
 }
 
 export const clubApi = {

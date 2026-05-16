@@ -39,6 +39,9 @@
         <el-button v-if="canImportUsers" type="info" link @click="downloadTemplate"
           >下载模板</el-button
         >
+        <el-button v-if="canInspectAvatars" plain @click="openAvatarHealthDialog">
+          头像巡检
+        </el-button>
         <el-button v-if="canCreateUser" type="primary" :icon="Plus" @click="openDialog()"
           >新增用户</el-button
         >
@@ -172,6 +175,48 @@
         >
       </template>
     </el-dialog>
+
+    <el-dialog v-model="avatarHealthVisible" title="头像巡检" width="620px">
+      <div v-loading="avatarHealthLoading" class="avatar-health">
+        <div class="avatar-health__summary">
+          <strong>{{ avatarHealth.totalManaged || 0 }}</strong>
+          <span>系统托管头像</span>
+          <strong :class="{ danger: avatarHealth.invalidCount }">
+            {{ avatarHealth.invalidCount || 0 }}
+          </strong>
+          <span>失效头像</span>
+        </div>
+
+        <el-empty
+          v-if="!avatarHealthLoading && !avatarHealth.invalidUsers?.length"
+          description="当前没有失效头像"
+        />
+
+        <el-table
+          v-else
+          :data="avatarHealth.invalidUsers || []"
+          border
+          size="small"
+        >
+          <el-table-column prop="id" label="ID" width="72" />
+          <el-table-column prop="realName" label="姓名" />
+          <el-table-column prop="userName" label="用户名" />
+          <el-table-column prop="avatar" label="失效地址" min-width="220" show-overflow-tooltip />
+        </el-table>
+      </div>
+      <template #footer>
+        <el-button @click="avatarHealthVisible = false">关闭</el-button>
+        <el-button
+          v-if="canCleanupAvatars"
+          type="primary"
+          :loading="avatarCleanupLoading"
+          :disabled="!avatarHealth.invalidCount"
+          @click="cleanupInvalidAvatars"
+        >
+          清理失效头像
+        </el-button>
+      </template>
+    </el-dialog>
   </ViewPage>
 </template>
 
@@ -219,6 +264,10 @@ const batchJoinVisible = ref(false)
 const batchJoinSaving = ref(false)
 
 const batchJoinForm = ref({ clubId: undefined, status: 'active' })
+const avatarHealthVisible = ref(false)
+const avatarHealthLoading = ref(false)
+const avatarCleanupLoading = ref(false)
+const avatarHealth = ref<any>({})
 
 const rules = ref({
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -266,6 +315,14 @@ const canDeleteUser = computed(() => {
 
 const canBatchJoinClub = computed(() => {
   return hasPermission('membership:batch-create')
+})
+
+const canInspectAvatars = computed(() => {
+  return hasPermission('user:list')
+})
+
+const canCleanupAvatars = computed(() => {
+  return hasPermission('user:update')
 })
 
 function statusText(status: any) {
@@ -426,6 +483,35 @@ async function submitBatchJoin() {
   }
 }
 
+async function openAvatarHealthDialog() {
+  avatarHealthVisible.value = true
+  await fetchAvatarHealth()
+}
+
+async function fetchAvatarHealth() {
+  avatarHealthLoading.value = true
+  try {
+    avatarHealth.value = (await userApi.avatarHealth()) || {}
+  } finally {
+    avatarHealthLoading.value = false
+  }
+}
+
+async function cleanupInvalidAvatars() {
+  await ElMessageBox.confirm('确认清理所有失效头像记录？用户将恢复为默认姓氏头像。', '提示', {
+    type: 'warning',
+  })
+  avatarCleanupLoading.value = true
+  try {
+    const cleaned = await userApi.cleanupInvalidAvatars()
+    ElMessage.success(`已清理 ${cleaned || 0} 条失效头像`)
+    await fetchAvatarHealth()
+    await fetchList()
+  } finally {
+    avatarCleanupLoading.value = false
+  }
+}
+
 onMounted(() => {
   fetchList()
   fetchClubs()
@@ -436,5 +522,26 @@ onMounted(() => {
 .pager {
   margin-top: 16px;
   justify-content: flex-end;
+}
+
+.avatar-health {
+  min-height: 180px;
+}
+
+.avatar-health__summary {
+  display: grid;
+  grid-template-columns: auto auto auto auto;
+  gap: 10px;
+  align-items: baseline;
+  width: fit-content;
+  margin-bottom: 18px;
+}
+
+.avatar-health__summary strong {
+  font-size: 28px;
+}
+
+.avatar-health__summary strong.danger {
+  color: #f56c6c;
 }
 </style>

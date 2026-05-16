@@ -10,11 +10,13 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestResetPasswordDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateUserStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUserUpdateDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseAvatarHealthVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import edu.jmi.openatom.server.openatomsystem.service.AvatarStorageService;
 import edu.jmi.openatom.server.openatomsystem.service.UserService;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -49,6 +51,7 @@ public class UserServiceImpl implements UserService {
   private final ActivityRegistrationMapper activityRegistrationMapper;
   private final FormSubmissionMapper formSubmissionMapper;
   private final PasswordService passwordService;
+  private final AvatarStorageService avatarStorageService;
 
   @Override
   public Result<PageDataVO<User>> getUsers(
@@ -160,6 +163,41 @@ public class UserServiceImpl implements UserService {
     } catch (Exception e) {
       return Result.error("Excel 导入失败: " + e.getMessage());
     }
+  }
+
+  @Override
+  public Result<ResponseAvatarHealthVO> getAvatarHealth() {
+    List<User> managedUsers =
+        userMapper.selectUsersWithAvatar().stream()
+            .filter(user -> avatarStorageService.isManagedAvatarUrl(user.getAvatar()))
+            .toList();
+    List<User> invalidUsers =
+        managedUsers.stream()
+            .filter(user -> !avatarStorageService.existsByAvatarUrl(user.getAvatar()))
+            .map(this::buildSafeUser)
+            .toList();
+    return Result.success(
+        ResponseAvatarHealthVO.builder()
+            .totalManaged(managedUsers.size())
+            .invalidCount(invalidUsers.size())
+            .invalidUsers(invalidUsers)
+            .build());
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<Integer> cleanupInvalidAvatars() {
+    List<User> invalidUsers =
+        userMapper.selectUsersWithAvatar().stream()
+            .filter(user -> avatarStorageService.isManagedAvatarUrl(user.getAvatar()))
+            .filter(user -> !avatarStorageService.existsByAvatarUrl(user.getAvatar()))
+            .toList();
+    invalidUsers.forEach(
+        user -> {
+          user.setAvatar(null);
+          userMapper.updateById(user);
+        });
+    return Result.success(invalidUsers.size(), "已清理 " + invalidUsers.size() + " 条失效头像");
   }
 
   @Override

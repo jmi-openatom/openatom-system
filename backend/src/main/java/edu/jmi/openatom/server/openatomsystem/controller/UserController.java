@@ -8,6 +8,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestResetPasswordDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateUserStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUserUpdateDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseAvatarHealthVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.entity.Role;
@@ -219,5 +220,17 @@ public class UserController {
   @SaCheckPermission("user:membership:list")
   public Result<List<ResponseMembershipVO>> memberships(@PathVariable Integer userId) {
     return userService.getUserMemberships(userId);
+  }
+
+  @GetMapping("/avatars/health")
+  @SaCheckPermission("user:list")
+  public Result<ResponseAvatarHealthVO> avatarHealth() {
+    return userService.getAvatarHealth();
+  }
+
+  @PostMapping("/avatars/cleanup")
+  @SaCheckPermission("user:update")
+  public Result<Integer> cleanupInvalidAvatars() {
+    return userService.cleanupInvalidAvatars();
   }
 }

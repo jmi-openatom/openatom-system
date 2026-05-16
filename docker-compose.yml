@@ -53,6 +53,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-openatom123}
       - APP_APPLICATION_SUBMIT_MAX_PER_SECOND=${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:-5}
+      - APP_AVATAR_STORAGE_DIR=/app/uploads/avatars
     ports:
       - "8921:8921"
     volumes:
