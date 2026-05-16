@@ -4,10 +4,6 @@
     <div aria-hidden="true" class="hero__glass"></div>
     <div class="container hero__inner">
       <div class="hero__content">
-        <div class="hero__eyebrow">
-          <img alt="" class="hero__logo" src="/logo.png" />
-          <span>OpenAtom · JMI</span>
-        </div>
         <MorphingText
           class="home-hero__morph"
           :cool-down-time="coolDownTime"
