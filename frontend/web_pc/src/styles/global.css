@@ -308,6 +308,43 @@ a {
   backdrop-filter: none;
 }
 
+.motion-card {
+  --motion-x: 50%;
+  --motion-y: 50%;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  will-change: transform;
+}
+
+.motion-card::selection {
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.motion-card::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: '';
+  opacity: 0;
+  border: 1px solid color-mix(in srgb, var(--oa-text) 16%, transparent);
+  transition: opacity 0.24s ease;
+  pointer-events: none;
+}
+
+.motion-card:hover::after {
+  opacity: 1;
+}
+
+.motion-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.motion-magnetic {
+  will-change: transform;
+}
+
 .toolbar {
   display: flex;
   gap: 12px;
@@ -966,6 +1003,10 @@ a:hover {
     scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
   }
+
+  .motion-card::after {
+    display: none;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1212,6 +1253,33 @@ html.dark .activity-band {
   color: var(--oa-text) !important;
 }
 
+html.dark .metric-console {
+  background: var(--oa-border) !important;
+  border-color: var(--oa-border) !important;
+}
+
+html.dark .metric-console__core {
+  background: var(--oa-dark-tile-3) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .metric-console__core::before {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+html.dark .metric-node {
+  background: var(--oa-elevated-bg) !important;
+  color: var(--oa-text) !important;
+}
+
+html.dark .metric-node span {
+  color: var(--oa-muted) !important;
+}
+
+html.dark .metric-node.is-active {
+  background: var(--oa-button-subtle-bg) !important;
+}
+
 html.dark .people-section {
   background: var(--oa-page-bg) !important;
   color: var(--oa-text) !important;
@@ -1431,10 +1499,7 @@ html.dark .preview-count {
 }
 
 html.dark .home-hero__morph span {
-  background: linear-gradient(90deg, #f8fafc 0%, #5eead4 48%, #38bdf8 100%) !important;
-  background-clip: text !important;
-  -webkit-background-clip: text !important;
-  color: transparent !important;
+  color: #f8fafc !important;
 }
 
 html.dark .brief-card .el-icon,

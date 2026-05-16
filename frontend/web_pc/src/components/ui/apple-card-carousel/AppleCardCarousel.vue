@@ -80,7 +80,7 @@ provide(CarouselKey, {
   <div class="relative w-full">
     <div
       ref="carouselRef"
-      class="flex w-full overflow-x-scroll overscroll-x-auto scroll-smooth py-10 [scrollbar-width:none] md:py-20"
+      class="flex w-full overflow-x-scroll overscroll-x-auto scroll-smooth py-6 [scrollbar-width:none] md:py-8"
       @scroll="checkScrollability"
     >
       <div class="absolute right-0 z-1000 h-auto w-[5%] overflow-hidden bg-gradient-to-l" />

@@ -119,7 +119,7 @@ function handleClose() {
 
   <Motion
     :layout-id="layout ? `card-${card.title}` : undefined"
-    class="relative z-10 flex h-80 w-56 flex-col items-start justify-start overflow-hidden rounded-3xl bg-gray-100 md:h-160 md:w-96 dark:bg-neutral-900"
+    class="relative z-10 flex h-80 w-56 flex-col items-start justify-start overflow-hidden rounded-3xl bg-gray-100 md:h-[460px] md:w-[340px] dark:bg-neutral-900"
     @click="handleOpen"
   >
     <div

@@ -1,6 +1,7 @@
 <template>
   <section id="overview" class="hero">
     <HomeMapSection background class="hero__map" />
+    <div aria-hidden="true" class="hero__grid"></div>
     <div aria-hidden="true" class="hero__glass"></div>
     <div class="container hero__inner">
       <div class="hero__content">
@@ -21,7 +22,6 @@ import HomeMapSection from './HomeMapSection.vue'
 import { MorphingText } from '@/components/ui/morphing-text'
 import type { BaseProps } from '../../ui/pattern-background'
 import { PATTERN_BACKGROUND_SPEED } from '../../ui/pattern-background'
-
 // 1. Define a single interface for all props
 interface HeroProps extends BaseProps {
   text?: string
@@ -32,7 +32,7 @@ interface HeroProps extends BaseProps {
 }
 
 // 2. Use withDefaults to handle your default values cleanly
-const props = withDefaults(defineProps<HeroProps>(), {
+withDefaults(defineProps<HeroProps>(), {
   text: '技术分享 · 项目实践 · 竞赛训练 · 开源协作',
   revealDelayMs: 100,
   animate: true,

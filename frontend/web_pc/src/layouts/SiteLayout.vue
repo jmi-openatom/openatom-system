@@ -1,5 +1,5 @@
 <template>
-  <div class="site-shell" :class="{ 'site-shell--home': isHomeRoute }">
+  <div ref="siteShellRef" class="site-shell" :class="{ 'site-shell--home': isHomeRoute }">
     <header
       :aria-hidden="!headerVisible"
       :class="{ 'site-header--hidden': !headerVisible, 'site-header--home': isHomeRoute }"
@@ -84,7 +84,7 @@
       </nav>
     </el-drawer>
 
-    <main class="site-main">
+    <main ref="siteMainRef" class="site-main">
       <router-view />
     </main>
 
@@ -122,6 +122,7 @@ import { getToken } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
 import { notificationApi } from '@/api'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import { useSiteShellMotion } from '@/composables/useSiteMotion'
 
 const Setting = markRaw(SettingIcon)
 
@@ -141,6 +142,10 @@ const version = ref(__APP_VERSION__)
 
 const route = useRoute()
 
+const siteShellRef = ref<HTMLElement>()
+
+const siteMainRef = ref<HTMLElement>()
+
 const hasScrolledPastHeroTop = ref(false)
 
 const isHomeRoute = computed(() => route.name === 'site-home')
@@ -156,6 +161,8 @@ const isLoggedIn = computed(() => {
 const showAdminEntry = computed(() => {
   return hasAdminAccess()
 })
+
+useSiteShellMotion(siteShellRef, siteMainRef, isHomeRoute)
 
 async function fetchUnreadCount() {
   try {
@@ -197,9 +204,11 @@ onBeforeUnmount(() => {
 /* 页面整体布局：Flex 垂直排布 */
 .site-shell {
   --oa-site-header-height: 60px;
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  isolation: isolate;
   background: var(--oa-page-bg);
   color: var(--oa-text);
 }
@@ -230,6 +239,12 @@ onBeforeUnmount(() => {
     background-color 0.22s ease,
     box-shadow 0.22s ease;
   will-change: transform, opacity;
+}
+
+.site-main,
+.site-footer {
+  position: relative;
+  z-index: 1;
 }
 
 .site-header::before {
@@ -586,4 +601,5 @@ onBeforeUnmount(() => {
     display: none;
   }
 }
+
 </style>

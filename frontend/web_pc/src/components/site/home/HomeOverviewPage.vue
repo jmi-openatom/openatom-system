@@ -1,5 +1,6 @@
 <template>
-  <section class="home-overview-page">
+  <section class="home-overview-page home-interactive-section">
+    <HomeInteractiveBackdrop :radius="220" :spacing="66" :strength="20" />
     <div class="container home-overview-page__inner">
       <div class="hero__actions">
         <el-button
@@ -16,25 +17,39 @@
       </div>
 
       <div class="command-panel">
-        <div v-if="metrics.length" aria-label="社团关键指标" class="signal-grid" role="list">
-          <div
-            v-for="metric in metrics"
-            :key="metric.label"
-            :class="`signal-card--${metricTone(metric.label)}`"
-            class="signal-card"
-            role="listitem"
-          >
-            <div class="signal-card__head">
-              <el-icon aria-hidden="true" class="signal-card__icon">
+        <div v-if="metrics.length" aria-label="社团关键指标" class="metric-console">
+          <div class="metric-console__core">
+            <Transition mode="out-in" name="metric-swap">
+              <div :key="activeMetric?.label" class="metric-console__copy">
+                <span>社团关键指标</span>
+                <strong>{{ activeMetric?.value }}</strong>
+                <p>{{ activeMetric?.label }}</p>
+                <small>{{ activeMetric?.note }}</small>
+              </div>
+            </Transition>
+          </div>
+
+          <div class="metric-console__orbit">
+            <button
+              v-for="(metric, index) in metrics"
+              :key="metric.label"
+              :class="{ 'is-active': index === activeIndex }"
+              class="metric-node"
+              type="button"
+              @focus="setActive(index)"
+              @pointerenter="setActive(index)"
+            >
+              <el-icon aria-hidden="true">
                 <component :is="metricIcon(metric.label)" />
               </el-icon>
-              <span class="signal-card__label">{{ metric.label }}</span>
-            </div>
-            <strong class="signal-card__value">{{ metric.value }}</strong>
-            <small class="signal-card__note">{{ metric.note }}</small>
+              <span>{{ metric.label }}</span>
+              <strong>{{ metric.value }}</strong>
+            </button>
           </div>
         </div>
+
         <el-empty v-else :image-size="72" description="暂无社团统计数据" />
+
         <div v-if="techStack.length" class="terminal-strip">
           <span v-for="item in techStack" :key="item">{{ item }}</span>
         </div>
@@ -44,7 +59,8 @@
 </template>
 
 <script setup lang="ts">
-import { type Component, markRaw } from 'vue'
+import { computed, markRaw, ref, type Component } from 'vue'
+import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
 import {
   Calendar,
   Collection,
@@ -53,7 +69,7 @@ import {
   UserFilled as UserFilledIcon,
 } from '@element-plus/icons-vue'
 
-defineProps<{
+const props = defineProps<{
   metrics: any[]
   techStack: string[]
 }>()
@@ -61,6 +77,9 @@ defineProps<{
 defineEmits<{
   scrollTo: [id: string]
 }>()
+
+const activeIndex = ref(0)
+const activeMetric = computed(() => props.metrics[activeIndex.value] || props.metrics[0])
 
 const DataAnalysis = markRaw(DataAnalysisIcon)
 const UserFilled = markRaw(UserFilledIcon)
@@ -82,12 +101,7 @@ function metricIcon(label?: string) {
   return metricIcons.DataAnalysis
 }
 
-function metricTone(label?: string) {
-  if (!label) return 'default'
-  if (label.includes('成员')) return 'members'
-  if (label.includes('活动')) return 'activity'
-  if (label.includes('获奖')) return 'award'
-  if (label.includes('招新')) return 'recruit'
-  return 'default'
+function setActive(index: number) {
+  activeIndex.value = index
 }
 </script>

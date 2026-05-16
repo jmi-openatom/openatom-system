@@ -1,5 +1,6 @@
 <template>
-  <section id="people" class="container section people-section">
+  <section id="people" class="container section people-section home-interactive-section">
+    <HomeInteractiveBackdrop :radius="200" :spacing="60" :strength="16" />
     <div class="section-heading reveal-block">
       <span>成员信息</span>
       <h2>我们的团队</h2>
@@ -59,6 +60,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Marquee, ReviewCard } from '@/components/ui/marquee'
+import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
 
 const props = defineProps<{
   people: any[]

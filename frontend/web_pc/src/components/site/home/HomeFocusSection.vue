@@ -4,6 +4,7 @@ import {
   AppleCardCarousel,
   AppleCarouselItem,
 } from "@/components/ui/apple-card-carousel";
+import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
 
 defineProps<{
   club: Record<string, any>
@@ -40,16 +41,15 @@ const data = [
 </script>
 
 <template>
-  <section class="container section club-brief">
+  <section class="container section club-brief home-interactive-section">
+    <HomeInteractiveBackdrop :radius="210" :spacing="62" :strength="18" />
     <div class="section-heading reveal-block">
       <span>社团概览</span>
       <h2>{{ club.name || "社团" }}的主要方向</h2>
       <p>左右滑动浏览社团各大方向，点击卡片查看详细介绍。</p>
     </div>
 
-    <el-empty v-if="!focusAreas.length && !loading" description="暂无社团部门数据" />
-
-    <div class="w-full overflow-hidden">
+    <div class="focus-carousel w-full overflow-hidden">
       <AppleCardCarousel>
         <AppleCarouselItem
           v-for="(card, index) in data"
