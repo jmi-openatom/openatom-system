@@ -74,10 +74,10 @@ const campusCamera = {
 function mapFog(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
-      color: '#0b1220',
-      'high-color': '#111827',
+      color: '#121a28',
+      'high-color': '#1b2638',
       'horizon-blend': 0.18,
-      'space-color': '#030712',
+      'space-color': '#0b1220',
       'star-intensity': 0.22,
     }
   }
@@ -113,10 +113,10 @@ function stylePalette(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
       ink: '#f8fafc',
-      background: '#0b1020',
-      water: '#102033',
-      park: '#14261d',
-      land: '#111827',
+      background: '#121a28',
+      water: '#183049',
+      park: '#183125',
+      land: '#162233',
       road: '#e5e7eb',
       minorRoad: '#a1a1aa',
       boundary: '#94a3b8',
@@ -506,7 +506,7 @@ onBeforeUnmount(() => {
 }
 
 :global(html.dark) .map-canvas {
-  filter: brightness(1.04) saturate(0.82) contrast(1.02);
+  filter: brightness(1.1) saturate(0.88) contrast(1.02);
 }
 
 :global(html.dark) .map-grain {

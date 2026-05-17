@@ -1236,23 +1236,23 @@ html.dark .home-overview-page {
 }
 
 html.dark .home-page {
-  background: #0b0d12 !important;
+  background: #111827 !important;
 }
 
 html.dark .hero {
-  background: #0b0f17 !important;
+  background: #121a28 !important;
 }
 
 html.dark .home-overview-page {
-  background: linear-gradient(180deg, #0b0f17 0%, #10151d 100%) !important;
+  background: linear-gradient(180deg, #121a28 0%, #182131 100%) !important;
 }
 
 html.dark .hero::after {
-  background: linear-gradient(180deg, transparent 0%, rgba(11, 15, 23, 0.26) 82%, #0b0f17 100%) !important;
+  background: linear-gradient(180deg, transparent 0%, rgba(18, 26, 40, 0.2) 82%, #121a28 100%) !important;
 }
 
 html.dark .hero__glass {
-  background: rgba(9, 9, 11, 0.04) !important;
+  background: rgba(255, 255, 255, 0.01) !important;
 }
 
 html.dark .club-brief,
@@ -1261,19 +1261,35 @@ html.dark .achievements-section {
 }
 
 html.dark .club-brief {
-  background: #11141b !important;
+  background: #141c2a !important;
 }
 
 html.dark .achievements-section {
-  background: #12161d !important;
+  background: #151e2d !important;
 }
 
 html.dark .metric-console {
-  --metric-ink: #f5f5f7;
-  --metric-muted: rgba(245, 245, 247, 0.58);
-  --metric-faint: rgba(245, 245, 247, 0.34);
-  --metric-line: rgba(245, 245, 247, 0.12);
-  --metric-glow: rgba(245, 245, 247, 0.18);
+  --metric-ink: #ffffff;
+  --metric-muted: rgba(255, 255, 255, 0.82);
+  --metric-faint: rgba(255, 255, 255, 0.58);
+  --metric-line: rgba(255, 255, 255, 0.18);
+  --metric-glow: rgba(255, 255, 255, 0.24);
+}
+
+html.dark .metric-console__core strong,
+html.dark .metric-node strong {
+  color: #ffffff !important;
+}
+
+html.dark .metric-console__core p {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+html.dark .metric-console__core span,
+html.dark .metric-console__core small,
+html.dark .metric-node span,
+html.dark .metric-node small {
+  color: rgba(255, 255, 255, 0.72) !important;
 }
 
 html.dark .home-overview-page .command-panel {
@@ -1375,7 +1391,7 @@ html.dark .award-exhibit__spotlight small {
 }
 
 html.dark .people-section {
-  background: #0d1118 !important;
+  background: #121a27 !important;
   color: var(--oa-text) !important;
 }
 
