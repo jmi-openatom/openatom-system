@@ -26,33 +26,26 @@
       </div>
 
       <div class="people-wall">
-        <div class="people-wall__marquee">
-          <div
-            v-for="copy in 2"
-            :key="copy"
-            class="people-wall__group"
-            role="list"
-            :aria-hidden="copy === 2 ? 'true' : undefined"
+        <div class="people-wall__marquee" :style="marqueeStyle" role="list">
+          <article
+            v-for="(person, index) in loopedPeople"
+            :key="`${person.copy}-${person.userId || person.name}`"
+            class="people-person"
+            role="listitem"
+            :aria-hidden="person.copy > 0 ? 'true' : undefined"
           >
-            <article
-              v-for="(person, index) in mappedPeople"
-              :key="`${copy}-${person.userId || person.name}`"
-              class="people-person"
-              role="listitem"
-            >
-              <span class="people-person__index">{{ formatMemberIndex(index) }}</span>
+            <span class="people-person__index">{{ formatMemberIndex(person.sourceIndex) }}</span>
 
-              <div class="people-person__portrait">
-                <UserAvatar :name="person.name" :size="112" :src="person.avatar" />
-              </div>
+            <div class="people-person__portrait">
+              <UserAvatar :name="person.name" :size="112" :src="person.avatar" />
+            </div>
 
-              <div class="people-person__meta">
-                <strong>{{ person.name }}</strong>
-                <span>{{ person.username || '成员' }}</span>
-                <p>{{ person.body || '共同推动社团发展' }}</p>
-              </div>
-            </article>
-          </div>
+            <div class="people-person__meta">
+              <strong>{{ person.name }}</strong>
+              <span>{{ person.username || '成员' }}</span>
+              <p>{{ person.body || '共同推动社团发展' }}</p>
+            </div>
+          </article>
         </div>
 
         <div class="people-wall__fade people-wall__fade--left" />
@@ -91,6 +84,20 @@ const uniqueRoles = computed(() => {
   )
   return [...roles]
 })
+
+const loopedPeople = computed(() =>
+  Array.from({ length: 3 }, (_, copy) =>
+    mappedPeople.value.map((person, sourceIndex) => ({
+      ...person,
+      copy,
+      sourceIndex,
+    })),
+  ).flat(),
+)
+
+const marqueeStyle = computed(() => ({
+  '--people-cycle-width': `${mappedPeople.value.length * 232}px`,
+}))
 
 function formatMemberIndex(index: number) {
   return String(index + 1).padStart(2, '0')
@@ -184,12 +191,6 @@ function formatMemberIndex(index: number) {
   animation-play-state: paused;
 }
 
-.people-wall__group {
-  display: flex;
-  align-items: stretch;
-  flex: 0 0 auto;
-}
-
 .people-person {
   position: relative;
   display: grid;
@@ -212,7 +213,7 @@ function formatMemberIndex(index: number) {
   }
 
   to {
-    transform: translateX(-50%);
+    transform: translateX(calc(var(--people-cycle-width) * -1));
   }
 }
 

@@ -18,6 +18,8 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
+import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.Resource;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -139,6 +141,16 @@ public class ControllerLogAspect {
   private Object summarizeResult(Object result) {
     if (result == null) {
       return null;
+    }
+    if (result instanceof ResponseEntity<?> responseEntity) {
+      Object body = responseEntity.getBody();
+      Map<String, Object> summary = new LinkedHashMap<>();
+      summary.put("status", responseEntity.getStatusCode().value());
+      summary.put("bodyType", body == null ? null : body.getClass().getSimpleName());
+      return summary;
+    }
+    if (result instanceof Resource resource) {
+      return Map.of("resource", resource.getDescription());
     }
     return maskSensitiveFields(toJsonNode(result));
   }

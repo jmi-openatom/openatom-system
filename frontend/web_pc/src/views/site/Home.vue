@@ -807,38 +807,42 @@ onBeforeUnmount(() => {
 
 .metric-console {
   position: relative;
-  display: grid;
   min-height: 360px;
-  grid-template-columns: minmax(300px, 0.9fr) minmax(420px, 1.1fr);
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid #e0e0e0;
-  border-radius: 28px;
-  background: #e0e0e0;
+  padding: 34px 0 8px;
+  overflow: visible;
 }
 
 .metric-console__core {
   position: relative;
   display: grid;
-  padding: 36px;
-  background: #0f172a;
+  min-height: 180px;
+  place-items: center;
   color: #ffffff;
 }
 
 .metric-console__core::before {
   position: absolute;
-  inset: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: min(560px, 72%);
+  height: 1px;
+  top: 50%;
+  left: 50%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.18),
+    transparent
+  );
   content: '';
+  transform: translate(-50%, -50%);
 }
 
 .metric-console__copy {
   position: relative;
   z-index: 1;
   display: grid;
-  align-content: center;
-  gap: 10px;
-  min-height: 100%;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
 }
 
 .metric-console__core span,
@@ -850,9 +854,9 @@ onBeforeUnmount(() => {
 }
 
 .metric-console__core span {
-  color: rgba(255, 255, 255, 0.56);
-  font-size: 13px;
-  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 12px;
+  letter-spacing: 0.28em;
 }
 
 .metric-console__core strong {
@@ -860,68 +864,93 @@ onBeforeUnmount(() => {
     'SF Pro Display',
     system-ui,
     sans-serif;
-  font-size: clamp(54px, 6vw, 76px);
+  font-size: clamp(70px, 8vw, 110px);
   font-weight: 600;
-  line-height: 0.96;
+  line-height: 0.9;
 }
 
 .metric-console__core p {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .metric-console__core small {
-  max-width: 240px;
-  color: rgba(255, 255, 255, 0.64);
+  max-width: 280px;
+  color: rgba(255, 255, 255, 0.52);
   line-height: 1.6;
 }
 
+.metric-console__rail {
+  position: absolute;
+  right: 0;
+  bottom: 94px;
+  left: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .metric-console__orbit {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  background: #e0e0e0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  gap: 0;
+  min-height: 126px;
 }
 
 .metric-node {
   position: relative;
   display: grid;
-  align-content: center;
-  gap: 8px;
-  min-height: 180px;
-  padding: 24px;
+  align-content: end;
+  gap: 7px;
+  min-height: 126px;
+  padding: 18px 18px 8px;
   border: 0;
-  background: #ffffff;
-  color: #0f172a;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.58);
   text-align: left;
   cursor: pointer;
   transition:
-    background-color 0.28s ease,
-    color 0.28s ease;
+    color 0.28s ease,
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .metric-node::before {
   position: absolute;
-  top: 18px;
+  top: 30px;
   left: 18px;
-  width: 8px;
-  height: 8px;
-  border: 1px solid currentColor;
-  border-radius: 999px;
+  width: 1px;
+  height: 44px;
+  background: currentColor;
   content: '';
-  opacity: 0.36;
+  opacity: 0.2;
   transition:
-    transform 0.28s ease,
+    height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.28s ease,
-    background-color 0.28s ease;
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.metric-node .el-icon {
-  font-size: 22px;
+.metric-node::after {
+  position: absolute;
+  top: 24px;
+  left: 14px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  content: '';
+  background: currentColor;
+  opacity: 0.34;
+  transition:
+    transform 0.28s ease,
+    opacity 0.28s ease;
+}
+
+.metric-node i {
+  display: none;
 }
 
 .metric-node span {
-  color: rgba(15, 23, 42, 0.56);
+  color: inherit;
   font-size: 14px;
 }
 
@@ -930,19 +959,34 @@ onBeforeUnmount(() => {
     'SF Pro Display',
     system-ui,
     sans-serif;
-  font-size: 38px;
+  color: #ffffff;
+  font-size: 34px;
   font-weight: 600;
   line-height: 1;
 }
 
-.metric-node.is-active {
-  background: #f5f5f7;
+.metric-node small {
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 12px;
 }
 
+.metric-node:hover,
+.metric-node.is-active {
+  color: #ffffff;
+  transform: translateY(-10px);
+}
+
+.metric-node:hover::before,
 .metric-node.is-active::before {
+  height: 58px;
+  opacity: 0.72;
+  transform: translateY(-10px);
+}
+
+.metric-node:hover::after,
+.metric-node.is-active::after {
   opacity: 1;
-  background: currentColor;
-  transform: scale(1.55);
+  transform: scale(1.8);
 }
 
 .metric-swap-enter-active,
@@ -967,6 +1011,7 @@ onBeforeUnmount(() => {
 
 .terminal-strip {
   justify-content: center;
+  margin-top: 16px;
 }
 
 .section {
