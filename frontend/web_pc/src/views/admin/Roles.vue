@@ -147,9 +147,9 @@ onMounted(() => {
   grid-template-columns: minmax(0, 1fr) 430px;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .role-grid :deep(.el-card) {

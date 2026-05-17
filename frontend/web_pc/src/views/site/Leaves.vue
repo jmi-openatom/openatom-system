@@ -266,16 +266,16 @@ onMounted(() => {
 <style scoped>
 .site-page {
   padding: 64px 0 80px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .leave-page {
   display: grid;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .leave-main,
@@ -284,7 +284,7 @@ onMounted(() => {
   padding: 32px;
   border: 0;
   border-radius: 0;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   box-shadow: none;
   animation: oaFadeUp 0.44s ease both;
 }
@@ -359,15 +359,15 @@ onMounted(() => {
 .date-title {
   align-items: center;
   padding: 0 4px 10px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--oa-border);
 }
 
 .leave-card {
   margin-top: 12px;
   padding: 16px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--oa-elevated-bg);
   animation: oaFadeUp 0.34s ease both;
 }
 
@@ -397,9 +397,9 @@ onMounted(() => {
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 10px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .flow-steps {

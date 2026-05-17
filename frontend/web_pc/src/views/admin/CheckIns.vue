@@ -727,7 +727,7 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   z-index: 3000;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
   overflow: hidden;
 }
 
@@ -735,8 +735,8 @@ onBeforeUnmount(() => {
   width: 100vw;
   min-height: 100vh;
   min-height: 100dvh;
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: var(--oa-text);
+  background: var(--oa-page-soft-bg);
   overflow: hidden;
 }
 
@@ -798,8 +798,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px;
-  border-bottom: 1px solid #e0e0e0;
-  color: #1d1d1f;
+  border-bottom: 1px solid var(--oa-border);
+  color: var(--oa-text);
   font-size: 22px;
   font-weight: 600;
 }
@@ -810,19 +810,19 @@ onBeforeUnmount(() => {
   height: 38px;
   place-items: center;
   border-radius: 999px;
-  background: #f5f5f7;
-  color: #1d1d1f;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-text);
   font-size: 22px;
 }
 
 .roster-column--pending .roster-head strong {
-  background: #f5f5f7;
-  color: #1d1d1f;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-text);
 }
 
 .roster-column--checked .roster-head strong {
-  background: #f5f5f7;
-  color: #1d1d1f;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-text);
 }
 
 .roster-list {
@@ -838,8 +838,8 @@ onBeforeUnmount(() => {
   overflow: hidden;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #f5f5f7;
-  color: #1d1d1f;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-text);
   font-size: 20px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -847,7 +847,7 @@ onBeforeUnmount(() => {
 }
 
 .preview-kicker {
-  color: #1d1d1f;
+  color: var(--oa-text);
   font-size: 22px;
   font-weight: 600;
 }
@@ -860,7 +860,7 @@ onBeforeUnmount(() => {
 .preview-meta,
 .preview-count {
   margin: 0;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 20px;
 }
 
@@ -868,7 +868,7 @@ onBeforeUnmount(() => {
   width: min(48vh, 420px);
   height: min(48vh, 420px);
   padding: 18px;
-  background: #fff;
+  background: var(--oa-elevated-bg);
   border-radius: 8px;
   box-shadow: none;
 }

@@ -169,9 +169,9 @@ onMounted(() => {
   display: grid;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .setting-panel,
@@ -179,7 +179,7 @@ onMounted(() => {
   padding: 24px;
   border: 0;
   border-radius: 0;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   box-shadow: none;
   animation: oaFadeUp 0.42s ease both;
 }
@@ -219,9 +219,9 @@ onMounted(() => {
 .week-title {
   display: grid;
   place-items: center;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   border-radius: 8px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
   font-weight: 600;
 }
 
@@ -234,9 +234,9 @@ onMounted(() => {
 .day-cell {
   min-height: 92px;
   padding: 10px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
 }
 
 .day-cell strong,
@@ -248,13 +248,13 @@ onMounted(() => {
 
 .day-cell span {
   margin-top: 6px;
-  color: #1d1d1f;
+  color: var(--oa-text);
   font-weight: 600;
 }
 
 .day-cell small {
   margin-top: 4px;
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .day-cell em {
@@ -266,15 +266,15 @@ onMounted(() => {
 }
 
 .day-cell--rest {
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .day-cell--rest small {
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .day-cell--adjusted {
-  border-color: #1d1d1f;
+  border-color: var(--oa-text);
   box-shadow: none;
 }
 

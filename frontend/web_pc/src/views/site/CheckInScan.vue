@@ -147,7 +147,7 @@ watch(() => [route.query.token, route.query.t], loadRouteToken)
   min-height: 100vh;
   min-height: 100dvh;
   padding: 0;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
   overflow: hidden;
 }
 
@@ -163,9 +163,9 @@ watch(() => [route.query.token, route.query.t], loadRouteToken)
 .scan-panel {
   width: min(100%, 620px);
   padding: 48px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   box-shadow: none;
   backdrop-filter: none;
   animation: oaScaleIn 0.42s ease both;
@@ -198,11 +198,11 @@ watch(() => [route.query.token, route.query.t], loadRouteToken)
   justify-items: center;
   margin-top: 24px;
   padding: 42px 18px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   text-align: center;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 8px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .status-card .el-icon {
@@ -211,7 +211,7 @@ watch(() => [route.query.token, route.query.t], loadRouteToken)
 }
 
 .status-card strong {
-  color: #1d1d1f;
+  color: var(--oa-text);
   font-size: 22px;
 }
 
@@ -220,11 +220,11 @@ watch(() => [route.query.token, route.query.t], loadRouteToken)
 }
 
 .status-card--success {
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .status-card--success .el-icon {
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .result-detail {
@@ -238,7 +238,7 @@ watch(() => [route.query.token, route.query.t], loadRouteToken)
   justify-content: space-between;
   gap: 16px;
   padding-top: 12px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--oa-border);
 }
 
 .result-detail dt {

@@ -261,7 +261,7 @@ onMounted(() => {
 <style scoped>
 .site-page {
   padding: 64px 0 80px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .profile-grid {
@@ -270,9 +270,9 @@ onMounted(() => {
   gap: 1px;
   align-items: start;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .profile-grid :deep(.el-card) {
@@ -301,12 +301,12 @@ onMounted(() => {
 }
 
 .profile-avatar strong {
-  color: #1d1d1f;
+  color: var(--oa-text);
   font-size: 20px;
 }
 
 .profile-avatar span {
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 13px;
 }
 

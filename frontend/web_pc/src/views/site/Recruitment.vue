@@ -121,7 +121,7 @@ onMounted(() => {
 <style scoped>
 .site-page {
   padding: 64px 0 80px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .campaign-item {
@@ -156,10 +156,10 @@ onMounted(() => {
 }
 
 .site-page :deep(.el-timeline-item__tail) {
-  border-left-color: #e0e0e0;
+  border-left-color: var(--oa-border);
 }
 
 .site-page :deep(.el-timeline-item__timestamp) {
-  color: #7a7a7a;
+  color: var(--oa-muted);
 }
 </style>

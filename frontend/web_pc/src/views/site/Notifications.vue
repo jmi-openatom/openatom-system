@@ -110,7 +110,7 @@ onMounted(fetchNotifications)
 .notifications-page {
   min-height: calc(100vh - 58px);
   padding: 72px max(24px, calc((100vw - 1180px) / 2)) 96px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .notifications-hero {
@@ -127,8 +127,8 @@ onMounted(fetchNotifications)
 .notification-summary,
 .notification-item,
 .empty-state {
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
+  background: var(--oa-elevated-bg);
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
 }
 
@@ -140,7 +140,7 @@ onMounted(fetchNotifications)
 
 .notifications-hero__copy span {
   display: block;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 14px;
   line-height: 1;
   margin-bottom: 14px;
@@ -157,12 +157,12 @@ onMounted(fetchNotifications)
   font-size: 48px;
   font-weight: 600;
   line-height: 1.1;
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .notifications-hero__copy p {
   margin: 0;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 18px;
   line-height: 1.7;
 }
@@ -183,11 +183,11 @@ onMounted(fetchNotifications)
 }
 
 .notifications-hero__stats div + div {
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--oa-border);
 }
 
 .notifications-hero__stats strong {
-  color: #1d1d1f;
+  color: var(--oa-text);
   font-family:
     'SF Pro Display',
     system-ui,
@@ -200,7 +200,7 @@ onMounted(fetchNotifications)
 }
 
 .notifications-hero__stats span {
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 14px;
 }
 
@@ -233,14 +233,14 @@ onMounted(fetchNotifications)
 
 .notification-summary h2 {
   margin: 6px 0 0;
-  color: #1d1d1f;
+  color: var(--oa-text);
   font-size: 24px;
   font-weight: 600;
 }
 
 .notification-summary p {
   margin: 0;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 14px;
   line-height: 1.7;
 }
@@ -266,13 +266,13 @@ onMounted(fetchNotifications)
 }
 
 .notification-item:hover {
-  border-color: #1d1d1f;
+  border-color: var(--oa-text);
   transform: translateY(-2px);
 }
 
 .notification-item.is-unread {
-  background: #ffffff;
-  border-color: #1d1d1f;
+  background: var(--oa-elevated-bg);
+  border-color: var(--oa-text);
 }
 
 .item-icon {
@@ -290,16 +290,16 @@ onMounted(fetchNotifications)
   color: #fff;
 }
 .item-icon.activity {
-  background: #f5f5f7;
-  color: #1d1d1f;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-text);
 }
 .item-icon.approval {
-  background: #f5f5f7;
-  color: #1d1d1f;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-text);
 }
 .item-icon.other {
-  background: #fafafc;
-  color: #7a7a7a;
+  background: var(--oa-button-subtle-bg);
+  color: var(--oa-muted);
 }
 
 .item-body {
@@ -318,7 +318,7 @@ onMounted(fetchNotifications)
   font-weight: 600;
   font-size: 17px;
   line-height: 1.35;
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .unread-pill {
@@ -333,7 +333,7 @@ onMounted(fetchNotifications)
 
 .item-content {
   font-size: 14px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   line-height: 1.7;
 }
 
@@ -343,8 +343,8 @@ onMounted(fetchNotifications)
   margin-top: 14px;
   padding: 6px 10px;
   border-radius: 999px;
-  color: #7a7a7a;
-  background: #f5f5f7;
+  color: var(--oa-muted);
+  background: var(--oa-page-soft-bg);
   font-size: 12px;
   line-height: 1;
 }
@@ -383,7 +383,7 @@ onMounted(fetchNotifications)
 
   .notifications-hero__stats div + div {
     border-top: 0;
-    border-left: 1px solid #e0e0e0;
+    border-left: 1px solid var(--oa-border);
   }
 
   .notification-summary {

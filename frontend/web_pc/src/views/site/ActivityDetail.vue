@@ -203,7 +203,7 @@ onMounted(() => {
 
 .markdown-body,
 .signup-panel {
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   border: 1px solid var(--oa-border);
   border-radius: 18px;
   padding: 26px;
@@ -213,18 +213,18 @@ onMounted(() => {
 .markdown-body :deep(h2),
 .markdown-body :deep(h3) {
   margin-top: 0;
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .markdown-body :deep(p),
 .markdown-body :deep(li) {
-  color: #7a7a7a;
+  color: var(--oa-muted);
   line-height: 1.9;
 }
 
 .markdown-body :deep(code) {
   padding: 2px 6px;
-  background: #fafafc;
+  background: var(--oa-button-subtle-bg);
   border-radius: 4px;
 }
 

@@ -464,9 +464,9 @@ onMounted(() => {
   grid-template-columns: 340px minmax(0, 1fr);
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .office-layout :deep(.el-card) {
@@ -490,29 +490,29 @@ onMounted(() => {
   flex-direction: column;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 8px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .office-list-item {
   padding: 16px;
   border: 0;
   border-radius: 0;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   cursor: pointer;
   animation: oaFadeUp 0.34s ease both;
   transition: background-color 0.2s ease;
 }
 
 .office-list-item.is-active {
-  border-color: #1d1d1f;
-  background: #f5f5f7;
+  border-color: var(--oa-text);
+  background: var(--oa-page-soft-bg);
 }
 
 .office-list-item__title {
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .office-list-item__meta {

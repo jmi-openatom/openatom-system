@@ -254,7 +254,7 @@ onMounted(() => {
 <style scoped>
 .site-page {
   padding: 64px 0 80px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .progress-page {
@@ -268,8 +268,8 @@ onMounted(() => {
   justify-content: space-between;
   gap: 16px;
   padding: 48px;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
+  background: var(--oa-elevated-bg);
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
   animation: oaFadeUp 0.42s ease both;
 }
@@ -283,9 +283,9 @@ onMounted(() => {
   display: grid;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .progress-card {
@@ -324,8 +324,8 @@ onMounted(() => {
 
 .summary-item {
   padding: 14px 16px;
-  background: #f5f5f7;
-  border: 1px solid #e0e0e0;
+  background: var(--oa-page-soft-bg);
+  border: 1px solid var(--oa-border);
   border-radius: 8px;
 }
 
@@ -347,8 +347,8 @@ onMounted(() => {
 
 .interview-item {
   padding: 16px;
-  background: #f5f5f7;
-  border: 1px solid #e0e0e0;
+  background: var(--oa-page-soft-bg);
+  border: 1px solid var(--oa-border);
   border-radius: 8px;
 }
 
@@ -363,7 +363,7 @@ onMounted(() => {
 .interview-item__meta {
   display: grid;
   gap: 8px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
 }
 
 @media (max-width: 900px) {
@@ -384,12 +384,12 @@ onMounted(() => {
 }
 
 .feedback-bubble {
-  background: #fff;
+  background: var(--oa-elevated-bg);
   padding: 10px 14px;
   border-radius: 12px;
   font-size: 14px;
-  color: #7a7a7a;
-  border: 1px solid #e0e0e0;
+  color: var(--oa-muted);
+  border: 1px solid var(--oa-border);
 }
 
 .approval-history {
@@ -412,14 +412,14 @@ onMounted(() => {
   top: 16px;
   bottom: -20px;
   width: 1px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .record-dot {
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: #e0e0e0;
+  background: var(--oa-border);
   margin-top: 6px;
   flex-shrink: 0;
   z-index: 1;
@@ -458,8 +458,8 @@ onMounted(() => {
 
 .record-comment {
   font-size: 14px;
-  color: #7a7a7a;
-  background: #f5f5f7;
+  color: var(--oa-muted);
+  background: var(--oa-page-soft-bg);
   padding: 8px 12px;
   border-radius: 8px;
   margin: 0;

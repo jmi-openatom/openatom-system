@@ -311,16 +311,16 @@ onMounted(() => {
   display: grid;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .date-group {
   padding: 24px;
   border: 0;
   border-radius: 0;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   box-shadow: none;
   animation: oaFadeUp 0.42s ease both;
 }
@@ -339,9 +339,9 @@ onMounted(() => {
 .leave-card {
   min-width: 0;
   padding: 16px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--oa-elevated-bg);
   animation: oaFadeUp 0.34s ease both;
 }
 
@@ -385,9 +385,9 @@ onMounted(() => {
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 10px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .flow-strip {
@@ -400,19 +400,19 @@ onMounted(() => {
 .flow-dot {
   padding: 5px 10px;
   border-radius: 999px;
-  color: #7a7a7a;
-  background: #fafafc;
+  color: var(--oa-muted);
+  background: var(--oa-button-subtle-bg);
   font-size: 12px;
 }
 
 .flow-dot--done {
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: var(--oa-text);
+  background: var(--oa-page-soft-bg);
 }
 
 .flow-dot--process {
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: var(--oa-text);
+  background: var(--oa-page-soft-bg);
 }
 
 .card-actions {

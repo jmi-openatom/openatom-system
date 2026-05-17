@@ -119,7 +119,7 @@ function formatMemberIndex(index: number) {
   gap: 32px;
   margin: 0 auto 40px;
   padding: 18px 28px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.82);
 }
@@ -249,7 +249,7 @@ function formatMemberIndex(index: number) {
   place-items: center;
   overflow: hidden;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   filter: saturate(1.04);
   transition:
     width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
@@ -264,7 +264,7 @@ function formatMemberIndex(index: number) {
 }
 
 .people-person__meta strong {
-  color: #1d1d1f;
+  color: var(--oa-text);
   font-family:
     'SF Pro Display',
     system-ui,

@@ -763,14 +763,14 @@ onMounted(() => {
   display: grid;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .designer-card {
   padding: 18px;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   border: 0;
   border-radius: 0;
   animation: oaFadeUp 0.34s ease both;

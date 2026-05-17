@@ -65,9 +65,4 @@ const avatarStyle = computed(() => ({
   object-fit: cover;
 }
 
-:global(html.dark) .user-avatar {
-  border-color: rgba(245, 245, 247, 0.16);
-  background: #f5f5f7;
-  color: #09090b;
-}
 </style>

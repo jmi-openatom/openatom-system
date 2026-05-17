@@ -88,7 +88,7 @@ onMounted(() => {
 <style scoped>
 .site-page {
   padding: 64px 0 80px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .club-grid {
@@ -97,9 +97,9 @@ onMounted(() => {
   gap: 1px;
   overflow: hidden;
   margin-top: 24px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .club-card {
@@ -108,7 +108,7 @@ onMounted(() => {
   gap: 16px;
   min-height: 260px;
   padding: 24px;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -119,7 +119,7 @@ onMounted(() => {
 
 .club-card:hover {
   transform: none;
-  background: #fafafc;
+  background: var(--oa-button-subtle-bg);
   border-color: transparent;
   box-shadow: none;
 }
@@ -164,7 +164,7 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 13px;
 }
 

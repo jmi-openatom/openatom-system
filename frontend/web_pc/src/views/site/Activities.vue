@@ -77,11 +77,11 @@ onMounted(() => {
 <style scoped>
 .activities-page {
   min-height: calc(100vh - 44px);
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .activities-hero {
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   border-bottom: 0;
 }
 
@@ -110,7 +110,7 @@ onMounted(() => {
 .activities-hero p {
   max-width: 720px;
   margin: 0;
-  color: #7a7a7a;
+  color: var(--oa-muted);
   font-size: 24px;
   font-weight: 300;
   line-height: 1.5;
@@ -128,8 +128,8 @@ onMounted(() => {
   gap: 22px;
   padding: 24px;
   margin-bottom: 1px;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
+  background: var(--oa-elevated-bg);
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
   box-shadow: none;
   backdrop-filter: none;
@@ -148,7 +148,7 @@ onMounted(() => {
   display: grid;
   height: 74px;
   place-items: center;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
   border-radius: 8px;
   color: var(--oa-primary-dark);
 }
@@ -159,7 +159,7 @@ onMounted(() => {
 }
 
 .activity-row__date span {
-  color: #7a7a7a;
+  color: var(--oa-muted);
 }
 
 .activity-row__meta {

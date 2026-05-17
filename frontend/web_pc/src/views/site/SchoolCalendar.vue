@@ -59,23 +59,23 @@ onMounted(async () => {
 <style scoped>
 .calendar-page {
   padding: 64px 0 80px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .calendar-shell {
   display: grid;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .section-head {
   padding: 48px;
   border: 0;
   border-radius: 0;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   box-shadow: none;
   text-align: center;
 }
@@ -102,7 +102,7 @@ onMounted(async () => {
   padding: 24px;
   border: 0;
   border-radius: 0;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   box-shadow: none;
   animation: oaFadeUp 0.42s ease both;
 }
@@ -122,9 +122,9 @@ onMounted(async () => {
 .day-cell {
   min-height: 92px;
   padding: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--oa-elevated-bg);
 }
 
 .day-cell strong,
@@ -141,7 +141,7 @@ onMounted(async () => {
 
 .day-cell small {
   margin-top: 4px;
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .day-cell em {
@@ -153,15 +153,15 @@ onMounted(async () => {
 }
 
 .day-cell--rest {
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .day-cell--rest small {
-  color: #1d1d1f;
+  color: var(--oa-text);
 }
 
 .day-cell--adjusted {
-  border-color: #1d1d1f;
+  border-color: var(--oa-text);
   box-shadow: none;
 }
 

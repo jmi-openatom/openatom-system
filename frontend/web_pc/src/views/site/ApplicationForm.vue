@@ -331,7 +331,7 @@ onMounted(() => {
 <style scoped>
 .site-page {
   padding: 64px 0 80px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
 }
 
 .apply-grid {
@@ -339,16 +339,16 @@ onMounted(() => {
   grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
   gap: 1px;
   overflow: hidden;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--oa-border);
   border-radius: 18px;
-  background: #e0e0e0;
+  background: var(--oa-border);
 }
 
 .apply-grid > div,
 .apply-grid > .el-card {
   min-height: 100%;
   padding: 32px;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   animation: oaFadeUp 0.44s ease both;
 }
 

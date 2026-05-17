@@ -902,9 +902,9 @@ onMounted(() => {
 .record-comment {
   margin-top: 8px;
   padding: 8px 12px;
-  background: #f5f5f7;
+  background: var(--oa-page-soft-bg);
   border-radius: 6px;
   font-size: 13px;
-  color: #7a7a7a;
+  color: var(--oa-muted);
 }
 </style>
