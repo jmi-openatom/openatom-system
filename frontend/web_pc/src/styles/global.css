@@ -1232,8 +1232,19 @@ html.dark .preview-screen {
 html.dark .home-page,
 html.dark .hero,
 html.dark .home-overview-page {
-  background: var(--oa-page-bg) !important;
   color: var(--oa-text) !important;
+}
+
+html.dark .home-page {
+  background: #0b0d12 !important;
+}
+
+html.dark .hero {
+  background: #0b0f17 !important;
+}
+
+html.dark .home-overview-page {
+  background: linear-gradient(180deg, #0b0f17 0%, #10151d 100%) !important;
 }
 
 html.dark .hero::after {
@@ -1245,10 +1256,16 @@ html.dark .hero__glass {
 }
 
 html.dark .club-brief,
-html.dark .achievements-section,
-html.dark .activity-band {
-  background: var(--oa-page-soft-bg) !important;
+html.dark .achievements-section {
   color: var(--oa-text) !important;
+}
+
+html.dark .club-brief {
+  background: #11141b !important;
+}
+
+html.dark .achievements-section {
+  background: #12161d !important;
 }
 
 html.dark .metric-console {
@@ -1364,7 +1381,7 @@ html.dark .award-exhibit__spotlight small {
 }
 
 html.dark .people-section {
-  background: var(--oa-page-bg) !important;
+  background: #0d1118 !important;
   color: var(--oa-text) !important;
 }
 
@@ -1616,11 +1633,11 @@ html.dark .apply-note {
 }
 
 html.dark .activity-band {
-  background: var(--oa-dark-tile) !important;
+  background: #171b23 !important;
 }
 
 html.dark .activity-band .activity-card {
-  background: var(--oa-dark-tile-2) !important;
+  background: #1b2029 !important;
 }
 
 html.dark .section-heading h2,

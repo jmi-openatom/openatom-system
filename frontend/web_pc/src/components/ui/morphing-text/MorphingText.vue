@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { cn } from '@/lib/utils'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 const props = withDefaults(defineProps<Props>(), {
   morphTime: 1.5,
@@ -95,13 +95,15 @@ function animate() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  canAnimateMorph.value = supportsMorphFilter() && !prefersReducedMotion()
+  await nextTick()
+
   if (text1Ref.value && text2Ref.value) {
     text1Ref.value.textContent = props.texts[0] || ''
     text2Ref.value.textContent = props.texts[0] || ''
   }
 
-  canAnimateMorph.value = supportsMorphFilter() && !prefersReducedMotion()
   if (canAnimateMorph.value) {
     animate()
   }
