@@ -806,6 +806,11 @@ onBeforeUnmount(() => {
 }
 
 .metric-console {
+  --metric-ink: #1d1d1f;
+  --metric-muted: rgba(29, 29, 31, 0.56);
+  --metric-faint: rgba(29, 29, 31, 0.34);
+  --metric-line: rgba(29, 29, 31, 0.12);
+  --metric-glow: rgba(29, 29, 31, 0.18);
   position: relative;
   min-height: 360px;
   padding: 34px 0 8px;
@@ -817,7 +822,7 @@ onBeforeUnmount(() => {
   display: grid;
   min-height: 180px;
   place-items: center;
-  color: #ffffff;
+  color: var(--metric-ink);
 }
 
 .metric-console__core::before {
@@ -829,7 +834,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.18),
+    var(--metric-glow),
     transparent
   );
   content: '';
@@ -854,7 +859,7 @@ onBeforeUnmount(() => {
 }
 
 .metric-console__core span {
-  color: rgba(255, 255, 255, 0.42);
+  color: var(--metric-faint);
   font-size: 12px;
   letter-spacing: 0.28em;
 }
@@ -876,7 +881,7 @@ onBeforeUnmount(() => {
 
 .metric-console__core small {
   max-width: 280px;
-  color: rgba(255, 255, 255, 0.52);
+  color: var(--metric-muted);
   line-height: 1.6;
 }
 
@@ -886,7 +891,7 @@ onBeforeUnmount(() => {
   bottom: 94px;
   left: 0;
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--metric-line);
 }
 
 .metric-console__orbit {
@@ -907,7 +912,7 @@ onBeforeUnmount(() => {
   padding: 18px 18px 8px;
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--metric-muted);
   text-align: left;
   cursor: pointer;
   transition:
@@ -959,20 +964,20 @@ onBeforeUnmount(() => {
     'SF Pro Display',
     system-ui,
     sans-serif;
-  color: #ffffff;
+  color: var(--metric-ink);
   font-size: 34px;
   font-weight: 600;
   line-height: 1;
 }
 
 .metric-node small {
-  color: rgba(255, 255, 255, 0.34);
+  color: var(--metric-faint);
   font-size: 12px;
 }
 
 .metric-node:hover,
 .metric-node.is-active {
-  color: #ffffff;
+  color: var(--metric-ink);
   transform: translateY(-10px);
 }
 

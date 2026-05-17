@@ -18,6 +18,8 @@
 
       <div class="command-panel">
         <div v-if="metrics.length" aria-label="社团关键指标" class="metric-console">
+          <div class="metric-console__rail"></div>
+
           <div class="metric-console__core">
             <Transition mode="out-in" name="metric-swap">
               <div :key="activeMetric?.label" class="metric-console__copy">
@@ -29,7 +31,7 @@
             </Transition>
           </div>
 
-          <div class="metric-console__orbit">
+          <div class="metric-console__orbit" @pointerleave="setActive(0)">
             <button
               v-for="(metric, index) in metrics"
               :key="metric.label"
@@ -39,11 +41,10 @@
               @focus="setActive(index)"
               @pointerenter="setActive(index)"
             >
-              <el-icon aria-hidden="true">
-                <component :is="metricIcon(metric.label)" />
-              </el-icon>
+              <i></i>
               <span>{{ metric.label }}</span>
               <strong>{{ metric.value }}</strong>
+              <small>{{ metric.note }}</small>
             </button>
           </div>
         </div>

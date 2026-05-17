@@ -250,7 +250,7 @@ function formatMemberIndex(index: number) {
   overflow: hidden;
   border-radius: 999px;
   background: #ffffff;
-  filter: grayscale(1);
+  filter: saturate(1.04);
   transition:
     width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
     height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
@@ -302,7 +302,7 @@ function formatMemberIndex(index: number) {
 .people-person:hover .people-person__portrait {
   width: 148px;
   height: 148px;
-  filter: grayscale(0);
+  filter: saturate(1.08) brightness(1.03);
   transform: translateY(-6px);
 }
 
