@@ -69,9 +69,9 @@ const earthCamera = {
 
 const campusCamera = {
   center: CAMPUS_CENTER,
-  zoom: 15.7,
-  pitch: 28,
-  bearing: -12,
+  zoom: 16.25,
+  pitch: 52,
+  bearing: -18,
 } satisfies CameraOptions
 
 function mapFog(theme: ResolvedTheme) {
