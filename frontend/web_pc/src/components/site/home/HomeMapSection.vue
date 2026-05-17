@@ -80,10 +80,10 @@ function mapFog(theme: ResolvedTheme) {
   }
 
   return {
-    color: '#ffffff',
-    'high-color': '#ffffff',
-    'horizon-blend': 0.18,
-    'space-color': '#ffffff',
+    color: '#f7fbff',
+    'high-color': '#dbeafe',
+    'horizon-blend': 0.2,
+    'space-color': '#eef6ff',
     'star-intensity': 0,
   }
 }
@@ -99,9 +99,9 @@ function buildingColors(theme: ResolvedTheme) {
   }
 
   return {
-    low: '#f3f3f3',
-    middle: '#ebebeb',
-    high: '#e2e2e2',
+    low: '#f1f5f9',
+    middle: '#e8eef5',
+    high: '#dbe4ee',
     opacity: 0.78,
   }
 }
@@ -182,8 +182,8 @@ function neutralizeStyle(theme: ResolvedTheme) {
 
   const layers = map.getStyle().layers || []
   const ink = theme === 'dark' ? '#f5f5f7' : '#111111'
-  const background = theme === 'dark' ? '#000000' : '#ffffff'
-  const faint = theme === 'dark' ? 0.16 : 0.12
+  const background = theme === 'dark' ? '#000000' : '#f8fbff'
+  const faint = theme === 'dark' ? 0.16 : 0.14
 
   layers.forEach((layer) => {
     try {
