@@ -1,6 +1,6 @@
 <template>
   <section id="overview" class="hero">
-    <HomeMapSection background class="hero__map" />
+    <HomeHeroField class="hero__field" />
     <div aria-hidden="true" class="hero__grid"></div>
     <div aria-hidden="true" class="hero__glass"></div>
     <div class="container hero__inner">
@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import HomeMapSection from './HomeMapSection.vue'
+import HomeHeroField from './HomeHeroField.vue'
 import { MorphingText } from '@/components/ui/morphing-text'
 import type { BaseProps } from '../../ui/pattern-background'
 import { PATTERN_BACKGROUND_SPEED } from '../../ui/pattern-background'
