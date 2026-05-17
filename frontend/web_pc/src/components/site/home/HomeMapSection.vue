@@ -74,11 +74,11 @@ const campusCamera = {
 function mapFog(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
-      color: '#121a28',
-      'high-color': '#1b2638',
+      color: '#10233a',
+      'high-color': '#244766',
       'horizon-blend': 0.18,
-      'space-color': '#0b1220',
-      'star-intensity': 0.22,
+      'space-color': '#08111f',
+      'star-intensity': 0.28,
     }
   }
 
@@ -94,10 +94,10 @@ function mapFog(theme: ResolvedTheme) {
 function buildingColors(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
-      low: '#1f2937',
-      middle: '#283548',
-      high: '#334155',
-      opacity: 0.82,
+      low: '#24364d',
+      middle: '#314965',
+      high: '#456585',
+      opacity: 0.9,
     }
   }
 
@@ -113,13 +113,13 @@ function stylePalette(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
       ink: '#f8fafc',
-      background: '#121a28',
-      water: '#183049',
-      park: '#183125',
-      land: '#162233',
-      road: '#e5e7eb',
-      minorRoad: '#a1a1aa',
-      boundary: '#94a3b8',
+      background: '#0d1b2f',
+      water: '#0f4262',
+      park: '#14533e',
+      land: '#12263d',
+      road: '#e2e8f0',
+      minorRoad: '#94a3b8',
+      boundary: '#a8b7ca',
       label: '#f8fafc',
       labelHalo: '#09090b',
     }
@@ -183,7 +183,7 @@ function tuneStyle(theme: ResolvedTheme) {
           map?.setLayoutProperty(layer.id, 'visibility', isMajor ? 'visible' : 'none')
           if (isMajor) {
             map?.setPaintProperty(layer.id, 'line-color', palette.road)
-            map?.setPaintProperty(layer.id, 'line-opacity', theme === 'dark' ? 0.22 : 0.18)
+            map?.setPaintProperty(layer.id, 'line-opacity', theme === 'dark' ? 0.34 : 0.18)
           }
           return
         }
@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
 .map-canvas {
   position: absolute;
   inset: 0;
-  filter: saturate(0.86) contrast(1.02);
+  filter: saturate(0.94) contrast(1.03);
 }
 
 .map-atmosphere,
@@ -492,37 +492,6 @@ onBeforeUnmount(() => {
   width: 10px;
   height: 10px;
   background: #0f172a;
-}
-
-:global(html.dark) .map-atmosphere {
-  background:
-    radial-gradient(
-      circle at 50% 56%,
-      transparent 0 42%,
-      rgba(0, 0, 0, 0.03) 74%,
-      rgba(0, 0, 0, 0.08) 100%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.05));
-}
-
-:global(html.dark) .map-canvas {
-  filter: brightness(1.1) saturate(0.88) contrast(1.02);
-}
-
-:global(html.dark) .map-grain {
-  opacity: 0.12;
-  background-image:
-    radial-gradient(rgba(255, 255, 255, 0.2) 0.7px, transparent 0.7px),
-    radial-gradient(rgba(255, 255, 255, 0.12) 0.7px, transparent 0.7px);
-}
-
-:global(html.dark) :deep(.map-campus-marker::before) {
-  border-color: rgba(245, 245, 247, 0.22);
-  background: rgba(9, 9, 11, 0.8);
-}
-
-:global(html.dark) :deep(.map-campus-marker span) {
-  background: #f5f5f7;
 }
 
 :deep(.mapboxgl-ctrl-group) {

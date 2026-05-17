@@ -1240,19 +1240,58 @@ html.dark .home-page {
 }
 
 html.dark .hero {
-  background: #121a28 !important;
+  background: #0d1b2f !important;
 }
 
 html.dark .home-overview-page {
-  background: linear-gradient(180deg, #121a28 0%, #182131 100%) !important;
+  background: linear-gradient(180deg, #0d1b2f 0%, #13263e 100%) !important;
 }
 
 html.dark .hero::after {
-  background: linear-gradient(180deg, transparent 0%, rgba(18, 26, 40, 0.2) 82%, #121a28 100%) !important;
+  background: linear-gradient(180deg, transparent 0%, rgba(13, 27, 47, 0.12) 78%, #0d1b2f 100%) !important;
 }
 
 html.dark .hero__glass {
-  background: rgba(255, 255, 255, 0.01) !important;
+  background: rgba(255, 255, 255, 0.015) !important;
+}
+
+html.dark .map-atmosphere {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(56, 189, 248, 0.14), transparent 34%),
+    radial-gradient(circle at 72% 28%, rgba(34, 197, 94, 0.08), transparent 26%),
+    radial-gradient(
+      circle at 50% 56%,
+      transparent 0 46%,
+      rgba(0, 0, 0, 0.02) 76%,
+      rgba(0, 0, 0, 0.06) 100%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.03)) !important;
+}
+
+html.dark .map-canvas {
+  filter: brightness(1.2) saturate(1.18) contrast(1.08) !important;
+}
+
+html.dark .map-grain {
+  opacity: 0.06 !important;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.2) 0.7px, transparent 0.7px),
+    radial-gradient(rgba(255, 255, 255, 0.12) 0.7px, transparent 0.7px) !important;
+}
+
+html.dark .map-campus-marker::before {
+  border-color: rgba(245, 245, 247, 0.22) !important;
+  background: rgba(9, 9, 11, 0.8) !important;
+}
+
+html.dark .map-campus-marker span {
+  background: var(--oa-page-soft-bg) !important;
+}
+
+html.dark .user-avatar {
+  border-color: rgba(245, 245, 247, 0.16) !important;
+  background: var(--oa-active-bg) !important;
+  color: var(--oa-active-text) !important;
 }
 
 html.dark .club-brief,
@@ -1680,11 +1719,15 @@ html.dark .roster-head strong {
 
 html.dark .home-hero__morph,
 html.dark .home-hero__morph span {
-  color: #f8fafc !important;
+  color: #ffffff !important;
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.72),
+    0 14px 42px rgba(2, 6, 23, 0.34);
 }
 
 html.dark .hero__subtitle {
-  color: rgba(248, 250, 252, 0.78) !important;
+  color: rgba(248, 250, 252, 0.88) !important;
+  text-shadow: 0 10px 26px rgba(2, 6, 23, 0.28);
 }
 
 html.dark .activities-hero p,
