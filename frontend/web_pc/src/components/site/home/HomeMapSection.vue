@@ -38,7 +38,7 @@ const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || 'pk.eyJ1
 const mapboxLightStyle =
   import.meta.env.VITE_MAPBOX_LIGHT_STYLE?.trim() ||
   import.meta.env.VITE_MAPBOX_STYLE?.trim() ||
-  'mapbox://styles/mapbox/outdoors-v12'
+  'mapbox://styles/mapbox/light-v11'
 const mapboxDarkStyle =
   import.meta.env.VITE_MAPBOX_DARK_STYLE?.trim() || 'mapbox://styles/mapbox/dark-v11'
 const mapboxStyle = computed(() => {
@@ -69,9 +69,9 @@ const earthCamera = {
 
 const campusCamera = {
   center: CAMPUS_CENTER,
-  zoom: 16.25,
-  pitch: 52,
-  bearing: -18,
+  zoom: 15.7,
+  pitch: 28,
+  bearing: -12,
 } satisfies CameraOptions
 
 function mapFog(theme: ResolvedTheme) {
@@ -155,64 +155,6 @@ function addTerrain() {
   map.setFog(mapFog(resolvedTheme.value))
 }
 
-function addBuildings() {
-  if (!map || map.getLayer('oa-3d-buildings')) return
-
-  const layers = map.getStyle().layers || []
-  const labelLayer = layers.find((layer: any) => {
-    return layer.type === 'symbol' && layer.layout?.['text-field']
-  }) as Layer | undefined
-  const colors = buildingColors(resolvedTheme.value)
-
-  try {
-    map.addLayer(
-      {
-        id: 'oa-3d-buildings',
-        source: 'composite',
-        'source-layer': 'building',
-        filter: ['==', 'extrude', 'true'],
-        type: 'fill-extrusion',
-        minzoom: 14,
-        paint: {
-          'fill-extrusion-color': [
-            'interpolate',
-            ['linear'],
-            ['get', 'height'],
-            0,
-            colors.low,
-            80,
-            colors.middle,
-            180,
-            colors.high,
-          ],
-          'fill-extrusion-height': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            14,
-            0,
-            15,
-            ['coalesce', ['get', 'height'], 18],
-          ],
-          'fill-extrusion-base': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            14,
-            0,
-            15,
-            ['coalesce', ['get', 'min_height'], 0],
-          ],
-          'fill-extrusion-opacity': colors.opacity,
-        },
-      },
-      labelLayer?.id,
-    )
-  } catch (error) {
-    // Some custom Mapbox styles do not expose the composite building source.
-  }
-}
-
 function tuneStyle(theme: ResolvedTheme) {
   if (!map) return
 
@@ -224,20 +166,7 @@ function tuneStyle(theme: ResolvedTheme) {
 
     try {
       if (layer.type === 'symbol') {
-        const keepLabel =
-          layerId.includes('road') ||
-          layerId.includes('place') ||
-          layerId.includes('settlement') ||
-          layerId.includes('poi')
-
-        map?.setLayoutProperty(layer.id, 'visibility', keepLabel ? 'visible' : 'none')
-        if (keepLabel) {
-          map?.setPaintProperty(layer.id, 'text-color', palette.label)
-          map?.setPaintProperty(layer.id, 'text-halo-color', palette.labelHalo)
-          map?.setPaintProperty(layer.id, 'text-halo-width', 1.1)
-          map?.setPaintProperty(layer.id, 'text-opacity', layerId.includes('poi') ? 0.72 : 0.9)
-          map?.setPaintProperty(layer.id, 'icon-opacity', 0)
-        }
+        map?.setLayoutProperty(layer.id, 'visibility', 'none')
         return
       }
 
@@ -248,16 +177,21 @@ function tuneStyle(theme: ResolvedTheme) {
 
       if (layer.type === 'line') {
         if (layerId.includes('road') || layerId.includes('bridge') || layerId.includes('tunnel')) {
-          const isMajor = layerId.includes('motorway') || layerId.includes('primary')
-          map?.setPaintProperty(layer.id, 'line-color', isMajor ? palette.road : palette.minorRoad)
-          map?.setPaintProperty(layer.id, 'line-opacity', isMajor ? 0.72 : 0.42)
+          const isMajor =
+            layerId.includes('motorway') ||
+            layerId.includes('trunk') ||
+            layerId.includes('primary') ||
+            layerId.includes('secondary')
+
+          map?.setLayoutProperty(layer.id, 'visibility', isMajor ? 'visible' : 'none')
+          if (isMajor) {
+            map?.setPaintProperty(layer.id, 'line-color', palette.road)
+            map?.setPaintProperty(layer.id, 'line-opacity', theme === 'dark' ? 0.22 : 0.18)
+          }
           return
         }
 
-        if (layerId.includes('boundary')) {
-          map?.setPaintProperty(layer.id, 'line-color', palette.boundary)
-          map?.setPaintProperty(layer.id, 'line-opacity', 0.34)
-        }
+        map?.setPaintProperty(layer.id, 'line-opacity', 0)
         return
       }
 
@@ -279,6 +213,8 @@ function tuneStyle(theme: ResolvedTheme) {
           return
         }
 
+        map?.setPaintProperty(layer.id, 'fill-color', palette.land)
+        map?.setPaintProperty(layer.id, 'fill-opacity', 1)
         return
       }
     } catch (error) {
@@ -291,7 +227,6 @@ function restoreStyleOverlays() {
   if (!map) return
   tuneStyle(resolvedTheme.value)
   addTerrain()
-  addBuildings()
 }
 
 function addCampusMarker(mapboxgl: typeof import('mapbox-gl').default) {
@@ -472,7 +407,7 @@ onBeforeUnmount(() => {
 .map-canvas {
   position: absolute;
   inset: 0;
-  filter: saturate(1.2) contrast(1.1);
+  filter: saturate(0.86) contrast(1.02);
 }
 
 .map-atmosphere,
@@ -488,11 +423,11 @@ onBeforeUnmount(() => {
   background:
     radial-gradient(
       circle at 50% 56%,
-      transparent 0 30%,
-      rgba(15, 23, 42, 0.05) 76%,
-      rgba(15, 23, 42, 0.14) 100%
+      transparent 0 38%,
+      rgba(15, 23, 42, 0.035) 78%,
+      rgba(15, 23, 42, 0.09) 100%
     ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(15, 23, 42, 0.05));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(15, 23, 42, 0.03));
 }
 
 .map-grain {
@@ -581,15 +516,15 @@ onBeforeUnmount(() => {
   background:
     radial-gradient(
       circle at 50% 56%,
-      transparent 0 24%,
-      rgba(0, 0, 0, 0.08) 72%,
-      rgba(0, 0, 0, 0.18) 100%
+      transparent 0 42%,
+      rgba(0, 0, 0, 0.03) 74%,
+      rgba(0, 0, 0, 0.08) 100%
     ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.12));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.05));
 }
 
 :global(html.dark) .map-canvas {
-  filter: brightness(1.12) saturate(1.08) contrast(1.04);
+  filter: brightness(1.04) saturate(0.82) contrast(1.02);
 }
 
 :global(html.dark) .map-grain {
