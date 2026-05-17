@@ -33,7 +33,7 @@ const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || 'pk.eyJ1
 const mapboxLightStyle =
   import.meta.env.VITE_MAPBOX_LIGHT_STYLE?.trim() ||
   import.meta.env.VITE_MAPBOX_STYLE?.trim() ||
-  'mapbox://styles/mapbox/streets-v12'
+  'mapbox://styles/mapbox/light-v11'
 const mapboxDarkStyle =
   import.meta.env.VITE_MAPBOX_DARK_STYLE?.trim() || 'mapbox://styles/mapbox/dark-v11'
 const mapboxStyle = computed(() => {
@@ -71,19 +71,19 @@ const campusCamera = {
 function mapFog(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
-      color: '#111113',
-      'high-color': '#2c2c2e',
+      color: '#000000',
+      'high-color': '#000000',
       'horizon-blend': 0.16,
-      'space-color': '#09090b',
+      'space-color': '#000000',
       'star-intensity': 0.28,
     }
   }
 
   return {
-    color: '#edf7ff',
-    'high-color': '#b9dcff',
+    color: '#ffffff',
+    'high-color': '#ffffff',
     'horizon-blend': 0.18,
-    'space-color': '#d9ecff',
+    'space-color': '#ffffff',
     'star-intensity': 0,
   }
 }
@@ -91,18 +91,18 @@ function mapFog(theme: ResolvedTheme) {
 function buildingColors(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
-      low: '#1c1c1e',
-      middle: '#2c2c2e',
-      high: '#3a3a3c',
+      low: '#111111',
+      middle: '#1a1a1a',
+      high: '#242424',
       opacity: 0.68,
     }
   }
 
   return {
-    low: '#dbeafe',
-    middle: '#bae6fd',
-    high: '#99f6e4',
-    opacity: 0.74,
+    low: '#f3f3f3',
+    middle: '#ebebeb',
+    high: '#e2e2e2',
+    opacity: 0.78,
   }
 }
 
@@ -177,8 +177,45 @@ function addBuildings() {
   }
 }
 
+function neutralizeStyle(theme: ResolvedTheme) {
+  if (!map) return
+
+  const layers = map.getStyle().layers || []
+  const ink = theme === 'dark' ? '#f5f5f7' : '#111111'
+  const background = theme === 'dark' ? '#000000' : '#ffffff'
+  const faint = theme === 'dark' ? 0.16 : 0.12
+
+  layers.forEach((layer) => {
+    try {
+      if (layer.type === 'symbol') {
+        map?.setLayoutProperty(layer.id, 'visibility', 'none')
+        return
+      }
+
+      if (layer.type === 'background') {
+        map?.setPaintProperty(layer.id, 'background-color', background)
+        return
+      }
+
+      if (layer.type === 'line') {
+        map?.setPaintProperty(layer.id, 'line-color', ink)
+        map?.setPaintProperty(layer.id, 'line-opacity', faint)
+        return
+      }
+
+      if (layer.type === 'fill') {
+        map?.setPaintProperty(layer.id, 'fill-color', background)
+        map?.setPaintProperty(layer.id, 'fill-opacity', 1)
+      }
+    } catch (error) {
+      // Some style layers do not expose every paint/layout property.
+    }
+  })
+}
+
 function restoreStyleOverlays() {
   if (!map) return
+  neutralizeStyle(resolvedTheme.value)
   addTerrain()
   addBuildings()
 }
@@ -298,8 +335,7 @@ onMounted(async () => {
   map.on('load', () => {
     mapLoaded.value = true
     mapError.value = ''
-    addTerrain()
-    addBuildings()
+    restoreStyleOverlays()
     scheduleEarthReturn()
   })
 
