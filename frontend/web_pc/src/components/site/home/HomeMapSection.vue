@@ -67,7 +67,7 @@ const earthCamera = {
 const campusCamera = {
   center: CAMPUS_CENTER,
   zoom: 16.25,
-  pitch: 52,
+  pitch: 58,
   bearing: -18,
 } satisfies CameraOptions
 
@@ -152,6 +152,59 @@ function addTerrain() {
   map.setFog(mapFog(resolvedTheme.value))
 }
 
+function add3dBuildings() {
+  if (!map || map.getLayer('oa-3d-buildings') || !map.getSource('composite')) return
+
+  const colors = buildingColors(resolvedTheme.value)
+  const labelLayerId = map
+    .getStyle()
+    .layers?.find((layer) => layer.type === 'symbol' && layer.layout?.['text-field'])?.id
+
+  map.addLayer(
+    {
+      id: 'oa-3d-buildings',
+      source: 'composite',
+      'source-layer': 'building',
+      type: 'fill-extrusion',
+      minzoom: 14,
+      paint: {
+        'fill-extrusion-color': [
+          'interpolate',
+          ['linear'],
+          ['max', ['coalesce', ['get', 'height'], 0], 24],
+          0,
+          colors.low,
+          30,
+          colors.middle,
+          90,
+          colors.high,
+        ],
+        'fill-extrusion-height': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          14,
+          0,
+          15.2,
+          ['max', ['coalesce', ['get', 'height'], 0], 24],
+        ],
+        'fill-extrusion-base': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          14,
+          0,
+          15.2,
+          ['coalesce', ['get', 'min_height'], 0],
+        ],
+        'fill-extrusion-opacity': colors.opacity,
+        'fill-extrusion-vertical-gradient': true,
+      },
+    },
+    labelLayerId,
+  )
+}
+
 function tuneStyle(theme: ResolvedTheme) {
   if (!map) return
 
@@ -180,11 +233,15 @@ function tuneStyle(theme: ResolvedTheme) {
             layerId.includes('primary') ||
             layerId.includes('secondary')
 
-          map?.setLayoutProperty(layer.id, 'visibility', isMajor ? 'visible' : 'none')
-          if (isMajor) {
-            map?.setPaintProperty(layer.id, 'line-color', palette.road)
-            map?.setPaintProperty(layer.id, 'line-opacity', theme === 'dark' ? 0.34 : 0.18)
-          }
+          map?.setLayoutProperty(layer.id, 'visibility', 'visible')
+          map?.setPaintProperty(layer.id, 'line-color', isMajor ? palette.road : palette.minorRoad)
+          map?.setPaintProperty(layer.id, 'line-opacity', isMajor
+            ? theme === 'dark'
+              ? 0.46
+              : 0.28
+            : theme === 'dark'
+              ? 0.26
+              : 0.16)
           return
         }
 
@@ -196,6 +253,13 @@ function tuneStyle(theme: ResolvedTheme) {
         if (layerId.includes('water')) {
           map?.setPaintProperty(layer.id, 'fill-color', palette.water)
           map?.setPaintProperty(layer.id, 'fill-opacity', 1)
+          return
+        }
+
+        if (layerId.includes('building')) {
+          const colors = buildingColors(theme)
+          map?.setPaintProperty(layer.id, 'fill-color', colors.low)
+          map?.setPaintProperty(layer.id, 'fill-opacity', theme === 'dark' ? 0.58 : 0.48)
           return
         }
 
@@ -224,6 +288,7 @@ function restoreStyleOverlays() {
   if (!map) return
   tuneStyle(resolvedTheme.value)
   addTerrain()
+  add3dBuildings()
 }
 
 function addCampusMarker(mapboxgl: typeof import('mapbox-gl').default) {
