@@ -7,9 +7,6 @@
     <div ref="mapContainer" class="map-canvas"></div>
     <div aria-hidden="true" class="map-atmosphere"></div>
     <div aria-hidden="true" class="map-grain"></div>
-    <div aria-hidden="true" class="campus-anchor">
-      <span></span>
-    </div>
     <div v-if="!mapboxToken || mapError" aria-hidden="true" class="map-fallback"></div>
   </component>
 </template>
@@ -411,8 +408,7 @@ onBeforeUnmount(() => {
 }
 
 .map-atmosphere,
-.map-grain,
-.campus-anchor {
+.map-grain {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -443,20 +439,6 @@ onBeforeUnmount(() => {
     16px 16px,
     16px 16px;
   mix-blend-mode: soft-light;
-}
-
-.campus-anchor {
-  z-index: 3;
-  display: grid;
-  place-items: center;
-}
-
-.campus-anchor span {
-  width: min(28vw, 360px);
-  aspect-ratio: 1;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 70%);
 }
 
 .map-section--hero {
@@ -532,11 +514,6 @@ onBeforeUnmount(() => {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.2) 0.7px, transparent 0.7px),
     radial-gradient(rgba(255, 255, 255, 0.12) 0.7px, transparent 0.7px);
-}
-
-:global(html.dark) .campus-anchor span {
-  border-color: rgba(245, 245, 247, 0.12);
-  background: radial-gradient(circle, rgba(245, 245, 247, 0.05), transparent 70%);
 }
 
 :global(html.dark) :deep(.map-campus-marker::before) {

@@ -1285,12 +1285,6 @@ html.dark .section-heading::before {
   background: linear-gradient(90deg, transparent, rgba(245, 245, 247, 0.76), transparent) !important;
 }
 
-html.dark .hero__grid {
-  background-image:
-    linear-gradient(rgba(245, 245, 247, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 245, 247, 0.06) 1px, transparent 1px) !important;
-}
-
 html.dark .activity-stage__card {
   background: #111113 !important;
   border-color: rgba(245, 245, 247, 0.12) !important;

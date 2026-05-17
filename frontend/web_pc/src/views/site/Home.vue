@@ -152,15 +152,6 @@ function createHomeAnimations() {
         0,
       )
       .from(
-        '.hero__grid',
-        {
-          opacity: 0,
-          scale: 1.05,
-          duration: 1.1,
-        },
-        0.08,
-      )
-      .from(
         '.hero__content',
         {
           y: 48,
@@ -1671,19 +1662,6 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
-.hero__grid {
-  position: absolute;
-  inset: -10%;
-  z-index: 1;
-  opacity: 0.34;
-  background-image:
-    linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
-  background-size: 54px 54px;
-  mask-image: radial-gradient(circle at center, black, transparent 74%);
-  pointer-events: none;
-}
-
 .hero__inner {
   z-index: 4;
   min-height: 100vh;
@@ -1829,10 +1807,6 @@ onBeforeUnmount(() => {
 
   .home-hero__morph {
     min-height: 96px;
-  }
-
-  .hero__grid {
-    background-size: 32px 32px;
   }
 
   .hero__inner,
