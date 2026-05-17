@@ -63,11 +63,15 @@ const MAGNETIC_SELECTOR = [
 ].join(',')
 
 function prefersReducedMotion() {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 }
 
 function supportsPrecisePointer() {
-  return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  return window.matchMedia?.('(hover: hover) and (pointer: fine)').matches ?? false
+}
+
+function supportsCss(property: string, value: string) {
+  return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports(property, value)
 }
 
 function disableCssAnimation(element: HTMLElement) {
@@ -97,10 +101,14 @@ export function useSiteShellMotion(
 
     if (prefersReducedMotion() || !supportsPrecisePointer()) return
 
-    gsap.set(element, {
-      transformPerspective: 1000,
-      transformStyle: 'preserve-3d',
-    })
+    const supports3d = supportsCss('transform-style', 'preserve-3d')
+
+    if (supports3d) {
+      gsap.set(element, {
+        transformPerspective: 1000,
+        transformStyle: 'preserve-3d',
+      })
+    }
 
     const rotateXTo = gsap.quickTo(element, 'rotateX', {
       duration: 0.32,
@@ -129,8 +137,10 @@ export function useSiteShellMotion(
       const localX = (event.clientX - rect.left) / rect.width - 0.5
       const localY = (event.clientY - rect.top) / rect.height - 0.5
 
-      rotateXTo(localY * -10)
-      rotateYTo(localX * 10)
+      if (supports3d) {
+        rotateXTo(localY * -10)
+        rotateYTo(localX * 10)
+      }
       element.style.setProperty('--motion-x', `${(localX + 0.5) * 100}%`)
       element.style.setProperty('--motion-y', `${(localY + 0.5) * 100}%`)
     }
@@ -206,7 +216,7 @@ export function useSiteShellMotion(
     gsap.from(element, {
       y: 32,
       opacity: 0,
-      filter: 'blur(12px)',
+      ...(supportsCss('filter', 'blur(1px)') ? { filter: 'blur(12px)' } : {}),
       duration: 0.82,
       delay: Math.min(index, 4) * 0.05,
       ease: 'power3.out',
@@ -224,12 +234,14 @@ export function useSiteShellMotion(
     animatedReveals.add(element)
     disableCssAnimation(element)
 
+    const supports3d = supportsCss('transform-style', 'preserve-3d')
+
     gsap.from(element, {
       y: 38,
       opacity: 0,
-      rotateX: -4,
+      ...(supports3d ? { rotateX: -4 } : {}),
       scale: 0.985,
-      filter: 'blur(10px)',
+      ...(supportsCss('filter', 'blur(1px)') ? { filter: 'blur(10px)' } : {}),
       transformOrigin: '50% 100%',
       duration: 0.78,
       delay: (index % 5) * 0.045,

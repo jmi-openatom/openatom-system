@@ -109,7 +109,20 @@ function animateMetricValue(element: HTMLElement) {
 
 function createHomeAnimations() {
   animationContext.value = gsap.context(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const prefersReducedMotion =
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    const supportsCss = (property: string, value: string) => {
+      return (
+        typeof CSS !== 'undefined' &&
+        typeof CSS.supports === 'function' &&
+        CSS.supports(property, value)
+      )
+    }
+    const supportsBlur = supportsCss('filter', 'blur(1px)')
+    const supports3d = supportsCss('transform-style', 'preserve-3d')
+    const supportsClipPath =
+      supportsCss('clip-path', 'inset(0 0 20% 0 round 0 0 36px 36px)') ||
+      supportsCss('-webkit-clip-path', 'inset(0 0 20% 0 round 0 0 36px 36px)')
 
     if (prefersReducedMotion) {
       ScrollTrigger.refresh()
@@ -124,11 +137,13 @@ function createHomeAnimations() {
 
     heroTimeline
       .from('.hero', {
-        clipPath: 'inset(0 0 20% 0 round 0 0 36px 36px)',
+        ...(supportsClipPath
+          ? { clipPath: 'inset(0 0 20% 0 round 0 0 36px 36px)' }
+          : { opacity: 0.94, y: 18 }),
         duration: 1.08,
       })
       .from(
-        '.hero__field',
+        '.hero__map',
         {
           opacity: 0,
           scale: 1.08,
@@ -146,21 +161,11 @@ function createHomeAnimations() {
         0.08,
       )
       .from(
-        '.hero__eyebrow',
-        {
-          y: 24,
-          opacity: 0,
-          filter: 'blur(10px)',
-          duration: 0.72,
-        },
-        0.26,
-      )
-      .from(
         '.hero__content',
         {
           y: 48,
           opacity: 0,
-          filter: 'blur(14px)',
+          ...(supportsBlur ? { filter: 'blur(14px)' } : {}),
           duration: 1,
         },
         0.32,
@@ -202,7 +207,7 @@ function createHomeAnimations() {
     gsap.from('.command-panel', {
       y: 46,
       opacity: 0,
-      filter: 'blur(10px)',
+      ...(supportsBlur ? { filter: 'blur(10px)' } : {}),
       duration: 0.9,
       ease: 'power3.out',
       scrollTrigger: {
@@ -234,7 +239,7 @@ function createHomeAnimations() {
       gsap.from(element, {
         y: 58,
         opacity: 0,
-        filter: 'blur(12px)',
+        ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
         duration: 0.86,
         ease: 'power3.out',
         scrollTrigger: {
@@ -248,9 +253,9 @@ function createHomeAnimations() {
       gsap.from(element, {
         y: 64,
         opacity: 0,
-        rotateX: -8,
+        ...(supports3d ? { rotateX: -8 } : {}),
         scale: 0.96,
-        transformPerspective: 900,
+        ...(supports3d ? { transformPerspective: 900 } : {}),
         transformOrigin: '50% 100%',
         duration: 0.78,
         ease: 'power3.out',
@@ -1623,6 +1628,7 @@ onBeforeUnmount(() => {
 
 .hero {
   position: relative;
+  min-height: 100vh;
   min-height: 100svh;
   overflow: hidden;
   color: #0f172a;
@@ -1630,7 +1636,7 @@ onBeforeUnmount(() => {
   isolation: isolate;
 }
 
-.hero__field {
+.hero__map {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -1680,6 +1686,7 @@ onBeforeUnmount(() => {
 
 .hero__inner {
   z-index: 4;
+  min-height: 100vh;
   min-height: 100svh;
   align-content: center;
   place-items: center;
@@ -1728,6 +1735,13 @@ onBeforeUnmount(() => {
   line-height: 0.98;
 }
 
+@media (max-width: 720px) {
+  .home-hero__morph {
+    width: min(100%, calc(100vw - 24px));
+    font-size: clamp(34px, 10vw, 52px);
+  }
+}
+
 .home-hero__morph span {
   color: #020617;
 }
@@ -1743,6 +1757,7 @@ onBeforeUnmount(() => {
 
 .home-overview-page {
   position: relative;
+  min-height: 100vh;
   min-height: 100svh;
   display: flex;
   flex-direction: column;

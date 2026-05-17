@@ -5,12 +5,17 @@
     :class="['map-section', { 'map-section--hero': props.background }]"
   >
     <div ref="mapContainer" class="map-canvas"></div>
+    <div aria-hidden="true" class="map-atmosphere"></div>
+    <div aria-hidden="true" class="map-grain"></div>
+    <div aria-hidden="true" class="campus-anchor">
+      <span></span>
+    </div>
     <div v-if="!mapboxToken || mapError" aria-hidden="true" class="map-fallback"></div>
   </component>
 </template>
 
 <script setup lang="ts">
-import type { CameraOptions, Layer, Map } from 'mapbox-gl'
+import type { CameraOptions, Layer, Map, Marker } from 'mapbox-gl'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useTheme, type ResolvedTheme } from '@/composables/useTheme'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -33,7 +38,7 @@ const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || 'pk.eyJ1
 const mapboxLightStyle =
   import.meta.env.VITE_MAPBOX_LIGHT_STYLE?.trim() ||
   import.meta.env.VITE_MAPBOX_STYLE?.trim() ||
-  'mapbox://styles/mapbox/light-v11'
+  'mapbox://styles/mapbox/outdoors-v12'
 const mapboxDarkStyle =
   import.meta.env.VITE_MAPBOX_DARK_STYLE?.trim() || 'mapbox://styles/mapbox/dark-v11'
 const mapboxStyle = computed(() => {
@@ -45,6 +50,7 @@ let campusHoldTimer: number | undefined
 let earthRotationTimer: number | undefined
 let nextCampusHoldTimer: number | undefined
 let rotationFrame: number | undefined
+let campusMarker: Marker | null = null
 
 const CAMPUS_CENTER: [number, number] = [118.903, 31.920]
 const EARTH_CENTER: [number, number] = [-40, 26]
@@ -64,8 +70,8 @@ const earthCamera = {
 const campusCamera = {
   center: CAMPUS_CENTER,
   zoom: 16.25,
-  pitch: 0,
-  bearing: 0,
+  pitch: 52,
+  bearing: -18,
 } satisfies CameraOptions
 
 function mapFog(theme: ResolvedTheme) {
@@ -103,6 +109,36 @@ function buildingColors(theme: ResolvedTheme) {
     middle: '#e8eef5',
     high: '#dbe4ee',
     opacity: 0.78,
+  }
+}
+
+function stylePalette(theme: ResolvedTheme) {
+  if (theme === 'dark') {
+    return {
+      ink: '#f5f5f7',
+      background: '#09090b',
+      water: '#101923',
+      park: '#132017',
+      land: '#0f1115',
+      road: '#d4d4d8',
+      minorRoad: '#8f9098',
+      boundary: '#71717a',
+      label: '#f8fafc',
+      labelHalo: '#09090b',
+    }
+  }
+
+  return {
+    ink: '#0f172a',
+    background: '#f7fbff',
+    water: '#dceeff',
+    park: '#dff5e8',
+    land: '#edf4fa',
+    road: '#64748b',
+    minorRoad: '#94a3b8',
+    boundary: '#94a3b8',
+    label: '#0f172a',
+    labelHalo: '#ffffff',
   }
 }
 
@@ -177,35 +213,73 @@ function addBuildings() {
   }
 }
 
-function neutralizeStyle(theme: ResolvedTheme) {
+function tuneStyle(theme: ResolvedTheme) {
   if (!map) return
 
   const layers = map.getStyle().layers || []
-  const ink = theme === 'dark' ? '#f5f5f7' : '#111111'
-  const background = theme === 'dark' ? '#000000' : '#f8fbff'
-  const faint = theme === 'dark' ? 0.16 : 0.14
+  const palette = stylePalette(theme)
 
   layers.forEach((layer) => {
+    const layerId = layer.id.toLowerCase()
+
     try {
       if (layer.type === 'symbol') {
-        map?.setLayoutProperty(layer.id, 'visibility', 'none')
+        const keepLabel =
+          layerId.includes('road') ||
+          layerId.includes('place') ||
+          layerId.includes('settlement') ||
+          layerId.includes('poi')
+
+        map?.setLayoutProperty(layer.id, 'visibility', keepLabel ? 'visible' : 'none')
+        if (keepLabel) {
+          map?.setPaintProperty(layer.id, 'text-color', palette.label)
+          map?.setPaintProperty(layer.id, 'text-halo-color', palette.labelHalo)
+          map?.setPaintProperty(layer.id, 'text-halo-width', 1.1)
+          map?.setPaintProperty(layer.id, 'text-opacity', layerId.includes('poi') ? 0.72 : 0.9)
+          map?.setPaintProperty(layer.id, 'icon-opacity', 0)
+        }
         return
       }
 
       if (layer.type === 'background') {
-        map?.setPaintProperty(layer.id, 'background-color', background)
+        map?.setPaintProperty(layer.id, 'background-color', palette.background)
         return
       }
 
       if (layer.type === 'line') {
-        map?.setPaintProperty(layer.id, 'line-color', ink)
-        map?.setPaintProperty(layer.id, 'line-opacity', faint)
+        if (layerId.includes('road') || layerId.includes('bridge') || layerId.includes('tunnel')) {
+          const isMajor = layerId.includes('motorway') || layerId.includes('primary')
+          map?.setPaintProperty(layer.id, 'line-color', isMajor ? palette.road : palette.minorRoad)
+          map?.setPaintProperty(layer.id, 'line-opacity', isMajor ? 0.72 : 0.42)
+          return
+        }
+
+        if (layerId.includes('boundary')) {
+          map?.setPaintProperty(layer.id, 'line-color', palette.boundary)
+          map?.setPaintProperty(layer.id, 'line-opacity', 0.34)
+        }
         return
       }
 
       if (layer.type === 'fill') {
-        map?.setPaintProperty(layer.id, 'fill-color', background)
-        map?.setPaintProperty(layer.id, 'fill-opacity', 1)
+        if (layerId.includes('water')) {
+          map?.setPaintProperty(layer.id, 'fill-color', palette.water)
+          map?.setPaintProperty(layer.id, 'fill-opacity', 1)
+          return
+        }
+
+        if (
+          layerId.includes('park') ||
+          layerId.includes('landuse') ||
+          layerId.includes('landcover') ||
+          layerId.includes('vegetation')
+        ) {
+          map?.setPaintProperty(layer.id, 'fill-color', palette.park)
+          map?.setPaintProperty(layer.id, 'fill-opacity', 0.92)
+          return
+        }
+
+        return
       }
     } catch (error) {
       // Some style layers do not expose every paint/layout property.
@@ -215,9 +289,24 @@ function neutralizeStyle(theme: ResolvedTheme) {
 
 function restoreStyleOverlays() {
   if (!map) return
-  neutralizeStyle(resolvedTheme.value)
+  tuneStyle(resolvedTheme.value)
   addTerrain()
   addBuildings()
+}
+
+function addCampusMarker(mapboxgl: typeof import('mapbox-gl').default) {
+  if (!map || campusMarker) return
+
+  const markerElement = document.createElement('div')
+  markerElement.className = 'map-campus-marker'
+  markerElement.innerHTML = '<span></span>'
+
+  campusMarker = new mapboxgl.Marker({
+    element: markerElement,
+    anchor: 'center',
+  })
+    .setLngLat(CAMPUS_CENTER)
+    .addTo(map)
 }
 
 function switchMapStyle() {
@@ -313,10 +402,19 @@ function zoomToCampus() {
 onMounted(async () => {
   if (!mapboxToken || !mapContainer.value) return
 
-  const mapboxModule = await import('mapbox-gl')
-  const mapboxgl = mapboxModule.default
+  let mapboxgl: typeof import('mapbox-gl').default
+  try {
+    const mapboxModule = await import('mapbox-gl')
+    mapboxgl = mapboxModule.default
+  } catch (error) {
+    mapError.value = '地图资源加载失败。'
+    return
+  }
 
-  if (!mapboxgl.supported()) return
+  if (!mapboxgl.supported({ failIfMajorPerformanceCaveat: true })) {
+    mapError.value = '当前浏览器不支持 WebGL 地图。'
+    return
+  }
 
   mapboxgl.accessToken = mapboxToken
   map = new mapboxgl.Map({
@@ -336,6 +434,7 @@ onMounted(async () => {
     mapLoaded.value = true
     mapError.value = ''
     restoreStyleOverlays()
+    addCampusMarker(mapboxgl)
     scheduleEarthReturn()
   })
 
@@ -352,6 +451,8 @@ watch(mapboxStyle, () => {
 
 onBeforeUnmount(() => {
   clearMapTimers()
+  campusMarker?.remove()
+  campusMarker = null
   map?.remove()
   map = null
 })
@@ -361,6 +462,7 @@ onBeforeUnmount(() => {
 .map-section {
   position: relative;
   width: 100%;
+  height: 100vh;
   height: 100svh;
   min-height: 720px;
   overflow: hidden;
@@ -370,6 +472,56 @@ onBeforeUnmount(() => {
 .map-canvas {
   position: absolute;
   inset: 0;
+  filter: saturate(1.2) contrast(1.1);
+}
+
+.map-atmosphere,
+.map-grain,
+.campus-anchor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.map-atmosphere {
+  z-index: 1;
+  background:
+    radial-gradient(
+      circle at 50% 56%,
+      transparent 0 30%,
+      rgba(15, 23, 42, 0.05) 76%,
+      rgba(15, 23, 42, 0.14) 100%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(15, 23, 42, 0.05));
+}
+
+.map-grain {
+  z-index: 2;
+  opacity: 0.18;
+  background-image:
+    radial-gradient(rgba(15, 23, 42, 0.22) 0.7px, transparent 0.7px),
+    radial-gradient(rgba(15, 23, 42, 0.14) 0.7px, transparent 0.7px);
+  background-position:
+    0 0,
+    8px 8px;
+  background-size:
+    16px 16px,
+    16px 16px;
+  mix-blend-mode: soft-light;
+}
+
+.campus-anchor {
+  z-index: 3;
+  display: grid;
+  place-items: center;
+}
+
+.campus-anchor span {
+  width: min(28vw, 360px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 70%);
 }
 
 .map-section--hero {
@@ -384,11 +536,77 @@ onBeforeUnmount(() => {
 .map-fallback {
   position: absolute;
   inset: 0;
-  z-index: 1;
-  background: var(--oa-map-fallback);
+  z-index: 4;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.82), transparent 18%),
+    radial-gradient(circle at 50% 48%, rgba(14, 116, 144, 0.22), transparent 54%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.08), transparent 44%),
+    var(--oa-map-fallback);
   background-size:
     auto,
+    auto,
+    auto,
     auto;
+}
+
+:deep(.map-campus-marker) {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+}
+
+:deep(.map-campus-marker::before),
+:deep(.map-campus-marker span) {
+  grid-area: 1 / 1;
+  border-radius: 50%;
+}
+
+:deep(.map-campus-marker::before) {
+  width: 24px;
+  height: 24px;
+  content: '';
+  border: 1px solid rgba(15, 23, 42, 0.24);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+:deep(.map-campus-marker span) {
+  width: 10px;
+  height: 10px;
+  background: #0f172a;
+}
+
+:global(html.dark) .map-atmosphere {
+  background:
+    radial-gradient(
+      circle at 50% 56%,
+      transparent 0 24%,
+      rgba(0, 0, 0, 0.16) 72%,
+      rgba(0, 0, 0, 0.34) 100%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.24));
+}
+
+:global(html.dark) .map-grain {
+  opacity: 0.12;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.2) 0.7px, transparent 0.7px),
+    radial-gradient(rgba(255, 255, 255, 0.12) 0.7px, transparent 0.7px);
+}
+
+:global(html.dark) .campus-anchor span {
+  border-color: rgba(245, 245, 247, 0.12);
+  background: radial-gradient(circle, rgba(245, 245, 247, 0.05), transparent 70%);
+}
+
+:global(html.dark) :deep(.map-campus-marker::before) {
+  border-color: rgba(245, 245, 247, 0.22);
+  background: rgba(9, 9, 11, 0.8);
+}
+
+:global(html.dark) :deep(.map-campus-marker span) {
+  background: #f5f5f7;
 }
 
 :deep(.mapboxgl-ctrl-group) {

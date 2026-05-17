@@ -26,6 +26,7 @@ const { resolvedTheme } = useTheme()
 let host: HTMLElement | null = null
 let ctx: CanvasRenderingContext2D | null = null
 let resizeObserver: ResizeObserver | null = null
+let handleWindowResize: (() => void) | null = null
 let animationFrame = 0
 let width = 0
 let height = 0
@@ -49,6 +50,10 @@ const activeTo = gsap.quickTo(pointer, 'active', {
   duration: 0.26,
   ease: 'power2.out',
 })
+
+function prefersReducedMotion() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
 
 function colors() {
   if (resolvedTheme.value === 'dark') {
@@ -165,10 +170,25 @@ onMounted(() => {
   if (!canvas || !host) return
 
   resizeCanvas()
-  resizeObserver = new ResizeObserver(resizeCanvas)
-  resizeObserver.observe(host)
+  if ('ResizeObserver' in window) {
+    resizeObserver = new ResizeObserver(resizeCanvas)
+    resizeObserver.observe(host)
+  } else {
+    handleWindowResize = resizeCanvas
+    window.addEventListener('resize', handleWindowResize)
+  }
   host.addEventListener('pointermove', handlePointerMove)
   host.addEventListener('pointerleave', handlePointerLeave)
+
+  if (prefersReducedMotion()) {
+    draw()
+    if (animationFrame) {
+      window.cancelAnimationFrame(animationFrame)
+      animationFrame = 0
+    }
+    return
+  }
+
   animationFrame = window.requestAnimationFrame(draw)
 })
 
@@ -179,6 +199,9 @@ watch(resolvedTheme, () => {
 onBeforeUnmount(() => {
   if (animationFrame) window.cancelAnimationFrame(animationFrame)
   resizeObserver?.disconnect()
+  if (handleWindowResize) {
+    window.removeEventListener('resize', handleWindowResize)
+  }
   host?.removeEventListener('pointermove', handlePointerMove)
   host?.removeEventListener('pointerleave', handlePointerLeave)
 })

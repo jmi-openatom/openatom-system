@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { cn } from '@/lib/utils'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 const props = withDefaults(defineProps<Props>(), {
   morphTime: 1.5,
@@ -23,6 +23,17 @@ const time = ref(new Date())
 
 const text1Ref = ref<HTMLSpanElement>()
 const text2Ref = ref<HTMLSpanElement>()
+const canAnimateMorph = ref(false)
+const staticText = computed(() => props.texts[0] || '')
+
+function prefersReducedMotion() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
+
+function supportsMorphFilter() {
+  if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') return false
+  return CSS.supports('filter', 'blur(1px)') && typeof SVGFEColorMatrixElement !== 'undefined'
+}
 
 function setStyles(fraction: number) {
   if (!text1Ref.value || !text2Ref.value) return
@@ -89,11 +100,17 @@ onMounted(() => {
     text1Ref.value.textContent = props.texts[0] || ''
     text2Ref.value.textContent = props.texts[0] || ''
   }
-  animate()
+
+  canAnimateMorph.value = supportsMorphFilter() && !prefersReducedMotion()
+  if (canAnimateMorph.value) {
+    animate()
+  }
 })
 
 onUnmounted(() => {
-  cancelAnimationFrame(animationFrameId)
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+  }
 })
 </script>
 
@@ -101,13 +118,17 @@ onUnmounted(() => {
   <div
     :class="
       cn(
-        `relative mx-auto flex h-16 w-full items-center justify-center overflow-visible text-center font-sans text-[40pt] leading-none font-bold whitespace-nowrap filter-[url(#threshold)_blur(0.6px)] md:h-24 lg:text-[6rem]`,
+        `relative mx-auto flex h-16 w-full items-center justify-center overflow-visible text-center font-sans text-[40pt] leading-none font-bold whitespace-nowrap md:h-24 lg:text-[6rem]`,
+        canAnimateMorph ? 'filter-[url(#threshold)_blur(0.6px)]' : '',
         props.class,
       )
     "
   >
-    <span ref="text1Ref" :class="[TEXT_CLASSES]" />
-    <span ref="text2Ref" :class="[TEXT_CLASSES]" />
+    <template v-if="canAnimateMorph">
+      <span ref="text1Ref" :class="[TEXT_CLASSES]" />
+      <span ref="text2Ref" :class="[TEXT_CLASSES]" />
+    </template>
+    <span v-else :class="[TEXT_CLASSES]">{{ staticText }}</span>
 
     <svg id="filters" class="fixed size-0" preserveAspectRatio="xMidYMid slice">
       <defs>
