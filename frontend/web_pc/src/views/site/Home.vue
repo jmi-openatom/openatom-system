@@ -1622,6 +1622,7 @@ onBeforeUnmount(() => {
 }
 
 .hero {
+  position: relative;
   min-height: 100svh;
   overflow: hidden;
   color: #0f172a;
@@ -1659,8 +1660,8 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(2px) saturate(1.12);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(1px) saturate(1.08);
   pointer-events: none;
 }
 

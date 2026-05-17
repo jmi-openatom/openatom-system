@@ -26,13 +26,14 @@ const props = withDefaults(
 
 const mapContainer = ref<HTMLElement>()
 const mapError = ref('')
+const mapLoaded = ref(false)
 const { resolvedTheme } = useTheme()
 
 const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || 'pk.eyJ1IjoiYWlydmVuaGUiLCJhIjoiY21vdmE2YTR5MDByczJxb2d1a3VuZzVwbSJ9.Q3Vok4PZRYqICAn6Uk4j8A'
 const mapboxLightStyle =
   import.meta.env.VITE_MAPBOX_LIGHT_STYLE?.trim() ||
   import.meta.env.VITE_MAPBOX_STYLE?.trim() ||
-  'mapbox://styles/mapbox/light-v11'
+  'mapbox://styles/mapbox/streets-v12'
 const mapboxDarkStyle =
   import.meta.env.VITE_MAPBOX_DARK_STYLE?.trim() || 'mapbox://styles/mapbox/dark-v11'
 const mapboxStyle = computed(() => {
@@ -295,13 +296,17 @@ onMounted(async () => {
   })
 
   map.on('load', () => {
+    mapLoaded.value = true
+    mapError.value = ''
     addTerrain()
     addBuildings()
     scheduleEarthReturn()
   })
 
   map.on('error', (event) => {
-    mapError.value = event.error?.message || '请检查 Mapbox Token、样式地址或网络连接。'
+    if (!mapLoaded.value) {
+      mapError.value = event.error?.message || '请检查 Mapbox Token、样式地址或网络连接。'
+    }
   })
 })
 
