@@ -128,7 +128,7 @@ function createHomeAnimations() {
         duration: 1.08,
       })
       .from(
-        '.hero__map',
+        '.hero__field',
         {
           opacity: 0,
           scale: 1.08,
@@ -1630,7 +1630,7 @@ onBeforeUnmount(() => {
   isolation: isolate;
 }
 
-.hero__map {
+.hero__field {
   position: absolute;
   inset: 0;
   z-index: 0;
