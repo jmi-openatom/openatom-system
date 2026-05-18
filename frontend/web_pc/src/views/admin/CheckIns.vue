@@ -446,14 +446,16 @@ async function fetchList() {
 }
 
 async function loadOptions() {
-  const [activities, users, groups] = await Promise.all([
+  const [activitiesResult, usersResult, groupsResult] = await Promise.allSettled([
     activityApi.list({ status: 'published' }),
     checkInApi.userOptions(),
     checkInApi.groups(),
   ])
-  activities.value = activities || []
-  members.value = (users || []).filter((item) => item.id)
-  groups.value = groups || []
+
+  activities.value = activitiesResult.status === 'fulfilled' ? activitiesResult.value || [] : []
+  members.value =
+    usersResult.status === 'fulfilled' ? (usersResult.value || []).filter((item) => item.id) : []
+  groups.value = groupsResult.status === 'fulfilled' ? groupsResult.value || [] : []
 }
 
 function openDialog() {
