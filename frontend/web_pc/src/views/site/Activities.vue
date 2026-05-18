@@ -123,7 +123,7 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import { siteApi } from '@/api/index.ts'
-import { formatDateTime } from '@/utils/format.ts'
+import { formatDateTime, monthDayParts } from '@/utils/format.ts'
 import { computed, onMounted, ref } from 'vue'
 
 const loading = ref(false)
@@ -152,20 +152,17 @@ async function fetchList() {
 }
 
 function day(value: any) {
-  if (!value) return '--'
-  return new Date(value).getDate().toString().padStart(2, '0')
+  return monthDayParts(value)?.day || '--'
 }
 
 function month(value: any) {
-  if (!value) return '待定'
-  return `${new Date(value).getMonth() + 1}月`
+  const parts = monthDayParts(value)
+  return parts ? `${Number(parts.month)}月` : '待定'
 }
 
 function monthDay(value: any) {
-  if (!value) return '时间待定'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '时间待定'
-  return `${date.getMonth() + 1}月${date.getDate()}日`
+  const parts = monthDayParts(value)
+  return parts ? `${Number(parts.month)}月${Number(parts.day)}日` : '时间待定'
 }
 
 onMounted(() => {

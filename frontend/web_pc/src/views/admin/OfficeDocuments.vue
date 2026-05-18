@@ -206,7 +206,7 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { officeDocumentApi } from '@/api'
-import { formatDateTime } from '@/utils/format.ts'
+import { formatDateTime, todayDateValue } from '@/utils/format.ts'
 import { onMounted, ref } from 'vue'
 
 function createLeaveForm() {
@@ -440,7 +440,7 @@ function resetForm() {
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10)
+  return todayDateValue()
 }
 
 onMounted(() => {

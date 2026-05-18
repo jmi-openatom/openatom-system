@@ -35,9 +35,6 @@ spring:
           max-idle: ${REDIS_POOL_MAX_IDLE:10}
           min-idle: ${REDIS_POOL_MIN_IDLE:5}
           max-wait: ${REDIS_POOL_MAX_WAIT:3000ms}
-  jackson:
-    time-zone: ${JACKSON_TIME_ZONE:Asia/Shanghai}
-
 server:
   port: ${SERVER_PORT:8921}
   servlet:

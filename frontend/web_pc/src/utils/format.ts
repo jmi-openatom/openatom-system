@@ -2,11 +2,83 @@ export function displayText(value: unknown, fallback = '-'): string {
   return value === null || value === undefined || value === '' ? fallback : String(value)
 }
 
-export function formatDateTime(value: string | number | Date | null | undefined): string {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return date.toLocaleString('zh-CN', { hour12: false })
+export const BUSINESS_TIME_ZONE = 'Asia/Shanghai'
+
+type DateLike = string | number | Date | null | undefined
+
+type BusinessDateParts = {
+  year: string
+  month: string
+  day: string
+  hour: string
+  minute: string
+  second: string
+}
+
+function normalizeBusinessDateTimeString(value: string): string {
+  const trimmed = value.trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return `${trimmed}T00:00:00+08:00`
+  }
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(trimmed)) {
+    return `${trimmed.replace(' ', 'T')}+08:00`
+  }
+  return trimmed
+}
+
+function toBusinessDate(value: DateLike): Date | null {
+  if (!value) return null
+  const date =
+    typeof value === 'string' ? new Date(normalizeBusinessDateTimeString(value)) : new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function businessDateParts(value: DateLike): BusinessDateParts | null {
+  const date = toBusinessDate(value)
+  if (!date) return null
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: BUSINESS_TIME_ZONE,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return {
+    year: values.year,
+    month: values.month,
+    day: values.day,
+    hour: values.hour,
+    minute: values.minute,
+    second: values.second,
+  }
+}
+
+export function formatDateTime(value: DateLike): string {
+  const date = toBusinessDate(value)
+  if (!date) return value ? String(value) : '-'
+  return date.toLocaleString('zh-CN', { hour12: false, timeZone: BUSINESS_TIME_ZONE })
+}
+
+export function toDateTimeInputValue(value: DateLike): string {
+  const parts = businessDateParts(value)
+  if (!parts) return ''
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`
+}
+
+export function todayDateValue(): string {
+  const parts = businessDateParts(new Date())
+  if (!parts) return ''
+  return `${parts.year}-${parts.month}-${parts.day}`
+}
+
+export function monthDayParts(value: DateLike): Pick<BusinessDateParts, 'month' | 'day'> | null {
+  const parts = businessDateParts(value)
+  if (!parts) return null
+  return { month: parts.month, day: parts.day }
 }
 
 export function statusType(status: string): string {

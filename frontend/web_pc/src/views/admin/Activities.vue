@@ -139,7 +139,7 @@ import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { activityApi } from '@/api/index.ts'
-import { formatDateTime, statusType } from '@/utils/format.ts'
+import { formatDateTime, statusType, toDateTimeInputValue } from '@/utils/format.ts'
 import { onMounted, ref } from 'vue'
 
 const defaultFields = [
@@ -247,10 +247,7 @@ async function openRegistrations(row: any) {
 }
 
 function toInputTime(value: any) {
-  if (!value) return ''
-  const date = new Date(value)
-  const offset = date.getTimezoneOffset() * 60000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+  return toDateTimeInputValue(value)
 }
 
 function prettyFields(value: any) {

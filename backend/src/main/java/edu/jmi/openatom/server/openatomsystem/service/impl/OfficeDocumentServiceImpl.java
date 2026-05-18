@@ -3,6 +3,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveOfficeDocumentDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseOfficeDocumentUserOptionVO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
@@ -17,7 +18,6 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -460,7 +460,7 @@ public class OfficeDocumentServiceImpl implements OfficeDocumentService {
     if (timestamp == null) {
       return LocalDate.now().toString();
     }
-    return LocalDateTime.ofInstant(timestamp.toInstant(), ZoneId.systemDefault())
+    return LocalDateTime.ofInstant(timestamp.toInstant(), Times.BUSINESS_ZONE)
         .toLocalDate()
         .toString();
   }

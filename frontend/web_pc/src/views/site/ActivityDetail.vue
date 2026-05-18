@@ -116,7 +116,7 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage } from 'element-plus'
 import { activityApi, siteApi } from '@/api'
-import { formatDateTime } from '@/utils/format.ts'
+import { formatDateTime, monthDayParts } from '@/utils/format.ts'
 import { getToken } from '@/utils/auth.ts'
 import { renderMarkdown } from '@/utils/markdown.ts'
 import { hasRole } from '@/utils/permission.ts'
@@ -188,13 +188,12 @@ async function submit() {
 }
 
 function day(value: any) {
-  if (!value) return '--'
-  return new Date(value).getDate().toString().padStart(2, '0')
+  return monthDayParts(value)?.day || '--'
 }
 
 function month(value: any) {
-  if (!value) return '待定'
-  return `${new Date(value).getMonth() + 1}月`
+  const parts = monthDayParts(value)
+  return parts ? `${Number(parts.month)}月` : '待定'
 }
 
 onMounted(() => {

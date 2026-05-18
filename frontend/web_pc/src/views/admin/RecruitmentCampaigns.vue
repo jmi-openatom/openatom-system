@@ -272,7 +272,7 @@ import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { campaignApi, clubApi } from '@/api'
-import { formatDateTime, statusType } from '@/utils/format.ts'
+import { formatDateTime, statusType, toDateTimeInputValue } from '@/utils/format.ts'
 import { nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -282,10 +282,7 @@ const defaultFormSchema = [
 ]
 
 function toInputTime(value) {
-  if (!value) return ''
-  const date = new Date(value)
-  const offset = date.getTimezoneOffset() * 60000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+  return toDateTimeInputValue(value)
 }
 
 const loading = ref(false)

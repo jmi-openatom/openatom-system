@@ -51,13 +51,39 @@ const primaryMetric = computed(() => props.metrics[0])
 
 <style scoped>
 .workspace-hero {
+  --workspace-hero-text: #0f172a;
+  --workspace-hero-muted: rgba(15, 23, 42, 0.68);
+  --workspace-hero-soft: rgba(15, 23, 42, 0.54);
+  --workspace-hero-grid: rgba(15, 23, 42, 0.05);
+  --workspace-hero-orb: rgba(56, 189, 248, 0.14);
+  --workspace-hero-chip-border: rgba(15, 23, 42, 0.12);
+  --workspace-hero-chip-bg: rgba(255, 255, 255, 0.72);
+  --workspace-hero-panel-border: rgba(15, 23, 42, 0.1);
+  --workspace-hero-panel-bg: rgba(255, 255, 255, 0.7);
+  --workspace-hero-tile-border: rgba(15, 23, 42, 0.08);
+  --workspace-hero-tile-bg: rgba(255, 255, 255, 0.62);
+  --workspace-hero-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 24px 80px rgba(15, 23, 42, 0.12);
+  --workspace-hero-solid-button-border: #0f172a;
+  --workspace-hero-solid-button-bg: #0f172a;
+  --workspace-hero-solid-button-text: #ffffff;
+  --workspace-hero-solid-button-hover-border: #020617;
+  --workspace-hero-solid-button-hover-bg: #020617;
+  --workspace-hero-solid-button-hover-text: #ffffff;
+  --workspace-hero-plain-button-border: rgba(15, 23, 42, 0.14);
+  --workspace-hero-plain-button-bg: rgba(255, 255, 255, 0.54);
+  --workspace-hero-plain-button-text: #0f172a;
+  --workspace-hero-plain-button-hover-border: rgba(15, 23, 42, 0.26);
+  --workspace-hero-plain-button-hover-bg: rgba(255, 255, 255, 0.86);
+  --workspace-hero-plain-button-hover-text: #020617;
   position: relative;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--workspace-hero-text);
   background:
-    radial-gradient(circle at 15% 16%, rgba(34, 211, 238, 0.22), transparent 28%),
-    radial-gradient(circle at 84% 8%, rgba(34, 197, 94, 0.14), transparent 26%),
-    linear-gradient(135deg, #0a0b0f 0%, #111827 46%, #05070b 100%);
+    radial-gradient(circle at 15% 16%, rgba(14, 165, 233, 0.18), transparent 28%),
+    radial-gradient(circle at 84% 8%, rgba(34, 197, 94, 0.12), transparent 26%),
+    linear-gradient(135deg, #f8fbff 0%, #edf5ff 48%, #f7fbff 100%);
 }
 
 .workspace-hero::before,
@@ -70,8 +96,8 @@ const primaryMetric = computed(() => props.metrics[0])
 .workspace-hero::before {
   inset: 0;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    linear-gradient(var(--workspace-hero-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--workspace-hero-grid) 1px, transparent 1px);
   background-size: 42px 42px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.94), transparent);
 }
@@ -82,7 +108,7 @@ const primaryMetric = computed(() => props.metrics[0])
   width: 420px;
   height: 420px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--workspace-hero-orb);
   filter: blur(18px);
 }
 
@@ -102,10 +128,10 @@ const primaryMetric = computed(() => props.metrics[0])
   align-items: center;
   min-height: 28px;
   padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--workspace-hero-chip-border);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.74);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--workspace-hero-muted);
+  background: var(--workspace-hero-chip-bg);
   font-size: 13px;
   backdrop-filter: blur(10px);
 }
@@ -126,7 +152,7 @@ const primaryMetric = computed(() => props.metrics[0])
 .workspace-hero__copy p {
   max-width: 460px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--workspace-hero-muted);
   font-size: clamp(16px, 1.8vw, 19px);
   line-height: 1.8;
 }
@@ -143,12 +169,10 @@ const primaryMetric = computed(() => props.metrics[0])
   display: grid;
   gap: 18px;
   padding: clamp(18px, 3vw, 24px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--workspace-hero-panel-border);
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 24px 80px rgba(0, 0, 0, 0.28);
+  background: var(--workspace-hero-panel-bg);
+  box-shadow: var(--workspace-hero-shadow);
   backdrop-filter: blur(18px);
 }
 
@@ -159,7 +183,7 @@ const primaryMetric = computed(() => props.metrics[0])
 }
 
 .workspace-hero__console-head small {
-  color: rgba(255, 255, 255, 0.54);
+  color: var(--workspace-hero-soft);
   font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -178,7 +202,7 @@ const primaryMetric = computed(() => props.metrics[0])
 }
 
 .workspace-hero__console-head span {
-  color: rgba(255, 255, 255, 0.76);
+  color: var(--workspace-hero-muted);
   font-size: 14px;
 }
 
@@ -194,14 +218,14 @@ const primaryMetric = computed(() => props.metrics[0])
   min-height: 106px;
   align-content: center;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--workspace-hero-tile-border);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.055);
+  background: var(--workspace-hero-tile-bg);
 }
 
 .workspace-hero__metric-grid span,
 .workspace-hero__metric-grid small {
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--workspace-hero-soft);
 }
 
 .workspace-hero__metric-grid span {
@@ -209,7 +233,7 @@ const primaryMetric = computed(() => props.metrics[0])
 }
 
 .workspace-hero__metric-grid strong {
-  color: #ffffff;
+  color: var(--workspace-hero-text);
   font-family:
     'SF Pro Display',
     system-ui,
@@ -226,27 +250,60 @@ const primaryMetric = computed(() => props.metrics[0])
 }
 
 :global(.workspace-hero .el-button:not(.is-plain)) {
-  border-color: #ffffff;
-  color: #111827;
-  background: #ffffff;
+  border-color: var(--workspace-hero-solid-button-border);
+  color: var(--workspace-hero-solid-button-text);
+  background: var(--workspace-hero-solid-button-bg);
 }
 
 :global(.workspace-hero .el-button:not(.is-plain):hover) {
-  border-color: #ffffff;
-  color: #05070b;
-  background: rgba(255, 255, 255, 0.92);
+  border-color: var(--workspace-hero-solid-button-hover-border);
+  color: var(--workspace-hero-solid-button-hover-text);
+  background: var(--workspace-hero-solid-button-hover-bg);
 }
 
 :global(.workspace-hero .el-button.is-plain) {
-  border-color: rgba(255, 255, 255, 0.24);
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--workspace-hero-plain-button-border);
+  color: var(--workspace-hero-plain-button-text);
+  background: var(--workspace-hero-plain-button-bg);
 }
 
 :global(.workspace-hero .el-button.is-plain:hover) {
-  border-color: rgba(255, 255, 255, 0.4);
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--workspace-hero-plain-button-hover-border);
+  color: var(--workspace-hero-plain-button-hover-text);
+  background: var(--workspace-hero-plain-button-hover-bg);
+}
+
+:global(html.dark) .workspace-hero {
+  --workspace-hero-text: #ffffff;
+  --workspace-hero-muted: rgba(255, 255, 255, 0.72);
+  --workspace-hero-soft: rgba(255, 255, 255, 0.62);
+  --workspace-hero-grid: rgba(255, 255, 255, 0.035);
+  --workspace-hero-orb: rgba(255, 255, 255, 0.08);
+  --workspace-hero-chip-border: rgba(255, 255, 255, 0.18);
+  --workspace-hero-chip-bg: rgba(255, 255, 255, 0.05);
+  --workspace-hero-panel-border: rgba(255, 255, 255, 0.16);
+  --workspace-hero-panel-bg: rgba(255, 255, 255, 0.08);
+  --workspace-hero-tile-border: rgba(255, 255, 255, 0.12);
+  --workspace-hero-tile-bg: rgba(255, 255, 255, 0.055);
+  --workspace-hero-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 24px 80px rgba(0, 0, 0, 0.28);
+  --workspace-hero-solid-button-border: #ffffff;
+  --workspace-hero-solid-button-bg: #ffffff;
+  --workspace-hero-solid-button-text: #111827;
+  --workspace-hero-solid-button-hover-border: #ffffff;
+  --workspace-hero-solid-button-hover-bg: rgba(255, 255, 255, 0.92);
+  --workspace-hero-solid-button-hover-text: #05070b;
+  --workspace-hero-plain-button-border: rgba(255, 255, 255, 0.24);
+  --workspace-hero-plain-button-bg: rgba(255, 255, 255, 0.06);
+  --workspace-hero-plain-button-text: #ffffff;
+  --workspace-hero-plain-button-hover-border: rgba(255, 255, 255, 0.4);
+  --workspace-hero-plain-button-hover-bg: rgba(255, 255, 255, 0.12);
+  --workspace-hero-plain-button-hover-text: #ffffff;
+  background:
+    radial-gradient(circle at 15% 16%, rgba(34, 211, 238, 0.22), transparent 28%),
+    radial-gradient(circle at 84% 8%, rgba(34, 197, 94, 0.14), transparent 26%),
+    linear-gradient(135deg, #0a0b0f 0%, #111827 46%, #05070b 100%);
 }
 
 @media (max-width: 980px) {

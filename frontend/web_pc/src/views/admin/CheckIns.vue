@@ -114,11 +114,12 @@
             style="width: 260px"
           />
           <el-button @click="selectAllMembers">全选当前人员</el-button>
-          <el-button @click="form.targetUserIds = []">清空</el-button>
+          <el-button @click="clearMemberSelection">清空</el-button>
           <span class="muted-line">已选择 {{ form.targetUserIds.length }} 人</span>
         </div>
         <el-table
           :data="filteredMembers"
+          row-key="id"
           height="300"
           @selection-change="handleMemberSelection"
           ref="memberTableRef"
@@ -161,6 +162,7 @@
       </div>
       <el-table
         :data="filteredGroupUsers"
+        row-key="id"
         height="280"
         @selection-change="handleGroupSelection"
         ref="groupUserTableRef"
@@ -379,6 +381,11 @@ const memberTableRef = ref<any>()
 
 const groupUserTableRef = ref<any>()
 
+let syncingMemberSelection = false
+let syncingGroupSelection = false
+let memberSelectionSyncVersion = 0
+let groupSelectionSyncVersion = 0
+
 const filteredMembers = computed(() => {
   const keyword = memberKeyword.value.trim()
   if (!keyword) return members.value
@@ -462,28 +469,35 @@ function openDialog() {
   }
   memberKeyword.value = ''
   dialogVisible.value = true
-  nextTick(() => memberTableRef.value?.clearSelection())
+  syncMemberTableSelection([])
 }
 
 function handleMemberSelection(selection: any) {
-  form.value.targetUserIds = selection.map((item) => item.id)
+  if (syncingMemberSelection) return
+  form.value.targetUserIds = mergeVisibleSelectionIds(
+    form.value.targetUserIds,
+    filteredMembers.value,
+    selection,
+  )
 }
 
 function selectAllMembers() {
-  memberTableRef.value?.clearSelection()
-  filteredMembers.value.forEach((row) => memberTableRef.value?.toggleRowSelection(row, true))
+  form.value.targetUserIds = uniqueIds([
+    ...form.value.targetUserIds,
+    ...filteredMembers.value.map((row) => row.id),
+  ])
+  syncMemberTableSelection(form.value.targetUserIds)
+}
+
+function clearMemberSelection() {
+  form.value.targetUserIds = []
+  syncMemberTableSelection([])
 }
 
 function applyGroupToForm(groupId: any) {
   const group = groups.value.find((item) => item.id === groupId)
   form.value.targetUserIds = group?.userIds ? [...group.userIds] : []
-  nextTick(() => {
-    memberTableRef.value?.clearSelection()
-    const selected = new Set(form.value.targetUserIds)
-    members.value.forEach((row) =>
-      memberTableRef.value?.toggleRowSelection(row, selected.has(row.id)),
-    )
-  })
+  syncMemberTableSelection(form.value.targetUserIds)
 }
 
 function openGroupManager() {
@@ -494,32 +508,34 @@ function openGroupManager() {
 function resetGroupForm() {
   groupForm.value = { id: null, name: '', userIds: [] }
   groupKeyword.value = ''
-  nextTick(() => groupUserTableRef.value?.clearSelection())
+  syncGroupTableSelection([])
 }
 
 function handleGroupSelection(selection: any) {
-  groupForm.value.userIds = selection.map((item) => item.id)
+  if (syncingGroupSelection) return
+  groupForm.value.userIds = mergeVisibleSelectionIds(
+    groupForm.value.userIds,
+    filteredGroupUsers.value,
+    selection,
+  )
 }
 
 function selectAllGroupUsers() {
-  groupUserTableRef.value?.clearSelection()
-  filteredGroupUsers.value.forEach((row) => groupUserTableRef.value?.toggleRowSelection(row, true))
+  groupForm.value.userIds = uniqueIds([
+    ...groupForm.value.userIds,
+    ...filteredGroupUsers.value.map((row) => row.id),
+  ])
+  syncGroupTableSelection(groupForm.value.userIds)
 }
 
 function clearGroupSelection() {
   groupForm.value.userIds = []
-  groupUserTableRef.value?.clearSelection()
+  syncGroupTableSelection([])
 }
 
 function editGroup(row: any) {
   groupForm.value = { id: row.id, name: row.name, userIds: [...(row.userIds || [])] }
-  const selected = new Set(groupForm.value.userIds)
-  nextTick(() => {
-    groupUserTableRef.value?.clearSelection()
-    members.value.forEach((item) =>
-      groupUserTableRef.value?.toggleRowSelection(item, selected.has(item.id)),
-    )
-  })
+  syncGroupTableSelection(groupForm.value.userIds)
 }
 
 async function saveGroup() {
@@ -565,12 +581,45 @@ async function removeGroupMember(row: any) {
   ElMessage.success('成员已移出')
   groupForm.value.userIds = groupForm.value.userIds.filter((id) => id !== row.id)
   groups.value = (await checkInApi.groups()) || []
-  const selected = new Set(groupForm.value.userIds)
+  syncGroupTableSelection(groupForm.value.userIds)
+}
+
+function uniqueIds(values: any[]) {
+  return [...new Set(values.filter((id) => id !== null && id !== undefined))]
+}
+
+function mergeVisibleSelectionIds(existingIds: any[], visibleRows: any[], selection: any[]) {
+  const visibleIds = new Set(visibleRows.map((row) => row.id))
+  const selectedVisibleIds = new Set(selection.map((row) => row.id))
+  return uniqueIds([
+    ...existingIds.filter((id) => !visibleIds.has(id)),
+    ...visibleRows.filter((row) => selectedVisibleIds.has(row.id)).map((row) => row.id),
+  ])
+}
+
+function syncMemberTableSelection(ids: any[]) {
+  const selected = new Set(ids)
+  const version = ++memberSelectionSyncVersion
+  syncingMemberSelection = true
+  nextTick(() => {
+    memberTableRef.value?.clearSelection()
+    filteredMembers.value.forEach((row) =>
+      memberTableRef.value?.toggleRowSelection(row, selected.has(row.id)),
+    )
+    if (version === memberSelectionSyncVersion) syncingMemberSelection = false
+  })
+}
+
+function syncGroupTableSelection(ids: any[]) {
+  const selected = new Set(ids)
+  const version = ++groupSelectionSyncVersion
+  syncingGroupSelection = true
   nextTick(() => {
     groupUserTableRef.value?.clearSelection()
-    members.value.forEach((item) =>
-      groupUserTableRef.value?.toggleRowSelection(item, selected.has(item.id)),
+    filteredGroupUsers.value.forEach((row) =>
+      groupUserTableRef.value?.toggleRowSelection(row, selected.has(row.id)),
     )
+    if (version === groupSelectionSyncVersion) syncingGroupSelection = false
   })
 }
 
@@ -692,6 +741,9 @@ onMounted(() => {
   fetchList()
   loadOptions()
 })
+
+watch(filteredMembers, () => syncMemberTableSelection(form.value.targetUserIds))
+watch(filteredGroupUsers, () => syncGroupTableSelection(groupForm.value.userIds))
 
 watch(previewVisible, (value: any) => {
   document.body.style.overflow = value ? 'hidden' : ''
