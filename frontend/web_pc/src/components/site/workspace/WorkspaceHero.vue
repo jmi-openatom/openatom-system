@@ -1,5 +1,11 @@
 <template>
-  <section class="workspace-hero">
+  <section
+    class="workspace-hero"
+    :class="{
+      'workspace-hero--light': !isDark,
+      'workspace-hero--dark': isDark,
+    }"
+  >
     <div class="container workspace-hero__inner">
       <div class="workspace-hero__copy site-reveal">
         <span>{{ eyebrow }}</span>
@@ -32,6 +38,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useTheme } from '@/composables/useTheme'
 
 type WorkspaceMetric = {
   label: string
@@ -47,6 +54,7 @@ const props = defineProps<{
 }>()
 
 const primaryMetric = computed(() => props.metrics[0])
+const { isDark } = useTheme()
 </script>
 
 <style scoped>
@@ -84,6 +92,9 @@ const primaryMetric = computed(() => props.metrics[0])
     radial-gradient(circle at 15% 16%, rgba(14, 165, 233, 0.18), transparent 28%),
     radial-gradient(circle at 84% 8%, rgba(34, 197, 94, 0.12), transparent 26%),
     linear-gradient(135deg, #f8fbff 0%, #edf5ff 48%, #f7fbff 100%);
+  transition:
+    color 0.24s ease,
+    background 0.24s ease;
 }
 
 .workspace-hero::before,
@@ -174,6 +185,10 @@ const primaryMetric = computed(() => props.metrics[0])
   background: var(--workspace-hero-panel-bg);
   box-shadow: var(--workspace-hero-shadow);
   backdrop-filter: blur(18px);
+  transition:
+    border-color 0.24s ease,
+    background-color 0.24s ease,
+    box-shadow 0.24s ease;
 }
 
 .workspace-hero__console-head {
@@ -221,6 +236,10 @@ const primaryMetric = computed(() => props.metrics[0])
   border: 1px solid var(--workspace-hero-tile-border);
   border-radius: 18px;
   background: var(--workspace-hero-tile-bg);
+  transition:
+    border-color 0.24s ease,
+    background-color 0.24s ease,
+    color 0.24s ease;
 }
 
 .workspace-hero__metric-grid span,
@@ -273,7 +292,7 @@ const primaryMetric = computed(() => props.metrics[0])
   background: var(--workspace-hero-plain-button-hover-bg);
 }
 
-:global(html.dark) .workspace-hero {
+.workspace-hero--dark {
   --workspace-hero-text: #ffffff;
   --workspace-hero-muted: rgba(255, 255, 255, 0.72);
   --workspace-hero-soft: rgba(255, 255, 255, 0.62);
