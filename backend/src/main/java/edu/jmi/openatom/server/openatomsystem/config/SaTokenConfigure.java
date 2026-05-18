@@ -47,7 +47,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 	}
 
 	/**
-	 * 注册 Sa-Token 全局过滤器，统一处理跨域
+	 * 注册 Sa-Token 全局过滤器，统一处理跨域1
 	 */
 	@Bean
 	public SaServletFilter getSaServletFilter() {
