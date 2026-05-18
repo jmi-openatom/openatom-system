@@ -1,123 +1,134 @@
 <template>
-  <ViewPage class="site-page">
-    <section class="container leave-page">
-      <div class="leave-main">
-        <div class="section-head">
-          <el-tag effect="plain">请假申请</el-tag>
-          <h1>我的请假</h1>
-          <p>提交请假理由和图片后，可查看审批流程。</p>
+  <ViewPage class="site-system-page">
+    <SitePageHero
+      eyebrow="请假申请"
+      title="我的请假"
+      description="提交请假理由和图片后，可查看审批流程。"
+      compact
+    />
+
+    <section class="site-system-section">
+      <div class="container leave-page">
+        <div class="leave-main site-system-surface site-reveal">
+          <SiteSectionHeading
+            eyebrow="新申请"
+            title="提交请假"
+            description="按要求填写时间、理由和图片附件。"
+            align="left"
+          />
+          <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="leave-form">
+            <div class="form-grid">
+              <el-form-item label="请假标题" prop="title">
+                <el-input v-model="form.title" placeholder="如：例会请假" />
+              </el-form-item>
+              <el-form-item label="开始时间">
+                <el-input v-model="form.startAt" type="datetime-local" />
+              </el-form-item>
+              <el-form-item label="结束时间">
+                <el-input v-model="form.endAt" type="datetime-local" />
+              </el-form-item>
+            </div>
+            <el-form-item label="请假理由" prop="reason">
+              <el-input
+                v-model="form.reason"
+                type="textarea"
+                :rows="4"
+                placeholder="请说明具体原因"
+              />
+            </el-form-item>
+            <el-form-item label="图片附件" prop="attachments">
+              <el-upload
+                accept="image/*"
+                :auto-upload="false"
+                :file-list="uploadFiles"
+                :limit="5"
+                list-type="picture-card"
+                :on-change="handleAttachmentChange"
+                :on-remove="handleAttachmentRemove"
+              >
+                <el-icon><Plus /></el-icon>
+              </el-upload>
+              <p class="upload-tip">支持手机拍照或相册选择，最多 5 张，审批人可直接查看原图。</p>
+            </el-form-item>
+            <el-form-item class="submit-row">
+              <el-button class="submit-button" type="primary" :loading="saving" @click="submit"
+                >提交申请</el-button
+              >
+            </el-form-item>
+          </el-form>
         </div>
 
-        <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="leave-form">
-          <div class="form-grid">
-            <el-form-item label="请假标题" prop="title">
-              <el-input v-model="form.title" placeholder="如：例会请假" />
-            </el-form-item>
-            <el-form-item label="开始时间">
-              <el-input v-model="form.startAt" type="datetime-local" />
-            </el-form-item>
-            <el-form-item label="结束时间">
-              <el-input v-model="form.endAt" type="datetime-local" />
-            </el-form-item>
-          </div>
-          <el-form-item label="请假理由" prop="reason">
-            <el-input
-              v-model="form.reason"
-              type="textarea"
-              :rows="4"
-              placeholder="请说明具体原因"
-            />
-          </el-form-item>
-          <el-form-item label="图片附件" prop="attachments">
-            <el-upload
-              accept="image/*"
-              :auto-upload="false"
-              :file-list="uploadFiles"
-              :limit="5"
-              list-type="picture-card"
-              :on-change="handleAttachmentChange"
-              :on-remove="handleAttachmentRemove"
-            >
-              <el-icon><Plus /></el-icon>
-            </el-upload>
-            <p class="upload-tip">支持手机拍照或相册选择，最多 5 张，审批人可直接查看原图。</p>
-          </el-form-item>
-          <el-form-item class="submit-row">
-            <el-button class="submit-button" type="primary" :loading="saving" @click="submit"
-              >提交申请</el-button
-            >
-          </el-form-item>
-        </el-form>
-      </div>
-
-      <section class="leave-history">
-        <div class="history-head">
-          <div>
-            <strong>请假记录</strong>
-            <p>按请假日期归档，提交或删除后会更新列表。</p>
-          </div>
-          <el-button link type="primary" :icon="Refresh" @click="fetchMine">刷新</el-button>
-        </div>
-
-        <el-empty v-if="!rows.length" :image-size="78" description="暂无请假申请" />
-
-        <div v-for="group in groupedRows" :key="group.date" class="date-group">
-          <div class="date-title">
-            <span>{{ group.label }}</span>
-            <small>{{ group.items.length }} 条</small>
+        <section class="leave-history site-system-surface site-reveal">
+          <div class="history-head">
+            <div>
+              <strong>请假记录</strong>
+              <p>按请假日期归档，提交或删除后会更新列表。</p>
+            </div>
+            <el-button link type="primary" :icon="Refresh" @click="fetchMine">刷新</el-button>
           </div>
 
-          <article v-for="item in group.items" :key="item.id" class="leave-card">
-            <div class="leave-card__top">
-              <div>
-                <strong>{{ item.title }}</strong>
-                <p>{{ formatRange(item.startAt, item.endAt) }}</p>
+          <el-empty v-if="!rows.length" :image-size="78" description="暂无请假申请" />
+
+          <div v-for="group in groupedRows" :key="group.date" class="date-group">
+            <div class="date-title">
+              <span>{{ group.label }}</span>
+              <small>{{ group.items.length }} 条</small>
+            </div>
+
+            <article v-for="item in group.items" :key="item.id" class="leave-card">
+              <div class="leave-card__top">
+                <div>
+                  <strong>{{ item.title }}</strong>
+                  <p>{{ formatRange(item.startAt, item.endAt) }}</p>
+                </div>
+                <el-tag :type="leaveStatusType(item.status)">{{
+                  leaveStatusText(item.status)
+                }}</el-tag>
               </div>
-              <el-tag :type="leaveStatusType(item.status)">{{
-                leaveStatusText(item.status)
-              }}</el-tag>
-            </div>
 
-            <p class="reason-text">{{ item.reason }}</p>
+              <p class="reason-text">{{ item.reason }}</p>
 
-            <div v-if="imageAttachments(item).length" class="image-grid">
-              <el-image
-                v-for="file in imageAttachments(item)"
-                :key="file.name"
-                class="leave-image"
-                fit="cover"
-                :src="file.content"
-                :preview-src-list="imagePreviewList(item)"
-                preview-teleported
-              />
-            </div>
+              <div v-if="imageAttachments(item).length" class="image-grid">
+                <el-image
+                  v-for="file in imageAttachments(item)"
+                  :key="file.name"
+                  class="leave-image"
+                  fit="cover"
+                  :src="file.content"
+                  :preview-src-list="imagePreviewList(item)"
+                  preview-teleported
+                />
+              </div>
 
-            <el-steps
-              class="flow-steps"
-              direction="vertical"
-              :active="flowActive(item)"
-              finish-status="success"
-              process-status="process"
-            >
-              <el-step
-                v-for="step in item.approvalFlow || []"
-                :key="step.node"
-                :title="step.node"
-                :description="stepDescription(step)"
-              />
-            </el-steps>
-            <div class="card-actions">
-              <el-button link type="danger" @click="deleteLeave(item)">删除记录</el-button>
-            </div>
-          </article>
-        </div>
-      </section>
+              <el-steps
+                class="flow-steps"
+                direction="vertical"
+                :active="flowActive(item)"
+                finish-status="success"
+                process-status="process"
+              >
+                <el-step
+                  v-for="step in item.approvalFlow || []"
+                  :key="step.node"
+                  :title="step.node"
+                  :description="stepDescription(step)"
+                />
+              </el-steps>
+              <div class="card-actions">
+                <el-button link type="danger" @click="deleteLeave(item)">删除记录</el-button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
     </section>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import SitePageHero from '@/components/site/shell/SitePageHero.vue'
+import SiteSectionHeading from '@/components/site/shell/SiteSectionHeading.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { leaveApplicationApi } from '@/api'
@@ -264,45 +275,17 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.site-page {
-  padding: 64px 0 80px;
-  background: var(--oa-page-soft-bg);
-}
-
 .leave-page {
   display: grid;
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--oa-border);
-  border-radius: 18px;
-  background: var(--oa-border);
+  gap: 24px;
 }
 
 .leave-main,
 .leave-history {
   min-width: 0;
-  padding: 32px;
-  border: 0;
-  border-radius: 0;
-  background: var(--oa-elevated-bg);
-  box-shadow: none;
-  animation: oaFadeUp 0.44s ease both;
+  padding: clamp(22px, 3vw, 32px);
 }
 
-.section-head h1 {
-  margin: 14px 0 8px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  font-size: 48px;
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.section-head p,
 .history-head p,
 .leave-card p,
 .upload-tip,
@@ -310,7 +293,6 @@ onMounted(() => {
   color: var(--oa-muted);
 }
 
-.section-head p,
 .history-head p {
   margin: 0;
   line-height: 1.7;
@@ -366,9 +348,8 @@ onMounted(() => {
   margin-top: 12px;
   padding: 16px;
   border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--oa-elevated-bg);
-  animation: oaFadeUp 0.34s ease both;
 }
 
 .leave-card__top strong,
@@ -419,19 +400,9 @@ onMounted(() => {
 }
 
 @media (max-width: 760px) {
-  .site-page {
-    padding: 14px 0 36px;
-  }
-
   .leave-main,
   .leave-history {
     padding: 16px;
-    border-radius: 18px;
-  }
-
-  .section-head h1 {
-    margin-top: 10px;
-    font-size: 28px;
   }
 
   .leave-form :deep(.el-form-item) {

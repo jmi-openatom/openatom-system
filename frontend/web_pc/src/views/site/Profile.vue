@@ -1,78 +1,108 @@
 <template>
-  <ViewPage class="site-page">
-    <section class="container profile-grid">
-      <el-card class="profile-card" shadow="never">
-        <template #header>
-          <div class="card-header">
-            <span>我的账号</span>
-            <el-tag v-if="isLogin" size="small" type="success">已登录</el-tag>
+  <ViewPage class="workspace-page profile-workspace">
+    <WorkspaceHero
+      eyebrow="个人中心"
+      title="我的账号"
+      description="管理头像、账号信息和最近的申请进度。"
+      :metrics="workspaceMetrics"
+    />
+
+    <section class="workspace-section">
+      <div class="container workspace-grid workspace-grid--split profile-grid">
+        <WorkspacePanel
+          class="profile-card site-reveal"
+          eyebrow="Identity"
+          title="身份资料"
+          description="维护基础信息与头像，保持工作台身份一致。"
+        >
+          <div class="profile-avatar">
+            <UserAvatar :name="displayName" :size="88" :src="String(user.avatar || '')" />
+            <div>
+              <strong>{{ displayName }}</strong>
+              <span>未上传头像时，将显示姓氏默认头像</span>
+            </div>
           </div>
-        </template>
 
-        <div class="profile-avatar">
-          <UserAvatar :name="displayName" :size="88" :src="String(user.avatar || '')" />
-          <div>
-            <strong>{{ displayName }}</strong>
-            <span>未上传头像时，将显示姓氏默认头像</span>
+          <input
+            ref="avatarInputRef"
+            accept="image/jpeg,image/png"
+            hidden
+            type="file"
+            @change="handleAvatarChange"
+          />
+
+          <div class="avatar-actions">
+            <el-button :loading="avatarUploading" plain type="primary" @click="chooseAvatar">
+              上传头像
+            </el-button>
+            <el-button v-if="user.avatar" :loading="avatarUploading" plain @click="removeAvatar">
+              恢复默认
+            </el-button>
           </div>
-        </div>
 
-        <input
-          ref="avatarInputRef"
-          accept="image/jpeg,image/png"
-          hidden
-          type="file"
-          @change="handleAvatarChange"
-        />
+          <div class="profile-meta">
+            <span class="workspace-chip">{{ isLogin ? '已登录' : '未登录' }}</span>
+            <span class="workspace-chip">资料完整度 {{ profileCompletion }}%</span>
+          </div>
 
-        <div class="avatar-actions">
-          <el-button :loading="avatarUploading" plain type="primary" @click="chooseAvatar">
-            上传头像
-          </el-button>
-          <el-button
-            v-if="user.avatar"
-            :loading="avatarUploading"
-            plain
-            @click="removeAvatar"
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="用户名">{{ user.userName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="姓名">{{ user.realName || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="邮箱">{{ user.email || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="手机号">{{ user.phone || '-' }}</el-descriptions-item>
+          </el-descriptions>
+        </WorkspacePanel>
+
+        <div class="profile-stack">
+          <WorkspacePanel
+            class="profile-progress-card site-reveal"
+            eyebrow="Applications"
+            title="申请雷达"
+            description="最近申请与当前阶段一并汇总。"
           >
-            恢复默认
-          </el-button>
+            <el-table :data="applications" border stripe>
+              <el-table-column label="申请编号" prop="id" width="100" />
+              <el-table-column label="社团名称" min-width="150" prop="clubName" />
+              <el-table-column label="当前状态" prop="status" width="120">
+                <template #default="{ row }">
+                  <el-tag :type="statusType(row.status)">{{
+                    applicationStatusText(row.status || 'reviewing')
+                  }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="提交时间" min-width="180" prop="createdAt">
+                <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+              </el-table-column>
+            </el-table>
+          </WorkspacePanel>
+
+          <WorkspacePanel
+            class="security-card site-reveal"
+            eyebrow="Security"
+            title="安全控制"
+            description="账号操作集中放在这里，避免和资料维护混在一起。"
+            compact
+          >
+            <div class="security-grid">
+              <div class="workspace-inline-stat">
+                <span>账号状态</span>
+                <strong>{{ isLogin ? '在线' : '离线' }}</strong>
+              </div>
+              <div class="workspace-inline-stat">
+                <span>当前申请</span>
+                <strong>{{ activeApplicationCount }}</strong>
+              </div>
+            </div>
+
+            <div class="btn-group">
+              <el-button class="w-full" plain type="primary" @click="passwordDialogVisible = true"
+                >修改密码
+              </el-button>
+              <el-button class="w-full" @click="logout">退出登录</el-button>
+            </div>
+          </WorkspacePanel>
         </div>
-
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="用户名">{{ user.userName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="姓名">{{ user.realName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="邮箱">{{ user.email || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="手机号">{{ user.phone || '-' }}</el-descriptions-item>
-        </el-descriptions>
-
-        <div class="btn-group">
-          <el-button class="w-full" @click="logout">退出登录</el-button>
-          <el-button class="w-full" plain type="primary" @click="passwordDialogVisible = true"
-            >修改密码
-          </el-button>
-        </div>
-      </el-card>
-
-      <el-card shadow="never">
-        <template #header>
-          <span>我的申请进度</span>
-        </template>
-        <el-table :data="applications" border stripe>
-          <el-table-column label="申请编号" prop="id" width="100" />
-          <el-table-column label="社团名称" min-width="150" prop="clubName" />
-          <el-table-column label="当前状态" prop="status" width="120">
-            <template #default="{ row }">
-              <el-tag :type="statusType(row.status)">{{
-                applicationStatusText(row.status || 'reviewing')
-              }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="提交时间" min-width="180" prop="createdAt">
-            <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
-          </el-table-column>
-        </el-table>
-      </el-card>
+      </div>
     </section>
 
     <el-dialog
@@ -115,6 +145,8 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import WorkspaceHero from '@/components/site/workspace/WorkspaceHero.vue'
+import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
 import { authApi, siteApi } from '@/api'
 import { clearSession, getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
 import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
@@ -156,6 +188,48 @@ const isLogin = computed(() => {
 })
 
 const displayName = computed(() => String(user.value.realName || user.value.userName || '用户'))
+
+const activeStatuses = new Set([
+  'submitted',
+  'reviewing',
+  'approved',
+  'pre_screen_passed',
+  'interview_scheduled',
+  'interviewed',
+  'waitlisted',
+])
+
+const activeApplicationCount = computed(() =>
+  applications.value.filter((item) => activeStatuses.has(item.status)).length,
+)
+
+const profileCompletion = computed(() => {
+  const fields = [user.value.realName, user.value.email, user.value.phone, user.value.avatar]
+  return Math.round((fields.filter(Boolean).length / fields.length) * 100)
+})
+
+const workspaceMetrics = computed(() => [
+  {
+    label: '账号状态',
+    value: isLogin.value ? '在线' : '离线',
+    note: isLogin.value ? '会话有效' : '等待登录',
+  },
+  {
+    label: '申请记录',
+    value: applications.value.length,
+    note: '累计提交',
+  },
+  {
+    label: '处理中',
+    value: activeApplicationCount.value,
+    note: '仍在流转',
+  },
+  {
+    label: '资料完整度',
+    value: `${profileCompletion.value}%`,
+    note: '基础信息',
+  },
+])
 
 async function fetchProfile() {
   const result = await authApi.me()
@@ -259,33 +333,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.site-page {
-  padding: 64px 0 80px;
-  background: var(--oa-page-soft-bg);
-}
-
 .profile-grid {
-  display: grid;
-  grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
-  gap: 1px;
   align-items: start;
-  overflow: hidden;
-  border: 1px solid var(--oa-border);
-  border-radius: 18px;
-  background: var(--oa-border);
-}
-
-.profile-grid :deep(.el-card) {
-  min-height: 100%;
-  border: 0 !important;
-  border-radius: 0 !important;
-  animation: oaFadeUp 0.44s ease both;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .profile-avatar {
@@ -313,7 +362,25 @@ onMounted(() => {
 .avatar-actions {
   display: flex;
   gap: 10px;
+  margin-bottom: 16px;
+}
+
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 22px;
+}
+
+.profile-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.security-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .btn-group {
@@ -328,8 +395,8 @@ onMounted(() => {
   margin-left: 0 !important;
 }
 
-@media (max-width: 900px) {
-  .profile-grid {
+@media (max-width: 640px) {
+  .security-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -31,7 +31,8 @@
   --oa-accent-2: #22c55e;
   --oa-warm: #f59e0b;
   --oa-gradient: linear-gradient(135deg, #0f172a 0%, #0e7490 48%, #16a34a 100%);
-  --oa-hero-gradient: radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.24), transparent 32%),
+  --oa-hero-gradient:
+    radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.24), transparent 32%),
     radial-gradient(circle at 86% 18%, rgba(34, 197, 94, 0.16), transparent 34%),
     linear-gradient(180deg, #f8fbff 0%, #edf7ff 42%, #ffffff 100%);
   --oa-primary-on-dark: #ffffff;
@@ -64,11 +65,13 @@
   --oa-header-border: rgba(148, 163, 184, 0.22);
   --oa-header-shadow: 0 16px 46px rgba(15, 23, 42, 0.08);
   --oa-header-home-shadow: 0 18px 48px rgba(15, 23, 42, 0.1);
-  --oa-header-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.44)),
+  --oa-header-overlay:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.44)),
     linear-gradient(90deg, rgba(6, 182, 212, 0.08), transparent 36%, rgba(34, 197, 94, 0.07));
   --oa-admin-header-bg: rgba(245, 245, 247, 0.82);
   --oa-map-bg: #f8fbff;
-  --oa-map-fallback: radial-gradient(circle at 50% 45%, rgba(59, 130, 246, 0.18), transparent 38%),
+  --oa-map-fallback:
+    radial-gradient(circle at 50% 45%, rgba(59, 130, 246, 0.18), transparent 38%),
     radial-gradient(circle at 52% 44%, rgba(20, 184, 166, 0.12), transparent 54%), #eef6ff;
   --oa-radius: 18px;
   --oa-radius-sm: 8px;
@@ -175,7 +178,8 @@ html.dark {
   --oa-header-overlay: linear-gradient(180deg, rgba(17, 17, 19, 0.88), rgba(17, 17, 19, 0.44));
   --oa-admin-header-bg: rgba(17, 17, 19, 0.84);
   --oa-map-bg: #09090b;
-  --oa-map-fallback: radial-gradient(circle at 50% 45%, rgba(245, 245, 247, 0.08), transparent 38%),
+  --oa-map-fallback:
+    radial-gradient(circle at 50% 45%, rgba(245, 245, 247, 0.08), transparent 38%),
     radial-gradient(circle at 52% 44%, rgba(161, 161, 170, 0.06), transparent 54%), #09090b;
   --oa-product-shadow: 3px 8px 34px rgba(0, 0, 0, 0.5);
   --oa-dark-tile: #171719;
@@ -228,12 +232,7 @@ body {
   color: var(--oa-text);
   background: var(--oa-hero-gradient);
   font-family:
-    'Avenir Next',
-    'DIN Alternate',
-    'PingFang SC',
-    'Microsoft YaHei',
-    system-ui,
-    sans-serif;
+    'Avenir Next', 'DIN Alternate', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
   font-size: 17px;
   line-height: 1.47;
   letter-spacing: 0;
@@ -253,8 +252,8 @@ a {
 }
 
 .container {
-    width: min(1520px, calc(100% - 32px));
-    margin: 0 auto;
+  width: min(1520px, calc(100% - 32px));
+  margin: 0 auto;
 }
 
 .site-screen-section {
@@ -917,7 +916,6 @@ a:hover {
   background: var(--oa-elevated-bg);
   border: 1px solid var(--oa-border);
   box-shadow: none;
-  animation: oaFadeUp 0.5s ease both;
 }
 
 .admin-table,
@@ -925,20 +923,8 @@ a:hover {
   border-radius: var(--oa-radius);
 }
 
-.el-table__row {
-  animation: oaFadeUp 0.34s ease both;
-}
-
-.el-table__row:nth-child(2n) {
-  animation-delay: 0.025s;
-}
-
-.el-table__row:nth-child(3n) {
-  animation-delay: 0.05s;
-}
-
 .el-dialog {
-  animation: oaScaleIn 0.25s ease both;
+  animation: none;
 }
 
 .hero__mesh {
@@ -977,6 +963,127 @@ a:hover {
 .panel:hover,
 .el-card:hover {
   border-color: var(--oa-primary);
+}
+
+.site-system-page {
+  min-height: calc(100vh - var(--oa-site-header-height));
+  background: var(--oa-page-soft-bg);
+}
+
+.site-system-section {
+  padding: clamp(56px, 7vw, 88px) 0;
+}
+
+.site-system-surface {
+  background: var(--oa-elevated-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: 24px;
+}
+
+.site-system-empty {
+  width: min(440px, 100%);
+  margin: 28px auto 0;
+  padding: 28px 24px;
+  border: 1px solid var(--oa-border);
+  border-radius: 24px;
+  background: var(--oa-elevated-bg);
+}
+
+.site-system-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.site-system-grid--split {
+  grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1.22fr);
+}
+
+.site-system-copy-card,
+.site-system-content-card {
+  padding: clamp(22px, 3vw, 32px);
+}
+
+.site-system-copy-card h3,
+.site-system-content-card h3 {
+  margin-top: 0;
+}
+
+.workspace-page {
+  min-height: calc(100vh - var(--oa-site-header-height));
+  background:
+    radial-gradient(circle at top center, color-mix(in srgb, var(--oa-text) 7%, transparent), transparent 34%),
+    var(--oa-page-soft-bg);
+}
+
+.workspace-section {
+  padding: clamp(28px, 5vw, 44px) 0 clamp(64px, 7vw, 92px);
+}
+
+.workspace-layout {
+  display: grid;
+  gap: 24px;
+}
+
+.workspace-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.workspace-grid--split {
+  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
+}
+
+.workspace-grid--balanced {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workspace-subgrid {
+  display: grid;
+  gap: 14px;
+}
+
+.workspace-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--oa-border);
+  border-radius: 999px;
+  color: var(--oa-muted);
+  background: var(--oa-button-subtle-bg);
+  font-size: 13px;
+}
+
+.workspace-inline-stat {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--oa-border);
+  border-radius: 18px;
+  background: var(--oa-page-soft-bg);
+}
+
+.workspace-inline-stat span {
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.workspace-inline-stat strong {
+  color: var(--oa-text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .site-system-grid--split {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-grid--split,
+  .workspace-grid--balanced {
+    grid-template-columns: 1fr;
+  }
 }
 
 .login-logo,
@@ -1248,7 +1355,12 @@ html.dark .home-overview-page {
 }
 
 html.dark .hero::after {
-  background: linear-gradient(180deg, transparent 0%, rgba(13, 27, 47, 0.12) 78%, #0d1b2f 100%) !important;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(13, 27, 47, 0.12) 78%,
+    #0d1b2f 100%
+  ) !important;
 }
 
 html.dark .hero__glass {
@@ -1337,7 +1449,12 @@ html.dark .home-overview-page .command-panel {
 }
 
 html.dark .section-heading::before {
-  background: linear-gradient(90deg, transparent, rgba(245, 245, 247, 0.76), transparent) !important;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(245, 245, 247, 0.76),
+    transparent
+  ) !important;
 }
 
 html.dark .activity-stage__card {

@@ -1,32 +1,40 @@
 <template>
-  <ViewPage class="calendar-page">
-    <section class="container calendar-shell">
-      <div class="section-head">
-        <el-tag effect="plain">校历</el-tag>
-        <h1>学期校历</h1>
-        <p v-if="calendar.startDate">
-          {{ calendar.startDate }} 至 {{ calendar.endDate }}，共 {{ calendar.weekCount }} 周。
-        </p>
-        <p v-else>校历暂未发布。</p>
-      </div>
+  <ViewPage class="site-system-page calendar-page">
+    <SitePageHero
+      eyebrow="校历"
+      title="学期校历"
+      :description="
+        calendar.startDate
+          ? `${calendar.startDate} 至 ${calendar.endDate}，共 ${calendar.weekCount} 周。`
+          : '校历暂未发布。'
+      "
+      compact
+    />
 
-      <el-empty v-if="!calendar.days?.length" description="暂无校历" />
-      <div v-for="week in weekGroups" :key="week.weekIndex" class="week-card">
-        <div class="week-title">第 {{ week.weekIndex }} 周</div>
-        <div class="day-grid">
-          <div
-            v-for="day in week.days"
-            :key="day.date"
-            class="day-cell"
-            :class="{
-              'day-cell--rest': day.restDay,
-              'day-cell--adjusted': day.source === 'adjustment',
-            }"
-          >
-            <strong>{{ day.dayName }}</strong>
-            <span>{{ day.date.slice(5) }}</span>
-            <small>{{ day.restDay ? '休息' : '上课' }}</small>
-            <em v-if="day.reason">{{ day.reason }}</em>
+    <section class="site-system-section">
+      <div class="container calendar-shell">
+        <el-empty v-if="!calendar.days?.length" class="site-system-empty" description="暂无校历" />
+        <div
+          v-for="week in weekGroups"
+          :key="week.weekIndex"
+          class="week-card site-system-surface site-reveal"
+        >
+          <div class="week-title">第 {{ week.weekIndex }} 周</div>
+          <div class="day-grid">
+            <div
+              v-for="day in week.days"
+              :key="day.date"
+              class="day-cell"
+              :class="{
+                'day-cell--rest': day.restDay,
+                'day-cell--adjusted': day.source === 'adjustment',
+              }"
+            >
+              <strong>{{ day.dayName }}</strong>
+              <span>{{ day.date.slice(5) }}</span>
+              <small>{{ day.restDay ? '休息' : '上课' }}</small>
+              <em v-if="day.reason">{{ day.reason }}</em>
+            </div>
           </div>
         </div>
       </div>
@@ -36,6 +44,7 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import SitePageHero from '@/components/site/shell/SitePageHero.vue'
 import { schoolCalendarApi } from '@/api'
 import { computed, onMounted, ref } from 'vue'
 
@@ -57,54 +66,13 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.calendar-page {
-  padding: 64px 0 80px;
-  background: var(--oa-page-soft-bg);
-}
-
 .calendar-shell {
   display: grid;
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--oa-border);
-  border-radius: 18px;
-  background: var(--oa-border);
-}
-
-.section-head {
-  padding: 48px;
-  border: 0;
-  border-radius: 0;
-  background: var(--oa-elevated-bg);
-  box-shadow: none;
-  text-align: center;
-}
-
-.section-head h1 {
-  margin: 14px 0 8px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  font-size: 48px;
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.section-head p {
-  margin: 0;
-  color: var(--oa-muted);
+  gap: 20px;
 }
 
 .week-card {
   padding: 24px;
-  border: 0;
-  border-radius: 0;
-  background: var(--oa-elevated-bg);
-  box-shadow: none;
-  animation: oaFadeUp 0.42s ease both;
 }
 
 .week-title {
@@ -166,18 +134,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 760px) {
-  .calendar-page {
-    padding: 18px 0 44px;
-  }
-
-  .section-head {
-    padding: 18px;
-  }
-
-  .section-head h1 {
-    font-size: 28px;
-  }
-
   .day-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

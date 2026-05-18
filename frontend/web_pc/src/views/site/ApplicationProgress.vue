@@ -1,122 +1,185 @@
 <template>
-  <ViewPage class="site-page">
-    <section class="container progress-page">
-      <div class="progress-header">
-        <div>
-          <h1 class="page-title">我的入会申请</h1>
-          <p class="section-subtitle">查看你提交的所有申请、面试安排和当前处理阶段。</p>
-        </div>
+  <ViewPage class="workspace-page application-workspace">
+    <WorkspaceHero
+      eyebrow="个人工作台"
+      title="我的入会申请"
+      description="查看你提交的所有申请、面试安排和当前处理阶段。"
+      :metrics="workspaceMetrics"
+    >
+      <template #actions>
         <div class="progress-header__actions">
           <el-button v-if="!isLogin" type="primary" @click="goLogin">登录后查看</el-button>
-          <el-button v-else @click="fetchProgress">刷新进度</el-button>
+          <el-button v-else plain @click="fetchProgress">刷新进度</el-button>
         </div>
-      </div>
+      </template>
+    </WorkspaceHero>
 
-      <el-alert
-        v-if="isLogin"
-        type="info"
-        show-icon
-        :closable="false"
-        :title="`当前账号：${displayName}`"
-        description="申请进度、面试时间和结果会在这里持续更新。"
-      />
-
-      <el-empty v-if="!isLogin" description="登录后可查看个人入会进度" />
-      <el-empty v-else-if="!loading && !applications.length" description="你还没有提交入会申请" />
-
-      <div v-else v-loading="loading" class="progress-list">
-        <el-card v-for="item in applications" :key="item.id" shadow="never" class="progress-card">
-          <template #header>
-            <div class="progress-card__header">
-              <div>
-                <div class="progress-card__title">{{ item.campaignName || '入会申请' }}</div>
-                <div class="progress-card__meta">
-                  <span>社团：{{ item.clubName || '-' }}</span>
-                  <span>申请编号：{{ item.id }}</span>
-                  <span>提交时间：{{ formatDateTime(item.createdAt) }}</span>
-                </div>
-              </div>
-              <el-tag :type="statusType(item.status)">{{
-                applicationStatusText(item.status)
-              }}</el-tag>
-            </div>
-          </template>
-
-          <div class="progress-summary">
-            <div class="summary-item">
-              <span class="summary-item__label">申请人</span>
-              <strong>{{ item.applicantName || '-' }}</strong>
-            </div>
-            <div class="summary-item">
-              <span class="summary-item__label">志愿部门</span>
-              <strong>{{ item.preferredDepartment || '未填写' }}</strong>
-            </div>
-            <div class="summary-item">
-              <span class="summary-item__label">当前说明</span>
-              <strong>{{ applicationStatusHint(item.status) }}</strong>
-            </div>
-          </div>
-
-          <el-steps
-            :active="applicationStep(item.status)"
-            finish-status="success"
-            align-center
-            class="progress-steps"
+    <section class="workspace-section">
+      <div class="container workspace-layout progress-page">
+        <div class="workspace-grid workspace-grid--split">
+          <WorkspacePanel
+            class="status-console site-reveal"
+            eyebrow="Account"
+            title="当前账号"
+            description="申请流转、面试安排和最终结果都会回流到这里。"
           >
-            <el-step title="已提交" />
-            <el-step title="审核中" />
-            <el-step title="面试阶段" />
-            <el-step title="结果通知" />
-          </el-steps>
+            <div class="account-console">
+              <span class="workspace-chip">{{ isLogin ? '已接入工作台' : '访客模式' }}</span>
+              <strong>{{ isLogin ? displayName : '尚未登录' }}</strong>
+              <p>
+                {{
+                  isLogin
+                    ? '系统会持续同步你提交过的申请与后续安排。'
+                    : '登录后可查看个人入会进度、面试通知和审核结果。'
+                }}
+              </p>
+            </div>
+          </WorkspacePanel>
 
-          <el-divider content-position="left">面试安排</el-divider>
-          <div v-if="item.interviews?.length" class="interview-list">
-            <div v-for="interview in item.interviews" :key="interview.id" class="interview-item">
-              <div class="interview-item__top">
-                <strong>第 {{ interview.round || 1 }} 轮面试</strong>
-                <el-tag :type="statusType(interview.status)">{{
-                  interviewStatusText(interview.status)
-                }}</el-tag>
+          <WorkspacePanel
+            class="pipeline-console site-reveal"
+            eyebrow="Pipeline"
+            title="流程总览"
+            description="把最新状态、待处理事项和最近提交时间集中放在一屏。"
+          >
+            <div class="pipeline-console__grid">
+              <div class="workspace-inline-stat">
+                <span>最新阶段</span>
+                <strong>{{ latestStatusLabel }}</strong>
               </div>
-              <div class="interview-item__meta">
-                <span
-                  >时间：{{
-                    formatRange(interview.scheduledStartAt, interview.scheduledEndAt)
-                  }}</span
-                >
-                <span>方式：{{ interviewModeText(interview.mode) }}</span>
-                <span>地点/链接：{{ interview.location || '-' }}</span>
+              <div class="workspace-inline-stat">
+                <span>下一步</span>
+                <strong>{{ latestStatusHint }}</strong>
               </div>
-              <div v-if="interview.feedbacks?.length" class="interview-feedback">
-                <div v-for="fb in interview.feedbacks" :key="fb.id" class="feedback-bubble">
-                  <p>{{ fb.suggestion || fb.comment || '面试官未填写具体评价' }}</p>
-                </div>
+              <div class="workspace-inline-stat">
+                <span>最近提交</span>
+                <strong>{{ latestSubmittedAt }}</strong>
               </div>
             </div>
-          </div>
-          <el-empty v-else description="暂未安排面试，请留意后续通知" :image-size="72" />
+          </WorkspacePanel>
+        </div>
 
-          <template v-if="item.approvalRecords?.length">
-            <el-divider content-position="left">审核意见</el-divider>
-            <div class="approval-history">
-              <div
-                v-for="record in item.approvalRecords"
-                :key="record.id"
-                class="approval-record"
-                :class="`is-${record.action}`"
-              >
-                <div class="record-dot"></div>
-                <div class="record-content">
-                  <div class="record-title">
-                    <span>{{ approvalActionText(record.action) }}</span>
-                    <time>{{ formatDateTime(record.createdAt) }}</time>
+        <WorkspacePanel
+          class="application-records site-reveal"
+          eyebrow="Records"
+          title="申请记录"
+          description="每一张卡片都对应一条完整申请链路。"
+        >
+          <el-empty
+            v-if="!isLogin"
+            class="site-system-empty"
+            description="登录后可查看个人入会进度"
+          />
+          <el-empty
+            v-else-if="!loading && !applications.length"
+            class="site-system-empty"
+            description="你还没有提交入会申请"
+          />
+
+          <div v-else v-loading="loading" class="progress-list">
+            <el-card
+              v-for="item in applications"
+              :key="item.id"
+              shadow="never"
+              class="progress-card"
+            >
+              <template #header>
+                <div class="progress-card__header">
+                  <div>
+                    <div class="progress-card__title">{{ item.campaignName || '入会申请' }}</div>
+                    <div class="progress-card__meta">
+                      <span>社团：{{ item.clubName || '-' }}</span>
+                      <span>申请编号：{{ item.id }}</span>
+                      <span>提交时间：{{ formatDateTime(item.createdAt) }}</span>
+                    </div>
                   </div>
-                  <p v-if="record.comment" class="record-comment">{{ record.comment }}</p>
+                  <el-tag :type="statusType(item.status)">{{
+                    applicationStatusText(item.status)
+                  }}</el-tag>
+                </div>
+              </template>
+
+              <div class="progress-summary">
+                <div class="summary-item">
+                  <span class="summary-item__label">申请人</span>
+                  <strong>{{ item.applicantName || '-' }}</strong>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-item__label">志愿部门</span>
+                  <strong>{{ item.preferredDepartment || '未填写' }}</strong>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-item__label">当前说明</span>
+                  <strong>{{ applicationStatusHint(item.status) }}</strong>
                 </div>
               </div>
-            </div>
-          </template>
-        </el-card>
+
+              <el-steps
+                :active="applicationStep(item.status)"
+                finish-status="success"
+                align-center
+                class="progress-steps"
+              >
+                <el-step title="已提交" />
+                <el-step title="审核中" />
+                <el-step title="面试阶段" />
+                <el-step title="结果通知" />
+              </el-steps>
+
+              <el-divider content-position="left">面试安排</el-divider>
+              <div v-if="item.interviews?.length" class="interview-list">
+                <div
+                  v-for="interview in item.interviews"
+                  :key="interview.id"
+                  class="interview-item"
+                >
+                  <div class="interview-item__top">
+                    <strong>第 {{ interview.round || 1 }} 轮面试</strong>
+                    <el-tag :type="statusType(interview.status)">{{
+                      interviewStatusText(interview.status)
+                    }}</el-tag>
+                  </div>
+                  <div class="interview-item__meta">
+                    <span
+                      >时间：{{
+                        formatRange(interview.scheduledStartAt, interview.scheduledEndAt)
+                      }}</span
+                    >
+                    <span>方式：{{ interviewModeText(interview.mode) }}</span>
+                    <span>地点/链接：{{ interview.location || '-' }}</span>
+                  </div>
+                  <div v-if="interview.feedbacks?.length" class="interview-feedback">
+                    <div v-for="fb in interview.feedbacks" :key="fb.id" class="feedback-bubble">
+                      <p>{{ fb.suggestion || fb.comment || '面试官未填写具体评价' }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <el-empty v-else description="暂未安排面试，请留意后续通知" :image-size="72" />
+
+              <template v-if="item.approvalRecords?.length">
+                <el-divider content-position="left">审核意见</el-divider>
+                <div class="approval-history">
+                  <div
+                    v-for="record in item.approvalRecords"
+                    :key="record.id"
+                    class="approval-record"
+                    :class="`is-${record.action}`"
+                  >
+                    <div class="record-dot"></div>
+                    <div class="record-content">
+                      <div class="record-title">
+                        <span>{{ approvalActionText(record.action) }}</span>
+                        <time>{{ formatDateTime(record.createdAt) }}</time>
+                      </div>
+                      <p v-if="record.comment" class="record-comment">{{ record.comment }}</p>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </el-card>
+          </div>
+        </WorkspacePanel>
       </div>
     </section>
   </ViewPage>
@@ -124,6 +187,8 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import WorkspaceHero from '@/components/site/workspace/WorkspaceHero.vue'
+import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
 import { authApi, siteApi } from '@/api'
 import { getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
 import { computed, onMounted, ref } from 'vue'
@@ -152,6 +217,79 @@ const isLogin = computed(() => {
 const displayName = computed(() => {
   return user.value.realName || user.value.userName || '当前用户'
 })
+
+const activeStatuses = new Set([
+  'submitted',
+  'reviewing',
+  'approved',
+  'pre_screen_passed',
+  'interview_scheduled',
+  'interviewed',
+  'waitlisted',
+])
+
+const archivedStatuses = new Set([
+  'pre_screen_rejected',
+  'final_approved',
+  'rejected',
+  'cancelled',
+])
+
+const activeApplicationCount = computed(() =>
+  applications.value.filter((item) => activeStatuses.has(item.status)).length,
+)
+
+const archivedApplicationCount = computed(() =>
+  applications.value.filter((item) => archivedStatuses.has(item.status)).length,
+)
+
+const interviewCount = computed(() =>
+  applications.value.reduce((total, item) => total + (item.interviews?.length || 0), 0),
+)
+
+const latestApplication = computed(() => {
+  return [...applications.value].sort((a, b) => {
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+  })[0]
+})
+
+const latestStatusLabel = computed(() => {
+  if (!latestApplication.value) return isLogin.value ? '暂无申请' : '等待登录'
+  return applicationStatusText(latestApplication.value.status)
+})
+
+const latestStatusHint = computed(() => {
+  if (!latestApplication.value) return isLogin.value ? '可前往招新页提交申请' : '登录后同步'
+  return applicationStatusHint(latestApplication.value.status)
+})
+
+const latestSubmittedAt = computed(() => {
+  if (!latestApplication.value?.createdAt) return '--'
+  return formatDateTime(latestApplication.value.createdAt)
+})
+
+const workspaceMetrics = computed(() => [
+  {
+    label: '申请总数',
+    value: applications.value.length,
+    note: isLogin.value ? '全部记录' : '登录后同步',
+  },
+  {
+    label: '处理中',
+    value: activeApplicationCount.value,
+    note: '仍在流转',
+  },
+  {
+    label: '面试安排',
+    value: interviewCount.value,
+    note: '已创建场次',
+  },
+  {
+    label: '已归档',
+    value: archivedApplicationCount.value,
+    note: '结果已明确',
+  },
+])
 
 async function fetchCurrentUser() {
   const result = await authApi.me()
@@ -252,46 +390,47 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.site-page {
-  padding: 64px 0 80px;
-  background: var(--oa-page-soft-bg);
-}
-
 .progress-page {
-  display: grid;
-  gap: 20px;
-}
-
-.progress-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 48px;
-  background: var(--oa-elevated-bg);
-  border: 1px solid var(--oa-border);
-  border-radius: 18px;
-  animation: oaFadeUp 0.42s ease both;
+  gap: 24px;
 }
 
 .progress-header__actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
+}
+
+.account-console {
+  display: grid;
+  gap: 14px;
+}
+
+.account-console strong {
+  color: var(--oa-text);
+  font-size: clamp(24px, 2vw, 30px);
+  font-weight: 600;
+}
+
+.account-console p {
+  margin: 0;
+  color: var(--oa-muted);
+  line-height: 1.8;
+}
+
+.pipeline-console__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .progress-list {
   display: grid;
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--oa-border);
-  border-radius: 18px;
-  background: var(--oa-border);
+  gap: 18px;
 }
 
 .progress-card {
-  border: 0;
-  border-radius: 0;
-  animation: oaFadeUp 0.44s ease both;
+  border-radius: 22px;
 }
 
 .progress-card__header {
@@ -367,7 +506,10 @@ onMounted(() => {
 }
 
 @media (max-width: 900px) {
-  .progress-header,
+  .pipeline-console__grid {
+    grid-template-columns: 1fr;
+  }
+
   .progress-card__header {
     flex-direction: column;
   }

@@ -1,59 +1,78 @@
 <template>
-  <ViewPage class="notifications-page">
-    <section class="notifications-hero">
-      <div class="notifications-hero__copy">
-        <span>通知中心</span>
-        <h1>消息通知</h1>
-        <p>及时获取社团公告、活动进展及申请反馈。</p>
-      </div>
-      <div class="notifications-hero__stats">
-        <div>
-          <strong>{{ notifications.length }}</strong>
-          <span>全部消息</span>
-        </div>
-        <div>
-          <strong>{{ unreadCount }}</strong>
-          <span>未读消息</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="notifications-workspace">
-      <aside class="notification-summary">
-        <div class="summary-icon">
-          <el-icon><Bell /></el-icon>
-        </div>
-        <h2>收件箱</h2>
-        <p>{{ unreadCount ? `还有 ${unreadCount} 条消息需要查看` : '当前所有消息均已读' }}</p>
-        <el-button v-if="unreadCount" type="primary" :icon="CircleCheck" @click="markAllAsRead">
+  <ViewPage class="workspace-page notifications-page">
+    <WorkspaceHero
+      eyebrow="通知中心"
+      title="消息通知"
+      description="及时获取社团公告、活动进展及申请反馈。"
+      :metrics="workspaceMetrics"
+    >
+      <template #actions>
+        <el-button v-if="unreadCount" :icon="CircleCheck" @click="markAllAsRead">
           全部标记为已读
         </el-button>
-      </aside>
+      </template>
+    </WorkspaceHero>
 
-      <div v-loading="loading" class="notification-list">
-        <div v-if="notifications.length === 0 && !loading" class="empty-state">
-          <el-empty description="暂无新消息" />
-        </div>
-
-        <article
-          v-for="item in notifications"
-          :key="item.id"
-          class="notification-item"
-          :class="{ 'is-unread': item.readFlag === 0 }"
-          @click="handleRead(item)"
+    <section class="workspace-section">
+      <div class="container workspace-grid workspace-grid--split notifications-shell">
+        <WorkspacePanel
+          class="notification-summary site-reveal"
+          eyebrow="Inbox"
+          title="收件箱状态"
+          description="把待处理消息和系统通知放在同一张控制台卡片里。"
         >
-          <div class="item-icon" :class="item.type || 'other'">
-            <el-icon><Bell /></el-icon>
-          </div>
-          <div class="item-body">
-            <div class="item-header">
-              <span class="item-title">{{ item.title }}</span>
-              <span v-if="item.readFlag === 0" class="unread-pill">未读</span>
+          <div class="summary-console">
+            <div class="summary-icon">
+              <el-icon><Bell /></el-icon>
             </div>
-            <div class="item-content">{{ item.content }}</div>
-            <time class="item-time">{{ formatDateTime(item.createdAt) }}</time>
+            <strong>{{ unreadCount ? `${unreadCount} 条未读` : '全部已读' }}</strong>
+            <p>{{ unreadCount ? '还有消息需要查看' : '当前没有待处理消息' }}</p>
           </div>
-        </article>
+
+          <div class="workspace-subgrid">
+            <div class="workspace-inline-stat">
+              <span>已读消息</span>
+              <strong>{{ readCount }}</strong>
+            </div>
+            <div class="workspace-inline-stat">
+              <span>系统提醒</span>
+              <strong>{{ systemCount }}</strong>
+            </div>
+          </div>
+        </WorkspacePanel>
+
+        <WorkspacePanel
+          class="notification-console site-reveal"
+          eyebrow="Feed"
+          title="消息流"
+          description="点击未读消息即可完成确认。"
+        >
+          <div v-loading="loading" class="notification-list">
+            <div v-if="notifications.length === 0 && !loading" class="empty-state">
+              <el-empty description="暂无新消息" />
+            </div>
+
+            <article
+              v-for="item in notifications"
+              :key="item.id"
+              class="notification-item"
+              :class="{ 'is-unread': item.readFlag === 0 }"
+              @click="handleRead(item)"
+            >
+              <div class="item-icon" :class="item.type || 'other'">
+                <el-icon><Bell /></el-icon>
+              </div>
+              <div class="item-body">
+                <div class="item-header">
+                  <span class="item-title">{{ item.title }}</span>
+                  <span v-if="item.readFlag === 0" class="unread-pill">未读</span>
+                </div>
+                <div class="item-content">{{ item.content }}</div>
+                <time class="item-time">{{ formatDateTime(item.createdAt) }}</time>
+              </div>
+            </article>
+          </div>
+        </WorkspacePanel>
       </div>
     </section>
   </ViewPage>
@@ -61,6 +80,8 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import WorkspaceHero from '@/components/site/workspace/WorkspaceHero.vue'
+import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
 import { computed, ref, onMounted } from 'vue'
 import { Bell, CircleCheck } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -70,6 +91,14 @@ import { formatDateTime } from '@/utils/format.ts'
 const loading = ref(false)
 const notifications = ref([])
 const unreadCount = computed(() => notifications.value.filter((n: any) => n.readFlag === 0).length)
+const readCount = computed(() => notifications.value.length - unreadCount.value)
+const systemCount = computed(() => notifications.value.filter((n: any) => n.type === 'system').length)
+const workspaceMetrics = computed(() => [
+  { label: '全部消息', value: notifications.value.length, note: '累计通知' },
+  { label: '未读消息', value: unreadCount.value, note: '需要处理' },
+  { label: '已读消息', value: readCount.value, note: '已完成' },
+  { label: '系统提醒', value: systemCount.value, note: '平台消息' },
+])
 
 const fetchNotifications = async () => {
   loading.value = true
@@ -107,117 +136,22 @@ onMounted(fetchNotifications)
 </script>
 
 <style scoped>
-.notifications-page {
-  min-height: calc(100vh - 58px);
-  padding: 72px max(24px, calc((100vw - 1180px) / 2)) 96px;
-  background: var(--oa-page-soft-bg);
-}
-
-.notifications-hero {
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 24px;
-  animation: oaFadeUp 0.42s ease both;
-}
-
-.notifications-hero__copy,
-.notifications-hero__stats,
-.notification-summary,
 .notification-item,
 .empty-state {
   background: var(--oa-elevated-bg);
   border: 1px solid var(--oa-border);
-  border-radius: 18px;
-}
-
-.notifications-hero__copy {
-  flex: 1 1 auto;
-  min-height: 220px;
-  padding: 48px;
-}
-
-.notifications-hero__copy span {
-  display: block;
-  color: var(--oa-muted);
-  font-size: 14px;
-  line-height: 1;
-  margin-bottom: 14px;
-}
-
-.notifications-hero__copy h1 {
-  margin: 0 0 8px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  font-size: 48px;
-  font-weight: 600;
-  line-height: 1.1;
-  color: var(--oa-text);
-}
-
-.notifications-hero__copy p {
-  margin: 0;
-  color: var(--oa-muted);
-  font-size: 18px;
-  line-height: 1.7;
-}
-
-.notifications-hero__stats {
-  display: grid;
-  flex: 0 0 280px;
-  grid-template-columns: 1fr;
-  overflow: hidden;
-}
-
-.notifications-hero__stats div {
-  display: grid;
-  align-content: center;
-  gap: 8px;
-  min-height: 110px;
-  padding: 26px;
-}
-
-.notifications-hero__stats div + div {
-  border-top: 1px solid var(--oa-border);
-}
-
-.notifications-hero__stats strong {
-  color: var(--oa-text);
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  font-size: 46px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.notifications-hero__stats span {
-  color: var(--oa-muted);
-  font-size: 14px;
-}
-
-.notifications-workspace {
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
+  border-radius: 24px;
 }
 
 .notification-summary {
-  position: sticky;
-  top: 82px;
   display: grid;
-  gap: 14px;
-  padding: 24px;
-  animation: oaFadeUp 0.5s ease both;
+  align-content: start;
+}
+
+.summary-console {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .summary-icon {
@@ -231,18 +165,21 @@ onMounted(fetchNotifications)
   font-size: 22px;
 }
 
-.notification-summary h2 {
-  margin: 6px 0 0;
+.summary-console strong {
   color: var(--oa-text);
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 600;
 }
 
-.notification-summary p {
+.summary-console p {
   margin: 0;
   color: var(--oa-muted);
   font-size: 14px;
   line-height: 1.7;
+}
+
+.notification-console :deep(.workspace-panel__body) {
+  padding-top: 22px;
 }
 
 .notification-list {
@@ -257,17 +194,14 @@ onMounted(fetchNotifications)
   grid-template-columns: 52px minmax(0, 1fr);
   gap: 16px;
   padding: 20px;
-  animation: oaFadeUp 0.38s ease both;
   transition:
     border-color 0.18s ease,
-    transform 0.18s ease,
     background-color 0.18s ease;
   cursor: pointer;
 }
 
 .notification-item:hover {
   border-color: var(--oa-text);
-  transform: translateY(-2px);
 }
 
 .notification-item.is-unread {
@@ -353,53 +287,9 @@ onMounted(fetchNotifications)
   padding: 72px 24px;
 }
 
-@media (max-width: 900px) {
-  .notifications-page {
-    padding: 48px 16px 72px;
-  }
-
-  .notifications-hero,
-  .notifications-workspace {
-    grid-template-columns: 1fr;
-  }
-
-  .notifications-hero {
-    display: grid;
-  }
-
-  .notifications-hero__copy {
-    min-height: auto;
-    padding: 32px;
-  }
-
-  .notifications-hero__copy h1 {
-    font-size: 36px;
-  }
-
-  .notifications-hero__stats {
-    grid-template-columns: 1fr 1fr;
-    flex-basis: auto;
-  }
-
-  .notifications-hero__stats div + div {
-    border-top: 0;
-    border-left: 1px solid var(--oa-border);
-  }
-
-  .notification-summary {
-    position: static;
-  }
-}
-
 @media (max-width: 560px) {
-  .notifications-hero__copy,
-  .notification-summary,
   .notification-item {
     padding: 20px;
-  }
-
-  .notifications-hero__stats strong {
-    font-size: 34px;
   }
 
   .notification-item {

@@ -164,11 +164,10 @@ watch(() => [route.query.token, route.query.t], loadRouteToken)
   width: min(100%, 620px);
   padding: 48px;
   border: 1px solid var(--oa-border);
-  border-radius: 18px;
+  border-radius: 24px;
   background: var(--oa-elevated-bg);
   box-shadow: none;
   backdrop-filter: none;
-  animation: oaScaleIn 0.42s ease both;
   text-align: center;
 }
 
@@ -201,7 +200,7 @@ watch(() => [route.query.token, route.query.t], loadRouteToken)
   color: var(--oa-muted);
   text-align: center;
   border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--oa-page-soft-bg);
 }
 

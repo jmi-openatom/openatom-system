@@ -1,12 +1,12 @@
 <template>
-  <ViewPage class="site-page">
-    <section class="container">
-      <ViewToolbar>
-        <div>
-          <h1 class="page-title">社团库</h1>
-          <p class="section-subtitle">查看已上线社团，了解分类、介绍与当前招新状态。</p>
-        </div>
-        <div class="toolbar__filters">
+  <ViewPage class="site-system-page">
+    <SitePageHero
+      eyebrow="社团库"
+      title="社团列表"
+      description="查看已上线社团，了解分类、介绍与当前招新状态。"
+    >
+      <template #actions>
+        <div class="club-actions">
           <el-input
             v-model="query.keyword"
             placeholder="搜索社团名称"
@@ -21,35 +21,45 @@
           </el-select>
           <el-button type="primary" :icon="Search" @click="fetchClubs">查询</el-button>
         </div>
-      </ViewToolbar>
+      </template>
+    </SitePageHero>
 
-      <el-skeleton :loading="loading" animated :rows="6">
-        <div class="club-grid">
-          <article class="club-card" v-for="club in clubs" :key="club.id">
-            <div class="club-card__logo">{{ shortName(club.name) }}</div>
-            <div class="club-card__body">
-              <div class="club-card__title">
-                <h3>{{ club.name }}</h3>
-                <el-tag size="small" :type="statusType(club.recruitmentStatus)">
-                  {{ recruitmentStatusText(club.recruitmentStatus || 'unknown') }}
-                </el-tag>
+    <section class="site-system-section">
+      <div class="container clubs-shell">
+        <SiteSectionHeading
+          eyebrow="浏览"
+          title="全部社团"
+          description="通过名称和分类快速找到你感兴趣的社团。"
+        />
+        <el-skeleton :loading="loading" animated :rows="6">
+          <div class="club-grid">
+            <article class="club-card" v-for="club in clubs" :key="club.id">
+              <div class="club-card__logo">{{ shortName(club.name) }}</div>
+              <div class="club-card__body">
+                <div class="club-card__title">
+                  <h3>{{ club.name }}</h3>
+                  <el-tag size="small" :type="statusType(club.recruitmentStatus)">
+                    {{ recruitmentStatusText(club.recruitmentStatus || 'unknown') }}
+                  </el-tag>
+                </div>
+                <p>{{ club.description || '该社团暂未填写介绍。' }}</p>
+                <div class="club-card__meta">
+                  <span>编号：{{ club.code || '-' }}</span>
+                  <span>分类：{{ club.category || '-' }}</span>
+                </div>
               </div>
-              <p>{{ club.description || '该社团暂未填写介绍。' }}</p>
-              <div class="club-card__meta">
-                <span>编号：{{ club.code || '-' }}</span>
-                <span>分类：{{ club.category || '-' }}</span>
-              </div>
-            </div>
-          </article>
-        </div>
-      </el-skeleton>
+            </article>
+          </div>
+        </el-skeleton>
+      </div>
     </section>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
-import ViewToolbar from '@/components/common/ViewToolbar.vue'
+import SitePageHero from '@/components/site/shell/SitePageHero.vue'
+import SiteSectionHeading from '@/components/site/shell/SiteSectionHeading.vue'
 import { Search } from '@element-plus/icons-vue'
 import { clubApi } from '@/api'
 import { recruitmentStatusText, statusType } from '@/utils/format.ts'
@@ -86,20 +96,22 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.site-page {
-  padding: 64px 0 80px;
-  background: var(--oa-page-soft-bg);
+.club-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.clubs-shell {
+  display: grid;
+  gap: 32px;
 }
 
 .club-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  overflow: hidden;
-  margin-top: 24px;
-  border: 1px solid var(--oa-border);
-  border-radius: 18px;
-  background: var(--oa-border);
+  gap: 18px;
 }
 
 .club-card {
@@ -109,11 +121,10 @@ onMounted(() => {
   min-height: 260px;
   padding: 24px;
   background: var(--oa-elevated-bg);
-  border: 0;
-  border-radius: 0;
+  border: 1px solid var(--oa-border);
+  border-radius: 24px;
   box-shadow: none;
   backdrop-filter: none;
-  animation: oaFadeUp 0.44s ease both;
   transition: background-color 0.2s ease;
 }
 
