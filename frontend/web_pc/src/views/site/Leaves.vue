@@ -87,6 +87,9 @@
               </div>
 
               <p class="reason-text">{{ item.reason }}</p>
+              <p v-if="item.status === 'rejected'" class="reject-reason">
+                <strong>驳回理由：</strong>{{ rejectionReason(item) }}
+              </p>
 
               <div v-if="imageAttachments(item).length" class="image-grid">
                 <el-image
@@ -184,6 +187,10 @@ function formatRange(startAt: any, endAt: any) {
 function stepDescription(step: any) {
   const parts = [formatDateTime(step.time), step.comment].filter(Boolean)
   return parts.join(' / ')
+}
+
+function rejectionReason(item: any) {
+  return item?.reviewComment || '未填写驳回理由'
 }
 
 function dateKey(value: any) {
@@ -365,6 +372,17 @@ onMounted(() => {
 
 .reason-text {
   line-height: 1.7;
+}
+
+.reject-reason {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 108, 108, 0.28);
+  border-radius: 8px;
+  color: var(--el-color-danger);
+  background: rgba(245, 108, 108, 0.08);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .image-grid {

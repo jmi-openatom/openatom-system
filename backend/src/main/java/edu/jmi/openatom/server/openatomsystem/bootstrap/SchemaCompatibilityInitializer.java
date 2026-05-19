@@ -316,6 +316,16 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             KEY `idx_leave_application_status` (`status`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='请假申请表'
         """);
+    addColumnIfAbsent(
+        "leave_application", "reviewer_id", "INT DEFAULT NULL COMMENT '审批人ID' AFTER `status`");
+    addColumnIfAbsent(
+        "leave_application",
+        "review_comment",
+        "VARCHAR(500) DEFAULT NULL COMMENT '审批意见' AFTER `reviewer_id`");
+    addColumnIfAbsent(
+        "leave_application",
+        "reviewed_at",
+        "TIMESTAMP NULL DEFAULT NULL COMMENT '审批时间' AFTER `review_comment`");
   }
 
   private void ensureSchoolCalendarTables() {

@@ -39,6 +39,9 @@
             </div>
 
             <p class="reason-text">{{ row.reason }}</p>
+            <p v-if="row.status === 'rejected'" class="reject-reason">
+              <strong>驳回理由：</strong>{{ rejectionReason(row) }}
+            </p>
             <p class="muted-line">{{ formatRange(row.startAt, row.endAt) }}</p>
 
             <div v-if="imageAttachments(row).length" class="image-grid">
@@ -100,6 +103,9 @@
           }}</el-tag>
         </div>
         <p class="reason-text">{{ current.reason }}</p>
+        <p v-if="current.status === 'rejected'" class="reject-reason">
+          <strong>驳回理由：</strong>{{ rejectionReason(current) }}
+        </p>
         <el-steps
           direction="vertical"
           :active="flowActive(current)"
@@ -139,7 +145,7 @@
             v-model="reviewForm.comment"
             type="textarea"
             :rows="4"
-            placeholder="可填写审批意见"
+            :placeholder="reviewForm.action === 'approve' ? '可填写审批意见' : '请填写驳回理由'"
           />
         </el-form-item>
       </el-form>
@@ -215,6 +221,10 @@ function stepDescription(step: any) {
   return parts.join(' / ')
 }
 
+function rejectionReason(item: any) {
+  return item?.reviewComment || '未填写驳回理由'
+}
+
 function dateKey(value: any) {
   if (!value) return 'unknown'
   return String(value).slice(0, 10)
@@ -261,6 +271,10 @@ function openReview(row: any, action: any) {
 
 async function submitReview() {
   if (!reviewForm.value.id) return
+  if (reviewForm.value.action === 'reject' && !reviewForm.value.comment.trim()) {
+    ElMessage.warning('请填写驳回理由')
+    return
+  }
   reviewing.value = true
   try {
     await leaveApplicationApi.review(reviewForm.value.id, {
@@ -362,6 +376,17 @@ onMounted(() => {
   margin: 12px 0 0;
   color: var(--oa-muted);
   line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.reject-reason {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 108, 108, 0.28);
+  border-radius: 8px;
+  color: var(--el-color-danger);
+  background: rgba(245, 108, 108, 0.08);
+  line-height: 1.6;
   overflow-wrap: anywhere;
 }
 

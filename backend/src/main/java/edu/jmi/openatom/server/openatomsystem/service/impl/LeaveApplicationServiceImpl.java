@@ -81,9 +81,11 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     if (!"submitted".equals(application.getStatus())) return Result.error(422, "该申请已审批");
     String action = request.getAction() == null ? "" : request.getAction().trim();
     if (!"approve".equals(action) && !"reject".equals(action)) return Result.error(400, "审批动作不合法");
+    String comment = trimToNull(request.getComment());
+    if ("reject".equals(action) && comment == null) return Result.error(400, "请填写驳回理由");
     application.setStatus("approve".equals(action) ? "approved" : "rejected");
     application.setReviewerId(StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null);
-    application.setReviewComment(trimToNull(request.getComment()));
+    application.setReviewComment(comment);
     application.setReviewedAt(Times.now());
     leaveApplicationMapper.updateById(application);
     return Result.success("approve".equals(action) ? "请假申请已通过" : "请假申请已驳回");
