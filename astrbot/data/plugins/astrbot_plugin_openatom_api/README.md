@@ -53,6 +53,7 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 /oa ping
 /oa me
 /oa config
+/oa callback-test
 /oa bind-qq 绑定码
 /艾特机器人发送：我要请假
 /oa ask 社团有多少人

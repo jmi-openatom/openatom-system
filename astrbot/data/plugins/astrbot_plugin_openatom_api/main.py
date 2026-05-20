@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.2.4"
+PLUGIN_VERSION = "1.2.5"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -96,6 +96,26 @@ class OpenAtomApiPlugin(Star):
             f"max_reply_chars: {self.max_reply_chars}\n"
             f"callback: http://{self.callback_host}:{self.callback_port}/openatom/leave-review"
         )
+
+    @oa.command("callback-test", alias={"回调测试"})
+    async def callback_test(self, event: AstrMessageEvent):
+        """测试后端审批回调通知链路"""
+        self._ensure_callback_server()
+        sent = await self._send_leave_status_notification(
+            {
+                "unifiedMsgOrigin": str(getattr(event, "unified_msg_origin", "") or ""),
+                "senderId": self._event_sender_id(event),
+                "leaveId": "TEST",
+                "title": "回调测试",
+            },
+            {
+                "id": "TEST",
+                "status": "approved",
+                "title": "回调测试",
+                "reviewComment": "",
+            },
+        )
+        yield event.plain_result("回调发送测试成功。" if sent else "回调发送测试失败，请查看 AstrBot 日志。")
 
     @oa.command("ping")
     async def ping(self, event: AstrMessageEvent):
@@ -710,15 +730,24 @@ class OpenAtomApiPlugin(Star):
             self.callback_task = None
 
     async def _start_callback_server(self):
-        app = web.Application()
-        app.router.add_post("/openatom/leave-review", self._handle_leave_review_callback)
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, self.callback_host, self.callback_port)
-        await site.start()
-        self.callback_runner = runner
-        self.callback_site = site
-        logger.info(f"OpenAtom leave review callback server started: {self.callback_host}:{self.callback_port}")
+        try:
+            app = web.Application()
+            app.router.add_get("/openatom/health", self._handle_callback_health)
+            app.router.add_post("/openatom/leave-review", self._handle_leave_review_callback)
+            runner = web.AppRunner(app)
+            await runner.setup()
+            site = web.TCPSite(runner, self.callback_host, self.callback_port)
+            await site.start()
+            self.callback_runner = runner
+            self.callback_site = site
+            logger.info(f"OpenAtom leave review callback server started: {self.callback_host}:{self.callback_port}")
+        except Exception as exc:
+            logger.warning(f"OpenAtom leave review callback server failed to start: {exc}")
+            self.callback_runner = None
+            self.callback_site = None
+
+    async def _handle_callback_health(self, request: web.Request) -> web.Response:
+        return web.json_response({"ok": True, "pluginVersion": PLUGIN_VERSION})
 
     async def _handle_leave_review_callback(self, request: web.Request) -> web.Response:
         if self.callback_token:
@@ -746,12 +775,17 @@ class OpenAtomApiPlugin(Star):
         sent = await self._send_leave_status_notification(item, data)
         if not sent:
             return web.json_response({"ok": False, "message": "send failed"}, status=500)
+        logger.info(
+            f"OpenAtom leave review callback sent: leaveId={payload.get('leaveId')}, "
+            f"status={payload.get('status')}, origin={payload.get('botNotifyOrigin')}"
+        )
         return web.json_response({"ok": True})
 
     async def _send_leave_status_notification(self, item: dict[str, Any], data: dict[str, Any]) -> bool:
         origin = str(item.get("unifiedMsgOrigin") or "")
         sender_id = str(item.get("senderId") or "")
         if not origin:
+            logger.warning(f"OpenAtom leave status notification skipped: empty origin, leaveId={data.get('id') or item.get('leaveId')}")
             return True
         leave_id = data.get("id") or item.get("leaveId")
         title = data.get("title") or item.get("title") or "请假申请"

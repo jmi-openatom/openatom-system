@@ -41,7 +41,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
   private final LeaveApplicationMapper leaveApplicationMapper;
   private final HttpClient httpClient = HttpClient.newHttpClient();
 
-  @Value("${app.bot.leave-review-callback-url:}")
+  @Value("${app.bot.leave-review-callback-url:http://astrbot:6198/openatom/leave-review}")
   private String leaveReviewCallbackUrl;
 
   @Value("${app.bot.callback-token:}")
@@ -265,7 +265,14 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
   private void notifyBotReviewResult(LeaveApplication application) {
     String callbackUrl = trimToNull(leaveReviewCallbackUrl);
-    if (callbackUrl == null || trimToNull(application.getBotNotifyOrigin()) == null) return;
+    if (callbackUrl == null) {
+      log.warn("Bot leave review callback skipped: callback url is empty, leaveId={}", application.getId());
+      return;
+    }
+    if (trimToNull(application.getBotNotifyOrigin()) == null) {
+      log.warn("Bot leave review callback skipped: missing notify origin, leaveId={}", application.getId());
+      return;
+    }
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("leaveId", application.getId());
     payload.put("status", application.getStatus());
