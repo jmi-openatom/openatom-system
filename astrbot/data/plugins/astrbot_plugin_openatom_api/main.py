@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 import json
+import inspect
 import re
+from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 import aiohttp
 from astrbot.api import AstrBotConfig, logger
@@ -17,7 +22,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.2.0"
+PLUGIN_VERSION = "1.2.1"
 
 
 @register(
@@ -53,7 +58,7 @@ class OpenAtomApiPlugin(Star):
                     "/oa ping",
                     "/oa me",
                     "/oa bind-qq 绑定码",
-                    "艾特我发送“我要请假”",
+                    "艾特我发送“我要请假 / 请个假 / 今天去不了”",
                     "/oa ask 社团有多少人",
                     "/oa ask 主要人员有哪些",
                     "/oa ask 看一下1号活动",
@@ -129,7 +134,7 @@ class OpenAtomApiPlugin(Star):
 
         session = self.leave_sessions.get(session_key)
         if not session:
-            if text.startswith("/") or "我要请假" not in text:
+            if text.startswith("/") or not self._looks_like_leave_request(text):
                 return
             bound, error = await self._is_qq_bound(sender_id)
             if error:
@@ -168,14 +173,14 @@ class OpenAtomApiPlugin(Star):
             else:
                 session["reason"] = self._excerpt(text, 500)
                 session["step"] = "time"
-                yield event.plain_result("请发送请假时间，格式示例：2026-05-21 18:00 至 2026-05-21 20:00。")
+                yield event.plain_result("请发送请假时间，可以随意写，例如：明晚7点到9点、今天下午、5月21日18点到20点、周五晚上。")
             event.stop_event()
             return
 
         if step == "time":
-            start_at, end_at = self._parse_leave_time(text)
+            start_at, end_at = await self._parse_leave_time_with_ai(event, text)
             if not start_at and not end_at:
-                yield event.plain_result("没有识别到时间。请按示例发送：2026-05-21 18:00 至 2026-05-21 20:00。")
+                yield event.plain_result("没有识别到时间。你可以这样发：明晚7点到9点、今天下午、5月21日18点到20点、周五晚上。")
             else:
                 session["startAt"] = start_at
                 session["endAt"] = end_at
@@ -643,19 +648,328 @@ class OpenAtomApiPlugin(Star):
             return "image/gif"
         return "image/*" if "image" in fallback else ""
 
+    def _looks_like_leave_request(self, text: str) -> bool:
+        value = (text or "").strip().lower()
+        if not value:
+            return False
+        keywords = (
+            "我要请假",
+            "我想请假",
+            "想请假",
+            "请个假",
+            "请假",
+            "假条",
+            "请假条",
+            "请假申请",
+            "要请假",
+            "请一天假",
+            "请半天假",
+            "去不了",
+            "来不了",
+            "到不了",
+            "不能去",
+            "没法去",
+            "没办法去",
+            "不参加",
+            "不能参加",
+            "缺席",
+            "请假一下",
+            "帮我请假",
+        )
+        if any(keyword in value for keyword in keywords):
+            return True
+        return bool(re.search(r"(今天|明天|后天|今晚|明晚|周[一二三四五六日天]|星期[一二三四五六日天]).*(去不了|来不了|缺席|请假)", value))
+
+    async def _parse_leave_time_with_ai(self, event: AstrMessageEvent, text: str) -> tuple[str | None, str | None]:
+        now = datetime.now(ZoneInfo("Asia/Shanghai"))
+        prompt = (
+            "你是请假时间解析器。请把用户输入解析成北京时间的请假开始和结束时间，只输出 JSON，不要解释。\n"
+            f"当前时间：{now.strftime('%Y-%m-%d %H:%M:%S')}，时区：Asia/Shanghai。\n"
+            "输出格式：{\"startAt\":\"YYYY-MM-DD HH:mm:ss 或 null\",\"endAt\":\"YYYY-MM-DD HH:mm:ss 或 null\"}\n"
+            "规则：\n"
+            "1. 理解中文相对时间，例如今天、明天、后天、今晚、明晚、本周五、下周三。\n"
+            "2. 理解模糊时段：上午默认 08:00-12:00，下午默认 14:00-18:00，晚上默认 18:00-22:00。\n"
+            "3. 例如“明晚七点到九点”应解析为明天 19:00 到 21:00；有上下文时不要把晚上九点解析成 09:00。\n"
+            "4. 如果只有一个明确时间，endAt 可以为 null；如果无法判断，两个字段都为 null。\n"
+            f"用户输入：{text}"
+        )
+        try:
+            ai_text = await self._call_llm_text(event, prompt)
+            parsed = self._parse_ai_time_json(ai_text)
+            if parsed:
+                return parsed
+        except Exception as exc:
+            logger.warning(f"OpenAtom leave time AI parse failed, fallback to local parser: {exc}")
+        return self._parse_leave_time(text)
+
+    async def _call_llm_text(self, event: AstrMessageEvent, prompt: str) -> str:
+        context = self.context
+        origin = getattr(event, "unified_msg_origin", None)
+        provider = None
+
+        for method_name in ("get_using_provider", "get_default_provider"):
+            method = getattr(context, method_name, None)
+            if not callable(method):
+                continue
+            try:
+                provider = await self._maybe_await_call(method, umo=origin)
+            except TypeError:
+                provider = None
+            if provider is None:
+                try:
+                    provider = await self._maybe_await_call(method)
+                except TypeError:
+                    provider = None
+            if provider is not None:
+                break
+
+        if provider is not None:
+            for method_name in ("text_chat", "chat", "generate", "ask"):
+                method = getattr(provider, method_name, None)
+                if not callable(method):
+                    continue
+                result = await self._try_llm_call(method, prompt, origin)
+                text = self._llm_result_to_text(result)
+                if text:
+                    return text
+
+        for method_name in ("llm_generate", "text_chat", "chat", "generate", "ask"):
+            method = getattr(context, method_name, None)
+            if not callable(method):
+                continue
+            result = await self._try_llm_call(method, prompt, origin)
+            text = self._llm_result_to_text(result)
+            if text:
+                return text
+
+        return ""
+
+    async def _try_llm_call(self, method: Any, prompt: str, origin: Any) -> Any:
+        attempts = (
+            {"prompt": prompt, "session_id": origin},
+            {"prompt": prompt},
+            {"message": prompt, "session_id": origin},
+            {"message": prompt},
+            {},
+        )
+        last_error: Exception | None = None
+        for kwargs in attempts:
+            try:
+                if kwargs:
+                    return await self._maybe_await_call(method, **kwargs)
+                return await self._maybe_await_call(method, prompt)
+            except TypeError as exc:
+                last_error = exc
+                continue
+        if last_error:
+            raise last_error
+        return None
+
+    async def _maybe_await_call(self, method: Any, *args: Any, **kwargs: Any) -> Any:
+        value = method(*args, **kwargs)
+        if inspect.isawaitable(value):
+            return await value
+        return value
+
+    def _llm_result_to_text(self, result: Any) -> str:
+        if result is None:
+            return ""
+        if isinstance(result, str):
+            return result.strip()
+        for name in ("completion_text", "text", "content", "result", "message"):
+            value = getattr(result, name, None)
+            if value:
+                return str(value).strip()
+        if isinstance(result, dict):
+            for key in ("completion_text", "text", "content", "result", "message"):
+                value = result.get(key)
+                if value:
+                    return str(value).strip()
+        return str(result).strip()
+
+    def _parse_ai_time_json(self, text: str) -> tuple[str | None, str | None] | None:
+        if not text:
+            return None
+        content = str(text).strip()
+        fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.S)
+        if fence:
+            content = fence.group(1)
+        else:
+            match = re.search(r"\{.*\}", content, re.S)
+            if match:
+                content = match.group(0)
+        try:
+            data = json.loads(content)
+        except Exception:
+            return None
+        if not isinstance(data, dict):
+            return None
+        start_at = self._normalize_ai_datetime(data.get("startAt") or data.get("start_at"))
+        end_at = self._normalize_ai_datetime(data.get("endAt") or data.get("end_at"))
+        if not start_at and not end_at:
+            return None
+        return start_at, end_at
+
+    def _normalize_ai_datetime(self, value: Any) -> str | None:
+        if value in (None, "", "null"):
+            return None
+        normalized = self._normalize_datetime(str(value))
+        if normalized and re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$", normalized):
+            return normalized
+        return None
+
     def _parse_leave_time(self, text: str) -> tuple[str | None, str | None]:
-        values = re.findall(r"\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}(?:[ T]\\d{1,2}:\\d{2}(?::\\d{2})?)?", text or "")
-        normalized = [self._normalize_datetime(value) for value in values]
-        normalized = [value for value in normalized if value]
-        if len(normalized) >= 2:
-            return normalized[0], normalized[1]
-        if len(normalized) == 1:
-            return normalized[0], None
-        return None, None
+        raw = self._normalize_chinese_time_text((text or "").strip())
+        if not raw:
+            return None, None
+        now = datetime.now(ZoneInfo("Asia/Shanghai"))
+        base_date = self._parse_leave_date(raw, now)
+        explicit_values = self._parse_explicit_datetimes(raw, now)
+        if len(explicit_values) >= 2:
+            return explicit_values[0], explicit_values[1]
+        if len(explicit_values) == 1:
+            first = explicit_values[0]
+            date_part = first[:10]
+            time_range = self._parse_time_range(raw)
+            if time_range and len(time_range) >= 2:
+                return f"{date_part} {time_range[0]}", f"{date_part} {time_range[1]}"
+            return first, None
+
+        if base_date is None:
+            return None, None
+        time_range = self._parse_time_range(raw)
+        if time_range and len(time_range) >= 2:
+            return self._combine_date_time(base_date, time_range[0]), self._combine_date_time(base_date, time_range[1])
+        if time_range and len(time_range) == 1:
+            return self._combine_date_time(base_date, time_range[0]), None
+
+        default_range = self._default_time_range(raw)
+        return self._combine_date_time(base_date, default_range[0]), self._combine_date_time(base_date, default_range[1])
+
+    def _parse_explicit_datetimes(self, text: str, now: datetime) -> list[str]:
+        values: list[str] = []
+        full_pattern = r"(?:(\d{4})[-/年])?(\d{1,2})[-/月](\d{1,2})日?(?:\s*(上午|中午|下午|晚上|晚|早上|傍晚)?\s*(\d{1,2})(?:[:：点时](\d{1,2}))?)?"
+        for match in re.finditer(full_pattern, text):
+            year, month, day, period, hour, minute = match.groups()
+            if hour is None and not re.search(r"[-/年月日]", match.group(0)):
+                continue
+            date_value = datetime(int(year or now.year), int(month), int(day), tzinfo=now.tzinfo)
+            if hour is None:
+                values.append(self._combine_date_time(date_value, "00:00:00"))
+            else:
+                values.append(self._combine_date_time(date_value, self._normalize_time(hour, minute, period)))
+        return values
+
+    def _parse_leave_date(self, text: str, now: datetime) -> datetime | None:
+        compact = text.replace(" ", "")
+        if any(word in compact for word in ("今天", "今日", "今晚")):
+            return now
+        if any(word in compact for word in ("明天", "明日", "明晚")):
+            return now + timedelta(days=1)
+        if "后天" in compact:
+            return now + timedelta(days=2)
+        month_day = re.search(r"(?:(\d{4})年)?(\d{1,2})月(\d{1,2})[日号]?", compact)
+        if month_day:
+            year, month, day = month_day.groups()
+            return datetime(int(year or now.year), int(month), int(day), tzinfo=now.tzinfo)
+        slash_day = re.search(r"(?:(\d{4})[-/])?(\d{1,2})[-/](\d{1,2})", compact)
+        if slash_day:
+            year, month, day = slash_day.groups()
+            return datetime(int(year or now.year), int(month), int(day), tzinfo=now.tzinfo)
+        day_only = re.search(r"(\d{1,2})[号日]", compact)
+        if day_only:
+            candidate = datetime(now.year, now.month, int(day_only.group(1)), tzinfo=now.tzinfo)
+            if candidate.date() < now.date():
+                month = now.month + 1
+                year = now.year + (1 if month > 12 else 0)
+                month = 1 if month > 12 else month
+                candidate = datetime(year, month, int(day_only.group(1)), tzinfo=now.tzinfo)
+            return candidate
+        week_map = {"一": 0, "二": 1, "三": 2, "四": 3, "五": 4, "六": 5, "日": 6, "天": 6}
+        week_match = re.search(r"(?:下?周|星期)([一二三四五六日天])", compact)
+        if week_match:
+            target = week_map[week_match.group(1)]
+            delta = (target - now.weekday()) % 7
+            if delta == 0 or "下周" in compact:
+                delta += 7
+            return now + timedelta(days=delta)
+        if re.search(r"\d{1,2}(?:[:：点时]\d{0,2})", compact):
+            return now
+        return None
+
+    def _parse_time_range(self, text: str) -> list[str]:
+        matches: list[tuple[str, str, str | None]] = []
+        time_pattern = r"(?<![月/\-])(?:(上午|中午|下午|晚上|晚|早上|傍晚)\s*)?(\d{1,2})(?:[:：](\d{2})|[点时](\d{1,2})?)"
+        last_period = ""
+        for period, hour, minute1, minute2 in re.findall(time_pattern, text):
+            if period:
+                last_period = period
+            elif last_period in {"下午", "晚上", "晚", "傍晚", "上午", "早上", "中午"}:
+                period = last_period
+            matches.append((period, hour, minute1 or minute2 or "0"))
+        if not matches:
+            range_match = re.search(r"(上午|中午|下午|晚上|晚|早上|傍晚)?\s*(\d{1,2})\s*(?:到|至|-|~)\s*(\d{1,2})", text)
+            if range_match:
+                period, start_hour, end_hour = range_match.groups()
+                matches.extend([(period or "", start_hour, "0"), (period or "", end_hour, "0")])
+        period_only = re.search(r"(上午|中午|下午|晚上|晚|早上|傍晚)", text)
+        if not matches and period_only:
+            return list(self._default_time_range(period_only.group(1)))
+        times = [self._normalize_time(hour, minute, period) for period, hour, minute in matches]
+        return [time for time in times if time]
+
+    def _normalize_chinese_time_text(self, text: str) -> str:
+        numbers = {
+            "零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5,
+            "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
+        }
+
+        def convert(value: str) -> str:
+            if value == "十":
+                return "10"
+            if value.startswith("十"):
+                return str(10 + numbers.get(value[-1], 0))
+            if value.endswith("十"):
+                return str(numbers.get(value[0], 0) * 10)
+            if "十" in value:
+                left, right = value.split("十", 1)
+                return str(numbers.get(left, 1) * 10 + numbers.get(right, 0))
+            return str(numbers.get(value, value))
+
+        text = re.sub(r"([一二两三四五六七八九十]{1,3})(?=点|时)", lambda m: convert(m.group(1)), text)
+        text = re.sub(r"(\d{1,2})[点时]半", r"\1点30", text)
+        return text
+
+    def _normalize_time(self, hour: str, minute: str | None, period: str | None) -> str:
+        h = int(hour)
+        m = int(minute or 0)
+        p = period or ""
+        if p in {"下午", "晚上", "晚", "傍晚"} and h < 12:
+            h += 12
+        if p == "中午" and h < 11:
+            h += 12
+        if h > 23 or m > 59:
+            return ""
+        return f"{h:02d}:{m:02d}:00"
+
+    def _default_time_range(self, text: str) -> tuple[str, str]:
+        compact = text.replace(" ", "")
+        if any(word in compact for word in ("早上", "上午")):
+            return "08:00:00", "12:00:00"
+        if "中午" in compact:
+            return "12:00:00", "14:00:00"
+        if "下午" in compact:
+            return "14:00:00", "18:00:00"
+        if any(word in compact for word in ("晚上", "晚", "今晚", "明晚")):
+            return "18:00:00", "22:00:00"
+        return "00:00:00", "23:59:00"
+
+    def _combine_date_time(self, date_value: datetime, time_value: str) -> str:
+        return f"{date_value.year:04d}-{date_value.month:02d}-{date_value.day:02d} {time_value}"
 
     def _normalize_datetime(self, value: str) -> str | None:
         value = (value or "").strip().replace("/", "-").replace("T", " ")
-        match = re.match(r"(\\d{4})-(\\d{1,2})-(\\d{1,2})(?:\\s+(\\d{1,2}):(\\d{2})(?::(\\d{2}))?)?", value)
+        match = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?", value)
         if not match:
             return None
         year, month, day, hour, minute, second = match.groups()
