@@ -376,6 +376,7 @@ public class UserServiceImpl implements UserService {
         .studentId(user.getStudentId()).college(user.getCollege()).major(user.getMajor())
         .grade(user.getGrade()).className(user.getClassName()).avatar(user.getAvatar())
         .miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
+        .qqOpenid(isBlank(user.getQqOpenid()) ? null : "BOUND")
         .userStatus(user.getUserStatus()).createTime(user.getCreateTime())
         .lastLoginAt(user.getLastLoginAt()).build();
   }

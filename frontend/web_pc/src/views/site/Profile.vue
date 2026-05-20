@@ -101,9 +101,10 @@
             <div class="qq-bind-box">
               <div>
                 <strong>QQ 机器人绑定</strong>
-                <span>生成一次性绑定码后，发给 QQ 机器人完成绑定。</span>
+                <span>{{ user.qqOpenid ? '当前账号已绑定 QQ，可在需要时解绑后重新绑定。' : '生成一次性绑定码后，发给 QQ 机器人完成绑定。' }}</span>
               </div>
               <el-button
+                v-if="!user.qqOpenid"
                 :loading="qqTokenLoading"
                 plain
                 type="primary"
@@ -111,9 +112,12 @@
               >
                 生成绑定码
               </el-button>
+              <el-button v-else :loading="qqUnbindLoading" plain type="danger" @click="unbindQq">
+                解除绑定
+              </el-button>
             </div>
 
-            <div v-if="qqBindToken" class="qq-token-card">
+            <div v-if="!user.qqOpenid && qqBindToken" class="qq-token-card">
               <span>绑定码</span>
               <strong>{{ qqBindToken }}</strong>
               <p>请在 {{ qqTokenMinutes }} 分钟内向机器人发送：</p>
@@ -188,6 +192,7 @@ const applications = ref<any[]>([])
 const submitting = ref(false)
 const avatarUploading = ref(false)
 const qqTokenLoading = ref(false)
+const qqUnbindLoading = ref(false)
 const qqBindToken = ref('')
 const qqBindExpiresIn = ref(0)
 const avatarInputRef = ref<HTMLInputElement>()
@@ -290,9 +295,23 @@ async function generateQqBindToken() {
     qqBindExpiresIn.value = Number(result?.expiresIn || 0)
     if (qqBindToken.value) {
       ElMessage.success('QQ 绑定码已生成')
+      await fetchProfile()
     }
   } finally {
     qqTokenLoading.value = false
+  }
+}
+
+async function unbindQq() {
+  try {
+    qqUnbindLoading.value = true
+    await authApi.unbindQq()
+    qqBindToken.value = ''
+    qqBindExpiresIn.value = 0
+    await fetchProfile()
+    ElMessage.success('QQ 绑定已解除')
+  } finally {
+    qqUnbindLoading.value = false
   }
 }
 
