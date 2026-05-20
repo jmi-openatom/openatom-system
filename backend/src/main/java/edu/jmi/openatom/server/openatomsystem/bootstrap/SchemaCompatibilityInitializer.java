@@ -86,7 +86,10 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
         "tb_user", "miniapp_openid", "VARCHAR(80) DEFAULT NULL COMMENT '微信小程序openid' AFTER `avatar`");
     addColumnIfAbsent(
         "tb_user", "wechat_unionid", "VARCHAR(80) DEFAULT NULL COMMENT '微信unionid' AFTER `miniapp_openid`");
+    addColumnIfAbsent(
+        "tb_user", "qq_openid", "VARCHAR(80) DEFAULT NULL COMMENT 'QQ号/QQ OpenID' AFTER `wechat_unionid`");
     addIndexIfAbsent("tb_user", "uk_miniapp_openid", "UNIQUE KEY `uk_miniapp_openid` (`miniapp_openid`)");
+    addIndexIfAbsent("tb_user", "uk_qq_openid", "UNIQUE KEY `uk_qq_openid` (`qq_openid`)");
   }
 
   private void ensureRecruitmentCampaignColumns() {

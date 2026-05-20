@@ -39,6 +39,12 @@ export const authApi = {
   me(): Promise<any> {
     return request.get('/auth/me')
   },
+  createQqBindToken(): Promise<any> {
+    return request.post('/auth/qq-bind-token')
+  },
+  unbindQq(): Promise<any> {
+    return request.delete('/auth/qq-bind')
+  },
   updateRegisterEnabled(enabled: boolean): Promise<any> {
     return request.patch('/auth/register-enabled', null, { params: { enabled } })
   },

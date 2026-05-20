@@ -92,6 +92,33 @@
                 <span>当前申请</span>
                 <strong>{{ activeApplicationCount }}</strong>
               </div>
+              <div class="workspace-inline-stat">
+                <span>QQ 绑定</span>
+                <strong>{{ user.qqOpenid ? '已绑定' : '未绑定' }}</strong>
+              </div>
+            </div>
+
+            <div class="qq-bind-box">
+              <div>
+                <strong>QQ 机器人绑定</strong>
+                <span>生成一次性绑定码后，发给 QQ 机器人完成绑定。</span>
+              </div>
+              <el-button
+                :loading="qqTokenLoading"
+                plain
+                type="primary"
+                @click="generateQqBindToken"
+              >
+                生成绑定码
+              </el-button>
+            </div>
+
+            <div v-if="qqBindToken" class="qq-token-card">
+              <span>绑定码</span>
+              <strong>{{ qqBindToken }}</strong>
+              <p>请在 {{ qqTokenMinutes }} 分钟内向机器人发送：</p>
+              <code>/oa bind-qq {{ qqBindToken }}</code>
+              <el-button link type="primary" @click="copyQqBindCommand">复制命令</el-button>
             </div>
 
             <div class="btn-group">
@@ -160,6 +187,9 @@ const applications = ref<any[]>([])
 
 const submitting = ref(false)
 const avatarUploading = ref(false)
+const qqTokenLoading = ref(false)
+const qqBindToken = ref('')
+const qqBindExpiresIn = ref(0)
 const avatarInputRef = ref<HTMLInputElement>()
 
 const passwordForm = ref({
@@ -202,6 +232,8 @@ const activeStatuses = new Set([
 const activeApplicationCount = computed(() =>
   applications.value.filter((item) => activeStatuses.has(item.status)).length,
 )
+
+const qqTokenMinutes = computed(() => Math.max(1, Math.ceil(qqBindExpiresIn.value / 60)))
 
 const profileCompletion = computed(() => {
   const fields = [user.value.realName, user.value.email, user.value.phone, user.value.avatar]
@@ -248,6 +280,26 @@ async function logout() {
   await authApi.logout()
   clearSession()
   router.push('/admin/login')
+}
+
+async function generateQqBindToken() {
+  try {
+    qqTokenLoading.value = true
+    const result = await authApi.createQqBindToken()
+    qqBindToken.value = result?.token || ''
+    qqBindExpiresIn.value = Number(result?.expiresIn || 0)
+    if (qqBindToken.value) {
+      ElMessage.success('QQ 绑定码已生成')
+    }
+  } finally {
+    qqTokenLoading.value = false
+  }
+}
+
+async function copyQqBindCommand() {
+  const command = `/oa bind-qq ${qqBindToken.value}`
+  await navigator.clipboard?.writeText(command)
+  ElMessage.success('已复制绑定命令')
 }
 
 function chooseAvatar() {
@@ -379,8 +431,63 @@ onMounted(() => {
 
 .security-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
+}
+
+.qq-bind-box {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+  background: var(--oa-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.qq-bind-box > div {
+  display: grid;
+  gap: 6px;
+}
+
+.qq-bind-box strong,
+.qq-token-card strong {
+  color: var(--oa-text);
+}
+
+.qq-bind-box span,
+.qq-token-card span,
+.qq-token-card p {
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.qq-token-card {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+}
+
+.qq-token-card > strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 24px;
+  letter-spacing: 3px;
+}
+
+.qq-token-card code {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--oa-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  white-space: normal;
+  word-break: break-all;
 }
 
 .btn-group {
@@ -398,6 +505,11 @@ onMounted(() => {
 @media (max-width: 640px) {
   .security-grid {
     grid-template-columns: 1fr;
+  }
+
+  .qq-bind-box {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 </style>

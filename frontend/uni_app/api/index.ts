@@ -41,6 +41,12 @@ export const authApi = {
   miniappBind(data: Record<string, unknown>) {
     return request.post('/auth/miniapp-bind', data)
   },
+  createQqBindToken() {
+    return request.post('/auth/qq-bind-token')
+  },
+  unbindQq() {
+    return request.delete('/auth/qq-bind')
+  },
   register(data: Record<string, unknown>) {
     return request.post('/auth/register', data)
   },

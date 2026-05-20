@@ -1,0 +1,25 @@
+{
+  "base_url": {
+    "description": "OpenAtom System 后端 API Base URL",
+    "type": "string",
+    "default": "http://backend:8921/api/v1",
+    "hint": "随项目 docker-compose 部署时使用 http://backend:8921/api/v1；如果 AstrBot 单独部署在宿主机上，可改为 http://host.docker.internal:8921/api/v1 或实际后端地址。"
+  },
+  "access_token": {
+    "description": "后端 accessToken",
+    "type": "string",
+    "default": "",
+    "hint": "只读接口可以留空；如果要读取需要登录的 GET 接口，请在 AstrBot 后台手动填写已有 token。插件不会登录或刷新 token，避免写入后端数据。"
+  },
+  "timeout_seconds": {
+    "description": "请求超时时间（秒）",
+    "type": "int",
+    "default": 15
+  },
+  "max_reply_chars": {
+    "description": "单次回复最大字符数",
+    "type": "int",
+    "default": 0,
+    "hint": "0 表示不截断，确保所有获取到的数据都会语义化输出。"
+  }
+}

@@ -21,6 +21,7 @@ import edu.jmi.openatom.server.openatomsystem.service.UserService;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,6 +41,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
+  private static final DataFormatter CELL_FORMATTER = new DataFormatter();
 
   private final UserMapper userMapper;
   private final RoleMapper roleMapper;
@@ -111,27 +113,32 @@ public class UserServiceImpl implements UserService {
       int rowCount = sheet.getPhysicalNumberOfRows();
       if (rowCount <= 1) return Result.error("Excel 数据为空");
       List<User> userList = new ArrayList<>();
+      Set<String> existingLoginIds = loadExistingLoginIds();
       Set<String> importedLoginIds = new LinkedHashSet<>();
       int skippedInvalidCount = 0;
       int skippedDuplicateCount = 0;
       for (int i = 1; i < rowCount; i++) {
         Row row = sheet.getRow(i);
         if (row == null) continue;
-        String userName = normalizeCellValue(row.getCell(0));
+        Cell userNameCell = row.getCell(0);
+        Cell studentIdCell = row.getCell(2);
+        String userName = normalizeAccountCellValue(userNameCell);
         String realName = normalizeCellValue(row.getCell(1));
-        String studentId = normalizeCellValue(row.getCell(2));
+        String studentId = normalizeAccountCellValue(studentIdCell);
         String phone = normalizeCellValue(row.getCell(3));
         String email = normalizeCellValue(row.getCell(4));
         String college = normalizeCellValue(row.getCell(5));
         String major = normalizeCellValue(row.getCell(6));
         String grade = normalizeCellValue(row.getCell(7));
         String className = normalizeCellValue(row.getCell(8));
-        if (isBlank(userName) || isBlank(realName)) {
+        if (isBlank(userName) || isBlank(realName)
+            || isDateLikeAccountCell(userNameCell) || isDateLikeAccountCell(studentIdCell)) {
           skippedInvalidCount++;
           continue;
         }
         if (isBlank(studentId)) studentId = userName;
-        if (existsByUsernameOrStudentId(userName, studentId)
+        if (existingLoginIds.contains(userName)
+            || existingLoginIds.contains(studentId)
             || importedLoginIds.contains(userName)
             || importedLoginIds.contains(studentId)) {
           skippedDuplicateCount++;
@@ -144,6 +151,8 @@ public class UserServiceImpl implements UserService {
         userList.add(user);
         importedLoginIds.add(userName);
         importedLoginIds.add(studentId);
+        existingLoginIds.add(userName);
+        existingLoginIds.add(studentId);
       }
       if (!userList.isEmpty()) {
         for (User user : userList) {
@@ -226,19 +235,31 @@ public class UserServiceImpl implements UserService {
 
   private String getCellValue(Cell cell) {
     if (cell == null) return "";
-    switch (cell.getCellType()) {
-      case STRING: return cell.getStringCellValue();
-      case NUMERIC:
-        if (DateUtil.isCellDateFormatted(cell)) return cell.getDateCellValue().toString();
-        return String.valueOf((long) cell.getNumericCellValue());
-      case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
-      case FORMULA: return cell.getCellFormula();
-      default: return "";
-    }
+    return CELL_FORMATTER.formatCellValue(cell);
   }
 
   private String normalizeCellValue(Cell cell) {
     return getCellValue(cell).trim();
+  }
+
+  private String normalizeAccountCellValue(Cell cell) {
+    if (isDateLikeAccountCell(cell)) return "";
+    return normalizeCellValue(cell);
+  }
+
+  private boolean isDateLikeAccountCell(Cell cell) {
+    return cell != null
+        && cell.getCellType() == CellType.NUMERIC
+        && DateUtil.isCellDateFormatted(cell);
+  }
+
+  private Set<String> loadExistingLoginIds() {
+    Set<String> loginIds = new HashSet<>();
+    userMapper.selectList(null).forEach(user -> {
+      if (!isBlank(user.getUserName())) loginIds.add(user.getUserName().trim());
+      if (!isBlank(user.getStudentId())) loginIds.add(user.getStudentId().trim());
+    });
+    return loginIds;
   }
 
   @Override

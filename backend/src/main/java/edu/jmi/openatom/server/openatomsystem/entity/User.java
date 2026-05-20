@@ -55,6 +55,9 @@ public class User {
   @TableField("wechat_unionid")
   private String wechatUnionid;
 
+  @TableField("qq_openid")
+  private String qqOpenid;
+
   @TableField("user_status")
   private UserStatus userStatus;
 

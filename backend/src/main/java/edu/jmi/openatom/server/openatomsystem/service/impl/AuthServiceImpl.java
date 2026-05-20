@@ -9,11 +9,13 @@ import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.web.ClientIpResolver;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestChangePasswordDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestConfirmQqBindDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
@@ -58,6 +60,8 @@ public class AuthServiceImpl implements AuthService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
   private static final String REFRESH_TOKEN_KEY_PREFIX = "openatom:refresh:token:";
   private static final String REFRESH_USER_KEY_PREFIX = "openatom:refresh:user:";
+  private static final String QQ_BIND_TOKEN_KEY_PREFIX = "openatom:qq-bind:token:";
+  private static final long QQ_BIND_TOKEN_TIMEOUT_SECONDS = 10 * 60L;
   private static final String MINIAPP_SESSION_URL = "https://api.weixin.qq.com/sns/jscode2session";
 
   private final UserMapper userMapper;
@@ -194,6 +198,67 @@ public class AuthServiceImpl implements AuthService {
     }
     userMapper.updateById(currentUser);
     return Result.success("微信绑定成功");
+  }
+
+  @Override
+  public Result<ResponseQqBindTokenVO> createQqBindToken() {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录后生成QQ绑定码");
+    Integer currentUserId = StpUtil.getLoginIdAsInt();
+    User currentUser = userMapper.selectById(currentUserId);
+    if (currentUser == null) return Result.error(404, "用户不存在");
+
+    String token = generateQqBindToken();
+    SaManager.getSaTokenDao()
+        .set(getQqBindTokenKey(token), String.valueOf(currentUserId), QQ_BIND_TOKEN_TIMEOUT_SECONDS);
+    return Result.success(
+        ResponseQqBindTokenVO.builder()
+            .token(token)
+            .expiresIn((int) QQ_BIND_TOKEN_TIMEOUT_SECONDS)
+            .build(),
+        "QQ绑定码已生成");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> confirmQqBind(RequestConfirmQqBindDTO requestConfirmQqBindDTO) {
+    if (requestConfirmQqBindDTO == null || isBlank(requestConfirmQqBindDTO.getToken())) {
+      return Result.error("绑定码不能为空");
+    }
+    String qqOpenid = normalizeQqOpenid(
+        requestConfirmQqBindDTO == null ? null : requestConfirmQqBindDTO.getQqOpenid());
+    if (qqOpenid == null) return Result.error("QQ号格式不正确");
+
+    String token = normalizeQqBindToken(requestConfirmQqBindDTO.getToken());
+    if (token == null) return Result.error("绑定码格式不正确");
+    SaTokenDao tokenDao = SaManager.getSaTokenDao();
+    String userIdValue = tokenDao.get(getQqBindTokenKey(token));
+    if (userIdValue == null) {
+      return Result.error(401, "绑定码无效或已过期");
+    }
+    tokenDao.delete(getQqBindTokenKey(token));
+
+    User currentUser = userMapper.selectById(Integer.valueOf(userIdValue));
+    if (currentUser == null) return Result.error(404, "用户不存在");
+    User boundUser = userMapper.selectByQqOpenid(qqOpenid);
+    if (boundUser != null && !boundUser.getId().equals(currentUser.getId())) {
+      return Result.error(409, "该QQ已绑定其他账号");
+    }
+
+    currentUser.setQqOpenid(qqOpenid);
+    userMapper.updateById(currentUser);
+    return Result.success("QQ绑定成功");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> unbindQq() {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录后解绑QQ");
+    Integer currentUserId = StpUtil.getLoginIdAsInt();
+    User currentUser = userMapper.selectById(currentUserId);
+    if (currentUser == null) return Result.error(404, "用户不存在");
+    currentUser.setQqOpenid(null);
+    userMapper.updateById(currentUser);
+    return Result.success("QQ解绑成功");
   }
 
   @Override
@@ -455,7 +520,41 @@ public class AuthServiceImpl implements AuthService {
         .grade(user.getGrade()).className(user.getClassName()).avatar(user.getAvatar())
         .userStatus(user.getUserStatus())
         .miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
+        .qqOpenid(isBlank(user.getQqOpenid()) ? null : "BOUND")
         .createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt()).build();
+  }
+
+  private String normalizeQqOpenid(String qqOpenid) {
+    if (qqOpenid == null) return null;
+    String trimmed = qqOpenid.trim();
+    if (trimmed.isEmpty() || trimmed.length() > 80) return null;
+    return trimmed;
+  }
+
+  private String normalizeQqBindToken(String token) {
+    if (token == null) return null;
+    String trimmed = token.trim().toUpperCase();
+    if (!trimmed.matches("[A-Z0-9]{8}")) return null;
+    return trimmed;
+  }
+
+  private String generateQqBindToken() {
+    String alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    String token;
+    do {
+      String random = UUID.randomUUID().toString().replace("-", "").toUpperCase();
+      StringBuilder builder = new StringBuilder();
+      for (int i = 0; i < 8; i++) {
+        int index = Integer.parseInt(random.substring(i * 2, i * 2 + 2), 16) % alphabet.length();
+        builder.append(alphabet.charAt(index));
+      }
+      token = builder.toString();
+    } while (SaManager.getSaTokenDao().get(getQqBindTokenKey(token)) != null);
+    return token;
+  }
+
+  private String getQqBindTokenKey(String token) {
+    return QQ_BIND_TOKEN_KEY_PREFIX + token;
   }
 
   private String encode(String value) {

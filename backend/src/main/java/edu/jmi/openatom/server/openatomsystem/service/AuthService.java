@@ -2,12 +2,14 @@ package edu.jmi.openatom.server.openatomsystem.service;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestChangePasswordDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestConfirmQqBindDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -23,6 +25,12 @@ public interface AuthService {
   Result<ResponseLoginVO> miniappLogin(RequestMiniappLoginDTO requestMiniappLoginDTO);
 
   Result<String> bindMiniapp(RequestMiniappLoginDTO requestMiniappLoginDTO);
+
+  Result<ResponseQqBindTokenVO> createQqBindToken();
+
+  Result<String> confirmQqBind(RequestConfirmQqBindDTO requestConfirmQqBindDTO);
+
+  Result<String> unbindQq();
 
   Result<ResponseLoginVO> refreshToken(String refreshToken);
 

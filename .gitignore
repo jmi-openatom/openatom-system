@@ -5,6 +5,18 @@ dist/
 log/
 uploads/
 
+# AstrBot runtime data. Keep the OpenAtom plugin source deployable, but do not
+# commit local runtime databases, logs, generated dashboard assets, QQ cache, etc.
+astrbot/data/*
+!astrbot/data/plugins/
+astrbot/data/plugins/*
+!astrbot/data/plugins/astrbot_plugin_openatom_api/
+!astrbot/data/plugins/astrbot_plugin_openatom_api/**
+astrbot/napcat/config/*
+!astrbot/napcat/config/.gitkeep
+astrbot/ntqq/*
+!astrbot/ntqq/.gitkeep
+
 # dependency package
 node_modules/
 .pnpm-store/

@@ -1,22 +1,22 @@
 <template>
   <ViewPage class="site-system-page">
     <SitePageHero
+      compact
+      description="提交请假理由和图片后，可查看审批流程。"
       eyebrow="请假申请"
       title="我的请假"
-      description="提交请假理由和图片后，可查看审批流程。"
-      compact
     />
 
     <section class="site-system-section">
       <div class="container leave-page">
         <div class="leave-main site-system-surface site-reveal">
           <SiteSectionHeading
+            align="left"
+            description="按要求填写时间、理由和图片附件。"
             eyebrow="新申请"
             title="提交请假"
-            description="按要求填写时间、理由和图片附件。"
-            align="left"
           />
-          <el-form ref="formRef" :model="form" :rules="rules" label-width="92px" class="leave-form">
+          <el-form ref="formRef" :model="form" :rules="rules" class="leave-form" label-width="92px">
             <div class="form-grid">
               <el-form-item label="请假标题" prop="title">
                 <el-input v-model="form.title" placeholder="如：例会请假" />
@@ -31,27 +31,27 @@
             <el-form-item label="请假理由" prop="reason">
               <el-input
                 v-model="form.reason"
-                type="textarea"
                 :rows="4"
                 placeholder="请说明具体原因"
+                type="textarea"
               />
             </el-form-item>
             <el-form-item label="图片附件" prop="attachments">
               <el-upload
-                accept="image/*"
                 :auto-upload="false"
                 :file-list="uploadFiles"
                 :limit="5"
-                list-type="picture-card"
                 :on-change="handleAttachmentChange"
                 :on-remove="handleAttachmentRemove"
+                accept="image/*"
+                list-type="picture-card"
               >
                 <el-icon><Plus /></el-icon>
               </el-upload>
               <p class="upload-tip">支持手机拍照或相册选择，最多 5 张，审批人可直接查看原图。</p>
             </el-form-item>
             <el-form-item class="submit-row">
-              <el-button class="submit-button" type="primary" :loading="saving" @click="submit"
+              <el-button :loading="saving" class="submit-button" type="primary" @click="submit"
                 >提交申请</el-button
               >
             </el-form-item>
@@ -64,7 +64,7 @@
               <strong>请假记录</strong>
               <p>按请假日期归档，提交或删除后会更新列表。</p>
             </div>
-            <el-button link type="primary" :icon="Refresh" @click="fetchMine">刷新</el-button>
+            <el-button :icon="Refresh" link type="primary" @click="fetchMine">刷新</el-button>
           </div>
 
           <el-empty v-if="!rows.length" :image-size="78" description="暂无请假申请" />
@@ -95,26 +95,26 @@
                 <el-image
                   v-for="file in imageAttachments(item)"
                   :key="file.name"
+                  :preview-src-list="imagePreviewList(item)"
+                  :src="file.content"
                   class="leave-image"
                   fit="cover"
-                  :src="file.content"
-                  :preview-src-list="imagePreviewList(item)"
                   preview-teleported
                 />
               </div>
 
               <el-steps
+                :active="flowActive(item)"
                 class="flow-steps"
                 direction="vertical"
-                :active="flowActive(item)"
                 finish-status="success"
                 process-status="process"
               >
                 <el-step
                   v-for="step in item.approvalFlow || []"
                   :key="step.node"
-                  :title="step.node"
                   :description="stepDescription(step)"
+                  :title="step.node"
                 />
               </el-steps>
               <div class="card-actions">
@@ -128,15 +128,15 @@
   </ViewPage>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
 import SitePageHero from '@/components/site/shell/SitePageHero.vue'
 import SiteSectionHeading from '@/components/site/shell/SiteSectionHeading.vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh } from '@element-plus/icons-vue'
-import { leaveApplicationApi } from '@/api'
-import { formatDateTime } from '@/utils/format.ts'
-import { computed, onMounted, ref } from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {Plus, Refresh} from '@element-plus/icons-vue'
+import {leaveApplicationApi} from '@/api'
+import {formatDateTime} from '@/utils/format.ts'
+import {computed, onMounted, ref} from 'vue'
 
 const rows = ref<any[]>([])
 
@@ -204,11 +204,11 @@ function dateLabel(value: any) {
 }
 
 function imageAttachments(item: any) {
-  return (item.attachments || []).filter((file) => isImage(file))
+  return (item.attachments || []).filter((file: any) => isImage(file))
 }
 
 function imagePreviewList(item: any) {
-  return imageAttachments(item).map((file) => file.content)
+  return imageAttachments(item).map((file: { content: any }) => file.content)
 }
 
 function isImage(file: any) {

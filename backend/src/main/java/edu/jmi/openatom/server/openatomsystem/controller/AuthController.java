@@ -6,6 +6,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.*;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,22 @@ public class AuthController {
   public Result<String> bindMiniapp(
       @Valid @RequestBody RequestMiniappLoginDTO requestMiniappLoginDTO) {
     return authService.bindMiniapp(requestMiniappLoginDTO);
+  }
+
+  @PostMapping("/qq-bind-token")
+  public Result<ResponseQqBindTokenVO> createQqBindToken() {
+    return authService.createQqBindToken();
+  }
+
+  @PostMapping("/qq-bind/confirm")
+  public Result<String> confirmQqBind(
+      @Valid @RequestBody RequestConfirmQqBindDTO requestConfirmQqBindDTO) {
+    return authService.confirmQqBind(requestConfirmQqBindDTO);
+  }
+
+  @DeleteMapping("/qq-bind")
+  public Result<String> unbindQq() {
+    return authService.unbindQq();
   }
 
   /**
