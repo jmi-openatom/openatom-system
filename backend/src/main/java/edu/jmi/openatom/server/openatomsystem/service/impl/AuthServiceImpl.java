@@ -268,6 +268,13 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
+  public Result<Boolean> isQqBound(String qqOpenid) {
+    String normalized = normalizeQqOpenid(qqOpenid);
+    if (normalized == null) return Result.success(false);
+    return Result.success(userMapper.selectByQqOpenid(normalized) != null);
+  }
+
+  @Override
   @Transactional(rollbackFor = Exception.class)
   public Result<String> unbindQq() {
     if (!StpUtil.isLogin()) return Result.error(401, "请先登录后解绑QQ");

@@ -1,7 +1,7 @@
 name: astrbot_plugin_openatom_api
 desc: 让 AstrBot/NapCat 机器人查询 OpenAtom System 后端公开数据并绑定 QQ
 help: 使用 /oa help 查看指令
-version: v1.1.1
+version: v1.2.0
 author: ariven
 repo: local
 support_platforms:

@@ -30,6 +30,8 @@ public interface AuthService {
 
   Result<String> confirmQqBind(RequestConfirmQqBindDTO requestConfirmQqBindDTO);
 
+  Result<Boolean> isQqBound(String qqOpenid);
+
   Result<String> unbindQq();
 
   Result<ResponseLoginVO> refreshToken(String refreshToken);

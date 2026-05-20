@@ -78,6 +78,11 @@ public class AuthController {
     return authService.confirmQqBind(requestConfirmQqBindDTO);
   }
 
+  @GetMapping("/qq-bind/status")
+  public Result<Boolean> qqBindStatus(@RequestParam String qqOpenid) {
+    return authService.isQqBound(qqOpenid);
+  }
+
   @PostMapping("/qq-bind")
   public Result<String> confirmQqBindCompat(
       @Valid @RequestBody RequestConfirmQqBindDTO requestConfirmQqBindDTO) {

@@ -12,11 +12,12 @@ from astrbot.api.star import Context, Star, register
 SAFE_METHODS = {"GET"}
 BIND_WRITE_PATHS = {
     ("POST", "/auth/qq-bind/confirm"),
+    ("POST", "/bot/leave-applications"),
 }
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.1.1"
+PLUGIN_VERSION = "1.2.0"
 
 
 @register(
@@ -36,6 +37,7 @@ class OpenAtomApiPlugin(Star):
         self.access_token = str(self.config.get("access_token") or "").strip()
         self.timeout = int(self.config.get("timeout_seconds", 15) or 15)
         self.max_reply_chars = int(self.config.get("max_reply_chars", 0) or 0)
+        self.leave_sessions: dict[str, dict[str, Any]] = {}
 
     @filter.command_group("oa", alias={"openatom", "开放原子"})
     def oa(self):
@@ -51,6 +53,7 @@ class OpenAtomApiPlugin(Star):
                     "/oa ping",
                     "/oa me",
                     "/oa bind-qq 绑定码",
+                    "艾特我发送“我要请假”",
                     "/oa ask 社团有多少人",
                     "/oa ask 主要人员有哪些",
                     "/oa ask 看一下1号活动",
@@ -113,6 +116,101 @@ class OpenAtomApiPlugin(Star):
         query = self._parse_query(params)
         data, error = await self._get_data(path, query)
         yield event.plain_result(error or self._format_generic(data))
+
+    @filter.event_message_type(filter.EventMessageType.ALL)
+    async def handle_leave_conversation(self, event: AstrMessageEvent):
+        """处理“@机器人 我要请假”的逐步问答。"""
+        sender_id = self._event_sender_id(event)
+        if not sender_id:
+            return
+        session_key = self._leave_session_key(event, sender_id)
+        text = self._event_plain_text(event).strip()
+        attachments = self._event_attachments(event)
+
+        session = self.leave_sessions.get(session_key)
+        if not session:
+            if text.startswith("/") or "我要请假" not in text:
+                return
+            bound, error = await self._is_qq_bound(sender_id)
+            if error:
+                yield event.plain_result(error)
+                event.stop_event()
+                return
+            if not bound:
+                yield event.plain_result("当前 QQ 还没有绑定系统账号。请先登录网页个人中心生成绑定码，再发送 /oa bind-qq 绑定码。")
+                event.stop_event()
+                return
+            self.leave_sessions[session_key] = {"step": "title", "qqOpenid": sender_id}
+            yield event.plain_result("开始提交请假申请。请先发送请假类型，例如：例会请假、活动请假。发送“取消”可退出。")
+            event.stop_event()
+            return
+
+        if text in {"取消", "退出", "算了", "不请了"}:
+            self.leave_sessions.pop(session_key, None)
+            yield event.plain_result("已取消本次请假申请。")
+            event.stop_event()
+            return
+
+        step = session.get("step")
+        if step == "title":
+            if not text:
+                yield event.plain_result("请发送请假类型，例如：例会请假、活动请假。")
+            else:
+                session["title"] = self._excerpt(text, 80)
+                session["step"] = "reason"
+                yield event.plain_result("请发送请假理由。")
+            event.stop_event()
+            return
+
+        if step == "reason":
+            if not text:
+                yield event.plain_result("请发送请假理由。")
+            else:
+                session["reason"] = self._excerpt(text, 500)
+                session["step"] = "time"
+                yield event.plain_result("请发送请假时间，格式示例：2026-05-21 18:00 至 2026-05-21 20:00。")
+            event.stop_event()
+            return
+
+        if step == "time":
+            start_at, end_at = self._parse_leave_time(text)
+            if not start_at and not end_at:
+                yield event.plain_result("没有识别到时间。请按示例发送：2026-05-21 18:00 至 2026-05-21 20:00。")
+            else:
+                session["startAt"] = start_at
+                session["endAt"] = end_at
+                session["step"] = "attachments"
+                yield event.plain_result("请发送请假附件图片，或发送图片链接。")
+            event.stop_event()
+            return
+
+        if step == "attachments":
+            if not attachments:
+                yield event.plain_result("请发送图片附件或图片链接，附件不能为空。")
+                event.stop_event()
+                return
+            session["attachments"] = attachments[:5]
+            result = await self._request(
+                "POST",
+                "/bot/leave-applications",
+                body={
+                    "qqOpenid": session["qqOpenid"],
+                    "title": session["title"],
+                    "reason": session["reason"],
+                    "startAt": session.get("startAt"),
+                    "endAt": session.get("endAt"),
+                    "attachments": session["attachments"],
+                },
+            )
+            self.leave_sessions.pop(session_key, None)
+            if result["ok"]:
+                body = result.get("body")
+                leave_id = body.get("data") if isinstance(body, dict) else None
+                yield event.plain_result(f"请假申请已提交" + (f"，编号 {leave_id}。" if leave_id else "。"))
+            else:
+                yield event.plain_result(self._format_error(result))
+            event.stop_event()
+            return
 
     @filter.llm_tool(name="openatom_query")
     async def openatom_query(self, event: AstrMessageEvent, question: str):
@@ -479,6 +577,97 @@ class OpenAtomApiPlugin(Star):
             return str(event.get_sender_id() or "").strip()
         except Exception:
             return ""
+
+    def _leave_session_key(self, event: AstrMessageEvent, sender_id: str) -> str:
+        message_obj = getattr(event, "message_obj", None)
+        session_id = getattr(message_obj, "session_id", "") if message_obj is not None else ""
+        group_id = getattr(message_obj, "group_id", "") if message_obj is not None else ""
+        return f"{group_id or session_id or 'private'}:{sender_id}"
+
+    def _event_plain_text(self, event: AstrMessageEvent) -> str:
+        value = getattr(event, "message_str", None)
+        if value is None:
+            message_obj = getattr(event, "message_obj", None)
+            value = getattr(message_obj, "message_str", "") if message_obj is not None else ""
+        return str(value or "").strip()
+
+    def _event_attachments(self, event: AstrMessageEvent) -> list[dict[str, Any]]:
+        attachments: list[dict[str, Any]] = []
+        message_obj = getattr(event, "message_obj", None)
+        chain = getattr(message_obj, "message", []) if message_obj is not None else []
+        for index, item in enumerate(chain or []):
+            type_name = item.__class__.__name__.lower()
+            if "image" not in type_name and "file" not in type_name:
+                continue
+            content = self._first_attr(item, ("url", "file", "path", "content"))
+            if not content:
+                continue
+            attachments.append(
+                {
+                    "name": self._first_attr(item, ("name", "file_name", "filename")) or f"bot-attachment-{index + 1}",
+                    "type": self._guess_attachment_type(content, type_name),
+                    "size": self._first_attr(item, ("size", "file_size")) or 0,
+                    "content": content,
+                }
+            )
+        text = self._event_plain_text(event)
+        for index, url in enumerate(re.findall(r"https?://\\S+", text)):
+            if any(item.get("content") == url for item in attachments):
+                continue
+            attachments.append(
+                {
+                    "name": f"bot-url-attachment-{index + 1}",
+                    "type": self._guess_attachment_type(url, "image"),
+                    "size": 0,
+                    "content": url.rstrip("，。；;"),
+                }
+            )
+        return attachments
+
+    def _first_attr(self, item: Any, names: tuple[str, ...]) -> Any:
+        for name in names:
+            value = getattr(item, name, None)
+            if value:
+                return str(value)
+        return None
+
+    def _guess_attachment_type(self, content: Any, fallback: str) -> str:
+        text = str(content or "").lower()
+        if text.startswith("data:image/"):
+            return text.split(";", 1)[0].replace("data:", "")
+        if any(text.endswith(ext) for ext in (".jpg", ".jpeg")):
+            return "image/jpeg"
+        if text.endswith(".png"):
+            return "image/png"
+        if text.endswith(".gif"):
+            return "image/gif"
+        return "image/*" if "image" in fallback else ""
+
+    def _parse_leave_time(self, text: str) -> tuple[str | None, str | None]:
+        values = re.findall(r"\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}(?:[ T]\\d{1,2}:\\d{2}(?::\\d{2})?)?", text or "")
+        normalized = [self._normalize_datetime(value) for value in values]
+        normalized = [value for value in normalized if value]
+        if len(normalized) >= 2:
+            return normalized[0], normalized[1]
+        if len(normalized) == 1:
+            return normalized[0], None
+        return None, None
+
+    def _normalize_datetime(self, value: str) -> str | None:
+        value = (value or "").strip().replace("/", "-").replace("T", " ")
+        match = re.match(r"(\\d{4})-(\\d{1,2})-(\\d{1,2})(?:\\s+(\\d{1,2}):(\\d{2})(?::(\\d{2}))?)?", value)
+        if not match:
+            return None
+        year, month, day, hour, minute, second = match.groups()
+        if hour is None:
+            return f"{year}-{int(month):02d}-{int(day):02d} 00:00:00"
+        return f"{year}-{int(month):02d}-{int(day):02d} {int(hour):02d}:{minute}:{second or '00'}"
+
+    async def _is_qq_bound(self, qq_openid: str) -> tuple[bool, str | None]:
+        data, error = await self._get_data("/auth/qq-bind/status", {"qqOpenid": qq_openid})
+        if error:
+            return False, error
+        return bool(data), None
 
     def _format_activity(self, item: dict[str, Any], detailed: bool) -> str:
         title = item.get("title") or item.get("name") or "未命名活动"

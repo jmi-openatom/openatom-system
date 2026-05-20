@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBotCreateLeaveApplicationDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateLeaveApplicationDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestReviewLeaveApplicationDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
@@ -54,18 +55,40 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
   @Override
   public Result<Integer> create(RequestCreateLeaveApplicationDTO request) {
     if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+    return createForUser(StpUtil.getLoginIdAsInt(), request.getTitle(), request.getReason(),
+        request.getStartAt(), request.getEndAt(), request.getAttachments());
+  }
+
+  @Override
+  public Result<Integer> createByQq(RequestBotCreateLeaveApplicationDTO request) {
+    String qqOpenid = request.getQqOpenid() == null ? "" : request.getQqOpenid().trim();
+    User user = qqOpenid.isBlank() ? null : userMapper.selectByQqOpenid(qqOpenid);
+    if (user == null) {
+      return Result.error(401, "当前QQ未绑定系统账号，请先在网页个人中心生成绑定码并发送给机器人绑定");
+    }
+    return createForUser(user.getId(), request.getTitle(), request.getReason(),
+        request.getStartAt(), request.getEndAt(), request.getAttachments());
+  }
+
+  private Result<Integer> createForUser(
+      Integer userId,
+      String title,
+      String reason,
+      String startAt,
+      String endAt,
+      List<Map<String, Object>> rawAttachments) {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
-    List<Map<String, Object>> attachments = sanitizeAttachments(request.getAttachments());
+    List<Map<String, Object>> attachments = sanitizeAttachments(rawAttachments);
     if (attachments.isEmpty()) return Result.error(400, "请上传请假附件");
     LeaveApplication application =
         LeaveApplication.builder()
             .clubId(club.getId())
-            .userId(StpUtil.getLoginIdAsInt())
-            .title(request.getTitle().trim())
-            .reason(request.getReason().trim())
-            .startAt(Times.parseTimestamp(request.getStartAt()))
-            .endAt(Times.parseTimestamp(request.getEndAt()))
+            .userId(userId)
+            .title(title.trim())
+            .reason(reason.trim())
+            .startAt(Times.parseTimestamp(startAt))
+            .endAt(Times.parseTimestamp(endAt))
             .attachments(Jsons.stringify(attachments))
             .status("submitted")
             .build();
