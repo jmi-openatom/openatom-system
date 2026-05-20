@@ -68,6 +68,13 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="QQ" width="100">
+        <template #default="{ row }">
+          <el-tag :type="row.qqOpenid ? 'success' : 'info'">
+            {{ row.qqOpenid  }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="userStatus" label="状态" width="110">
         <template #default="{ row }">
           <el-tag :type="statusType(row.userStatus)">{{ statusText(row.userStatus) }}</el-tag>
