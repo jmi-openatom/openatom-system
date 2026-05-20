@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 import aiohttp
 from aiohttp import web
 from astrbot.api import AstrBotConfig, logger
-from astrbot.api.event import AstrMessageEvent, filter
+from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star, register
 
 
@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.2.5"
+PLUGIN_VERSION = "1.2.6"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -800,7 +800,8 @@ class OpenAtomApiPlugin(Star):
         try:
             import astrbot.api.message_components as Comp
 
-            chain = [Comp.At(qq=sender_id), Comp.Plain(text)] if sender_id else [Comp.Plain(text.strip())]
+            chain = MessageChain()
+            chain.chain = [Comp.At(qq=sender_id), Comp.Plain(text)] if sender_id else [Comp.Plain(text.strip())]
             await self.context.send_message(origin, chain)
             return True
         except Exception as exc:
