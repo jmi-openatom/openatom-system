@@ -43,7 +43,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				return;
 			}
 			StpUtil.checkLogin();
-		})).addPathPatterns("/**").excludePathPatterns("/auth/register", "/auth/login", "/auth/miniapp-login", "/auth/refresh-token", "/auth/qq-bind/confirm", "/site/**", "/clubs/{clubId}/departments", "/files/avatars/**");
+		})).addPathPatterns("/**").excludePathPatterns("/auth/register", "/auth/login", "/auth/miniapp-login", "/auth/refresh-token", "/auth/qq-bind", "/auth/qq-bind/confirm", "/site/**", "/clubs/{clubId}/departments", "/files/avatars/**");
 	}
 
 	/**

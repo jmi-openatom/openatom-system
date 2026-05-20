@@ -78,6 +78,12 @@ public class AuthController {
     return authService.confirmQqBind(requestConfirmQqBindDTO);
   }
 
+  @PostMapping("/qq-bind")
+  public Result<String> confirmQqBindCompat(
+      @Valid @RequestBody RequestConfirmQqBindDTO requestConfirmQqBindDTO) {
+    return authService.confirmQqBind(requestConfirmQqBindDTO);
+  }
+
   @DeleteMapping("/qq-bind")
   public Result<String> unbindQq() {
     return authService.unbindQq();
