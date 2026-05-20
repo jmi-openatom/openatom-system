@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -54,6 +55,12 @@ public class GlobalExceptionHandlerAdvice {
   @ExceptionHandler(NoResourceFoundException.class)
   public Result<Void> handleNoResourceFoundException(NoResourceFoundException e) {
     return Result.error(404, "请求路径不存在");
+  }
+
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public ResponseEntity<Result<Void>> handleHttpRequestMethodNotSupportedException(
+      HttpRequestMethodNotSupportedException e) {
+    return ResponseEntity.status(405).body(Result.error(405, "请求方法不支持"));
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)

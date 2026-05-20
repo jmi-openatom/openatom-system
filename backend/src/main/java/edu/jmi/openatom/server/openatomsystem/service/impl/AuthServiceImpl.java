@@ -41,6 +41,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -235,17 +237,33 @@ public class AuthServiceImpl implements AuthService {
     if (userIdValue == null) {
       return Result.error(401, "绑定码无效或已过期");
     }
-    tokenDao.delete(getQqBindTokenKey(token));
 
-    User currentUser = userMapper.selectById(Integer.valueOf(userIdValue));
-    if (currentUser == null) return Result.error(404, "用户不存在");
-    User boundUser = userMapper.selectByQqOpenid(qqOpenid);
-    if (boundUser != null && !boundUser.getId().equals(currentUser.getId())) {
-      return Result.error(409, "该QQ已绑定其他账号");
+    Integer userId;
+    try {
+      userId = Integer.valueOf(userIdValue);
+    } catch (NumberFormatException e) {
+      log.warn("Invalid QQ bind token payload: token={}, userIdValue={}", token, userIdValue);
+      tokenDao.delete(getQqBindTokenKey(token));
+      return Result.error(401, "绑定码无效，请在网页重新生成");
     }
 
-    currentUser.setQqOpenid(qqOpenid);
-    userMapper.updateById(currentUser);
+    try {
+      User currentUser = userMapper.selectById(userId);
+      if (currentUser == null) return Result.error(404, "用户不存在");
+      User boundUser = userMapper.selectByQqOpenid(qqOpenid);
+      if (boundUser != null && !boundUser.getId().equals(currentUser.getId())) {
+        return Result.error(409, "该QQ已绑定其他账号");
+      }
+
+      currentUser.setQqOpenid(qqOpenid);
+      userMapper.updateById(currentUser);
+      tokenDao.delete(getQqBindTokenKey(token));
+    } catch (DuplicateKeyException e) {
+      return Result.error(409, "该QQ已绑定其他账号");
+    } catch (DataAccessException e) {
+      log.error("QQ bind database operation failed", e);
+      return Result.error(500, "QQ绑定数据库字段未初始化，请确认最新迁移已执行后重试");
+    }
     return Result.success("QQ绑定成功");
   }
 
