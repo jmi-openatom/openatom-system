@@ -16,13 +16,14 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
+PLUGIN_VERSION = "1.1.1"
 
 
 @register(
     "astrbot_plugin_openatom_api",
     "ariven",
     "让 AstrBot/NapCat 机器人查询 OpenAtom System 后端公开数据并绑定 QQ",
-    "1.1.0",
+    PLUGIN_VERSION,
     "local",
 )
 class OpenAtomApiPlugin(Star):
@@ -56,6 +57,7 @@ class OpenAtomApiPlugin(Star):
                     "/oa get /site/club-home",
                     "/oa config",
                     "",
+                    f"插件版本：{PLUGIN_VERSION}",
                     "普通查询只允许 GET；QQ 绑定命令只会消费网页登录生成的一次性绑定码。",
                 ]
             )
@@ -67,6 +69,7 @@ class OpenAtomApiPlugin(Star):
         token_status = "已配置" if self.access_token else "未配置"
         yield event.plain_result(
             f"base_url: {self.base_url}\n"
+            f"plugin_version: {PLUGIN_VERSION}\n"
             f"token: {token_status}\n"
             f"timeout: {self.timeout}s\n"
             f"max_reply_chars: {self.max_reply_chars}"
@@ -451,6 +454,7 @@ class OpenAtomApiPlugin(Star):
 
         timeout = aiohttp.ClientTimeout(total=self.timeout)
         try:
+            logger.info(f"OpenAtom API request: {method} {url}")
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.request(method, url, json=body, params=params, headers=headers) as response:
                     text = await response.text()
@@ -598,6 +602,11 @@ class OpenAtomApiPlugin(Star):
         body = result.get("body")
         message = body.get("message") if isinstance(body, dict) else str(body)
         status = result.get("status", 0)
+        if status == 405:
+            return self._truncate(
+                f"请求失败 HTTP 405\n{message}\n"
+                "请检查后端是否已部署支持 QQ 绑定的新版本，或在 /oa config 查看 base_url 是否指向了正确后端。"
+            )
         return self._truncate(f"请求失败 HTTP {status}\n{message}")
 
     def _parse_response_text(self, text: str) -> Any:

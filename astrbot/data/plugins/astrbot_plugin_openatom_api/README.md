@@ -52,12 +52,12 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 /oa help
 /oa ping
 /oa me
+/oa config
 /oa bind-qq 绑定码
 /oa ask 社团有多少人
 /oa ask 主要人员有哪些
 /oa ask 看一下1号活动
 /oa get /site/club-home
-/oa config
 ```
 
 ## QQ 绑定流程
