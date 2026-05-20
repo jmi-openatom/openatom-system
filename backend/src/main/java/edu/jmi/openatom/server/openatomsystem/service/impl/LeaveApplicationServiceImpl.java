@@ -15,22 +15,37 @@ import edu.jmi.openatom.server.openatomsystem.mapper.LeaveApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.LeaveApplicationService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLeaveApplicationVO;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LeaveApplicationServiceImpl implements LeaveApplicationService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
 
   private final ClubMapper clubMapper;
   private final UserMapper userMapper;
   private final LeaveApplicationMapper leaveApplicationMapper;
+  private final HttpClient httpClient = HttpClient.newHttpClient();
+
+  @Value("${app.bot.leave-review-callback-url:}")
+  private String leaveReviewCallbackUrl;
+
+  @Value("${app.bot.callback-token:}")
+  private String botCallbackToken;
 
   @Override
   public Result<List<ResponseLeaveApplicationVO>> list(String status) {
@@ -80,7 +95,8 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
       return Result.error(401, "当前QQ未绑定系统账号，请先在网页个人中心生成绑定码并发送给机器人绑定");
     }
     return createForUser(user.getId(), request.getTitle(), request.getReason(),
-        request.getStartAt(), request.getEndAt(), request.getAttachments());
+        request.getStartAt(), request.getEndAt(), request.getAttachments(),
+        request.getBotNotifyOrigin(), request.getBotNotifyUserId());
   }
 
   private Result<Integer> createForUser(
@@ -90,6 +106,18 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
       String startAt,
       String endAt,
       List<Map<String, Object>> rawAttachments) {
+    return createForUser(userId, title, reason, startAt, endAt, rawAttachments, null, null);
+  }
+
+  private Result<Integer> createForUser(
+      Integer userId,
+      String title,
+      String reason,
+      String startAt,
+      String endAt,
+      List<Map<String, Object>> rawAttachments,
+      String botNotifyOrigin,
+      String botNotifyUserId) {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
     List<Map<String, Object>> attachments = sanitizeAttachments(rawAttachments);
@@ -104,6 +132,8 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
             .endAt(Times.parseTimestamp(endAt))
             .attachments(Jsons.stringify(attachments))
             .status("submitted")
+            .botNotifyOrigin(trimToNull(botNotifyOrigin))
+            .botNotifyUserId(trimToNull(botNotifyUserId))
             .build();
     leaveApplicationMapper.insert(application);
     return Result.success(application.getId(), "请假申请已提交");
@@ -124,6 +154,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     application.setReviewComment(comment);
     application.setReviewedAt(Times.now());
     leaveApplicationMapper.updateById(application);
+    notifyBotReviewResult(application);
     return Result.success("approve".equals(action) ? "请假申请已通过" : "请假申请已驳回");
   }
 
@@ -230,5 +261,42 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
   private String trimToNull(String value) {
     return value == null || value.isBlank() ? null : value.trim();
+  }
+
+  private void notifyBotReviewResult(LeaveApplication application) {
+    String callbackUrl = trimToNull(leaveReviewCallbackUrl);
+    if (callbackUrl == null || trimToNull(application.getBotNotifyOrigin()) == null) return;
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("leaveId", application.getId());
+    payload.put("status", application.getStatus());
+    payload.put("title", application.getTitle());
+    payload.put("reviewComment", application.getReviewComment());
+    payload.put("botNotifyOrigin", application.getBotNotifyOrigin());
+    payload.put("botNotifyUserId", application.getBotNotifyUserId());
+    HttpRequest.Builder builder =
+        HttpRequest.newBuilder(URI.create(callbackUrl))
+            .timeout(Duration.ofSeconds(5))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(Jsons.stringify(payload)));
+    String token = trimToNull(botCallbackToken);
+    if (token != null) {
+      builder.header("X-OpenAtom-Bot-Token", token);
+    }
+    httpClient
+        .sendAsync(builder.build(), HttpResponse.BodyHandlers.discarding())
+        .thenAccept(
+            response -> {
+              if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                application.setBotNotifiedAt(Times.now());
+                leaveApplicationMapper.updateById(application);
+              } else {
+                log.warn("Bot leave review callback failed: leaveId={}, status={}", application.getId(), response.statusCode());
+              }
+            })
+        .exceptionally(
+            throwable -> {
+              log.warn("Bot leave review callback failed: leaveId={}, error={}", application.getId(), throwable.getMessage());
+              return null;
+            });
   }
 }

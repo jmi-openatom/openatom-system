@@ -13,6 +13,7 @@ from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 import aiohttp
+from aiohttp import web
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
@@ -26,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.2.2"
+PLUGIN_VERSION = "1.2.4"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -47,12 +48,14 @@ class OpenAtomApiPlugin(Star):
         self.access_token = str(self.config.get("access_token") or "").strip()
         self.timeout = int(self.config.get("timeout_seconds", 15) or 15)
         self.max_reply_chars = int(self.config.get("max_reply_chars", 0) or 0)
-        self.leave_poll_interval = int(self.config.get("leave_poll_interval_seconds", 15) or 15)
+        self.callback_host = str(self.config.get("callback_host", "0.0.0.0") or "0.0.0.0").strip()
+        self.callback_port = int(self.config.get("callback_port", 6198) or 6198)
+        self.callback_token = str(self.config.get("callback_token", "") or "").strip()
         self.leave_sessions: dict[str, dict[str, Any]] = {}
-        self.leave_notification_file = Path(__file__).with_name("leave_notifications.json")
-        self.leave_notifications: dict[str, dict[str, Any]] = self._load_leave_notifications()
-        self.leave_poll_task: asyncio.Task | None = None
-        self._ensure_leave_poll_task()
+        self.callback_runner: web.AppRunner | None = None
+        self.callback_site: web.TCPSite | None = None
+        self.callback_task: asyncio.Task | None = None
+        self._ensure_callback_server()
 
     @filter.command_group("oa", alias={"openatom", "开放原子"})
     def oa(self):
@@ -91,7 +94,7 @@ class OpenAtomApiPlugin(Star):
             f"token: {token_status}\n"
             f"timeout: {self.timeout}s\n"
             f"max_reply_chars: {self.max_reply_chars}\n"
-            f"leave_poll_interval_seconds: {self.leave_poll_interval}"
+            f"callback: http://{self.callback_host}:{self.callback_port}/openatom/leave-review"
         )
 
     @oa.command("ping")
@@ -136,7 +139,7 @@ class OpenAtomApiPlugin(Star):
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_leave_conversation(self, event: AstrMessageEvent):
         """处理“@机器人 我要请假”的逐步问答。"""
-        self._ensure_leave_poll_task()
+        self._ensure_callback_server()
         sender_id = self._event_sender_id(event)
         if not sender_id:
             return
@@ -222,6 +225,8 @@ class OpenAtomApiPlugin(Star):
                     "startAt": session.get("startAt"),
                     "endAt": session.get("endAt"),
                     "attachments": session["attachments"],
+                    "botNotifyOrigin": str(getattr(event, "unified_msg_origin", "") or ""),
+                    "botNotifyUserId": session["qqOpenid"],
                 },
             )
             if result["ok"]:
@@ -229,8 +234,7 @@ class OpenAtomApiPlugin(Star):
                 body = result.get("body")
                 leave_id = body.get("data") if isinstance(body, dict) else None
                 if leave_id:
-                    self._track_leave_notification(event, session, str(leave_id))
-                    yield event.plain_result(f"请假申请已提交，编号 {leave_id}，当前状态：待审批。审批完成后我会在这里通知你。")
+                    yield event.plain_result(f"请假申请已提交，编号 {leave_id}，当前状态：待审批。审批完成后后端会直接通知我，我会在这里通知你。")
                 else:
                     yield event.plain_result("请假申请已提交，当前状态：待审批。")
             else:
@@ -600,6 +604,14 @@ class OpenAtomApiPlugin(Star):
             if content.startswith("data:image/"):
                 prepared.append(self._normalized_attachment(item, content))
                 continue
+            data_url = self._local_image_as_data_url(content)
+            if data_url:
+                prepared.append(self._normalized_attachment(item, data_url))
+                continue
+            data_url = self._raw_base64_image_as_data_url(content)
+            if data_url:
+                prepared.append(self._normalized_attachment(item, data_url))
+                continue
             if not content.startswith(("http://", "https://")):
                 return [], "没有拿到可上传的图片内容。请直接发送图片原图，或发送可公开访问的图片链接。"
             data_url, error = await self._download_image_as_data_url(content)
@@ -617,15 +629,18 @@ class OpenAtomApiPlugin(Star):
                 async with session.get(url) as response:
                     if response.status < 200 or response.status >= 300:
                         return None, f"图片下载失败 HTTP {response.status}"
-                    content_type = str(response.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
-                    if not content_type.startswith("image/"):
-                        return None, "链接内容不是图片"
                     content_length = response.headers.get("Content-Length")
                     if content_length and int(content_length) > MAX_ATTACHMENT_BYTES:
                         return None, "图片超过 6MB"
                     data = await response.read()
                     if len(data) > MAX_ATTACHMENT_BYTES:
                         return None, "图片超过 6MB"
+                    content_type = str(response.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+                    detected_type = self._detect_image_type(data)
+                    if not content_type.startswith("image/"):
+                        content_type = detected_type
+                    if not content_type.startswith("image/"):
+                        return None, "链接内容不是图片"
                     encoded = base64.b64encode(data).decode("ascii")
                     return f"data:{content_type};base64,{encoded}", None
         except Exception as exc:
@@ -640,50 +655,98 @@ class OpenAtomApiPlugin(Star):
             "content": content,
         }
 
-    def _track_leave_notification(self, event: AstrMessageEvent, session: dict[str, Any], leave_id: str):
-        origin = str(getattr(event, "unified_msg_origin", "") or "")
-        if not origin:
-            return
-        self.leave_notifications[leave_id] = {
-            "leaveId": leave_id,
-            "qqOpenid": session.get("qqOpenid"),
-            "senderId": session.get("qqOpenid"),
-            "unifiedMsgOrigin": origin,
-            "title": session.get("title"),
-            "lastStatus": "submitted",
-        }
-        self._save_leave_notifications()
-        self._ensure_leave_poll_task()
+    def _local_image_as_data_url(self, value: str) -> str | None:
+        if not value or value.startswith(("http://", "https://")):
+            return None
+        try:
+            path = Path(value).expanduser()
+            if not path.is_file():
+                return None
+            data = path.read_bytes()
+            if len(data) > MAX_ATTACHMENT_BYTES:
+                return None
+            content_type = self._detect_image_type(data)
+            if not content_type.startswith("image/"):
+                return None
+            encoded = base64.b64encode(data).decode("ascii")
+            return f"data:{content_type};base64,{encoded}"
+        except Exception:
+            return None
 
-    def _ensure_leave_poll_task(self):
-        if self.leave_poll_task is not None and not self.leave_poll_task.done():
+    def _raw_base64_image_as_data_url(self, value: str) -> str | None:
+        compact = value.strip()
+        if not compact or len(compact) < 64 or not re.fullmatch(r"[A-Za-z0-9+/=\s]+", compact):
+            return None
+        try:
+            data = base64.b64decode(re.sub(r"\s+", "", compact), validate=True)
+        except Exception:
+            return None
+        if len(data) > MAX_ATTACHMENT_BYTES:
+            return None
+        content_type = self._detect_image_type(data)
+        if not content_type.startswith("image/"):
+            return None
+        return f"data:{content_type};base64,{base64.b64encode(data).decode('ascii')}"
+
+    def _detect_image_type(self, data: bytes) -> str:
+        if data.startswith(b"\x89PNG\r\n\x1a\n"):
+            return "image/png"
+        if data.startswith(b"\xff\xd8\xff"):
+            return "image/jpeg"
+        if data.startswith((b"GIF87a", b"GIF89a")):
+            return "image/gif"
+        if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+            return "image/webp"
+        return ""
+
+    def _ensure_callback_server(self):
+        if self.callback_task is not None and not self.callback_task.done():
+            return
+        if self.callback_runner is not None:
             return
         try:
-            self.leave_poll_task = asyncio.create_task(self._poll_leave_notifications())
+            self.callback_task = asyncio.create_task(self._start_callback_server())
         except RuntimeError:
-            self.leave_poll_task = None
+            self.callback_task = None
 
-    async def _poll_leave_notifications(self):
-        while True:
-            await asyncio.sleep(max(self.leave_poll_interval, 5))
-            if not self.leave_notifications:
-                continue
-            for leave_id, item in list(self.leave_notifications.items()):
-                qq_openid = str(item.get("qqOpenid") or "")
-                data, error = await self._get_data(f"/bot/leave-applications/{leave_id}/status", {"qqOpenid": qq_openid})
-                if error or not isinstance(data, dict):
-                    if error:
-                        logger.warning(f"OpenAtom leave status poll failed: leaveId={leave_id}, error={error}")
-                    continue
-                status = str(data.get("status") or "")
-                if status == "submitted":
-                    continue
-                if status not in {"approved", "rejected"}:
-                    continue
-                sent = await self._send_leave_status_notification(item, data)
-                if sent:
-                    self.leave_notifications.pop(leave_id, None)
-                    self._save_leave_notifications()
+    async def _start_callback_server(self):
+        app = web.Application()
+        app.router.add_post("/openatom/leave-review", self._handle_leave_review_callback)
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, self.callback_host, self.callback_port)
+        await site.start()
+        self.callback_runner = runner
+        self.callback_site = site
+        logger.info(f"OpenAtom leave review callback server started: {self.callback_host}:{self.callback_port}")
+
+    async def _handle_leave_review_callback(self, request: web.Request) -> web.Response:
+        if self.callback_token:
+            token = request.headers.get("X-OpenAtom-Bot-Token", "")
+            if token != self.callback_token:
+                return web.json_response({"ok": False, "message": "invalid token"}, status=403)
+        try:
+            payload = await request.json()
+        except Exception:
+            return web.json_response({"ok": False, "message": "invalid json"}, status=400)
+        if not isinstance(payload, dict):
+            return web.json_response({"ok": False, "message": "invalid payload"}, status=400)
+        item = {
+            "unifiedMsgOrigin": payload.get("botNotifyOrigin"),
+            "senderId": payload.get("botNotifyUserId"),
+            "leaveId": payload.get("leaveId"),
+            "title": payload.get("title"),
+        }
+        data = {
+            "id": payload.get("leaveId"),
+            "status": payload.get("status"),
+            "title": payload.get("title"),
+            "reviewComment": payload.get("reviewComment"),
+        }
+        sent = await self._send_leave_status_notification(item, data)
+        if not sent:
+            return web.json_response({"ok": False, "message": "send failed"}, status=500)
+        return web.json_response({"ok": True})
 
     async def _send_leave_status_notification(self, item: dict[str, Any], data: dict[str, Any]) -> bool:
         origin = str(item.get("unifiedMsgOrigin") or "")
@@ -710,29 +773,13 @@ class OpenAtomApiPlugin(Star):
             logger.warning(f"OpenAtom leave status notification failed: leaveId={leave_id}, error={exc}")
             return False
 
-    def _load_leave_notifications(self) -> dict[str, dict[str, Any]]:
-        try:
-            if not self.leave_notification_file.exists():
-                return {}
-            with self.leave_notification_file.open("r", encoding="utf-8") as file:
-                data = json.load(file)
-            return data if isinstance(data, dict) else {}
-        except Exception as exc:
-            logger.warning(f"OpenAtom leave notification state load failed: {exc}")
-            return {}
-
-    def _save_leave_notifications(self):
-        try:
-            with self.leave_notification_file.open("w", encoding="utf-8") as file:
-                json.dump(self.leave_notifications, file, ensure_ascii=False, indent=2)
-        except Exception as exc:
-            logger.warning(f"OpenAtom leave notification state save failed: {exc}")
-
     async def terminate(self):
-        if self.leave_poll_task is not None:
-            self.leave_poll_task.cancel()
+        if self.callback_task is not None:
+            self.callback_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
-                await self.leave_poll_task
+                await self.callback_task
+        if self.callback_runner is not None:
+            await self.callback_runner.cleanup()
 
     def _success_message(self, result: dict[str, Any], fallback: str) -> str:
         if not result["ok"]:
@@ -801,7 +848,7 @@ class OpenAtomApiPlugin(Star):
         return None
 
     def _guess_attachment_type(self, content: Any, fallback: str) -> str:
-        text = str(content or "").lower()
+        text = str(content or "").split("?", 1)[0].lower()
         if text.startswith("data:image/"):
             return text.split(";", 1)[0].replace("data:", "")
         if any(text.endswith(ext) for ext in (".jpg", ".jpeg")):

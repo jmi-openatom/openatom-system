@@ -23,4 +23,7 @@ public class RequestBotCreateLeaveApplicationDTO {
 
   @NotEmpty(message = "请上传请假附件")
   private List<Map<String, Object>> attachments;
+
+  private String botNotifyOrigin;
+  private String botNotifyUserId;
 }

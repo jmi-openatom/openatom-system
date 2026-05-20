@@ -47,6 +47,15 @@ public class LeaveApplication {
   @TableField("reviewed_at")
   private Timestamp reviewedAt;
 
+  @TableField("bot_notify_origin")
+  private String botNotifyOrigin;
+
+  @TableField("bot_notify_user_id")
+  private String botNotifyUserId;
+
+  @TableField("bot_notified_at")
+  private Timestamp botNotifiedAt;
+
   @TableField("created_at")
   private Timestamp createdAt;
 

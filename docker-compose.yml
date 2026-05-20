@@ -54,6 +54,8 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-openatom123}
       - APP_APPLICATION_SUBMIT_MAX_PER_SECOND=${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:-5}
       - APP_AVATAR_STORAGE_DIR=/app/uploads/avatars
+      - APP_BOT_LEAVE_REVIEW_CALLBACK_URL=${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:-http://astrbot:6198/openatom/leave-review}
+      - APP_BOT_CALLBACK_TOKEN=${APP_BOT_CALLBACK_TOKEN:-}
     ports:
       - "8921:8921"
     volumes:

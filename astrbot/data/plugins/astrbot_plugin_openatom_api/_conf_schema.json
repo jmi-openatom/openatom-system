@@ -22,10 +22,22 @@
     "default": 0,
     "hint": "0 表示不截断，确保所有获取到的数据都会语义化输出。"
   },
-  "leave_poll_interval_seconds": {
-    "description": "请假审批状态轮询间隔（秒）",
+  "callback_host": {
+    "description": "后端审批回调监听地址",
+    "type": "string",
+    "default": "0.0.0.0",
+    "hint": "Docker 内网部署时保持默认即可。"
+  },
+  "callback_port": {
+    "description": "后端审批回调监听端口",
     "type": "int",
-    "default": 15,
-    "hint": "机器人请假提交成功后会按这个间隔查询审批状态，审批通过或驳回后主动通知原会话。"
+    "default": 6198,
+    "hint": "后端 APP_BOT_LEAVE_REVIEW_CALLBACK_URL 需要指向这个端口，例如 http://astrbot:6198/openatom/leave-review。"
+  },
+  "callback_token": {
+    "description": "后端审批回调 Token",
+    "type": "string",
+    "default": "",
+    "hint": "如果填写，后端也要配置相同的 APP_BOT_CALLBACK_TOKEN。"
   }
 }
