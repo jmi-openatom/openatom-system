@@ -21,5 +21,11 @@
     "type": "int",
     "default": 0,
     "hint": "0 表示不截断，确保所有获取到的数据都会语义化输出。"
+  },
+  "leave_poll_interval_seconds": {
+    "description": "请假审批状态轮询间隔（秒）",
+    "type": "int",
+    "default": 15,
+    "hint": "机器人请假提交成功后会按这个间隔查询审批状态，审批通过或驳回后主动通知原会话。"
   }
 }

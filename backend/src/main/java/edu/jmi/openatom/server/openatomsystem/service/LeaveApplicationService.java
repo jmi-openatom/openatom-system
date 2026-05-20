@@ -14,6 +14,8 @@ public interface LeaveApplicationService {
 
   Result<ResponseLeaveApplicationVO> detail(Integer leaveApplicationId);
 
+  Result<ResponseLeaveApplicationVO> botDetailByQq(Integer leaveApplicationId, String qqOpenid);
+
   Result<Integer> create(RequestCreateLeaveApplicationDTO request);
 
   Result<Integer> createByQq(RequestBotCreateLeaveApplicationDTO request);

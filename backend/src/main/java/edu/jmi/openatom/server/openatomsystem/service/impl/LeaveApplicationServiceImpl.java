@@ -53,6 +53,19 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
   }
 
   @Override
+  public Result<ResponseLeaveApplicationVO> botDetailByQq(Integer leaveApplicationId, String qqOpenid) {
+    String normalizedQqOpenid = qqOpenid == null ? "" : qqOpenid.trim();
+    User user = normalizedQqOpenid.isBlank() ? null : userMapper.selectByQqOpenid(normalizedQqOpenid);
+    if (user == null) {
+      return Result.error(401, "当前QQ未绑定系统账号，请先在网页个人中心生成绑定码并发送给机器人绑定");
+    }
+    LeaveApplication application = find(leaveApplicationId);
+    if (application == null) return Result.error(404, "请假申请不存在");
+    if (!user.getId().equals(application.getUserId())) return Result.error(403, "无权查看该请假申请");
+    return Result.success(toVO(application));
+  }
+
+  @Override
   public Result<Integer> create(RequestCreateLeaveApplicationDTO request) {
     if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
     return createForUser(StpUtil.getLoginIdAsInt(), request.getTitle(), request.getReason(),

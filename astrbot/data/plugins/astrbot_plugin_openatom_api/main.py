@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import asyncio
+import base64
+import contextlib
 import json
 import inspect
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -22,7 +26,8 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.2.1"
+PLUGIN_VERSION = "1.2.2"
+MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
 @register(
@@ -42,7 +47,12 @@ class OpenAtomApiPlugin(Star):
         self.access_token = str(self.config.get("access_token") or "").strip()
         self.timeout = int(self.config.get("timeout_seconds", 15) or 15)
         self.max_reply_chars = int(self.config.get("max_reply_chars", 0) or 0)
+        self.leave_poll_interval = int(self.config.get("leave_poll_interval_seconds", 15) or 15)
         self.leave_sessions: dict[str, dict[str, Any]] = {}
+        self.leave_notification_file = Path(__file__).with_name("leave_notifications.json")
+        self.leave_notifications: dict[str, dict[str, Any]] = self._load_leave_notifications()
+        self.leave_poll_task: asyncio.Task | None = None
+        self._ensure_leave_poll_task()
 
     @filter.command_group("oa", alias={"openatom", "开放原子"})
     def oa(self):
@@ -80,7 +90,8 @@ class OpenAtomApiPlugin(Star):
             f"plugin_version: {PLUGIN_VERSION}\n"
             f"token: {token_status}\n"
             f"timeout: {self.timeout}s\n"
-            f"max_reply_chars: {self.max_reply_chars}"
+            f"max_reply_chars: {self.max_reply_chars}\n"
+            f"leave_poll_interval_seconds: {self.leave_poll_interval}"
         )
 
     @oa.command("ping")
@@ -125,6 +136,7 @@ class OpenAtomApiPlugin(Star):
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_leave_conversation(self, event: AstrMessageEvent):
         """处理“@机器人 我要请假”的逐步问答。"""
+        self._ensure_leave_poll_task()
         sender_id = self._event_sender_id(event)
         if not sender_id:
             return
@@ -194,7 +206,12 @@ class OpenAtomApiPlugin(Star):
                 yield event.plain_result("请发送图片附件或图片链接，附件不能为空。")
                 event.stop_event()
                 return
-            session["attachments"] = attachments[:5]
+            prepared_attachments, attachment_error = await self._prepare_leave_attachments(attachments[:5])
+            if attachment_error:
+                yield event.plain_result(attachment_error)
+                event.stop_event()
+                return
+            session["attachments"] = prepared_attachments
             result = await self._request(
                 "POST",
                 "/bot/leave-applications",
@@ -207,11 +224,15 @@ class OpenAtomApiPlugin(Star):
                     "attachments": session["attachments"],
                 },
             )
-            self.leave_sessions.pop(session_key, None)
             if result["ok"]:
+                self.leave_sessions.pop(session_key, None)
                 body = result.get("body")
                 leave_id = body.get("data") if isinstance(body, dict) else None
-                yield event.plain_result(f"请假申请已提交" + (f"，编号 {leave_id}。" if leave_id else "。"))
+                if leave_id:
+                    self._track_leave_notification(event, session, str(leave_id))
+                    yield event.plain_result(f"请假申请已提交，编号 {leave_id}，当前状态：待审批。审批完成后我会在这里通知你。")
+                else:
+                    yield event.plain_result("请假申请已提交，当前状态：待审批。")
             else:
                 yield event.plain_result(self._format_error(result))
             event.stop_event()
@@ -569,6 +590,149 @@ class OpenAtomApiPlugin(Star):
         except Exception as exc:
             logger.warning(f"OpenAtom API request failed: {method} {url}: {exc}")
             return {"ok": False, "status": 0, "body": {"message": str(exc)}}
+
+    async def _prepare_leave_attachments(self, attachments: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
+        prepared: list[dict[str, Any]] = []
+        for index, item in enumerate(attachments, start=1):
+            content = str(item.get("content") or "").strip()
+            if not content:
+                continue
+            if content.startswith("data:image/"):
+                prepared.append(self._normalized_attachment(item, content))
+                continue
+            if not content.startswith(("http://", "https://")):
+                return [], "没有拿到可上传的图片内容。请直接发送图片原图，或发送可公开访问的图片链接。"
+            data_url, error = await self._download_image_as_data_url(content)
+            if error:
+                return [], f"第 {index} 张图片上传准备失败：{error}。请重新发送图片原图或换一张图片。"
+            prepared.append(self._normalized_attachment(item, data_url))
+        if not prepared:
+            return [], "没有拿到可上传的图片内容。请直接发送图片原图，或发送可公开访问的图片链接。"
+        return prepared[:5], None
+
+    async def _download_image_as_data_url(self, url: str) -> tuple[str | None, str | None]:
+        timeout = aiohttp.ClientTimeout(total=self.timeout)
+        try:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(url) as response:
+                    if response.status < 200 or response.status >= 300:
+                        return None, f"图片下载失败 HTTP {response.status}"
+                    content_type = str(response.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+                    if not content_type.startswith("image/"):
+                        return None, "链接内容不是图片"
+                    content_length = response.headers.get("Content-Length")
+                    if content_length and int(content_length) > MAX_ATTACHMENT_BYTES:
+                        return None, "图片超过 6MB"
+                    data = await response.read()
+                    if len(data) > MAX_ATTACHMENT_BYTES:
+                        return None, "图片超过 6MB"
+                    encoded = base64.b64encode(data).decode("ascii")
+                    return f"data:{content_type};base64,{encoded}", None
+        except Exception as exc:
+            logger.warning(f"OpenAtom leave attachment download failed: {url}: {exc}")
+            return None, str(exc)
+
+    def _normalized_attachment(self, item: dict[str, Any], content: str) -> dict[str, Any]:
+        return {
+            "name": str(item.get("name") or "leave-attachment"),
+            "type": self._guess_attachment_type(content, str(item.get("type") or "image")),
+            "size": item.get("size") or len(content),
+            "content": content,
+        }
+
+    def _track_leave_notification(self, event: AstrMessageEvent, session: dict[str, Any], leave_id: str):
+        origin = str(getattr(event, "unified_msg_origin", "") or "")
+        if not origin:
+            return
+        self.leave_notifications[leave_id] = {
+            "leaveId": leave_id,
+            "qqOpenid": session.get("qqOpenid"),
+            "senderId": session.get("qqOpenid"),
+            "unifiedMsgOrigin": origin,
+            "title": session.get("title"),
+            "lastStatus": "submitted",
+        }
+        self._save_leave_notifications()
+        self._ensure_leave_poll_task()
+
+    def _ensure_leave_poll_task(self):
+        if self.leave_poll_task is not None and not self.leave_poll_task.done():
+            return
+        try:
+            self.leave_poll_task = asyncio.create_task(self._poll_leave_notifications())
+        except RuntimeError:
+            self.leave_poll_task = None
+
+    async def _poll_leave_notifications(self):
+        while True:
+            await asyncio.sleep(max(self.leave_poll_interval, 5))
+            if not self.leave_notifications:
+                continue
+            for leave_id, item in list(self.leave_notifications.items()):
+                qq_openid = str(item.get("qqOpenid") or "")
+                data, error = await self._get_data(f"/bot/leave-applications/{leave_id}/status", {"qqOpenid": qq_openid})
+                if error or not isinstance(data, dict):
+                    if error:
+                        logger.warning(f"OpenAtom leave status poll failed: leaveId={leave_id}, error={error}")
+                    continue
+                status = str(data.get("status") or "")
+                if status == "submitted":
+                    continue
+                if status not in {"approved", "rejected"}:
+                    continue
+                sent = await self._send_leave_status_notification(item, data)
+                if sent:
+                    self.leave_notifications.pop(leave_id, None)
+                    self._save_leave_notifications()
+
+    async def _send_leave_status_notification(self, item: dict[str, Any], data: dict[str, Any]) -> bool:
+        origin = str(item.get("unifiedMsgOrigin") or "")
+        sender_id = str(item.get("senderId") or "")
+        if not origin:
+            return True
+        leave_id = data.get("id") or item.get("leaveId")
+        title = data.get("title") or item.get("title") or "请假申请"
+        status = str(data.get("status") or "")
+        if status == "approved":
+            text = f" 你的请假申请“{title}”（编号 {leave_id}）已通过。"
+        elif status == "rejected":
+            reason = data.get("reviewComment") or "未填写驳回理由"
+            text = f" 你的请假申请“{title}”（编号 {leave_id}）未通过，原因：{reason}"
+        else:
+            return False
+        try:
+            import astrbot.api.message_components as Comp
+
+            chain = [Comp.At(qq=sender_id), Comp.Plain(text)] if sender_id else [Comp.Plain(text.strip())]
+            await self.context.send_message(origin, chain)
+            return True
+        except Exception as exc:
+            logger.warning(f"OpenAtom leave status notification failed: leaveId={leave_id}, error={exc}")
+            return False
+
+    def _load_leave_notifications(self) -> dict[str, dict[str, Any]]:
+        try:
+            if not self.leave_notification_file.exists():
+                return {}
+            with self.leave_notification_file.open("r", encoding="utf-8") as file:
+                data = json.load(file)
+            return data if isinstance(data, dict) else {}
+        except Exception as exc:
+            logger.warning(f"OpenAtom leave notification state load failed: {exc}")
+            return {}
+
+    def _save_leave_notifications(self):
+        try:
+            with self.leave_notification_file.open("w", encoding="utf-8") as file:
+                json.dump(self.leave_notifications, file, ensure_ascii=False, indent=2)
+        except Exception as exc:
+            logger.warning(f"OpenAtom leave notification state save failed: {exc}")
+
+    async def terminate(self):
+        if self.leave_poll_task is not None:
+            self.leave_poll_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self.leave_poll_task
 
     def _success_message(self, result: dict[str, Any], fallback: str) -> str:
         if not result["ok"]:

@@ -55,6 +55,13 @@ public class LeaveApplicationController {
     return leaveApplicationService.createByQq(request);
   }
 
+  @GetMapping("/bot/leave-applications/{leaveApplicationId}/status")
+  public Result<ResponseLeaveApplicationVO> botStatus(
+      @PathVariable Integer leaveApplicationId,
+      @RequestParam String qqOpenid) {
+    return leaveApplicationService.botDetailByQq(leaveApplicationId, qqOpenid);
+  }
+
   @PostMapping("/leave-applications/{leaveApplicationId}/review")
   @SaCheckPermission("leave-application:review")
   public Result<String> review(
