@@ -19,10 +19,11 @@ public final class Times {
     if (value == null || value.isBlank()) {
       return null;
     }
+    String normalized = value.trim();
     try {
-      return Timestamp.from(OffsetDateTime.parse(value).toInstant());
+      return Timestamp.from(OffsetDateTime.parse(normalized).toInstant());
     } catch (RuntimeException ignored) {
-      return Timestamp.from(LocalDateTime.parse(value).atZone(BUSINESS_ZONE).toInstant());
+      return Timestamp.from(LocalDateTime.parse(normalized.replace(' ', 'T')).atZone(BUSINESS_ZONE).toInstant());
     }
   }
 

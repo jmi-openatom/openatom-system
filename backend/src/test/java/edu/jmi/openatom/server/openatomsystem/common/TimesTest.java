@@ -13,6 +13,12 @@ class TimesTest {
   }
 
   @Test
+  void parsesSpaceSeparatedDateTimesInBusinessZone() {
+    assertThat(Times.parseTimestamp("2026-05-21 18:30:00").toInstant())
+        .isEqualTo(Instant.parse("2026-05-21T10:30:00Z"));
+  }
+
+  @Test
   void preservesExplicitOffsets() {
     assertThat(Times.parseTimestamp("2026-05-18T00:00:00+08:00").toInstant())
         .isEqualTo(Instant.parse("2026-05-17T16:00:00Z"));
