@@ -46,6 +46,12 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 
 不要再使用旧工具名 `openatom_system_overview`、`openatom_public_query`、`openatom_api_get`。如果后台还显示旧工具，说明插件未重载成功。
 
+## 输出形式
+
+项目的 `astrbot/data/cmd_config.json` 已开启 AstrBot 全局 `t2i`，并把 `t2i_word_threshold` 设为 `0`，所以普通模型回复、内置回复和插件回复都会尽量渲染成图片发送。
+
+本插件内部也保留了图片回复兜底：普通 `/oa` 命令回复和非请假类自然语言查询回答会先渲染成 PNG 图片后发送。请假查询、请假流程提示、主动私聊提醒和审批回调通知保持文本消息，便于用户按步骤回复。部署时需要安装 `requirements.txt` 里的 `Pillow`。
+
 ## 聊天命令
 
 ```text
