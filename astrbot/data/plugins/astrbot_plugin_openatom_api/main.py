@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.2.8"
+PLUGIN_VERSION = "1.2.9"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -76,7 +76,7 @@ class OpenAtomApiPlugin(Star):
                     "/oa ping",
                     "/oa me",
                     "/oa bind-qq 绑定码",
-                    "艾特我发送“我要请假 / 请个假 / 今天去不了”",
+                    "群里艾特我发送“我要请假 / 请个假 / 今天去不了”，我会私聊你继续办理",
                     "/oa ask 社团有多少人",
                     "/oa ask 主要人员有哪些",
                     "/oa ask 看一下1号活动",
@@ -105,11 +105,12 @@ class OpenAtomApiPlugin(Star):
     @oa.command("callback-test", alias={"回调测试"})
     async def callback_test(self, event: AstrMessageEvent):
         """测试后端审批回调通知链路"""
+        sender_id = self._event_sender_id(event)
         self._ensure_callback_server()
         sent = await self._send_leave_status_notification(
             {
-                "unifiedMsgOrigin": str(getattr(event, "unified_msg_origin", "") or ""),
-                "senderId": self._event_sender_id(event),
+                "unifiedMsgOrigin": self._private_origin_for_event(event, sender_id),
+                "senderId": sender_id,
                 "leaveId": "TEST",
                 "title": "回调测试",
             },
@@ -168,7 +169,8 @@ class OpenAtomApiPlugin(Star):
         sender_id = self._event_sender_id(event)
         if not sender_id:
             return
-        session_key = self._leave_session_key(event, sender_id)
+        is_group = self._is_group_event(event)
+        session_key = self._private_leave_session_key(sender_id)
         text = self._event_plain_text(event).strip()
         attachments = self._event_attachments(event)
 
@@ -185,9 +187,25 @@ class OpenAtomApiPlugin(Star):
                 yield event.plain_result("当前 QQ 还没有绑定系统账号。请先登录网页个人中心生成绑定码，再发送 /oa bind-qq 绑定码。")
                 event.stop_event()
                 return
-            self.leave_sessions[session_key] = {"step": "title", "qqOpenid": sender_id}
-            yield event.plain_result("开始提交请假申请。请先发送请假类型，例如：例会请假、活动请假。发送“取消”可退出。")
+            notify_origin = self._private_origin_for_event(event, sender_id)
+            self.leave_sessions[session_key] = {"step": "title", "qqOpenid": sender_id, "notifyOrigin": notify_origin}
+            prompt = "开始提交请假申请。请先发送请假类型，例如：例会请假、活动请假。发送“取消”可退出。"
+            if is_group:
+                sent = await self._send_plain_message(notify_origin, prompt)
+                if sent:
+                    yield event.plain_result("我已经私聊你了，请在私聊里继续完成请假申请。")
+                else:
+                    self.leave_sessions.pop(session_key, None)
+                    yield event.plain_result("我没能发起私聊，请先给机器人发送一条私聊消息后再试。")
+            else:
+                yield event.plain_result(prompt)
             event.stop_event()
+            return
+
+        if is_group:
+            if self._looks_like_leave_request(text):
+                yield event.plain_result("你有一条请假申请正在私聊里办理，请到私聊继续。")
+                event.stop_event()
             return
 
         if text in {"取消", "退出", "算了", "不请了"}:
@@ -250,7 +268,7 @@ class OpenAtomApiPlugin(Star):
                     "startAt": session.get("startAt"),
                     "endAt": session.get("endAt"),
                     "attachments": session["attachments"],
-                    "botNotifyOrigin": str(getattr(event, "unified_msg_origin", "") or ""),
+                    "botNotifyOrigin": str(session.get("notifyOrigin") or getattr(event, "unified_msg_origin", "") or ""),
                     "botNotifyUserId": session["qqOpenid"],
                 },
             )
@@ -259,7 +277,7 @@ class OpenAtomApiPlugin(Star):
                 body = result.get("body")
                 leave_id = body.get("data") if isinstance(body, dict) else None
                 if leave_id:
-                    yield event.plain_result(f"请假申请已提交，编号 {leave_id}，当前状态：待审批。审批完成后我会在这里通知你。")
+                    yield event.plain_result(f"请假申请已提交，编号 {leave_id}，当前状态：待审批。审批完成后我会在私聊里通知你。")
                 else:
                     yield event.plain_result("请假申请已提交，当前状态：待审批。")
             else:
@@ -843,6 +861,21 @@ class OpenAtomApiPlugin(Star):
         session_id = getattr(message_obj, "session_id", "") if message_obj is not None else ""
         group_id = getattr(message_obj, "group_id", "") if message_obj is not None else ""
         return f"{group_id or session_id or 'private'}:{sender_id}"
+
+    def _private_leave_session_key(self, sender_id: str) -> str:
+        return f"private:{sender_id}"
+
+    def _is_group_event(self, event: AstrMessageEvent) -> bool:
+        message_obj = getattr(event, "message_obj", None)
+        group_id = getattr(message_obj, "group_id", "") if message_obj is not None else ""
+        origin = str(getattr(event, "unified_msg_origin", "") or "")
+        return bool(group_id) or "GroupMessage" in origin
+
+    def _private_origin_for_event(self, event: AstrMessageEvent, sender_id: str) -> str:
+        origin = str(getattr(event, "unified_msg_origin", "") or "")
+        parts = origin.split(":")
+        platform = parts[0] if parts and parts[0] else "default"
+        return f"{platform}:FriendMessage:{sender_id}"
 
     def _event_plain_text(self, event: AstrMessageEvent) -> str:
         value = getattr(event, "message_str", None)
