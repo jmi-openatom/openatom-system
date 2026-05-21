@@ -466,7 +466,7 @@ function createField(type: any) {
   }
 }
 
-function createOption(option: any) {
+function createOption(option: any = {}) {
   return {
     uid: nextUid(),
     label: option.label || '',
@@ -475,6 +475,7 @@ function createOption(option: any) {
 }
 
 function addOption(field: any) {
+  if (!Array.isArray(field.options)) field.options = []
   field.options.push(createOption())
 }
 

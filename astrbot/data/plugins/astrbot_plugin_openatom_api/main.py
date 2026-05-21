@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 import aiohttp
 from aiohttp import web
 from astrbot.api import AstrBotConfig, logger
-from astrbot.api.event import AstrMessageEvent, MessageChain, filter
+from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
 
@@ -27,8 +27,13 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.2.6"
+PLUGIN_VERSION = "1.2.8"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
+
+
+class OutgoingMessageChain:
+    def __init__(self, chain: list[Any]):
+        self.chain = chain
 
 
 @register(
@@ -254,7 +259,7 @@ class OpenAtomApiPlugin(Star):
                 body = result.get("body")
                 leave_id = body.get("data") if isinstance(body, dict) else None
                 if leave_id:
-                    yield event.plain_result(f"请假申请已提交，编号 {leave_id}，当前状态：待审批。审批完成后后端会直接通知我，我会在这里通知你。")
+                    yield event.plain_result(f"请假申请已提交，编号 {leave_id}，当前状态：待审批。审批完成后我会在这里通知你。")
                 else:
                     yield event.plain_result("请假申请已提交，当前状态：待审批。")
             else:
@@ -797,15 +802,19 @@ class OpenAtomApiPlugin(Star):
             text = f" 你的请假申请“{title}”（编号 {leave_id}）未通过，原因：{reason}"
         else:
             return False
+        return await self._send_plain_message(origin, text.strip(), sender_id if "FriendMessage" not in origin else None)
+
+    async def _send_plain_message(self, origin: str, text: str, at_user: str | None = None) -> bool:
+        if not origin:
+            return False
         try:
             import astrbot.api.message_components as Comp
 
-            chain = MessageChain()
-            chain.chain = [Comp.At(qq=sender_id), Comp.Plain(text)] if sender_id else [Comp.Plain(text.strip())]
+            chain = OutgoingMessageChain([Comp.At(qq=at_user), Comp.Plain(text)] if at_user else [Comp.Plain(text)])
             await self.context.send_message(origin, chain)
             return True
         except Exception as exc:
-            logger.warning(f"OpenAtom leave status notification failed: leaveId={leave_id}, error={exc}")
+            logger.warning(f"OpenAtom active message failed: origin={origin}, error={exc}")
             return False
 
     async def terminate(self):
