@@ -16,8 +16,8 @@ import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
-import edu.jmi.openatom.server.openatomsystem.service.AvatarStorageService;
 import edu.jmi.openatom.server.openatomsystem.service.UserService;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -40,353 +41,355 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-  private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
-  private static final DataFormatter CELL_FORMATTER = new DataFormatter();
+	private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
+	private static final DataFormatter CELL_FORMATTER = new DataFormatter();
 
-  private final UserMapper userMapper;
-  private final RoleMapper roleMapper;
-  private final UserRoleMapper userRoleMapper;
-  private final ClubMapper clubMapper;
-  private final ClubDepartmentMapper clubDepartmentMapper;
-  private final ClubMembershipMapper clubMembershipMapper;
-  private final MembershipApplicationMapper membershipApplicationMapper;
-  private final ActivityRegistrationMapper activityRegistrationMapper;
-  private final FormSubmissionMapper formSubmissionMapper;
-  private final PasswordService passwordService;
-  private final AvatarStorageService avatarStorageService;
+	private final UserMapper userMapper;
+	private final RoleMapper roleMapper;
+	private final UserRoleMapper userRoleMapper;
+	private final ClubMapper clubMapper;
+	private final ClubDepartmentMapper clubDepartmentMapper;
+	private final ClubMembershipMapper clubMembershipMapper;
+	private final MembershipApplicationMapper membershipApplicationMapper;
+	private final ActivityRegistrationMapper activityRegistrationMapper;
+	private final FormSubmissionMapper formSubmissionMapper;
+	private final PasswordService passwordService;
+	private final AvatarStorageServiceImpl avatarStorageService;
 
-  @Override
-  public Result<PageDataVO<User>> getUsers(
-      String keyword, UserStatus status, Integer clubId, Long page, Long pageSize) {
-    long current = PageRequests.page(page);
-    long size = PageRequests.pageSize(pageSize);
-    List<Integer> userIds = null;
-    if (clubId != null) {
-      userIds = clubMembershipMapper.selectByClubId(clubId).stream()
-          .map(ClubMembership::getUserId).distinct().toList();
-      if (userIds.isEmpty()) {
-        return Result.success(PageDataVO.<User>builder().list(List.of())
-            .page(current).pageSize(size).total(0L).build());
-      }
-    }
-    Page<User> userPage = userMapper.selectPageByConditions(new Page<>(current, size), keyword, status, userIds);
-    List<User> users = userPage.getRecords().stream().map(this::buildSafeUser).toList();
-    return Result.success(PageDataVO.<User>builder().list(users)
-        .page(userPage.getCurrent()).pageSize(userPage.getSize()).total(userPage.getTotal()).build());
-  }
+	@Override
+	public Result<PageDataVO<User>> getUsers(
+			String keyword, UserStatus status, Integer clubId, Long page, Long pageSize) {
+		long current = PageRequests.page(page);
+		long size = PageRequests.pageSize(pageSize);
+		List<Integer> userIds = null;
+		if (clubId != null) {
+			userIds = clubMembershipMapper.selectByClubId(clubId).stream()
+					.map(ClubMembership::getUserId).distinct().toList();
+			if (userIds.isEmpty()) {
+				return Result.success(PageDataVO.<User>builder().list(List.of())
+						.page(current).pageSize(size).total(0L).build());
+			}
+		}
+		Page<User> userPage = userMapper.selectPageByConditions(new Page<>(current, size), keyword, status, userIds);
+		List<User> users = userPage.getRecords().stream().map(this::buildSafeUser).toList();
+		return Result.success(PageDataVO.<User>builder().list(users)
+				.page(userPage.getCurrent()).pageSize(userPage.getSize()).total(userPage.getTotal()).build());
+	}
 
-  @Override
-  @Transactional(rollbackFor = Exception.class)
-  public Result<String> createUser(RequestCreateUserDTO requestCreateUserDTO) {
-    if (requestCreateUserDTO == null) return Result.error("请求参数为空");
-    if (isBlank(requestCreateUserDTO.getUsername()) || isBlank(requestCreateUserDTO.getPassword())
-        || isBlank(requestCreateUserDTO.getRealName())) {
-      return Result.error(400, "用户名、密码、真实姓名不能为空");
-    }
-    String studentId = isBlank(requestCreateUserDTO.getStudentNo())
-        ? requestCreateUserDTO.getUsername() : requestCreateUserDTO.getStudentNo();
-    if (existsByUsernameOrStudentId(requestCreateUserDTO.getUsername(), studentId)) {
-      return Result.error(400, "用户名或学号已存在");
-    }
-    User user = User.builder().userName(requestCreateUserDTO.getUsername()).studentId(studentId)
-        .password(passwordService.encode(requestCreateUserDTO.getPassword()))
-        .realName(requestCreateUserDTO.getRealName()).gender(requestCreateUserDTO.getGender())
-        .phone(requestCreateUserDTO.getPhone()).email(requestCreateUserDTO.getEmail())
-        .college(requestCreateUserDTO.getCollege()).major(requestCreateUserDTO.getMajor())
-        .grade(requestCreateUserDTO.getGrade()).className(requestCreateUserDTO.getClassName())
-        .avatar(requestCreateUserDTO.getAvatar())
-        .userStatus(requestCreateUserDTO.getStatus() == null ? UserStatus.ACTIVE : requestCreateUserDTO.getStatus())
-        .build();
-    int row = userMapper.insert(user);
-    if (row <= 0) return Result.error("用户创建失败");
-    bindDefaultRole(user.getId());
-    bindDefaultClubMembership(user.getId());
-    return Result.success("用户创建成功");
-  }
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Result<String> createUser(RequestCreateUserDTO requestCreateUserDTO) {
+		if (requestCreateUserDTO == null) return Result.error("请求参数为空");
+		if (isBlank(requestCreateUserDTO.getUsername()) || isBlank(requestCreateUserDTO.getPassword())
+				|| isBlank(requestCreateUserDTO.getRealName())) {
+			return Result.error(400, "用户名、密码、真实姓名不能为空");
+		}
+		String studentId = isBlank(requestCreateUserDTO.getStudentNo())
+				? requestCreateUserDTO.getUsername() : requestCreateUserDTO.getStudentNo();
+		if (existsByUsernameOrStudentId(requestCreateUserDTO.getUsername(), studentId)) {
+			return Result.error(400, "用户名或学号已存在");
+		}
+		User user = User.builder().userName(requestCreateUserDTO.getUsername()).studentId(studentId)
+				.password(passwordService.encode(requestCreateUserDTO.getPassword()))
+				.realName(requestCreateUserDTO.getRealName()).gender(requestCreateUserDTO.getGender())
+				.phone(requestCreateUserDTO.getPhone()).email(requestCreateUserDTO.getEmail())
+				.college(requestCreateUserDTO.getCollege()).major(requestCreateUserDTO.getMajor())
+				.grade(requestCreateUserDTO.getGrade()).className(requestCreateUserDTO.getClassName())
+				.avatar(requestCreateUserDTO.getAvatar())
+				.userStatus(requestCreateUserDTO.getStatus() == null ? UserStatus.ACTIVE : requestCreateUserDTO.getStatus())
+				.build();
+		int row = userMapper.insert(user);
+		if (row <= 0) return Result.error("用户创建失败");
+		bindDefaultRole(user.getId());
+		bindDefaultClubMembership(user.getId());
+		return Result.success("用户创建成功");
+	}
 
-  @Override
-  @Transactional(rollbackFor = Exception.class)
-  public Result<String> importUsers(MultipartFile file) {
-    if (file == null || file.isEmpty()) return Result.error("上传文件为空");
-    try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
-      Sheet sheet = workbook.getSheetAt(0);
-      int rowCount = sheet.getPhysicalNumberOfRows();
-      if (rowCount <= 1) return Result.error("Excel 数据为空");
-      List<User> userList = new ArrayList<>();
-      Set<String> existingLoginIds = loadExistingLoginIds();
-      Set<String> importedLoginIds = new LinkedHashSet<>();
-      int skippedInvalidCount = 0;
-      int skippedDuplicateCount = 0;
-      for (int i = 1; i < rowCount; i++) {
-        Row row = sheet.getRow(i);
-        if (row == null) continue;
-        Cell userNameCell = row.getCell(0);
-        Cell studentIdCell = row.getCell(2);
-        String userName = normalizeAccountCellValue(userNameCell);
-        String realName = normalizeCellValue(row.getCell(1));
-        String studentId = normalizeAccountCellValue(studentIdCell);
-        String phone = normalizeCellValue(row.getCell(3));
-        String email = normalizeCellValue(row.getCell(4));
-        String college = normalizeCellValue(row.getCell(5));
-        String major = normalizeCellValue(row.getCell(6));
-        String grade = normalizeCellValue(row.getCell(7));
-        String className = normalizeCellValue(row.getCell(8));
-        if (isBlank(userName) || isBlank(realName)
-            || isDateLikeAccountCell(userNameCell) || isDateLikeAccountCell(studentIdCell)) {
-          skippedInvalidCount++;
-          continue;
-        }
-        if (isBlank(studentId)) studentId = userName;
-        if (existingLoginIds.contains(userName)
-            || existingLoginIds.contains(studentId)
-            || importedLoginIds.contains(userName)
-            || importedLoginIds.contains(studentId)) {
-          skippedDuplicateCount++;
-          continue;
-        }
-        User user = User.builder().userName(userName).realName(realName).studentId(studentId)
-            .phone(phone).email(email).college(college).major(major).grade(grade)
-            .className(className).password(passwordService.encode("123456"))
-            .userStatus(UserStatus.ACTIVE).build();
-        userList.add(user);
-        importedLoginIds.add(userName);
-        importedLoginIds.add(studentId);
-        existingLoginIds.add(userName);
-        existingLoginIds.add(studentId);
-      }
-      if (!userList.isEmpty()) {
-        for (User user : userList) {
-          userMapper.insert(user);
-          bindDefaultRole(user.getId());
-          bindDefaultClubMembership(user.getId());
-        }
-      }
-      String message = "成功导入 " + userList.size() + " 条用户数据";
-      int skippedCount = skippedInvalidCount + skippedDuplicateCount;
-      if (skippedCount > 0) {
-        message += "，跳过 " + skippedCount + " 条";
-        if (skippedDuplicateCount > 0) message += "，其中重复 " + skippedDuplicateCount + " 条";
-        if (skippedInvalidCount > 0) message += "，必填缺失 " + skippedInvalidCount + " 条";
-      }
-      return Result.success(message);
-    } catch (Exception e) {
-      return Result.error("Excel 导入失败: " + e.getMessage());
-    }
-  }
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Result<String> importUsers(MultipartFile file) {
+		if (file == null || file.isEmpty()) return Result.error("上传文件为空");
+		try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
+			Sheet sheet = workbook.getSheetAt(0);
+			int rowCount = sheet.getPhysicalNumberOfRows();
+			if (rowCount <= 1) return Result.error("Excel 数据为空");
+			List<User> userList = new ArrayList<>();
+			Set<String> existingLoginIds = loadExistingLoginIds();
+			Set<String> importedLoginIds = new LinkedHashSet<>();
+			int skippedInvalidCount = 0;
+			int skippedDuplicateCount = 0;
+			for (int i = 1; i < rowCount; i++) {
+				Row row = sheet.getRow(i);
+				if (row == null) continue;
+				Cell userNameCell = row.getCell(0);
+				Cell studentIdCell = row.getCell(2);
+				String userName = normalizeAccountCellValue(userNameCell);
+				String realName = normalizeCellValue(row.getCell(1));
+				String studentId = normalizeAccountCellValue(studentIdCell);
+				String phone = normalizeCellValue(row.getCell(3));
+				String email = normalizeCellValue(row.getCell(4));
+				String college = normalizeCellValue(row.getCell(5));
+				String major = normalizeCellValue(row.getCell(6));
+				String grade = normalizeCellValue(row.getCell(7));
+				String className = normalizeCellValue(row.getCell(8));
+				if (isBlank(userName) || isBlank(realName)
+						|| isDateLikeAccountCell(userNameCell) || isDateLikeAccountCell(studentIdCell)) {
+					skippedInvalidCount++;
+					continue;
+				}
+				if (isBlank(studentId)) studentId = userName;
+				if (existingLoginIds.contains(userName)
+						|| existingLoginIds.contains(studentId)
+						|| importedLoginIds.contains(userName)
+						|| importedLoginIds.contains(studentId)) {
+					skippedDuplicateCount++;
+					continue;
+				}
+				User user = User.builder().userName(userName).realName(realName).studentId(studentId)
+						.phone(phone).email(email).college(college).major(major).grade(grade)
+						.className(className).password(passwordService.encode("123456"))
+						.userStatus(UserStatus.ACTIVE).build();
+				userList.add(user);
+				importedLoginIds.add(userName);
+				importedLoginIds.add(studentId);
+				existingLoginIds.add(userName);
+				existingLoginIds.add(studentId);
+			}
+			if (!userList.isEmpty()) {
+				for (User user : userList) {
+					userMapper.insert(user);
+					bindDefaultRole(user.getId());
+					bindDefaultClubMembership(user.getId());
+				}
+			}
+			String message = "成功导入 " + userList.size() + " 条用户数据";
+			int skippedCount = skippedInvalidCount + skippedDuplicateCount;
+			if (skippedCount > 0) {
+				message += "，跳过 " + skippedCount + " 条";
+				if (skippedDuplicateCount > 0) message += "，其中重复 " + skippedDuplicateCount + " 条";
+				if (skippedInvalidCount > 0) message += "，必填缺失 " + skippedInvalidCount + " 条";
+			}
+			return Result.success(message);
+		} catch (Exception e) {
+			return Result.error("Excel 导入失败: " + e.getMessage());
+		}
+	}
 
-  @Override
-  public Result<ResponseAvatarHealthVO> getAvatarHealth() {
-    List<User> managedUsers =
-        userMapper.selectUsersWithAvatar().stream()
-            .filter(user -> avatarStorageService.isManagedAvatarUrl(user.getAvatar()))
-            .toList();
-    List<User> invalidUsers =
-        managedUsers.stream()
-            .filter(user -> !avatarStorageService.existsByAvatarUrl(user.getAvatar()))
-            .map(this::buildSafeUser)
-            .toList();
-    return Result.success(
-        ResponseAvatarHealthVO.builder()
-            .totalManaged(managedUsers.size())
-            .invalidCount(invalidUsers.size())
-            .invalidUsers(invalidUsers)
-            .build());
-  }
+	@Override
+	public Result<ResponseAvatarHealthVO> getAvatarHealth() {
+		List<User> managedUsers =
+				userMapper.selectUsersWithAvatar().stream()
+						.filter(user -> avatarStorageService.isManagedAvatarUrl(user.getAvatar()))
+						.toList();
+		List<User> invalidUsers =
+				managedUsers.stream()
+						.filter(user -> !avatarStorageService.existsByAvatarUrl(user.getAvatar()))
+						.map(this::buildSafeUser)
+						.toList();
+		return Result.success(
+				ResponseAvatarHealthVO.builder()
+						.totalManaged(managedUsers.size())
+						.invalidCount(invalidUsers.size())
+						.invalidUsers(invalidUsers)
+						.build());
+	}
 
-  @Override
-  @Transactional(rollbackFor = Exception.class)
-  public Result<Integer> cleanupInvalidAvatars() {
-    List<User> invalidUsers =
-        userMapper.selectUsersWithAvatar().stream()
-            .filter(user -> avatarStorageService.isManagedAvatarUrl(user.getAvatar()))
-            .filter(user -> !avatarStorageService.existsByAvatarUrl(user.getAvatar()))
-            .toList();
-    invalidUsers.forEach(
-        user -> {
-          user.setAvatar(null);
-          userMapper.updateById(user);
-        });
-    return Result.success(invalidUsers.size(), "已清理 " + invalidUsers.size() + " 条失效头像");
-  }
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Result<Integer> cleanupInvalidAvatars() {
+		List<User> invalidUsers =
+				userMapper.selectUsersWithAvatar().stream()
+						.filter(user -> avatarStorageService.isManagedAvatarUrl(user.getAvatar()))
+						.filter(user -> !avatarStorageService.existsByAvatarUrl(user.getAvatar()))
+						.toList();
+		invalidUsers.forEach(
+				user -> {
+					user.setAvatar(null);
+					userMapper.updateById(user);
+				});
+		return Result.success(invalidUsers.size(), "已清理 " + invalidUsers.size() + " 条失效头像");
+	}
 
-  @Override
-  public byte[] exportTemplate() {
-    try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-      Sheet sheet = workbook.createSheet("用户导入模板");
-      Row header = sheet.createRow(0);
-      String[] titles = {"用户名*", "姓名*", "学号", "手机号", "邮箱", "学院", "专业", "年级", "班级"};
-      for (int i = 0; i < titles.length; i++) header.createCell(i).setCellValue(titles[i]);
-      Row example = sheet.createRow(1);
-      example.createCell(0).setCellValue("test_user");
-      example.createCell(1).setCellValue("张三");
-      example.createCell(2).setCellValue("20230001");
-      example.createCell(3).setCellValue("13800000000");
-      example.createCell(4).setCellValue("test@example.com");
-      example.createCell(5).setCellValue("信息工程学院");
-      example.createCell(6).setCellValue("计算机应用技术");
-      example.createCell(7).setCellValue("2023");
-      example.createCell(8).setCellValue("计网2301");
-      workbook.write(out);
-      return out.toByteArray();
-    } catch (IOException e) {
-      throw new RuntimeException("模板导出失败", e);
-    }
-  }
+	@Override
+	public byte[] exportTemplate() {
+		try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+			Sheet sheet = workbook.createSheet("用户导入模板");
+			Row header = sheet.createRow(0);
+			String[] titles = {"用户名*", "姓名*", "学号", "手机号", "邮箱", "学院", "专业", "年级", "班级"};
+			for (int i = 0; i < titles.length; i++) header.createCell(i).setCellValue(titles[i]);
+			Row example = sheet.createRow(1);
+			example.createCell(0).setCellValue("test_user");
+			example.createCell(1).setCellValue("张三");
+			example.createCell(2).setCellValue("20230001");
+			example.createCell(3).setCellValue("13800000000");
+			example.createCell(4).setCellValue("test@example.com");
+			example.createCell(5).setCellValue("信息工程学院");
+			example.createCell(6).setCellValue("计算机应用技术");
+			example.createCell(7).setCellValue("2023");
+			example.createCell(8).setCellValue("计网2301");
+			workbook.write(out);
+			return out.toByteArray();
+		} catch (IOException e) {
+			throw new RuntimeException("模板导出失败", e);
+		}
+	}
 
-  private String getCellValue(Cell cell) {
-    if (cell == null) return "";
-    return CELL_FORMATTER.formatCellValue(cell);
-  }
+	private String getCellValue(Cell cell) {
+		if (cell == null) return "";
+		return CELL_FORMATTER.formatCellValue(cell);
+	}
 
-  private String normalizeCellValue(Cell cell) {
-    return getCellValue(cell).trim();
-  }
+	private String normalizeCellValue(Cell cell) {
+		return getCellValue(cell).trim();
+	}
 
-  private String normalizeAccountCellValue(Cell cell) {
-    if (isDateLikeAccountCell(cell)) return "";
-    return normalizeCellValue(cell);
-  }
+	private String normalizeAccountCellValue(Cell cell) {
+		if (isDateLikeAccountCell(cell)) return "";
+		return normalizeCellValue(cell);
+	}
 
-  private boolean isDateLikeAccountCell(Cell cell) {
-    return cell != null
-        && cell.getCellType() == CellType.NUMERIC
-        && DateUtil.isCellDateFormatted(cell);
-  }
+	private boolean isDateLikeAccountCell(Cell cell) {
+		return cell != null
+				&& cell.getCellType() == CellType.NUMERIC
+				&& DateUtil.isCellDateFormatted(cell);
+	}
 
-  private Set<String> loadExistingLoginIds() {
-    Set<String> loginIds = new HashSet<>();
-    userMapper.selectList(null).forEach(user -> {
-      if (!isBlank(user.getUserName())) loginIds.add(user.getUserName().trim());
-      if (!isBlank(user.getStudentId())) loginIds.add(user.getStudentId().trim());
-    });
-    return loginIds;
-  }
+	private Set<String> loadExistingLoginIds() {
+		Set<String> loginIds = new HashSet<>();
+		userMapper.selectList(null).forEach(user -> {
+			if (!isBlank(user.getUserName())) loginIds.add(user.getUserName().trim());
+			if (!isBlank(user.getStudentId())) loginIds.add(user.getStudentId().trim());
+		});
+		return loginIds;
+	}
 
-  @Override
-  public Result<User> infoByUserId(Integer userId) {
-    Integer targetUserId = userId == null ? StpUtil.getLoginIdAsInt() : userId;
-    User user = userMapper.selectById(targetUserId);
-    if (user == null) return Result.error(404, "用户不存在");
-    return Result.success(buildSafeUser(user));
-  }
+	@Override
+	public Result<User> infoByUserId(Integer userId) {
+		Integer targetUserId = userId == null ? StpUtil.getLoginIdAsInt() : userId;
+		User user = userMapper.selectById(targetUserId);
+		if (user == null) return Result.error(404, "用户不存在");
+		return Result.success(buildSafeUser(user));
+	}
 
-  @Override
-  public Result<String> updateUserInfo(Integer userId, RequestUserUpdateDTO requestUserUpdate) {
-    if (userId == null) return Result.error(400, "userId不能为空");
-    if (requestUserUpdate == null) return Result.error("请求参数为空");
-    User user = userMapper.selectById(userId);
-    if (user == null) return Result.error(404, "用户不存在");
-    user.setRealName(requestUserUpdate.getRealName());
-    user.setGender(requestUserUpdate.getGender());
-    user.setPhone(requestUserUpdate.getPhone());
-    user.setEmail(requestUserUpdate.getEmail());
-    user.setStudentId(requestUserUpdate.getStudentNo());
-    user.setCollege(requestUserUpdate.getCollege());
-    user.setMajor(requestUserUpdate.getMajor());
-    user.setGrade(requestUserUpdate.getGrade());
-    user.setClassName(requestUserUpdate.getClassName());
-    user.setAvatar(requestUserUpdate.getAvatar());
-    int row = userMapper.updateById(user);
-    return row > 0 ? Result.success("用户信息更新成功") : Result.error("用户信息更新失败");
-  }
+	@Override
+	public Result<String> updateUserInfo(Integer userId, RequestUserUpdateDTO requestUserUpdate) {
+		if (userId == null) return Result.error(400, "userId不能为空");
+		if (requestUserUpdate == null) return Result.error("请求参数为空");
+		User user = userMapper.selectById(userId);
+		if (user == null) return Result.error(404, "用户不存在");
+		user.setRealName(requestUserUpdate.getRealName());
+		user.setGender(requestUserUpdate.getGender());
+		user.setPhone(requestUserUpdate.getPhone());
+		user.setEmail(requestUserUpdate.getEmail());
+		user.setStudentId(requestUserUpdate.getStudentNo());
+		user.setCollege(requestUserUpdate.getCollege());
+		user.setMajor(requestUserUpdate.getMajor());
+		user.setGrade(requestUserUpdate.getGrade());
+		user.setClassName(requestUserUpdate.getClassName());
+		user.setAvatar(requestUserUpdate.getAvatar());
+		int row = userMapper.updateById(user);
+		return row > 0 ? Result.success("用户信息更新成功") : Result.error("用户信息更新失败");
+	}
 
-  @Override
-  public Result<String> updateUserStatus(Integer userId, RequestUpdateUserStatusDTO requestUpdateUserStatusDTO) {
-    if (userId == null) return Result.error(400, "userId不能为空");
-    if (requestUpdateUserStatusDTO == null || requestUpdateUserStatusDTO.getStatus() == null)
-      return Result.error(400, "用户状态不能为空");
-    User user = userMapper.selectById(userId);
-    if (user == null) return Result.error(404, "用户不存在");
-    user.setUserStatus(requestUpdateUserStatusDTO.getStatus());
-    int row = userMapper.updateById(user);
-    return row > 0 ? Result.success("用户状态更新成功") : Result.error("用户状态更新失败");
-  }
+	@Override
+	public Result<String> updateUserStatus(Integer userId, RequestUpdateUserStatusDTO requestUpdateUserStatusDTO) {
+		if (userId == null) return Result.error(400, "userId不能为空");
+		if (requestUpdateUserStatusDTO == null || requestUpdateUserStatusDTO.getStatus() == null)
+			return Result.error(400, "用户状态不能为空");
+		User user = userMapper.selectById(userId);
+		if (user == null) return Result.error(404, "用户不存在");
+		user.setUserStatus(requestUpdateUserStatusDTO.getStatus());
+		int row = userMapper.updateById(user);
+		return row > 0 ? Result.success("用户状态更新成功") : Result.error("用户状态更新失败");
+	}
 
-  @Override
-  public Result<String> resetPassword(Integer userId, RequestResetPasswordDTO requestResetPasswordDTO) {
-    if (userId == null) return Result.error(400, "userId不能为空");
-    if (requestResetPasswordDTO == null || isBlank(requestResetPasswordDTO.getNewPassword()))
-      return Result.error(400, "新密码不能为空");
-    User user = userMapper.selectById(userId);
-    if (user == null) return Result.error(404, "用户不存在");
-    user.setPassword(passwordService.encode(requestResetPasswordDTO.getNewPassword()));
-    int row = userMapper.updateById(user);
-    return row > 0 ? Result.success("密码重置成功") : Result.error("密码重置失败");
-  }
+	@Override
+	public Result<String> resetPassword(Integer userId, RequestResetPasswordDTO requestResetPasswordDTO) {
+		if (userId == null) return Result.error(400, "userId不能为空");
+		if (requestResetPasswordDTO == null || isBlank(requestResetPasswordDTO.getNewPassword()))
+			return Result.error(400, "新密码不能为空");
+		User user = userMapper.selectById(userId);
+		if (user == null) return Result.error(404, "用户不存在");
+		user.setPassword(passwordService.encode(requestResetPasswordDTO.getNewPassword()));
+		int row = userMapper.updateById(user);
+		return row > 0 ? Result.success("密码重置成功") : Result.error("密码重置失败");
+	}
 
-  @Override
-  public Result<List<ResponseMembershipVO>> getUserMemberships(Integer userId) {
-    if (userId == null) return Result.error(400, "userId不能为空");
-    User user = userMapper.selectById(userId);
-    if (user == null) return Result.error(404, "用户不存在");
-    List<ResponseMembershipVO> memberships = clubMembershipMapper.selectByUserId(userId).stream()
-        .map(this::buildMembershipResponse).toList();
-    return Result.success(memberships);
-  }
+	@Override
+	public Result<List<ResponseMembershipVO>> getUserMemberships(Integer userId) {
+		if (userId == null) return Result.error(400, "userId不能为空");
+		User user = userMapper.selectById(userId);
+		if (user == null) return Result.error(404, "用户不存在");
+		List<ResponseMembershipVO> memberships = clubMembershipMapper.selectByUserId(userId).stream()
+				.map(this::buildMembershipResponse).toList();
+		return Result.success(memberships);
+	}
 
-  @Override
-  @Transactional(rollbackFor = Exception.class)
-  public Result<String> deleteUser(Integer userId) {
-    if (userId == null) return Result.error(400, "userId不能为空");
-    if (StpUtil.isLogin() && userId.equals(StpUtil.getLoginIdAsInt()))
-      return Result.error(400, "不能删除当前登录用户");
-    User user = userMapper.selectById(userId);
-    if (user == null) return Result.error(404, "用户不存在");
-    Long activeMembershipCount = clubMembershipMapper.countActiveByUserId(userId);
-    if (activeMembershipCount != null && activeMembershipCount > 0)
-      return Result.error(400, "请先将该用户从社团中移出");
-    userRoleMapper.deleteByUserId(userId);
-    clubMembershipMapper.deleteByUserId(userId);
-    activityRegistrationMapper.deleteByUserId(userId);
-    membershipApplicationMapper.nullifyUserId(userId);
-    formSubmissionMapper.nullifyUserId(userId);
-    clubMapper.nullifyPresidentUserId(userId);
-    clubDepartmentMapper.nullifyManagerUserId(userId);
-    int rows = userMapper.deleteById(userId);
-    return rows > 0 ? Result.success("用户已删除") : Result.error("用户删除失败");
-  }
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Result<String> deleteUser(Integer userId) {
+		if (userId == null) return Result.error(400, "userId不能为空");
+		if (StpUtil.isLogin() && userId.equals(StpUtil.getLoginIdAsInt()))
+			return Result.error(400, "不能删除当前登录用户");
+		User user = userMapper.selectById(userId);
+		if (user == null) return Result.error(404, "用户不存在");
+		Long activeMembershipCount = clubMembershipMapper.countActiveByUserId(userId);
+		if (activeMembershipCount != null && activeMembershipCount > 0)
+			return Result.error(400, "请先将该用户从社团中移出");
+		userRoleMapper.deleteByUserId(userId);
+		clubMembershipMapper.deleteByUserId(userId);
+		activityRegistrationMapper.deleteByUserId(userId);
+		membershipApplicationMapper.nullifyUserId(userId);
+		formSubmissionMapper.nullifyUserId(userId);
+		clubMapper.nullifyPresidentUserId(userId);
+		clubDepartmentMapper.nullifyManagerUserId(userId);
+		int rows = userMapper.deleteById(userId);
+		return rows > 0 ? Result.success("用户已删除") : Result.error("用户删除失败");
+	}
 
-  private boolean existsByUsernameOrStudentId(String username, String studentId) {
-    return userMapper.countByUsernameOrStudentId(username, studentId) > 0;
-  }
+	private boolean existsByUsernameOrStudentId(String username, String studentId) {
+		return userMapper.countByUsernameOrStudentId(username, studentId) > 0;
+	}
 
-  private void bindDefaultRole(Integer userId) {
-    String roleCode = RoleSeedTemplate.probationaryMember().code();
-    Role role = roleMapper.selectByCode(roleCode);
-    if (role == null) throw new IllegalStateException("Default role not initialized: " + roleCode);
-    UserRole exists = userRoleMapper.selectOneByUserAndRole(userId, role.getId());
-    if (exists == null) {
-      userRoleMapper.insert(UserRole.builder().userId(userId).roleId(role.getId()).build());
-    }
-  }
+	private void bindDefaultRole(Integer userId) {
+		String roleCode = RoleSeedTemplate.probationaryMember().code();
+		Role role = roleMapper.selectByCode(roleCode);
+		if (role == null) throw new IllegalStateException("Default role not initialized: " + roleCode);
+		UserRole exists = userRoleMapper.selectOneByUserAndRole(userId, role.getId());
+		if (exists == null) {
+			userRoleMapper.insert(UserRole.builder().userId(userId).roleId(role.getId()).build());
+		}
+	}
 
-  private void bindDefaultClubMembership(Integer userId) {
-    Club club = clubMapper.selectDefaultClub(DEFAULT_CLUB_CODE);
-    if (club == null) throw new IllegalStateException("Default club not initialized: " + DEFAULT_CLUB_CODE);
-    ClubMembership exists = clubMembershipMapper.selectActiveMembership(userId, club.getId());
-    if (exists == null) {
-      clubMembershipMapper.insert(
-          ClubMembership.builder().userId(userId).clubId(club.getId()).status("probation").build());
-    }
-  }
+	private void bindDefaultClubMembership(Integer userId) {
+		Club club = clubMapper.selectDefaultClub(DEFAULT_CLUB_CODE);
+		if (club == null) throw new IllegalStateException("Default club not initialized: " + DEFAULT_CLUB_CODE);
+		ClubMembership exists = clubMembershipMapper.selectActiveMembership(userId, club.getId());
+		if (exists == null) {
+			clubMembershipMapper.insert(
+					ClubMembership.builder().userId(userId).clubId(club.getId()).status("probation").build());
+		}
+	}
 
-  private User buildSafeUser(User user) {
-    return User.builder().id(user.getId()).userName(user.getUserName()).realName(user.getRealName())
-        .gender(user.getGender()).phone(user.getPhone()).email(user.getEmail())
-        .studentId(user.getStudentId()).college(user.getCollege()).major(user.getMajor())
-        .grade(user.getGrade()).className(user.getClassName()).avatar(user.getAvatar())
-        .miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
-        .qqOpenid(isBlank(user.getQqOpenid()) ? null : "BOUND")
-        .userStatus(user.getUserStatus()).createTime(user.getCreateTime())
-        .lastLoginAt(user.getLastLoginAt()).build();
-  }
+	private User buildSafeUser(User user) {
+		return User.builder().id(user.getId()).userName(user.getUserName()).realName(user.getRealName())
+				.gender(user.getGender()).phone(user.getPhone()).email(user.getEmail())
+				.studentId(user.getStudentId()).college(user.getCollege()).major(user.getMajor())
+				.grade(user.getGrade()).className(user.getClassName()).avatar(user.getAvatar())
+				.miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
+				.qqOpenid(isBlank(user.getQqOpenid()) ? null : "BOUND")
+				.userStatus(user.getUserStatus()).createTime(user.getCreateTime())
+				.lastLoginAt(user.getLastLoginAt()).build();
+	}
 
-  private ResponseMembershipVO buildMembershipResponse(ClubMembership membership) {
-    return ResponseMembershipVO.builder().id(membership.getId()).userId(membership.getUserId())
-        .clubId(membership.getClubId()).departmentId(membership.getDepartmentId())
-        .positionId(membership.getPositionId()).status(membership.getStatus())
-        .joinedAt(membership.getJoinedAt()).leftAt(membership.getLeftAt()).build();
-  }
+	private ResponseMembershipVO buildMembershipResponse(ClubMembership membership) {
+		return ResponseMembershipVO.builder().id(membership.getId()).userId(membership.getUserId())
+				.clubId(membership.getClubId()).departmentId(membership.getDepartmentId())
+				.positionId(membership.getPositionId()).status(membership.getStatus())
+				.joinedAt(membership.getJoinedAt()).leftAt(membership.getLeftAt()).build();
+	}
 
-  private boolean isBlank(String value) { return value == null || value.isBlank(); }
+	private boolean isBlank(String value) {
+		return value == null || value.isBlank();
+	}
 }

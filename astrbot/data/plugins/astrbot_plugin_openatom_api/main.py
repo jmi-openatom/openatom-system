@@ -3,12 +3,9 @@ from __future__ import annotations
 import asyncio
 import base64
 import contextlib
-import hashlib
 import json
 import inspect
 import re
-import tempfile
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -32,7 +29,6 @@ MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
 PLUGIN_VERSION = "1.3.0"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
-BOT_IMAGE_DIR = Path(tempfile.gettempdir()) / "openatom-bot-replies"
 
 
 class OutgoingMessageChain:
@@ -73,7 +69,7 @@ class OpenAtomApiPlugin(Star):
     @oa.command("help", alias={"帮助"})
     async def help(self, event: AstrMessageEvent):
         """查看 OpenAtom API 插件用法"""
-        yield self._image_result(
+        yield self._plain_result(
             event,
             "\n".join(
                 [
@@ -98,7 +94,7 @@ class OpenAtomApiPlugin(Star):
     async def show_config(self, event: AstrMessageEvent):
         """查看当前 API 配置"""
         token_status = "已配置" if self.access_token else "未配置"
-        yield self._image_result(
+        yield self._plain_result(
             event,
             f"base_url: {self.base_url}\n"
             f"plugin_version: {PLUGIN_VERSION}\n"
@@ -133,43 +129,40 @@ class OpenAtomApiPlugin(Star):
     async def ping(self, event: AstrMessageEvent):
         """测试后端连接"""
         data, error = await self._get_data("/site/register-enabled")
-        yield self._image_result(event, "后端连接正常" if error is None else error)
+        yield self._plain_result(event, "后端连接正常" if error is None else error)
 
     @oa.command("me")
     async def me(self, event: AstrMessageEvent):
         """查看当前登录用户"""
         data, error = await self._get_data("/auth/me")
-        yield self._image_result(event, error or self._format_generic(data))
+        yield self._plain_result(event, error or self._format_generic(data))
 
     @oa.command("bind-qq", alias={"绑定qq", "qq绑定"})
     async def bind_qq(self, event: AstrMessageEvent, token: str):
         """使用网页登录生成的一次性绑定码绑定当前 QQ"""
         qq_openid = self._event_sender_id(event)
         if not qq_openid:
-            yield self._image_result(event, "没有获取到当前 QQ 号，无法绑定。")
+            yield self._plain_result(event, "没有获取到当前 QQ 号，无法绑定。")
             return
         result = await self._request(
             "POST",
             "/auth/qq-bind/confirm",
             body={"token": token, "qqOpenid": qq_openid},
         )
-        yield self._image_result(event, self._success_message(result, f"已将当前 QQ（{qq_openid}）绑定到系统账号。"))
+        yield self._plain_result(event, self._success_message(result, f"已将当前 QQ（{qq_openid}）绑定到系统账号。"))
 
     @oa.command("ask", alias={"问"})
     async def ask(self, event: AstrMessageEvent, *question_parts: str):
         """按自然语言问题查询公开数据"""
         question = " ".join(question_parts).strip()
-        answer = await self._answer_question(question)
-        result = self._plain_result if self._is_leave_related_text(question) else self._image_result
-        yield result(event, answer)
+        yield self._plain_result(event, await self._answer_question(question))
 
     @oa.command("get")
     async def get(self, event: AstrMessageEvent, path: str, *params: str):
         """调用 GET API，参数格式 key=value"""
         query = self._parse_query(params)
         data, error = await self._get_data(path, query)
-        result = self._plain_result if self._is_leave_related_text(path) else self._image_result
-        yield result(event, error or self._format_generic(data))
+        yield self._plain_result(event, error or self._format_generic(data))
 
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_leave_conversation(self, event: AstrMessageEvent):
@@ -306,9 +299,7 @@ class OpenAtomApiPlugin(Star):
         Args:
             question(string): 用户原始问题
         '''
-        answer = await self._answer_question(question)
-        result = self._plain_result if self._is_leave_related_text(question) else self._image_result
-        yield result(event, answer)
+        yield self._plain_result(event, await self._answer_question(question))
 
     async def _answer_question(self, question: str) -> str:
         text = (question or "").strip().lower()
@@ -847,20 +838,6 @@ class OpenAtomApiPlugin(Star):
             logger.warning(f"OpenAtom active plain message failed: origin={origin}, error={exc}")
             return False
 
-    async def _send_image_message(self, origin: str, text: str, at_user: str | None = None) -> bool:
-        if not origin:
-            return False
-        try:
-            import astrbot.api.message_components as Comp
-
-            chain_items = self._build_image_chain(Comp, text, at_user)
-            chain = OutgoingMessageChain(chain_items)
-            await self.context.send_message(origin, chain)
-            return True
-        except Exception as exc:
-            logger.warning(f"OpenAtom active message failed: origin={origin}, error={exc}")
-            return False
-
     def _plain_result(self, event: AstrMessageEvent, text: str):
         message = str(text or "")
         try:
@@ -876,146 +853,12 @@ class OpenAtomApiPlugin(Star):
             logger.warning(f"OpenAtom plain reply fallback to plain_result: {exc}")
             return event.plain_result(message)
 
-    def _image_result(self, event: AstrMessageEvent, text: str):
-        message = str(text or "")
-        try:
-            import astrbot.api.message_components as Comp
-
-            chain = self._build_image_chain(Comp, message)
-            for method_name in ("chain_result", "message_result"):
-                method = getattr(event, method_name, None)
-                if callable(method):
-                    return method(chain)
-            return OutgoingMessageChain(chain)
-        except Exception as exc:
-            logger.warning(f"OpenAtom image reply fallback to plain text: {exc}")
-            return event.plain_result(message)
-
     def _build_plain_chain(self, Comp: Any, text: str, at_user: str | None = None) -> list[Any]:
         chain: list[Any] = []
         if at_user:
             chain.append(Comp.At(qq=at_user))
         chain.append(Comp.Plain(str(text or "")))
         return chain
-
-    def _build_image_chain(self, Comp: Any, text: str, at_user: str | None = None) -> list[Any]:
-        image_path = self._render_text_image(text)
-        chain: list[Any] = []
-        if at_user:
-            chain.append(Comp.At(qq=at_user))
-        chain.append(self._image_component(Comp, image_path))
-        return chain
-
-    def _image_component(self, Comp: Any, image_path: Path) -> Any:
-        image_class = getattr(Comp, "Image")
-        path = str(image_path)
-        for factory_name in ("fromFileSystem", "from_file", "fromFile", "from_path"):
-            factory = getattr(image_class, factory_name, None)
-            if callable(factory):
-                try:
-                    return factory(path)
-                except TypeError:
-                    pass
-        for args, kwargs in (
-            ((path,), {}),
-            ((), {"file": path}),
-            ((), {"path": path}),
-            ((), {"url": f"file://{path}"}),
-        ):
-            try:
-                return image_class(*args, **kwargs)
-            except TypeError:
-                continue
-        return image_class(path)
-
-    def _render_text_image(self, text: str) -> Path:
-        try:
-            from PIL import Image, ImageDraw, ImageFont
-        except ImportError as exc:
-            raise RuntimeError("Pillow 未安装，无法把机器人回复渲染为图片") from exc
-
-        BOT_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
-        self._cleanup_old_reply_images()
-        safe_text = str(text or "").strip() or " "
-        digest = hashlib.sha1(f"{time.time_ns()}:{safe_text}".encode("utf-8")).hexdigest()[:16]
-        image_path = BOT_IMAGE_DIR / f"reply-{digest}.png"
-
-        font = self._load_reply_font(ImageFont, 30)
-        small_font = self._load_reply_font(ImageFont, 22)
-        width = 980
-        padding_x = 46
-        padding_y = 40
-        line_gap = 12
-        content_width = width - padding_x * 2
-
-        probe = Image.new("RGB", (width, 120), "#ffffff")
-        draw = ImageDraw.Draw(probe)
-        lines = self._wrap_reply_text(draw, safe_text, font, content_width)
-        line_height = self._text_height(draw, "开放原子", font) + line_gap
-        footer_height = 38
-        height = max(180, padding_y * 2 + len(lines) * line_height + footer_height)
-
-        image = Image.new("RGB", (width, height), "#f7fafc")
-        draw = ImageDraw.Draw(image)
-        draw.rounded_rectangle((18, 18, width - 18, height - 18), radius=28, fill="#ffffff", outline="#dbe4ee", width=2)
-        draw.rounded_rectangle((18, 18, width - 18, 86), radius=28, fill="#0f766e")
-        draw.rectangle((18, 54, width - 18, 86), fill="#0f766e")
-        draw.text((padding_x, 36), "OpenAtom Bot", fill="#ffffff", font=small_font)
-
-        y = 112
-        for line in lines:
-            draw.text((padding_x, y), line, fill="#111827", font=font)
-            y += line_height
-        image.save(image_path, "PNG", optimize=True)
-        return image_path
-
-    def _load_reply_font(self, ImageFont: Any, size: int) -> Any:
-        for path in (
-            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-            "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf",
-            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
-            "/System/Library/Fonts/PingFang.ttc",
-            "/System/Library/Fonts/STHeiti Light.ttc",
-            "/Library/Fonts/Arial Unicode.ttf",
-        ):
-            if Path(path).exists():
-                try:
-                    return ImageFont.truetype(path, size)
-                except Exception:
-                    continue
-        return ImageFont.load_default()
-
-    def _wrap_reply_text(self, draw: Any, text: str, font: Any, max_width: int) -> list[str]:
-        lines: list[str] = []
-        for paragraph in text.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
-            if not paragraph:
-                lines.append("")
-                continue
-            current = ""
-            for char in paragraph:
-                candidate = current + char
-                if current and draw.textlength(candidate, font=font) > max_width:
-                    lines.append(current)
-                    current = char
-                else:
-                    current = candidate
-            if current:
-                lines.append(current)
-        return lines or [" "]
-
-    def _text_height(self, draw: Any, text: str, font: Any) -> int:
-        bbox = draw.textbbox((0, 0), text, font=font)
-        return max(1, bbox[3] - bbox[1])
-
-    def _cleanup_old_reply_images(self) -> None:
-        if not BOT_IMAGE_DIR.exists():
-            return
-        cutoff = time.time() - 24 * 60 * 60
-        for path in BOT_IMAGE_DIR.glob("reply-*.png"):
-            with contextlib.suppress(OSError):
-                if path.stat().st_mtime < cutoff:
-                    path.unlink()
 
     async def terminate(self):
         if self.callback_task is not None:
@@ -1602,10 +1445,6 @@ class OpenAtomApiPlugin(Star):
 
     def _has_any(self, text: str, words: tuple[str, ...]) -> bool:
         return any(word in text for word in words)
-
-    def _is_leave_related_text(self, text: str) -> bool:
-        normalized = str(text or "").strip().lower()
-        return self._has_any(normalized, ("请假", "假条", "leave", "leave-application", "leave_applications"))
 
     def _normalize_text(self, value: Any) -> str:
         return re.sub(r"\s+", "", str(value or "").lower())
