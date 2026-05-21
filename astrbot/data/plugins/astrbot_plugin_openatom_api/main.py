@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.2.6"
+PLUGIN_VERSION = "1.2.7"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -71,7 +71,7 @@ class OpenAtomApiPlugin(Star):
                     "/oa ping",
                     "/oa me",
                     "/oa bind-qq 绑定码",
-                    "艾特我发送“我要请假 / 请个假 / 今天去不了”",
+                    "群里艾特我发送“我要请假 / 请个假 / 今天去不了”，我会私聊继续办理",
                     "/oa ask 社团有多少人",
                     "/oa ask 主要人员有哪些",
                     "/oa ask 看一下1号活动",
@@ -171,6 +171,11 @@ class OpenAtomApiPlugin(Star):
         if not session:
             if text.startswith("/") or not self._looks_like_leave_request(text):
                 return
+            private_session_key = self._private_leave_session_key(sender_id)
+            if self._is_group_event(event) and private_session_key in self.leave_sessions:
+                yield event.plain_result("你已经有一条请假流程在私聊中进行，请到私聊继续发送。")
+                event.stop_event()
+                return
             bound, error = await self._is_qq_bound(sender_id)
             if error:
                 yield event.plain_result(error)
@@ -180,8 +185,26 @@ class OpenAtomApiPlugin(Star):
                 yield event.plain_result("当前 QQ 还没有绑定系统账号。请先登录网页个人中心生成绑定码，再发送 /oa bind-qq 绑定码。")
                 event.stop_event()
                 return
-            self.leave_sessions[session_key] = {"step": "title", "qqOpenid": sender_id}
-            yield event.plain_result("开始提交请假申请。请先发送请假类型，例如：例会请假、活动请假。发送“取消”可退出。")
+            if self._is_group_event(event):
+                private_origin = self._private_origin_for_event(event, sender_id)
+                sent = await self._send_plain_message(
+                    private_origin,
+                    "开始提交请假申请。请先发送请假类型，例如：例会请假、活动请假。发送“取消”可退出。",
+                )
+                if not sent:
+                    yield event.plain_result("我没能私聊你，请先添加机器人好友，或允许群临时会话后再发起请假。")
+                    event.stop_event()
+                    return
+                self.leave_sessions[private_session_key] = {
+                    "step": "title",
+                    "qqOpenid": sender_id,
+                    "notifyOrigin": private_origin,
+                }
+                yield event.plain_result("我已经私聊你了，请到私聊继续完成请假申请。")
+            else:
+                private_origin = str(getattr(event, "unified_msg_origin", "") or self._private_origin_for_event(event, sender_id))
+                self.leave_sessions[session_key] = {"step": "title", "qqOpenid": sender_id, "notifyOrigin": private_origin}
+                yield event.plain_result("开始提交请假申请。请先发送请假类型，例如：例会请假、活动请假。发送“取消”可退出。")
             event.stop_event()
             return
 
@@ -245,7 +268,7 @@ class OpenAtomApiPlugin(Star):
                     "startAt": session.get("startAt"),
                     "endAt": session.get("endAt"),
                     "attachments": session["attachments"],
-                    "botNotifyOrigin": str(getattr(event, "unified_msg_origin", "") or ""),
+                    "botNotifyOrigin": session.get("notifyOrigin") or str(getattr(event, "unified_msg_origin", "") or ""),
                     "botNotifyUserId": session["qqOpenid"],
                 },
             )
@@ -254,7 +277,7 @@ class OpenAtomApiPlugin(Star):
                 body = result.get("body")
                 leave_id = body.get("data") if isinstance(body, dict) else None
                 if leave_id:
-                    yield event.plain_result(f"请假申请已提交，编号 {leave_id}，当前状态：待审批。审批完成后后端会直接通知我，我会在这里通知你。")
+                    yield event.plain_result(f"请假申请已提交，编号 {leave_id}，当前状态：待审批。审批结果会继续通过私聊通知你。")
                 else:
                     yield event.plain_result("请假申请已提交，当前状态：待审批。")
             else:
@@ -797,15 +820,20 @@ class OpenAtomApiPlugin(Star):
             text = f" 你的请假申请“{title}”（编号 {leave_id}）未通过，原因：{reason}"
         else:
             return False
+        return await self._send_plain_message(origin, text.strip(), sender_id if "FriendMessage" not in origin else None)
+
+    async def _send_plain_message(self, origin: str, text: str, at_user: str | None = None) -> bool:
+        if not origin:
+            return False
         try:
             import astrbot.api.message_components as Comp
 
             chain = MessageChain()
-            chain.chain = [Comp.At(qq=sender_id), Comp.Plain(text)] if sender_id else [Comp.Plain(text.strip())]
+            chain.chain = [Comp.At(qq=at_user), Comp.Plain(text)] if at_user else [Comp.Plain(text)]
             await self.context.send_message(origin, chain)
             return True
         except Exception as exc:
-            logger.warning(f"OpenAtom leave status notification failed: leaveId={leave_id}, error={exc}")
+            logger.warning(f"OpenAtom active message failed: origin={origin}, error={exc}")
             return False
 
     async def terminate(self):
@@ -834,6 +862,20 @@ class OpenAtomApiPlugin(Star):
         session_id = getattr(message_obj, "session_id", "") if message_obj is not None else ""
         group_id = getattr(message_obj, "group_id", "") if message_obj is not None else ""
         return f"{group_id or session_id or 'private'}:{sender_id}"
+
+    def _private_leave_session_key(self, sender_id: str) -> str:
+        return f"{sender_id}:{sender_id}"
+
+    def _is_group_event(self, event: AstrMessageEvent) -> bool:
+        message_obj = getattr(event, "message_obj", None)
+        group_id = getattr(message_obj, "group_id", "") if message_obj is not None else ""
+        return bool(group_id)
+
+    def _private_origin_for_event(self, event: AstrMessageEvent, sender_id: str) -> str:
+        origin = str(getattr(event, "unified_msg_origin", "") or "")
+        parts = origin.split(":")
+        platform = parts[0] if parts and parts[0] else "default"
+        return f"{platform}:FriendMessage:{sender_id}"
 
     def _event_plain_text(self, event: AstrMessageEvent) -> str:
         value = getattr(event, "message_str", None)
