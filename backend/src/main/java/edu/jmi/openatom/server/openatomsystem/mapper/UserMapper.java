@@ -103,13 +103,49 @@ public interface UserMapper extends BaseMapper<User> {
     return selectList(wrapper);
   }
 
+  /** 机器人公开查人（只查询低敏字段） */
+  default List<User> selectBotLookup(String keyword, String qqOpenid, int limit) {
+    int safeLimit = Math.max(1, Math.min(limit, 10));
+    LambdaQueryWrapper<User> wrapper =
+        new LambdaQueryWrapper<User>()
+            .select(
+                User::getId,
+                User::getUserName,
+                User::getRealName,
+                User::getStudentId,
+                User::getCollege,
+                User::getMajor,
+                User::getGrade,
+                User::getClassName,
+                User::getQqOpenid,
+                User::getUserStatus)
+            .orderByAsc(User::getRealName)
+            .orderByAsc(User::getId)
+            .last("LIMIT " + safeLimit);
+    if (qqOpenid != null && !qqOpenid.isBlank()) {
+      wrapper.eq(User::getQqOpenid, qqOpenid.trim());
+    } else if (keyword != null && !keyword.isBlank()) {
+      String k = keyword.trim();
+      wrapper.and(
+          query ->
+              query
+                  .like(User::getRealName, k)
+                  .or()
+                  .like(User::getUserName, k)
+                  .or()
+                  .like(User::getStudentId, k));
+    } else {
+      return List.of();
+    }
+    return selectList(wrapper);
+  }
+
   /** 条件查询用户分页 */
   default Page<User> selectPageByConditions(
       Page<User> page,
       String keyword,
       UserStatus status,
-      List<Integer> userIds,
-      String qqOpenid) {
+      List<Integer> userIds) {
     LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
     if (keyword != null && !keyword.isBlank()) {
       String k = keyword.trim();
@@ -121,14 +157,9 @@ public interface UserMapper extends BaseMapper<User> {
                   .or()
                   .like(User::getStudentId, k)
                   .or()
-                  .like(User::getQqOpenid, k)
-                  .or()
                   .like(User::getPhone, k)
                   .or()
                   .like(User::getEmail, k));
-    }
-    if (qqOpenid != null && !qqOpenid.isBlank()) {
-      wrapper.eq(User::getQqOpenid, qqOpenid.trim());
     }
     if (status != null) {
       wrapper.eq(User::getUserStatus, status);

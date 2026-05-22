@@ -23,7 +23,6 @@ public interface UserService {
       String keyword,
       UserStatus status,
       Integer clubId,
-      String qqOpenid,
       Long page,
       Long pageSize);
 

@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.4.0"
+PLUGIN_VERSION = "1.4.1"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -87,7 +87,7 @@ class OpenAtomApiPlugin(Star):
                     "/oa config",
                     "",
                     f"插件版本：{PLUGIN_VERSION}",
-                    "普通查询只允许 GET；查人需要配置有 user:list 权限的后端 access_token；QQ 绑定命令只会消费网页登录生成的一次性绑定码。",
+                    "普通查询只允许 GET；查人走独立 public 接口；QQ 绑定命令只会消费网页登录生成的一次性绑定码。",
                 ]
             )
         )
@@ -381,18 +381,14 @@ class OpenAtomApiPlugin(Star):
         value = self._normalize_user_lookup_keyword(keyword)
         if not value:
             return "请告诉我要查的 QQ 号或姓名，例如：/oa 查人 qq 123456，或 /oa 查人 张三。"
-        if not self.access_token:
-            return "查人需要在插件配置里填写有 user:list 权限的后端 access_token。"
 
-        params = {"page": "1", "pageSize": "5"}
+        params = {"limit": "5"}
         if lookup_type == "qq":
             params["qqOpenid"] = value
         else:
             params["keyword"] = value
-        data, error = await self._get_data("/users", params)
+        data, error = await self._get_data("/bot/users/lookup", params)
         if error:
-            if "HTTP 401" in error or "未登录" in error or "权限" in error:
-                return "查人需要后端 access_token 有效，并且账号具备 user:list 权限。"
             return error
         return self._format_user_lookup_result(data, lookup_type, value)
 
@@ -480,7 +476,8 @@ class OpenAtomApiPlugin(Star):
         org = " / ".join(str(value) for value in (item.get("college"), item.get("major"), item.get("className")) if value)
         if org:
             parts.append(org)
-        qq_status = "已绑定" if item.get("qqOpenid") else "未绑定"
+        qq_bound = item.get("qqBound") if "qqBound" in item else bool(item.get("qqOpenid"))
+        qq_status = "已绑定" if qq_bound else "未绑定"
         parts.append(f"QQ：{qq_status}")
         status = self._format_user_status(item.get("userStatus"))
         if status:

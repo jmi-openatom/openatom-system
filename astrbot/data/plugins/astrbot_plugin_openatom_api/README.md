@@ -36,8 +36,8 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 社团统计/规模 -> 查询 /site/club-home 的 metrics
 社团方向/技术栈 -> 查询 /site/club-home 的 focusAreas 和 techStack
 社团荣誉/获奖 -> 查询 /site/club-home 的 awards
-查人 张三 -> 查询 /users?keyword=张三
-通过QQ号123456查人 -> 查询 /users?qqOpenid=123456
+查人 张三 -> 查询 /bot/users/lookup?keyword=张三
+通过QQ号123456查人 -> 查询 /bot/users/lookup?qqOpenid=123456
 有哪些部门 -> 查询 /clubs/1/departments
 招新开了吗 -> 查询 /site/recruitment
 校历怎么安排 -> 查询 /site/school-calendar
@@ -95,7 +95,7 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 /oa ask 查人 张三
 ```
 
-查人接口读取后端 `/users`，需要在插件配置里填写具备 `user:list` 权限的 `access_token`。插件只展示姓名、ID、用户名、学号、院系专业班级、QQ 绑定状态和账号状态，不直接暴露密码、token、QQ 原始绑定值。
+查人接口读取后端 public 接口 `/bot/users/lookup`，不需要登录，也不需要在插件配置里填写 `access_token`。后端只返回姓名、ID、用户名、学号、院系专业班级、QQ 绑定状态和账号状态，不直接暴露密码、token、手机号、邮箱或 QQ 原始绑定值。
 
 ## 机器人请假
 

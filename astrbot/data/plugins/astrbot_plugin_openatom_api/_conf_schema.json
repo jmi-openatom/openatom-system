@@ -9,7 +9,7 @@
     "description": "后端 accessToken",
     "type": "string",
     "default": "",
-    "hint": "公开只读接口可以留空；查人会读取 /users，需要在 AstrBot 后台手动填写具备 user:list 权限的 token。插件不会登录或刷新 token，避免写入后端数据。"
+    "hint": "公开只读接口和查人接口可以留空；如果要读取需要登录的 GET 接口，请在 AstrBot 后台手动填写已有 token。插件不会登录或刷新 token，避免写入后端数据。"
   },
   "timeout_seconds": {
     "description": "请求超时时间（秒）",

@@ -61,7 +61,6 @@ public class UserServiceImpl implements UserService {
 			String keyword,
 			UserStatus status,
 			Integer clubId,
-			String qqOpenid,
 			Long page,
 			Long pageSize) {
 		long current = PageRequests.page(page);
@@ -77,7 +76,7 @@ public class UserServiceImpl implements UserService {
 		}
 		Page<User> userPage =
 				userMapper.selectPageByConditions(
-						new Page<>(current, size), keyword, status, userIds, qqOpenid);
+						new Page<>(current, size), keyword, status, userIds);
 		List<User> users = userPage.getRecords().stream().map(this::buildSafeUser).toList();
 		return Result.success(PageDataVO.<User>builder().list(users)
 				.page(userPage.getCurrent()).pageSize(userPage.getSize()).total(userPage.getTotal()).build());
