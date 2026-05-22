@@ -108,7 +108,18 @@ public record RoleSeedTemplate(
         SystemPermission.SITE_FORM_EXPORT,
         SystemPermission.NOTIFICATION_LIST,
         SystemPermission.NOTIFICATION_CREATE,
-        SystemPermission.NOTIFICATION_DELETE);
+        SystemPermission.NOTIFICATION_DELETE,
+        SystemPermission.BOT_MANAGEMENT_LIST,
+        SystemPermission.BOT_MANAGEMENT_DETAIL,
+        SystemPermission.BOT_MANAGEMENT_MEMBERS,
+        SystemPermission.BOT_MANAGEMENT_SYNC,
+        SystemPermission.BOT_MANAGEMENT_CONFIG,
+        SystemPermission.BOT_MANAGEMENT_MUTE,
+        SystemPermission.BOT_MANAGEMENT_ANNOUNCEMENTS,
+        SystemPermission.BOT_MANAGEMENT_JOIN_REQUESTS,
+        SystemPermission.BOT_MANAGEMENT_SENSITIVE_WORDS,
+        SystemPermission.BOT_MANAGEMENT_AUTO_REVIEW,
+        SystemPermission.BOT_MANAGEMENT_STATISTICS);
   }
 
   public static List<String> departmentHeadPermissionCodes() {

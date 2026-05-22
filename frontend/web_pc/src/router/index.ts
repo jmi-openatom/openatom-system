@@ -17,6 +17,7 @@ const adminFallbackRoutes = [
   '/admin/school-calendar',
   '/admin/activities',
   '/admin/check-ins',
+  '/admin/bot-groups',
   '/admin/awards',
   '/admin/applications',
   '/admin/interviews',
@@ -197,6 +198,12 @@ const routes = [
         name: 'admin-check-ins',
         meta: { permissions: ['check-in:list'] },
         component: () => import('../views/admin/CheckIns.vue'),
+      },
+      {
+        path: 'bot-groups',
+        name: 'admin-bot-groups',
+        meta: { permissions: ['bot-management:list'] },
+        component: () => import('../views/admin/BotGroups.vue'),
       },
       {
         path: 'awards',

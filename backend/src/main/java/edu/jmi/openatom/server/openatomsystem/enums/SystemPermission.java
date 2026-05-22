@@ -232,6 +232,47 @@ public enum SystemPermission {
   DOCUMENT_CREATE("创建文书", "document:create", "api", "/office-documents", "POST"),
   DOCUMENT_UPDATE("更新文书", "document:update", "api", "/office-documents/{documentId}", "PATCH"),
   DOCUMENT_EXPORT("导出文书", "document:export", "api", "/office-documents/{documentId}/export", "GET"),
+  BOT_MANAGEMENT_LIST("查看 QQ 机器人群管后台", "bot-management:list", "api", "/bot-management/**", "GET"),
+  BOT_MANAGEMENT_DETAIL("查看 QQ 群详情", "bot-management:detail", "api", "/bot-management/groups/{groupId}", "GET"),
+  BOT_MANAGEMENT_MEMBERS(
+      "查看 QQ 群成员",
+      "bot-management:members",
+      "api",
+      "/bot-management/groups/{groupId}/members",
+      "GET"),
+  BOT_MANAGEMENT_SYNC("同步 QQ 群与成员", "bot-management:sync", "api", "/bot-management/groups/**/sync", "POST"),
+  BOT_MANAGEMENT_CONFIG("配置 QQ 群机器人", "bot-management:config", "api", "/bot-management/groups/**/config", "PATCH"),
+  BOT_MANAGEMENT_MUTE("执行 QQ 群禁言", "bot-management:mute", "api", "/bot-management/groups/**/mute*", "POST"),
+  BOT_MANAGEMENT_ANNOUNCEMENTS(
+      "管理 QQ 群公告",
+      "bot-management:announcements",
+      "api",
+      "/bot-management/groups/{groupId}/announcements/**",
+      "POST"),
+  BOT_MANAGEMENT_JOIN_REQUESTS(
+      "处理 QQ 入群申请",
+      "bot-management:join-requests",
+      "api",
+      "/bot-management/groups/{groupId}/join-requests/**",
+      "POST"),
+  BOT_MANAGEMENT_SENSITIVE_WORDS(
+      "管理 QQ 群敏感词",
+      "bot-management:sensitive-words",
+      "api",
+      "/bot-management/sensitive-words/**",
+      "POST"),
+  BOT_MANAGEMENT_AUTO_REVIEW(
+      "管理 QQ 自动审核规则",
+      "bot-management:auto-review",
+      "api",
+      "/bot-management/auto-review-rules/**",
+      "POST"),
+  BOT_MANAGEMENT_STATISTICS(
+      "查看 QQ 群统计",
+      "bot-management:statistics",
+      "api",
+      "/bot-management/statistics/**",
+      "GET"),
   LOG_OPERATION_LIST("查询操作日志", "log:operation:list", "api", "/operation-logs", "GET"),
   LOG_LOGIN_LIST("查询登录日志", "log:login:list", "api", "/login-logs", "GET");
 

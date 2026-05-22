@@ -95,6 +95,7 @@ import {
   ArrowDown,
   Bell,
   Calendar,
+  ChatDotRound,
   Connection,
   DataAnalysis,
   DocumentChecked,
@@ -177,6 +178,12 @@ const menus = ref([
     label: '扫码签到',
     icon: Tickets,
     permissions: ['check-in:list'],
+  },
+  {
+    path: '/admin/bot-groups',
+    label: 'QQ机器人',
+    icon: ChatDotRound,
+    permissions: ['bot-management:list'],
   },
   { path: '/admin/awards', label: '获奖经历', icon: Trophy, permissions: ['award:list'] },
   {

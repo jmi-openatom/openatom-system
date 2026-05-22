@@ -475,3 +475,103 @@ export const notificationApi = {
     return request.delete(`/notifications/admin/${id}`)
   },
 }
+
+export const botManagementApi = {
+  overview(): Promise<any> {
+    return request.get('/bot-management/overview')
+  },
+  accounts(): Promise<any> {
+    return request.get('/bot-management/accounts')
+  },
+  saveAccount(data: Record<string, unknown>): Promise<any> {
+    return request.post('/bot-management/accounts', data)
+  },
+  groups(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/bot-management/groups', { params })
+  },
+  syncGroups(): Promise<any> {
+    return request.post('/bot-management/groups/sync')
+  },
+  batchConfig(data: Record<string, unknown>): Promise<any> {
+    return request.post('/bot-management/groups/batch-config', data)
+  },
+  groupDetail(groupId: string | number): Promise<any> {
+    return request.get(`/bot-management/groups/${groupId}`)
+  },
+  members(groupId: string | number, params?: Record<string, unknown>): Promise<any> {
+    return request.get(`/bot-management/groups/${groupId}/members`, { params })
+  },
+  syncMembers(groupId: string | number): Promise<any> {
+    return request.post(`/bot-management/groups/${groupId}/members/sync`)
+  },
+  updateConfig(groupId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/bot-management/groups/${groupId}/config`, data)
+  },
+  muteMember(
+    groupId: string | number,
+    userId: string | number,
+    data: Record<string, unknown>,
+  ): Promise<any> {
+    return request.post(`/bot-management/groups/${groupId}/members/${userId}/mute`, data)
+  },
+  muteAll(groupId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/bot-management/groups/${groupId}/mute-all`, data)
+  },
+  announcements(groupId: string | number): Promise<any> {
+    return request.get(`/bot-management/groups/${groupId}/announcements`)
+  },
+  publishAnnouncement(groupId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/bot-management/groups/${groupId}/announcements`, data)
+  },
+  republishAnnouncement(groupId: string | number, announcementId: string | number): Promise<any> {
+    return request.post(
+      `/bot-management/groups/${groupId}/announcements/${announcementId}/republish`,
+    )
+  },
+  deleteAnnouncement(groupId: string | number, announcementId: string | number): Promise<any> {
+    return request.delete(`/bot-management/groups/${groupId}/announcements/${announcementId}`)
+  },
+  joinRequests(groupId: string | number, params?: Record<string, unknown>): Promise<any> {
+    return request.get(`/bot-management/groups/${groupId}/join-requests`, { params })
+  },
+  saveJoinRequest(groupId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/bot-management/groups/${groupId}/join-requests`, data)
+  },
+  handleJoinRequest(
+    groupId: string | number,
+    requestId: string | number,
+    data: Record<string, unknown>,
+  ): Promise<any> {
+    return request.post(`/bot-management/groups/${groupId}/join-requests/${requestId}/handle`, data)
+  },
+  sensitiveWords(): Promise<any> {
+    return request.get('/bot-management/sensitive-words')
+  },
+  saveSensitiveWord(data: Record<string, unknown>): Promise<any> {
+    return request.post('/bot-management/sensitive-words', data)
+  },
+  updateSensitiveWord(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/bot-management/sensitive-words/${id}`, data)
+  },
+  deleteSensitiveWord(id: string | number): Promise<any> {
+    return request.delete(`/bot-management/sensitive-words/${id}`)
+  },
+  autoReviewRules(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/bot-management/auto-review-rules', { params })
+  },
+  saveAutoReviewRule(data: Record<string, unknown>): Promise<any> {
+    return request.post('/bot-management/auto-review-rules', data)
+  },
+  updateAutoReviewRule(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/bot-management/auto-review-rules/${id}`, data)
+  },
+  deleteAutoReviewRule(id: string | number): Promise<any> {
+    return request.delete(`/bot-management/auto-review-rules/${id}`)
+  },
+  statistics(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/bot-management/statistics', { params })
+  },
+  activeGroups(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/bot-management/statistics/active-groups', { params })
+  },
+}
