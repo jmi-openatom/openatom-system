@@ -10,6 +10,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -86,6 +87,14 @@ public class NapCatClient {
       Map<String, Object> response =
           restTemplate.postForObject(url, new HttpEntity<>(body, headers), Map.class);
       return NapCatResponse.from(response);
+    } catch (HttpClientErrorException.NotFound ex) {
+      String responseBody = ex.getResponseBodyAsString();
+      if (responseBody != null && responseBody.contains("Cannot POST /" + normalizedAction)) {
+        return NapCatResponse.failed(
+            "当前 NapCat 地址不是 OneBot HTTP API 服务端，可能连到了 WebUI 或反向 WebSocket 端口。"
+                + "请在 NapCat 启用 HTTP 服务端后设置 APP_NAPCAT_BASE_URL，例如 http://napcat:3000。");
+      }
+      return NapCatResponse.failed("NapCat HTTP 404：" + ex.getStatusText());
     } catch (RestClientException ex) {
       log.warn("NapCat action failed: {}", action, ex);
       return NapCatResponse.failed(ex.getMessage());

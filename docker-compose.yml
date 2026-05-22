@@ -56,7 +56,7 @@ services:
       - APP_AVATAR_STORAGE_DIR=/app/uploads/avatars
       - APP_BOT_LEAVE_REVIEW_CALLBACK_URL=${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:-http://astrbot:6198/openatom/leave-review}
       - APP_BOT_CALLBACK_TOKEN=${APP_BOT_CALLBACK_TOKEN:-}
-      - APP_NAPCAT_BASE_URL=${APP_NAPCAT_BASE_URL:-http://napcat:6099}
+      - APP_NAPCAT_BASE_URL=${APP_NAPCAT_BASE_URL:-http://napcat:3000}
       - APP_NAPCAT_ACCESS_TOKEN=${APP_NAPCAT_ACCESS_TOKEN:-}
     ports:
       - "8921:8921"
