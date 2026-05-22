@@ -1,6 +1,6 @@
 # OpenAtom API AstrBot 插件
 
-这个插件用于让 AstrBot/NapCat 机器人查询 OpenAtom System 后端公开数据，并支持用户通过网页登录生成的一次性绑定码绑定 QQ。
+这个插件用于让 AstrBot/NapCat 机器人查询 OpenAtom System 后端数据，并支持用户通过网页登录生成的一次性绑定码绑定 QQ，以及通过 QQ 号或姓名查系统用户。
 
 ## 配置
 
@@ -24,7 +24,7 @@ http://host.docker.internal:8921/api/v1
 openatom_query(question)
 ```
 
-AI 必须把用户原始问题传给 `question`，插件内部根据问题自动查询后端公开 GET 接口并直接生成中文回答。
+AI 必须把用户原始问题传给 `question`，插件内部根据问题自动查询后端 GET 接口并直接生成中文回答。
 
 示例：
 
@@ -36,6 +36,8 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 社团统计/规模 -> 查询 /site/club-home 的 metrics
 社团方向/技术栈 -> 查询 /site/club-home 的 focusAreas 和 techStack
 社团荣誉/获奖 -> 查询 /site/club-home 的 awards
+查人 张三 -> 查询 /users?keyword=张三
+通过QQ号123456查人 -> 查询 /users?qqOpenid=123456
 有哪些部门 -> 查询 /clubs/1/departments
 招新开了吗 -> 查询 /site/recruitment
 校历怎么安排 -> 查询 /site/school-calendar
@@ -59,6 +61,8 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 /oa config
 /oa callback-test
 /oa bind-qq 绑定码
+/oa 查人 qq 123456
+/oa 查人 张三
 /群里艾特机器人发送：我要请假，然后在机器人私聊里继续
 /oa ask 社团有多少人
 /oa ask 主要人员有哪些
@@ -79,6 +83,19 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 4. 到 QQ 里发给机器人，机器人会把当前发送人的 QQ 号和该 Web 账号绑定。
 
 绑定码 10 分钟有效，成功绑定后立即失效。
+
+## 查人
+
+机器人支持按 QQ 号或姓名查系统用户：
+
+```text
+/oa 查人 qq 123456
+/oa 查人 张三
+/oa ask 通过QQ号123456查人
+/oa ask 查人 张三
+```
+
+查人接口读取后端 `/users`，需要在插件配置里填写具备 `user:list` 权限的 `access_token`。插件只展示姓名、ID、用户名、学号、院系专业班级、QQ 绑定状态和账号状态，不直接暴露密码、token、QQ 原始绑定值。
 
 ## 机器人请假
 

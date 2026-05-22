@@ -20,7 +20,12 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface UserService {
   Result<PageDataVO<User>> getUsers(
-      String keyword, UserStatus status, Integer clubId, Long page, Long pageSize);
+      String keyword,
+      UserStatus status,
+      Integer clubId,
+      String qqOpenid,
+      Long page,
+      Long pageSize);
 
   Result<String> createUser(RequestCreateUserDTO requestCreateUserDTO);
 

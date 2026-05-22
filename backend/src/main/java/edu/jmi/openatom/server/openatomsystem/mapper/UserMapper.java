@@ -105,7 +105,11 @@ public interface UserMapper extends BaseMapper<User> {
 
   /** 条件查询用户分页 */
   default Page<User> selectPageByConditions(
-      Page<User> page, String keyword, UserStatus status, List<Integer> userIds) {
+      Page<User> page,
+      String keyword,
+      UserStatus status,
+      List<Integer> userIds,
+      String qqOpenid) {
     LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
     if (keyword != null && !keyword.isBlank()) {
       String k = keyword.trim();
@@ -117,9 +121,14 @@ public interface UserMapper extends BaseMapper<User> {
                   .or()
                   .like(User::getStudentId, k)
                   .or()
+                  .like(User::getQqOpenid, k)
+                  .or()
                   .like(User::getPhone, k)
                   .or()
                   .like(User::getEmail, k));
+    }
+    if (qqOpenid != null && !qqOpenid.isBlank()) {
+      wrapper.eq(User::getQqOpenid, qqOpenid.trim());
     }
     if (status != null) {
       wrapper.eq(User::getUserStatus, status);

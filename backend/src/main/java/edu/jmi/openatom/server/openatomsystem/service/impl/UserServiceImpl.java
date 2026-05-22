@@ -58,7 +58,12 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public Result<PageDataVO<User>> getUsers(
-			String keyword, UserStatus status, Integer clubId, Long page, Long pageSize) {
+			String keyword,
+			UserStatus status,
+			Integer clubId,
+			String qqOpenid,
+			Long page,
+			Long pageSize) {
 		long current = PageRequests.page(page);
 		long size = PageRequests.pageSize(pageSize);
 		List<Integer> userIds = null;
@@ -70,7 +75,9 @@ public class UserServiceImpl implements UserService {
 						.page(current).pageSize(size).total(0L).build());
 			}
 		}
-		Page<User> userPage = userMapper.selectPageByConditions(new Page<>(current, size), keyword, status, userIds);
+		Page<User> userPage =
+				userMapper.selectPageByConditions(
+						new Page<>(current, size), keyword, status, userIds, qqOpenid);
 		List<User> users = userPage.getRecords().stream().map(this::buildSafeUser).toList();
 		return Result.success(PageDataVO.<User>builder().list(users)
 				.page(userPage.getCurrent()).pageSize(userPage.getSize()).total(userPage.getTotal()).build());

@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.3.0"
+PLUGIN_VERSION = "1.4.0"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -39,7 +39,7 @@ class OutgoingMessageChain:
 @register(
     "astrbot_plugin_openatom_api",
     "ariven",
-    "让 AstrBot/NapCat 机器人查询 OpenAtom System 后端公开数据并绑定 QQ",
+    "让 AstrBot/NapCat 机器人查询 OpenAtom System 后端数据、绑定 QQ 并查人",
     PLUGIN_VERSION,
     "local",
 )
@@ -77,6 +77,8 @@ class OpenAtomApiPlugin(Star):
                     "/oa ping",
                     "/oa me",
                     "/oa bind-qq 绑定码",
+                    "/oa 查人 qq 123456",
+                    "/oa 查人 张三",
                     "群里艾特我发送“我要请假 / 请个假 / 今天去不了”，我会私聊你继续办理",
                     "/oa ask 社团有多少人",
                     "/oa ask 主要人员有哪些",
@@ -85,7 +87,7 @@ class OpenAtomApiPlugin(Star):
                     "/oa config",
                     "",
                     f"插件版本：{PLUGIN_VERSION}",
-                    "普通查询只允许 GET；QQ 绑定命令只会消费网页登录生成的一次性绑定码。",
+                    "普通查询只允许 GET；查人需要配置有 user:list 权限的后端 access_token；QQ 绑定命令只会消费网页登录生成的一次性绑定码。",
                 ]
             )
         )
@@ -150,6 +152,12 @@ class OpenAtomApiPlugin(Star):
             body={"token": token, "qqOpenid": qq_openid},
         )
         yield self._plain_result(event, self._success_message(result, f"已将当前 QQ（{qq_openid}）绑定到系统账号。"))
+
+    @oa.command("find", alias={"查人", "找人", "user", "用户"})
+    async def find_user(self, event: AstrMessageEvent, *parts: str):
+        """按 QQ 号或姓名查询系统用户"""
+        lookup_type, keyword = self._parse_user_lookup_command(parts)
+        yield self._plain_result(event, await self._answer_user_lookup(keyword, lookup_type))
 
     @oa.command("ask", alias={"问"})
     async def ask(self, event: AstrMessageEvent, *question_parts: str):
@@ -289,11 +297,11 @@ class OpenAtomApiPlugin(Star):
 
     @filter.llm_tool(name="openatom_query")
     async def openatom_query(self, event: AstrMessageEvent, question: str):
-        '''根据用户原话查询社团系统后端公开数据并直接生成简短回答。
+        '''根据用户原话查询社团系统后端数据并直接生成简短回答。
 
         这是唯一应该给 AI 使用的 OpenAtom 社团系统工具。
-        直接把用户原始问题传入 question，例如“当前有什么活动”“社团有多少人”“主要人员有哪些”“看一下1号活动”“有哪些部门”“招新开了吗”。
-        工具内部会判断要查哪个后端公开 GET 接口，并返回最终可发送给用户的中文答案。
+        直接把用户原始问题传入 question，例如“当前有什么活动”“社团有多少人”“主要人员有哪些”“看一下1号活动”“有哪些部门”“招新开了吗”“查人 张三”“通过QQ号123456查人”。
+        工具内部会判断要查哪个后端 GET 接口，并返回最终可发送给用户的中文答案。
         不要再自行选择接口，不要展示 JSON、字段名、URL、ID、状态码或工具原始数据。
 
         Args:
@@ -305,6 +313,10 @@ class OpenAtomApiPlugin(Star):
         text = (question or "").strip().lower()
         if not text:
             return "你想查询社团系统的哪类信息？可以问活动、招新、部门、人数、主要人员或校历。"
+
+        lookup_type, lookup_keyword = self._extract_user_lookup_from_question(question)
+        if lookup_keyword:
+            return await self._answer_user_lookup(lookup_keyword, lookup_type)
 
         if self._has_any(text, ("主要人员", "负责人", "骨干", "成员风采", "人员有哪些", "有哪些人", "社长", "会长", "部长", "核心成员", "老师")):
             return await self._answer_people()
@@ -364,6 +376,120 @@ class OpenAtomApiPlugin(Star):
             )
 
         return await self._answer_club_home()
+
+    async def _answer_user_lookup(self, keyword: str | None, lookup_type: str | None = None) -> str:
+        value = self._normalize_user_lookup_keyword(keyword)
+        if not value:
+            return "请告诉我要查的 QQ 号或姓名，例如：/oa 查人 qq 123456，或 /oa 查人 张三。"
+        if not self.access_token:
+            return "查人需要在插件配置里填写有 user:list 权限的后端 access_token。"
+
+        params = {"page": "1", "pageSize": "5"}
+        if lookup_type == "qq":
+            params["qqOpenid"] = value
+        else:
+            params["keyword"] = value
+        data, error = await self._get_data("/users", params)
+        if error:
+            if "HTTP 401" in error or "未登录" in error or "权限" in error:
+                return "查人需要后端 access_token 有效，并且账号具备 user:list 权限。"
+            return error
+        return self._format_user_lookup_result(data, lookup_type, value)
+
+    def _parse_user_lookup_command(self, parts: tuple[str, ...]) -> tuple[str | None, str | None]:
+        text = " ".join(str(part) for part in parts if part is not None).strip()
+        if not text:
+            return None, None
+        lower = text.lower()
+        qq_match = re.match(r"^(?:qq|qq号|qq号码)\s*[:：=]?\s*(.+)$", text, re.IGNORECASE)
+        if qq_match:
+            return "qq", qq_match.group(1)
+        name_match = re.match(r"^(?:name|姓名|名字)\s*[:：=]?\s*(.+)$", text, re.IGNORECASE)
+        if name_match:
+            return "name", name_match.group(1)
+        if "qq" in lower:
+            qq_value = self._extract_qq_lookup(text)
+            if qq_value:
+                return "qq", qq_value
+        return "name", text
+
+    def _extract_user_lookup_from_question(self, question: str) -> tuple[str | None, str | None]:
+        raw = (question or "").strip()
+        text = raw.lower()
+        if not self._has_any(text, ("查人", "找人", "查询用户", "用户查询", "qq号", "qq ", "姓名", "名字")):
+            return None, None
+        if "qq" in text:
+            qq_value = self._extract_qq_lookup(raw)
+            if qq_value:
+                return "qq", qq_value
+        patterns = (
+            r"(?:查人|找人|查询用户|用户查询)\s*[:：]?\s*(.+)$",
+            r"(?:姓名|名字|name)\s*(?:查|查询)?\s*[:：]?\s*(.+)$",
+        )
+        for pattern in patterns:
+            match = re.search(pattern, raw, re.IGNORECASE)
+            if match:
+                value = self._normalize_user_lookup_keyword(match.group(1))
+                if value:
+                    return "name", value
+        return None, None
+
+    def _extract_qq_lookup(self, text: str) -> str | None:
+        match = re.search(r"(?:qq|qq号|qq号码)\s*[:：=]?\s*([A-Za-z0-9_-]{5,80})", text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+        match = re.search(r"\b(\d{5,20})\b", text)
+        return match.group(1) if match else None
+
+    def _normalize_user_lookup_keyword(self, value: Any) -> str:
+        text = str(value or "").strip()
+        text = re.sub(r"^(?:qq|qq号|qq号码|name|姓名|名字)\s*[:：=]?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"^(?:查|查询|一下|用户|成员|同学)\s*", "", text)
+        text = re.sub(r"(?:是谁|的信息|信息|资料|这个人|这个成员)\s*$", "", text)
+        return text.strip(" \t\r\n，。；;：:,.")
+
+    def _format_user_lookup_result(self, data: Any, lookup_type: str | None, keyword: str) -> str:
+        records = data.get("list") if isinstance(data, dict) else data
+        total = data.get("total") if isinstance(data, dict) else None
+        if not isinstance(records, list) or not records:
+            label = f"QQ {keyword}" if lookup_type == "qq" else keyword
+            return f"没有查到 {label} 对应的系统用户。"
+        total_count = int(total) if isinstance(total, int) else len(records)
+        if total_count > len(records):
+            lines = [f"查到 {total_count} 人，先展示前 {len(records)} 个："]
+        else:
+            lines = [f"查到 {len(records)} 人："]
+        for index, item in enumerate(records, start=1):
+            lines.append(f"{index}. {self._format_user_record(item)}")
+        return self._truncate("\n".join(lines))
+
+    def _format_user_record(self, item: Any) -> str:
+        if not isinstance(item, dict):
+            return self._excerpt(item, MAX_TEXT_CHARS)
+        name = item.get("realName") or item.get("userName") or "未命名用户"
+        parts = [str(name)]
+        user_id = item.get("id")
+        if user_id not in (None, ""):
+            parts[0] += f"（ID {user_id}）"
+        user_name = item.get("userName")
+        if user_name and user_name != name:
+            parts.append(f"用户名：{user_name}")
+        student_id = item.get("studentId")
+        if student_id:
+            parts.append(f"学号：{student_id}")
+        org = " / ".join(str(value) for value in (item.get("college"), item.get("major"), item.get("className")) if value)
+        if org:
+            parts.append(org)
+        qq_status = "已绑定" if item.get("qqOpenid") else "未绑定"
+        parts.append(f"QQ：{qq_status}")
+        status = self._format_user_status(item.get("userStatus"))
+        if status:
+            parts.append(f"状态：{status}")
+        return "；".join(parts)
+
+    def _format_user_status(self, value: Any) -> str:
+        status_map = {"active": "启用", "disabled": "禁用", "locked": "锁定"}
+        return status_map.get(str(value or "").lower(), str(value or "") if value else "")
 
     async def _answer_club_home(self) -> str:
         data, error = await self._get_data("/site/club-home")

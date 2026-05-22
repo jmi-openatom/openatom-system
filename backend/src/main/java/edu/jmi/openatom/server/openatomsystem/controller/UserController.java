@@ -46,6 +46,7 @@ public class UserController {
    * @param keyword 搜索关键词（可选）
    * @param status 用户状态（可选）
    * @param clubId 社团ID（可选）
+   * @param qqOpenid QQ号/QQ OpenID（可选）
    * @param page 页码，默认 1
    * @param pageSize 每页条数，默认 10
    * @return 分页用户数据
@@ -56,12 +57,14 @@ public class UserController {
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) String status,
       @RequestParam(required = false) Integer clubId,
+      @RequestParam(required = false) String qqOpenid,
       @RequestParam(defaultValue = "1") Long page,
       @RequestParam(defaultValue = "10") Long pageSize) {
     return userService.getUsers(
         keyword,
         status == null || status.isBlank() ? null : UserStatus.fromValue(status),
         clubId,
+        qqOpenid,
         page,
         pageSize);
   }
