@@ -54,4 +54,4 @@ app:
     leave-review-callback-url: ${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:http://astrbot:6198/openatom/leave-review}
   napcat:
     base-url: ${APP_NAPCAT_BASE_URL:http://napcat:3000}
-    access-token: ${APP_NAPCAT_ACCESS_TOKEN:}
+    access-token: ${APP_NAPCAT_ACCESS_TOKEN:sRtnBQJy-lqPTWjj}
