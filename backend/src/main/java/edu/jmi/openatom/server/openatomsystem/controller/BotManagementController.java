@@ -28,11 +28,32 @@ public class BotManagementController {
   @PostMapping("/bot/qq-events")
   public Result<String> handleOneBotEvent(
       @RequestHeader(value = "X-OpenAtom-Bot-Token", required = false) String token,
+      @RequestHeader(value = "Authorization", required = false) String authorization,
       @RequestBody Map<String, Object> request) {
-    if (botCallbackToken != null && !botCallbackToken.isBlank() && !botCallbackToken.equals(token)) {
+    if (!callbackTokenMatches(token, authorization, request)) {
       return Result.error(401, "机器人事件令牌不正确");
     }
     return botManagementService.handleOneBotEvent(request);
+  }
+
+  private boolean callbackTokenMatches(String token, String authorization, Map<String, Object> request) {
+    if (botCallbackToken == null || botCallbackToken.isBlank()) {
+      return true;
+    }
+    return botCallbackToken.equals(trimToken(token))
+        || botCallbackToken.equals(trimToken(authorization))
+        || botCallbackToken.equals(trimToken(request.get("token")));
+  }
+
+  private String trimToken(Object value) {
+    if (value == null) {
+      return null;
+    }
+    String text = String.valueOf(value).trim();
+    if (text.regionMatches(true, 0, "Bearer ", 0, 7)) {
+      text = text.substring(7).trim();
+    }
+    return text.isEmpty() ? null : text;
   }
 
   @GetMapping("/bot-management/overview")

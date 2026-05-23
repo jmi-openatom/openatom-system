@@ -95,17 +95,21 @@ public class BotManagementServiceImpl implements BotManagementService {
         return Result.success("群消息事件已记录");
       }
     }
-    if ("request".equals(postType) && groupId != null) {
+    if (groupId != null && ("request".equals(postType) || firstPresent(request, "request_type", "requestType") != null)) {
       String requestType = trimToNull(firstPresent(request, "request_type", "requestType"));
-      if ("group".equals(requestType)) {
+      String requestSubType = trimToNull(firstPresent(request, "sub_type", "subType"));
+      if ("group".equals(requestType) && (requestSubType == null || "add".equals(requestSubType))) {
+        String flag = trimToNull(request.get("flag"));
         Map<String, Object> joinRequest = new LinkedHashMap<>();
-        joinRequest.put("requestId", trimToNull(firstPresent(request, "request_id", "requestId")));
-        joinRequest.put("flag", trimToNull(request.get("flag")));
+        joinRequest.put("requestId", firstNonBlank(trimToNull(firstPresent(request, "request_id", "requestId")), flag));
+        joinRequest.put("flag", flag);
         joinRequest.put("userId", idString(firstPresent(request, "user_id", "userId")));
-        joinRequest.put("nickname", trimToNull(firstPresent(request, "nickname", "sender_nickname")));
-        joinRequest.put("comment", trimToNull(firstPresent(request, "comment", "message")));
+        joinRequest.put("nickname", eventNickname(request));
+        joinRequest.put("comment", trimToNull(firstPresent(request, "comment", "message", "request_msg", "requestMsg")));
+        joinRequest.put("requestedAt", timestampFromValue(firstPresent(request, "time", "timestamp", "requested_at", "requestedAt")));
         saveJoinRequest(groupId, joinRequest);
         applyAutoReviewIfMatched(groupId, joinRequest);
+        logOperation("入群申请", "记录申请", groupId + ":" + firstNonBlank(flag, idString(joinRequest.get("userId"))), text(joinRequest.get("comment")));
         return Result.success("入群申请事件已记录");
       }
     }
@@ -435,11 +439,13 @@ public class BotManagementServiceImpl implements BotManagementService {
     String attachments = jsonOf(request.get("attachments"));
     NapCatResponse response = napCatClient.sendGroupNotice(groupId, formatAnnouncement(title, content));
     String status = response.ok() ? "published" : "failed";
-    Integer id = insertAnnouncement(groupId, title, content, attachments, status, response.message());
+    String noticeId = response.ok() ? noticeIdFrom(response) : null;
+    Integer id = insertAnnouncement(groupId, title, content, attachments, status, noticeId, response.message());
     logOperation("群公告", "发布公告", groupId + ":" + id, title + " / " + status);
     Map<String, Object> result = new LinkedHashMap<>();
     result.put("id", id);
     result.put("status", status);
+    result.put("noticeId", noticeId);
     result.put("message", response.message());
     return Result.success(result, response.ok() ? "群公告已发布" : "群公告发布失败，已记录失败原因");
   }
@@ -450,7 +456,8 @@ public class BotManagementServiceImpl implements BotManagementService {
         queryForList(
             """
             SELECT id, group_id AS groupId, title, content, attachments, status, result_message AS resultMessage,
-                   published_by AS publishedBy, published_at AS publishedAt, created_at AS createdAt, updated_at AS updatedAt
+                   notice_id AS noticeId, published_by AS publishedBy, published_at AS publishedAt,
+                   created_at AS createdAt, updated_at AS updatedAt
             FROM bot_group_announcement
             WHERE group_id = ?
             ORDER BY created_at DESC, id DESC
@@ -461,6 +468,22 @@ public class BotManagementServiceImpl implements BotManagementService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Result<String> deleteAnnouncement(String groupId, Integer announcementId) {
+    Map<String, Object> announcement =
+        queryForOptionalMap(
+            "SELECT * FROM bot_group_announcement WHERE group_id = ? AND id = ?", groupId, announcementId);
+    if (announcement == null) {
+      return Result.error(404, "公告不存在");
+    }
+    String noticeId = trimToNull(announcement.get("notice_id"));
+    if (noticeId == null) {
+      noticeId = findAnnouncementNoticeId(groupId, announcement);
+    }
+    if (noticeId != null) {
+      NapCatResponse response = napCatClient.deleteGroupNotice(groupId, noticeId);
+      if (!response.ok()) {
+        return Result.error(502, "删除 QQ 群公告失败：" + response.message());
+      }
+    }
     int rows =
         jdbcTemplate.update(
             "DELETE FROM bot_group_announcement WHERE group_id = ? AND id = ?", groupId, announcementId);
@@ -484,24 +507,33 @@ public class BotManagementServiceImpl implements BotManagementService {
     String content = text(announcement.get("content"));
     NapCatResponse response = napCatClient.sendGroupNotice(groupId, formatAnnouncement(title, content));
     String status = response.ok() ? "published" : "failed";
+    String noticeId = response.ok() ? noticeIdFrom(response) : null;
     jdbcTemplate.update(
         """
         UPDATE bot_group_announcement
-        SET status = ?, result_message = ?, published_by = ?, published_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        SET status = ?, notice_id = COALESCE(?, notice_id), result_message = ?, published_by = ?,
+            published_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
         status,
+        noticeId,
         response.message(),
         currentUserId(),
         announcementId);
     logOperation("群公告", "重新发布公告", groupId + ":" + announcementId, title + " / " + status);
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("id", announcementId);
+    result.put("status", status);
+    result.put("noticeId", noticeId);
+    result.put("message", response.message());
     return Result.success(
-        Map.of("id", announcementId, "status", status, "message", response.message()),
+        result,
         response.ok() ? "群公告已重新发布" : "群公告重新发布失败，已记录失败原因");
   }
 
   @Override
   public Result<List<Map<String, Object>>> joinRequests(String groupId, String status) {
+    syncJoinRequestsFromSystemMessages(groupId);
     List<Object> args = new ArrayList<>();
     args.add(groupId);
     StringBuilder sql =
@@ -535,8 +567,11 @@ public class BotManagementServiceImpl implements BotManagementService {
         INSERT INTO bot_join_request
           (group_id, request_id, flag, user_id, nickname, comment, status, requested_at)
         VALUES (?, ?, ?, ?, ?, ?, 'pending', COALESCE(?, CURRENT_TIMESTAMP))
-        ON DUPLICATE KEY UPDATE flag = VALUES(flag), user_id = VALUES(user_id), nickname = VALUES(nickname),
-                                comment = VALUES(comment), status = 'pending', updated_at = CURRENT_TIMESTAMP
+        ON DUPLICATE KEY UPDATE flag = COALESCE(VALUES(flag), flag),
+                                user_id = COALESCE(VALUES(user_id), user_id),
+                                nickname = COALESCE(VALUES(nickname), nickname),
+                                comment = COALESCE(VALUES(comment), comment),
+                                status = 'pending', updated_at = CURRENT_TIMESTAMP
         """,
         groupId,
         requestId,
@@ -544,7 +579,7 @@ public class BotManagementServiceImpl implements BotManagementService {
         userId,
         trimToNull(request.get("nickname")),
         trimToNull(request.get("comment")),
-        timestampFromText(request.get("requestedAt")));
+        timestampFromValue(request.get("requestedAt")));
     return Result.success(Map.of("requestId", requestId == null ? "" : requestId), "入群申请已记录");
   }
 
@@ -559,12 +594,13 @@ public class BotManagementServiceImpl implements BotManagementService {
     boolean approve = toBoolean(request.get("approve"), false);
     String reason = trimToNull(request.get("reason"));
     String flag = trimToNull(row.get("flag"));
-    if (flag != null) {
-      NapCatResponse response = napCatClient.handleGroupRequest(flag, approve, reason);
-      if (!response.ok()) {
-        logOperation("入群申请", "处理失败", groupId + ":" + requestId, response.message());
-        return Result.error(502, "处理入群申请失败：" + response.message());
-      }
+    if (flag == null) {
+      return Result.error(400, "这条入群申请缺少 NapCat flag，无法在后台处理；请等待新的事件推送或在 QQ/NapCat 里处理。");
+    }
+    NapCatResponse response = napCatClient.handleGroupRequest(flag, approve, reason);
+    if (!response.ok()) {
+      logOperation("入群申请", "处理失败", groupId + ":" + requestId, response.message());
+      return Result.error(502, "处理入群申请失败：" + response.message());
     }
     jdbcTemplate.update(
         """
@@ -982,6 +1018,27 @@ public class BotManagementServiceImpl implements BotManagementService {
         userId);
   }
 
+  private void syncJoinRequestsFromSystemMessages(String groupId) {
+    NapCatResponse response = napCatClient.getGroupSystemMessages();
+    if (!response.ok() || !(response.data() instanceof Map<?, ?> map)) {
+      return;
+    }
+    Map<String, Object> data = toStringKeyMap(map);
+    for (Map<String, Object> item : asMapList(data.get("join_requests"))) {
+      String requestGroupId = idString(firstPresent(item, "group_id", "groupId"));
+      if (!groupId.equals(requestGroupId) || toBoolean(item.get("checked"), false)) {
+        continue;
+      }
+      Map<String, Object> joinRequest = new LinkedHashMap<>();
+      joinRequest.put("requestId", idString(firstPresent(item, "request_id", "requestId")));
+      joinRequest.put("flag", trimToNull(item.get("flag")));
+      joinRequest.put("userId", idString(firstPresent(item, "requester_uin", "requesterUin", "user_id", "userId")));
+      joinRequest.put("nickname", trimToNull(firstPresent(item, "requester_nick", "requesterNick", "nickname")));
+      joinRequest.put("comment", trimToNull(firstPresent(item, "message", "comment")));
+      saveJoinRequest(groupId, joinRequest);
+    }
+  }
+
   private void applyAutoReviewIfMatched(String groupId, Map<String, Object> joinRequest) {
     Map<String, Object> config = findConfig(groupId);
     if (config == null || !toBoolean(config.get("autoReviewEnabled"), false)) {
@@ -1038,7 +1095,13 @@ public class BotManagementServiceImpl implements BotManagementService {
   }
 
   private Integer insertAnnouncement(
-      String groupId, String title, String content, String attachments, String status, String message) {
+      String groupId,
+      String title,
+      String content,
+      String attachments,
+      String status,
+      String noticeId,
+      String message) {
     KeyHolder keyHolder = new GeneratedKeyHolder();
     jdbcTemplate.update(
         connection -> {
@@ -1046,8 +1109,8 @@ public class BotManagementServiceImpl implements BotManagementService {
               connection.prepareStatement(
                   """
                   INSERT INTO bot_group_announcement
-                    (group_id, title, content, attachments, status, result_message, published_by, published_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    (group_id, title, content, attachments, status, notice_id, result_message, published_by, published_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                   """,
                   Statement.RETURN_GENERATED_KEYS);
           ps.setString(1, groupId);
@@ -1055,12 +1118,13 @@ public class BotManagementServiceImpl implements BotManagementService {
           ps.setString(3, content);
           ps.setString(4, attachments);
           ps.setString(5, status);
-          ps.setString(6, message);
+          ps.setString(6, noticeId);
+          ps.setString(7, message);
           Integer userId = currentUserId();
           if (userId == null) {
-            ps.setObject(7, null);
+            ps.setObject(8, null);
           } else {
-            ps.setInt(7, userId);
+            ps.setInt(8, userId);
           }
           return ps;
         },
@@ -1071,6 +1135,41 @@ public class BotManagementServiceImpl implements BotManagementService {
 
   private String formatAnnouncement(String title, String content) {
     return title + "\n\n" + content;
+  }
+
+  private String noticeIdFrom(NapCatResponse response) {
+    Object data = response.data();
+    if (data instanceof Map<?, ?> map) {
+      return idString(firstPresent(toStringKeyMap(map), "notice_id", "noticeId", "id"));
+    }
+    return idString(data);
+  }
+
+  private String findAnnouncementNoticeId(String groupId, Map<String, Object> announcement) {
+    String title = trimToNull(announcement.get("title"));
+    String content = trimToNull(announcement.get("content"));
+    if (title == null || content == null) {
+      return null;
+    }
+    NapCatResponse response = napCatClient.getGroupNotices(groupId);
+    if (!response.ok()) {
+      return null;
+    }
+    String expected = formatAnnouncement(title, content);
+    for (Map<String, Object> notice : asMapList(response.data())) {
+      String noticeId = idString(firstPresent(notice, "notice_id", "noticeId", "id"));
+      if (noticeId == null) {
+        continue;
+      }
+      String noticeText =
+          firstNonBlank(
+              text(firstPresent(notice, "message", "content", "text", "notice_text", "noticeText")),
+              text(firstPresent(notice, "title")));
+      if (expected.equals(noticeText) || (noticeText.contains(title) && noticeText.contains(content))) {
+        return noticeId;
+      }
+    }
+    return null;
   }
 
   private void logOperation(String module, String action, String targetId, String content) {
@@ -1113,7 +1212,7 @@ public class BotManagementServiceImpl implements BotManagementService {
       return rows;
     }
     if (value instanceof Map<?, ?> map) {
-      Object list = firstPresent(toStringKeyMap(map), "list", "items", "groups", "members", "data");
+      Object list = firstPresent(toStringKeyMap(map), "list", "items", "groups", "members", "notices", "data");
       if (list != value) {
         return asMapList(list);
       }
@@ -1306,6 +1405,11 @@ public class BotManagementServiceImpl implements BotManagementService {
       return null;
     }
     return Timestamp.from(Instant.ofEpochSecond(seconds.longValue()));
+  }
+
+  private Timestamp timestampFromValue(Object value) {
+    Timestamp timestamp = oneBotTimestamp(value);
+    return timestamp == null ? timestampFromText(value) : timestamp;
   }
 
   private Timestamp timestampFromText(Object value) {

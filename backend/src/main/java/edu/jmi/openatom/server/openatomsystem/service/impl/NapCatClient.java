@@ -67,6 +67,18 @@ public class NapCatClient {
     return post("_send_group_notice", Map.of("group_id", groupId, "content", content));
   }
 
+  public NapCatResponse getGroupNotices(String groupId) {
+    return post("_get_group_notice", Map.of("group_id", groupId));
+  }
+
+  public NapCatResponse getGroupSystemMessages() {
+    return post("get_group_system_msg", Map.of());
+  }
+
+  public NapCatResponse deleteGroupNotice(String groupId, String noticeId) {
+    return post("_del_group_notice", Map.of("group_id", groupId, "notice_id", noticeId));
+  }
+
   public NapCatResponse handleGroupRequest(String flag, boolean approve, String reason) {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("flag", flag);

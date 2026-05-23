@@ -494,6 +494,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `content` TEXT NOT NULL COMMENT '公告正文',
             `attachments` JSON DEFAULT NULL COMMENT '附件列表',
             `status` VARCHAR(30) DEFAULT 'draft' COMMENT '发布状态',
+            `notice_id` VARCHAR(120) DEFAULT NULL COMMENT 'NapCat群公告ID',
             `result_message` VARCHAR(500) DEFAULT NULL COMMENT '发布结果',
             `published_by` INT DEFAULT NULL COMMENT '发布人',
             `published_at` TIMESTAMP NULL DEFAULT NULL COMMENT '发布时间',
@@ -501,6 +502,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
             PRIMARY KEY (`id`),
             KEY `idx_bot_announcement_group` (`group_id`),
+            KEY `idx_bot_announcement_notice` (`notice_id`),
             KEY `idx_bot_announcement_status` (`status`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='QQ群公告记录表'
         """);
@@ -579,6 +581,14 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             KEY `idx_bot_message_stat_date` (`stat_date`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='QQ群消息统计表'
         """);
+    addColumnIfAbsent(
+        "bot_group_announcement",
+        "notice_id",
+        "VARCHAR(120) DEFAULT NULL COMMENT 'NapCat群公告ID' AFTER `status`");
+    addIndexIfAbsent(
+        "bot_group_announcement",
+        "idx_bot_announcement_notice",
+        "KEY `idx_bot_announcement_notice` (`notice_id`)");
   }
 
   private void addColumnIfAbsent(String tableName, String columnName, String definition) {
