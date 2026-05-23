@@ -18,7 +18,10 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -27,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class BotManagementServiceImpl implements BotManagementService {
   private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
@@ -110,7 +114,7 @@ public class BotManagementServiceImpl implements BotManagementService {
       if ("group_increase".equals(noticeType)) {
         String userId = idString(firstPresent(request, "user_id", "userId"));
         upsertJoinedMember(groupId, userId);
-        sendWelcomeIfEnabled(groupId, userId, trimToNull(firstPresent(request, "nickname", "card")));
+        sendWelcomeIfEnabled(groupId, userId, eventNickname(request));
         return Result.success("新成员入群事件已处理");
       }
     }
@@ -429,7 +433,7 @@ public class BotManagementServiceImpl implements BotManagementService {
       return Result.error(400, "请填写公告标题和正文");
     }
     String attachments = jsonOf(request.get("attachments"));
-    NapCatResponse response = napCatClient.sendGroupMessage(groupId, formatAnnouncement(title, content));
+    NapCatResponse response = napCatClient.sendGroupNotice(groupId, formatAnnouncement(title, content));
     String status = response.ok() ? "published" : "failed";
     Integer id = insertAnnouncement(groupId, title, content, attachments, status, response.message());
     logOperation("群公告", "发布公告", groupId + ":" + id, title + " / " + status);
@@ -437,7 +441,7 @@ public class BotManagementServiceImpl implements BotManagementService {
     result.put("id", id);
     result.put("status", status);
     result.put("message", response.message());
-    return Result.success(result, response.ok() ? "公告已发布" : "公告发布失败，已记录失败原因");
+    return Result.success(result, response.ok() ? "群公告已发布" : "群公告发布失败，已记录失败原因");
   }
 
   @Override
@@ -478,7 +482,7 @@ public class BotManagementServiceImpl implements BotManagementService {
     }
     String title = text(announcement.get("title"));
     String content = text(announcement.get("content"));
-    NapCatResponse response = napCatClient.sendGroupMessage(groupId, formatAnnouncement(title, content));
+    NapCatResponse response = napCatClient.sendGroupNotice(groupId, formatAnnouncement(title, content));
     String status = response.ok() ? "published" : "failed";
     jdbcTemplate.update(
         """
@@ -491,7 +495,9 @@ public class BotManagementServiceImpl implements BotManagementService {
         currentUserId(),
         announcementId);
     logOperation("群公告", "重新发布公告", groupId + ":" + announcementId, title + " / " + status);
-    return Result.success(Map.of("id", announcementId, "status", status, "message", response.message()));
+    return Result.success(
+        Map.of("id", announcementId, "status", status, "message", response.message()),
+        response.ok() ? "群公告已重新发布" : "群公告重新发布失败，已记录失败原因");
   }
 
   @Override
@@ -908,24 +914,72 @@ public class BotManagementServiceImpl implements BotManagementService {
     if (pluginConfig.containsKey("welcome") && !toBoolean(pluginConfig.get("welcome"), true)) {
       return;
     }
-    Map<String, Object> group = findGroup(groupId);
-    String groupName = group == null ? "QQ群 " + groupId : text(group.get("groupName"));
-    String displayName = nickname == null ? userId : nickname;
-    String template =
-        trimToNull(config.get("welcomeText")) == null
-            ? "欢迎 {nickname} 加入本群！"
-            : trimToNull(config.get("welcomeText"));
-    String message =
-        template
-            .replace("{nickname}", displayName)
-            .replace("{qq}", userId)
-            .replace("{group_name}", groupName == null ? groupId : groupName)
-            .replace("{group_id}", groupId);
-    if (toBoolean(config.get("atNewMember"), true)) {
-      message = "[CQ:at,qq=" + userId + "] " + message;
+    int delaySeconds = Math.max(0, toInteger(config.get("welcomeDelaySeconds"), 0));
+    Runnable task = () -> sendWelcomeMessage(groupId, userId, nickname, config);
+    if (delaySeconds > 0) {
+      CompletableFuture.delayedExecutor(delaySeconds, TimeUnit.SECONDS).execute(task);
+    } else {
+      task.run();
     }
-    NapCatResponse response = napCatClient.sendGroupMessage(groupId, message);
-    logOperation("新人欢迎", response.ok() ? "发送欢迎语" : "欢迎语发送失败", groupId + ":" + userId, response.message());
+  }
+
+  private void sendWelcomeMessage(String groupId, String userId, String nickname, Map<String, Object> config) {
+    try {
+      Map<String, Object> group = findGroup(groupId);
+      String groupName = group == null ? "QQ群 " + groupId : text(group.get("groupName"));
+      Map<String, Object> memberInfo = resolveMemberInfo(groupId, userId);
+      String displayName =
+          firstNonBlank(nickname, text(memberInfo.get("card")), text(memberInfo.get("nickname")), userId);
+      if (!memberInfo.isEmpty()) {
+        updateMemberProfile(groupId, userId, text(memberInfo.get("nickname")), text(memberInfo.get("card")));
+      }
+      String template =
+          trimToNull(config.get("welcomeText")) == null
+              ? "欢迎 {nickname} 加入本群！"
+              : trimToNull(config.get("welcomeText"));
+      String message =
+          template
+              .replace("{nickname}", displayName)
+              .replace("{qq}", userId)
+              .replace("{group_name}", groupName == null ? groupId : groupName)
+              .replace("{group_id}", groupId);
+      String imageUrl = trimToNull(config.get("welcomeImageUrl"));
+      if (imageUrl != null) {
+        message = message + "\n[CQ:image,file=" + escapeCqValue(imageUrl) + "]";
+      }
+      String attachmentUrl = trimToNull(config.get("welcomeAttachmentUrl"));
+      if (attachmentUrl != null) {
+        message = message + "\n" + attachmentUrl;
+      }
+      if (toBoolean(config.get("atNewMember"), true)) {
+        message = "[CQ:at,qq=" + userId + "] " + message;
+      }
+      NapCatResponse response = napCatClient.sendGroupMessage(groupId, message);
+      logOperation("新人欢迎", response.ok() ? "发送欢迎语" : "欢迎语发送失败", groupId + ":" + userId, response.message());
+    } catch (RuntimeException ex) {
+      log.warn("Failed to send welcome message, groupId={}, userId={}", groupId, userId, ex);
+    }
+  }
+
+  private Map<String, Object> resolveMemberInfo(String groupId, String userId) {
+    NapCatResponse response = napCatClient.getGroupMemberInfo(groupId, userId);
+    if (!response.ok() || !(response.data() instanceof Map<?, ?> map)) {
+      return Map.of();
+    }
+    return toStringKeyMap(map);
+  }
+
+  private void updateMemberProfile(String groupId, String userId, String nickname, String card) {
+    jdbcTemplate.update(
+        """
+        UPDATE bot_group_member
+        SET nickname = COALESCE(?, nickname), card = COALESCE(?, card), updated_at = CURRENT_TIMESTAMP
+        WHERE group_id = ? AND user_id = ?
+        """,
+        trimToNull(nickname),
+        trimToNull(card),
+        groupId,
+        userId);
   }
 
   private void applyAutoReviewIfMatched(String groupId, Map<String, Object> joinRequest) {
@@ -1016,7 +1070,7 @@ public class BotManagementServiceImpl implements BotManagementService {
   }
 
   private String formatAnnouncement(String title, String content) {
-    return "【群公告】" + title + "\n\n" + content;
+    return title + "\n\n" + content;
   }
 
   private void logOperation(String module, String action, String targetId, String content) {
@@ -1086,6 +1140,19 @@ public class BotManagementServiceImpl implements BotManagementService {
     return null;
   }
 
+  private String eventNickname(Map<String, Object> event) {
+    String nickname =
+        trimToNull(firstPresent(event, "nickname", "card", "sender_nickname", "senderNickname", "user_name", "userName"));
+    if (nickname != null) {
+      return nickname;
+    }
+    Object sender = event.get("sender");
+    if (sender instanceof Map<?, ?> map) {
+      return trimToNull(firstPresent(toStringKeyMap(map), "card", "nickname", "user_name", "userName"));
+    }
+    return null;
+  }
+
   private String idString(Object value) {
     if (value == null) {
       return null;
@@ -1095,6 +1162,16 @@ public class BotManagementServiceImpl implements BotManagementService {
     }
     String text = String.valueOf(value).trim();
     return text.isEmpty() ? null : text;
+  }
+
+  private String firstNonBlank(String... values) {
+    for (String value : values) {
+      String text = trimToNull(value);
+      if (text != null) {
+        return text;
+      }
+    }
+    return "";
   }
 
   private String text(Object value) {
@@ -1165,6 +1242,10 @@ public class BotManagementServiceImpl implements BotManagementService {
     } catch (JsonProcessingException ex) {
       return "{}";
     }
+  }
+
+  private String escapeCqValue(String value) {
+    return value.replace("&", "&amp;").replace("[", "&#91;").replace("]", "&#93;").replace(",", "&#44;");
   }
 
   private Map<String, Object> parseJsonMap(Object value) {

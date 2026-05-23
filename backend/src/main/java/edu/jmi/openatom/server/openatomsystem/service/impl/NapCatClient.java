@@ -45,6 +45,10 @@ public class NapCatClient {
     return post("get_group_member_list", Map.of("group_id", groupId, "no_cache", false));
   }
 
+  public NapCatResponse getGroupMemberInfo(String groupId, String userId) {
+    return post("get_group_member_info", Map.of("group_id", groupId, "user_id", userId, "no_cache", false));
+  }
+
   public NapCatResponse muteMember(String groupId, String userId, int durationSeconds) {
     return post(
         "set_group_ban",
@@ -57,6 +61,10 @@ public class NapCatClient {
 
   public NapCatResponse sendGroupMessage(String groupId, String message) {
     return post("send_group_msg", Map.of("group_id", groupId, "message", message));
+  }
+
+  public NapCatResponse sendGroupNotice(String groupId, String content) {
+    return post("_send_group_notice", Map.of("group_id", groupId, "content", content));
   }
 
   public NapCatResponse handleGroupRequest(String flag, boolean approve, String reason) {
@@ -87,6 +95,12 @@ public class NapCatClient {
       Map<String, Object> response =
           restTemplate.postForObject(url, new HttpEntity<>(body, headers), Map.class);
       return NapCatResponse.from(response);
+    } catch (HttpClientErrorException.Forbidden ex) {
+      String responseBody = ex.getResponseBodyAsString();
+      if (responseBody != null && responseBody.contains("token verify failed")) {
+        return NapCatResponse.failed("NapCat 访问令牌不正确，请确认 APP_NAPCAT_ACCESS_TOKEN 与 NapCat HTTP 服务端 token 一致。");
+      }
+      return NapCatResponse.failed("NapCat HTTP 403：" + ex.getStatusText());
     } catch (HttpClientErrorException.NotFound ex) {
       String responseBody = ex.getResponseBodyAsString();
       if (responseBody != null && responseBody.contains("Cannot POST /" + normalizedAction)) {
@@ -97,6 +111,11 @@ public class NapCatClient {
       return NapCatResponse.failed("NapCat HTTP 404：" + ex.getStatusText());
     } catch (RestClientException ex) {
       log.warn("NapCat action failed: {}", action, ex);
+      String message = ex.getMessage();
+      if (message != null && message.contains("Connection refused")) {
+        return NapCatResponse.failed(
+            "无法连接 NapCat HTTP 服务端，请确认 NapCat 网络配置里的 HTTP 服务器已启用，主机为 0.0.0.0，端口为 3000。");
+      }
       return NapCatResponse.failed(ex.getMessage());
     }
   }

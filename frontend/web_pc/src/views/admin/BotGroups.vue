@@ -327,6 +327,12 @@
         <el-form-item label="欢迎语">
           <el-input v-model="configForm.welcomeText" type="textarea" :rows="4" />
         </el-form-item>
+        <el-form-item label="欢迎图片">
+          <el-input v-model="configForm.welcomeImageUrl" clearable placeholder="图片 URL，可选" />
+        </el-form-item>
+        <el-form-item label="欢迎附件">
+          <el-input v-model="configForm.welcomeAttachmentUrl" clearable placeholder="附件 URL，可选" />
+        </el-form-item>
         <el-divider content-position="left">插件开关</el-divider>
         <el-form-item v-for="item in pluginOptions" :key="item.key" :label="item.label">
           <el-switch v-model="configForm.pluginConfig[item.key]" />
