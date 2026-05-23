@@ -82,6 +82,7 @@ public class NapCatClient {
   public NapCatResponse handleGroupRequest(String flag, boolean approve, String reason) {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("flag", flag);
+    body.put("request_id", flag);
     body.put("sub_type", "add");
     body.put("approve", approve);
     if (reason != null && !reason.isBlank()) {

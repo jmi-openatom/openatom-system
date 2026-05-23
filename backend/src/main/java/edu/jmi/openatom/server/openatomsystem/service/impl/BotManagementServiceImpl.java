@@ -82,15 +82,15 @@ public class BotManagementServiceImpl implements BotManagementService {
     if (groupId != null) {
       ensureMinimalGroup(groupId);
     }
-    if ("message".equals(postType) && groupId != null) {
+    if (List.of("message", "message_sent").contains(postType) && groupId != null) {
       String messageType = trimToNull(firstPresent(request, "message_type", "messageType"));
       if ("group".equals(messageType)) {
         String rawMessage = text(firstPresent(request, "raw_message", "rawMessage", "message"));
         Map<String, Object> stat = new LinkedHashMap<>();
         stat.put("groupId", groupId);
+        stat.put("userId", idString(firstPresent(request, "user_id", "userId", "sender_id", "senderId")));
         stat.put("messageCount", 1);
-        stat.put("activeMemberCount", 1);
-        stat.put("commandCount", rawMessage != null && rawMessage.trim().startsWith("/") ? 1 : 0);
+        stat.put("commandCount", isBotCommand(rawMessage) ? 1 : 0);
         recordMessageStat(stat);
         return Result.success("群消息事件已记录");
       }
@@ -593,9 +593,9 @@ public class BotManagementServiceImpl implements BotManagementService {
     }
     boolean approve = toBoolean(request.get("approve"), false);
     String reason = trimToNull(request.get("reason"));
-    String flag = trimToNull(row.get("flag"));
+    String flag = firstNonBlank(trimToNull(row.get("flag")), trimToNull(row.get("request_id")));
     if (flag == null) {
-      return Result.error(400, "这条入群申请缺少 NapCat flag，无法在后台处理；请等待新的事件推送或在 QQ/NapCat 里处理。");
+      return Result.error(400, "这条入群申请缺少 NapCat 处理标识，无法在后台处理；请等待新的事件推送或在 QQ/NapCat 里处理。");
     }
     NapCatResponse response = napCatClient.handleGroupRequest(flag, approve, reason);
     if (!response.ok()) {
@@ -746,9 +746,13 @@ public class BotManagementServiceImpl implements BotManagementService {
   }
 
   @Override
-  public Result<List<Map<String, Object>>> statistics(String startDate, String endDate) {
+  public Result<List<Map<String, Object>>> statistics(String groupId, String startDate, String endDate) {
     LocalDate end = parseDate(endDate, LocalDate.now(ZONE));
     LocalDate start = parseDate(startDate, end.minusDays(13));
+    String normalizedGroupId = idString(groupId);
+    if (normalizedGroupId != null) {
+      return Result.success(statisticsByGroup(normalizedGroupId, start, end));
+    }
     return Result.success(
         queryForList(
             """
@@ -790,6 +794,7 @@ public class BotManagementServiceImpl implements BotManagementService {
     if (groupId == null) {
       return Result.error(400, "缺少群号");
     }
+    String userId = idString(firstPresent(request, "userId", "user_id", "senderId", "sender_id"));
     LocalDate statDate = parseDate(text(request.get("statDate")), LocalDate.now(ZONE));
     int messageCount = Math.max(0, toInteger(request.get("messageCount"), 1));
     int activeMemberCount = Math.max(0, toInteger(request.get("activeMemberCount"), 0));
@@ -808,6 +813,38 @@ public class BotManagementServiceImpl implements BotManagementService {
         messageCount,
         activeMemberCount,
         commandCount);
+    if (userId != null) {
+      jdbcTemplate.update(
+          """
+          INSERT IGNORE INTO bot_message_active_member (group_id, stat_date, user_id)
+          VALUES (?, ?, ?)
+          """,
+          groupId,
+          Date.valueOf(statDate),
+          userId);
+      jdbcTemplate.update(
+          """
+          UPDATE bot_message_stat
+          SET active_member_count = (
+              SELECT COUNT(*)
+              FROM bot_message_active_member
+              WHERE group_id = ? AND stat_date = ?
+          ), updated_at = CURRENT_TIMESTAMP
+          WHERE group_id = ? AND stat_date = ?
+          """,
+          groupId,
+          Date.valueOf(statDate),
+          groupId,
+          Date.valueOf(statDate));
+      jdbcTemplate.update(
+          """
+          UPDATE bot_group_member
+          SET last_sent_time = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+          WHERE group_id = ? AND user_id = ?
+          """,
+          groupId,
+          userId);
+    }
     jdbcTemplate.update(
         "UPDATE bot_group SET last_active_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE group_id = ?",
         groupId);
@@ -1135,6 +1172,14 @@ public class BotManagementServiceImpl implements BotManagementService {
 
   private String formatAnnouncement(String title, String content) {
     return title + "\n\n" + content;
+  }
+
+  private boolean isBotCommand(String message) {
+    String text = trimToNull(message);
+    if (text == null) {
+      return false;
+    }
+    return text.startsWith("/") || text.startsWith("!") || text.startsWith("！") || text.startsWith(".");
   }
 
   private String noticeIdFrom(NapCatResponse response) {

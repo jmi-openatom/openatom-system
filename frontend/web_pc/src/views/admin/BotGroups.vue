@@ -526,6 +526,7 @@ async function selectGroup(row: Row) {
     fetchAnnouncements(),
     fetchJoinRequests(),
     fetchAutoReviewRules(),
+    fetchStats(),
   ])
 }
 
@@ -589,6 +590,9 @@ async function fetchStats() {
   if (statsRange.value) {
     params.startDate = statsRange.value[0]
     params.endDate = statsRange.value[1]
+  }
+  if (selectedGroupId.value) {
+    params.groupId = selectedGroupId.value
   }
   const [statRows, activeRows] = await Promise.all([
     botManagementApi.statistics(params),

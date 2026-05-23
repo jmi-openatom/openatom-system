@@ -240,8 +240,10 @@ public class BotManagementController {
   @GetMapping("/bot-management/statistics")
   @SaCheckPermission("bot-management:statistics")
   public Result<List<Map<String, Object>>> statistics(
-      @RequestParam(required = false) String startDate, @RequestParam(required = false) String endDate) {
-    return botManagementService.statistics(startDate, endDate);
+      @RequestParam(required = false) String groupId,
+      @RequestParam(required = false) String startDate,
+      @RequestParam(required = false) String endDate) {
+    return botManagementService.statistics(groupId, startDate, endDate);
   }
 
   @GetMapping("/bot-management/statistics/active-groups")

@@ -61,7 +61,7 @@ public interface BotManagementService {
 
   Result<String> deleteAutoReviewRule(Integer ruleId);
 
-  Result<List<Map<String, Object>>> statistics(String startDate, String endDate);
+  Result<List<Map<String, Object>>> statistics(String groupId, String startDate, String endDate);
 
   Result<List<Map<String, Object>>> activeGroups(String startDate, String endDate);
 
