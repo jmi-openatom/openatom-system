@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import edu.jmi.openatom.server.openatomsystem.service.impl.AvatarStorageServiceImpl;
+import edu.jmi.openatom.server.openatomsystem.service.impl.ImageHostingStorageServiceImpl;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/files")
 public class FileController {
 	private final AvatarStorageServiceImpl avatarStorageService;
+	private final ImageHostingStorageServiceImpl imageHostingStorageService;
 
 	@GetMapping("/avatars/{fileName:.+}")
 	public ResponseEntity<?> avatar(@PathVariable String fileName) throws IOException {
@@ -32,6 +34,19 @@ public class FileController {
 										.cacheControl(CacheControl.maxAge(Duration.ofDays(30)))
 										.contentType(avatar.getMediaType())
 										.body(avatar.getResource()))
+				.orElseGet(() -> ResponseEntity.notFound().build());
+	}
+
+	@GetMapping("/images/{fileName:.+}")
+	public ResponseEntity<?> image(@PathVariable String fileName) throws IOException {
+		return imageHostingStorageService
+				.load(fileName)
+				.<ResponseEntity<?>>map(
+						image ->
+								ResponseEntity.ok()
+										.cacheControl(CacheControl.maxAge(Duration.ofDays(30)))
+										.contentType(image.getMediaType())
+										.body(image.getResource()))
 				.orElseGet(() -> ResponseEntity.notFound().build());
 	}
 }

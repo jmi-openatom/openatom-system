@@ -923,6 +923,75 @@ a:hover {
   border-radius: var(--oa-radius);
 }
 
+.markdown-body {
+  overflow-wrap: anywhere;
+}
+
+.markdown-body a {
+  color: var(--oa-primary, var(--el-color-primary));
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body blockquote {
+  margin: 18px 0;
+  padding: 4px 0 4px 16px;
+  color: var(--oa-muted);
+  border-left: 3px solid var(--oa-border);
+}
+
+.markdown-body pre {
+  overflow-x: auto;
+  margin: 18px 0;
+  padding: 16px;
+  background: var(--oa-page-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+}
+
+.markdown-body pre code {
+  padding: 0;
+  color: var(--oa-text);
+  background: transparent;
+  border-radius: 0;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  margin: 14px 0;
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+}
+
+.markdown-body table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 18px 0;
+}
+
+.markdown-body th,
+.markdown-body td {
+  padding: 10px 12px;
+  border: 1px solid var(--oa-border);
+}
+
+.markdown-body th {
+  color: var(--oa-text);
+  background: var(--oa-page-bg);
+}
+
+.markdown-body hr {
+  margin: 24px 0;
+  border: 0;
+  border-top: 1px solid var(--oa-border);
+}
+
 .el-dialog {
   animation: none;
 }
@@ -972,6 +1041,26 @@ a:hover {
 
 .site-system-section {
   padding: clamp(56px, 7vw, 88px) 0;
+}
+
+.home-interactive-section {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.home-section-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.home-interactive-section > :not(.home-section-canvas) {
+  position: relative;
+  z-index: 1;
 }
 
 .site-system-surface {

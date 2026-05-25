@@ -1,32 +1,28 @@
 package edu.jmi.openatom.server.openatomsystem.vo;
 
 import java.sql.Timestamp;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 博客评论响应
+ * 博客互动记录响应
  *
- * <p>包含评论内容、评论人基础信息和状态
+ * <p>用于后台查看点赞、收藏和分享明细
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ResponseBlogCommentVO {
+public class ResponseBlogInteractionVO {
   private Integer id;
   private Integer articleId;
+  private String articleTitle;
   private Integer userId;
-  private Integer parentId;
   private String userName;
   private String userAvatar;
-  private String content;
-  private String status;
-  private Integer replyCount;
-  private List<ResponseBlogCommentVO> replies;
+  private String interactionType;
+  private String channel;
   private Timestamp createdAt;
-  private Timestamp updatedAt;
 }

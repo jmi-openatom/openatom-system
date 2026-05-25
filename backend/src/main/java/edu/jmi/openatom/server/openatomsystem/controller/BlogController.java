@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBlogInteractionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateBlogCommentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestReviewBlogArticleDTO;
@@ -11,6 +12,7 @@ import edu.jmi.openatom.server.openatomsystem.service.BlogService;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogArticleVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogCommentVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogInteractionVO;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +64,27 @@ public class BlogController {
   public Result<String> createComment(
       @PathVariable Integer articleId, @Valid @RequestBody RequestCreateBlogCommentDTO request) {
     return blogService.createComment(articleId, request);
+  }
+
+  @PostMapping("/site/blog/articles/{articleId}/like")
+  public Result<ResponseBlogArticleVO> likeArticle(
+      @PathVariable Integer articleId,
+      @RequestBody(required = false) RequestBlogInteractionDTO request) {
+    return blogService.likeArticle(articleId, request);
+  }
+
+  @PostMapping("/site/blog/articles/{articleId}/favorite")
+  public Result<ResponseBlogArticleVO> favoriteArticle(
+      @PathVariable Integer articleId,
+      @RequestBody(required = false) RequestBlogInteractionDTO request) {
+    return blogService.favoriteArticle(articleId, request);
+  }
+
+  @PostMapping("/site/blog/articles/{articleId}/share")
+  public Result<ResponseBlogArticleVO> shareArticle(
+      @PathVariable Integer articleId,
+      @RequestBody(required = false) RequestBlogInteractionDTO request) {
+    return blogService.shareArticle(articleId, request);
   }
 
   @GetMapping("/blog/my/articles")
@@ -129,5 +152,15 @@ public class BlogController {
       @PathVariable Integer commentId,
       @Valid @RequestBody RequestUpdateBlogCommentStatusDTO request) {
     return blogService.adminUpdateCommentStatus(commentId, request.getStatus());
+  }
+
+  @GetMapping("/blog/admin/interactions")
+  @SaCheckPermission("blog-interaction:list")
+  public Result<PageDataVO<ResponseBlogInteractionVO>> adminInteractions(
+      @RequestParam(required = false) String interactionType,
+      @RequestParam(required = false) Integer articleId,
+      @RequestParam(required = false) Long page,
+      @RequestParam(required = false) Long pageSize) {
+    return blogService.adminInteractions(interactionType, articleId, page, pageSize);
   }
 }

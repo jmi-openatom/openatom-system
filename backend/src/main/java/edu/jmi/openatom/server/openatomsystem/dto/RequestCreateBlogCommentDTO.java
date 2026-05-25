@@ -12,4 +12,6 @@ import lombok.Data;
 public class RequestCreateBlogCommentDTO {
   @NotBlank(message = "评论内容不能为空")
   private String content;
+
+  private Integer parentId;
 }

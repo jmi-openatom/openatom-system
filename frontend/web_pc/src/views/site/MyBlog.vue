@@ -1,7 +1,14 @@
 <template>
   <ViewPage class="my-blog-page" :loading="loading">
-    <section class="my-blog-shell">
+    <section class="my-blog-shell home-interactive-section">
+      <HomeInteractiveBackdrop :radius="220" :spacing="66" :strength="20" />
       <div class="container">
+        <div class="section-heading reveal-block my-blog-heading">
+          <span>Member Studio</span>
+          <h1>我的博客</h1>
+          <p>把项目踩坑、竞赛复盘和技术笔记沉淀下来，正式成员可以直接发布到社团博客。</p>
+        </div>
+
         <ViewToolbar>
           <div class="toolbar__filters">
             <el-select v-model="query.status" clearable placeholder="文章状态" @change="reload">
@@ -38,9 +45,10 @@
               <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="数据" width="130">
+          <el-table-column label="数据" width="190">
             <template #default="{ row }">
-              {{ row.viewCount || 0 }} 阅读 · {{ row.commentCount || 0 }} 评论
+              {{ row.viewCount || 0 }} 阅读 · {{ row.likeCount || 0 }} 赞 · {{ row.favoriteCount || 0 }} 藏 ·
+              {{ row.commentCount || 0 }} 评论
             </template>
           </el-table-column>
           <el-table-column prop="updatedAt" label="更新时间" width="180">
@@ -107,7 +115,29 @@
           <el-input v-model="form.summary" type="textarea" :rows="3" maxlength="500" show-word-limit />
         </el-form-item>
         <el-form-item label="正文" prop="contentMarkdown">
-          <el-input v-model="form.contentMarkdown" type="textarea" :rows="16" />
+          <div class="editor-field">
+            <div class="markdown-toolbar">
+              <el-button-group>
+                <el-button :icon="EditPen" @click="insertHeading">标题</el-button>
+                <el-button @click="wrapSelection('**', '**', '加粗文字')">B</el-button>
+                <el-button @click="wrapSelection('*', '*', '斜体文字')">I</el-button>
+                <el-button :icon="Memo" @click="insertBlockquote">引用</el-button>
+                <el-button :icon="List" @click="insertList">列表</el-button>
+                <el-button :icon="Document" @click="insertCodeBlock">代码</el-button>
+                <el-button :icon="Grid" @click="insertTable">表格</el-button>
+                <el-button :icon="Link" @click="insertLink">链接</el-button>
+                <el-button :icon="Picture" @click="openImageDialog">图片</el-button>
+              </el-button-group>
+            </div>
+            <el-tabs v-model="editorMode" class="markdown-editor-tabs">
+              <el-tab-pane label="编辑" name="edit">
+                <el-input ref="contentInputRef" v-model="form.contentMarkdown" type="textarea" :rows="18" />
+              </el-tab-pane>
+              <el-tab-pane label="预览" name="preview">
+                <article class="markdown-body editor-preview" v-html="previewHtml"></article>
+              </el-tab-pane>
+            </el-tabs>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -116,17 +146,68 @@
         <el-button type="primary" :loading="saving" @click="save('published')">发布</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="imageDialogVisible" title="上传图床图片" width="560px">
+      <el-upload
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        :auto-upload="false"
+        drag
+        :file-list="imageUploadFiles"
+        :limit="1"
+        :on-change="handleImageChange"
+        :on-remove="handleImageRemove"
+      >
+        <el-icon class="el-icon--upload">
+          <UploadFilled />
+        </el-icon>
+        <div class="el-upload__text">拖拽图片到这里，或点击选择图片</div>
+        <template #tip>
+          <div class="el-upload__tip">支持 JPG、PNG、GIF、WebP，单张最大 10MB。</div>
+        </template>
+      </el-upload>
+
+      <div v-if="imageUploadResult.url" class="image-upload-result">
+        <el-image :src="imageUploadResult.url" fit="cover" />
+        <el-input :model-value="imageUploadResult.url" readonly />
+        <el-input :model-value="imageUploadResult.markdown" readonly />
+      </div>
+
+      <template #footer>
+        <el-button @click="imageDialogVisible = false">取消</el-button>
+        <el-button :loading="imageUploading" @click="uploadImage">上传</el-button>
+        <el-button
+          type="primary"
+          :disabled="!imageUploadResult.url"
+          @click="insertUploadedImage"
+        >
+          插入正文
+        </el-button>
+      </template>
+    </el-dialog>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import { blogApi } from '@/api'
+import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
+import { blogApi, imageHostingApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
 import { hasRole } from '@/utils/permission.ts'
+import { renderMarkdown } from '@/utils/markdown.ts'
 import { ElMessage } from 'element-plus'
-import { Plus, Refresh } from '@element-plus/icons-vue'
+import {
+  Document,
+  EditPen,
+  Grid,
+  Link,
+  List,
+  Memo,
+  Picture,
+  Plus,
+  Refresh,
+  UploadFilled,
+} from '@element-plus/icons-vue'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -135,11 +216,17 @@ const route = useRoute()
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
+const imageDialogVisible = ref(false)
+const imageUploading = ref(false)
+const editorMode = ref('edit')
 const rows = ref<any[]>([])
 const total = ref(0)
 const form = ref<Record<string, any>>({})
 const tagText = ref('')
+const imageUploadFiles = ref<any[]>([])
+const imageUploadResult = ref<Record<string, any>>({})
 const formRef = ref<any>()
+const contentInputRef = ref<any>()
 const query = ref({
   status: '',
   page: 1,
@@ -147,6 +234,7 @@ const query = ref({
 })
 
 const canWrite = computed(() => hasRole('formal_member'))
+const previewHtml = computed(() => renderMarkdown(form.value.contentMarkdown || ''))
 const rules = ref({
   title: [{ required: true, message: '请输入文章标题', trigger: 'blur' }],
   contentMarkdown: [{ required: true, message: '请输入文章正文', trigger: 'blur' }],
@@ -199,6 +287,80 @@ function openDialog(row?: any) {
   dialogVisible.value = true
 }
 
+function openImageDialog() {
+  imageUploadFiles.value = []
+  imageUploadResult.value = {}
+  imageDialogVisible.value = true
+}
+
+function textareaElement() {
+  return contentInputRef.value?.textarea as HTMLTextAreaElement | undefined
+}
+
+function setMarkdown(value: string, selectionStart?: number, selectionEnd?: number) {
+  form.value.contentMarkdown = value
+  editorMode.value = 'edit'
+  nextTick(() => {
+    const textarea = textareaElement()
+    if (!textarea) return
+    textarea.focus()
+    if (selectionStart !== undefined && selectionEnd !== undefined) {
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+    }
+  })
+}
+
+function wrapSelection(prefix: string, suffix = prefix, placeholder = '内容') {
+  const value = String(form.value.contentMarkdown || '')
+  const textarea = textareaElement()
+  const start = textarea?.selectionStart ?? value.length
+  const end = textarea?.selectionEnd ?? value.length
+  const selected = value.slice(start, end) || placeholder
+  const nextValue = `${value.slice(0, start)}${prefix}${selected}${suffix}${value.slice(end)}`
+  const nextStart = start + prefix.length
+  setMarkdown(nextValue, nextStart, nextStart + selected.length)
+}
+
+function insertSnippet(snippet: string, selectText?: string) {
+  const value = String(form.value.contentMarkdown || '')
+  const textarea = textareaElement()
+  const start = textarea?.selectionStart ?? value.length
+  const end = textarea?.selectionEnd ?? value.length
+  const prefix = start > 0 && !value.slice(0, start).endsWith('\n\n') ? '\n\n' : ''
+  const suffix = snippet.endsWith('\n\n') ? '' : '\n\n'
+  const inserted = `${prefix}${snippet}${suffix}`
+  const nextValue = `${value.slice(0, start)}${inserted}${value.slice(end)}`
+  const matchedAt = selectText ? nextValue.indexOf(selectText, start) : -1
+  const hasMatch = matchedAt >= 0 && Boolean(selectText)
+  const selectAt = hasMatch ? matchedAt : start + inserted.length
+  const selectEnd = hasMatch && selectText ? selectAt + selectText.length : selectAt
+  setMarkdown(nextValue, selectAt, selectEnd)
+}
+
+function insertHeading() {
+  wrapSelection('## ', '', '小标题')
+}
+
+function insertBlockquote() {
+  insertSnippet('> 引用内容', '引用内容')
+}
+
+function insertList() {
+  insertSnippet('- 要点一\n- 要点二\n- 要点三', '要点一')
+}
+
+function insertCodeBlock() {
+  insertSnippet('```java\nSystem.out.println("Hello OpenAtom");\n```', 'System.out.println("Hello OpenAtom");')
+}
+
+function insertTable() {
+  insertSnippet('| 字段 | 说明 |\n| --- | --- |\n| 标题 | 内容 |', '字段')
+}
+
+function insertLink() {
+  insertSnippet('[链接文字](https://example.com)', '链接文字')
+}
+
 function save(status: string) {
   formRef.value.validate(async (valid: boolean) => {
     if (!valid) return
@@ -236,6 +398,40 @@ async function remove(row: any) {
   fetchList()
 }
 
+function handleImageChange(_file: any, fileList: any[]) {
+  imageUploadFiles.value = fileList.slice(-1)
+  imageUploadResult.value = {}
+}
+
+function handleImageRemove(_file: any, fileList: any[]) {
+  imageUploadFiles.value = fileList
+  imageUploadResult.value = {}
+}
+
+async function uploadImage() {
+  const file = imageUploadFiles.value[0]?.raw
+  if (!file) {
+    ElMessage.warning('请先选择图片')
+    return
+  }
+  imageUploading.value = true
+  try {
+    imageUploadResult.value = await imageHostingApi.upload(file)
+    ElMessage.success('图片上传成功')
+  } finally {
+    imageUploading.value = false
+  }
+}
+
+function insertUploadedImage() {
+  const url = imageUploadResult.value.url
+  if (!url) return
+  const markdown = imageUploadResult.value.markdown || `![图片](${url})`
+  insertSnippet(markdown)
+  if (!form.value.coverUrl) form.value.coverUrl = url
+  imageDialogVisible.value = false
+}
+
 function parseTags(value: string) {
   return value
     .split(/[,，]/)
@@ -260,7 +456,28 @@ onMounted(async () => {
 }
 
 .my-blog-shell {
+  position: relative;
   padding: 92px 0 56px;
+}
+
+.my-blog-heading {
+  max-width: 820px;
+  margin-bottom: 24px;
+}
+
+.my-blog-heading h1 {
+  margin: 10px 0 12px;
+  color: var(--oa-text);
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.my-blog-heading p {
+  max-width: 760px;
+  color: var(--oa-muted);
+  font-size: 17px;
+  line-height: 1.7;
 }
 
 .write-alert {
@@ -286,6 +503,51 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 18px;
+}
+
+.editor-field {
+  display: grid;
+  width: 100%;
+  gap: 10px;
+}
+
+.markdown-toolbar {
+  display: flex;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.markdown-toolbar :deep(.el-button) {
+  min-width: 44px;
+}
+
+.markdown-editor-tabs {
+  width: 100%;
+}
+
+.editor-preview {
+  min-height: 438px;
+  max-height: 62vh;
+  overflow: auto;
+  padding: 16px;
+  background: var(--oa-page-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+}
+
+.image-upload-result {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.image-upload-result .el-image {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background: var(--oa-page-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius);
 }
 
 @media (max-width: 760px) {

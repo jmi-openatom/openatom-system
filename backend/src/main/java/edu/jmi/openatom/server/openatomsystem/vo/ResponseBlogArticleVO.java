@@ -32,7 +32,11 @@ public class ResponseBlogArticleVO {
   private Boolean featured;
   private Integer viewCount;
   private Integer likeCount;
+  private Integer favoriteCount;
+  private Integer shareCount;
   private Long commentCount;
+  private Boolean liked;
+  private Boolean favorited;
   private String rejectReason;
   private Integer reviewedBy;
   private String reviewerName;

@@ -3,11 +3,13 @@ package edu.jmi.openatom.server.openatomsystem.service;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateBlogCommentDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBlogInteractionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestReviewBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogArticleVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogCommentVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogInteractionVO;
 import java.util.List;
 
 /**
@@ -26,6 +28,12 @@ public interface BlogService {
   Result<List<ResponseBlogCommentVO>> publicComments(Integer articleId);
 
   Result<String> createComment(Integer articleId, RequestCreateBlogCommentDTO request);
+
+  Result<ResponseBlogArticleVO> likeArticle(Integer articleId, RequestBlogInteractionDTO request);
+
+  Result<ResponseBlogArticleVO> favoriteArticle(Integer articleId, RequestBlogInteractionDTO request);
+
+  Result<ResponseBlogArticleVO> shareArticle(Integer articleId, RequestBlogInteractionDTO request);
 
   Result<PageDataVO<ResponseBlogArticleVO>> myArticles(String status, Long page, Long pageSize);
 
@@ -47,4 +55,7 @@ public interface BlogService {
   Result<List<ResponseBlogCommentVO>> adminComments(Integer articleId);
 
   Result<String> adminUpdateCommentStatus(Integer commentId, String status);
+
+  Result<PageDataVO<ResponseBlogInteractionVO>> adminInteractions(
+      String interactionType, Integer articleId, Long page, Long pageSize);
 }

@@ -1,50 +1,71 @@
 <template>
   <ViewPage class="blog-page" :loading="loading">
-    <section class="blog-shell">
-      <div class="container blog-shell__inner">
-        <aside class="blog-sidebar">
-          <div class="blog-sidebar__title">
-            <span>OpenAtom Blog</span>
-            <h1>技术博客</h1>
-          </div>
+    <section class="blog-hero home-interactive-section">
+      <HomeInteractiveBackdrop :radius="230" :spacing="68" :strength="22" />
+      <div class="container blog-hero__inner">
+        <div class="section-heading reveal-block">
+          <span>OpenAtom Blog</span>
+          <h1>技术博客</h1>
+          <p>沉淀社团成员的工程实践、竞赛复盘和开源笔记，让经验像代码一样被复用。</p>
+        </div>
 
-          <el-input
-            v-model="query.keyword"
-            clearable
-            placeholder="搜索标题、摘要、正文"
-            @keyup.enter="reload"
-            @clear="reload"
-          />
-          <el-select v-model="query.category" clearable placeholder="文章分类" @change="reload">
-            <el-option
-              v-for="category in categories"
-              :key="category"
-              :label="category"
-              :value="category"
+        <div class="hero__actions blog-hero__actions">
+          <el-button v-if="isLoggedIn" size="large" @click="$router.push('/blog/my')">
+            我的博客
+          </el-button>
+          <el-button
+            v-if="canWrite"
+            size="large"
+            type="primary"
+            @click="$router.push('/blog/write')"
+          >
+            写文章
+          </el-button>
+        </div>
+
+        <div class="command-panel blog-command-panel">
+          <div class="blog-command-panel__fields">
+            <el-input
+              v-model="query.keyword"
+              clearable
+              placeholder="搜索标题、摘要、正文"
+              @keyup.enter="reload"
+              @clear="reload"
             />
-          </el-select>
-          <el-input
-            v-model="query.tag"
-            clearable
-            placeholder="标签"
-            @keyup.enter="reload"
-            @clear="reload"
-          />
-
-          <div class="blog-sidebar__actions">
-            <el-button type="primary" @click="reload">筛选</el-button>
-            <el-button v-if="isLoggedIn" @click="$router.push('/blog/my')">我的博客</el-button>
-            <el-button v-if="canWrite" type="success" @click="$router.push('/blog/write')">
-              写文章
-            </el-button>
+            <el-select v-model="query.category" clearable placeholder="文章分类" @change="reload">
+              <el-option
+                v-for="category in categories"
+                :key="category"
+                :label="category"
+                :value="category"
+              />
+            </el-select>
+            <el-input
+              v-model="query.tag"
+              clearable
+              placeholder="标签"
+              @keyup.enter="reload"
+              @clear="reload"
+            />
           </div>
-        </aside>
+          <el-button type="primary" @click="reload">筛选</el-button>
+        </div>
+      </div>
+    </section>
 
-        <main class="blog-content">
+    <section class="blog-stream-section home-interactive-section">
+      <HomeInteractiveBackdrop :radius="210" :spacing="62" :strength="18" />
+      <div class="container blog-stream">
+        <div class="section-heading reveal-block">
+          <span>文章流</span>
+          <h2>最新发布</h2>
+        </div>
+
+        <div class="blog-content">
           <article
             v-for="article in rows"
             :key="article.id"
-            class="blog-row"
+            class="blog-row reveal-card"
             @click="$router.push(`/blog/${article.id}`)"
           >
             <div class="blog-row__body">
@@ -63,6 +84,9 @@
               </div>
               <footer>
                 <span>{{ article.viewCount || 0 }} 阅读</span>
+                <span>{{ article.likeCount || 0 }} 点赞</span>
+                <span>{{ article.favoriteCount || 0 }} 收藏</span>
+                <span>{{ article.shareCount || 0 }} 分享</span>
                 <span>{{ article.commentCount || 0 }} 评论</span>
               </footer>
             </div>
@@ -84,7 +108,7 @@
             :total="total"
             @current-change="handlePageChange"
           />
-        </main>
+        </div>
       </div>
     </section>
   </ViewPage>
@@ -92,6 +116,7 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
 import { siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { getToken } from '@/utils/auth.ts'
@@ -159,60 +184,88 @@ onMounted(() => {
   background: var(--oa-page-soft-bg);
 }
 
-.blog-shell {
-  padding: 92px 0 56px;
+.blog-hero,
+.blog-stream-section {
+  position: relative;
+  overflow: hidden;
 }
 
-.blog-shell__inner {
-  display: grid;
-  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
-  gap: 28px;
-  align-items: start;
-}
-
-.blog-sidebar {
-  position: sticky;
-  top: calc(var(--oa-site-header-height) + 24px);
-  display: grid;
-  gap: 14px;
-  padding: 22px;
+.blog-hero {
+  min-height: min(82vh, 780px);
+  padding: clamp(92px, 10vw, 132px) 0 clamp(56px, 7vw, 88px);
   background: var(--oa-elevated-bg);
-  border: 1px solid var(--oa-border);
-  border-radius: var(--oa-radius);
+  border-bottom: 1px solid var(--oa-border);
 }
 
-.blog-sidebar__title span {
-  color: var(--oa-muted);
-  font-size: 13px;
-}
-
-.blog-sidebar__title h1 {
-  margin: 6px 0 0;
-  color: var(--oa-text);
-  font-size: 28px;
-  line-height: 1.2;
-}
-
-.blog-sidebar__actions {
+.blog-hero__inner {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 10px;
+  gap: 28px;
+}
+
+.blog-hero .section-heading {
+  max-width: 880px;
+}
+
+.blog-hero .section-heading h1 {
+  margin: 12px 0 16px;
+  color: var(--oa-text);
+  font-size: clamp(46px, 7vw, 92px);
+  font-weight: 650;
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.blog-hero .section-heading p {
+  max-width: 760px;
+  color: var(--oa-muted);
+  font-size: clamp(18px, 2.1vw, 24px);
+  line-height: 1.7;
+}
+
+.blog-hero__actions {
+  justify-content: flex-start;
+}
+
+.blog-command-panel {
+  width: min(920px, 100%);
+  padding: 22px;
+}
+
+.blog-command-panel__fields {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(180px, 0.8fr) minmax(160px, 0.7fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.blog-stream-section {
+  padding: clamp(54px, 7vw, 88px) 0;
+}
+
+.blog-stream {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 28px;
 }
 
 .blog-content {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .blog-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 180px;
-  gap: 20px;
-  min-height: 176px;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 22px;
+  min-height: 190px;
   padding: 22px;
   cursor: pointer;
   background: var(--oa-elevated-bg);
   border: 1px solid var(--oa-border);
-  border-radius: var(--oa-radius);
+  border-radius: 24px;
   transition:
     border-color 0.2s ease,
     transform 0.2s ease;
@@ -220,7 +273,7 @@ onMounted(() => {
 
 .blog-row:hover {
   border-color: var(--oa-primary);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
 
 .blog-row__body {
@@ -240,8 +293,8 @@ onMounted(() => {
 .blog-row h2 {
   margin: 12px 0 8px;
   color: var(--oa-text);
-  font-size: 22px;
-  line-height: 1.35;
+  font-size: clamp(22px, 2.2vw, 30px);
+  line-height: 1.3;
 }
 
 .blog-row p {
@@ -264,12 +317,12 @@ onMounted(() => {
 
 .blog-row__cover {
   display: grid;
-  min-height: 132px;
+  min-height: 146px;
   overflow: hidden;
   place-items: center;
   background: var(--oa-page-bg);
   border: 1px solid var(--oa-border);
-  border-radius: var(--oa-radius);
+  border-radius: 18px;
 }
 
 .blog-row__cover img {
@@ -280,26 +333,18 @@ onMounted(() => {
 
 .blog-row__cover span {
   color: var(--oa-muted);
-  font-size: 42px;
+  font-size: 48px;
   font-weight: 700;
 }
 
 @media (max-width: 900px) {
-  .blog-shell {
-    padding-top: 76px;
-  }
-
-  .blog-shell__inner,
+  .blog-command-panel__fields,
   .blog-row {
     grid-template-columns: 1fr;
   }
 
-  .blog-sidebar {
-    position: static;
-  }
-
   .blog-row__cover {
-    min-height: 180px;
+    min-height: 190px;
   }
 }
 </style>

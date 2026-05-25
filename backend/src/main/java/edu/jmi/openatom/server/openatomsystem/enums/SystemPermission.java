@@ -232,6 +232,7 @@ public enum SystemPermission {
   DOCUMENT_CREATE("创建文书", "document:create", "api", "/office-documents", "POST"),
   DOCUMENT_UPDATE("更新文书", "document:update", "api", "/office-documents/{documentId}", "PATCH"),
   DOCUMENT_EXPORT("导出文书", "document:export", "api", "/office-documents/{documentId}/export", "GET"),
+  IMAGE_UPLOAD("上传图床图片", "image:upload", "api", "/image-hosting/images", "POST"),
   BLOG_MY_LIST("查询我的博客", "blog:my:list", "api", "/blog/my/articles", "GET"),
   BLOG_CREATE("发布博客文章", "blog:create", "api", "/blog/articles", "POST"),
   BLOG_UPDATE_OWN("更新自己的博客文章", "blog:update-own", "api", "/blog/articles/{articleId}", "PATCH"),
@@ -243,6 +244,8 @@ public enum SystemPermission {
       "查询博客评论", "blog-comment:list", "api", "/blog/admin/articles/{articleId}/comments", "GET"),
   BLOG_COMMENT_MANAGE(
       "管理博客评论", "blog-comment:manage", "api", "/blog/admin/comments/{commentId}/status", "PATCH"),
+  BLOG_INTERACTION_LIST(
+      "查询博客互动记录", "blog-interaction:list", "api", "/blog/admin/interactions", "GET"),
   BOT_MANAGEMENT_LIST("查看 QQ 机器人群管后台", "bot-management:list", "api", "/bot-management/**", "GET"),
   BOT_MANAGEMENT_DETAIL("查看 QQ 群详情", "bot-management:detail", "api", "/bot-management/groups/{groupId}", "GET"),
   BOT_MANAGEMENT_MEMBERS(

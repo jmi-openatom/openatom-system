@@ -6,15 +6,18 @@ import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBlogInteractionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateBlogCommentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestReviewBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.BlogArticle;
+import edu.jmi.openatom.server.openatomsystem.entity.BlogArticleInteraction;
 import edu.jmi.openatom.server.openatomsystem.entity.BlogComment;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.BlogArticleMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.BlogArticleInteractionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.BlogCommentMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
@@ -23,7 +26,10 @@ import edu.jmi.openatom.server.openatomsystem.service.BlogService;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogArticleVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogCommentVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogInteractionVO;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,10 +50,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class BlogServiceImpl implements BlogService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
   private static final List<String> AUTHOR_STATUSES = List.of("draft", "published");
-  private static final List<String> ADMIN_STATUSES = List.of("draft", "published", "hidden", "rejected");
+  private static final List<String> ADMIN_STATUSES =
+      List.of("draft", "published", "hidden", "rejected");
   private static final List<String> COMMENT_STATUSES = List.of("visible", "hidden");
+  private static final List<String> INTERACTION_TYPES = List.of("like", "favorite", "share");
 
   private final BlogArticleMapper blogArticleMapper;
+  private final BlogArticleInteractionMapper blogArticleInteractionMapper;
   private final BlogCommentMapper blogCommentMapper;
   private final ClubMapper clubMapper;
   private final ClubMembershipMapper clubMembershipMapper;
@@ -94,7 +103,7 @@ public class BlogServiceImpl implements BlogService {
     if (blogArticleMapper.selectPublishedById(articleId) == null) {
       return Result.error(404, "文章不存在或未发布");
     }
-    return Result.success(toCommentResponseList(blogCommentMapper.selectVisibleByArticleId(articleId)));
+    return Result.success(toCommentTree(blogCommentMapper.selectVisibleByArticleId(articleId)));
   }
 
   @Override
@@ -107,15 +116,46 @@ public class BlogServiceImpl implements BlogService {
     String content = trimToNull(request == null ? null : request.getContent());
     if (content == null) return Result.error(400, "评论内容不能为空");
     if (content.length() > 1000) return Result.error(400, "评论内容不能超过1000字");
+    Integer parentId = request == null ? null : request.getParentId();
+    if (parentId != null) {
+      BlogComment parent = blogCommentMapper.selectById(parentId);
+      if (parent == null
+          || !Objects.equals(parent.getArticleId(), articleId)
+          || !"visible".equals(parent.getStatus())) {
+        return Result.error(404, "要回复的评论不存在或不可见");
+      }
+    }
     BlogComment comment =
         BlogComment.builder()
             .articleId(articleId)
             .userId(StpUtil.getLoginIdAsInt())
+            .parentId(parentId)
             .content(content)
             .status("visible")
             .build();
     int row = blogCommentMapper.insert(comment);
     return row > 0 ? Result.success("评论已发布") : Result.error("评论发布失败");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseBlogArticleVO> likeArticle(
+      Integer articleId, RequestBlogInteractionDTO request) {
+    return recordInteraction(articleId, "like", request, false);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseBlogArticleVO> favoriteArticle(
+      Integer articleId, RequestBlogInteractionDTO request) {
+    return recordInteraction(articleId, "favorite", request, false);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseBlogArticleVO> shareArticle(
+      Integer articleId, RequestBlogInteractionDTO request) {
+    return recordInteraction(articleId, "share", request, true);
   }
 
   @Override
@@ -163,6 +203,8 @@ public class BlogServiceImpl implements BlogService {
             .featured(false)
             .viewCount(0)
             .likeCount(0)
+            .favoriteCount(0)
+            .shareCount(0)
             .publishedAt("published".equals(status) ? now : null)
             .build();
     int row = blogArticleMapper.insert(article);
@@ -242,6 +284,7 @@ public class BlogServiceImpl implements BlogService {
     BlogArticle article = findOwnArticle(articleId);
     if (article == null) return Result.error(404, "文章不存在");
     blogCommentMapper.deleteByArticleId(articleId);
+    blogArticleInteractionMapper.deleteByArticleId(articleId);
     int row = blogArticleMapper.deleteById(articleId);
     return row > 0 ? Result.success("文章已删除") : Result.error("文章删除失败");
   }
@@ -292,6 +335,7 @@ public class BlogServiceImpl implements BlogService {
   public Result<String> adminDeleteArticle(Integer articleId) {
     if (blogArticleMapper.selectById(articleId) == null) return Result.error(404, "文章不存在");
     blogCommentMapper.deleteByArticleId(articleId);
+    blogArticleInteractionMapper.deleteByArticleId(articleId);
     int row = blogArticleMapper.deleteById(articleId);
     return row > 0 ? Result.success("文章已删除") : Result.error("文章删除失败");
   }
@@ -312,6 +356,77 @@ public class BlogServiceImpl implements BlogService {
     comment.setStatus(normalized);
     int row = blogCommentMapper.updateById(comment);
     return row > 0 ? Result.success("评论状态已更新") : Result.error("评论状态更新失败");
+  }
+
+  @Override
+  public Result<PageDataVO<ResponseBlogInteractionVO>> adminInteractions(
+      String interactionType, Integer articleId, Long page, Long pageSize) {
+    String normalized = trimToNull(interactionType);
+    if (normalized != null && !INTERACTION_TYPES.contains(normalized)) {
+      return Result.error(400, "互动类型不合法");
+    }
+    Page<BlogArticleInteraction> interactionPage =
+        blogArticleInteractionMapper.selectPageByConditions(
+            new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)),
+            normalized,
+            articleId);
+    return Result.success(toInteractionPage(interactionPage));
+  }
+
+  private Result<ResponseBlogArticleVO> recordInteraction(
+      Integer articleId,
+      String interactionType,
+      RequestBlogInteractionDTO request,
+      boolean allowDuplicate) {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录后再操作");
+    BlogArticle article = blogArticleMapper.selectPublishedById(articleId);
+    if (article == null) return Result.error(404, "文章不存在或未发布");
+    Integer userId = StpUtil.getLoginIdAsInt();
+    if (!allowDuplicate
+        && blogArticleInteractionMapper.selectLatestByArticleUserType(
+                articleId, userId, interactionType)
+            != null) {
+      return Result.success(
+          toResponse(article, userMap(List.of(article)), commentCount(articleId)), "互动已记录");
+    }
+    BlogArticleInteraction interaction =
+        BlogArticleInteraction.builder()
+            .articleId(articleId)
+            .userId(userId)
+            .interactionType(interactionType)
+            .channel(normalizeInteractionChannel(request, interactionType))
+            .createdAt(Times.now())
+            .build();
+    int row = blogArticleInteractionMapper.insert(interaction);
+    if (row <= 0) return Result.error("互动记录保存失败");
+    if ("like".equals(interactionType)) {
+      blogArticleMapper.incrementLikeCount(articleId);
+    } else if ("favorite".equals(interactionType)) {
+      blogArticleMapper.incrementFavoriteCount(articleId);
+    } else if ("share".equals(interactionType)) {
+      blogArticleMapper.incrementShareCount(articleId);
+    }
+    BlogArticle updated = blogArticleMapper.selectPublishedById(articleId);
+    BlogArticle responseArticle = updated == null ? article : updated;
+    return Result.success(
+        toResponse(responseArticle, userMap(List.of(responseArticle)), commentCount(articleId)),
+        interactionMessage(interactionType));
+  }
+
+  private String normalizeInteractionChannel(
+      RequestBlogInteractionDTO request, String interactionType) {
+    String channel = trimToNull(request == null ? null : request.getChannel());
+    if (channel == null) return "share".equals(interactionType) ? "copy_link" : "web";
+    return channel.length() > 40 ? channel.substring(0, 40) : channel;
+  }
+
+  private String interactionMessage(String interactionType) {
+    return switch (interactionType) {
+      case "like" -> "点赞已记录";
+      case "favorite" -> "收藏已记录";
+      case "share" -> "分享已记录";
+      default -> "互动已记录";
+    };
   }
 
   private Result<Club> requireAuthorClub() {
@@ -388,6 +503,16 @@ public class BlogServiceImpl implements BlogService {
         .build();
   }
 
+  private PageDataVO<ResponseBlogInteractionVO> toInteractionPage(
+      Page<BlogArticleInteraction> page) {
+    return PageDataVO.<ResponseBlogInteractionVO>builder()
+        .list(toInteractionResponseList(page.getRecords()))
+        .page(page.getCurrent())
+        .pageSize(page.getSize())
+        .total(page.getTotal())
+        .build();
+  }
+
   private List<ResponseBlogArticleVO> toResponseList(List<BlogArticle> articles) {
     if (articles == null || articles.isEmpty()) return List.of();
     Map<Integer, User> users = userMap(articles);
@@ -413,10 +538,60 @@ public class BlogServiceImpl implements BlogService {
     return count == null ? 0L : count;
   }
 
+  private List<ResponseBlogInteractionVO> toInteractionResponseList(
+      List<BlogArticleInteraction> interactions) {
+    if (interactions == null || interactions.isEmpty()) return List.of();
+    Map<Integer, BlogArticle> articles = articleMap(interactions);
+    Map<Integer, User> users =
+        userMapByIds(
+            interactions.stream()
+                .map(BlogArticleInteraction::getUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList());
+    return interactions.stream()
+        .map(
+            interaction -> {
+              BlogArticle article = articles.get(interaction.getArticleId());
+              User user = users.get(interaction.getUserId());
+              return ResponseBlogInteractionVO.builder()
+                  .id(interaction.getId())
+                  .articleId(interaction.getArticleId())
+                  .articleTitle(article == null ? null : article.getTitle())
+                  .userId(interaction.getUserId())
+                  .userName(displayName(user))
+                  .userAvatar(user == null ? null : user.getAvatar())
+                  .interactionType(interaction.getInteractionType())
+                  .channel(interaction.getChannel())
+                  .createdAt(interaction.getCreatedAt())
+                  .build();
+            })
+        .toList();
+  }
+
+  private Map<Integer, BlogArticle> articleMap(List<BlogArticleInteraction> interactions) {
+    List<Integer> articleIds =
+        interactions.stream()
+            .map(BlogArticleInteraction::getArticleId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+    if (articleIds.isEmpty()) return Map.of();
+    return blogArticleMapper.selectBatchIds(articleIds).stream()
+        .collect(Collectors.toMap(BlogArticle::getId, Function.identity(), (left, right) -> left));
+  }
+
+  private Map<Integer, User> userMapByIds(List<Integer> userIds) {
+    if (userIds == null || userIds.isEmpty()) return Map.of();
+    return userMapper.selectBatchIds(userIds).stream()
+        .collect(Collectors.toMap(User::getId, Function.identity(), (left, right) -> left));
+  }
+
   private ResponseBlogArticleVO toResponse(
       BlogArticle article, Map<Integer, User> users, Long commentCount) {
     User author = article.getAuthorId() == null ? null : users.get(article.getAuthorId());
     User reviewer = article.getReviewedBy() == null ? null : users.get(article.getReviewedBy());
+    Integer currentUserId = currentUserIdOrNull();
     return ResponseBlogArticleVO.builder()
         .id(article.getId())
         .clubId(article.getClubId())
@@ -433,7 +608,12 @@ public class BlogServiceImpl implements BlogService {
         .featured(Boolean.TRUE.equals(article.getFeatured()))
         .viewCount(article.getViewCount() == null ? 0 : article.getViewCount())
         .likeCount(article.getLikeCount() == null ? 0 : article.getLikeCount())
+        .favoriteCount(article.getFavoriteCount() == null ? 0 : article.getFavoriteCount())
+        .shareCount(article.getShareCount() == null ? 0 : article.getShareCount())
         .commentCount(commentCount)
+        .liked(currentUserId != null && hasInteraction(article.getId(), currentUserId, "like"))
+        .favorited(
+            currentUserId != null && hasInteraction(article.getId(), currentUserId, "favorite"))
         .rejectReason(article.getRejectReason())
         .reviewedBy(article.getReviewedBy())
         .reviewerName(displayName(reviewer))
@@ -442,6 +622,16 @@ public class BlogServiceImpl implements BlogService {
         .createdAt(article.getCreatedAt())
         .updatedAt(article.getUpdatedAt())
         .build();
+  }
+
+  private Integer currentUserIdOrNull() {
+    return StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null;
+  }
+
+  private boolean hasInteraction(Integer articleId, Integer userId, String interactionType) {
+    return blogArticleInteractionMapper.selectLatestByArticleUserType(
+            articleId, userId, interactionType)
+        != null;
   }
 
   private List<ResponseBlogCommentVO> toCommentResponseList(List<BlogComment> comments) {
@@ -456,16 +646,43 @@ public class BlogServiceImpl implements BlogService {
     return comments.stream().map(comment -> toCommentResponse(comment, users)).toList();
   }
 
+  private List<ResponseBlogCommentVO> toCommentTree(List<BlogComment> comments) {
+    if (comments == null || comments.isEmpty()) return List.of();
+    List<ResponseBlogCommentVO> flat = toCommentResponseList(comments);
+    Map<Integer, ResponseBlogCommentVO> commentMap = new LinkedHashMap<>();
+    for (ResponseBlogCommentVO comment : flat) {
+      comment.setReplies(new ArrayList<>());
+      commentMap.put(comment.getId(), comment);
+    }
+    List<ResponseBlogCommentVO> roots = new ArrayList<>();
+    for (ResponseBlogCommentVO comment : flat) {
+      Integer parentId = comment.getParentId();
+      ResponseBlogCommentVO parent = parentId == null ? null : commentMap.get(parentId);
+      if (parent == null) {
+        roots.add(comment);
+      } else {
+        parent.getReplies().add(comment);
+      }
+    }
+    for (ResponseBlogCommentVO comment : flat) {
+      comment.setReplyCount(comment.getReplies() == null ? 0 : comment.getReplies().size());
+    }
+    return roots;
+  }
+
   private ResponseBlogCommentVO toCommentResponse(BlogComment comment, Map<Integer, User> users) {
     User user = comment.getUserId() == null ? null : users.get(comment.getUserId());
     return ResponseBlogCommentVO.builder()
         .id(comment.getId())
         .articleId(comment.getArticleId())
         .userId(comment.getUserId())
+        .parentId(comment.getParentId())
         .userName(displayName(user))
         .userAvatar(user == null ? null : user.getAvatar())
         .content(comment.getContent())
         .status(comment.getStatus())
+        .replyCount(0)
+        .replies(new ArrayList<>())
         .createdAt(comment.getCreatedAt())
         .updatedAt(comment.getUpdatedAt())
         .build();

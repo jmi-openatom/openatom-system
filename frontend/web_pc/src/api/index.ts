@@ -39,6 +39,15 @@ export const siteApi = {
   createBlogComment(id: string | number, data: Record<string, unknown>): Promise<any> {
     return request.post(`/site/blog/articles/${id}/comments`, data)
   },
+  likeBlogArticle(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
+    return request.post(`/site/blog/articles/${id}/like`, data)
+  },
+  favoriteBlogArticle(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
+    return request.post(`/site/blog/articles/${id}/favorite`, data)
+  },
+  shareBlogArticle(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
+    return request.post(`/site/blog/articles/${id}/share`, data)
+  },
 }
 
 export const authApi = {
@@ -214,6 +223,14 @@ export const officeDocumentApi = {
   },
 }
 
+export const imageHostingApi = {
+  upload(file: File): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/image-hosting/images', formData)
+  },
+}
+
 export const blogApi = {
   myArticles(params?: Record<string, unknown>): Promise<any> {
     return request.get('/blog/my/articles', { params })
@@ -244,6 +261,9 @@ export const blogApi = {
   },
   updateCommentStatus(id: string | number, status: string): Promise<any> {
     return request.patch(`/blog/admin/comments/${id}/status`, { status })
+  },
+  adminInteractions(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/blog/admin/interactions', { params })
   },
 }
 

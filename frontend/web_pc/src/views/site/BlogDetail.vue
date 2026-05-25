@@ -1,6 +1,7 @@
 <template>
   <ViewPage class="blog-detail" :loading="loading">
-    <section class="blog-detail__hero">
+    <section class="blog-detail__hero home-interactive-section">
+      <HomeInteractiveBackdrop :radius="230" :spacing="68" :strength="22" />
       <div class="container blog-detail__hero-inner">
         <div class="blog-detail__copy">
           <el-button text @click="$router.back()">返回博客</el-button>
@@ -14,8 +15,30 @@
           <p>{{ article.summary || '作者暂未填写摘要' }}</p>
           <div class="blog-detail__stats">
             <span>{{ article.viewCount || 0 }} 阅读</span>
-            <span>{{ article.commentCount || comments.length }} 评论</span>
+            <span>{{ article.likeCount || 0 }} 点赞</span>
+            <span>{{ article.favoriteCount || 0 }} 收藏</span>
+            <span>{{ article.shareCount || 0 }} 分享</span>
+            <span>{{ article.commentCount ?? totalComments }} 评论</span>
             <el-button v-if="canEdit" size="small" @click="$router.push('/blog/my')">编辑</el-button>
+          </div>
+          <div class="blog-detail__actions">
+            <el-button
+              :disabled="Boolean(article.liked)"
+              :icon="Pointer"
+              :type="article.liked ? 'primary' : 'default'"
+              @click="likeArticle"
+            >
+              {{ article.liked ? '已点赞' : '点赞' }}
+            </el-button>
+            <el-button
+              :disabled="Boolean(article.favorited)"
+              :icon="Star"
+              :type="article.favorited ? 'primary' : 'default'"
+              @click="favoriteArticle"
+            >
+              {{ article.favorited ? '已收藏' : '收藏' }}
+            </el-button>
+            <el-button :icon="Share" @click="shareArticle">分享</el-button>
           </div>
         </div>
         <div class="blog-detail__cover" :class="{ 'is-empty': !article.coverUrl }">
@@ -25,7 +48,8 @@
       </div>
     </section>
 
-    <section class="blog-detail__body">
+    <section class="blog-detail__body home-interactive-section">
+      <HomeInteractiveBackdrop :radius="210" :spacing="62" :strength="18" />
       <div class="container blog-detail__grid">
         <article class="markdown-body blog-article">
           <div v-html="html"></div>
@@ -34,7 +58,10 @@
         <aside class="blog-aside">
           <div class="blog-aside__block">
             <span>作者</span>
-            <strong>{{ article.authorName || '匿名作者' }}</strong>
+            <div class="blog-author">
+              <UserAvatar :name="article.authorName || '匿名作者'" :size="42" :src="article.authorAvatar || ''" />
+              <strong>{{ article.authorName || '匿名作者' }}</strong>
+            </div>
           </div>
           <div class="blog-aside__block">
             <span>标签</span>
@@ -49,33 +76,35 @@
       <div class="container comments-section">
         <div class="comments-section__head">
           <h2>评论</h2>
-          <span>{{ comments.length }} 条</span>
+          <span>{{ totalComments }} 条</span>
         </div>
 
         <div v-if="isLoggedIn" class="comment-editor">
+          <div v-if="replyTarget" class="comment-editor__replying">
+            <span>回复 {{ replyTarget.userName || '匿名用户' }}</span>
+            <el-button link type="primary" @click="cancelReply">取消回复</el-button>
+          </div>
           <el-input
             v-model="commentForm.content"
             maxlength="1000"
-            placeholder="写下你的观点"
+            :placeholder="commentPlaceholder"
             show-word-limit
             :rows="4"
             type="textarea"
           />
-          <el-button type="primary" :loading="commenting" @click="submitComment">发布评论</el-button>
+          <el-button type="primary" :loading="commenting" @click="submitComment">
+            {{ replyTarget ? '发布回复' : '发布评论' }}
+          </el-button>
         </div>
         <el-alert v-else type="info" :closable="false" title="登录后可以发表评论" />
 
         <div class="comment-list">
-          <article v-for="comment in comments" :key="comment.id" class="comment-item">
-            <div class="comment-item__avatar">{{ coverInitial(comment.userName) }}</div>
-            <div>
-              <header>
-                <strong>{{ comment.userName || '匿名用户' }}</strong>
-                <span>{{ formatDateTime(comment.createdAt) }}</span>
-              </header>
-              <p>{{ comment.content }}</p>
-            </div>
-          </article>
+          <BlogCommentItem
+            v-for="comment in comments"
+            :key="comment.id"
+            :comment="comment"
+            @reply="startReply"
+          />
           <el-empty v-if="!comments.length" description="还没有评论" />
         </div>
       </div>
@@ -85,7 +114,11 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
+import BlogCommentItem from '@/components/site/blog/BlogCommentItem.vue'
+import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
 import { ElMessage } from 'element-plus'
+import { Pointer, Share, Star } from '@element-plus/icons-vue'
 import { siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { getCurrentUser, getToken } from '@/utils/auth.ts'
@@ -100,41 +133,96 @@ const loading = ref(false)
 const commenting = ref(false)
 const article = ref<Record<string, any>>({})
 const comments = ref<any[]>([])
-const commentForm = ref({ content: '' })
+const commentForm = ref({ content: '', parentId: null as number | null })
+const replyTarget = ref<Record<string, any> | null>(null)
 
 const isLoggedIn = computed(() => Boolean(getToken()))
 const currentUser = computed(() => getCurrentUser())
 const canEdit = computed(() => currentUser.value?.id && currentUser.value.id === article.value.authorId)
 const html = computed(() => renderMarkdown(article.value.contentMarkdown || article.value.summary || ''))
+const totalComments = computed(() => countComments(comments.value))
+const commentPlaceholder = computed(() =>
+  replyTarget.value ? `回复 ${replyTarget.value.userName || '匿名用户'}` : '写下你的观点',
+)
 
 async function fetchDetail() {
   loading.value = true
   try {
     article.value = await siteApi.blogArticleDetail(route.params.id)
-    comments.value = (await siteApi.blogComments(route.params.id)) || []
+    await refreshComments()
   } finally {
     loading.value = false
   }
 }
 
+async function refreshComments() {
+  comments.value = (await siteApi.blogComments(route.params.id)) || []
+}
+
 async function submitComment() {
-  if (!getToken()) {
-    router.push({ path: '/admin/login', query: { redirect: route.fullPath } })
-    return
-  }
+  if (!ensureLogin()) return
   if (!commentForm.value.content.trim()) {
     ElMessage.warning('请填写评论内容')
     return
   }
   commenting.value = true
   try {
-    await siteApi.createBlogComment(route.params.id, { content: commentForm.value.content })
-    commentForm.value.content = ''
-    comments.value = (await siteApi.blogComments(route.params.id)) || []
+    await siteApi.createBlogComment(route.params.id, {
+      content: commentForm.value.content,
+      parentId: commentForm.value.parentId || undefined,
+    })
+    commentForm.value = { content: '', parentId: null }
+    replyTarget.value = null
+    await refreshComments()
+    article.value.commentCount = totalComments.value
     ElMessage.success('评论已发布')
   } finally {
     commenting.value = false
   }
+}
+
+async function likeArticle() {
+  if (!ensureLogin()) return
+  article.value = await siteApi.likeBlogArticle(route.params.id, { channel: 'web' })
+  ElMessage.success(article.value.liked ? '点赞已记录' : '操作成功')
+}
+
+async function favoriteArticle() {
+  if (!ensureLogin()) return
+  article.value = await siteApi.favoriteBlogArticle(route.params.id, { channel: 'web' })
+  ElMessage.success(article.value.favorited ? '收藏已记录' : '操作成功')
+}
+
+async function shareArticle() {
+  if (!ensureLogin()) return
+  article.value = await siteApi.shareBlogArticle(route.params.id, { channel: 'copy_link' })
+  try {
+    await navigator.clipboard?.writeText(window.location.href)
+    ElMessage.success('链接已复制，分享记录已保存')
+  } catch (_error) {
+    ElMessage.success('分享记录已保存')
+  }
+}
+
+function startReply(comment: Record<string, any>) {
+  if (!ensureLogin()) return
+  replyTarget.value = comment
+  commentForm.value.parentId = Number(comment.id)
+}
+
+function cancelReply() {
+  replyTarget.value = null
+  commentForm.value.parentId = null
+}
+
+function ensureLogin() {
+  if (getToken()) return true
+  router.push({ path: '/admin/login', query: { redirect: route.fullPath } })
+  return false
+}
+
+function countComments(list: any[]): number {
+  return list.reduce((total, comment) => total + 1 + countComments(comment.replies || []), 0)
 }
 
 function coverInitial(value: string) {
@@ -169,7 +257,7 @@ onMounted(() => {
   min-width: 0;
 }
 
-.blog-detail__copy .el-button {
+.blog-detail__copy > .el-button {
   padding-left: 0;
 }
 
@@ -181,6 +269,13 @@ onMounted(() => {
   align-items: center;
   color: var(--oa-muted);
   font-size: 13px;
+}
+
+.blog-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .blog-detail h1 {
@@ -266,6 +361,19 @@ onMounted(() => {
   font-size: 18px;
 }
 
+.blog-author {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.blog-author strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .blog-aside__tags {
   display: flex;
   flex-wrap: wrap;
@@ -298,6 +406,18 @@ onMounted(() => {
   display: grid;
   gap: 12px;
   justify-items: end;
+}
+
+.comment-editor__replying {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  color: var(--oa-muted);
+  background: var(--oa-page-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
 }
 
 .comment-list {

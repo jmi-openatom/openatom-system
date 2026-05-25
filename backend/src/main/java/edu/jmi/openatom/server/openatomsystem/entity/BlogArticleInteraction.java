@@ -11,16 +11,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 博客评论
+ * 博客互动记录
  *
- * <p>对应数据库表 blog_comment, 记录文章评论及管理员可见性状态
+ * <p>对应数据库表 blog_article_interaction, 记录用户点赞、收藏和分享文章的行为
  */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName("blog_comment")
-public class BlogComment {
+@TableName("blog_article_interaction")
+public class BlogArticleInteraction {
   @TableId(value = "id", type = IdType.AUTO)
   private Integer id;
 
@@ -30,15 +30,11 @@ public class BlogComment {
   @TableField("user_id")
   private Integer userId;
 
-  @TableField("parent_id")
-  private Integer parentId;
+  @TableField("interaction_type")
+  private String interactionType;
 
-  private String content;
-  private String status;
+  private String channel;
 
   @TableField("created_at")
   private Timestamp createdAt;
-
-  @TableField("updated_at")
-  private Timestamp updatedAt;
 }

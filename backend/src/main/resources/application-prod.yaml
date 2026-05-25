@@ -70,6 +70,8 @@ app:
       max-per-second: ${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:5}
   avatar:
     storage-dir: ${APP_AVATAR_STORAGE_DIR:./uploads/avatars}
+  image-hosting:
+    storage-dir: ${APP_IMAGE_HOSTING_STORAGE_DIR:./uploads/images}
   bot:
     callback-token: ${APP_BOT_CALLBACK_TOKEN:}
     leave-review-callback-url: ${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:http://astrbot:6198/openatom/leave-review}

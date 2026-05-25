@@ -227,6 +227,8 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `featured` TINYINT(1) DEFAULT 0 COMMENT '是否推荐',
             `view_count` INT DEFAULT 0 COMMENT '浏览量',
             `like_count` INT DEFAULT 0 COMMENT '点赞数',
+            `favorite_count` INT DEFAULT 0 COMMENT '收藏数',
+            `share_count` INT DEFAULT 0 COMMENT '分享数',
             `reject_reason` VARCHAR(500) DEFAULT NULL COMMENT '驳回或隐藏原因',
             `reviewed_by` INT DEFAULT NULL COMMENT '审核人ID',
             `reviewed_at` TIMESTAMP NULL DEFAULT NULL COMMENT '审核时间',
@@ -248,16 +250,42 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
             `article_id` INT NOT NULL COMMENT '文章ID',
             `user_id` INT NOT NULL COMMENT '评论用户ID',
+            `parent_id` INT DEFAULT NULL COMMENT '父评论ID',
             `content` TEXT NOT NULL COMMENT '评论内容',
             `status` VARCHAR(30) DEFAULT 'visible' COMMENT '状态: visible/hidden',
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
             PRIMARY KEY (`id`),
             KEY `idx_blog_comment_article` (`article_id`),
+            KEY `idx_blog_comment_parent` (`parent_id`),
             KEY `idx_blog_comment_user` (`user_id`),
             KEY `idx_blog_comment_status` (`status`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='博客评论表'
         """);
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `blog_article_interaction`
+        (
+            `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+            `article_id` INT NOT NULL COMMENT '文章ID',
+            `user_id` INT NOT NULL COMMENT '用户ID',
+            `interaction_type` VARCHAR(30) NOT NULL COMMENT '互动类型: like/favorite/share',
+            `channel` VARCHAR(40) DEFAULT NULL COMMENT '互动来源渠道',
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+            PRIMARY KEY (`id`),
+            KEY `idx_blog_interaction_article` (`article_id`),
+            KEY `idx_blog_interaction_user_type` (`user_id`, `interaction_type`),
+            KEY `idx_blog_interaction_type_time` (`interaction_type`, `created_at`)
+        ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='博客互动记录表'
+        """);
+    addColumnIfAbsent(
+        "blog_article", "favorite_count", "INT DEFAULT 0 COMMENT '收藏数' AFTER `like_count`");
+    addColumnIfAbsent(
+        "blog_article", "share_count", "INT DEFAULT 0 COMMENT '分享数' AFTER `favorite_count`");
+    addColumnIfAbsent(
+        "blog_comment", "parent_id", "INT DEFAULT NULL COMMENT '父评论ID' AFTER `user_id`");
+    addIndexIfAbsent(
+        "blog_comment", "idx_blog_comment_parent", "KEY `idx_blog_comment_parent` (`parent_id`)");
   }
 
   private void ensureCheckInTables() {

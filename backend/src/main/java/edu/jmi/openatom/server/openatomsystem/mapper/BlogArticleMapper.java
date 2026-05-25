@@ -84,4 +84,28 @@ public interface BlogArticleMapper extends BaseMapper<BlogArticle> {
             .eq(BlogArticle::getId, articleId)
             .setSql("view_count = COALESCE(view_count, 0) + 1"));
   }
+
+  default int incrementLikeCount(Integer articleId) {
+    return update(
+        null,
+        new LambdaUpdateWrapper<BlogArticle>()
+            .eq(BlogArticle::getId, articleId)
+            .setSql("like_count = COALESCE(like_count, 0) + 1"));
+  }
+
+  default int incrementFavoriteCount(Integer articleId) {
+    return update(
+        null,
+        new LambdaUpdateWrapper<BlogArticle>()
+            .eq(BlogArticle::getId, articleId)
+            .setSql("favorite_count = COALESCE(favorite_count, 0) + 1"));
+  }
+
+  default int incrementShareCount(Integer articleId) {
+    return update(
+        null,
+        new LambdaUpdateWrapper<BlogArticle>()
+            .eq(BlogArticle::getId, articleId)
+            .setSql("share_count = COALESCE(share_count, 0) + 1"));
+  }
 }

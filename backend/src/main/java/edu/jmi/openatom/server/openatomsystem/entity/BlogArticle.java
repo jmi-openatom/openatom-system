@@ -50,6 +50,12 @@ public class BlogArticle {
   @TableField("like_count")
   private Integer likeCount;
 
+  @TableField("favorite_count")
+  private Integer favoriteCount;
+
+  @TableField("share_count")
+  private Integer shareCount;
+
   @TableField("reject_reason")
   private String rejectReason;
 

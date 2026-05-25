@@ -18,6 +18,7 @@
         />
         <el-button type="primary" :icon="Refresh" @click="reload">刷新</el-button>
       </div>
+      <el-button :icon="Tickets" @click="openInteractions()">互动记录</el-button>
     </ViewToolbar>
 
     <el-table v-loading="loading" :data="rows" class="admin-table">
@@ -40,9 +41,10 @@
           <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="数据" width="130">
+      <el-table-column label="数据" width="210">
         <template #default="{ row }">
-          {{ row.viewCount || 0 }} 阅读 · {{ row.commentCount || 0 }} 评论
+          {{ row.viewCount || 0 }} 阅读 · {{ row.likeCount || 0 }} 赞 · {{ row.favoriteCount || 0 }} 藏 ·
+          {{ row.shareCount || 0 }} 分享
         </template>
       </el-table-column>
       <el-table-column prop="updatedAt" label="更新时间" width="180">
@@ -52,6 +54,7 @@
         <template #default="{ row }">
           <el-button link type="primary" @click="openReview(row)">管控</el-button>
           <el-button link type="success" @click="openComments(row)">评论</el-button>
+          <el-button link type="primary" @click="openInteractions(row)">互动</el-button>
           <el-button
             v-if="row.status === 'published'"
             link
@@ -116,12 +119,14 @@
     <el-drawer v-model="commentsVisible" size="560px" title="评论管理">
       <div class="comment-list">
         <article v-for="comment in comments" :key="comment.id" class="comment-item">
+          <UserAvatar :name="comment.userName || '匿名用户'" :size="38" :src="comment.userAvatar || ''" />
           <div>
             <header>
               <strong>{{ comment.userName || '匿名用户' }}</strong>
               <el-tag :type="comment.status === 'visible' ? 'success' : 'info'" size="small">
                 {{ comment.status === 'visible' ? '显示中' : '已隐藏' }}
               </el-tag>
+              <el-tag v-if="comment.parentId" type="info" size="small">回复 #{{ comment.parentId }}</el-tag>
             </header>
             <p>{{ comment.content }}</p>
             <small>{{ formatDateTime(comment.createdAt) }}</small>
@@ -137,30 +142,91 @@
         <el-empty v-if="!comments.length" description="暂无评论" />
       </div>
     </el-drawer>
+
+    <el-drawer v-model="interactionsVisible" size="720px" title="互动记录">
+      <div class="interaction-toolbar">
+        <el-select v-model="interactionQuery.interactionType" clearable placeholder="互动类型" @change="reloadInteractions">
+          <el-option label="点赞" value="like" />
+          <el-option label="收藏" value="favorite" />
+          <el-option label="分享" value="share" />
+        </el-select>
+        <el-button :icon="Refresh" @click="reloadInteractions">刷新</el-button>
+      </div>
+      <el-alert
+        v-if="interactionQuery.articleId"
+        class="interaction-scope"
+        type="info"
+        :closable="false"
+        :title="`当前仅查看《${currentArticle.title}》`"
+      />
+      <el-table v-loading="interactionsLoading" :data="interactions" class="admin-table">
+        <el-table-column label="类型" width="90">
+          <template #default="{ row }">
+            <el-tag :type="interactionTagType(row.interactionType)">
+              {{ interactionText(row.interactionType) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="articleTitle" label="文章" min-width="180" show-overflow-tooltip />
+        <el-table-column label="用户" min-width="150">
+          <template #default="{ row }">
+            <div class="interaction-user">
+              <UserAvatar :name="row.userName || '匿名用户'" :size="30" :src="row.userAvatar || ''" />
+              <span>{{ row.userName || '匿名用户' }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="channel" label="渠道" width="110" />
+        <el-table-column prop="createdAt" label="时间" width="180">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+        v-if="interactionTotal > interactionQuery.pageSize"
+        class="pager"
+        background
+        layout="prev, pager, next"
+        :current-page="interactionQuery.page"
+        :page-size="interactionQuery.pageSize"
+        :total="interactionTotal"
+        @current-change="handleInteractionPageChange"
+      />
+    </el-drawer>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { blogApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
 import { ElMessage } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Tickets } from '@element-plus/icons-vue'
 import { onMounted, ref } from 'vue'
 
 const loading = ref(false)
 const saving = ref(false)
 const reviewVisible = ref(false)
 const commentsVisible = ref(false)
+const interactionsVisible = ref(false)
+const interactionsLoading = ref(false)
 const rows = ref<any[]>([])
 const comments = ref<any[]>([])
+const interactions = ref<any[]>([])
 const total = ref(0)
+const interactionTotal = ref(0)
 const currentArticle = ref<Record<string, any>>({})
 const reviewForm = ref({ status: 'published', featured: false, reason: '' })
 const query = ref({
   status: '',
   keyword: '',
+  page: 1,
+  pageSize: 10,
+})
+const interactionQuery = ref({
+  interactionType: '',
+  articleId: null as number | null,
   page: 1,
   pageSize: 10,
 })
@@ -171,6 +237,14 @@ function statusText(status: string) {
     status ||
     '-'
   )
+}
+
+function interactionText(type: string) {
+  return ({ like: '点赞', favorite: '收藏', share: '分享' }[type] || type || '-')
+}
+
+function interactionTagType(type: string) {
+  return ({ like: 'success', favorite: 'warning', share: 'primary' }[type] || 'info')
 }
 
 async function fetchList() {
@@ -244,6 +318,41 @@ async function toggleComment(comment: any) {
   fetchList()
 }
 
+async function openInteractions(row?: any) {
+  if (row) currentArticle.value = row
+  else currentArticle.value = {}
+  interactionQuery.value.articleId = row?.id || null
+  interactionQuery.value.page = 1
+  interactionsVisible.value = true
+  await fetchInteractions()
+}
+
+async function fetchInteractions() {
+  interactionsLoading.value = true
+  try {
+    const data = await blogApi.adminInteractions({
+      interactionType: interactionQuery.value.interactionType || undefined,
+      articleId: interactionQuery.value.articleId || undefined,
+      page: interactionQuery.value.page,
+      pageSize: interactionQuery.value.pageSize,
+    })
+    interactions.value = data?.list || []
+    interactionTotal.value = Number(data?.total || 0)
+  } finally {
+    interactionsLoading.value = false
+  }
+}
+
+function reloadInteractions() {
+  interactionQuery.value.page = 1
+  fetchInteractions()
+}
+
+function handleInteractionPageChange(page: number) {
+  interactionQuery.value.page = page
+  fetchInteractions()
+}
+
 onMounted(() => {
   fetchList()
 })
@@ -272,7 +381,7 @@ onMounted(() => {
 
 .comment-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
   align-items: start;
   padding: 14px;
@@ -296,5 +405,40 @@ onMounted(() => {
 
 .comment-item small {
   color: var(--oa-muted);
+}
+
+.interaction-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.interaction-scope {
+  margin-bottom: 12px;
+}
+
+.interaction-user {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.interaction-user span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .comment-item {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .comment-item .el-button {
+    grid-column: 2;
+    justify-self: start;
+  }
 }
 </style>
