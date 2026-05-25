@@ -517,6 +517,18 @@ export const botManagementApi = {
   muteAll(groupId: string | number, data: Record<string, unknown>): Promise<any> {
     return request.post(`/bot-management/groups/${groupId}/mute-all`, data)
   },
+  groupMessages(groupId: string | number): Promise<any> {
+    return request.get(`/bot-management/groups/${groupId}/messages`)
+  },
+  sendGroupMessage(groupId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/bot-management/groups/${groupId}/messages`, data)
+  },
+  sendGroupMessageNow(groupId: string | number, messageId: string | number): Promise<any> {
+    return request.post(`/bot-management/groups/${groupId}/messages/${messageId}/send-now`)
+  },
+  deleteGroupMessage(groupId: string | number, messageId: string | number): Promise<any> {
+    return request.delete(`/bot-management/groups/${groupId}/messages/${messageId}`)
+  },
   announcements(groupId: string | number): Promise<any> {
     return request.get(`/bot-management/groups/${groupId}/announcements`)
   },

@@ -115,6 +115,7 @@ public record RoleSeedTemplate(
         SystemPermission.BOT_MANAGEMENT_SYNC,
         SystemPermission.BOT_MANAGEMENT_CONFIG,
         SystemPermission.BOT_MANAGEMENT_MUTE,
+        SystemPermission.BOT_MANAGEMENT_MESSAGES,
         SystemPermission.BOT_MANAGEMENT_ANNOUNCEMENTS,
         SystemPermission.BOT_MANAGEMENT_JOIN_REQUESTS,
         SystemPermission.BOT_MANAGEMENT_SENSITIVE_WORDS,

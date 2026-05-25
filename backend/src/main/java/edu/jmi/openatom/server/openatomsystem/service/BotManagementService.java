@@ -31,6 +31,14 @@ public interface BotManagementService {
 
   Result<String> muteAll(String groupId, Map<String, Object> request);
 
+  Result<Map<String, Object>> sendGroupMessage(String groupId, Map<String, Object> request);
+
+  Result<List<Map<String, Object>>> groupMessages(String groupId);
+
+  Result<Map<String, Object>> sendScheduledGroupMessageNow(String groupId, Integer messageId);
+
+  Result<String> deleteGroupMessage(String groupId, Integer messageId);
+
   Result<Map<String, Object>> publishAnnouncement(String groupId, Map<String, Object> request);
 
   Result<List<Map<String, Object>>> announcements(String groupId);

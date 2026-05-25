@@ -91,6 +91,16 @@ public class NapCatClient {
     return post("set_group_add_request", body);
   }
 
+  public NapCatResponse handleFriendRequest(String flag, boolean approve, String remark) {
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("flag", flag);
+    body.put("approve", approve);
+    if (remark != null && !remark.isBlank()) {
+      body.put("remark", remark);
+    }
+    return post("set_friend_add_request", body);
+  }
+
   public NapCatResponse post(String action, Map<String, ?> body) {
     String normalizedBaseUrl = normalizeBaseUrl(baseUrl);
     if (normalizedBaseUrl.isBlank()) {

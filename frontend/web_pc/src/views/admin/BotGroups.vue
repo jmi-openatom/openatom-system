@@ -161,13 +161,91 @@
               </el-table>
             </el-tab-pane>
 
+            <el-tab-pane label="群消息" name="messages">
+              <el-form class="message-form" :model="messageForm" label-width="72px">
+                <el-form-item label="内容">
+                  <el-input
+                    v-model="messageForm.content"
+                    type="textarea"
+                    :rows="4"
+                    placeholder="输入群消息内容"
+                    :maxlength="GROUP_MESSAGE_MAX_LENGTH"
+                    show-word-limit
+                  />
+                </el-form-item>
+                <el-form-item label="发送">
+                  <div class="message-actions">
+                    <el-switch v-model="messageForm.atAll" active-text="@全体" />
+                    <el-radio-group v-model="messageForm.deliveryMode">
+                      <el-radio-button label="now">立即</el-radio-button>
+                      <el-radio-button label="scheduled">定时</el-radio-button>
+                    </el-radio-group>
+                    <el-date-picker
+                      v-if="messageForm.deliveryMode === 'scheduled'"
+                      v-model="messageForm.scheduledAt"
+                      type="datetime"
+                      value-format="YYYY-MM-DD HH:mm:ss"
+                      format="YYYY-MM-DD HH:mm"
+                      placeholder="选择发送时间"
+                    />
+                    <el-button type="primary" :loading="messageSaving" @click="submitGroupMessage">
+                      {{ messageForm.deliveryMode === 'scheduled' ? '保存定时' : '发送消息' }}
+                    </el-button>
+                  </div>
+                </el-form-item>
+              </el-form>
+              <el-table :data="groupMessages" class="admin-table compact-table" height="300">
+                <el-table-column prop="content" label="内容" min-width="220" show-overflow-tooltip />
+                <el-table-column label="类型" width="90">
+                  <template #default="{ row }">
+                    <el-tag v-if="row.atAll" type="warning">@全体</el-tag>
+                    <span v-else>普通</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="状态" width="110">
+                  <template #default="{ row }">
+                    <el-tag :type="statusType(row.status)">{{ groupMessageStatusText(row.status) }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="定时时间" min-width="160">
+                  <template #default="{ row }">{{ formatDateTime(row.scheduledAt) || '-' }}</template>
+                </el-table-column>
+                <el-table-column label="发送时间" min-width="160">
+                  <template #default="{ row }">{{ formatDateTime(row.sentAt) || '-' }}</template>
+                </el-table-column>
+                <el-table-column prop="resultMessage" label="结果" min-width="160" show-overflow-tooltip />
+                <el-table-column label="操作" width="160" fixed="right">
+                  <template #default="{ row }">
+                    <el-button v-if="row.status === 'pending'" link type="success" @click="sendGroupMessageNow(row)">
+                      立即执行
+                    </el-button>
+                    <el-button link type="danger" @click="deleteGroupMessage(row)">
+                      {{ row.status === 'pending' ? '取消' : '删除' }}
+                    </el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-tab-pane>
+
             <el-tab-pane label="公告" name="announcements">
               <el-form class="announce-form" :model="announcementForm" label-width="72px">
                 <el-form-item label="标题">
-                  <el-input v-model="announcementForm.title" placeholder="公告标题" />
+                  <el-input
+                    v-model="announcementForm.title"
+                    placeholder="公告标题"
+                    :maxlength="GROUP_NOTICE_TITLE_MAX_LENGTH"
+                    show-word-limit
+                  />
                 </el-form-item>
                 <el-form-item label="正文">
-                  <el-input v-model="announcementForm.content" type="textarea" :rows="4" placeholder="公告正文" />
+                  <el-input
+                    v-model="announcementForm.content"
+                    type="textarea"
+                    :rows="4"
+                    placeholder="公告正文"
+                    :maxlength="announcementContentMaxLength"
+                    show-word-limit
+                  />
                 </el-form-item>
                 <el-form-item>
                   <el-button type="primary" :loading="announcementSaving" @click="publishAnnouncement">
@@ -382,6 +460,10 @@ import { formatDateTime, statusType } from '@/utils/format.ts'
 
 type Row = Record<string, any>
 
+const GROUP_NOTICE_MAX_LENGTH = 600
+const GROUP_NOTICE_TITLE_MAX_LENGTH = 60
+const GROUP_MESSAGE_MAX_LENGTH = 4000
+
 const modeOptions = [
   { label: '启用', value: 'enabled' },
   { label: '禁用', value: 'disabled' },
@@ -401,6 +483,7 @@ const pluginOptions = [
 const overview = ref<Row>({})
 const groups = ref<Row[]>([])
 const members = ref<Row[]>([])
+const groupMessages = ref<Row[]>([])
 const announcements = ref<Row[]>([])
 const joinRequests = ref<Row[]>([])
 const sensitiveWords = ref<Row[]>([])
@@ -420,6 +503,7 @@ const configVisible = ref(false)
 const configSaving = ref(false)
 const batchVisible = ref(false)
 const batchSaving = ref(false)
+const messageSaving = ref(false)
 const announcementSaving = ref(false)
 
 const query = reactive({
@@ -434,10 +518,28 @@ const memberQuery = reactive({
   muteStatus: '',
 })
 
+const messageForm = reactive({
+  content: '',
+  atAll: false,
+  deliveryMode: 'now',
+  scheduledAt: '',
+})
+
 const announcementForm = reactive({
   title: '',
   content: '',
   attachments: [] as unknown[],
+})
+
+const announcementContentMaxLength = computed(() =>
+  Math.max(0, GROUP_NOTICE_MAX_LENGTH - textLength(announcementForm.title.trim()) - 2),
+)
+
+const announcementTextLength = computed(() => {
+  const title = announcementForm.title.trim()
+  const content = announcementForm.content.trim()
+  if (!title && !content) return 0
+  return textLength(`${title}\n\n${content}`)
 })
 
 const configForm = reactive({
@@ -523,6 +625,7 @@ async function selectGroup(row: Row) {
   await Promise.all([
     fetchGroupDetail(),
     fetchMembers(),
+    fetchGroupMessages(),
     fetchAnnouncements(),
     fetchJoinRequests(),
     fetchAutoReviewRules(),
@@ -564,6 +667,11 @@ async function syncMembers(row: Row) {
   } finally {
     syncingMembers.value = ''
   }
+}
+
+async function fetchGroupMessages() {
+  if (!selectedGroupId.value) return
+  groupMessages.value = await botManagementApi.groupMessages(selectedGroupId.value)
 }
 
 async function fetchAnnouncements() {
@@ -687,8 +795,67 @@ async function confirmMuteAll(row: Row, enabled: boolean) {
   ElMessage.success(enabled ? '已开启全体禁言' : '已关闭全体禁言')
 }
 
+async function submitGroupMessage() {
+  if (!selectedGroupId.value) return
+  const content = messageForm.content.trim()
+  if (!content) {
+    ElMessage.error('请填写群消息内容')
+    return
+  }
+  if (textLength(content) > GROUP_MESSAGE_MAX_LENGTH) {
+    ElMessage.error(`群消息内容过长：当前 ${textLength(content)} 字，最多 ${GROUP_MESSAGE_MAX_LENGTH} 字`)
+    return
+  }
+  if (messageForm.deliveryMode === 'scheduled' && !messageForm.scheduledAt) {
+    ElMessage.error('请选择定时发送时间')
+    return
+  }
+  messageSaving.value = true
+  try {
+    const result = await botManagementApi.sendGroupMessage(selectedGroupId.value, {
+      content,
+      atAll: messageForm.atAll,
+      deliveryMode: messageForm.deliveryMode,
+      scheduledAt: messageForm.deliveryMode === 'scheduled' ? messageForm.scheduledAt : null,
+    })
+    if (result.status === 'failed') {
+      ElMessage.error(result.message || '群消息发送失败')
+    } else {
+      ElMessage.success(messageForm.deliveryMode === 'scheduled' ? '定时群消息已创建' : '群消息已发送')
+      messageForm.content = ''
+      messageForm.scheduledAt = ''
+    }
+    await fetchGroupMessages()
+  } finally {
+    messageSaving.value = false
+  }
+}
+
+async function sendGroupMessageNow(row: Row) {
+  await ElMessageBox.confirm('确认立即执行这条定时消息？', '立即执行', { type: 'warning' })
+  const result = await botManagementApi.sendGroupMessageNow(selectedGroupId.value, row.id)
+  if (result.status === 'failed') {
+    ElMessage.error(result.message || '群消息发送失败')
+  } else {
+    ElMessage.success('群消息已发送')
+  }
+  await fetchGroupMessages()
+}
+
+async function deleteGroupMessage(row: Row) {
+  const action = row.status === 'pending' ? '取消这条定时消息' : '删除这条消息记录'
+  await ElMessageBox.confirm(`确认${action}？`, row.status === 'pending' ? '取消定时' : '删除记录', { type: 'warning' })
+  await botManagementApi.deleteGroupMessage(selectedGroupId.value, row.id)
+  ElMessage.success(row.status === 'pending' ? '定时群消息已取消' : '群消息记录已删除')
+  await fetchGroupMessages()
+}
+
 async function publishAnnouncement() {
   if (!selectedGroupId.value) return
+  if (announcementTextLength.value > GROUP_NOTICE_MAX_LENGTH) {
+    ElMessage.error(`群公告内容过长：当前 ${announcementTextLength.value} 字，最多 ${GROUP_NOTICE_MAX_LENGTH} 字`)
+    return
+  }
   announcementSaving.value = true
   try {
     await botManagementApi.publishAnnouncement(selectedGroupId.value, { ...announcementForm })
@@ -702,9 +869,12 @@ async function publishAnnouncement() {
 }
 
 async function republishAnnouncement(row: Row) {
-  await botManagementApi.republishAnnouncement(selectedGroupId.value, row.id)
-  ElMessage.success('已重新发布')
-  await fetchAnnouncements()
+  try {
+    await botManagementApi.republishAnnouncement(selectedGroupId.value, row.id)
+    ElMessage.success('已重新发布')
+  } finally {
+    await fetchAnnouncements()
+  }
 }
 
 async function deleteAnnouncement(row: Row) {
@@ -787,6 +957,18 @@ function roleText(role: string): string {
   )
 }
 
+function groupMessageStatusText(status: string): string {
+  return (
+    {
+      pending: '待发送',
+      sending: '发送中',
+      sent: '已发送',
+      failed: '发送失败',
+      canceled: '已取消',
+    }[status] || status || '-'
+  )
+}
+
 function announcementStatusText(status: string): string {
   return (
     {
@@ -795,6 +977,10 @@ function announcementStatusText(status: string): string {
       draft: '草稿',
     }[status] || status || '-'
   )
+}
+
+function textLength(value: string): number {
+  return Array.from(value || '').length
 }
 
 function requestStatusText(status: string): string {
@@ -894,8 +1080,17 @@ function requestStatusText(status: string): string {
   margin-bottom: 12px;
 }
 
+.message-form,
 .announce-form {
   margin-bottom: 10px;
+}
+
+.message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
 }
 
 .advanced-grid,

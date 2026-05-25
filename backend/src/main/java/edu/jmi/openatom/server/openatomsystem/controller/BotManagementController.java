@@ -137,6 +137,33 @@ public class BotManagementController {
     return botManagementService.muteAll(groupId, request);
   }
 
+  @GetMapping("/bot-management/groups/{groupId}/messages")
+  @SaCheckPermission("bot-management:messages")
+  public Result<List<Map<String, Object>>> groupMessages(@PathVariable String groupId) {
+    return botManagementService.groupMessages(groupId);
+  }
+
+  @PostMapping("/bot-management/groups/{groupId}/messages")
+  @SaCheckPermission("bot-management:messages")
+  public Result<Map<String, Object>> sendGroupMessage(
+      @PathVariable String groupId, @RequestBody Map<String, Object> request) {
+    return botManagementService.sendGroupMessage(groupId, request);
+  }
+
+  @PostMapping("/bot-management/groups/{groupId}/messages/{messageId}/send-now")
+  @SaCheckPermission("bot-management:messages")
+  public Result<Map<String, Object>> sendScheduledGroupMessageNow(
+      @PathVariable String groupId, @PathVariable Integer messageId) {
+    return botManagementService.sendScheduledGroupMessageNow(groupId, messageId);
+  }
+
+  @DeleteMapping("/bot-management/groups/{groupId}/messages/{messageId}")
+  @SaCheckPermission("bot-management:messages")
+  public Result<String> deleteGroupMessage(
+      @PathVariable String groupId, @PathVariable Integer messageId) {
+    return botManagementService.deleteGroupMessage(groupId, messageId);
+  }
+
   @GetMapping("/bot-management/groups/{groupId}/announcements")
   @SaCheckPermission("bot-management:announcements")
   public Result<List<Map<String, Object>>> announcements(@PathVariable String groupId) {

@@ -26,6 +26,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BotManagementServiceImpl implements BotManagementService {
   private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
+  private static final int GROUP_NOTICE_MAX_TEXT_LENGTH = 600;
   private static final List<String> BOT_MODES =
       List.of("enabled", "disabled", "admin_only", "command_only", "silent");
 
@@ -95,6 +97,12 @@ public class BotManagementServiceImpl implements BotManagementService {
         return Result.success("群消息事件已记录");
       }
     }
+    if ("request".equals(postType) || firstPresent(request, "request_type", "requestType") != null) {
+      String requestType = trimToNull(firstPresent(request, "request_type", "requestType"));
+      if ("friend".equals(requestType)) {
+        return autoApproveFriendRequest(request);
+      }
+    }
     if (groupId != null && ("request".equals(postType) || firstPresent(request, "request_type", "requestType") != null)) {
       String requestType = trimToNull(firstPresent(request, "request_type", "requestType"));
       String requestSubType = trimToNull(firstPresent(request, "sub_type", "subType"));
@@ -123,6 +131,29 @@ public class BotManagementServiceImpl implements BotManagementService {
       }
     }
     return Result.success("事件已忽略");
+  }
+
+  private Result<String> autoApproveFriendRequest(Map<String, Object> request) {
+    String flag = trimToNull(request.get("flag"));
+    String userId = idString(firstPresent(request, "user_id", "userId"));
+    String nickname = eventNickname(request);
+    String comment = trimToNull(firstPresent(request, "comment", "message", "request_msg", "requestMsg"));
+    if (flag == null) {
+      logOperation("好友申请", "自动同意失败", firstNonBlank(userId, "unknown"), "缺少 NapCat flag");
+      return Result.success("好友申请缺少 NapCat flag，已忽略");
+    }
+    String remark = firstNonBlank(nickname, userId);
+    NapCatResponse response = napCatClient.handleFriendRequest(flag, true, remark);
+    String targetId = firstNonBlank(userId, flag);
+    logOperation(
+        "好友申请",
+        response.ok() ? "自动同意" : "自动同意失败",
+        targetId,
+        firstNonBlank(comment, response.message()));
+    if (!response.ok()) {
+      return Result.error(502, "自动同意好友申请失败：" + response.message());
+    }
+    return Result.success("好友申请已自动同意");
   }
 
   @Override
@@ -427,6 +458,170 @@ public class BotManagementServiceImpl implements BotManagementService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  public Result<Map<String, Object>> sendGroupMessage(String groupId, Map<String, Object> request) {
+    if (findGroup(groupId) == null) {
+      return Result.error(404, "群聊不存在");
+    }
+    String content = trimToNull(request.get("content"));
+    if (content == null) {
+      return Result.error(400, "请填写群消息内容");
+    }
+    boolean atAll = toBoolean(request.get("atAll"), false);
+    String deliveryMode = trimToNull(firstPresent(request, "deliveryMode", "sendMode", "mode"));
+    Timestamp scheduledAt = timestampFromValue(firstPresent(request, "scheduledAt", "scheduled_at"));
+    if ("scheduled".equals(deliveryMode) || scheduledAt != null) {
+      if (scheduledAt == null) {
+        return Result.error(400, "请选择定时发送时间");
+      }
+      if (!scheduledAt.after(Timestamp.from(Instant.now()))) {
+        return Result.error(400, "定时发送时间必须晚于当前时间");
+      }
+      Integer id = insertGroupMessageTask(groupId, content, atAll, "pending", scheduledAt, null, "等待定时发送");
+      logOperation("群消息", "创建定时消息", groupId + ":" + id, messageLogContent(content, atAll));
+      Map<String, Object> result = groupMessageResult(id, "pending", "等待定时发送", null);
+      result.put("scheduledAt", scheduledAt);
+      return Result.success(result, "定时群消息已创建");
+    }
+
+    NapCatResponse response = napCatClient.sendGroupMessage(groupId, formatGroupMessage(content, atAll));
+    String status = response.ok() ? "sent" : "failed";
+    Integer id =
+        insertGroupMessageTask(
+            groupId,
+            content,
+            atAll,
+            status,
+            null,
+            response.ok() ? Timestamp.from(Instant.now()) : null,
+            response.message());
+    logOperation("群消息", response.ok() ? "发送群消息" : "发送群消息失败", groupId + ":" + id, response.message());
+    return Result.success(
+        groupMessageResult(id, status, response.message(), null),
+        response.ok() ? "群消息已发送" : "群消息发送失败，已记录失败原因");
+  }
+
+  @Override
+  public Result<List<Map<String, Object>>> groupMessages(String groupId) {
+    return Result.success(
+        queryForList(
+            """
+            SELECT id, group_id AS groupId, content, at_all AS atAll, status, scheduled_at AS scheduledAt,
+                   sent_at AS sentAt, result_message AS resultMessage, created_by AS createdBy,
+                   created_at AS createdAt, updated_at AS updatedAt
+            FROM bot_group_message_task
+            WHERE group_id = ?
+            ORDER BY COALESCE(scheduled_at, created_at) DESC, id DESC
+            LIMIT 80
+            """,
+            groupId));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<Map<String, Object>> sendScheduledGroupMessageNow(String groupId, Integer messageId) {
+    Map<String, Object> message =
+        queryForOptionalMap(
+            "SELECT * FROM bot_group_message_task WHERE group_id = ? AND id = ?", groupId, messageId);
+    if (message == null) {
+      return Result.error(404, "群消息任务不存在");
+    }
+    String status = trimToNull(message.get("status"));
+    if (!"pending".equals(status)) {
+      return Result.error(400, "只有待发送的定时消息可以立即执行");
+    }
+    int locked =
+        jdbcTemplate.update(
+            """
+            UPDATE bot_group_message_task
+            SET status = 'sending', updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND status = 'pending'
+            """,
+            messageId);
+    if (locked == 0) {
+      return Result.error(409, "这条定时消息正在被处理，请刷新后重试");
+    }
+    return Result.success(dispatchGroupMessageTask(message), "定时群消息已立即执行");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> deleteGroupMessage(String groupId, Integer messageId) {
+    Map<String, Object> message =
+        queryForOptionalMap(
+            "SELECT status FROM bot_group_message_task WHERE group_id = ? AND id = ?", groupId, messageId);
+    if (message == null) {
+      return Result.error(404, "群消息任务不存在");
+    }
+    String status = trimToNull(message.get("status"));
+    if ("pending".equals(status)) {
+      jdbcTemplate.update(
+          """
+          UPDATE bot_group_message_task
+          SET status = 'canceled', result_message = '已取消', updated_at = CURRENT_TIMESTAMP
+          WHERE group_id = ? AND id = ? AND status = 'pending'
+          """,
+          groupId,
+          messageId);
+      logOperation("群消息", "取消定时消息", groupId + ":" + messageId, "取消定时群消息");
+      return Result.success("定时群消息已取消");
+    }
+    int rows =
+        jdbcTemplate.update(
+            "DELETE FROM bot_group_message_task WHERE group_id = ? AND id = ?", groupId, messageId);
+    if (rows == 0) {
+      return Result.error(404, "群消息任务不存在");
+    }
+    logOperation("群消息", "删除消息记录", groupId + ":" + messageId, "删除群消息记录");
+    return Result.success("群消息记录已删除");
+  }
+
+  @Scheduled(
+      initialDelayString = "${app.bot.group-message-task-initial-delay-ms:10000}",
+      fixedDelayString = "${app.bot.group-message-task-scan-ms:30000}")
+  public void processDueGroupMessages() {
+    List<Map<String, Object>> rows =
+        queryForList(
+            """
+            SELECT *
+            FROM bot_group_message_task
+            WHERE status = 'pending' AND scheduled_at <= CURRENT_TIMESTAMP
+            ORDER BY scheduled_at ASC, id ASC
+            LIMIT 10
+            """);
+    for (Map<String, Object> row : rows) {
+      Integer id = toInteger(row.get("id"), null);
+      if (id == null) {
+        continue;
+      }
+      int locked =
+          jdbcTemplate.update(
+              """
+              UPDATE bot_group_message_task
+              SET status = 'sending', updated_at = CURRENT_TIMESTAMP
+              WHERE id = ? AND status = 'pending'
+              """,
+              id);
+      if (locked == 0) {
+        continue;
+      }
+      try {
+        dispatchGroupMessageTask(row);
+      } catch (RuntimeException ex) {
+        log.warn("Failed to dispatch scheduled group message, id={}", id, ex);
+        jdbcTemplate.update(
+            """
+            UPDATE bot_group_message_task
+            SET status = 'failed', result_message = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            firstNonBlank(ex.getMessage(), "定时消息发送异常"),
+            id);
+      }
+    }
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
   public Result<Map<String, Object>> publishAnnouncement(String groupId, Map<String, Object> request) {
     if (findGroup(groupId) == null) {
       return Result.error(404, "群聊不存在");
@@ -437,7 +632,13 @@ public class BotManagementServiceImpl implements BotManagementService {
       return Result.error(400, "请填写公告标题和正文");
     }
     String attachments = jsonOf(request.get("attachments"));
-    NapCatResponse response = napCatClient.sendGroupNotice(groupId, formatAnnouncement(title, content));
+    String announcementText = formatAnnouncement(title, content);
+    String lengthError = announcementLengthError(announcementText);
+    if (lengthError != null) {
+      logOperation("群公告", "发布公告失败", groupId, title + " / " + lengthError);
+      return Result.error(400, lengthError);
+    }
+    NapCatResponse response = napCatClient.sendGroupNotice(groupId, announcementText);
     String status = response.ok() ? "published" : "failed";
     String noticeId = response.ok() ? noticeIdFrom(response) : null;
     Integer id = insertAnnouncement(groupId, title, content, attachments, status, noticeId, response.message());
@@ -505,7 +706,21 @@ public class BotManagementServiceImpl implements BotManagementService {
     }
     String title = text(announcement.get("title"));
     String content = text(announcement.get("content"));
-    NapCatResponse response = napCatClient.sendGroupNotice(groupId, formatAnnouncement(title, content));
+    String announcementText = formatAnnouncement(title, content);
+    String lengthError = announcementLengthError(announcementText);
+    if (lengthError != null) {
+      jdbcTemplate.update(
+          """
+          UPDATE bot_group_announcement
+          SET status = 'failed', result_message = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+          """,
+          lengthError,
+          announcementId);
+      logOperation("群公告", "重新发布公告失败", groupId + ":" + announcementId, title + " / " + lengthError);
+      return Result.error(400, lengthError);
+    }
+    NapCatResponse response = napCatClient.sendGroupNotice(groupId, announcementText);
     String status = response.ok() ? "published" : "failed";
     String noticeId = response.ok() ? noticeIdFrom(response) : null;
     jdbcTemplate.update(
@@ -1131,6 +1346,95 @@ public class BotManagementServiceImpl implements BotManagementService {
     }
   }
 
+  private Integer insertGroupMessageTask(
+      String groupId,
+      String content,
+      boolean atAll,
+      String status,
+      Timestamp scheduledAt,
+      Timestamp sentAt,
+      String resultMessage) {
+    KeyHolder keyHolder = new GeneratedKeyHolder();
+    jdbcTemplate.update(
+        connection -> {
+          PreparedStatement ps =
+              connection.prepareStatement(
+                  """
+                  INSERT INTO bot_group_message_task
+                    (group_id, content, at_all, status, scheduled_at, sent_at, result_message, created_by)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                  """,
+                  Statement.RETURN_GENERATED_KEYS);
+          ps.setString(1, groupId);
+          ps.setString(2, content);
+          ps.setBoolean(3, atAll);
+          ps.setString(4, status);
+          ps.setTimestamp(5, scheduledAt);
+          ps.setTimestamp(6, sentAt);
+          ps.setString(7, resultMessage);
+          Integer userId = currentUserId();
+          if (userId == null) {
+            ps.setObject(8, null);
+          } else {
+            ps.setInt(8, userId);
+          }
+          return ps;
+        },
+        keyHolder);
+    Number key = keyHolder.getKey();
+    return key == null ? null : key.intValue();
+  }
+
+  private Map<String, Object> dispatchGroupMessageTask(Map<String, Object> row) {
+    Integer id = toInteger(row.get("id"), null);
+    String groupId = idString(firstPresent(row, "group_id", "groupId"));
+    String content = text(row.get("content"));
+    boolean atAll = toBoolean(firstPresent(row, "at_all", "atAll"), false);
+    NapCatResponse response = napCatClient.sendGroupMessage(groupId, formatGroupMessage(content, atAll));
+    String status = response.ok() ? "sent" : "failed";
+    jdbcTemplate.update(
+        """
+        UPDATE bot_group_message_task
+        SET status = ?, result_message = ?, sent_at = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE sent_at END,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        status,
+        response.message(),
+        response.ok(),
+        id);
+    logOperation("群消息", response.ok() ? "发送定时消息" : "定时消息发送失败", groupId + ":" + id, response.message());
+    return groupMessageResult(id, status, response.message(), null);
+  }
+
+  private Map<String, Object> groupMessageResult(Integer id, String status, String message, Object extra) {
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("id", id);
+    result.put("status", status);
+    result.put("message", message);
+    if (extra != null) {
+      result.put("data", extra);
+    }
+    return result;
+  }
+
+  private String formatGroupMessage(String content, boolean atAll) {
+    String message = text(content);
+    if (!atAll) {
+      return message;
+    }
+    return "[CQ:at,qq=all]\n" + message;
+  }
+
+  private String messageLogContent(String content, boolean atAll) {
+    String prefix = atAll ? "@全体 " : "";
+    String text = content == null ? "" : content.strip();
+    if (text.length() > 120) {
+      text = text.substring(0, 120) + "...";
+    }
+    return prefix + text;
+  }
+
   private Integer insertAnnouncement(
       String groupId,
       String title,
@@ -1172,6 +1476,22 @@ public class BotManagementServiceImpl implements BotManagementService {
 
   private String formatAnnouncement(String title, String content) {
     return title + "\n\n" + content;
+  }
+
+  private String announcementLengthError(String announcementText) {
+    int length = codePointLength(announcementText);
+    if (length <= GROUP_NOTICE_MAX_TEXT_LENGTH) {
+      return null;
+    }
+    return "群公告内容过长：当前 "
+        + length
+        + " 字，最多支持 "
+        + GROUP_NOTICE_MAX_TEXT_LENGTH
+        + " 字，请精简后再发布";
+  }
+
+  private int codePointLength(String value) {
+    return value == null ? 0 : value.codePointCount(0, value.length());
   }
 
   private boolean isBotCommand(String message) {

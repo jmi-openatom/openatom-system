@@ -243,6 +243,12 @@ public enum SystemPermission {
   BOT_MANAGEMENT_SYNC("同步 QQ 群与成员", "bot-management:sync", "api", "/bot-management/groups/**/sync", "POST"),
   BOT_MANAGEMENT_CONFIG("配置 QQ 群机器人", "bot-management:config", "api", "/bot-management/groups/**/config", "PATCH"),
   BOT_MANAGEMENT_MUTE("执行 QQ 群禁言", "bot-management:mute", "api", "/bot-management/groups/**/mute*", "POST"),
+  BOT_MANAGEMENT_MESSAGES(
+      "发送 QQ 群消息",
+      "bot-management:messages",
+      "api",
+      "/bot-management/groups/{groupId}/messages/**",
+      "POST"),
   BOT_MANAGEMENT_ANNOUNCEMENTS(
       "管理 QQ 群公告",
       "bot-management:announcements",
