@@ -16,6 +16,7 @@ const adminFallbackRoutes = [
   '/admin/leaves',
   '/admin/school-calendar',
   '/admin/activities',
+  '/admin/blogs',
   '/admin/check-ins',
   '/admin/bot-groups',
   '/admin/awards',
@@ -79,6 +80,28 @@ const routes = [
         path: 'forms/:id',
         name: 'site-form-detail',
         component: () => import('../views/site/SiteForm.vue'),
+      },
+      {
+        path: 'blog',
+        name: 'site-blog',
+        component: () => import('../views/site/Blog.vue'),
+      },
+      {
+        path: 'blog/my',
+        name: 'site-blog-my',
+        meta: { requiresSiteLogin: true },
+        component: () => import('../views/site/MyBlog.vue'),
+      },
+      {
+        path: 'blog/write',
+        name: 'site-blog-write',
+        meta: { requiresSiteLogin: true },
+        component: () => import('../views/site/MyBlog.vue'),
+      },
+      {
+        path: 'blog/:id',
+        name: 'site-blog-detail',
+        component: () => import('../views/site/BlogDetail.vue'),
       },
       {
         path: 'progress',
@@ -192,6 +215,12 @@ const routes = [
         name: 'admin-activities',
         meta: { permissions: ['activity:list'] },
         component: () => import('../views/admin/Activities.vue'),
+      },
+      {
+        path: 'blogs',
+        name: 'admin-blogs',
+        meta: { permissions: ['blog:list'] },
+        component: () => import('../views/admin/Blogs.vue'),
       },
       {
         path: 'check-ins',

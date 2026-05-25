@@ -106,6 +106,11 @@ public record RoleSeedTemplate(
         SystemPermission.SITE_FORM_DETAIL,
         SystemPermission.SITE_FORM_UPDATE,
         SystemPermission.SITE_FORM_EXPORT,
+        SystemPermission.BLOG_LIST,
+        SystemPermission.BLOG_REVIEW,
+        SystemPermission.BLOG_DELETE,
+        SystemPermission.BLOG_COMMENT_LIST,
+        SystemPermission.BLOG_COMMENT_MANAGE,
         SystemPermission.NOTIFICATION_LIST,
         SystemPermission.NOTIFICATION_CREATE,
         SystemPermission.NOTIFICATION_DELETE,
@@ -175,6 +180,10 @@ public record RoleSeedTemplate(
         SystemPermission.INTERVIEW_CONFIRM,
         SystemPermission.EXIT_APPLICATION_CREATE,
         SystemPermission.EXIT_APPLICATION_DETAIL,
+        SystemPermission.BLOG_MY_LIST,
+        SystemPermission.BLOG_CREATE,
+        SystemPermission.BLOG_UPDATE_OWN,
+        SystemPermission.BLOG_DELETE_OWN,
         SystemPermission.NOTIFICATION_LIST,
         SystemPermission.NOTIFICATION_READ);
   }

@@ -4,6 +4,7 @@ import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import edu.jmi.openatom.server.openatomsystem.bootstrap.RoleSeedTemplate;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.web.ClientIpResolver;
@@ -541,13 +542,16 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	private User buildSafeUser(User user) {
+		if (StringUtils.isNotBlank(user.getQqOpenid()) && user.getAvatar() == null) {
+			user.setAvatar("https://q1.qlogo.cn/g?b=qq&nk=" + user.getQqOpenid() + "&s=640");
+		}
 		return User.builder().id(user.getId()).userName(user.getUserName()).realName(user.getRealName())
 				.gender(user.getGender()).phone(user.getPhone()).email(user.getEmail())
 				.studentId(user.getStudentId()).college(user.getCollege()).major(user.getMajor())
 				.grade(user.getGrade()).className(user.getClassName()).avatar(user.getAvatar())
 				.userStatus(user.getUserStatus())
 				.miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
-				.qqOpenid(isBlank(user.getQqOpenid()) ? null : "BOUND")
+				.qqOpenid(isBlank(user.getQqOpenid()) ? null : user.getQqOpenid())
 				.createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt()).build();
 	}
 

@@ -24,6 +24,21 @@ export const siteApi = {
   formDetail(id: string | number): Promise<any> {
     return request.get(`/site/forms/${id}`)
   },
+  blogArticles(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/site/blog/articles', { params })
+  },
+  blogArticleDetail(id: string | number): Promise<any> {
+    return request.get(`/site/blog/articles/${id}`)
+  },
+  blogCategories(): Promise<any> {
+    return request.get('/site/blog/categories')
+  },
+  blogComments(id: string | number): Promise<any> {
+    return request.get(`/site/blog/articles/${id}/comments`)
+  },
+  createBlogComment(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/site/blog/articles/${id}/comments`, data)
+  },
 }
 
 export const authApi = {
@@ -196,6 +211,39 @@ export const officeDocumentApi = {
   },
   export(id: string | number): Promise<any> {
     return request.get(`/office-documents/${id}/export`, { responseType: 'blob' })
+  },
+}
+
+export const blogApi = {
+  myArticles(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/blog/my/articles', { params })
+  },
+  create(data: Record<string, unknown>): Promise<any> {
+    return request.post('/blog/articles', data)
+  },
+  update(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/blog/articles/${id}`, data)
+  },
+  publish(id: string | number): Promise<any> {
+    return request.post(`/blog/articles/${id}/publish`)
+  },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/blog/articles/${id}`)
+  },
+  adminList(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/blog/admin/articles', { params })
+  },
+  review(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/blog/admin/articles/${id}/review`, data)
+  },
+  adminRemove(id: string | number): Promise<any> {
+    return request.delete(`/blog/admin/articles/${id}`)
+  },
+  adminComments(id: string | number): Promise<any> {
+    return request.get(`/blog/admin/articles/${id}/comments`)
+  },
+  updateCommentStatus(id: string | number, status: string): Promise<any> {
+    return request.patch(`/blog/admin/comments/${id}/status`, { status })
   },
 }
 

@@ -232,6 +232,17 @@ public enum SystemPermission {
   DOCUMENT_CREATE("创建文书", "document:create", "api", "/office-documents", "POST"),
   DOCUMENT_UPDATE("更新文书", "document:update", "api", "/office-documents/{documentId}", "PATCH"),
   DOCUMENT_EXPORT("导出文书", "document:export", "api", "/office-documents/{documentId}/export", "GET"),
+  BLOG_MY_LIST("查询我的博客", "blog:my:list", "api", "/blog/my/articles", "GET"),
+  BLOG_CREATE("发布博客文章", "blog:create", "api", "/blog/articles", "POST"),
+  BLOG_UPDATE_OWN("更新自己的博客文章", "blog:update-own", "api", "/blog/articles/{articleId}", "PATCH"),
+  BLOG_DELETE_OWN("删除自己的博客文章", "blog:delete-own", "api", "/blog/articles/{articleId}", "DELETE"),
+  BLOG_LIST("管理博客文章", "blog:list", "api", "/blog/admin/articles", "GET"),
+  BLOG_REVIEW("审核博客文章", "blog:review", "api", "/blog/admin/articles/{articleId}/review", "POST"),
+  BLOG_DELETE("删除博客文章", "blog:delete", "api", "/blog/admin/articles/{articleId}", "DELETE"),
+  BLOG_COMMENT_LIST(
+      "查询博客评论", "blog-comment:list", "api", "/blog/admin/articles/{articleId}/comments", "GET"),
+  BLOG_COMMENT_MANAGE(
+      "管理博客评论", "blog-comment:manage", "api", "/blog/admin/comments/{commentId}/status", "PATCH"),
   BOT_MANAGEMENT_LIST("查看 QQ 机器人群管后台", "bot-management:list", "api", "/bot-management/**", "GET"),
   BOT_MANAGEMENT_DETAIL("查看 QQ 群详情", "bot-management:detail", "api", "/bot-management/groups/{groupId}", "GET"),
   BOT_MANAGEMENT_MEMBERS(

@@ -52,4 +52,15 @@ public final class Jsons {
       return List.of();
     }
   }
+
+  public static List<String> parseStringList(String value) {
+    if (value == null || value.isBlank()) {
+      return List.of();
+    }
+    try {
+      return OBJECT_MAPPER.readValue(value, new TypeReference<List<String>>() {});
+    } catch (JsonProcessingException e) {
+      return List.of();
+    }
+  }
 }

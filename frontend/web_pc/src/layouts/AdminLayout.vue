@@ -99,6 +99,7 @@ import {
   Connection,
   DataAnalysis,
   DocumentChecked,
+  EditPen,
   HomeFilled,
   List,
   Lock,
@@ -172,6 +173,12 @@ const menus = ref([
     label: '活动管理',
     icon: Calendar,
     permissions: ['activity:list'],
+  },
+  {
+    path: '/admin/blogs',
+    label: '博客管理',
+    icon: EditPen,
+    permissions: ['blog:list'],
   },
   {
     path: '/admin/check-ins',
