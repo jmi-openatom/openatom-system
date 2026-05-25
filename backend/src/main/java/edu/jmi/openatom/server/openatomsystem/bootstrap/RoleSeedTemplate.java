@@ -102,6 +102,8 @@ public record RoleSeedTemplate(
         SystemPermission.DOCUMENT_UPDATE,
         SystemPermission.DOCUMENT_EXPORT,
         SystemPermission.IMAGE_UPLOAD,
+        SystemPermission.IMAGE_LIST,
+        SystemPermission.IMAGE_DELETE,
         SystemPermission.SITE_FORM_LIST,
         SystemPermission.SITE_FORM_CREATE,
         SystemPermission.SITE_FORM_DETAIL,

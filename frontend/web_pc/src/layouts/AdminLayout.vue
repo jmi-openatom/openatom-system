@@ -106,6 +106,7 @@ import {
   Menu,
   MessageBox,
   OfficeBuilding,
+  Picture,
   Tickets,
   Trophy,
   User,
@@ -155,6 +156,12 @@ const menus = ref([
     label: '文书中心',
     icon: DocumentChecked,
     permissions: ['document:list'],
+  },
+  {
+    path: '/admin/images',
+    label: '图床管理',
+    icon: Picture,
+    permissions: ['image:list'],
   },
   {
     path: '/admin/leaves',

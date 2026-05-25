@@ -229,6 +229,18 @@ export const imageHostingApi = {
     formData.append('file', file)
     return request.post('/image-hosting/images', formData)
   },
+  myImages(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/image-hosting/images/my', { params })
+  },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/image-hosting/images/${id}`)
+  },
+  adminList(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/image-hosting/admin/images', { params })
+  },
+  adminRemove(id: string | number): Promise<any> {
+    return request.delete(`/image-hosting/admin/images/${id}`)
+  },
 }
 
 export const blogApi = {

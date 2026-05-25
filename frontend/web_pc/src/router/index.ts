@@ -13,6 +13,7 @@ const adminFallbackRoutes = [
   '/admin/site-forms',
   '/admin/form-submissions',
   '/admin/office-documents',
+  '/admin/images',
   '/admin/leaves',
   '/admin/school-calendar',
   '/admin/activities',
@@ -85,6 +86,12 @@ const routes = [
         path: 'blog',
         name: 'site-blog',
         component: () => import('../views/site/Blog.vue'),
+      },
+      {
+        path: 'images',
+        name: 'site-images',
+        meta: { requiresSiteLogin: true },
+        component: () => import('../views/site/ImageHosting.vue'),
       },
       {
         path: 'blog/my',
@@ -197,6 +204,12 @@ const routes = [
         name: 'admin-office-documents',
         meta: { permissions: ['document:list'] },
         component: () => import('../views/admin/OfficeDocuments.vue'),
+      },
+      {
+        path: 'images',
+        name: 'admin-images',
+        meta: { permissions: ['image:list'] },
+        component: () => import('../views/admin/Images.vue'),
       },
       {
         path: 'leaves',

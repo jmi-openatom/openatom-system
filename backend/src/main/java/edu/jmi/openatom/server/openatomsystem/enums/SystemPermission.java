@@ -233,6 +233,8 @@ public enum SystemPermission {
   DOCUMENT_UPDATE("更新文书", "document:update", "api", "/office-documents/{documentId}", "PATCH"),
   DOCUMENT_EXPORT("导出文书", "document:export", "api", "/office-documents/{documentId}/export", "GET"),
   IMAGE_UPLOAD("上传图床图片", "image:upload", "api", "/image-hosting/images", "POST"),
+  IMAGE_LIST("管理图床图片", "image:list", "api", "/image-hosting/admin/images", "GET"),
+  IMAGE_DELETE("删除图床图片", "image:delete", "api", "/image-hosting/admin/images/{imageId}", "DELETE"),
   BLOG_MY_LIST("查询我的博客", "blog:my:list", "api", "/blog/my/articles", "GET"),
   BLOG_CREATE("发布博客文章", "blog:create", "api", "/blog/articles", "POST"),
   BLOG_UPDATE_OWN("更新自己的博客文章", "blog:update-own", "api", "/blog/articles/{articleId}", "PATCH"),

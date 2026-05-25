@@ -7,21 +7,26 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 图床上传响应
+ * 图床资产响应
  *
- * <p>返回图片公开地址及可直接插入博客正文的 Markdown 片段
+ * <p>用于前台图床列表和后台图床管理
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ResponseImageUploadVO {
+public class ResponseImageHostingAssetVO {
   private Integer id;
+  private Integer uploaderId;
+  private String uploaderName;
+  private String uploaderAvatar;
   private String fileName;
   private String originalName;
   private String contentType;
   private Long fileSize;
   private String url;
   private String markdown;
+  private String status;
+  private Timestamp deletedAt;
   private Timestamp createdAt;
 }

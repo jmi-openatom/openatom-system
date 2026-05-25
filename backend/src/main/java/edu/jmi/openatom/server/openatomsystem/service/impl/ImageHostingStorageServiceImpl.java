@@ -1,15 +1,32 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import edu.jmi.openatom.server.openatomsystem.common.Times;
+import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
+import edu.jmi.openatom.server.openatomsystem.entity.ImageHostingAsset;
+import edu.jmi.openatom.server.openatomsystem.entity.User;
+import edu.jmi.openatom.server.openatomsystem.mapper.ImageHostingAssetMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
+import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseImageHostingAssetVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseImageUploadVO;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.sql.Timestamp;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -23,11 +40,82 @@ import org.springframework.web.multipart.MultipartFile;
  * <p>将博客正文图片保存到独立目录，并通过 /files/images 暴露公开读取地址
  */
 @Service
+@RequiredArgsConstructor
 public class ImageHostingStorageServiceImpl {
   private static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024 * 1024;
+  private static final int MAX_ORIGINAL_NAME_LENGTH = 255;
+
+  private final ImageHostingAssetMapper imageHostingAssetMapper;
+  private final UserMapper userMapper;
 
   @Value("${app.image-hosting.storage-dir:./uploads/images}")
   private String storageDir;
+
+  public ResponseImageUploadVO upload(MultipartFile file, String baseUrl, Integer uploaderId)
+      throws IOException {
+    StoredImage storedImage = store(file);
+    Timestamp now = Times.now();
+    String url = baseUrl + storedImage.getFileName();
+    ImageHostingAsset asset =
+        ImageHostingAsset.builder()
+            .uploaderId(uploaderId)
+            .fileName(storedImage.getFileName())
+            .originalName(storedImage.getOriginalName())
+            .contentType(storedImage.getMediaType().toString())
+            .fileSize(storedImage.getFileSize())
+            .url(url)
+            .status("active")
+            .createdAt(now)
+            .build();
+    imageHostingAssetMapper.insert(asset);
+    return ResponseImageUploadVO.builder()
+        .id(asset.getId())
+        .fileName(asset.getFileName())
+        .originalName(asset.getOriginalName())
+        .contentType(asset.getContentType())
+        .fileSize(asset.getFileSize())
+        .url(asset.getUrl())
+        .markdown(markdown(asset.getUrl()))
+        .createdAt(asset.getCreatedAt())
+        .build();
+  }
+
+  public PageDataVO<ResponseImageHostingAssetVO> myImages(
+      Integer uploaderId, String keyword, Long page, Long pageSize) {
+    Page<ImageHostingAsset> imagePage =
+        imageHostingAssetMapper.selectPageByConditions(
+            new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)),
+            uploaderId,
+            keyword,
+            null,
+            true);
+    return toPage(imagePage);
+  }
+
+  public PageDataVO<ResponseImageHostingAssetVO> adminImages(
+      String keyword, String status, Long page, Long pageSize) {
+    Page<ImageHostingAsset> imagePage =
+        imageHostingAssetMapper.selectPageByConditions(
+            new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)),
+            null,
+            keyword,
+            status,
+            false);
+    return toPage(imagePage);
+  }
+
+  public boolean deleteOwnImage(Integer imageId, Integer userId) throws IOException {
+    ImageHostingAsset asset = imageId == null ? null : imageHostingAssetMapper.selectById(imageId);
+    if (asset == null || !"active".equals(asset.getStatus())) return false;
+    if (!Objects.equals(asset.getUploaderId(), userId)) return false;
+    return markDeleted(asset, userId);
+  }
+
+  public boolean adminDeleteImage(Integer imageId, Integer userId) throws IOException {
+    ImageHostingAsset asset = imageId == null ? null : imageHostingAssetMapper.selectById(imageId);
+    if (asset == null || !"active".equals(asset.getStatus())) return false;
+    return markDeleted(asset, userId);
+  }
 
   public StoredImage store(MultipartFile file) throws IOException {
     ImageType imageType = validate(file);
@@ -39,11 +127,17 @@ public class ImageHostingStorageServiceImpl {
     try (InputStream input = file.getInputStream()) {
       Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
     }
-    return new StoredImage(fileName, imageType.mediaType());
+    return new StoredImage(
+        fileName,
+        normalizeOriginalName(file.getOriginalFilename()),
+        file.getSize(),
+        imageType.mediaType());
   }
 
   public Optional<ImageResource> load(String fileName) throws IOException {
     if (!isSafeFileName(fileName)) return Optional.empty();
+    ImageHostingAsset asset = imageHostingAssetMapper.selectByFileName(fileName);
+    if (asset != null && !"active".equals(asset.getStatus())) return Optional.empty();
     Path root = root();
     Path target = root.resolve(fileName).normalize();
     if (!target.getParent().equals(root) || !Files.exists(target) || !Files.isRegularFile(target)) {
@@ -52,6 +146,96 @@ public class ImageHostingStorageServiceImpl {
     Resource resource = new UrlResource(target.toUri());
     if (!resource.exists() || !resource.isReadable()) return Optional.empty();
     return Optional.of(new ImageResource(resource, mediaTypeOf(fileName)));
+  }
+
+  private boolean markDeleted(ImageHostingAsset asset, Integer userId) throws IOException {
+    asset.setStatus("deleted");
+    asset.setDeletedBy(userId);
+    asset.setDeletedAt(Times.now());
+    int row = imageHostingAssetMapper.updateById(asset);
+    if (row > 0) {
+      deletePhysical(asset.getFileName());
+      return true;
+    }
+    return false;
+  }
+
+  private void deletePhysical(String fileName) throws IOException {
+    if (!isSafeFileName(fileName)) return;
+    Path root = root();
+    Path target = root.resolve(fileName).normalize();
+    if (target.getParent().equals(root)) {
+      Files.deleteIfExists(target);
+    }
+  }
+
+  private PageDataVO<ResponseImageHostingAssetVO> toPage(Page<ImageHostingAsset> page) {
+    return PageDataVO.<ResponseImageHostingAssetVO>builder()
+        .list(toResponseList(page.getRecords()))
+        .page(page.getCurrent())
+        .pageSize(page.getSize())
+        .total(page.getTotal())
+        .build();
+  }
+
+  private List<ResponseImageHostingAssetVO> toResponseList(List<ImageHostingAsset> assets) {
+    if (assets == null || assets.isEmpty()) return List.of();
+    Map<Integer, User> users = userMap(assets);
+    return assets.stream().map(asset -> toResponse(asset, users.get(asset.getUploaderId()))).toList();
+  }
+
+  private Map<Integer, User> userMap(List<ImageHostingAsset> assets) {
+    List<Integer> userIds =
+        assets.stream()
+            .map(ImageHostingAsset::getUploaderId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+    if (userIds.isEmpty()) return Map.of();
+    return userMapper.selectBatchIds(userIds).stream()
+        .collect(Collectors.toMap(User::getId, Function.identity(), (left, right) -> left));
+  }
+
+  private ResponseImageHostingAssetVO toResponse(ImageHostingAsset asset, User uploader) {
+    return ResponseImageHostingAssetVO.builder()
+        .id(asset.getId())
+        .uploaderId(asset.getUploaderId())
+        .uploaderName(displayName(uploader))
+        .uploaderAvatar(uploader == null ? null : uploader.getAvatar())
+        .fileName(asset.getFileName())
+        .originalName(asset.getOriginalName())
+        .contentType(asset.getContentType())
+        .fileSize(asset.getFileSize())
+        .url(asset.getUrl())
+        .markdown(markdown(asset.getUrl()))
+        .status(asset.getStatus())
+        .deletedAt(asset.getDeletedAt())
+        .createdAt(asset.getCreatedAt())
+        .build();
+  }
+
+  private String markdown(String url) {
+    return "![图片](" + url + ")";
+  }
+
+  private String displayName(User user) {
+    if (user == null) return null;
+    String realName = trimToNull(user.getRealName());
+    return realName == null ? user.getUserName() : realName;
+  }
+
+  private String normalizeOriginalName(String fileName) {
+    String value = trimToNull(fileName);
+    if (value == null) return "image";
+    value = Paths.get(value).getFileName().toString();
+    if (value.length() <= MAX_ORIGINAL_NAME_LENGTH) return value;
+    return value.substring(0, MAX_ORIGINAL_NAME_LENGTH);
+  }
+
+  private String trimToNull(String value) {
+    if (value == null) return null;
+    String trimmed = value.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 
   private ImageType validate(MultipartFile file) throws IOException {
@@ -141,10 +325,14 @@ public class ImageHostingStorageServiceImpl {
   @Getter
   public static class StoredImage {
     private final String fileName;
+    private final String originalName;
+    private final Long fileSize;
     private final MediaType mediaType;
 
-    public StoredImage(String fileName, MediaType mediaType) {
+    public StoredImage(String fileName, String originalName, Long fileSize, MediaType mediaType) {
       this.fileName = fileName;
+      this.originalName = originalName;
+      this.fileSize = fileSize;
       this.mediaType = mediaType;
     }
   }

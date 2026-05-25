@@ -18,6 +18,7 @@
           <a href="/#overview">概览</a>
           <router-link to="/activities">活动</router-link>
           <router-link to="/blog">博客</router-link>
+          <router-link to="/images">图床</router-link>
           <router-link to="/apply">入会申请</router-link>
           <router-link to="/progress">我的申请</router-link>
           <router-link to="/leaves">请假</router-link>
@@ -68,6 +69,7 @@
         <a href="/#overview" @click="mobileNavVisible = false">概览</a>
         <router-link to="/activities" @click="mobileNavVisible = false">活动</router-link>
         <router-link to="/blog" @click="mobileNavVisible = false">博客</router-link>
+        <router-link to="/images" @click="mobileNavVisible = false">图床</router-link>
         <router-link to="/apply" @click="mobileNavVisible = false">入会申请</router-link>
         <router-link to="/progress" @click="mobileNavVisible = false">我的申请</router-link>
         <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>

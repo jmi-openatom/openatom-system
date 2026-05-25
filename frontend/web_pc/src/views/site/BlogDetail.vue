@@ -75,28 +75,41 @@
 
       <div class="container comments-section">
         <div class="comments-section__head">
-          <h2>评论</h2>
-          <span>{{ totalComments }} 条</span>
+          <div>
+            <span>Discussion</span>
+            <h2>评论区</h2>
+          </div>
+          <strong>{{ totalComments }} 条讨论</strong>
         </div>
 
-        <div v-if="isLoggedIn" class="comment-editor">
-          <div v-if="replyTarget" class="comment-editor__replying">
-            <span>回复 {{ replyTarget.userName || '匿名用户' }}</span>
-            <el-button link type="primary" @click="cancelReply">取消回复</el-button>
+        <div v-if="isLoggedIn" class="comment-composer">
+          <UserAvatar :name="currentUserName" :size="44" :src="currentUserAvatar" />
+          <div class="comment-composer__main">
+            <div v-if="replyTarget" class="comment-composer__replying">
+              <span>正在回复 {{ replyTarget.userName || '匿名用户' }}</span>
+              <el-button link type="primary" @click="cancelReply">取消</el-button>
+            </div>
+            <el-input
+              v-model="commentForm.content"
+              class="comment-composer__input"
+              maxlength="1000"
+              :placeholder="commentPlaceholder"
+              show-word-limit
+              :rows="4"
+              type="textarea"
+            />
+            <div class="comment-composer__footer">
+              <span>支持 Markdown、代码块和图片链接</span>
+              <el-button type="primary" :loading="commenting" @click="submitComment">
+                {{ replyTarget ? '发布回复' : '发布评论' }}
+              </el-button>
+            </div>
           </div>
-          <el-input
-            v-model="commentForm.content"
-            maxlength="1000"
-            :placeholder="commentPlaceholder"
-            show-word-limit
-            :rows="4"
-            type="textarea"
-          />
-          <el-button type="primary" :loading="commenting" @click="submitComment">
-            {{ replyTarget ? '发布回复' : '发布评论' }}
-          </el-button>
         </div>
-        <el-alert v-else type="info" :closable="false" title="登录后可以发表评论" />
+        <div v-else class="comment-login-tip">
+          <span>登录后参与讨论</span>
+          <el-button type="primary" plain @click="ensureLogin">去登录</el-button>
+        </div>
 
         <div class="comment-list">
           <BlogCommentItem
@@ -141,6 +154,10 @@ const currentUser = computed(() => getCurrentUser())
 const canEdit = computed(() => currentUser.value?.id && currentUser.value.id === article.value.authorId)
 const html = computed(() => renderMarkdown(article.value.contentMarkdown || article.value.summary || ''))
 const totalComments = computed(() => countComments(comments.value))
+const currentUserName = computed(
+  () => currentUser.value?.realName || currentUser.value?.userName || '我',
+)
+const currentUserAvatar = computed(() => String(currentUser.value?.avatar || ''))
 const commentPlaceholder = computed(() =>
   replyTarget.value ? `回复 ${replyTarget.value.userName || '匿名用户'}` : '写下你的观点',
 )
@@ -383,37 +400,115 @@ onMounted(() => {
 
 .comments-section {
   display: grid;
-  gap: 18px;
+  gap: 20px;
   margin-top: 24px;
+  overflow: hidden;
 }
 
 .comments-section__head {
   display: flex;
+  gap: 16px;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--oa-border);
+}
+
+.comments-section__head > div {
+  display: grid;
+  gap: 6px;
+}
+
+.comments-section__head > div > span {
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .comments-section__head h2 {
   margin: 0;
   font-size: 24px;
+  line-height: 1.2;
 }
 
-.comments-section__head span {
+.comments-section__head strong {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 12px;
   color: var(--oa-muted);
+  background: var(--oa-page-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.comment-editor {
+.comment-composer {
   display: grid;
-  gap: 12px;
-  justify-items: end;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  background: var(--oa-page-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
 }
 
-.comment-editor__replying {
+.comment-composer__main {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.comment-composer__replying {
   display: flex;
-  width: 100%;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 7px 10px;
+  color: var(--oa-muted);
+  background: var(--oa-elevated-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.comment-composer__input :deep(.el-textarea__inner) {
+  min-height: 116px !important;
+  background: var(--oa-elevated-bg);
+  border-color: var(--oa-border);
+  border-radius: 8px;
+  box-shadow: none;
+  color: var(--oa-text);
+  line-height: 1.7;
+  resize: vertical;
+}
+
+.comment-composer__input :deep(.el-textarea__inner:focus) {
+  border-color: color-mix(in srgb, var(--oa-primary, #2563eb) 42%, var(--oa-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--oa-primary, #2563eb) 12%, transparent);
+}
+
+.comment-composer__footer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.comment-composer__footer span {
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.comment-login-tip {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
   color: var(--oa-muted);
   background: var(--oa-page-bg);
   border: 1px solid var(--oa-border);
@@ -422,45 +517,11 @@ onMounted(() => {
 
 .comment-list {
   display: grid;
-  gap: 12px;
-}
-
-.comment-item {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 12px;
-  padding: 14px 0;
-  border-top: 1px solid var(--oa-border);
-}
-
-.comment-item__avatar {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  color: var(--oa-muted);
+  gap: 2px;
+  padding: 2px 2px 0;
   background: var(--oa-page-bg);
   border: 1px solid var(--oa-border);
-  border-radius: 50%;
-  font-weight: 700;
-}
-
-.comment-item header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.comment-item header span {
-  color: var(--oa-muted);
-  font-size: 13px;
-}
-
-.comment-item p {
-  margin: 8px 0 0;
-  color: var(--oa-text);
-  line-height: 1.7;
+  border-radius: 8px;
 }
 
 .markdown-body :deep(h1),
@@ -491,6 +552,26 @@ onMounted(() => {
 
   .blog-detail__hero-inner {
     padding-top: 78px;
+  }
+}
+
+@media (max-width: 640px) {
+  .comments-section__head,
+  .comment-composer,
+  .comment-login-tip,
+  .comment-composer__footer {
+    align-items: stretch;
+  }
+
+  .comments-section__head,
+  .comment-composer__footer,
+  .comment-login-tip {
+    flex-direction: column;
+  }
+
+  .comment-composer {
+    grid-template-columns: 38px minmax(0, 1fr);
+    padding: 12px;
   }
 }
 </style>
