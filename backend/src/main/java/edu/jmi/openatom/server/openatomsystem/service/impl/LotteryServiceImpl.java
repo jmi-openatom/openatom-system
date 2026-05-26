@@ -196,6 +196,7 @@ public class LotteryServiceImpl implements LotteryService {
     return Result.success(
         ResponseLotteryScreenVO.builder()
             .lottery(detail.getLottery())
+            .participantNames(participantNames(campaign.getFormId()))
             .prizes(detail.getPrizes())
             .winners(winners)
             .latestWinner(winners.isEmpty() ? null : winners.get(0))
@@ -406,6 +407,34 @@ public class LotteryServiceImpl implements LotteryService {
       eligible.add(submission);
     }
     return eligible;
+  }
+
+  private List<String> participantNames(Integer formId) {
+    if (formId == null) return List.of();
+    List<FormSubmission> submissions =
+        formSubmissionMapper.selectByFormIdOrdered(formId).stream()
+            .filter(submission -> "submitted".equals(defaultString(submission.getStatus(), "submitted")))
+            .toList();
+    if (submissions.isEmpty()) return List.of();
+    Set<Integer> userIds =
+        submissions.stream()
+            .map(FormSubmission::getUserId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    Map<Integer, User> users =
+        userIds.isEmpty()
+            ? Map.of()
+            : userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+    return submissions.stream()
+        .map(
+            submission -> {
+              User user = users.get(submission.getUserId());
+              Map<String, Object> formData = Jsons.parseObject(submission.getFormData());
+              return resolveWinnerName(submission, user, formData);
+            })
+        .filter(name -> !isBlank(name))
+        .toList();
   }
 
   private Map<Integer, Long> countWinnersByPrize(List<LotteryWinner> winners) {

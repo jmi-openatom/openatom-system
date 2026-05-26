@@ -1,412 +1,533 @@
 <template>
-  <main class="lottery-screen home-interactive-section">
-    <HomeInteractiveBackdrop track-window :radius="250" :spacing="72" :strength="24" />
-    <section class="screen-header">
-      <div>
-        <span>OpenAtom Lottery</span>
-        <h1>{{ lottery.title || '抽奖大屏' }}</h1>
-        <p>{{ lottery.description || lottery.formName || '现场抽奖结果实时展示' }}</p>
-      </div>
-      <div class="screen-status">
-        <strong>{{ statusText(lottery.status) }}</strong>
-        <small>{{ formatDateTime(now) }}</small>
-      </div>
+  <main :class="`phase-${phase}`" class="lottery-screen">
+    <section aria-live="polite" class="winner-stage">
+      <strong>{{ displayWinner?.winnerName || '会是谁呢？' }}</strong>
+      <div v-if="winnerPrizeText" class="winner-prize">{{ winnerPrizeText }}</div>
     </section>
 
-    <section class="metric-grid">
-      <div>
-        <span>参与人数</span>
-        <strong>{{ lottery.participantCount || 0 }}</strong>
-      </div>
-      <div>
-        <span>已抽中</span>
-        <strong>{{ lottery.winnerCount || 0 }}</strong>
-      </div>
-      <div>
-        <span>剩余奖品</span>
-        <strong>{{ lottery.remainingPrizeCount || 0 }}</strong>
-      </div>
-      <div>
-        <span>奖品总数</span>
-        <strong>{{ lottery.totalPrizeCount || 0 }}</strong>
-      </div>
-    </section>
+    <div v-if="introVisible" class="intro-screen">
+      <strong>抽奖即将开始</strong>
+    </div>
 
-    <section class="screen-main">
-      <div class="winner-stage">
-        <div class="stage-title">
-          <span>最新中奖</span>
-          <small>{{ latestWinner ? formatDateTime(latestWinner.wonAt) : '等待抽取' }}</small>
-        </div>
-        <div v-if="latestWinner" class="winner-focus">
-          <span>{{ latestWinner.prizeLevel || '奖品' }} · {{ latestWinner.prizeName }}</span>
-          <strong>{{ latestWinner.winnerName }}</strong>
-          <p>{{ latestWinner.winnerAccount || latestWinner.winnerContact || '匿名提交' }}</p>
-        </div>
-        <div v-else class="winner-empty">
-          <strong>等待第一位中奖者</strong>
-          <p>后台抽取后这里会自动刷新</p>
-        </div>
+    <div
+      v-if="curtainVisible"
+      :class="{
+        'is-entering': phase === 'entering',
+        'is-rolling': phase === 'rolling',
+        'is-opening': phase === 'revealing',
+      }"
+      class="draw-curtain"
+    >
+      <div class="curtain-panel curtain-panel--top"></div>
+      <div class="curtain-panel curtain-panel--bottom"></div>
+      <div class="curtain-copy">
+        <strong>{{ phase === 'rolling' ? rollingName : displayWinner?.winnerName }}</strong>
       </div>
-
-      <div class="prize-panel">
-        <div class="panel-title">
-          <span>奖品进度</span>
-          <small>{{ prizes.length }} 个奖项</small>
-        </div>
-        <div class="prize-list">
-          <div v-for="prize in prizes" :key="prize.id" class="prize-card">
-            <span class="prize-bar" :style="{ backgroundColor: prize.color || '#39c5bb' }" />
-            <div>
-              <strong>{{ prize.level || '奖品' }} · {{ prize.name }}</strong>
-              <p>已抽 {{ prize.wonCount || 0 }} / {{ prize.quantity || 0 }}</p>
-            </div>
-            <em>{{ prize.remainingCount || 0 }}</em>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="winner-wall">
-      <div class="panel-title">
-        <span>中奖名单</span>
-        <small>实时更新</small>
-      </div>
-      <div v-if="winners.length" class="winner-list">
-        <div v-for="winner in winners" :key="winner.id" class="winner-item">
-          <strong>{{ winner.winnerName }}</strong>
-          <span>{{ winner.prizeLevel || '奖品' }} · {{ winner.prizeName }}</span>
-          <small>{{ formatDateTime(winner.wonAt) }}</small>
-        </div>
-      </div>
-      <div v-else class="wall-empty">暂无中奖记录</div>
-    </section>
+    </div>
   </main>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import { lotteryApi } from '@/api'
-import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
-import { formatDateTime } from '@/utils/format.ts'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+
+type DrawPhase = 'idle' | 'entering' | 'rolling' | 'revealing' | 'revealed'
+
+const CURTAIN_ENTER_DURATION = 900
+const DRAW_TEXT_DURATION = 2800
+const CURTAIN_OPEN_DURATION = 1100
+const INTRO_DURATION = 1200
+const NAME_TICK_INTERVAL = 86
 
 const route = useRoute()
 const screen = ref<Record<string, any>>({})
-const now = ref(new Date())
-let timer: number | null = null
+const phase = ref<DrawPhase>('idle')
+const introVisible = ref(true)
+const revealedWinner = ref<Record<string, any> | null>(null)
+const pendingWinner = ref<Record<string, any> | null>(null)
+const lastWinnerKey = ref('')
+const hasSyncedInitialWinner = ref(false)
+const highlightIndex = ref(0)
 
-const lottery = computed(() => screen.value.lottery || {})
-const prizes = computed(() => screen.value.prizes || [])
+let refreshTimer: number | null = null
+let enterTimer: number | null = null
+let drawTimer: number | null = null
+let curtainTimer: number | null = null
+let nameTicker: number | null = null
+let introTimer: number | null = null
+let rollingSoundTimer: number | null = null
+let audioContext: AudioContext | null = null
+
 const winners = computed(() => screen.value.winners || [])
 const latestWinner = computed(() => screen.value.latestWinner || winners.value[0] || null)
+const latestWinnerKey = computed(() => winnerKey(latestWinner.value))
+const curtainVisible = computed(() => ['entering', 'rolling', 'revealing'].includes(phase.value))
+const displayWinner = computed<Record<string, any>>(() => revealedWinner.value || {})
+const winnerPrizeText = computed(() => {
+  const winner = displayWinner.value
+  const level = String(winner.prizeLevel || '').trim()
+  const name = String(winner.prizeName || '').trim()
+  return [level, name].filter(Boolean).join(' · ')
+})
+const rollingNames = computed(() => {
+  const names = Array.isArray(screen.value.participantNames) ? screen.value.participantNames : []
+  const cleanedNames = names.map((name: unknown) => String(name || '').trim()).filter(Boolean)
+  if (cleanedNames.length) return cleanedNames
+  return ['正在抽取']
+})
+const rollingName = computed(() => {
+  const names = rollingNames.value
+  return names[highlightIndex.value % names.length] || '正在抽取'
+})
 
 async function loadScreen() {
   screen.value = await lotteryApi.screen(String(route.params.id))
-  now.value = new Date()
 }
 
 function startTimer() {
   stopTimer()
-  timer = window.setInterval(() => {
+  refreshTimer = window.setInterval(() => {
     loadScreen()
   }, 2000)
 }
 
 function stopTimer() {
-  if (timer === null) return
-  window.clearInterval(timer)
-  timer = null
+  if (refreshTimer === null) return
+  window.clearInterval(refreshTimer)
+  refreshTimer = null
 }
 
-function statusText(status: unknown) {
-  return (
-    {
-      draft: '未开始',
-      open: '进行中',
-      closed: '已结束',
-    }[String(status || '').toLowerCase()] ||
-    String(status || '-') ||
-    '-'
+function startDraw(winner: Record<string, any>) {
+  pendingWinner.value = winner
+  phase.value = 'entering'
+  introVisible.value = false
+  stopNameTicker()
+  stopRollingSound()
+  playDrawStartSound()
+
+  if (enterTimer !== null) window.clearTimeout(enterTimer)
+  if (drawTimer !== null) window.clearTimeout(drawTimer)
+  if (curtainTimer !== null) window.clearTimeout(curtainTimer)
+
+  enterTimer = window.setTimeout(() => {
+    phase.value = 'rolling'
+    startNameTicker()
+    startRollingSound()
+    enterTimer = null
+
+    drawTimer = window.setTimeout(() => {
+      stopNameTicker()
+      stopRollingSound()
+      revealedWinner.value = pendingWinner.value
+      pendingWinner.value = null
+      playWinnerSound()
+      phase.value = 'revealing'
+      drawTimer = null
+
+      curtainTimer = window.setTimeout(() => {
+        phase.value = 'revealed'
+        curtainTimer = null
+      }, CURTAIN_OPEN_DURATION)
+    }, DRAW_TEXT_DURATION)
+  }, CURTAIN_ENTER_DURATION)
+}
+
+function resetDrawState() {
+  stopNameTicker()
+  stopRollingSound()
+  if (enterTimer !== null) {
+    window.clearTimeout(enterTimer)
+    enterTimer = null
+  }
+  if (drawTimer !== null) {
+    window.clearTimeout(drawTimer)
+    drawTimer = null
+  }
+  if (curtainTimer !== null) {
+    window.clearTimeout(curtainTimer)
+    curtainTimer = null
+  }
+  pendingWinner.value = null
+  revealedWinner.value = null
+  phase.value = 'idle'
+}
+
+function startNameTicker() {
+  stopNameTicker()
+  highlightIndex.value = Math.max(0, highlightIndex.value + 1)
+  nameTicker = window.setInterval(() => {
+    highlightIndex.value = (highlightIndex.value + 1) % Math.max(rollingNames.value.length, 1)
+  }, NAME_TICK_INTERVAL)
+}
+
+function stopNameTicker() {
+  if (nameTicker === null) return
+  window.clearInterval(nameTicker)
+  nameTicker = null
+}
+
+function getAudioContext() {
+  if (typeof window === 'undefined') return null
+  const AudioContextConstructor =
+    window.AudioContext ||
+    (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext
+  if (!AudioContextConstructor) return null
+  if (!audioContext) audioContext = new AudioContextConstructor()
+  return audioContext
+}
+
+function requestAudioUnlock() {
+  void unlockAudio()
+}
+
+async function unlockAudio() {
+  const context = getAudioContext()
+  if (!context || context.state !== 'suspended') return
+  await context.resume().catch(() => undefined)
+}
+
+function playTone(
+  frequency: number,
+  duration: number,
+  delay = 0,
+  type: OscillatorType = 'sine',
+  volume = 0.05,
+) {
+  const context = getAudioContext()
+  if (!context) return
+  void unlockAudio()
+
+  const startAt = context.currentTime + delay
+  const oscillator = context.createOscillator()
+  const gainNode = context.createGain()
+
+  oscillator.type = type
+  oscillator.frequency.setValueAtTime(frequency, startAt)
+  gainNode.gain.setValueAtTime(0.0001, startAt)
+  gainNode.gain.exponentialRampToValueAtTime(volume, startAt + 0.02)
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + duration)
+
+  oscillator.connect(gainNode)
+  gainNode.connect(context.destination)
+  oscillator.start(startAt)
+  oscillator.stop(startAt + duration + 0.04)
+}
+
+function playDrawStartSound() {
+  playTone(392, 0.14, 0, 'triangle', 0.045)
+  playTone(523.25, 0.16, 0.1, 'triangle', 0.05)
+  playTone(659.25, 0.2, 0.22, 'triangle', 0.04)
+}
+
+function playRollingTickSound() {
+  const frequency = 720 + (highlightIndex.value % 5) * 28
+  playTone(frequency, 0.035, 0, 'square', 0.012)
+}
+
+function startRollingSound() {
+  stopRollingSound()
+  playRollingTickSound()
+  rollingSoundTimer = window.setInterval(playRollingTickSound, 170)
+}
+
+function stopRollingSound() {
+  if (rollingSoundTimer === null) return
+  window.clearInterval(rollingSoundTimer)
+  rollingSoundTimer = null
+}
+
+function playWinnerSound() {
+  playTone(523.25, 0.28, 0, 'sine', 0.055)
+  playTone(659.25, 0.32, 0.08, 'sine', 0.05)
+  playTone(783.99, 0.36, 0.16, 'sine', 0.048)
+  playTone(1046.5, 0.48, 0.28, 'triangle', 0.04)
+}
+
+function winnerKey(winner: Record<string, any> | null) {
+  if (!winner) return ''
+  return String(
+    winner.id || `${winner.prizeId || ''}-${winner.winnerName || ''}-${winner.wonAt || ''}`,
   )
 }
 
+watch(latestWinnerKey, (key) => {
+  if (!hasSyncedInitialWinner.value) return
+
+  if (!key) {
+    lastWinnerKey.value = ''
+    resetDrawState()
+    return
+  }
+
+  if (key !== lastWinnerKey.value) {
+    lastWinnerKey.value = key
+    startDraw(latestWinner.value)
+  }
+})
+
+function syncInitialWinner() {
+  if (hasSyncedInitialWinner.value) return
+  hasSyncedInitialWinner.value = true
+  lastWinnerKey.value = latestWinnerKey.value
+  if (latestWinnerKey.value) {
+    revealedWinner.value = latestWinner.value
+    phase.value = 'revealed'
+  } else {
+    resetDrawState()
+  }
+}
+
 onMounted(async () => {
+  window.addEventListener('pointerdown', requestAudioUnlock, { passive: true })
+  window.addEventListener('keydown', requestAudioUnlock)
   await loadScreen()
+  syncInitialWinner()
   startTimer()
+  introTimer = window.setTimeout(() => {
+    introVisible.value = false
+    introTimer = null
+  }, INTRO_DURATION)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('pointerdown', requestAudioUnlock)
+  window.removeEventListener('keydown', requestAudioUnlock)
   stopTimer()
+  resetDrawState()
+  if (introTimer !== null) {
+    window.clearTimeout(introTimer)
+  }
 })
 </script>
 
 <style scoped>
 .lottery-screen {
+  position: relative;
+  display: grid;
   min-height: 100vh;
-  padding: clamp(20px, 3vw, 40px);
+  min-height: 100svh;
+  place-items: center;
   overflow: hidden;
-  background:
-    linear-gradient(135deg, rgba(3, 15, 34, 0.94), rgba(7, 35, 48, 0.9)),
-    radial-gradient(circle at 70% 0%, rgba(57, 197, 187, 0.22), transparent 32%);
-  color: #f6fbff;
+  background: #ffffff;
+  color: #020617;
 }
 
-.screen-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-.screen-header span,
-.panel-title span,
-.stage-title span {
-  color: #6de6df;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.screen-header h1 {
-  margin: 10px 0 8px;
-  font-size: clamp(36px, 5vw, 76px);
-  font-weight: 800;
-  letter-spacing: 0;
-  line-height: 1;
-}
-
-.screen-header p {
-  max-width: 760px;
-  margin: 0;
-  color: rgba(246, 251, 255, 0.72);
-  font-size: clamp(16px, 1.6vw, 22px);
-}
-
-.screen-status {
+.winner-stage {
   display: grid;
-  min-width: 180px;
-  gap: 8px;
-  justify-items: end;
-}
-
-.screen-status strong {
-  padding: 8px 14px;
-  border: 1px solid rgba(109, 230, 223, 0.36);
-  border-radius: 999px;
-  color: #a7fff9;
-  background: rgba(109, 230, 223, 0.1);
-}
-
-.screen-status small,
-.panel-title small,
-.stage-title small {
-  color: rgba(246, 251, 255, 0.62);
-}
-
-.metric-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 24px;
-}
-
-.metric-grid > div,
-.winner-stage,
-.prize-panel,
-.winner-wall {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
-}
-
-.metric-grid > div {
-  display: grid;
-  gap: 8px;
-  padding: 18px 20px;
-}
-
-.metric-grid span {
-  color: rgba(246, 251, 255, 0.62);
-  font-size: 14px;
-}
-
-.metric-grid strong {
-  font-size: clamp(30px, 4vw, 54px);
-  line-height: 1;
-}
-
-.screen-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
-  gap: 18px;
-  margin-bottom: 18px;
-}
-
-.winner-stage,
-.prize-panel,
-.winner-wall {
-  padding: 22px;
-}
-
-.stage-title,
-.panel-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.winner-focus {
-  display: grid;
-  min-height: 360px;
-  align-content: center;
-  gap: 18px;
-}
-
-.winner-focus span {
-  color: #ffd666;
-  font-size: clamp(20px, 3vw, 34px);
-  font-weight: 700;
-}
-
-.winner-focus strong {
-  font-size: clamp(62px, 10vw, 138px);
-  line-height: 1;
-}
-
-.winner-focus p,
-.winner-empty p {
-  margin: 0;
-  color: rgba(246, 251, 255, 0.64);
-  font-size: clamp(18px, 2.4vw, 28px);
-}
-
-.winner-empty {
-  display: grid;
-  min-height: 360px;
-  place-content: center;
-  gap: 12px;
+  gap: 22px;
+  justify-items: center;
+  width: min(100%, 1120px);
+  padding: 40px;
   text-align: center;
 }
 
-.winner-empty strong {
-  font-size: clamp(34px, 5vw, 66px);
+.winner-stage span {
+  display: none;
 }
 
-.prize-list,
-.winner-list {
-  display: grid;
-  gap: 10px;
+.winner-stage strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: #020617;
+  font-size: clamp(64px, 12vw, 180px);
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 0.94;
+  white-space: nowrap;
 }
 
-.prize-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  min-height: 76px;
-  padding: 12px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.18);
-}
-
-.prize-bar {
-  width: 12px;
-  height: 48px;
-  border-radius: 999px;
-}
-
-.prize-card strong,
-.winner-item strong {
-  display: block;
+.winner-prize {
+  max-width: min(100%, 900px);
+  margin: 0;
   overflow: hidden;
+  color: #475569;
+  font-size: clamp(18px, 4.6vw, 36px);
+  font-weight: 760;
+  letter-spacing: 0;
+  line-height: 1.05;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.prize-card p {
-  margin: 6px 0 0;
-  color: rgba(246, 251, 255, 0.62);
+.intro-screen,
+.draw-curtain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
 }
 
-.prize-card em {
-  color: #a7fff9;
-  font-size: 30px;
-  font-style: normal;
-  font-weight: 800;
-}
-
-.winner-wall {
-  min-height: 180px;
-}
-
-.winner-list {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.winner-item {
+.intro-screen {
+  z-index: 20;
   display: grid;
-  gap: 8px;
-  min-width: 0;
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.18);
-}
-
-.winner-item span {
-  overflow: hidden;
-  color: #ffd666;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.winner-item small {
-  color: rgba(246, 251, 255, 0.56);
-}
-
-.wall-empty {
-  display: grid;
-  min-height: 110px;
   place-items: center;
-  color: rgba(246, 251, 255, 0.62);
+  padding: 32px;
+  background: #ffffff;
+  color: #020617;
+  text-align: center;
+  animation: introExit 1.2s cubic-bezier(0.76, 0, 0.24, 1) forwards;
 }
 
-@media (max-width: 1100px) {
-  .screen-header,
-  .screen-main {
-    grid-template-columns: 1fr;
+.intro-screen strong {
+  max-width: min(1000px, calc(100vw - 48px));
+  font-size: clamp(54px, 10vw, 160px);
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 0.96;
+}
+
+.draw-curtain {
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #020617;
+}
+
+.curtain-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: #ffffff;
+  transition: transform 1.1s cubic-bezier(0.76, 0, 0.24, 1);
+  will-change: transform;
+}
+
+.curtain-panel--top {
+  top: 0;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+}
+
+.curtain-panel--bottom {
+  bottom: 0;
+  box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.08);
+}
+
+.draw-curtain.is-entering .curtain-panel--top {
+  animation: curtainTopIn 0.9s cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+.draw-curtain.is-entering .curtain-panel--bottom {
+  animation: curtainBottomIn 0.9s cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+.draw-curtain.is-opening .curtain-panel--top {
+  transform: translateY(-100%);
+}
+
+.draw-curtain.is-opening .curtain-panel--bottom {
+  transform: translateY(100%);
+}
+
+.curtain-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 24px;
+  justify-items: center;
+  max-width: min(1100px, calc(100vw - 48px));
+  text-align: center;
+  transition:
+    opacity 0.42s ease,
+    transform 0.42s ease;
+}
+
+.draw-curtain.is-entering .curtain-copy {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
+.draw-curtain.is-rolling .curtain-copy {
+  animation: copyIn 0.36s ease both;
+}
+
+.curtain-copy strong {
+  color: #020617;
+  font-size: clamp(64px, 12vw, 180px);
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 0.94;
+  white-space: nowrap;
+}
+
+.curtain-copy p {
+  margin: 0;
+  color: #475569;
+  font-size: clamp(28px, 5vw, 78px);
+  font-weight: 760;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.draw-curtain.is-opening .curtain-copy {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+@keyframes curtainTopIn {
+  from {
+    transform: translateY(-100%);
   }
 
-  .screen-header {
-    display: grid;
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes curtainBottomIn {
+  from {
+    transform: translateY(100%);
   }
 
-  .screen-status {
-    justify-items: start;
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes copyIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
   }
 
-  .metric-grid,
-  .winner-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes introExit {
+  0%,
+  68% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-18px);
   }
 }
 
 @media (max-width: 640px) {
-  .metric-grid,
-  .winner-list {
-    grid-template-columns: 1fr;
+  .winner-stage {
+    padding: 24px;
   }
 
-  .winner-focus,
-  .winner-empty {
-    min-height: 260px;
+  .winner-stage strong,
+  .curtain-copy strong {
+    font-size: clamp(46px, 12vw, 76px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-screen,
+  .curtain-panel,
+  .curtain-copy {
+    animation: none;
+    transition: none;
   }
 }
 </style>
