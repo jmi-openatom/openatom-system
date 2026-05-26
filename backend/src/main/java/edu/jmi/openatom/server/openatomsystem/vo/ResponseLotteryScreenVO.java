@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResponseLotteryScreenVO {
   private ResponseLotteryVO lottery;
+  private List<String> participantNames;
   private List<ResponseLotteryPrizeVO> prizes;
   private List<ResponseLotteryWinnerVO> winners;
   private ResponseLotteryWinnerVO latestWinner;
