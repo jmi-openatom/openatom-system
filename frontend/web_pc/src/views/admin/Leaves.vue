@@ -13,7 +13,7 @@
           <el-option label="已通过" value="approved" />
           <el-option label="已驳回" value="rejected" />
         </el-select>
-        <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
+        <el-button :icon="Refresh" type="primary" @click="fetchList">刷新</el-button>
       </div>
     </ViewToolbar>
 
@@ -48,10 +48,10 @@
               <el-image
                 v-for="file in imageAttachments(row)"
                 :key="file.name"
+                :preview-src-list="imagePreviewList(row)"
+                :src="file.content"
                 class="leave-image"
                 fit="cover"
-                :src="file.content"
-                :preview-src-list="imagePreviewList(row)"
                 preview-teleported
               />
             </div>
@@ -103,20 +103,22 @@
           }}</el-tag>
         </div>
         <p class="reason-text">{{ current.reason }}</p>
+
+        <p>审核人:{{current.reviewerName}}</p>
         <p v-if="current.status === 'rejected'" class="reject-reason">
           <strong>驳回理由：</strong>{{ rejectionReason(current) }}
         </p>
         <el-steps
-          direction="vertical"
           :active="flowActive(current)"
+          direction="vertical"
           finish-status="success"
           process-status="process"
         >
           <el-step
             v-for="step in current.approvalFlow || []"
             :key="step.node"
-            :title="step.node"
             :description="stepDescription(step)"
+            :title="step.node"
           />
         </el-steps>
         <el-divider content-position="left">图片附件</el-divider>
@@ -124,10 +126,10 @@
           <el-image
             v-for="file in imageAttachments(current)"
             :key="file.name"
+            :preview-src-list="imagePreviewList(current)"
+            :src="file.content"
             class="dialog-image"
             fit="cover"
-            :src="file.content"
-            :preview-src-list="imagePreviewList(current)"
             preview-teleported
           />
         </div>
@@ -143,17 +145,17 @@
         <el-form-item label="审批意见">
           <el-input
             v-model="reviewForm.comment"
-            type="textarea"
-            :rows="4"
             :placeholder="reviewForm.action === 'approve' ? '可填写审批意见' : '请填写驳回理由'"
+            :rows="4"
+            type="textarea"
           />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="reviewVisible = false">取消</el-button>
         <el-button
-          :type="reviewForm.action === 'approve' ? 'success' : 'danger'"
           :loading="reviewing"
+          :type="reviewForm.action === 'approve' ? 'success' : 'danger'"
           @click="submitReview"
         >
           确认{{ reviewForm.action === 'approve' ? '通过' : '驳回' }}
@@ -163,14 +165,14 @@
   </ViewPage>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
-import { leaveApplicationApi } from '@/api'
-import { formatDateTime } from '@/utils/format.ts'
-import { computed, onMounted, ref } from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {Refresh} from '@element-plus/icons-vue'
+import {leaveApplicationApi} from '@/api'
+import {formatDateTime} from '@/utils/format.ts'
+import {computed, onMounted, ref} from 'vue'
 
 const loading = ref(false)
 
@@ -254,6 +256,7 @@ async function fetchList() {
   loading.value = true
   try {
     rows.value = (await leaveApplicationApi.list(query.value)) || []
+    console.log(rows.value)
   } finally {
     loading.value = false
   }

@@ -1,17 +1,13 @@
-import axios, {
-  type AxiosInstance,
-  type AxiosResponse,
-  type InternalAxiosRequestConfig,
-} from 'axios'
-import { ElMessage } from 'element-plus'
-import { clearSession, getToken } from '@/utils/auth.ts'
+import axios, {type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig,} from 'axios'
+import {ElMessage} from 'element-plus'
+import {clearSession, getToken} from '@/utils/auth.ts'
 
 const UNAUTHORIZED_CODES = new Set([401, 40100])
 let redirectingToLogin = false
 
 const service: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-  timeout: 15000,
+  timeout: 150000,
 })
 
 function currentRedirectPath(): string {
