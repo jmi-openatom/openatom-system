@@ -12,11 +12,13 @@ const props = withDefaults(
     spacing?: number
     radius?: number
     strength?: number
+    trackWindow?: boolean
   }>(),
   {
     spacing: 58,
     radius: 180,
     strength: 18,
+    trackWindow: false,
   },
 )
 
@@ -177,8 +179,13 @@ onMounted(() => {
     handleWindowResize = resizeCanvas
     window.addEventListener('resize', handleWindowResize)
   }
-  host.addEventListener('pointermove', handlePointerMove)
-  host.addEventListener('pointerleave', handlePointerLeave)
+  if (props.trackWindow) {
+    window.addEventListener('pointermove', handlePointerMove, { passive: true })
+    window.addEventListener('pointerleave', handlePointerLeave)
+  } else {
+    host.addEventListener('pointermove', handlePointerMove)
+    host.addEventListener('pointerleave', handlePointerLeave)
+  }
 
   if (prefersReducedMotion()) {
     draw()
@@ -202,7 +209,12 @@ onBeforeUnmount(() => {
   if (handleWindowResize) {
     window.removeEventListener('resize', handleWindowResize)
   }
-  host?.removeEventListener('pointermove', handlePointerMove)
-  host?.removeEventListener('pointerleave', handlePointerLeave)
+  if (props.trackWindow) {
+    window.removeEventListener('pointermove', handlePointerMove)
+    window.removeEventListener('pointerleave', handlePointerLeave)
+  } else {
+    host?.removeEventListener('pointermove', handlePointerMove)
+    host?.removeEventListener('pointerleave', handlePointerLeave)
+  }
 })
 </script>

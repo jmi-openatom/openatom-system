@@ -60,7 +60,17 @@
         </div>
       </el-header>
       <el-main class="admin-main">
-        <router-view />
+        <router-view v-slot="{ Component, route }">
+          <transition
+            :css="false"
+            mode="out-in"
+            @before-enter="routeTransition.beforeEnter"
+            @enter="routeTransition.enter"
+            @leave="routeTransition.leave"
+          >
+            <component :is="Component" :key="route.fullPath" />
+          </transition>
+        </router-view>
       </el-main>
     </el-container>
     <el-drawer
@@ -89,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowDown,
@@ -116,6 +126,7 @@ import { authApi } from '@/api'
 import { clearSession, getCurrentUser } from '@/utils/auth.ts'
 import { hasAnyPermission } from '@/utils/permission.ts'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import { useRouteTransition } from '@/composables/useRouteTransition'
 
 const mobileMenuVisible = ref(false)
 
@@ -249,6 +260,13 @@ const router = useRouter()
 
 const route = useRoute()
 
+const routeTransition = useRouteTransition({
+  enterY: 16,
+  leaveY: -8,
+  enterDuration: 0.28,
+  leaveDuration: 0.14,
+})
+
 const visibleMenus = computed(() => {
   return menus.value.filter((item) => item.path === '/' || hasAnyPermission(item.permissions || []))
 })
@@ -267,6 +285,10 @@ async function handleCommand(command: string) {
     router.replace('/admin/login')
   }
 }
+
+onBeforeUnmount(() => {
+  routeTransition.kill()
+})
 </script>
 
 <style scoped>

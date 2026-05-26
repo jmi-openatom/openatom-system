@@ -1,5 +1,8 @@
 <template>
   <div ref="siteShellRef" class="site-shell" :class="{ 'site-shell--home': isHomeRoute }">
+    <div v-if="!isHomeRoute" class="site-global-mouse-field" aria-hidden="true">
+      <HomeInteractiveBackdrop track-window :radius="230" :spacing="68" :strength="22" />
+    </div>
     <header
       :aria-hidden="!headerVisible"
       :class="{ 'site-header--hidden': !headerVisible, 'site-header--home': isHomeRoute }"
@@ -89,7 +92,17 @@
     </el-drawer>
 
     <main ref="siteMainRef" class="site-main">
-      <router-view />
+      <router-view v-slot="{ Component, route }">
+        <transition
+          :css="false"
+          mode="out-in"
+          @before-enter="routeTransition.beforeEnter"
+          @enter="routeTransition.enter"
+          @leave="routeTransition.leave"
+        >
+          <component :is="Component" :key="route.fullPath" />
+        </transition>
+      </router-view>
     </main>
 
     <footer class="site-footer">
@@ -126,6 +139,8 @@ import { getToken } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
 import { notificationApi } from '@/api'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
+import { useRouteTransition } from '@/composables/useRouteTransition'
 import { useSiteShellMotion } from '@/composables/useSiteMotion'
 
 const Setting = markRaw(SettingIcon)
@@ -153,6 +168,13 @@ const siteMainRef = ref<HTMLElement>()
 const hasScrolledPastHeroTop = ref(false)
 
 const isHomeRoute = computed(() => route.name === 'site-home')
+
+const routeTransition = useRouteTransition({
+  enterY: 18,
+  leaveY: -8,
+  enterDuration: 0.3,
+  leaveDuration: 0.16,
+})
 
 const headerVisible = computed(() => {
   return !isHomeRoute.value || hasScrolledPastHeroTop.value || mobileNavVisible.value
@@ -201,6 +223,7 @@ watch(
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateHeaderState)
   if (unreadTimer.value) clearInterval(unreadTimer.value)
+  routeTransition.kill()
 })
 </script>
 
@@ -219,6 +242,20 @@ onBeforeUnmount(() => {
 
 .site-shell:not(.site-shell--home) .site-main {
   padding-top: var(--oa-site-header-height);
+}
+
+.site-global-mouse-field {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+.site-global-mouse-field :deep(.home-section-canvas) {
+  position: absolute;
+  inset: 0;
 }
 
 /* Header 样式 */
@@ -605,5 +642,4 @@ onBeforeUnmount(() => {
     display: none;
   }
 }
-
 </style>

@@ -1,5 +1,6 @@
 <template>
-  <main class="lottery-screen">
+  <main class="lottery-screen home-interactive-section">
+    <HomeInteractiveBackdrop track-window :radius="250" :spacing="72" :strength="24" />
     <section class="screen-header">
       <div>
         <span>OpenAtom Lottery</span>
@@ -85,6 +86,7 @@
 
 <script setup lang="ts">
 import { lotteryApi } from '@/api'
+import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
 import { formatDateTime } from '@/utils/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'

@@ -1,25 +1,25 @@
 <template>
   <ViewPage class="workspace-page profile-workspace">
     <WorkspaceHero
+      :metrics="workspaceMetrics"
+      description="管理头像、账号信息和最近的申请进度。"
       eyebrow="个人中心"
       title="我的账号"
-      description="管理头像、账号信息和最近的申请进度。"
-      :metrics="workspaceMetrics"
     />
 
     <section class="workspace-section">
       <div class="container workspace-grid workspace-grid--split profile-grid">
         <WorkspacePanel
           class="profile-card site-reveal"
+          description="维护基础信息与头像，保持工作台身份一致。"
           eyebrow="Identity"
           title="身份资料"
-          description="维护基础信息与头像，保持工作台身份一致。"
         >
           <div class="profile-avatar">
             <UserAvatar :name="displayName" :size="88" :src="String(user.avatar || '')" />
             <div>
               <strong>{{ displayName }}</strong>
-              <span>未上传头像时，将显示姓氏默认头像</span>
+              <span>未上传头像时，如已经绑定QQ,显示QQ头像,否则将显示姓氏默认头像</span>
             </div>
           </div>
 
@@ -56,9 +56,9 @@
         <div class="profile-stack">
           <WorkspacePanel
             class="profile-progress-card site-reveal"
+            description="最近申请与当前阶段一并汇总。"
             eyebrow="Applications"
             title="申请雷达"
-            description="最近申请与当前阶段一并汇总。"
           >
             <el-table :data="applications" border stripe>
               <el-table-column label="申请编号" prop="id" width="100" />
@@ -78,10 +78,10 @@
 
           <WorkspacePanel
             class="security-card site-reveal"
+            compact
+            description="账号操作集中放在这里，避免和资料维护混在一起。"
             eyebrow="Security"
             title="安全控制"
-            description="账号操作集中放在这里，避免和资料维护混在一起。"
-            compact
           >
             <div class="security-grid">
               <div class="workspace-inline-stat">
@@ -173,17 +173,17 @@
   </ViewPage>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceHero from '@/components/site/workspace/WorkspaceHero.vue'
 import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
-import { authApi, siteApi } from '@/api'
-import { clearSession, getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
-import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
-import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import {authApi, siteApi} from '@/api'
+import {clearSession, getCurrentUser, getToken, setSession} from '@/utils/auth.ts'
+import {applicationStatusText, formatDateTime, statusType} from '@/utils/format.ts'
+import {ElMessage} from 'element-plus'
+import {computed, onMounted, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 
 const user = ref(getCurrentUser() || {})
 

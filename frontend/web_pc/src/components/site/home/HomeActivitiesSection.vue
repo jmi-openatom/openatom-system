@@ -67,9 +67,12 @@
 
 <script setup lang="ts">
 import gsap from 'gsap'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
+
+gsap.registerPlugin(ScrollTrigger)
 
 const props = defineProps<{
   activities: any[]
@@ -79,11 +82,11 @@ const props = defineProps<{
 const router = useRouter()
 const stageRef = ref<HTMLElement>()
 const activeIndex = ref(0)
-const tiltX = ref(0)
-const tiltY = ref(0)
 
 let autoPlayTimer: number | undefined
 let animationContext: gsap.Context | undefined
+let tiltXTo: gsap.QuickToFunc | undefined
+let tiltYTo: gsap.QuickToFunc | undefined
 let switching = false
 
 const total = computed(() => props.activities.length)
@@ -130,9 +133,35 @@ function stageStyle(index: number) {
     '--card-scale': scale,
     '--card-opacity': opacity,
     '--card-z': zIndex,
-    '--stage-tilt-x': `${tiltX.value}deg`,
-    '--stage-tilt-y': `${tiltY.value}deg`,
   }
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
+
+function setupStageMotion() {
+  tiltXTo?.tween.kill()
+  tiltYTo?.tween.kill()
+  tiltXTo = undefined
+  tiltYTo = undefined
+
+  const stage = stageRef.value
+  if (!stage || prefersReducedMotion()) return
+
+  gsap.set(stage, {
+    '--stage-tilt-x': '0deg',
+    '--stage-tilt-y': '0deg',
+  })
+
+  tiltXTo = gsap.quickTo(stage, '--stage-tilt-x', {
+    duration: 0.56,
+    ease: 'power3.out',
+  })
+  tiltYTo = gsap.quickTo(stage, '--stage-tilt-y', {
+    duration: 0.56,
+    ease: 'power3.out',
+  })
 }
 
 function animateSwitch(index: number) {
@@ -146,14 +175,26 @@ function animateSwitch(index: number) {
 
   switching = true
 
+  const direction = relativeOffset(nextIndex) < 0 ? -1 : 1
   const currentCard = stage.querySelector<HTMLElement>('.activity-stage__card.is-active')
   const nextCard = stage.querySelectorAll<HTMLElement>('.activity-stage__card')[nextIndex]
 
   const timeline = gsap.timeline({
     defaults: {
       ease: 'power3.inOut',
+      overwrite: 'auto',
     },
     onComplete: () => {
+      gsap.set(stage.querySelectorAll('.activity-stage__card'), { clearProps: 'transform' })
+      gsap.set(stage.querySelectorAll('.activity-stage__wipe'), { clearProps: 'transform' })
+      gsap.set(
+        stage.querySelectorAll(
+          '.activity-stage__media img, .activity-stage__content, .activity-stage__content > *',
+        ),
+        {
+          clearProps: 'transform,opacity,visibility',
+        },
+      )
       switching = false
     },
   })
@@ -163,9 +204,9 @@ function animateSwitch(index: number) {
       .to(
         currentCard.querySelector('.activity-stage__content'),
         {
-          y: -18,
-          opacity: 0,
-          duration: 0.28,
+          y: -22,
+          autoAlpha: 0,
+          duration: 0.3,
         },
         0,
       )
@@ -181,8 +222,18 @@ function animateSwitch(index: number) {
       .to(
         currentCard,
         {
-          rotateY: -14,
-          duration: 0.42,
+          x: -24 * direction,
+          rotateY: -16 * direction,
+          scale: 0.97,
+          duration: 0.44,
+        },
+        0,
+      )
+      .to(
+        currentCard.querySelector('.activity-stage__media img'),
+        {
+          scale: 1.08,
+          duration: 0.44,
         },
         0,
       )
@@ -193,17 +244,26 @@ function animateSwitch(index: number) {
   }, 0.2)
 
   if (nextCard) {
-    const nextContent = nextCard.querySelector('.activity-stage__content')
+    const nextContent = nextCard.querySelector<HTMLElement>('.activity-stage__content')
+    const nextMeta = nextCard.querySelector<HTMLElement>('.activity-stage__meta')
+    const nextTitle = nextCard.querySelector<HTMLElement>('h3')
+    const nextCopy = nextCard.querySelector<HTMLElement>('p')
+    const nextImage = nextCard.querySelector<HTMLElement>('.activity-stage__media img')
+    const nextPieces = [nextMeta, nextTitle, nextCopy].filter(Boolean) as HTMLElement[]
 
     timeline
       .set(
-        nextContent,
+        nextCard,
         {
-          y: 0,
-          opacity: 1,
+          x: 26 * direction,
+          rotateY: 12 * direction,
+          scale: 0.98,
         },
         0.2,
       )
+      .set(nextContent, { y: 0, autoAlpha: 1 }, 0.2)
+      .set(nextPieces, { y: 26, autoAlpha: 0 }, 0.2)
+      .set(nextImage, { scale: 1.08 }, 0.2)
       .fromTo(
         nextCard.querySelector('.activity-stage__wipe'),
         {
@@ -216,44 +276,36 @@ function animateSwitch(index: number) {
         },
         0.22,
       )
-      .fromTo(
-        nextCard.querySelector('.activity-stage__meta'),
+      .to(
+        nextCard,
         {
-          y: 16,
-          opacity: 0,
+          x: 0,
+          rotateY: 0,
+          scale: 1,
+          duration: 0.64,
+          ease: 'expo.out',
         },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.34,
-        },
-        0.34,
+        0.24,
       )
-      .fromTo(
-        nextCard.querySelector('h3'),
+      .to(
+        nextImage,
         {
-          y: 26,
-          opacity: 0,
+          scale: 1.025,
+          duration: 0.78,
+          ease: 'power3.out',
         },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.42,
-        },
-        0.39,
+        0.24,
       )
-      .fromTo(
-        nextCard.querySelector('p'),
-        {
-          y: 18,
-          opacity: 0,
-        },
+      .to(
+        nextPieces,
         {
           y: 0,
-          opacity: 1,
-          duration: 0.38,
+          autoAlpha: 1,
+          duration: 0.46,
+          ease: 'power3.out',
+          stagger: 0.065,
         },
-        0.46,
+        0.38,
       )
   }
 }
@@ -285,8 +337,8 @@ function formatIndex(index: number) {
 }
 
 function startAutoPlay() {
-  if (total.value <= 1) return
   window.clearInterval(autoPlayTimer)
+  if (total.value <= 1 || prefersReducedMotion()) return
   autoPlayTimer = window.setInterval(next, 4800)
 }
 
@@ -301,49 +353,91 @@ function resumeAutoPlay() {
 
 function handlePointerMove(event: PointerEvent) {
   const stage = stageRef.value
-  if (!stage) return
+  if (!stage || !tiltXTo || !tiltYTo || prefersReducedMotion()) return
 
   const rect = stage.getBoundingClientRect()
   const xRatio = (event.clientX - rect.left) / rect.width - 0.5
   const yRatio = (event.clientY - rect.top) / rect.height - 0.5
-  tiltX.value = yRatio * -6
-  tiltY.value = xRatio * 8
+  tiltXTo(yRatio * -6.5)
+  tiltYTo(xRatio * 8.5)
 }
 
 function resetTilt() {
-  tiltX.value = 0
-  tiltY.value = 0
+  tiltXTo?.(0)
+  tiltYTo?.(0)
 }
 
 function animateStage() {
   animationContext?.revert()
   if (!stageRef.value) return
+  if (prefersReducedMotion()) {
+    ScrollTrigger.refresh()
+    return
+  }
 
   animationContext = gsap.context(() => {
-    gsap.from('.activity-stage__card', {
-      y: 36,
-      opacity: 0,
-      duration: 0.8,
-      stagger: 0.08,
-      ease: 'power3.out',
+    const stageTimeline = gsap.timeline({
       scrollTrigger: {
         trigger: '.activity-stage',
         start: 'top 84%',
         once: true,
       },
     })
+
+    stageTimeline
+      .from('.activity-stage__card', {
+        y: 72,
+        autoAlpha: 0,
+        scale: 0.86,
+        rotateX: -9,
+        transformOrigin: '50% 100%',
+        duration: 0.9,
+        ease: 'power4.out',
+        stagger: {
+          each: 0.08,
+          from: 'center',
+        },
+      })
+      .from(
+        '.activity-stage__controls',
+        {
+          y: 20,
+          autoAlpha: 0,
+          duration: 0.42,
+          ease: 'power3.out',
+        },
+        '-=0.36',
+      )
+      .from(
+        '.activity-stage__card.is-active .activity-stage__content > *',
+        {
+          y: 22,
+          autoAlpha: 0,
+          duration: 0.46,
+          ease: 'power3.out',
+          stagger: 0.06,
+        },
+        '-=0.42',
+      )
   }, stageRef.value)
+
+  ScrollTrigger.refresh()
 }
 
 watch(
   () => props.activities.length,
-  () => {
+  async () => {
     if (activeIndex.value >= total.value) activeIndex.value = 0
+    await nextTick()
+    setupStageMotion()
+    animateStage()
     startAutoPlay()
   },
+  { flush: 'post' },
 )
 
 onMounted(() => {
+  setupStageMotion()
   startAutoPlay()
   animateStage()
 })
@@ -351,5 +445,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.clearInterval(autoPlayTimer)
   animationContext?.revert()
+  tiltXTo?.tween.kill()
+  tiltYTo?.tween.kill()
 })
 </script>

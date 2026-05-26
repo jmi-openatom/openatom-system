@@ -136,126 +136,213 @@ function createHomeAnimations() {
     })
 
     heroTimeline
-      .from('.hero', {
-        ...(supportsClipPath
-          ? { clipPath: 'inset(0 0 20% 0 round 0 0 36px 36px)' }
-          : { opacity: 0.94, y: 18 }),
-        duration: 1.08,
-      })
+      .addLabel('intro', 0)
+      .from(
+        '.hero',
+        {
+          ...(supportsClipPath
+            ? { clipPath: 'inset(0 0 20% 0 round 0 0 36px 36px)' }
+            : { opacity: 0.94, y: 18 }),
+          duration: 1.12,
+          ease: 'expo.out',
+        },
+        'intro',
+      )
       .from(
         '.hero__map',
         {
-          opacity: 0,
-          scale: 1.08,
-          duration: 1.35,
+          autoAlpha: 0,
+          y: 36,
+          scale: 1.1,
+          duration: 1.45,
         },
-        0,
+        'intro',
       )
       .from(
-        '.hero__content',
+        '.hero__glass',
         {
-          y: 48,
-          opacity: 0,
-          ...(supportsBlur ? { filter: 'blur(14px)' } : {}),
-          duration: 1,
+          autoAlpha: 0,
+          duration: 0.82,
         },
-        0.32,
+        'intro+=0.12',
+      )
+      .from(
+        '.home-hero__morph',
+        {
+          y: 54,
+          autoAlpha: 0,
+          scale: 0.96,
+          ...(supportsBlur ? { filter: 'blur(16px)' } : {}),
+          duration: 1.02,
+          ease: 'expo.out',
+        },
+        'intro+=0.26',
       )
       .from(
         '.hero__subtitle',
         {
-          y: 22,
-          opacity: 0,
-          duration: 0.72,
+          y: 26,
+          autoAlpha: 0,
+          duration: 0.68,
+          ease: 'power3.out',
         },
-        0.56,
+        '<0.22',
       )
 
-    gsap.to('.home-hero__morph', {
-      y: -26,
-      ease: 'none',
+    const heroParallax = gsap.timeline({
       scrollTrigger: {
         trigger: '.hero',
         start: 'top top',
         end: 'bottom top',
-        scrub: 0.8,
+        scrub: 0.9,
       },
     })
 
-    gsap.from('.hero__actions .el-button', {
-      y: 26,
-      opacity: 0,
-      scale: 0.94,
-      duration: 0.72,
-      ease: 'back.out(1.7)',
-      stagger: 0.09,
+    heroParallax
+      .to('.hero__map', { yPercent: 10, scale: 1.04, ease: 'none' }, 0)
+      .to('.home-hero__morph', { y: -34, scale: 0.985, ease: 'none' }, 0)
+      .to('.hero__subtitle', { y: -18, autoAlpha: 0.74, ease: 'none' }, 0)
+
+    const overviewTimeline = gsap.timeline({
+      defaults: {
+        ease: 'power3.out',
+      },
       scrollTrigger: {
         trigger: '.home-overview-page',
-        start: 'top 68%',
+        start: 'top 72%',
+        once: true,
       },
     })
 
-    gsap.from('.command-panel', {
-      y: 46,
-      opacity: 0,
-      ...(supportsBlur ? { filter: 'blur(10px)' } : {}),
-      duration: 0.9,
-      ease: 'power3.out',
-      scrollTrigger: {
-        trigger: '.command-panel',
-        start: 'top 82%',
-      },
-    })
-
-    gsap.utils.toArray<HTMLElement>('.metric-node').forEach((element, index) => {
-      gsap.from(element, {
-        y: 36,
-        opacity: 0,
-        scale: 0.92,
-        duration: 0.72,
-        ease: 'back.out(1.5)',
-        delay: index * 0.05,
-        scrollTrigger: {
-          trigger: element,
-          start: 'top 88%',
+    overviewTimeline
+      .from(
+        '.hero__actions .el-button',
+        {
+          y: 28,
+          autoAlpha: 0,
+          scale: 0.94,
+          duration: 0.66,
+          ease: 'back.out(1.55)',
+          stagger: 0.08,
         },
-      })
-    })
+        0,
+      )
+      .from(
+        '.command-panel',
+        {
+          y: 48,
+          autoAlpha: 0,
+          scale: 0.985,
+          ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
+          duration: 0.9,
+        },
+        0.08,
+      )
+      .from(
+        '.metric-console__rail',
+        {
+          scaleX: 0,
+          transformOrigin: 'center center',
+          duration: 0.72,
+        },
+        0.34,
+      )
+      .from(
+        '.metric-console__core',
+        {
+          y: 24,
+          autoAlpha: 0,
+          duration: 0.68,
+        },
+        0.3,
+      )
+      .from(
+        '.metric-node',
+        {
+          y: 40,
+          autoAlpha: 0,
+          scale: 0.92,
+          transformOrigin: '50% 100%',
+          duration: 0.72,
+          ease: 'back.out(1.35)',
+          stagger: {
+            each: 0.07,
+            from: 'center',
+          },
+        },
+        0.52,
+      )
+      .from(
+        '.terminal-strip span',
+        {
+          y: 16,
+          autoAlpha: 0,
+          duration: 0.38,
+          stagger: 0.035,
+        },
+        0.86,
+      )
 
     gsap.utils
       .toArray<HTMLElement>('.metric-console__core strong, .metric-node strong')
       .forEach(animateMetricValue)
 
-    gsap.utils.toArray<HTMLElement>('.reveal-block').forEach((element) => {
-      gsap.from(element, {
-        y: 58,
-        opacity: 0,
-        ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
-        duration: 0.86,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: element,
-          start: 'top 82%',
-        },
-      })
+    gsap.set('.reveal-block', {
+      y: 58,
+      autoAlpha: 0,
+      ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
     })
 
-    gsap.utils.toArray<HTMLElement>('.reveal-card').forEach((element, index) => {
-      gsap.from(element, {
-        y: 64,
-        opacity: 0,
-        ...(supports3d ? { rotateX: -8 } : {}),
-        scale: 0.96,
-        ...(supports3d ? { transformPerspective: 900 } : {}),
-        transformOrigin: '50% 100%',
-        duration: 0.78,
-        ease: 'power3.out',
-        delay: (index % 4) * 0.05,
-        scrollTrigger: {
-          trigger: element,
-          start: 'top 86%',
-        },
-      })
+    ScrollTrigger.batch('.reveal-block', {
+      start: 'top 82%',
+      once: true,
+      onEnter: (batch) => {
+        gsap.to(batch, {
+          y: 0,
+          autoAlpha: 1,
+          ...(supportsBlur ? { filter: 'blur(0px)' } : {}),
+          duration: 0.86,
+          ease: 'power3.out',
+          stagger: 0.08,
+          overwrite: 'auto',
+          clearProps: supportsBlur
+            ? 'transform,opacity,visibility,filter'
+            : 'transform,opacity,visibility',
+        })
+      },
+    })
+
+    gsap.set('.reveal-card', {
+      y: 64,
+      autoAlpha: 0,
+      scale: 0.96,
+      ...(supports3d ? { rotateX: -8, transformPerspective: 900 } : {}),
+      ...(supportsBlur ? { filter: 'blur(10px)' } : {}),
+      transformOrigin: '50% 100%',
+    })
+
+    ScrollTrigger.batch('.reveal-card', {
+      start: 'top 86%',
+      once: true,
+      onEnter: (batch) => {
+        gsap.to(batch, {
+          y: 0,
+          autoAlpha: 1,
+          scale: 1,
+          ...(supports3d ? { rotateX: 0 } : {}),
+          ...(supportsBlur ? { filter: 'blur(0px)' } : {}),
+          duration: 0.78,
+          ease: 'power3.out',
+          stagger: {
+            each: 0.06,
+            from: 'start',
+          },
+          overwrite: 'auto',
+          clearProps: supportsBlur
+            ? 'transform,opacity,visibility,filter'
+            : 'transform,opacity,visibility',
+        })
+      },
     })
 
     ScrollTrigger.refresh()
@@ -827,12 +914,7 @@ onBeforeUnmount(() => {
   height: 1px;
   top: 50%;
   left: 50%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--metric-glow),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, var(--metric-glow), transparent);
   content: '';
   transform: translate(-50%, -50%);
 }
@@ -861,10 +943,7 @@ onBeforeUnmount(() => {
 }
 
 .metric-console__core strong {
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    sans-serif;
+  font-family: 'SF Pro Display', system-ui, sans-serif;
   font-size: clamp(70px, 8vw, 110px);
   font-weight: 600;
   line-height: 0.9;
@@ -956,10 +1035,7 @@ onBeforeUnmount(() => {
 }
 
 .metric-node strong {
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    sans-serif;
+  font-family: 'SF Pro Display', system-ui, sans-serif;
   color: var(--metric-ink);
   font-size: 34px;
   font-weight: 600;
@@ -1198,6 +1274,8 @@ onBeforeUnmount(() => {
 }
 
 .activity-stage {
+  --stage-tilt-x: 0deg;
+  --stage-tilt-y: 0deg;
   position: relative;
   width: min(1180px, 100%);
   height: 620px;
@@ -1211,8 +1289,6 @@ onBeforeUnmount(() => {
   --card-scale: 1;
   --card-opacity: 1;
   --card-z: 1;
-  --stage-tilt-x: 0deg;
-  --stage-tilt-y: 0deg;
   position: absolute;
   top: 0;
   left: 50%;
@@ -1225,10 +1301,8 @@ onBeforeUnmount(() => {
   background: #0f172a;
   opacity: var(--card-opacity);
   cursor: pointer;
-  transform:
-    translateX(calc(-50% + var(--card-x)))
-    rotateY(calc(var(--card-rotate) + var(--stage-tilt-y)))
-    rotateX(var(--stage-tilt-x))
+  transform: translateX(calc(-50% + var(--card-x)))
+    rotateY(calc(var(--card-rotate) + var(--stage-tilt-y))) rotateX(var(--stage-tilt-x))
     scale(var(--card-scale));
   transform-origin: center center;
   transition:
@@ -1407,10 +1481,7 @@ onBeforeUnmount(() => {
   right: -8px;
   bottom: -22px;
   color: rgba(15, 23, 42, 0.055);
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    sans-serif;
+  font-family: 'SF Pro Display', system-ui, sans-serif;
   font-size: clamp(120px, 19vw, 280px);
   font-weight: 700;
   line-height: 0.78;
@@ -1467,10 +1538,7 @@ onBeforeUnmount(() => {
 
 .award-exhibit__year {
   color: rgba(15, 23, 42, 0.36);
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    sans-serif;
+  font-family: 'SF Pro Display', system-ui, sans-serif;
   font-size: 42px;
   font-weight: 600;
   line-height: 1;
@@ -1577,10 +1645,7 @@ onBeforeUnmount(() => {
 .award-exhibit__spotlight h3 {
   margin: 0;
   color: #0f172a;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    sans-serif;
+  font-family: 'SF Pro Display', system-ui, sans-serif;
   font-size: clamp(30px, 3vw, 44px);
   line-height: 1.08;
 }
@@ -1632,6 +1697,7 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: 0;
   opacity: 1;
+  will-change: transform, opacity;
 }
 
 .hero::before {
@@ -1660,6 +1726,7 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(1px) saturate(1.08);
   pointer-events: none;
+  will-change: opacity;
 }
 
 .hero__inner {
@@ -1711,6 +1778,7 @@ onBeforeUnmount(() => {
   font-size: clamp(44px, 6.8vw, 92px);
   font-weight: 700;
   line-height: 0.98;
+  will-change: transform, opacity;
 }
 
 @media (max-width: 720px) {
@@ -1731,6 +1799,7 @@ onBeforeUnmount(() => {
   font-size: 18px;
   line-height: 1.7;
   letter-spacing: 0;
+  will-change: transform, opacity;
 }
 
 .home-overview-page {
