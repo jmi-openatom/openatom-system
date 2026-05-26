@@ -581,30 +581,11 @@ function buildFormSchema() {
 }
 
 function validateSchedule() {
-  const applyStart = parseTimeValue(form.value.applyStartAt)
-  const applyEnd = parseTimeValue(form.value.applyEndAt)
-  const interviewStart = parseTimeValue(form.value.interviewStartAt)
-  const interviewEnd = parseTimeValue(form.value.interviewEndAt)
-  const resultPublishAt = parseTimeValue(form.value.resultPublishAt)
+  const startAt = parseTimeValue(form.value.startAt)
+  const endAt = parseTimeValue(form.value.endAt)
 
-  if (applyStart && applyEnd && applyStart >= applyEnd) {
+  if (startAt && endAt && startAt >= endAt) {
     ElMessage.warning('结束时间必须晚于开始时间')
-    return false
-  }
-  if ((interviewStart && !interviewEnd) || (!interviewStart && interviewEnd)) {
-    ElMessage.warning('请完整填写面试开始和结束时间')
-    return false
-  }
-  if (interviewStart && interviewEnd && interviewStart >= interviewEnd) {
-    ElMessage.warning('面试结束时间必须晚于面试开始时间')
-    return false
-  }
-  if (applyEnd && interviewStart && interviewStart < applyEnd) {
-    ElMessage.warning('面试开始时间不能早于表单结束时间')
-    return false
-  }
-  if (interviewEnd && resultPublishAt && resultPublishAt < interviewEnd) {
-    ElMessage.warning('结果公布时间不能早于面试结束时间')
     return false
   }
   return true

@@ -172,6 +172,11 @@ public enum SystemPermission {
   SITE_FORM_UPDATE("更新信息收集表单", "site-form:update", "api", "/site-forms/{formId}", "PATCH"),
   SITE_FORM_EXPORT(
       "导出表单提交数据", "site-form:export", "api", "/site-forms/{formId}/submissions/export", "GET"),
+  LOTTERY_LIST("查询抽奖活动", "lottery:list", "api", "/lotteries", "GET"),
+  LOTTERY_CREATE("创建抽奖活动", "lottery:create", "api", "/clubs/{clubId}/lotteries", "POST"),
+  LOTTERY_DETAIL("获取抽奖详情", "lottery:detail", "api", "/lotteries/{lotteryId}", "GET"),
+  LOTTERY_UPDATE("更新抽奖活动", "lottery:update", "api", "/lotteries/{lotteryId}", "PATCH"),
+  LOTTERY_DRAW("执行抽奖", "lottery:draw", "api", "/lotteries/{lotteryId}/draw", "POST"),
   MEMBERSHIP_LIST("查询成员列表", "membership:list", "api", "/memberships", "GET"),
   MEMBERSHIP_CREATE("新增成员", "membership:create", "api", "/memberships", "POST"),
   MEMBERSHIP_DETAIL("获取成员详情", "membership:detail", "api", "/memberships/{membershipId}", "GET"),

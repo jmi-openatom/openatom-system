@@ -12,6 +12,7 @@ const adminFallbackRoutes = [
   '/admin/recruitment-campaigns',
   '/admin/site-forms',
   '/admin/form-submissions',
+  '/admin/lotteries',
   '/admin/office-documents',
   '/admin/images',
   '/admin/leaves',
@@ -147,6 +148,11 @@ const routes = [
     component: () => import('../views/site/CheckInScan.vue'),
   },
   {
+    path: '/lottery/:id/screen',
+    name: 'lottery-screen',
+    component: () => import('../views/site/LotteryScreen.vue'),
+  },
+  {
     path: '/admin/login',
     name: 'admin-login',
     component: () => import('../views/admin/Login.vue'),
@@ -198,6 +204,12 @@ const routes = [
         name: 'admin-form-submissions',
         meta: { permissions: ['site-form:detail'] },
         component: () => import('../views/admin/FormSubmissions.vue'),
+      },
+      {
+        path: 'lotteries',
+        name: 'admin-lotteries',
+        meta: { permissions: ['lottery:list'] },
+        component: () => import('../views/admin/Lotteries.vue'),
       },
       {
         path: 'office-documents',

@@ -45,7 +45,7 @@
       show-icon
       :closable="false"
       :title="`当前表单：${currentForm.name}`"
-      :description="`收集时间：${formatRange(currentForm.applyStartAt, currentForm.applyEndAt)}`"
+      :description="`收集时间：${formatRange(currentForm.startAt, currentForm.endAt)}`"
     />
 
     <el-table v-loading="loading" :data="rows" class="admin-table">

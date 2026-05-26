@@ -205,6 +205,36 @@ export const formSubmissionApi = {
   },
 }
 
+export const lotteryApi = {
+  list(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/lotteries', { params })
+  },
+  detail(id: string | number): Promise<any> {
+    return request.get(`/lotteries/${id}`)
+  },
+  create(clubId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/clubs/${clubId}/lotteries`, data)
+  },
+  update(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/lotteries/${id}`, data)
+  },
+  publish(id: string | number): Promise<any> {
+    return request.post(`/lotteries/${id}/publish`)
+  },
+  close(id: string | number): Promise<any> {
+    return request.post(`/lotteries/${id}/close`)
+  },
+  draw(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/lotteries/${id}/draw`, data)
+  },
+  reset(id: string | number): Promise<any> {
+    return request.post(`/lotteries/${id}/reset`)
+  },
+  screen(id: string | number): Promise<any> {
+    return request.get(`/site/lotteries/${id}/screen`)
+  },
+}
+
 export const officeDocumentApi = {
   list(params?: Record<string, unknown>): Promise<any> {
     return request.get('/office-documents', { params })

@@ -152,6 +152,12 @@ const menus = ref([
     permissions: ['site-form:detail'],
   },
   {
+    path: '/admin/lotteries',
+    label: '抽奖系统',
+    icon: Trophy,
+    permissions: ['lottery:list'],
+  },
+  {
     path: '/admin/office-documents',
     label: '文书中心',
     icon: DocumentChecked,
