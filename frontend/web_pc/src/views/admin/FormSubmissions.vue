@@ -17,7 +17,7 @@
           filterable
           placeholder="选择表单"
           style="width: 260px"
-          @change="fetchList"
+          @change="handleFormChange"
         >
           <el-option v-for="item in forms" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
@@ -45,11 +45,13 @@
       show-icon
       :closable="false"
       :title="`当前表单：${currentForm.name}`"
-      :description="`收集时间：${formatRange(currentForm.startAt, currentForm.endAt)}`"
+      :description="`收集时间：${formatRange(currentForm.startAt, currentForm.endAt)}；共 ${total} 条提交记录`"
     />
 
     <el-table v-loading="loading" :data="rows" class="admin-table">
-      <el-table-column prop="id" label="ID" width="90" />
+      <el-table-column label="ID" width="90">
+        <template #default="{ $index }">{{ serialNumber($index) }}</template>
+      </el-table-column>
       <el-table-column prop="submitterName" label="提交人" min-width="140">
         <template #default="{ row }">{{ row.submitterName || '-' }}</template>
       </el-table-column>
@@ -194,6 +196,11 @@ async function handleClubChange(clubId: any) {
   await fetchList()
 }
 
+function handleFormChange() {
+  page.value = 1
+  fetchList()
+}
+
 async function fetchList() {
   if (!selectedFormId.value) {
     rows.value = []
@@ -233,9 +240,13 @@ async function exportExcel() {
   }
 }
 
-function handlePageChange(page: any) {
-  page.value = page
+function handlePageChange(nextPage: any) {
+  page.value = nextPage
   fetchList()
+}
+
+function serialNumber(index: number) {
+  return (page.value - 1) * pageSize.value + index + 1
 }
 
 function openDetail(row: any) {
