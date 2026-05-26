@@ -28,7 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * 控制器日志切面
  *
- * <p>使用 AOP 对 Controller 层方法进行环绕增强, 记录请求参数, 响应结果, 执行耗时和异常信息, 并对敏感字段进行脱敏处理.
+ * <p>使用 AOP 对 Controller 层方法进行环绕增强, 记录请求参数, 响应结果, 执行耗时和异常信息, 并对敏感字段进行脱敏处理...
  */
 @Slf4j
 @Aspect
