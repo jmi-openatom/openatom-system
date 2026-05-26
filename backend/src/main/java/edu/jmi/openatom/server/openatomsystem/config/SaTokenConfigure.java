@@ -52,10 +52,20 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 	@Bean
 	public SaServletFilter getSaServletFilter() {
 		return new SaServletFilter().addInclude("/**").setBeforeAuth(obj -> {
-			// 1. 设置跨域响应头
-			// 注意：如果 allowCredentials 为 true，origin 不能为 *，必须是具体域名
-			// 这里我们直接从配置读取，或者如果你想完全放开，可以直接设为 SaHolder.getRequest().getHeader("Origin")
-			SaHolder.getResponse().setHeader("Access-Control-Allow-Origin", SaHolder.getRequest().getHeader("Origin")).setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS").setHeader("Access-Control-Allow-Headers", "*").setHeader("Access-Control-Expose-Headers", "Content-Disposition").setHeader("Access-Control-Allow-Credentials", "true") // 建议设为 true 以支持 Token
+			String origin = SaHolder.getRequest().getHeader("Origin");
+			String requestHeaders = SaHolder.getRequest().getHeader("Access-Control-Request-Headers");
+			String allowHeaders = requestHeaders == null || requestHeaders.isBlank()
+					? "Content-Type, Authorization, jmiopenatom, X-Requested-With, Accept, Origin"
+					: requestHeaders;
+			if (origin != null && !origin.isBlank()) {
+				SaHolder.getResponse().setHeader("Access-Control-Allow-Origin", origin);
+			}
+			SaHolder.getResponse()
+					.setHeader("Vary", "Origin, Access-Control-Request-Headers, Access-Control-Request-Method")
+					.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+					.setHeader("Access-Control-Allow-Headers", allowHeaders)
+					.setHeader("Access-Control-Expose-Headers", "Content-Disposition")
+					.setHeader("Access-Control-Allow-Credentials", "true")
 					.setHeader("Access-Control-Max-Age", "3600");
 
 			// 2. 如果是 OPTIONS 预检请求，直接结束请求，不进入后面的拦截器
