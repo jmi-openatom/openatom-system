@@ -8,6 +8,7 @@ let redirectingToLogin = false
 const service: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 150000,
+  withCredentials: true,
 })
 
 function currentRedirectPath(): string {

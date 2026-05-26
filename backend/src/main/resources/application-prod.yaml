@@ -72,6 +72,8 @@ app:
     storage-dir: ${APP_AVATAR_STORAGE_DIR:./uploads/avatars}
   image-hosting:
     storage-dir: ${APP_IMAGE_HOSTING_STORAGE_DIR:./uploads/images}
+  leave-attachment:
+    storage-dir: ${APP_LEAVE_ATTACHMENT_STORAGE_DIR:./uploads/leave-attachments}
   bot:
     callback-token: ${APP_BOT_CALLBACK_TOKEN:}
     leave-review-callback-url: ${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:http://astrbot:6198/openatom/leave-review}

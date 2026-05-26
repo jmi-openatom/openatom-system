@@ -44,16 +44,21 @@
             </p>
             <p class="muted-line">{{ formatRange(row.startAt, row.endAt) }}</p>
 
-            <div v-if="imageAttachments(row).length" class="image-grid">
-              <el-image
-                v-for="file in imageAttachments(row)"
-                :key="file.name"
-                :preview-src-list="imagePreviewList(row)"
-                :src="file.content"
-                class="leave-image"
-                fit="cover"
-                preview-teleported
-              />
+            <div v-if="attachmentLinks(row).length" class="attachment-link-list">
+              <template v-for="(file, index) in attachmentLinks(row)" :key="file.name || index">
+                <a
+                  v-if="attachmentUrl(file)"
+                  :href="attachmentUrl(file)"
+                  class="attachment-link"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {{ attachmentLabel(file, index) }}
+                </a>
+                <span v-else class="attachment-link attachment-link--disabled">
+                  {{ attachmentUnavailable(file) || attachmentLabel(file, index) }}
+                </span>
+              </template>
             </div>
 
             <div class="flow-strip">
@@ -122,16 +127,21 @@
           />
         </el-steps>
         <el-divider content-position="left">图片附件</el-divider>
-        <div class="dialog-image-grid">
-          <el-image
-            v-for="file in imageAttachments(current)"
-            :key="file.name"
-            :preview-src-list="imagePreviewList(current)"
-            :src="file.content"
-            class="dialog-image"
-            fit="cover"
-            preview-teleported
-          />
+        <div class="dialog-attachment-list">
+          <template v-for="(file, index) in attachmentLinks(current)" :key="file.name || index">
+            <a
+              v-if="attachmentUrl(file)"
+              :href="attachmentUrl(file)"
+              class="attachment-link"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {{ attachmentLabel(file, index) }}
+            </a>
+            <span v-else class="attachment-link attachment-link--disabled">
+              {{ attachmentUnavailable(file) || attachmentLabel(file, index) }}
+            </span>
+          </template>
         </div>
       </template>
     </el-dialog>
@@ -193,9 +203,9 @@ const reviewForm = ref({ id: null, action: 'approve', comment: '' })
 const groupedRows = computed(() => {
   const groups = new Map()
   ;(rows.value || []).forEach((item) => {
-    const key = dateKey(item.startAt || item.createdAt)
+    const key = dateKey(item.createdAt)
     if (!groups.has(key))
-      groups.set(key, { date: key, label: dateLabel(item.startAt || item.createdAt), items: [] })
+      groups.set(key, { date: key, label: dateLabel(item.createdAt), items: [] })
     groups.get(key).items.push(item)
   })
   return Array.from(groups.values())
@@ -237,26 +247,44 @@ function dateLabel(value: any) {
   return key === 'unknown' ? '未设置日期' : key
 }
 
-function imageAttachments(item: any) {
-  return (item.attachments || []).filter((file) => isImage(file))
+function attachmentLinks(item: any) {
+  return (item?.attachments || []).filter((file: any) => isImageAttachment(file))
 }
 
-function imagePreviewList(item: any) {
-  return imageAttachments(item).map((file) => file.content)
-}
-
-function isImage(file: any) {
+function isImageAttachment(file: any) {
   return (
     String(file?.type || '').startsWith('image/') ||
-    String(file?.content || '').startsWith('data:image/')
+    String(file?.content || '').startsWith('data:image/') ||
+    Boolean(attachmentUrl(file)) ||
+    Boolean(file?.unavailableReason)
   )
+}
+
+function attachmentUrl(file: any) {
+  const value = String(file?.url || file?.content || '').trim()
+  if (!value || value.startsWith('data:image/')) return ''
+  if (
+    value.startsWith('http://') ||
+    value.startsWith('https://') ||
+    value.startsWith('/leave-attachments/') ||
+    value.startsWith('/files/images/')
+  )
+    return value
+  return ''
+}
+
+function attachmentLabel(file: any, index: number) {
+  return file?.name || `图片附件 ${index + 1}`
+}
+
+function attachmentUnavailable(file: any) {
+  return file?.unavailableReason || ''
 }
 
 async function fetchList() {
   loading.value = true
   try {
     rows.value = (await leaveApplicationApi.list(query.value)) || []
-    console.log(rows.value)
   } finally {
     loading.value = false
   }
@@ -393,29 +421,29 @@ onMounted(() => {
   overflow-wrap: anywhere;
 }
 
-.image-grid,
-.dialog-image-grid {
-  display: grid;
-  gap: 10px;
+.attachment-link-list,
+.dialog-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 14px;
 }
 
-.image-grid {
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-}
-
-.dialog-image-grid {
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-}
-
-.leave-image,
-.dialog-image {
-  width: 100%;
-  aspect-ratio: 1;
-  overflow: hidden;
+.attachment-link {
+  max-width: 100%;
+  padding: 6px 10px;
   border: 1px solid var(--oa-border);
-  border-radius: 10px;
+  border-radius: 8px;
+  color: var(--el-color-primary);
   background: var(--oa-page-soft-bg);
+  font-size: 12px;
+  line-height: 1.4;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.attachment-link--disabled {
+  color: var(--oa-muted);
 }
 
 .flow-strip {
@@ -471,10 +499,6 @@ onMounted(() => {
   .leave-card__top :deep(.el-tag),
   .detail-head :deep(.el-tag) {
     flex: 0 0 auto;
-  }
-
-  .image-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .card-actions {

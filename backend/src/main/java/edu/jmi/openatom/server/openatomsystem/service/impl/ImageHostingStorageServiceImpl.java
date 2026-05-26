@@ -10,6 +10,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseImageHostingAssetVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseImageUploadVO;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -17,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -54,6 +56,16 @@ public class ImageHostingStorageServiceImpl {
   public ResponseImageUploadVO upload(MultipartFile file, String baseUrl, Integer uploaderId)
       throws IOException {
     StoredImage storedImage = store(file);
+    return saveAsset(storedImage, baseUrl, uploaderId);
+  }
+
+  public ResponseImageUploadVO uploadDataUrl(
+      String dataUrl, String originalName, String baseUrl, Integer uploaderId) throws IOException {
+    StoredImage storedImage = storeDataUrl(dataUrl, originalName);
+    return saveAsset(storedImage, baseUrl, uploaderId);
+  }
+
+  private ResponseImageUploadVO saveAsset(StoredImage storedImage, String baseUrl, Integer uploaderId) {
     Timestamp now = Times.now();
     String url = baseUrl + storedImage.getFileName();
     ImageHostingAsset asset =
@@ -131,6 +143,46 @@ public class ImageHostingStorageServiceImpl {
         fileName,
         normalizeOriginalName(file.getOriginalFilename()),
         file.getSize(),
+        imageType.mediaType());
+  }
+
+  private StoredImage storeDataUrl(String dataUrl, String originalName) throws IOException {
+    String value = trimToNull(dataUrl);
+    if (value == null || !value.startsWith("data:image/")) {
+      throw new IOException("图片内容不是 data:image 地址");
+    }
+    int commaIndex = value.indexOf(',');
+    if (commaIndex < 0) {
+      throw new IOException("图片 data 地址格式不正确");
+    }
+    String metadata = value.substring(5, commaIndex).toLowerCase(Locale.ROOT);
+    if (!metadata.startsWith("image/") || !metadata.contains(";base64")) {
+      throw new IOException("图片 data 地址必须是 base64 图片");
+    }
+    byte[] data;
+    try {
+      data = Base64.getDecoder().decode(value.substring(commaIndex + 1).trim());
+    } catch (IllegalArgumentException e) {
+      throw new IOException("图片 base64 内容不正确");
+    }
+    if (data.length == 0) throw new IOException("图片内容为空");
+    if (data.length > MAX_IMAGE_SIZE_BYTES) throw new IOException("图片不能超过 10MB");
+    ImageType imageType = ImageType.detect(data);
+    if (imageType == null) {
+      throw new IOException("仅支持 JPG、PNG、GIF 或 WebP 图片");
+    }
+    Path root = root();
+    Files.createDirectories(root);
+    String fileName = UUID.randomUUID() + imageType.extension();
+    Path target = root.resolve(fileName).normalize();
+    if (!target.getParent().equals(root)) throw new IOException("非法图片文件名");
+    try (InputStream input = new ByteArrayInputStream(data)) {
+      Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
+    }
+    return new StoredImage(
+        fileName,
+        normalizeOriginalName(originalName),
+        (long) data.length,
         imageType.mediaType());
   }
 

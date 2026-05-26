@@ -23,4 +23,12 @@ public interface LeaveApplicationMapper extends BaseMapper<LeaveApplication> {
             .eq(LeaveApplication::getUserId, userId)
             .orderByDesc(LeaveApplication::getId));
   }
+
+  default LeaveApplication selectByAttachmentFileName(String fileName) {
+    if (fileName == null || fileName.isBlank()) return null;
+    return selectOne(
+        new LambdaQueryWrapper<LeaveApplication>()
+            .like(LeaveApplication::getAttachments, fileName.trim())
+            .last("LIMIT 1"));
+  }
 }

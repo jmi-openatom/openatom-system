@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.4.1"
+PLUGIN_VERSION = "1.4.2"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -780,12 +780,10 @@ class OpenAtomApiPlugin(Star):
             if data_url:
                 prepared.append(self._normalized_attachment(item, data_url))
                 continue
-            if not content.startswith(("http://", "https://")):
-                return [], "没有拿到可上传的图片内容。请直接发送图片原图，或发送可公开访问的图片链接。"
-            data_url, error = await self._download_image_as_data_url(content)
-            if error:
-                return [], f"第 {index} 张图片上传准备失败：{error}。请重新发送图片原图或换一张图片。"
-            prepared.append(self._normalized_attachment(item, data_url))
+            if content.startswith(("http://", "https://")):
+                prepared.append(self._normalized_attachment(item, content))
+                continue
+            return [], "没有拿到可上传的图片内容。请直接发送图片原图，或发送可公开访问的图片链接。"
         if not prepared:
             return [], "没有拿到可上传的图片内容。请直接发送图片原图，或发送可公开访问的图片链接。"
         return prepared[:5], None

@@ -14,21 +14,26 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.LeaveApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.LeaveApplicationService;
+import edu.jmi.openatom.server.openatomsystem.service.impl.LeaveAttachmentStorageServiceImpl.StoredLeaveAttachment;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLeaveApplicationVO;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +44,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
   private final ClubMapper clubMapper;
   private final UserMapper userMapper;
   private final LeaveApplicationMapper leaveApplicationMapper;
+  private final LeaveAttachmentStorageServiceImpl leaveAttachmentStorageService;
   private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Value("${app.bot.leave-review-callback-url:http://astrbot:6198/openatom/leave-review}")
@@ -120,7 +126,12 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
       String botNotifyUserId) {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
-    List<Map<String, Object>> attachments = sanitizeAttachments(rawAttachments);
+    List<Map<String, Object>> attachments;
+    try {
+      attachments = sanitizeAttachments(rawAttachments, userId);
+    } catch (IOException | IllegalArgumentException e) {
+      return Result.error(400, e.getMessage());
+    }
     if (attachments.isEmpty()) return Result.error(400, "请上传请假附件");
     LeaveApplication application =
         LeaveApplication.builder()
@@ -149,12 +160,23 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     if (!"approve".equals(action) && !"reject".equals(action)) return Result.error(400, "审批动作不合法");
     String comment = trimToNull(request.getComment());
     if ("reject".equals(action) && comment == null) return Result.error(400, "请填写驳回理由");
-    application.setStatus("approve".equals(action) ? "approved" : "rejected");
-    application.setReviewerId(StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null);
+    String status = "approve".equals(action) ? "approved" : "rejected";
+    Integer reviewerId = StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null;
+    Timestamp reviewedAt = Times.now();
+    LeaveApplication update =
+        LeaveApplication.builder()
+            .id(application.getId())
+            .status(status)
+            .reviewerId(reviewerId)
+            .reviewComment(comment)
+            .reviewedAt(reviewedAt)
+            .build();
+    leaveApplicationMapper.updateById(update);
+    application.setStatus(status);
+    application.setReviewerId(reviewerId);
     application.setReviewComment(comment);
-    application.setReviewedAt(Times.now());
-    leaveApplicationMapper.updateById(application);
-    notifyBotReviewResult(application);
+    application.setReviewedAt(reviewedAt);
+    scheduleBotReviewResultNotification(application);
     return Result.success("approve".equals(action) ? "请假申请已通过" : "请假申请已驳回");
   }
 
@@ -188,7 +210,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
   private ResponseLeaveApplicationVO toVO(LeaveApplication application) {
     User applicant = userMapper.selectById(application.getUserId());
     User reviewer = application.getReviewerId() == null ? null : userMapper.selectById(application.getReviewerId());
-    List<Map<String, Object>> attachments = Jsons.parseListOfObjects(application.getAttachments());
+    List<Map<String, Object>> attachments = normalizedAttachments(application);
     return ResponseLeaveApplicationVO.builder()
         .id(application.getId())
         .userId(application.getUserId())
@@ -239,17 +261,89 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     };
   }
 
-  private List<Map<String, Object>> sanitizeAttachments(List<Map<String, Object>> values) {
+  private List<Map<String, Object>> sanitizeAttachments(
+      List<Map<String, Object>> values, Integer uploaderId) throws IOException {
     if (values == null) return List.of();
-    return values.stream()
-        .filter(item -> item != null && item.get("name") != null && item.get("content") != null)
+    List<Map<String, Object>> attachments = new ArrayList<>();
+    for (Map<String, Object> item : values) {
+      if (item == null) continue;
+      Map<String, Object> attachment = normalizeAttachment(item, uploaderId);
+      if (attachment != null) attachments.add(attachment);
+      if (attachments.size() >= 5) break;
+    }
+    return attachments;
+  }
+
+  private List<Map<String, Object>> normalizedAttachments(LeaveApplication application) {
+    List<Map<String, Object>> attachments = Jsons.parseListOfObjects(application.getAttachments());
+    if (attachments.isEmpty()) return attachments;
+    try {
+      List<Map<String, Object>> normalized = sanitizeAttachments(attachments, application.getUserId());
+      String normalizedJson = Jsons.stringify(normalized);
+      if (!normalizedJson.equals(application.getAttachments())) {
+        LeaveApplication update =
+            LeaveApplication.builder()
+                .id(application.getId())
+                .attachments(normalizedJson)
+                .build();
+        leaveApplicationMapper.updateById(update);
+        application.setAttachments(normalizedJson);
+      }
+      return normalized;
+    } catch (IOException | IllegalArgumentException e) {
+      log.warn("Leave attachment normalization failed: leaveId={}, error={}", application.getId(), e.getMessage());
+      return compactAttachments(attachments);
+    }
+  }
+
+  private Map<String, Object> normalizeAttachment(Map<String, Object> item, Integer uploaderId)
+      throws IOException {
+    String name = stringValue(item.get("name"));
+    String type = stringValue(item.get("type"));
+    Object size = item.get("size");
+    String content = trimToNull(stringValue(item.get("content")));
+    String url = trimToNull(stringValue(item.get("url")));
+    if (isHttpUrl(url) && (content == null || isDataImage(content))) {
+      content = url;
+    }
+    if (name == null || content == null) return null;
+    Map<String, Object> value = new LinkedHashMap<>();
+    if (isDataImage(content)) {
+      StoredLeaveAttachment attachment = leaveAttachmentStorageService.uploadDataUrl(content, name);
+      String attachmentUrl = leaveAttachmentUrl(attachment.getFileName());
+      value.put("name", attachment.getOriginalName());
+      value.put("type", attachment.getMediaType().toString());
+      value.put("size", attachment.getFileSize());
+      value.put("content", attachmentUrl);
+      value.put("url", attachmentUrl);
+      return value;
+    }
+    value.put("name", name);
+    value.put("type", type == null ? "" : type);
+    value.put("size", size);
+    value.put("content", content);
+    if (isHttpUrl(content)) value.put("url", content);
+    return value;
+  }
+
+  private List<Map<String, Object>> compactAttachments(List<Map<String, Object>> attachments) {
+    if (attachments == null) return List.of();
+    return attachments.stream()
+        .filter(item -> item != null)
         .limit(5)
         .map(item -> {
           Map<String, Object> value = new LinkedHashMap<>();
-          value.put("name", String.valueOf(item.get("name")));
-          value.put("type", String.valueOf(item.getOrDefault("type", "")));
+          value.put("name", stringValue(item.get("name")));
+          value.put("type", stringValue(item.getOrDefault("type", "")));
           value.put("size", item.get("size"));
-          value.put("content", String.valueOf(item.get("content")));
+          String content = trimToNull(stringValue(item.get("content")));
+          if (isDataImage(content)) {
+            value.put("content", "");
+            value.put("unavailableReason", "历史内嵌图片暂未生成地址");
+          } else {
+            value.put("content", content);
+            if (isHttpUrl(content)) value.put("url", content);
+          }
           return value;
         })
         .toList();
@@ -261,6 +355,55 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
   private String trimToNull(String value) {
     return value == null || value.isBlank() ? null : value.trim();
+  }
+
+  private String stringValue(Object value) {
+    return value == null ? null : String.valueOf(value);
+  }
+
+  private boolean isDataImage(String value) {
+    return value != null && value.startsWith("data:image/");
+  }
+
+  private boolean isHttpUrl(String value) {
+    return value != null
+        && (value.startsWith("http://")
+            || value.startsWith("https://")
+            || value.startsWith("/leave-attachments/")
+            || value.startsWith("/files/images/"));
+  }
+
+  private String leaveAttachmentUrl(String fileName) {
+    try {
+      return ServletUriComponentsBuilder.fromCurrentContextPath()
+          .path("/leave-attachments/")
+          .path(fileName)
+          .toUriString();
+    } catch (IllegalStateException e) {
+      return "/leave-attachments/" + fileName;
+    }
+  }
+
+  private void scheduleBotReviewResultNotification(LeaveApplication application) {
+    if (trimToNull(application.getBotNotifyOrigin()) == null) return;
+    LeaveApplication snapshot =
+        LeaveApplication.builder()
+            .id(application.getId())
+            .status(application.getStatus())
+            .title(application.getTitle())
+            .reviewComment(application.getReviewComment())
+            .botNotifyOrigin(application.getBotNotifyOrigin())
+            .botNotifyUserId(application.getBotNotifyUserId())
+            .build();
+    CompletableFuture.runAsync(() -> notifyBotReviewResult(snapshot))
+        .exceptionally(
+            throwable -> {
+              log.warn(
+                  "Bot leave review callback scheduling failed: leaveId={}, error={}",
+                  snapshot.getId(),
+                  throwable.getMessage());
+              return null;
+            });
   }
 
   private void notifyBotReviewResult(LeaveApplication application) {
@@ -294,8 +437,12 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         .thenAccept(
             response -> {
               if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                application.setBotNotifiedAt(Times.now());
-                leaveApplicationMapper.updateById(application);
+                LeaveApplication update =
+                    LeaveApplication.builder()
+                        .id(application.getId())
+                        .botNotifiedAt(Times.now())
+                        .build();
+                leaveApplicationMapper.updateById(update);
               } else {
                 log.warn("Bot leave review callback failed: leaveId={}, status={}", application.getId(), response.statusCode());
               }
