@@ -371,7 +371,8 @@ public class CheckInServiceImpl implements CheckInService {
   }
 
   private List<Integer> resolveTargetUserIds(Integer groupId, List<Integer> values) {
-    LinkedHashSet<Integer> ids = new LinkedHashSet<>(sanitizeTargetUserIds(values));
+    if (values != null) return sanitizeTargetUserIds(values);
+    LinkedHashSet<Integer> ids = new LinkedHashSet<>();
     if (groupId != null) {
       groupMemberMapper.selectByGroupId(groupId).stream()
           .map(CheckInGroupMember::getUserId)
