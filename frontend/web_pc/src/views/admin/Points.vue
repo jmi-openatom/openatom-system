@@ -53,7 +53,7 @@
           <el-table-column label="更新时间" width="180">
             <template #default="{ row }">{{ formatDateTime(row.updatedAt) || '-' }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="120" fixed="right">
+          <el-table-column label="操作" width="120">
             <template #default="{ row }">
               <el-button link type="primary" @click="openAdjustDialog(row)">调整</el-button>
             </template>
@@ -122,7 +122,7 @@
             </template>
           </el-table-column>
           <el-table-column prop="sortOrder" label="排序" width="90" />
-          <el-table-column label="操作" width="160" fixed="right">
+          <el-table-column label="操作" width="160">
             <template #default="{ row }">
               <el-button link type="primary" @click="openItemDialog(row)">编辑</el-button>
               <el-button link type="danger" @click="deleteItem(row)">下架</el-button>
@@ -160,7 +160,7 @@
           <el-table-column label="申请时间" width="180">
             <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="120" fixed="right">
+          <el-table-column label="操作" width="120">
             <template #default="{ row }">
               <el-button link type="primary" @click="openRedemptionDialog(row)">处理</el-button>
             </template>
@@ -495,12 +495,17 @@ onMounted(async () => {
 .points-admin-page {
   display: grid;
   gap: 18px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .point-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .point-metrics article {
@@ -524,6 +529,9 @@ onMounted(async () => {
 }
 
 .point-tabs {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   padding: 16px;
   border: 1px solid var(--oa-border);
   border-radius: 8px;
@@ -532,8 +540,34 @@ onMounted(async () => {
 
 .table-filter-row {
   display: flex;
+  min-width: 0;
   justify-content: flex-end;
   margin-bottom: 12px;
+}
+
+.points-admin-page :deep(.toolbar) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.points-admin-page :deep(.toolbar)::before {
+  grid-column: 1 / -1;
+}
+
+.points-admin-page :deep(.toolbar__filters),
+.points-admin-page :deep(.toolbar__actions),
+.points-admin-page :deep(.el-tabs__content),
+.points-admin-page :deep(.el-tab-pane),
+.points-admin-page :deep(.el-table),
+.points-admin-page :deep(.el-table__inner-wrapper) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.points-admin-page :deep(.el-table) {
+  width: 100%;
 }
 
 .muted-line {

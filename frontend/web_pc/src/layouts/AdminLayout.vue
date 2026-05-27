@@ -434,8 +434,10 @@ onBeforeUnmount(() => {
 
 .admin-main {
   flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
   padding: 24px;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--oa-page-soft-bg);
@@ -592,7 +594,8 @@ onBeforeUnmount(() => {
 
   .admin-main {
     padding: 12px;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 }
 
