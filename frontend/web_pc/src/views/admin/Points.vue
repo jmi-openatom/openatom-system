@@ -66,6 +66,8 @@
           <el-select v-model="transactionQuery.type" clearable placeholder="流水类型" style="width: 180px" @change="fetchTransactions">
             <el-option label="签到" value="checkin" />
             <el-option label="活动" value="activity" />
+            <el-option label="每日登录" value="daily_login" />
+            <el-option label="博客发布" value="blog_publish" />
             <el-option label="手动调整" value="manual_adjust" />
             <el-option label="兑换扣除" value="redemption" />
             <el-option label="兑换退回" value="redemption_refund" />
@@ -167,6 +169,27 @@
           </el-table-column>
         </el-table>
       </el-tab-pane>
+
+      <el-tab-pane label="积分规则" name="rules">
+        <el-form
+          v-loading="loading.rules"
+          class="point-rules-form"
+          :model="ruleForm"
+          label-width="150px"
+        >
+          <el-form-item label="每日登录积分">
+            <el-input-number v-model="ruleForm.dailyLoginPoints" :min="0" :max="100000" :step="1" />
+            <span class="rule-tip">每个账号每天首次登录只发放一次，填 0 表示关闭。</span>
+          </el-form-item>
+          <el-form-item label="博客审核通过积分">
+            <el-input-number v-model="ruleForm.blogPublishPoints" :min="0" :max="100000" :step="5" />
+            <span class="rule-tip">文章通过管理员审核并展示时发放，单篇文章只发放一次。</span>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" :loading="saving.rules" @click="saveRules">保存规则</el-button>
+          </el-form-item>
+        </el-form>
+      </el-tab-pane>
     </el-tabs>
 
     <el-dialog v-model="adjustVisible" title="调整积分" width="520px">
@@ -265,12 +288,14 @@ const loading = ref({
   transactions: false,
   items: false,
   redemptions: false,
+  rules: false,
 })
 
 const saving = ref({
   adjust: false,
   item: false,
   redemption: false,
+  rules: false,
 })
 
 const accountQuery = ref({ keyword: '' })
@@ -290,6 +315,7 @@ const redemptionVisible = ref(false)
 const adjustForm = ref<any>({ userId: null, delta: 10, description: '' })
 const itemForm = ref<any>({})
 const redemptionForm = ref<any>({})
+const ruleForm = ref<any>({ dailyLoginPoints: 1, blogPublishPoints: 20 })
 
 const totalBalance = computed(() =>
   accounts.value.reduce((sum, item) => sum + Number(item.balance || 0), 0),
@@ -314,6 +340,8 @@ function transactionTypeText(type: string) {
       checkin_revoke: '签到撤销',
       activity: '活动',
       activity_revoke: '活动撤销',
+      daily_login: '每日登录',
+      blog_publish: '博客发布',
       manual_adjust: '手动调整',
       redemption: '兑换扣除',
       redemption_refund: '兑换退回',
@@ -372,6 +400,19 @@ async function fetchRedemptions() {
   }
 }
 
+async function fetchRules() {
+  loading.value.rules = true
+  try {
+    ruleForm.value = {
+      dailyLoginPoints: 1,
+      blogPublishPoints: 20,
+      ...((await pointApi.adminRules()) || {}),
+    }
+  } finally {
+    loading.value.rules = false
+  }
+}
+
 async function fetchUserOptions() {
   userOptions.value = (await checkInApi.userOptions()) || []
 }
@@ -380,7 +421,8 @@ function refreshCurrent() {
   if (activeTab.value === 'accounts') fetchAccounts()
   else if (activeTab.value === 'transactions') fetchTransactions()
   else if (activeTab.value === 'items') fetchItems()
-  else fetchRedemptions()
+  else if (activeTab.value === 'redemptions') fetchRedemptions()
+  else fetchRules()
 }
 
 function handleTabChange() {
@@ -486,8 +528,22 @@ async function saveRedemption() {
   }
 }
 
+async function saveRules() {
+  saving.value.rules = true
+  try {
+    await pointApi.updateRules({
+      dailyLoginPoints: Number(ruleForm.value.dailyLoginPoints || 0),
+      blogPublishPoints: Number(ruleForm.value.blogPublishPoints || 0),
+    })
+    ElMessage.success('积分规则已保存')
+    await fetchRules()
+  } finally {
+    saving.value.rules = false
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([fetchAccounts(), fetchItems(), fetchRedemptions(), fetchUserOptions()])
+  await Promise.all([fetchAccounts(), fetchItems(), fetchRedemptions(), fetchRules(), fetchUserOptions()])
 })
 </script>
 
@@ -568,6 +624,21 @@ onMounted(async () => {
 
 .points-admin-page :deep(.el-table) {
   width: 100%;
+}
+
+.point-rules-form {
+  max-width: 760px;
+  padding: 12px 0 4px;
+}
+
+.point-rules-form :deep(.el-form-item__content) {
+  gap: 12px;
+}
+
+.rule-tip {
+  color: var(--oa-muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .muted-line {

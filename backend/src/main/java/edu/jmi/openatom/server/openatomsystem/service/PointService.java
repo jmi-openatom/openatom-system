@@ -5,11 +5,13 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestPointAdjustmentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRedeemItemDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRedemptionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRedemptionStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRuleSettingsDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.CheckInSession;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointAccountVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointRedeemItemVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointRedemptionVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointRuleSettingsVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointSummaryVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointTransactionVO;
 import java.util.List;
@@ -31,6 +33,10 @@ public interface PointService {
 
   Result<String> adjust(RequestPointAdjustmentDTO request);
 
+  Result<ResponsePointRuleSettingsVO> adminRuleSettings();
+
+  Result<String> updateRuleSettings(RequestPointRuleSettingsDTO request);
+
   Result<List<ResponsePointRedeemItemVO>> adminItems(Boolean includeInactive);
 
   Result<Integer> createItem(RequestPointRedeemItemDTO request);
@@ -46,4 +52,8 @@ public interface PointService {
   void grantCheckInPoints(Integer userId, CheckInSession session, ClubActivity activity, Integer operatorId);
 
   void revokeCheckInPoints(Integer userId, CheckInSession session, ClubActivity activity, Integer operatorId);
+
+  void grantDailyLoginPoints(Integer userId);
+
+  void grantBlogPublishPoints(Integer userId, Integer articleId, String articleTitle, Integer operatorId);
 }

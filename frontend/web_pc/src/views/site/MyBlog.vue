@@ -6,13 +6,14 @@
         <div class="section-heading reveal-block my-blog-heading">
           <span>Member Studio</span>
           <h1>我的博客</h1>
-          <p>把项目踩坑、竞赛复盘和技术笔记沉淀下来，正式成员可以直接发布到社团博客。</p>
+          <p>把项目踩坑、竞赛复盘和技术笔记沉淀下来，正式成员提交审核后展示到社团博客。</p>
         </div>
 
         <ViewToolbar>
           <div class="toolbar__filters">
             <el-select v-model="query.status" clearable placeholder="文章状态" @change="reload">
               <el-option label="草稿" value="draft" />
+              <el-option label="待审核" value="pending" />
               <el-option label="已发布" value="published" />
               <el-option label="已隐藏" value="hidden" />
               <el-option label="已驳回" value="rejected" />
@@ -58,12 +59,12 @@
             <template #default="{ row }">
               <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
               <el-button
-                v-if="row.status !== 'published' && row.status !== 'hidden'"
+                v-if="row.status !== 'pending' && row.status !== 'published' && row.status !== 'hidden'"
                 link
                 type="success"
                 @click="publish(row)"
               >
-                发布
+                提交审核
               </el-button>
               <el-button
                 v-if="row.status === 'published'"
@@ -143,7 +144,7 @@
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button :loading="saving" @click="save('draft')">保存草稿</el-button>
-        <el-button type="primary" :loading="saving" @click="save('published')">发布</el-button>
+        <el-button type="primary" :loading="saving" @click="save('pending')">提交审核</el-button>
       </template>
     </el-dialog>
 
@@ -242,7 +243,7 @@ const rules = ref({
 
 function statusText(status: string) {
   return (
-    { draft: '草稿', published: '已发布', hidden: '已隐藏', rejected: '已驳回' }[status] ||
+    { draft: '草稿', pending: '待审核', published: '已发布', hidden: '已隐藏', rejected: '已驳回' }[status] ||
     status ||
     '-'
   )
@@ -377,7 +378,7 @@ function save(status: string) {
       }
       if (form.value.id) await blogApi.update(form.value.id, payload)
       else await blogApi.create(payload)
-      ElMessage.success(status === 'published' ? '文章已发布' : '草稿已保存')
+      ElMessage.success(status === 'pending' ? '文章已提交审核' : '草稿已保存')
       dialogVisible.value = false
       fetchList()
     } finally {
@@ -388,7 +389,7 @@ function save(status: string) {
 
 async function publish(row: any) {
   await blogApi.publish(row.id)
-  ElMessage.success('文章已发布')
+  ElMessage.success('文章已提交审核')
   fetchList()
 }
 

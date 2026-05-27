@@ -7,24 +7,30 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestPointAdjustmentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRedeemItemDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRedemptionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRedemptionStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRuleSettingsDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.CheckInSession;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
 import edu.jmi.openatom.server.openatomsystem.entity.PointAccount;
 import edu.jmi.openatom.server.openatomsystem.entity.PointRedeemItem;
 import edu.jmi.openatom.server.openatomsystem.entity.PointRedemption;
 import edu.jmi.openatom.server.openatomsystem.entity.PointTransaction;
+import edu.jmi.openatom.server.openatomsystem.entity.SystemSetting;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.PointAccountMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.PointRedeemItemMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.PointRedemptionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.PointTransactionMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.SystemSettingMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointAccountVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointRedeemItemVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointRedemptionVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointRuleSettingsVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointSummaryVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointTransactionVO;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +46,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class PointServiceImpl implements PointService {
+  private static final String DAILY_LOGIN_POINTS_KEY = "point.daily_login_points";
+  private static final String BLOG_PUBLISH_POINTS_KEY = "point.blog_publish_points";
+  private static final int DEFAULT_DAILY_LOGIN_POINTS = 1;
+  private static final int DEFAULT_BLOG_PUBLISH_POINTS = 20;
+  private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
   private static final Set<String> ITEM_STATUSES = Set.of("active", "inactive");
   private static final Set<String> REDEMPTION_STATUSES =
       Set.of("pending", "fulfilled", "cancelled", "rejected");
@@ -49,6 +60,7 @@ public class PointServiceImpl implements PointService {
   private final PointRedeemItemMapper itemMapper;
   private final PointRedemptionMapper redemptionMapper;
   private final UserMapper userMapper;
+  private final SystemSettingMapper systemSettingMapper;
 
   @Override
   public Result<List<ResponsePointAccountVO>> leaderboard(Integer limit) {
@@ -147,6 +159,32 @@ public class PointServiceImpl implements PointService {
         trimToNull(request.getDescription()) == null ? "后台手动调整" : request.getDescription().trim(),
         currentUserId());
     return Result.success("积分已调整");
+  }
+
+  @Override
+  public Result<ResponsePointRuleSettingsVO> adminRuleSettings() {
+    ensurePointSettingRows();
+    return Result.success(
+        ResponsePointRuleSettingsVO.builder()
+            .dailyLoginPoints(pointSettingValue(DAILY_LOGIN_POINTS_KEY, DEFAULT_DAILY_LOGIN_POINTS))
+            .blogPublishPoints(pointSettingValue(BLOG_PUBLISH_POINTS_KEY, DEFAULT_BLOG_PUBLISH_POINTS))
+            .build());
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> updateRuleSettings(RequestPointRuleSettingsDTO request) {
+    if (request == null) return Result.error(400, "积分规则不能为空");
+    ensurePointSettingRows();
+    savePointSetting(
+        DAILY_LOGIN_POINTS_KEY,
+        normalizeRulePoints(request.getDailyLoginPoints()),
+        "每日首次登录奖励积分");
+    savePointSetting(
+        BLOG_PUBLISH_POINTS_KEY,
+        normalizeRulePoints(request.getBlogPublishPoints()),
+        "博客审核通过奖励积分");
+    return Result.success("积分规则已保存");
   }
 
   @Override
@@ -292,6 +330,43 @@ public class PointServiceImpl implements PointService {
     }
   }
 
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void grantDailyLoginPoints(Integer userId) {
+    if (userId == null) return;
+    int points = pointSettingValue(DAILY_LOGIN_POINTS_KEY, DEFAULT_DAILY_LOGIN_POINTS);
+    if (points <= 0) return;
+    LocalDate today = LocalDate.now(BUSINESS_ZONE);
+    awardBySource(
+        userId,
+        points,
+        "daily_login",
+        "login",
+        null,
+        "daily_login:" + today,
+        "每日登录：" + today,
+        null);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void grantBlogPublishPoints(
+      Integer userId, Integer articleId, String articleTitle, Integer operatorId) {
+    if (userId == null || articleId == null) return;
+    int points = pointSettingValue(BLOG_PUBLISH_POINTS_KEY, DEFAULT_BLOG_PUBLISH_POINTS);
+    if (points <= 0) return;
+    String title = trimToNull(articleTitle);
+    awardBySource(
+        userId,
+        points,
+        "blog_publish",
+        "blog_article",
+        articleId,
+        "blog_publish:" + articleId,
+        title == null ? "博客审核通过" : "博客审核通过：" + title,
+        operatorId);
+  }
+
   private void awardBySource(
       Integer userId,
       Integer points,
@@ -366,7 +441,12 @@ public class PointServiceImpl implements PointService {
   }
 
   private void updateAccountTotals(PointAccount account, int delta, String type) {
-    if (delta > 0 && ("checkin".equals(type) || "activity".equals(type) || "manual_adjust".equals(type))) {
+    if (delta > 0
+        && ("checkin".equals(type)
+            || "activity".equals(type)
+            || "manual_adjust".equals(type)
+            || "daily_login".equals(type)
+            || "blog_publish".equals(type))) {
       account.setTotalEarned(safe(account.getTotalEarned()) + delta);
       return;
     }
@@ -569,6 +649,58 @@ public class PointServiceImpl implements PointService {
 
   private Integer currentUserId() {
     return StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null;
+  }
+
+  private void ensurePointSettingRows() {
+    ensurePointSetting(
+        DAILY_LOGIN_POINTS_KEY, DEFAULT_DAILY_LOGIN_POINTS, "每日首次登录奖励积分");
+    ensurePointSetting(
+        BLOG_PUBLISH_POINTS_KEY, DEFAULT_BLOG_PUBLISH_POINTS, "博客审核通过奖励积分");
+  }
+
+  private void ensurePointSetting(String key, int defaultValue, String description) {
+    if (systemSettingMapper.selectById(key) != null) return;
+    try {
+      systemSettingMapper.insert(
+          SystemSetting.builder()
+              .settingKey(key)
+              .settingValue(String.valueOf(defaultValue))
+              .description(description)
+              .build());
+    } catch (DuplicateKeyException ignored) {
+      // Another request may have initialized the row first.
+    }
+  }
+
+  private void savePointSetting(String key, int value, String description) {
+    systemSettingMapper.updateById(
+        SystemSetting.builder()
+            .settingKey(key)
+            .settingValue(String.valueOf(value))
+            .description(description)
+            .build());
+  }
+
+  private int pointSettingValue(String key, int defaultValue) {
+    ensurePointSetting(key, defaultValue, settingDescription(key));
+    SystemSetting setting = systemSettingMapper.selectById(key);
+    if (setting == null || setting.getSettingValue() == null) return defaultValue;
+    try {
+      return normalizeRulePoints(Integer.valueOf(setting.getSettingValue().trim()));
+    } catch (NumberFormatException ignored) {
+      return defaultValue;
+    }
+  }
+
+  private String settingDescription(String key) {
+    if (DAILY_LOGIN_POINTS_KEY.equals(key)) return "每日首次登录奖励积分";
+    if (BLOG_PUBLISH_POINTS_KEY.equals(key)) return "博客审核通过奖励积分";
+    return "积分规则";
+  }
+
+  private int normalizeRulePoints(Integer value) {
+    if (value == null || value < 0) return 0;
+    return Math.min(value, 100000);
   }
 
   private String checkInSourceKey(Integer sessionId) {

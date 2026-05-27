@@ -183,6 +183,8 @@ function transactionTypeText(type: string) {
       checkin_revoke: '签到撤销',
       activity: '活动',
       activity_revoke: '活动撤销',
+      daily_login: '每日登录',
+      blog_publish: '博客发布',
       manual_adjust: '手动调整',
       redemption: '兑换扣除',
       redemption_refund: '兑换退回',

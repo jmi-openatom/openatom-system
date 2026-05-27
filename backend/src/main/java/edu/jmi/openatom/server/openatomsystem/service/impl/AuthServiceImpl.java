@@ -21,6 +21,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
+import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -80,6 +81,7 @@ public class AuthServiceImpl implements AuthService {
 	private final AvatarStorageServiceImpl avatarStorageService;
 	private final ClientIpResolver clientIpResolver;
 	private final RegistrationSettingService registrationSettingService;
+	private final PointService pointService;
 	private final HttpClient httpClient = HttpClient.newHttpClient();
 
 	@Value("${app.miniapp.app-id:}")
@@ -144,6 +146,7 @@ public class AuthServiceImpl implements AuthService {
 		}
 		upgradePasswordIfNecessary(user, requestLoginDTO.getPassword());
 		recordLoginLog(user.getId());
+		grantDailyLoginPoints(user.getId());
 		return Result.success(createLoginResponse(user), "登陆成功");
 	}
 
@@ -170,6 +173,7 @@ public class AuthServiceImpl implements AuthService {
 			userMapper.updateById(user);
 		}
 		recordLoginLog(user.getId());
+		grantDailyLoginPoints(user.getId());
 		return Result.success(createLoginResponse(user), "微信登录成功");
 	}
 
@@ -510,6 +514,14 @@ public class AuthServiceImpl implements AuthService {
 		loginLogMapper.insert(LoginLog.builder().userId(userId)
 				.ip(clientIpResolver.resolve(request))
 				.userAgent(request == null ? null : request.getHeader("User-Agent")).build());
+	}
+
+	private void grantDailyLoginPoints(Integer userId) {
+		try {
+			pointService.grantDailyLoginPoints(userId);
+		} catch (Exception e) {
+			log.warn("Grant daily login points failed: userId={}", userId, e);
+		}
 	}
 
 	private void upgradePasswordIfNecessary(User user, String rawPassword) {

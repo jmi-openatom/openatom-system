@@ -35,6 +35,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     ensureLotteryTables();
     ensureCheckInTables();
     ensurePointSystemTables();
+    ensurePointSettingSeed();
     ensureLeaveApplicationTable();
     ensureSchoolCalendarTables();
     ensureOfficeDocumentTable();
@@ -82,6 +83,26 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             SELECT 1 FROM system_setting WHERE setting_key = 'register_enabled'
         )
         """);
+  }
+
+  private void ensurePointSettingSeed() {
+    insertSettingIfAbsent("point.daily_login_points", "1", "每日首次登录奖励积分");
+    insertSettingIfAbsent("point.blog_publish_points", "20", "博客审核通过奖励积分");
+  }
+
+  private void insertSettingIfAbsent(String key, String value, String description) {
+    jdbcTemplate.update(
+        """
+        INSERT INTO system_setting (`setting_key`, `setting_value`, `description`)
+        SELECT ?, ?, ?
+        WHERE NOT EXISTS (
+            SELECT 1 FROM system_setting WHERE setting_key = ?
+        )
+        """,
+        key,
+        value,
+        description,
+        key);
   }
 
   private void ensureUserColumns() {

@@ -7,7 +7,7 @@ import lombok.Data;
 /**
  * 创建博客文章请求
  *
- * <p>正式成员创建草稿或直接发布文章时使用
+ * <p>正式成员创建草稿或提交文章审核时使用
  */
 @Data
 public class RequestCreateBlogArticleDTO {

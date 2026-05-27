@@ -410,6 +410,12 @@ export const pointApi = {
   adjust(data: Record<string, unknown>): Promise<any> {
     return request.post('/points/admin/adjustments', data)
   },
+  adminRules(): Promise<any> {
+    return request.get('/points/admin/rules')
+  },
+  updateRules(data: Record<string, unknown>): Promise<any> {
+    return request.patch('/points/admin/rules', data)
+  },
   adminItems(params?: Record<string, unknown>): Promise<any> {
     return request.get('/points/admin/items', { params })
   },

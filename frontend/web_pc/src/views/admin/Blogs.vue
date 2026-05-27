@@ -4,6 +4,7 @@
       <div class="toolbar__filters">
         <el-select v-model="query.status" clearable placeholder="文章状态" @change="reload">
           <el-option label="草稿" value="draft" />
+          <el-option label="待审核" value="pending" />
           <el-option label="已发布" value="published" />
           <el-option label="已隐藏" value="hidden" />
           <el-option label="已驳回" value="rejected" />
@@ -52,7 +53,7 @@
       </el-table-column>
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openReview(row)">管控</el-button>
+          <el-button link type="primary" @click="openReview(row)">审核</el-button>
           <el-button link type="success" @click="openComments(row)">评论</el-button>
           <el-button link type="primary" @click="openInteractions(row)">互动</el-button>
           <el-button
@@ -83,7 +84,7 @@
       @current-change="handlePageChange"
     />
 
-    <el-dialog v-model="reviewVisible" title="文章管控" width="620px">
+    <el-dialog v-model="reviewVisible" title="文章审核" width="620px">
       <el-form label-width="92px">
         <el-form-item label="文章">
           <strong>{{ currentArticle.title }}</strong>
@@ -91,7 +92,8 @@
         <el-form-item label="状态">
           <el-select v-model="reviewForm.status">
             <el-option label="草稿" value="draft" />
-            <el-option label="发布" value="published" />
+            <el-option label="待审核" value="pending" />
+            <el-option label="审核通过" value="published" />
             <el-option label="隐藏" value="hidden" />
             <el-option label="驳回" value="rejected" />
           </el-select>
@@ -233,7 +235,7 @@ const interactionQuery = ref({
 
 function statusText(status: string) {
   return (
-    { draft: '草稿', published: '已发布', hidden: '已隐藏', rejected: '已驳回' }[status] ||
+    { draft: '草稿', pending: '待审核', published: '已发布', hidden: '已隐藏', rejected: '已驳回' }[status] ||
     status ||
     '-'
   )

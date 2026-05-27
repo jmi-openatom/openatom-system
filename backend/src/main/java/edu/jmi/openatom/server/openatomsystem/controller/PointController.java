@@ -6,10 +6,12 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestPointAdjustmentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRedeemItemDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRedemptionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRedemptionStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestPointRuleSettingsDTO;
 import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointAccountVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointRedeemItemVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointRedemptionVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointRuleSettingsVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointSummaryVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePointTransactionVO;
 import jakarta.validation.Valid;
@@ -75,6 +77,18 @@ public class PointController {
   @SaCheckPermission("point:adjust")
   public Result<String> adjust(@Valid @RequestBody RequestPointAdjustmentDTO request) {
     return pointService.adjust(request);
+  }
+
+  @GetMapping("/points/admin/rules")
+  @SaCheckPermission("point:account:list")
+  public Result<ResponsePointRuleSettingsVO> adminRuleSettings() {
+    return pointService.adminRuleSettings();
+  }
+
+  @PatchMapping("/points/admin/rules")
+  @SaCheckPermission("point:adjust")
+  public Result<String> updateRuleSettings(@RequestBody RequestPointRuleSettingsDTO request) {
+    return pointService.updateRuleSettings(request);
   }
 
   @GetMapping("/points/admin/items")

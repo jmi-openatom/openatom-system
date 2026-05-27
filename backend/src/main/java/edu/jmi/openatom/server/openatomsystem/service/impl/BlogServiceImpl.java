@@ -23,11 +23,11 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.BlogService;
+import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogArticleVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogCommentVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogInteractionVO;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,9 +49,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BlogServiceImpl implements BlogService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
-  private static final List<String> AUTHOR_STATUSES = List.of("draft", "published");
+  private static final List<String> AUTHOR_STATUSES = List.of("draft", "pending", "published");
   private static final List<String> ADMIN_STATUSES =
-      List.of("draft", "published", "hidden", "rejected");
+      List.of("draft", "pending", "published", "hidden", "rejected");
   private static final List<String> COMMENT_STATUSES = List.of("visible", "hidden");
   private static final List<String> INTERACTION_TYPES = List.of("like", "favorite", "share");
 
@@ -61,6 +61,7 @@ public class BlogServiceImpl implements BlogService {
   private final ClubMapper clubMapper;
   private final ClubMembershipMapper clubMembershipMapper;
   private final UserMapper userMapper;
+  private final PointService pointService;
 
   @Override
   public Result<PageDataVO<ResponseBlogArticleVO>> publicArticles(
@@ -188,7 +189,6 @@ public class BlogServiceImpl implements BlogService {
     if (content == null) return Result.error(400, "文章正文不能为空");
     String status = normalizeAuthorStatus(request.getStatus());
     if (status == null) return Result.error(400, "文章状态不合法");
-    Timestamp now = Times.now();
     BlogArticle article =
         BlogArticle.builder()
             .clubId(clubResult.getData().getId())
@@ -205,11 +205,13 @@ public class BlogServiceImpl implements BlogService {
             .likeCount(0)
             .favoriteCount(0)
             .shareCount(0)
-            .publishedAt("published".equals(status) ? now : null)
+            .publishedAt(null)
             .build();
     int row = blogArticleMapper.insert(article);
     if (row <= 0) return Result.error("文章保存失败");
-    return Result.success(toResponse(article, userMap(List.of(article)), 0L), "文章保存成功");
+    return Result.success(
+        toResponse(article, userMap(List.of(article)), 0L),
+        "pending".equals(status) ? "文章已提交审核" : "文章保存成功");
   }
 
   @Override
@@ -241,6 +243,7 @@ public class BlogServiceImpl implements BlogService {
     if (request.getCoverUrl() != null) article.setCoverUrl(trimToNull(request.getCoverUrl()));
     if (request.getCategory() != null) article.setCategory(trimToNull(request.getCategory()));
     if (request.getTags() != null) article.setTags(Jsons.stringify(normalizeTags(request.getTags())));
+    boolean submittedForReview = false;
     if (request.getStatus() != null) {
       if ("hidden".equals(article.getStatus())) {
         return Result.error(403, "文章已被管理员隐藏，不能自行发布");
@@ -248,15 +251,15 @@ public class BlogServiceImpl implements BlogService {
       String status = normalizeAuthorStatus(request.getStatus());
       if (status == null) return Result.error(400, "文章状态不合法");
       article.setStatus(status);
-      if ("published".equals(status) && article.getPublishedAt() == null) {
-        article.setPublishedAt(Times.now());
-      }
-      if ("published".equals(status)) {
+      if ("pending".equals(status)) {
         article.setRejectReason(null);
+        submittedForReview = true;
       }
     }
     int row = blogArticleMapper.updateById(article);
-    return row > 0 ? Result.success("文章已保存") : Result.error("文章保存失败");
+    return row > 0
+        ? Result.success(submittedForReview ? "文章已提交审核" : "文章已保存")
+        : Result.error("文章保存失败");
   }
 
   @Override
@@ -271,11 +274,10 @@ public class BlogServiceImpl implements BlogService {
     if ("hidden".equals(article.getStatus())) {
       return Result.error(403, "文章已被管理员隐藏，不能自行发布");
     }
-    article.setStatus("published");
+    article.setStatus("pending");
     article.setRejectReason(null);
-    if (article.getPublishedAt() == null) article.setPublishedAt(Times.now());
     int row = blogArticleMapper.updateById(article);
-    return row > 0 ? Result.success("文章已发布") : Result.error("文章发布失败");
+    return row > 0 ? Result.success("文章已提交审核") : Result.error("文章提交审核失败");
   }
 
   @Override
@@ -310,23 +312,29 @@ public class BlogServiceImpl implements BlogService {
     if (request == null) return Result.error(400, "审核内容不能为空");
     BlogArticle article = articleId == null ? null : blogArticleMapper.selectById(articleId);
     if (article == null) return Result.error(404, "文章不存在");
+    String oldStatus = article.getStatus();
     if (request.getFeatured() != null) article.setFeatured(request.getFeatured());
+    String nextStatus = null;
     if (request.getStatus() != null && !request.getStatus().isBlank()) {
-      String status = request.getStatus().trim();
-      if (!ADMIN_STATUSES.contains(status)) return Result.error(400, "文章状态不合法");
-      if ("rejected".equals(status) && trimToNull(request.getReason()) == null) {
+      nextStatus = request.getStatus().trim();
+      if (!ADMIN_STATUSES.contains(nextStatus)) return Result.error(400, "文章状态不合法");
+      if ("rejected".equals(nextStatus) && trimToNull(request.getReason()) == null) {
         return Result.error(400, "驳回文章需要填写原因");
       }
-      article.setStatus(status);
+      article.setStatus(nextStatus);
       article.setReviewedBy(StpUtil.getLoginIdAsInt());
       article.setReviewedAt(Times.now());
       article.setRejectReason(
-          List.of("hidden", "rejected").contains(status) ? trimToNull(request.getReason()) : null);
-      if ("published".equals(status) && article.getPublishedAt() == null) {
+          List.of("hidden", "rejected").contains(nextStatus) ? trimToNull(request.getReason()) : null);
+      if ("published".equals(nextStatus) && article.getPublishedAt() == null) {
         article.setPublishedAt(Times.now());
       }
     }
     int row = blogArticleMapper.updateById(article);
+    if (row > 0 && "published".equals(nextStatus) && !"published".equals(oldStatus)) {
+      pointService.grantBlogPublishPoints(
+          article.getAuthorId(), article.getId(), article.getTitle(), StpUtil.getLoginIdAsInt());
+    }
     return row > 0 ? Result.success("文章状态已更新") : Result.error("文章状态更新失败");
   }
 
@@ -456,7 +464,8 @@ public class BlogServiceImpl implements BlogService {
 
   private String normalizeAuthorStatus(String status) {
     String value = status == null || status.isBlank() ? "draft" : status.trim();
-    return AUTHOR_STATUSES.contains(value) ? value : null;
+    if (!AUTHOR_STATUSES.contains(value)) return null;
+    return "published".equals(value) ? "pending" : value;
   }
 
   private List<String> normalizeTags(List<String> tags) {

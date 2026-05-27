@@ -2079,6 +2079,14 @@ INSERT INTO `system_setting` (`setting_key`, `setting_value`, `description`)
 SELECT 'register_enabled',
        'false',
        '是否开放用户自助注册' WHERE NOT EXISTS (SELECT 1 FROM `system_setting` WHERE `setting_key` = 'register_enabled');
+INSERT INTO `system_setting` (`setting_key`, `setting_value`, `description`)
+SELECT 'point.daily_login_points',
+       '1',
+       '每日首次登录奖励积分' WHERE NOT EXISTS (SELECT 1 FROM `system_setting` WHERE `setting_key` = 'point.daily_login_points');
+INSERT INTO `system_setting` (`setting_key`, `setting_value`, `description`)
+SELECT 'point.blog_publish_points',
+       '20',
+       '博客审核通过奖励积分' WHERE NOT EXISTS (SELECT 1 FROM `system_setting` WHERE `setting_key` = 'point.blog_publish_points');
 
 -- 绑定 super_admin 全部权限
 INSERT

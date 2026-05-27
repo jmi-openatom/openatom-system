@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * 更新博客文章请求
  *
- * <p>作者维护自己的草稿、已发布文章或被驳回文章时使用
+ * <p>作者维护自己的草稿、待审核文章、已发布文章或被驳回文章时使用
  */
 @Data
 public class RequestUpdateBlogArticleDTO {
