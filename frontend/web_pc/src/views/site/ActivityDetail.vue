@@ -12,6 +12,9 @@
             <el-tag :type="activity.registrationRequired ? 'success' : 'info'" effect="plain">
               {{ activity.registrationRequired ? '需要官网报名' : '无需报名' }}
             </el-tag>
+            <el-tag v-if="activity.participationPoints" type="warning" effect="plain">
+              参加 +{{ activity.participationPoints }} 积分
+            </el-tag>
             <span>{{ formatDateTime(activity.activityAt) }}</span>
             <span>{{ activity.location || '地点待定' }}</span>
           </div>
@@ -44,6 +47,10 @@
         <article class="detail-fact">
           <span>报名方式</span>
           <strong>{{ activity.registrationRequired ? '官网报名' : '现场参与' }}</strong>
+        </article>
+        <article class="detail-fact">
+          <span>活动积分</span>
+          <strong>{{ activity.participationPoints || 0 }}</strong>
         </article>
       </div>
 

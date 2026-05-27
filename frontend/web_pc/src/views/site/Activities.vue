@@ -60,6 +60,9 @@
               >
                 {{ featuredActivity.registrationRequired ? '官网报名' : '无需报名' }}
               </el-tag>
+              <el-tag v-if="featuredActivity.participationPoints" type="warning" effect="plain">
+                +{{ featuredActivity.participationPoints }} 积分
+              </el-tag>
               <span>{{ featuredActivity.location || '地点待定' }}</span>
             </div>
             <h3>{{ featuredActivity.title }}</h3>
@@ -100,6 +103,9 @@
               <div class="activity-list-card__meta">
                 <el-tag :type="item.registrationRequired ? 'success' : 'info'" effect="plain">
                   {{ item.registrationRequired ? '官网报名' : '无需报名' }}
+                </el-tag>
+                <el-tag v-if="item.participationPoints" type="warning" effect="plain">
+                  +{{ item.participationPoints }} 积分
                 </el-tag>
                 <span>{{ item.location || '地点待定' }}</span>
               </div>

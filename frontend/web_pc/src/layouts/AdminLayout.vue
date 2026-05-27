@@ -106,6 +106,7 @@ import {
   Bell,
   Calendar,
   ChatDotRound,
+  Coin,
   Connection,
   DataAnalysis,
   DocumentChecked,
@@ -167,6 +168,12 @@ const menus = ref([
     label: '抽奖系统',
     icon: Trophy,
     permissions: ['lottery:list'],
+  },
+  {
+    path: '/admin/points',
+    label: '积分兑换',
+    icon: Coin,
+    permissions: ['point:account:list', 'point:item:list', 'point:redemption:list'],
   },
   {
     path: '/admin/office-documents',

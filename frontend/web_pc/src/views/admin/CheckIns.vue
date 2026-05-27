@@ -38,6 +38,9 @@
           >{{ row.checkedCount || 0 }} / {{ row.targetCount || 0 }}</template
         >
       </el-table-column>
+      <el-table-column label="签到积分" width="110">
+        <template #default="{ row }">{{ row.checkinPoints || 0 }}</template>
+      </el-table-column>
       <el-table-column label="状态" width="110">
         <template #default="{ row }">
           <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
@@ -87,6 +90,9 @@
                 :value="item.id"
               />
             </el-select>
+          </el-form-item>
+          <el-form-item label="签到积分">
+            <el-input-number v-model="form.checkinPoints" :min="0" :step="1" />
           </el-form-item>
           <el-form-item label="签到分组">
             <el-select
@@ -212,6 +218,9 @@
               <p class="preview-meta">
                 {{ formatRange(previewRow.startAt, previewRow.endAt) }} ·
                 {{ previewRow.location || '现场签到' }}
+              </p>
+              <p v-if="previewRow.checkinPoints" class="preview-count">
+                本次签到 +{{ previewRow.checkinPoints }} 积分
               </p>
               <img
                 class="qr-image"
@@ -366,6 +375,7 @@ const form = ref({
   location: '',
   activityId: undefined,
   groupId: undefined,
+  checkinPoints: 0,
   targetUserIds: [],
 })
 
@@ -467,6 +477,7 @@ function openDialog() {
     location: '',
     activityId: undefined,
     groupId: undefined,
+    checkinPoints: 0,
     targetUserIds: [],
   }
   memberKeyword.value = ''

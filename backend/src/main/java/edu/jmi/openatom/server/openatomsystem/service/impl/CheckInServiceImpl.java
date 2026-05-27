@@ -25,6 +25,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubActivityMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.CheckInService;
+import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInGroupVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInRecordVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInSessionVO;
@@ -61,6 +62,7 @@ public class CheckInServiceImpl implements CheckInService {
   private final CheckInSessionMapper sessionMapper;
   private final CheckInTargetMapper targetMapper;
   private final CheckInRecordMapper recordMapper;
+  private final PointService pointService;
 
   @Override
   public Result<List<ResponseCheckInSessionVO>> list(String status) {
@@ -171,6 +173,7 @@ public class CheckInServiceImpl implements CheckInService {
         .endAt(Times.parseTimestamp(request.getEndAt()))
         .status(status)
         .token(UUID.randomUUID().toString().replace("-", ""))
+        .checkinPoints(safePoints(request.getCheckinPoints()))
         .createdBy(StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null)
         .build();
     sessionMapper.insert(session);
@@ -245,6 +248,7 @@ public class CheckInServiceImpl implements CheckInService {
     CheckInRecord record = recordMapper.selectOneBySessionAndUser(sessionId, userId);
     if ("pending".equals(status)) {
       if (record != null) recordMapper.deleteById(record.getId());
+      pointService.revokeCheckInPoints(userId, session, activityForSession(session), currentUserId());
       return Result.success(toRecordVO(userMapper.selectById(userId), null), "已标记为未签到");
     }
     if (record == null) {
@@ -257,6 +261,7 @@ public class CheckInServiceImpl implements CheckInService {
       record.setSource("manual");
       recordMapper.updateById(record);
     }
+    pointService.grantCheckInPoints(userId, session, activityForSession(session), currentUserId());
     return Result.success(toRecordVO(userMapper.selectById(userId), record), "已标记为已签到");
   }
 
@@ -278,6 +283,7 @@ public class CheckInServiceImpl implements CheckInService {
       record = CheckInRecord.builder().sessionId(session.getId()).userId(userId)
           .checkinAt(now).source("miniapp_scan").status("checked").build();
       recordMapper.insert(record);
+      pointService.grantCheckInPoints(userId, session, activityForSession(session), null);
       return Result.success(toRecordVO(userMapper.selectById(userId), record), "签到成功");
     }
     return Result.success(toRecordVO(userMapper.selectById(userId), record), "已签到，无需重复签到");
@@ -293,6 +299,7 @@ public class CheckInServiceImpl implements CheckInService {
         .title(session.getTitle()).location(session.getLocation())
         .startAt(session.getStartAt()).endAt(session.getEndAt())
         .status(session.getStatus()).qrPayload(rotatingPayload(session))
+        .checkinPoints(safePoints(session.getCheckinPoints()))
         .targetCount(targets.size()).checkedCount(checkedCount)
         .targetUserIds(targets.stream().map(CheckInTarget::getUserId).toList())
         .build();
@@ -352,6 +359,10 @@ public class CheckInServiceImpl implements CheckInService {
 
   private Club defaultClub() {
     return clubMapper.selectDefaultClub(DEFAULT_CLUB_CODE);
+  }
+
+  private ClubActivity activityForSession(CheckInSession session) {
+    return session == null || session.getActivityId() == null ? null : activityMapper.selectById(session.getActivityId());
   }
 
   private List<Integer> sanitizeTargetUserIds(List<Integer> values) {
@@ -442,5 +453,13 @@ public class CheckInServiceImpl implements CheckInService {
 
   private String trimToNull(String value) {
     return value == null || value.isBlank() ? null : value.trim();
+  }
+
+  private Integer currentUserId() {
+    return StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null;
+  }
+
+  private int safePoints(Integer value) {
+    return value == null ? 0 : Math.max(0, value);
   }
 }

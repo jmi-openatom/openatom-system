@@ -10,42 +10,41 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 内部签到场次 */
+/** 积分兑换订单 */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName("checkin_session")
-public class CheckInSession {
+@TableName("point_redemption")
+public class PointRedemption {
   @TableId(value = "id", type = IdType.AUTO)
   private Integer id;
 
-  @TableField("club_id")
-  private Integer clubId;
+  @TableField("user_id")
+  private Integer userId;
 
-  @TableField("activity_id")
-  private Integer activityId;
+  @TableField("item_id")
+  private Integer itemId;
 
-  @TableField("group_id")
-  private Integer groupId;
-
-  private String title;
-  private String location;
-
-  @TableField("start_at")
-  private Timestamp startAt;
-
-  @TableField("end_at")
-  private Timestamp endAt;
-
+  private Integer points;
   private String status;
-  private String token;
 
-  @TableField("checkin_points")
-  private Integer checkinPoints;
+  @TableField("receiver_name")
+  private String receiverName;
 
-  @TableField("created_by")
-  private Integer createdBy;
+  @TableField("receiver_contact")
+  private String receiverContact;
+
+  private String remark;
+
+  @TableField("admin_note")
+  private String adminNote;
+
+  @TableField("reviewed_by")
+  private Integer reviewedBy;
+
+  @TableField("reviewed_at")
+  private Timestamp reviewedAt;
 
   @TableField("created_at")
   private Timestamp createdAt;

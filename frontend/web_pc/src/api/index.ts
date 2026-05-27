@@ -385,6 +385,51 @@ export const checkInApi = {
   },
 }
 
+export const pointApi = {
+  leaderboard(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/site/points/leaderboard', { params })
+  },
+  mySummary(): Promise<any> {
+    return request.get('/site/points/me')
+  },
+  siteItems(): Promise<any> {
+    return request.get('/site/points/items')
+  },
+  redeem(itemId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/site/points/items/${itemId}/redeem`, data)
+  },
+  myRedemptions(): Promise<any> {
+    return request.get('/site/points/redemptions')
+  },
+  adminAccounts(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/points/admin/accounts', { params })
+  },
+  adminTransactions(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/points/admin/transactions', { params })
+  },
+  adjust(data: Record<string, unknown>): Promise<any> {
+    return request.post('/points/admin/adjustments', data)
+  },
+  adminItems(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/points/admin/items', { params })
+  },
+  createItem(data: Record<string, unknown>): Promise<any> {
+    return request.post('/points/admin/items', data)
+  },
+  updateItem(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/points/admin/items/${id}`, data)
+  },
+  deleteItem(id: string | number): Promise<any> {
+    return request.delete(`/points/admin/items/${id}`)
+  },
+  adminRedemptions(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/points/admin/redemptions', { params })
+  },
+  updateRedemptionStatus(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/points/admin/redemptions/${id}/status`, data)
+  },
+}
+
 export const leaveApplicationApi = {
   list(params?: Record<string, unknown>): Promise<any> {
     return request.get('/leave-applications', { params })

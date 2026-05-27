@@ -21,4 +21,5 @@ public class RequestUpdateActivityDTO {
   private String registrationStartAt;
   private String registrationEndAt;
   private Object registrationFields;
+  private Integer participationPoints;
 }

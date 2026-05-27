@@ -64,7 +64,9 @@ public class ActivityServiceImpl implements ActivityService {
         .registrationRequired(Boolean.TRUE.equals(request.getRegistrationRequired()))
         .registrationStartAt(Times.parseTimestamp(request.getRegistrationStartAt()))
         .registrationEndAt(Times.parseTimestamp(request.getRegistrationEndAt()))
-        .registrationFields(Jsons.stringify(request.getRegistrationFields())).build();
+        .registrationFields(Jsons.stringify(request.getRegistrationFields()))
+        .participationPoints(safePoints(request.getParticipationPoints()))
+        .build();
     int rows = clubActivityMapper.insert(activity);
     return rows > 0 ? Result.success("活动创建成功") : Result.error("活动创建失败");
   }
@@ -89,6 +91,7 @@ public class ActivityServiceImpl implements ActivityService {
     if (request.getRegistrationStartAt() != null) activity.setRegistrationStartAt(Times.parseTimestamp(request.getRegistrationStartAt()));
     if (request.getRegistrationEndAt() != null) activity.setRegistrationEndAt(Times.parseTimestamp(request.getRegistrationEndAt()));
     if (request.getRegistrationFields() != null) activity.setRegistrationFields(Jsons.stringify(request.getRegistrationFields()));
+    if (request.getParticipationPoints() != null) activity.setParticipationPoints(safePoints(request.getParticipationPoints()));
     int rows = clubActivityMapper.updateById(activity);
     return rows > 0 ? Result.success("活动更新成功") : Result.error("活动更新失败");
   }
@@ -151,5 +154,9 @@ public class ActivityServiceImpl implements ActivityService {
   private String normalizeStatus(String status) {
     String value = status == null || status.isBlank() ? "draft" : status;
     return STATUSES.contains(value) ? value : null;
+  }
+
+  private int safePoints(Integer value) {
+    return value == null ? 0 : Math.max(0, value);
   }
 }

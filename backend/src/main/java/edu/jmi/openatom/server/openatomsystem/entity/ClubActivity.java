@@ -57,6 +57,9 @@ public class ClubActivity {
   @TableField("registration_fields")
   private String registrationFields;
 
+  @TableField("participation_points")
+  private Integer participationPoints;
+
   @TableField("created_at")
   private Timestamp createdAt;
 

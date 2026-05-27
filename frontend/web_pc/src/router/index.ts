@@ -13,6 +13,7 @@ const adminFallbackRoutes = [
   '/admin/site-forms',
   '/admin/form-submissions',
   '/admin/lotteries',
+  '/admin/points',
   '/admin/office-documents',
   '/admin/images',
   '/admin/leaves',
@@ -93,6 +94,11 @@ const routes = [
         name: 'site-images',
         meta: { requiresSiteLogin: true },
         component: () => import('../views/site/ImageHosting.vue'),
+      },
+      {
+        path: 'points',
+        name: 'site-points',
+        component: () => import('../views/site/Points.vue'),
       },
       {
         path: 'blog/my',
@@ -210,6 +216,12 @@ const routes = [
         name: 'admin-lotteries',
         meta: { permissions: ['lottery:list'] },
         component: () => import('../views/admin/Lotteries.vue'),
+      },
+      {
+        path: 'points',
+        name: 'admin-points',
+        meta: { permissions: ['point:account:list', 'point:item:list', 'point:redemption:list'] },
+        component: () => import('../views/admin/Points.vue'),
       },
       {
         path: 'office-documents',

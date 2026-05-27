@@ -37,6 +37,9 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column prop="participationPoints" label="活动积分" width="110">
+        <template #default="{ row }">{{ row.participationPoints || 0 }}</template>
+      </el-table-column>
       <el-table-column prop="status" label="状态" width="110">
         <template #default="{ row }">
           <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
@@ -80,6 +83,9 @@
           </el-form-item>
           <el-form-item label="封面URL">
             <el-input v-model="form.coverUrl" />
+          </el-form-item>
+          <el-form-item label="参加积分">
+            <el-input-number v-model="form.participationPoints" :min="0" :step="1" />
           </el-form-item>
         </div>
         <el-form-item label="活动摘要">
@@ -204,6 +210,7 @@ function openDialog(row: any) {
         summary: '',
         descriptionMarkdown: '# 活动介绍\n\n',
         registrationRequired: false,
+        participationPoints: 0,
       }
   registrationFieldsText.value = prettyFields(row?.registrationFields || defaultFields)
   dialogVisible.value = true
