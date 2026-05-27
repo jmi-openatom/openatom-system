@@ -84,34 +84,77 @@
       @current-change="handlePageChange"
     />
 
-    <el-dialog v-model="reviewVisible" title="文章审核" width="620px">
-      <el-form label-width="92px">
-        <el-form-item label="文章">
-          <strong>{{ currentArticle.title }}</strong>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="reviewForm.status">
-            <el-option label="草稿" value="draft" />
-            <el-option label="待审核" value="pending" />
-            <el-option label="审核通过" value="published" />
-            <el-option label="隐藏" value="hidden" />
-            <el-option label="驳回" value="rejected" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="推荐">
-          <el-switch v-model="reviewForm.featured" />
-        </el-form-item>
-        <el-form-item label="原因">
-          <el-input
-            v-model="reviewForm.reason"
-            type="textarea"
-            :rows="4"
-            maxlength="500"
-            show-word-limit
-            placeholder="隐藏或驳回时填写，作者可见"
+    <el-dialog
+      v-model="reviewVisible"
+      class="blog-review-dialog"
+      title="文章审核"
+      width="1180px"
+      destroy-on-close
+    >
+      <div class="review-layout">
+        <aside class="review-panel">
+          <el-form label-width="92px">
+            <el-form-item label="文章">
+              <strong>{{ currentArticle.title }}</strong>
+            </el-form-item>
+            <el-form-item label="作者">
+              <span>{{ currentArticle.authorName || '-' }}</span>
+            </el-form-item>
+            <el-form-item label="分类">
+              <span>{{ currentArticle.category || '-' }}</span>
+            </el-form-item>
+            <el-form-item label="状态">
+              <el-select v-model="reviewForm.status">
+                <el-option label="草稿" value="draft" />
+                <el-option label="待审核" value="pending" />
+                <el-option label="审核通过" value="published" />
+                <el-option label="隐藏" value="hidden" />
+                <el-option label="驳回" value="rejected" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="推荐">
+              <el-switch v-model="reviewForm.featured" />
+            </el-form-item>
+            <el-form-item label="原因">
+              <el-input
+                v-model="reviewForm.reason"
+                type="textarea"
+                :rows="5"
+                maxlength="500"
+                show-word-limit
+                placeholder="隐藏或驳回时填写，作者可见"
+              />
+            </el-form-item>
+          </el-form>
+        </aside>
+
+        <article class="review-preview">
+          <header class="review-preview__header">
+            <div>
+              <span>预览</span>
+              <h2>{{ currentArticle.title || '未命名文章' }}</h2>
+              <p>{{ currentArticle.summary || '暂无摘要' }}</p>
+            </div>
+            <el-tag :type="statusType(currentArticle.status)">{{ statusText(currentArticle.status) }}</el-tag>
+          </header>
+          <img
+            v-if="currentArticle.coverUrl"
+            class="review-preview__cover"
+            :src="currentArticle.coverUrl"
+            alt=""
           />
-        </el-form-item>
-      </el-form>
+          <div class="review-preview__meta">
+            <span>{{ currentArticle.authorName || '匿名作者' }}</span>
+            <span>{{ formatDateTime(currentArticle.updatedAt || currentArticle.createdAt) }}</span>
+          </div>
+          <article
+            v-if="reviewPreviewHtml"
+            class="markdown-body review-preview__markdown"
+            v-html="reviewPreviewHtml"
+          ></article>
+          <el-empty v-else description="暂无正文可预览" :image-size="80" />
+        </article>
+      </div>
       <template #footer>
         <el-button @click="reviewVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="submitReview">保存</el-button>
@@ -203,9 +246,10 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { blogApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
+import { renderMarkdown } from '@/utils/markdown.ts'
 import { ElMessage } from 'element-plus'
 import { Refresh, Tickets } from '@element-plus/icons-vue'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -220,6 +264,9 @@ const total = ref(0)
 const interactionTotal = ref(0)
 const currentArticle = ref<Record<string, any>>({})
 const reviewForm = ref({ status: 'published', featured: false, reason: '' })
+const reviewPreviewHtml = computed(() =>
+  renderMarkdown(currentArticle.value.contentMarkdown || currentArticle.value.summary || ''),
+)
 const query = ref({
   status: '',
   keyword: '',
@@ -376,6 +423,89 @@ onMounted(() => {
   color: var(--el-color-danger);
 }
 
+:global(.blog-review-dialog) {
+  max-width: calc(100vw - 48px);
+}
+
+:global(.blog-review-dialog .el-dialog__body) {
+  max-height: calc(100vh - 178px);
+  overflow: hidden;
+}
+
+.review-layout {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 16px;
+  min-height: min(620px, calc(100vh - 240px));
+}
+
+.review-panel {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+  background: var(--oa-page-soft-bg);
+}
+
+.review-preview {
+  min-width: 0;
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+  background: var(--oa-elevated-bg);
+}
+
+.review-preview__header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--oa-divider);
+}
+
+.review-preview__header span {
+  color: var(--oa-muted);
+  font-size: 12px;
+}
+
+.review-preview__header h2 {
+  margin: 6px 0 8px;
+  color: var(--oa-text);
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.review-preview__header p {
+  margin: 0;
+  color: var(--oa-muted);
+  line-height: 1.6;
+}
+
+.review-preview__cover {
+  width: 100%;
+  max-height: 260px;
+  margin-top: 16px;
+  object-fit: cover;
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+}
+
+.review-preview__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.review-preview__markdown {
+  padding: 0;
+  border: 0;
+}
+
 .comment-list {
   display: grid;
   gap: 14px;
@@ -434,6 +564,24 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
+  :global(.blog-review-dialog) {
+    max-width: calc(100vw - 24px);
+  }
+
+  :global(.blog-review-dialog .el-dialog__body) {
+    max-height: calc(100vh - 144px);
+    overflow-y: auto;
+  }
+
+  .review-layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .review-preview {
+    max-height: none;
+  }
+
   .comment-item {
     grid-template-columns: 38px minmax(0, 1fr);
   }
