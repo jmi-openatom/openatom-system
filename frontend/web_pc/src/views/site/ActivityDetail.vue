@@ -1,9 +1,11 @@
 <template>
-  <ViewPage class="activity-detail" :loading="loading">
+  <ViewPage :loading="loading" class="activity-detail">
     <section class="detail-hero">
       <div class="container detail-hero__inner">
         <div class="detail-hero__copy">
-          <el-button text @click="$router.back()">返回活动</el-button>
+          <div>
+              <el-button text type="primary" @click="$router.back()">返回活动</el-button>
+          </div>
           <span>活动详情</span>
           <h1>{{ activity.title || '活动详情' }}</h1>
           <p>{{ activity.summary || '暂无活动摘要' }}</p>
@@ -12,7 +14,7 @@
             <el-tag :type="activity.registrationRequired ? 'success' : 'info'" effect="plain">
               {{ activity.registrationRequired ? '需要官网报名' : '无需报名' }}
             </el-tag>
-            <el-tag v-if="activity.participationPoints" type="warning" effect="plain">
+            <el-tag v-if="activity.participationPoints" effect="plain" type="warning">
               参加 +{{ activity.participationPoints }} 积分
             </el-tag>
             <span>{{ formatDateTime(activity.activityAt) }}</span>
@@ -20,7 +22,7 @@
           </div>
         </div>
 
-        <div class="detail-hero__visual" :class="{ 'is-fallback': !activity.coverUrl }">
+        <div :class="{ 'is-fallback': !activity.coverUrl }" class="detail-hero__visual">
           <img
             v-if="activity.coverUrl"
             :alt="activity.title || '活动封面'"
@@ -35,7 +37,7 @@
     </section>
 
     <section class="detail-body-section">
-      <div class="container detail-facts" aria-label="活动信息">
+      <div aria-label="活动信息" class="container detail-facts">
         <article class="detail-fact">
           <span>活动时间</span>
           <strong>{{ formatDateTime(activity.activityAt) }}</strong>
@@ -74,11 +76,11 @@
           <template v-else>
             <el-alert
               v-if="signupBlockedMessage"
-              type="warning"
-              show-icon
               :closable="false"
               :title="signupBlockedMessage"
               class="signup-alert"
+              show-icon
+              type="warning"
             />
             <el-form label-position="top">
               <el-form-item
@@ -119,16 +121,16 @@
   </ViewPage>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
-import { ElMessage } from 'element-plus'
-import { activityApi, siteApi } from '@/api'
-import { formatDateTime, monthDayParts } from '@/utils/format.ts'
-import { getToken } from '@/utils/auth.ts'
-import { renderMarkdown } from '@/utils/markdown.ts'
-import { hasRole } from '@/utils/permission.ts'
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import {ElMessage} from 'element-plus'
+import {activityApi, siteApi} from '@/api'
+import {formatDateTime, monthDayParts} from '@/utils/format.ts'
+import {getToken} from '@/utils/auth.ts'
+import {renderMarkdown} from '@/utils/markdown.ts'
+import {hasRole} from '@/utils/permission.ts'
+import {computed, onMounted, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 
 const loading = ref(false)
 const submitting = ref(false)

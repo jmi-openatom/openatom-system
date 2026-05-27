@@ -1,11 +1,17 @@
 <template>
-  <ViewPage class="blog-detail" :loading="loading">
+  <ViewPage :loading="loading" class="blog-detail">
     <section class="blog-detail__hero home-interactive-section">
+
+
       <div class="container blog-detail__hero-inner">
         <div class="blog-detail__copy">
-          <el-button text @click="$router.back()">返回博客</el-button>
+    <div>
+        <el-button size="large" type="primary" @click="$router.back()"> 返回博客 </el-button>
+    </div>
+            <br>
+
           <div class="blog-detail__meta">
-            <el-tag v-if="article.featured" type="warning" effect="plain">推荐</el-tag>
+            <el-tag v-if="article.featured" effect="plain" type="warning">推荐</el-tag>
             <span>{{ article.category || '未分类' }}</span>
             <span>{{ article.authorName || '匿名作者' }}</span>
             <span>{{ formatDateTime(article.publishedAt || article.createdAt) }}</span>
@@ -18,7 +24,9 @@
             <span>{{ article.favoriteCount || 0 }} 收藏</span>
             <span>{{ article.shareCount || 0 }} 分享</span>
             <span>{{ article.commentCount ?? totalComments }} 评论</span>
-            <el-button v-if="canEdit" size="small" @click="$router.push('/blog/my')">编辑</el-button>
+            <el-button v-if="canEdit" size="small" @click="$router.push('/blog/my')"
+              >编辑</el-button
+            >
           </div>
           <div class="blog-detail__actions">
             <el-button
@@ -40,7 +48,7 @@
             <el-button :icon="Share" @click="shareArticle">分享</el-button>
           </div>
         </div>
-        <div class="blog-detail__cover" :class="{ 'is-empty': !article.coverUrl }">
+        <div :class="{ 'is-empty': !article.coverUrl }" class="blog-detail__cover">
           <img v-if="article.coverUrl" :alt="article.title" :src="article.coverUrl" />
           <span v-else>{{ coverInitial(article.title) }}</span>
         </div>
@@ -57,7 +65,11 @@
           <div class="blog-aside__block">
             <span>作者</span>
             <div class="blog-author">
-              <UserAvatar :name="article.authorName || '匿名作者'" :size="42" :src="article.authorAvatar || ''" />
+              <UserAvatar
+                :name="article.authorName || '匿名作者'"
+                :size="42"
+                :src="article.authorAvatar || ''"
+              />
               <strong>{{ article.authorName || '匿名作者' }}</strong>
             </div>
           </div>
@@ -89,16 +101,16 @@
             </div>
             <el-input
               v-model="commentForm.content"
+              :placeholder="commentPlaceholder"
+              :rows="4"
               class="comment-composer__input"
               maxlength="1000"
-              :placeholder="commentPlaceholder"
               show-word-limit
-              :rows="4"
               type="textarea"
             />
             <div class="comment-composer__footer">
               <span>支持 Markdown、代码块和图片链接</span>
-              <el-button type="primary" :loading="commenting" @click="submitComment">
+              <el-button :loading="commenting" type="primary" @click="submitComment">
                 {{ replyTarget ? '发布回复' : '发布评论' }}
               </el-button>
             </div>
@@ -106,7 +118,7 @@
         </div>
         <div v-else class="comment-login-tip">
           <span>登录后参与讨论</span>
-          <el-button type="primary" plain @click="ensureLogin">去登录</el-button>
+          <el-button plain type="primary" @click="ensureLogin">去登录</el-button>
         </div>
 
         <div class="comment-list">
@@ -123,18 +135,18 @@
   </ViewPage>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import BlogCommentItem from '@/components/site/blog/BlogCommentItem.vue'
-import { ElMessage } from 'element-plus'
-import { Pointer, Share, Star } from '@element-plus/icons-vue'
-import { siteApi } from '@/api'
-import { formatDateTime } from '@/utils/format.ts'
-import { getCurrentUser, getToken } from '@/utils/auth.ts'
-import { renderMarkdown } from '@/utils/markdown.ts'
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import {ElMessage} from 'element-plus'
+import {Pointer, Share, Star} from '@element-plus/icons-vue'
+import {siteApi} from '@/api'
+import {formatDateTime} from '@/utils/format.ts'
+import {getCurrentUser, getToken} from '@/utils/auth.ts'
+import {renderMarkdown} from '@/utils/markdown.ts'
+import {computed, onMounted, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
@@ -148,8 +160,12 @@ const replyTarget = ref<Record<string, any> | null>(null)
 
 const isLoggedIn = computed(() => Boolean(getToken()))
 const currentUser = computed(() => getCurrentUser())
-const canEdit = computed(() => currentUser.value?.id && currentUser.value.id === article.value.authorId)
-const html = computed(() => renderMarkdown(article.value.contentMarkdown || article.value.summary || ''))
+const canEdit = computed(
+  () => currentUser.value?.id && currentUser.value.id === article.value.authorId,
+)
+const html = computed(() =>
+  renderMarkdown(article.value.contentMarkdown || article.value.summary || ''),
+)
 const totalComments = computed(() => countComments(comments.value))
 const currentUserName = computed(
   () => currentUser.value?.realName || currentUser.value?.userName || '我',
@@ -240,7 +256,9 @@ function countComments(list: any[]): number {
 }
 
 function coverInitial(value: string) {
-  return String(value || 'B').slice(0, 1).toUpperCase()
+  return String(value || 'B')
+    .slice(0, 1)
+    .toUpperCase()
 }
 
 onMounted(() => {

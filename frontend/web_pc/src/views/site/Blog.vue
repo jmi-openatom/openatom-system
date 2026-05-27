@@ -1,5 +1,5 @@
 <template>
-  <ViewPage class="blog-page" :loading="loading">
+  <ViewPage :loading="loading" class="blog-page">
     <section class="blog-hero home-interactive-section">
       <div class="container blog-hero__inner">
         <div class="section-heading reveal-block">
@@ -15,6 +15,7 @@
           <el-button
             v-if="canWrite"
             size="large"
+            style="margin-left: 10px"
             type="primary"
             @click="$router.push('/blog/write')"
           >
@@ -28,8 +29,8 @@
               v-model="query.keyword"
               clearable
               placeholder="搜索标题、摘要、正文"
-              @keyup.enter="reload"
               @clear="reload"
+              @keyup.enter="reload"
             />
             <el-select v-model="query.category" clearable placeholder="文章分类" @change="reload">
               <el-option
@@ -43,8 +44,8 @@
               v-model="query.tag"
               clearable
               placeholder="标签"
-              @keyup.enter="reload"
               @clear="reload"
+              @keyup.enter="reload"
             />
           </div>
           <el-button type="primary" @click="reload">筛选</el-button>
@@ -68,7 +69,7 @@
           >
             <div class="blog-row__body">
               <div class="blog-row__meta">
-                <el-tag v-if="article.featured" type="warning" effect="plain">推荐</el-tag>
+                <el-tag v-if="article.featured" effect="plain" type="warning">推荐</el-tag>
                 <span>{{ article.category || '未分类' }}</span>
                 <span>{{ article.authorName || '匿名作者' }}</span>
                 <span>{{ formatDateTime(article.publishedAt || article.createdAt) }}</span>
@@ -76,7 +77,7 @@
               <h2>{{ article.title }}</h2>
               <p>{{ article.summary || '作者暂未填写摘要' }}</p>
               <div class="blog-row__tags">
-                <el-tag v-for="tag in article.tags || []" :key="tag" size="small" effect="plain">
+                <el-tag v-for="tag in article.tags || []" :key="tag" effect="plain" size="small">
                   {{ tag }}
                 </el-tag>
               </div>
@@ -88,7 +89,7 @@
                 <span>{{ article.commentCount || 0 }} 评论</span>
               </footer>
             </div>
-            <div class="blog-row__cover" :class="{ 'is-empty': !article.coverUrl }">
+            <div :class="{ 'is-empty': !article.coverUrl }" class="blog-row__cover">
               <img v-if="article.coverUrl" :alt="article.title" :src="article.coverUrl" />
               <span v-else>{{ coverInitial(article.title) }}</span>
             </div>
@@ -98,12 +99,12 @@
 
           <el-pagination
             v-if="total > query.pageSize"
-            class="pager"
-            background
-            layout="prev, pager, next"
             :current-page="query.page"
             :page-size="query.pageSize"
             :total="total"
+            background
+            class="pager"
+            layout="prev, pager, next"
             @current-change="handlePageChange"
           />
         </div>
@@ -112,13 +113,13 @@
   </ViewPage>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
-import { siteApi } from '@/api'
-import { formatDateTime } from '@/utils/format.ts'
-import { getToken } from '@/utils/auth.ts'
-import { hasRole } from '@/utils/permission.ts'
-import { computed, onMounted, ref } from 'vue'
+import {siteApi} from '@/api'
+import {formatDateTime} from '@/utils/format.ts'
+import {getToken} from '@/utils/auth.ts'
+import {hasRole} from '@/utils/permission.ts'
+import {computed, onMounted, ref} from 'vue'
 
 const loading = ref(false)
 const rows = ref<any[]>([])

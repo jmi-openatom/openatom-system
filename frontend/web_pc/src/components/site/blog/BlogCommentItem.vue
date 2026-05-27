@@ -1,7 +1,11 @@
 <template>
-  <article class="blog-comment-item" :class="{ 'is-reply': depth > 0 }">
+  <article :class="{ 'is-reply': depth > 0 }" class="blog-comment-item">
     <div class="blog-comment-item__avatar">
-      <UserAvatar :name="comment.userName || '匿名用户'" :size="depth > 0 ? 32 : 44" :src="comment.userAvatar || ''" />
+      <UserAvatar
+        :name="comment.userName || '匿名用户'"
+        :size="depth > 0 ? 32 : 44"
+        :src="comment.userAvatar || ''"
+      />
     </div>
     <div class="blog-comment-item__body">
       <header class="blog-comment-item__head">
@@ -9,13 +13,18 @@
           <span class="author-name">{{ comment.userName || '匿名用户' }}</span>
           <span class="comment-time">{{ formatDateTime(comment.createdAt) }}</span>
         </div>
-        <el-button class="blog-comment-item__reply" link type="primary" @click="emit('reply', comment)">
+        <el-button
+          class="blog-comment-item__reply"
+          link
+          type="primary"
+          @click="emit('reply', comment)"
+        >
           <el-icon class="reply-icon"><ChatLineRound /></el-icon>
           <span class="reply-text">回复</span>
         </el-button>
       </header>
-      <div class="markdown-body blog-comment-item__content" v-html="contentHtml"></div>
-      
+      <div class=" blog-comment-item__content" v-html="contentHtml"></div>
+
       <div v-if="comment.replies?.length" class="blog-comment-item__replies">
         <BlogCommentItem
           v-for="reply in comment.replies"
@@ -29,12 +38,12 @@
   </article>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { ChatLineRound } from '@element-plus/icons-vue'
-import { formatDateTime } from '@/utils/format.ts'
-import { renderMarkdown } from '@/utils/markdown.ts'
-import { computed } from 'vue'
+import {ChatLineRound} from '@element-plus/icons-vue'
+import {formatDateTime} from '@/utils/format.ts'
+import {renderMarkdown} from '@/utils/markdown.ts'
+import {computed} from 'vue'
 
 defineOptions({ name: 'BlogCommentItem' })
 
@@ -110,11 +119,7 @@ function handleReply(comment: Record<string, any>) {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.blog-comment-item__body:hover {
-  border-color: color-mix(in srgb, var(--oa-primary, #2563eb) 35%, var(--oa-border));
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.045);
-  transform: translateY(-1.5px);
-}
+
 
 .blog-comment-item__head {
   display: flex;

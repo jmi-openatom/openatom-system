@@ -1,5 +1,5 @@
 <template>
-  <ViewPage class="points-page" :loading="loading.page">
+  <ViewPage :loading="loading.page" class="points-page">
     <section class="points-hero">
       <div class="container points-hero__inner">
         <div>
@@ -36,7 +36,7 @@
               <div class="rank-mark">{{ item.rank }}</div>
               <div>
                 <strong>{{ displayName(item) }}</strong>
-                <span>{{ item.className || item.studentId || '社团成员' }}</span>
+                <span style="margin-left: 10px">{{ item.className || item.studentId || '社团成员' }}</span>
               </div>
               <b>{{ item.balance || 0 }}</b>
             </div>
@@ -54,7 +54,7 @@
               <div v-for="item in recentTransactions" :key="item.id" class="history-row">
                 <div>
                   <strong>{{ item.description || transactionTypeText(item.type) }}</strong>
-                  <span>{{ formatDateTime(item.createdAt) }}</span>
+                  <span style="margin-left: 10px">{{ formatDateTime(item.createdAt) }}</span>
                 </div>
                 <b :class="item.delta >= 0 ? 'is-plus' : 'is-minus'">
                   {{ item.delta > 0 ? '+' : '' }}{{ item.delta }}
@@ -79,7 +79,7 @@
         </div>
         <div class="exchange-grid">
           <article v-for="item in items" :key="item.id" class="exchange-item">
-            <div class="exchange-item__media" :class="{ 'is-empty': !item.imageUrl }">
+            <div :class="{ 'is-empty': !item.imageUrl }" class="exchange-item__media">
               <img v-if="item.imageUrl" :alt="item.name" :src="item.imageUrl" />
               <span v-else>{{ item.pointCost }}</span>
             </div>
@@ -92,7 +92,7 @@
                 <strong>{{ item.pointCost }} 积分</strong>
                 <span>{{ item.availableStock === null || item.availableStock === undefined ? '库存不限' : `剩余 ${item.availableStock}` }}</span>
               </div>
-              <el-button type="primary" :disabled="!canRedeem(item)" @click="openRedeemDialog(item)">
+              <el-button :disabled="!canRedeem(item)" type="primary" @click="openRedeemDialog(item)">
                 兑换
               </el-button>
             </div>
@@ -109,14 +109,14 @@
           <h2>兑换记录</h2>
         </div>
         <el-table :data="redemptions">
-          <el-table-column prop="itemName" label="兑换项" min-width="180" />
-          <el-table-column prop="points" label="积分" width="90" />
+          <el-table-column label="兑换项" min-width="180" prop="itemName" />
+          <el-table-column label="积分" prop="points" width="90" />
           <el-table-column label="状态" width="110">
             <template #default="{ row }">
               <el-tag :type="redemptionStatusType(row.status)">{{ redemptionStatusText(row.status) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="adminNote" label="后台备注" min-width="180" />
+          <el-table-column label="后台备注" min-width="180" prop="adminNote" />
           <el-table-column label="申请时间" width="180">
             <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
           </el-table-column>
@@ -137,25 +137,25 @@
           <el-input v-model="redeemForm.receiverContact" />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="redeemForm.remark" type="textarea" :rows="3" maxlength="500" show-word-limit />
+          <el-input v-model="redeemForm.remark" :rows="3" maxlength="500" show-word-limit type="textarea" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="redeemVisible = false">取消</el-button>
-        <el-button type="primary" :loading="loading.redeem" @click="submitRedeem">提交</el-button>
+        <el-button :loading="loading.redeem" type="primary" @click="submitRedeem">提交</el-button>
       </template>
     </el-dialog>
   </ViewPage>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
-import { pointApi } from '@/api'
-import { getToken } from '@/utils/auth.ts'
-import { formatDateTime } from '@/utils/format.ts'
-import { ElMessage } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import {pointApi} from '@/api'
+import {getToken} from '@/utils/auth.ts'
+import {formatDateTime} from '@/utils/format.ts'
+import {ElMessage} from 'element-plus'
+import {computed, onMounted, ref} from 'vue'
+import {useRouter} from 'vue-router'
 
 const router = useRouter()
 

@@ -1,5 +1,5 @@
 <template>
-  <ViewPage class="my-blog-page" :loading="loading">
+  <ViewPage :loading="loading" class="my-blog-page">
     <section class="my-blog-shell home-interactive-section">
       <div class="container">
         <div class="section-heading reveal-block my-blog-heading">
@@ -19,46 +19,51 @@
             </el-select>
             <el-button :icon="Refresh" @click="fetchList">刷新</el-button>
           </div>
-          <el-button type="primary" :icon="Plus" @click="openDialog()">写文章</el-button>
+          <el-button :icon="Plus" type="primary" @click="openDialog()">写文章</el-button>
         </ViewToolbar>
+        <br />
 
         <el-alert
           v-if="!canWrite"
-          class="write-alert"
-          type="warning"
-          show-icon
           :closable="false"
+          class="write-alert"
+          show-icon
           title="仅正式成员可以发布文章；如果你已经转正，请重新登录刷新权限信息。"
+          type="warning"
         />
 
         <el-table :data="rows" class="admin-table">
-          <el-table-column prop="title" label="文章" min-width="240">
+          <el-table-column label="文章" min-width="240" prop="title">
             <template #default="{ row }">
               <strong>{{ row.title }}</strong>
               <p class="muted-line">{{ row.summary || '暂无摘要' }}</p>
               <p v-if="row.rejectReason" class="danger-line">原因：{{ row.rejectReason }}</p>
             </template>
           </el-table-column>
-          <el-table-column prop="category" label="分类" width="130" />
-          <el-table-column prop="status" label="状态" width="110">
+          <el-table-column label="分类" prop="category" width="130" />
+          <el-table-column label="状态" prop="status" width="110">
             <template #default="{ row }">
               <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="数据" width="190">
             <template #default="{ row }">
-              {{ row.viewCount || 0 }} 阅读 · {{ row.likeCount || 0 }} 赞 · {{ row.favoriteCount || 0 }} 藏 ·
-              {{ row.commentCount || 0 }} 评论
+              {{ row.viewCount || 0 }} 阅读 · {{ row.likeCount || 0 }} 赞 ·
+              {{ row.favoriteCount || 0 }} 藏 · {{ row.commentCount || 0 }} 评论
             </template>
           </el-table-column>
-          <el-table-column prop="updatedAt" label="更新时间" width="180">
-            <template #default="{ row }">{{ formatDateTime(row.updatedAt || row.createdAt) }}</template>
+          <el-table-column label="更新时间" prop="updatedAt" width="180">
+            <template #default="{ row }">{{
+              formatDateTime(row.updatedAt || row.createdAt)
+            }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="240" fixed="right">
+          <el-table-column fixed="right" label="操作" width="240">
             <template #default="{ row }">
               <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
               <el-button
-                v-if="row.status !== 'pending' && row.status !== 'published' && row.status !== 'hidden'"
+                v-if="
+                  row.status !== 'pending' && row.status !== 'published' && row.status !== 'hidden'
+                "
                 link
                 type="success"
                 @click="publish(row)"
@@ -84,12 +89,12 @@
 
         <el-pagination
           v-if="total > query.pageSize"
-          class="pager"
-          background
-          layout="prev, pager, next"
           :current-page="query.page"
           :page-size="query.pageSize"
           :total="total"
+          background
+          class="pager"
+          layout="prev, pager, next"
           @current-change="handlePageChange"
         />
       </div>
@@ -102,7 +107,11 @@
             <el-input v-model="form.title" maxlength="180" show-word-limit />
           </el-form-item>
           <el-form-item label="分类">
-            <el-input v-model="form.category" maxlength="80" placeholder="例如：Java / 前端 / 竞赛" />
+            <el-input
+              v-model="form.category"
+              maxlength="80"
+              placeholder="例如：Java / 前端 / 竞赛"
+            />
           </el-form-item>
           <el-form-item label="封面URL">
             <el-input v-model="form.coverUrl" />
@@ -112,7 +121,13 @@
           </el-form-item>
         </div>
         <el-form-item label="摘要">
-          <el-input v-model="form.summary" type="textarea" :rows="3" maxlength="500" show-word-limit />
+          <el-input
+            v-model="form.summary"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            type="textarea"
+          />
         </el-form-item>
         <el-form-item label="正文" prop="contentMarkdown">
           <div class="editor-field">
@@ -131,7 +146,12 @@
             </div>
             <el-tabs v-model="editorMode" class="markdown-editor-tabs">
               <el-tab-pane label="编辑" name="edit">
-                <el-input ref="contentInputRef" v-model="form.contentMarkdown" type="textarea" :rows="18" />
+                <el-input
+                  ref="contentInputRef"
+                  v-model="form.contentMarkdown"
+                  :rows="18"
+                  type="textarea"
+                />
               </el-tab-pane>
               <el-tab-pane label="预览" name="preview">
                 <article class="markdown-body editor-preview" v-html="previewHtml"></article>
@@ -143,19 +163,19 @@
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button :loading="saving" @click="save('draft')">保存草稿</el-button>
-        <el-button type="primary" :loading="saving" @click="save('pending')">提交审核</el-button>
+        <el-button :loading="saving" type="primary" @click="save('pending')">提交审核</el-button>
       </template>
     </el-dialog>
 
     <el-dialog v-model="imageDialogVisible" title="上传图床图片" width="560px">
       <el-upload
-        accept="image/jpeg,image/png,image/gif,image/webp"
         :auto-upload="false"
-        drag
         :file-list="imageUploadFiles"
         :limit="1"
         :on-change="handleImageChange"
         :on-remove="handleImageRemove"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        drag
       >
         <el-icon class="el-icon--upload">
           <UploadFilled />
@@ -175,11 +195,7 @@
       <template #footer>
         <el-button @click="imageDialogVisible = false">取消</el-button>
         <el-button :loading="imageUploading" @click="uploadImage">上传</el-button>
-        <el-button
-          type="primary"
-          :disabled="!imageUploadResult.url"
-          @click="insertUploadedImage"
-        >
+        <el-button :disabled="!imageUploadResult.url" type="primary" @click="insertUploadedImage">
           插入正文
         </el-button>
       </template>
@@ -187,28 +203,17 @@
   </ViewPage>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import { blogApi, imageHostingApi } from '@/api'
-import { formatDateTime, statusType } from '@/utils/format.ts'
-import { hasRole } from '@/utils/permission.ts'
-import { renderMarkdown } from '@/utils/markdown.ts'
-import { ElMessage } from 'element-plus'
-import {
-  Document,
-  EditPen,
-  Grid,
-  Link,
-  List,
-  Memo,
-  Picture,
-  Plus,
-  Refresh,
-  UploadFilled,
-} from '@element-plus/icons-vue'
-import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import {blogApi, imageHostingApi} from '@/api'
+import {formatDateTime, statusType} from '@/utils/format.ts'
+import {hasRole} from '@/utils/permission.ts'
+import {renderMarkdown} from '@/utils/markdown.ts'
+import {ElMessage} from 'element-plus'
+import {Document, EditPen, Grid, Link, List, Memo, Picture, Plus, Refresh, UploadFilled,} from '@element-plus/icons-vue'
+import {computed, nextTick, onMounted, ref} from 'vue'
+import {useRoute} from 'vue-router'
 
 const route = useRoute()
 
@@ -241,7 +246,9 @@ const rules = ref({
 
 function statusText(status: string) {
   return (
-    { draft: '草稿', pending: '待审核', published: '已发布', hidden: '已隐藏', rejected: '已驳回' }[status] ||
+    { draft: '草稿', pending: '待审核', published: '已发布', hidden: '已隐藏', rejected: '已驳回' }[
+      status
+    ] ||
     status ||
     '-'
   )
@@ -349,7 +356,10 @@ function insertList() {
 }
 
 function insertCodeBlock() {
-  insertSnippet('```java\nSystem.out.println("Hello OpenAtom");\n```', 'System.out.println("Hello OpenAtom");')
+  insertSnippet(
+    '```java\nSystem.out.println("Hello OpenAtom");\n```',
+    'System.out.println("Hello OpenAtom");',
+  )
 }
 
 function insertTable() {

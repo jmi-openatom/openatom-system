@@ -76,7 +76,7 @@
   --oa-radius: 18px;
   --oa-radius-sm: 8px;
   --oa-radius-md: 11px;
-  --oa-radius-pill: 9999px;
+  --oa-radius-pill: 10px;
   --oa-shadow: none;
   --oa-product-shadow: 3px 5px 30px rgba(0, 0, 0, 0.22);
   --oa-dark-tile: #272729;
@@ -452,6 +452,7 @@ svg {
   border-radius: var(--oa-radius-pill);
   font-weight: 400;
   letter-spacing: 0;
+  text-align: center;
   transition:
     transform 0.16s ease,
     background-color 0.16s ease,
@@ -1100,7 +1101,11 @@ a:hover {
 .workspace-page {
   min-height: calc(100vh - var(--oa-site-header-height));
   background:
-    radial-gradient(circle at top center, color-mix(in srgb, var(--oa-text) 7%, transparent), transparent 34%),
+    radial-gradient(
+      circle at top center,
+      color-mix(in srgb, var(--oa-text) 7%, transparent),
+      transparent 34%
+    ),
     var(--oa-page-soft-bg);
 }
 
