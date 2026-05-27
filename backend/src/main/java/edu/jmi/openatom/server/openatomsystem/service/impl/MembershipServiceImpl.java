@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Times;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.dto.*;
@@ -129,6 +130,7 @@ public class MembershipServiceImpl implements MembershipService {
     if (request.getFeatured() != null) m.setFeatured(request.getFeatured());
     if (request.getSortOrder() != null) m.setSortOrder(request.getSortOrder());
     membershipMapper.updateById(m);
+    syncUserRole(m.getUserId(), m.getStatus());
     return Result.success("成员更新成功");
   }
 
@@ -151,6 +153,7 @@ public class MembershipServiceImpl implements MembershipService {
     m.setStatus(request.getStatus());
     if ("left".equals(request.getStatus())) m.setLeftAt(Times.now());
     membershipMapper.updateById(m);
+    syncUserRole(m.getUserId(), m.getStatus());
     return Result.success("成员状态更新成功");
   }
 
@@ -165,6 +168,7 @@ public class MembershipServiceImpl implements MembershipService {
       m.setStatus(request.getStatus());
       if ("left".equals(request.getStatus())) m.setLeftAt(Times.now());
       membershipMapper.updateById(m);
+      syncUserRole(m.getUserId(), m.getStatus());
       count++;
     }
     return Result.success("已批量更新 " + count + " 条成员状态");
@@ -191,13 +195,44 @@ public class MembershipServiceImpl implements MembershipService {
     if (m == null) return Result.error(404, "成员不存在");
     m.setStatus("left"); m.setLeftAt(Times.now());
     membershipMapper.updateById(m);
+    syncUserRole(m.getUserId(), m.getStatus());
     return Result.success("强制退社成功");
   }
 
   private void ensureMembership(Integer userId, Integer clubId, Integer departmentId, Integer positionId, String status, Boolean featured, Integer sortOrder) {
     ClubMembership exists = membershipMapper.selectActiveNotLeft(userId, clubId);
-    if (exists != null) { exists.setDepartmentId(departmentId); exists.setPositionId(positionId); exists.setStatus(status); if (featured != null) exists.setFeatured(featured); if (sortOrder != null) exists.setSortOrder(sortOrder); membershipMapper.updateById(exists); return; }
+    if (exists != null) { 
+      exists.setDepartmentId(departmentId); 
+      exists.setPositionId(positionId); 
+      exists.setStatus(status); 
+      if (featured != null) exists.setFeatured(featured); 
+      if (sortOrder != null) exists.setSortOrder(sortOrder); 
+      membershipMapper.updateById(exists); 
+      syncUserRole(userId, status);
+      return; 
+    }
     membershipMapper.insert(ClubMembership.builder().userId(userId).clubId(clubId).departmentId(departmentId).positionId(positionId).status(status).featured(Boolean.TRUE.equals(featured)).sortOrder(sortOrder == null ? 0 : sortOrder).build());
+    syncUserRole(userId, status);
+  }
+
+  private void syncUserRole(Integer userId, String status) {
+    if (userId == null || status == null) return;
+    Role probationaryRole = roleMapper.selectByCode("probationary_member");
+    Role formalRole = roleMapper.selectByCode("formal_member");
+    if (probationaryRole == null || formalRole == null) return;
+
+    userRoleMapper.delete(new LambdaQueryWrapper<UserRole>()
+        .eq(UserRole::getUserId, userId)
+        .eq(UserRole::getRoleId, probationaryRole.getId()));
+    userRoleMapper.delete(new LambdaQueryWrapper<UserRole>()
+        .eq(UserRole::getUserId, userId)
+        .eq(UserRole::getRoleId, formalRole.getId()));
+
+    if ("active".equals(status)) {
+      userRoleMapper.insert(UserRole.builder().userId(userId).roleId(formalRole.getId()).build());
+    } else if ("probation".equals(status)) {
+      userRoleMapper.insert(UserRole.builder().userId(userId).roleId(probationaryRole.getId()).build());
+    }
   }
 
   private Result<String> validateMembershipRefs(Integer userId, Integer clubId, Integer departmentId, Integer positionId) {
