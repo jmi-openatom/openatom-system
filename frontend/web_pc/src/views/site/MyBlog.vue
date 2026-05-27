@@ -1,7 +1,6 @@
 <template>
   <ViewPage class="my-blog-page" :loading="loading">
     <section class="my-blog-shell home-interactive-section">
-      <HomeInteractiveBackdrop :radius="220" :spacing="66" :strength="20" />
       <div class="container">
         <div class="section-heading reveal-block my-blog-heading">
           <span>Member Studio</span>
@@ -191,7 +190,6 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
 import { blogApi, imageHostingApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
 import { hasRole } from '@/utils/permission.ts'

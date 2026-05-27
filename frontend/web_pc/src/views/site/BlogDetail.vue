@@ -1,7 +1,6 @@
 <template>
   <ViewPage class="blog-detail" :loading="loading">
     <section class="blog-detail__hero home-interactive-section">
-      <HomeInteractiveBackdrop :radius="230" :spacing="68" :strength="22" />
       <div class="container blog-detail__hero-inner">
         <div class="blog-detail__copy">
           <el-button text @click="$router.back()">返回博客</el-button>
@@ -49,7 +48,6 @@
     </section>
 
     <section class="blog-detail__body home-interactive-section">
-      <HomeInteractiveBackdrop :radius="210" :spacing="62" :strength="18" />
       <div class="container blog-detail__grid">
         <article class="markdown-body blog-article">
           <div v-html="html"></div>
@@ -129,7 +127,6 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import BlogCommentItem from '@/components/site/blog/BlogCommentItem.vue'
-import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
 import { ElMessage } from 'element-plus'
 import { Pointer, Share, Star } from '@element-plus/icons-vue'
 import { siteApi } from '@/api'
@@ -400,9 +397,10 @@ onMounted(() => {
 
 .comments-section {
   display: grid;
-  gap: 20px;
-  margin-top: 24px;
+  gap: 24px;
+  margin-top: 32px;
   overflow: hidden;
+  padding: 32px;
 }
 
 .comments-section__head {
@@ -410,7 +408,7 @@ onMounted(() => {
   gap: 16px;
   justify-content: space-between;
   align-items: flex-end;
-  padding-bottom: 14px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--oa-border);
 }
 
@@ -421,26 +419,29 @@ onMounted(() => {
 
 .comments-section__head > div > span {
   color: var(--oa-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
+  opacity: 0.85;
 }
 
 .comments-section__head h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 650;
+  color: var(--oa-text);
   line-height: 1.2;
 }
 
 .comments-section__head strong {
   display: inline-flex;
-  min-height: 30px;
+  min-height: 32px;
   align-items: center;
-  padding: 0 12px;
-  color: var(--oa-muted);
-  background: var(--oa-page-bg);
-  border: 1px solid var(--oa-border);
+  padding: 0 16px;
+  color: var(--oa-primary, #2563eb);
+  background: color-mix(in srgb, var(--oa-primary, #2563eb) 8%, var(--oa-elevated-bg));
+  border: 1px solid color-mix(in srgb, var(--oa-primary, #2563eb) 15%, var(--oa-border));
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
@@ -449,17 +450,18 @@ onMounted(() => {
 .comment-composer {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 14px;
-  padding: 16px;
+  gap: 18px;
+  padding: 24px;
   background: var(--oa-page-bg);
   border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  border-radius: 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.01);
 }
 
 .comment-composer__main {
   display: grid;
   min-width: 0;
-  gap: 10px;
+  gap: 14px;
 }
 
 .comment-composer__replying {
@@ -467,33 +469,38 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 7px 10px;
-  color: var(--oa-muted);
-  background: var(--oa-elevated-bg);
-  border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--oa-primary, #2563eb);
+  background: color-mix(in srgb, var(--oa-primary, #2563eb) 6%, var(--oa-elevated-bg));
+  border: 1px solid color-mix(in srgb, var(--oa-primary, #2563eb) 12%, var(--oa-border));
+  border-radius: 10px;
   font-size: 13px;
+  font-weight: 500;
 }
 
 .comment-composer__input :deep(.el-textarea__inner) {
   min-height: 116px !important;
   background: var(--oa-elevated-bg);
-  border-color: var(--oa-border);
-  border-radius: 8px;
+  border: 1px solid var(--oa-border);
+  border-radius: 12px;
   box-shadow: none;
   color: var(--oa-text);
+  font-size: 14.5px;
+  padding: 12px 16px;
   line-height: 1.7;
   resize: vertical;
+  transition: all 0.25s ease;
 }
 
 .comment-composer__input :deep(.el-textarea__inner:focus) {
-  border-color: color-mix(in srgb, var(--oa-primary, #2563eb) 42%, var(--oa-border));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--oa-primary, #2563eb) 12%, transparent);
+  border-color: color-mix(in srgb, var(--oa-primary, #2563eb) 45%, var(--oa-border));
+  background: var(--oa-page-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--oa-primary, #2563eb) 10%, transparent);
 }
 
 .comment-composer__footer {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   justify-content: space-between;
 }
@@ -501,27 +508,41 @@ onMounted(() => {
 .comment-composer__footer span {
   color: var(--oa-muted);
   font-size: 13px;
+  opacity: 0.85;
+}
+
+.comment-composer__footer :deep(.el-button) {
+  border-radius: 10px;
+  font-weight: 500;
+  padding: 10px 20px;
+  height: auto;
 }
 
 .comment-login-tip {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: 20px 24px;
   color: var(--oa-muted);
-  background: var(--oa-page-bg);
+  background: var(--oa-page-soft-bg);
   border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  border-radius: 16px;
+  font-size: 14.5px;
+}
+
+.comment-login-tip :deep(.el-button) {
+  border-radius: 10px;
+  font-weight: 500;
+  padding: 8px 18px;
 }
 
 .comment-list {
   display: grid;
-  gap: 2px;
-  padding: 2px 2px 0;
-  background: var(--oa-page-bg);
-  border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  gap: 16px;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .markdown-body :deep(h1),

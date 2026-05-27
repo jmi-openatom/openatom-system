@@ -1,7 +1,6 @@
 <template>
   <ViewPage class="image-hosting-page" :loading="loading">
     <section class="image-hosting-hero home-interactive-section">
-      <HomeInteractiveBackdrop :radius="220" :spacing="66" :strength="20" />
       <div class="container image-hosting-hero__inner">
         <div class="section-heading reveal-block image-hosting-heading">
           <span>Image Hosting</span>
@@ -37,7 +36,6 @@
     </section>
 
     <section class="image-hosting-main home-interactive-section">
-      <HomeInteractiveBackdrop :radius="210" :spacing="64" :strength="18" />
       <div class="container image-hosting-shell">
         <ViewToolbar>
           <div class="toolbar__filters">
@@ -109,7 +107,6 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
 import { imageHostingApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { ElMessage } from 'element-plus'

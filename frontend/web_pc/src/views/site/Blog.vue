@@ -1,7 +1,6 @@
 <template>
   <ViewPage class="blog-page" :loading="loading">
     <section class="blog-hero home-interactive-section">
-      <HomeInteractiveBackdrop :radius="230" :spacing="68" :strength="22" />
       <div class="container blog-hero__inner">
         <div class="section-heading reveal-block">
           <span>OpenAtom Blog</span>
@@ -54,7 +53,6 @@
     </section>
 
     <section class="blog-stream-section home-interactive-section">
-      <HomeInteractiveBackdrop :radius="210" :spacing="62" :strength="18" />
       <div class="container blog-stream">
         <div class="section-heading reveal-block">
           <span>文章流</span>
@@ -116,7 +114,6 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
-import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
 import { siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { getToken } from '@/utils/auth.ts'
