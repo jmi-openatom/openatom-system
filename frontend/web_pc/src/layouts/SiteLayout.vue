@@ -1,8 +1,5 @@
 <template>
   <div ref="siteShellRef" class="site-shell" :class="{ 'site-shell--home': isHomeRoute }">
-    <div v-if="!isHomeRoute" class="site-global-mouse-field" aria-hidden="true">
-      <HomeInteractiveBackdrop track-window :radius="230" :spacing="68" :strength="22" />
-    </div>
     <header
       :aria-hidden="!headerVisible"
       :class="{ 'site-header--hidden': !headerVisible, 'site-header--home': isHomeRoute }"
@@ -141,7 +138,6 @@ import { getToken } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
 import { notificationApi } from '@/api'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
 import { useRouteTransition } from '@/composables/useRouteTransition'
 import { useSiteShellMotion } from '@/composables/useSiteMotion'
 
@@ -244,20 +240,6 @@ onBeforeUnmount(() => {
 
 .site-shell:not(.site-shell--home) .site-main {
   padding-top: var(--oa-site-header-height);
-}
-
-.site-global-mouse-field {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0.72;
-}
-
-.site-global-mouse-field :deep(.home-section-canvas) {
-  position: absolute;
-  inset: 0;
 }
 
 /* Header 样式 */

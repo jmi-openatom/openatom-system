@@ -1,6 +1,5 @@
 <template>
   <ViewPage class="scan-page home-interactive-section">
-    <HomeInteractiveBackdrop track-window :radius="220" :spacing="66" :strength="20" />
     <section class="container scan-shell">
       <div class="scan-panel">
         <div class="scan-heading">
@@ -48,7 +47,6 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
-import HomeInteractiveBackdrop from '@/components/site/home/HomeInteractiveBackdrop.vue'
 import { ElMessage } from 'element-plus'
 import { Link, Loading, Refresh, Select } from '@element-plus/icons-vue'
 import { checkInApi } from '@/api'
