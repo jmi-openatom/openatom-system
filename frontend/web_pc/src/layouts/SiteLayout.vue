@@ -19,13 +19,13 @@
           <router-link to="/activities">活动</router-link>
           <router-link to="/blog">博客</router-link>
           <router-link to="/images">图床</router-link>
-<!--          <router-link to="/open-platform">开放平台</router-link>-->
+          <router-link to="/open-platform">开放平台</router-link>
           <router-link to="/points">积分</router-link>
           <router-link to="/apply">入会申请</router-link>
           <router-link to="/progress">我的申请</router-link>
           <router-link to="/leaves">请假</router-link>
           <router-link to="/calendar">校历</router-link>
-          <router-link to="/check-in/scan">扫码签到</router-link>
+<!--          <router-link to="/check-in/scan">扫码签到</router-link>-->
         </nav>
         <el-button :icon="Menu" circle class="mobile-menu-btn" @click="mobileNavVisible = true" />
         <div class="site-header__actions">
