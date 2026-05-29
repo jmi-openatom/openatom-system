@@ -45,4 +45,6 @@ public class DataOpenController {
       @Valid @RequestBody RequestReviewDataOpenApplicationDTO request) {
     return dataOpenApplicationService.review(applicationId, request, StpUtil.getLoginIdAsInt());
   }
+
+
 }

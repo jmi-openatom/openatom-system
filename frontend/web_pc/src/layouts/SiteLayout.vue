@@ -1,5 +1,5 @@
 <template>
-  <div ref="siteShellRef" class="site-shell" :class="{ 'site-shell--home': isHomeRoute }">
+  <div ref="siteShellRef" :class="{ 'site-shell--home': isHomeRoute }" class="site-shell">
     <header
       :aria-hidden="!headerVisible"
       :class="{ 'site-header--hidden': !headerVisible, 'site-header--home': isHomeRoute }"
@@ -19,7 +19,7 @@
           <router-link to="/activities">活动</router-link>
           <router-link to="/blog">博客</router-link>
           <router-link to="/images">图床</router-link>
-          <router-link to="/open-platform">开放平台</router-link>
+<!--          <router-link to="/open-platform">开放平台</router-link>-->
           <router-link to="/points">积分</router-link>
           <router-link to="/apply">入会申请</router-link>
           <router-link to="/progress">我的申请</router-link>
@@ -27,7 +27,7 @@
           <router-link to="/calendar">校历</router-link>
           <router-link to="/check-in/scan">扫码签到</router-link>
         </nav>
-        <el-button class="mobile-menu-btn" circle :icon="Menu" @click="mobileNavVisible = true" />
+        <el-button :icon="Menu" circle class="mobile-menu-btn" @click="mobileNavVisible = true" />
         <div class="site-header__actions">
           <ThemeToggle />
           <el-button
@@ -97,9 +97,9 @@
         <transition
           :css="false"
           mode="out-in"
-          @before-enter="routeTransition.beforeEnter"
           @enter="routeTransition.enter"
           @leave="routeTransition.leave"
+          @before-enter="routeTransition.beforeEnter"
         >
           <component :is="Component" :key="route.fullPath" />
         </transition>
@@ -127,21 +127,21 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import {
   Bell as BellIcon,
   Menu as MenuIcon,
   Setting as SettingIcon,
   UserFilled as UserFilledIcon,
 } from '@element-plus/icons-vue'
-import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { getToken } from '@/utils/auth.ts'
-import { hasAdminAccess } from '@/utils/permission.ts'
-import { notificationApi } from '@/api'
+import {computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {useRoute} from 'vue-router'
+import {getToken} from '@/utils/auth.ts'
+import {hasAdminAccess} from '@/utils/permission.ts'
+import {notificationApi} from '@/api'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import { useRouteTransition } from '@/composables/useRouteTransition'
-import { useSiteShellMotion } from '@/composables/useSiteMotion'
+import {useRouteTransition} from '@/composables/useRouteTransition'
+import {useSiteShellMotion} from '@/composables/useSiteMotion'
 
 const Setting = markRaw(SettingIcon)
 

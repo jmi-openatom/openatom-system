@@ -124,11 +124,16 @@ public class DataOpenApplicationServiceImpl implements DataOpenApplicationServic
     List<DataOpenApplication> applications = page.getRecords();
     Map<Integer, User> reviewers = reviewerMap(applications);
     return PageDataVO.<ResponseDataOpenApplicationVO>builder()
-        .list(applications.stream().map(item -> toResponse(item, reviewers.get(item.getReviewedBy()))).toList())
+        .list(applications.stream().map(item -> toResponse(item, reviewerOf(item, reviewers))).toList())
         .page(page.getCurrent())
         .pageSize(page.getSize())
         .total(page.getTotal())
         .build();
+  }
+
+  private User reviewerOf(DataOpenApplication application, Map<Integer, User> reviewers) {
+    Integer reviewerId = application == null ? null : application.getReviewedBy();
+    return reviewerId == null ? null : reviewers.get(reviewerId);
   }
 
   private Map<Integer, User> reviewerMap(List<DataOpenApplication> applications) {

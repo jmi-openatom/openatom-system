@@ -24,6 +24,8 @@ public class DataOpenApplication {
   @TableId(value = "id", type = IdType.AUTO)
   private Integer id;
 
+  
+
   @TableField("app_name")
   private String appName;
 
