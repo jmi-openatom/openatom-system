@@ -273,6 +273,18 @@ export const imageHostingApi = {
   },
 }
 
+export const dataOpenApi = {
+  apply(data: Record<string, unknown>): Promise<any> {
+    return request.post('/public/data-open/applications', data)
+  },
+  adminList(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/data-open/admin/applications', { params })
+  },
+  review(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/data-open/admin/applications/${id}/review`, data)
+  },
+}
+
 export const blogApi = {
   myArticles(params?: Record<string, unknown>): Promise<any> {
     return request.get('/blog/my/articles', { params })

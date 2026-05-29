@@ -59,3 +59,6 @@ app:
   napcat:
     base-url: ${APP_NAPCAT_BASE_URL:http://napcat:3000}
     access-token: ${APP_NAPCAT_ACCESS_TOKEN:sRtnBQJy-lqPTWjj}
+logging:
+  level:
+    cn.dev33.satoken: debug

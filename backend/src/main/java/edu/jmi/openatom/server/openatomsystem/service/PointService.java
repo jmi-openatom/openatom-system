@@ -55,5 +55,7 @@ public interface PointService {
 
   void grantDailyLoginPoints(Integer userId);
 
+  void grantDailyLoginPointsPublic(Integer userId,String applicationName);
+
   void grantBlogPublishPoints(Integer userId, Integer articleId, String articleTitle, Integer operatorId);
 }

@@ -188,6 +188,12 @@ const menus = ref([
     permissions: ['image:list'],
   },
   {
+    path: '/admin/data-open',
+    label: '开放平台',
+    icon: Connection,
+    permissions: ['data-open:list'],
+  },
+  {
     path: '/admin/leaves',
     label: '请假审批',
     icon: DocumentChecked,

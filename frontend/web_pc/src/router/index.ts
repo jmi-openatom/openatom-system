@@ -16,6 +16,7 @@ const adminFallbackRoutes = [
   '/admin/points',
   '/admin/office-documents',
   '/admin/images',
+  '/admin/data-open',
   '/admin/leaves',
   '/admin/school-calendar',
   '/admin/activities',
@@ -94,6 +95,11 @@ const routes = [
         name: 'site-images',
         meta: { requiresSiteLogin: true },
         component: () => import('../views/site/ImageHosting.vue'),
+      },
+      {
+        path: 'open-platform',
+        name: 'site-open-platform',
+        component: () => import('../views/site/OpenPlatform.vue'),
       },
       {
         path: 'points',
@@ -234,6 +240,12 @@ const routes = [
         name: 'admin-images',
         meta: { permissions: ['image:list'] },
         component: () => import('../views/admin/Images.vue'),
+      },
+      {
+        path: 'data-open',
+        name: 'admin-data-open',
+        meta: { permissions: ['data-open:list'] },
+        component: () => import('../views/admin/DataOpen.vue'),
       },
       {
         path: 'leaves',

@@ -32,9 +32,12 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(operationLogInterceptor).addPathPatterns("/**").excludePathPatterns("/error", "/favicon.ico");
+		registry.addInterceptor(operationLogInterceptor)
+				.addPathPatterns("/**")
+				.excludePathPatterns("/error", "/favicon.ico");
 
-		registry.addInterceptor(applicationSubmitRateLimitInterceptor).addPathPatterns("/applications");
+		registry.addInterceptor(applicationSubmitRateLimitInterceptor)
+				.addPathPatterns("/applications");
 
 		registry.addInterceptor(new SaInterceptor(handle -> {
 			String path = SaHolder.getRequest().getRequestPath();
@@ -43,11 +46,27 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				return;
 			}
 			StpUtil.checkLogin();
-		})).addPathPatterns("/**").excludePathPatterns("/auth/register", "/auth/login", "/auth/miniapp-login", "/auth/refresh-token", "/auth/qq-bind", "/auth/qq-bind/confirm", "/auth/qq-bind/status", "/bot/leave-applications", "/bot/leave-applications/**", "/bot/qq-events", "/bot/users/lookup", "/site/**", "/clubs/{clubId}/departments", "/files/avatars/**", "/files/images/**");
+		})).addPathPatterns("/**").excludePathPatterns(
+				"/auth/register",
+				"/auth/login",
+				"/auth/miniapp-login",
+				"/auth/refresh-token",
+				"/auth/qq-bind",
+				"/auth/qq-bind/confirm",
+				"/auth/qq-bind/status",
+				"/bot/leave-applications",
+				"/bot/leave-applications/**",
+				"/bot/qq-events",
+				"/bot/users/lookup",
+				"/site/**",
+				"/clubs/{clubId}/departments",
+				"/files/avatars/**",
+				"/files/images/**",
+				"/public/**");
 	}
 
 	/**
-	 * 注册 Sa-Token 全局过滤器，统一处理跨域1
+	 * 注册 Sa-Token 全局过滤器，统一处理跨域
 	 */
 	@Bean
 	public SaServletFilter getSaServletFilter() {

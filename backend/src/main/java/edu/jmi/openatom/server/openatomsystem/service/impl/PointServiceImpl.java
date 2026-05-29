@@ -348,7 +348,26 @@ public class PointServiceImpl implements PointService {
         null);
   }
 
-  @Override
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void grantDailyLoginPointsPublic(Integer userId,String applicationName) {
+		if (userId == null) return;
+		int points = pointSettingValue(DAILY_LOGIN_POINTS_KEY, DEFAULT_DAILY_LOGIN_POINTS);
+		if (points <= 0) return;
+		LocalDate today = LocalDate.now(BUSINESS_ZONE);
+		awardBySource(
+				userId,
+				points,
+				"daily_login",
+				"login",
+				null,
+				"daily_login:" + today,
+				applicationName+" 每日登录：" + today,
+				null);
+	}
+
+
+	@Override
   @Transactional(rollbackFor = Exception.class)
   public void grantBlogPublishPoints(
       Integer userId, Integer articleId, String articleTitle, Integer operatorId) {
