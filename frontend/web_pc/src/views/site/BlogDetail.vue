@@ -227,7 +227,7 @@ async function shareArticle() {
   if (!ensureLogin()) return
   article.value = await siteApi.shareBlogArticle(route.params.id, { channel: 'copy_link' })
   try {
-    await navigator.clipboard?.writeText(window.location.href)
+    await navigator.clipboard?.writeText(article.value.title+"\n"+window.location.href)
     ElMessage.success('链接已复制，分享记录已保存')
   } catch (_error) {
     ElMessage.success('分享记录已保存')

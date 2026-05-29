@@ -6,13 +6,10 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestCreatePermissionDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Permission;
 import edu.jmi.openatom.server.openatomsystem.service.PermissionService;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 权限管理控制器
@@ -23,29 +20,29 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/permissions")
 public class PermissionController {
-  private final PermissionService permissionService;
+	private final PermissionService permissionService;
 
-  /**
-   * 获取所有权限
-   *
-   * @return 权限列表
-   */
-  @GetMapping
-  @SaCheckPermission("permission:list")
-  public Result<List<Permission>> getPermissions() {
-    return permissionService.getPermissions();
-  }
+	/**
+	 * 获取所有权限
+	 *
+	 * @return 权限列表
+	 */
+	@GetMapping
+	@SaCheckPermission("permission:list")
+	public Result<List<Permission>> getPermissions() {
+		return permissionService.getPermissions();
+	}
 
-  /**
-   * 创建新权限
-   *
-   * @param requestCreatePermissionDTO 创建权限请求参数
-   * @return 创建结果
-   */
-  @PostMapping
-  @SaCheckPermission("permission:create")
-  public Result<String> createPermission(
-      @Valid @RequestBody RequestCreatePermissionDTO requestCreatePermissionDTO) {
-    return permissionService.createPermission(requestCreatePermissionDTO);
-  }
+	/**
+	 * 创建新权限
+	 *
+	 * @param requestCreatePermissionDTO 创建权限请求参数
+	 * @return 创建结果
+	 */
+	@PostMapping
+	@SaCheckPermission("permission:create")
+	public Result<String> createPermission(
+			@Valid @RequestBody RequestCreatePermissionDTO requestCreatePermissionDTO) {
+		return permissionService.createPermission(requestCreatePermissionDTO);
+	}
 }
