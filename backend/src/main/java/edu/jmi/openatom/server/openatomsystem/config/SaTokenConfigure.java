@@ -10,10 +10,16 @@ import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.web.ApplicationSubmitRateLimitInterceptor;
 import edu.jmi.openatom.server.openatomsystem.common.web.OperationLogInterceptor;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -35,6 +41,22 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 	@Bean
 	public StpLogic getStpLogicJwt() {
 		return new StpLogicJwtForSimple();
+	}
+
+	@Bean
+	public FilterRegistrationBean<CorsFilter> corsFilterRegistrationBean() {
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowedOriginPatterns(Arrays.asList(allowedOriginPatterns));
+		config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		config.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization", "jmiopenatom", "X-Requested-With", "Accept", "Origin"));
+		config.setExposedHeaders(Arrays.asList("Content-Disposition"));
+		config.setAllowCredentials(true);
+		config.setMaxAge(3600L);
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config);
+		FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
+		bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+		return bean;
 	}
 
 	@Override
