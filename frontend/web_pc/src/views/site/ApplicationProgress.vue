@@ -314,7 +314,7 @@ async function fetchProgress() {
 }
 
 function goLogin() {
-  router.push({ path: '/admin/login', query: { redirect: route.fullPath } })
+  router.push({ path: '/login', query: { redirect: route.fullPath } })
 }
 
 function interviewModeText(mode: any) {

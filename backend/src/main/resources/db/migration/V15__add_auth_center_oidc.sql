@@ -39,7 +39,27 @@ INSERT INTO `oauth_client` (`client_id`, `client_secret`, `client_name`, `redire
 SELECT 'openatom-web',
        NULL,
        'OpenAtom Web',
-       'http://localhost:18080/auth/callback,http://127.0.0.1:18080/auth/callback,http://localhost:5173/auth/callback,http://localhost:5175/auth/callback,http://127.0.0.1:5173/auth/callback,http://127.0.0.1:5175/auth/callback',
+       'https://jmi-openatom.cn/auth/callback,https://www.jmi-openatom.cn/auth/callback,http://localhost:18080/auth/callback,http://127.0.0.1:18080/auth/callback,http://localhost:5173/auth/callback,http://localhost:5175/auth/callback,http://127.0.0.1:5173/auth/callback,http://127.0.0.1:5175/auth/callback',
        'openid profile email roles permissions',
        'authorization_code refresh_token'
 WHERE NOT EXISTS (SELECT 1 FROM `oauth_client` WHERE `client_id` = 'openatom-web');
+
+INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
+SELECT '查询认证应用', 'oauth-client:list', 'api', '/oauth/admin/clients', 'GET'
+WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'oauth-client:list');
+
+INSERT INTO `sys_permission` (`name`, `code`, `type`, `path`, `method`)
+SELECT '管理认证应用', 'oauth-client:manage', 'api', '/oauth/admin/clients/**', 'POST'
+WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `code` = 'oauth-client:manage');
+
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.`id`, p.`id`
+FROM `sys_role` r
+         JOIN `sys_permission` p ON p.`code` IN ('oauth-client:list', 'oauth-client:manage')
+WHERE r.`code` = 'super_admin'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM `sys_role_permission` rp
+    WHERE rp.`role_id` = r.`id`
+      AND rp.`permission_id` = p.`id`
+);

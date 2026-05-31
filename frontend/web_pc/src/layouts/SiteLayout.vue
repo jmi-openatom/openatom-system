@@ -45,7 +45,7 @@
           <el-button v-if="isLoggedIn" :icon="UserFilled" plain @click="$router.push('/profile')"
             >个人中心
           </el-button>
-          <el-button v-else :icon="UserFilled" plain @click="$router.push('/admin/login')"
+          <el-button v-else :icon="UserFilled" plain @click="$router.push('/login')"
             >登录
           </el-button>
           <el-button
@@ -85,7 +85,7 @@
         <router-link v-if="isLoggedIn" to="/profile" @click="mobileNavVisible = false">
           个人中心
         </router-link>
-        <router-link v-else to="/admin/login" @click="mobileNavVisible = false">登录</router-link>
+        <router-link v-else to="/login" @click="mobileNavVisible = false">登录</router-link>
         <router-link v-if="showAdminEntry" to="/admin" @click="mobileNavVisible = false">
           管理员后台
         </router-link>

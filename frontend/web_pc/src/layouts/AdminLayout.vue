@@ -137,6 +137,12 @@ const version = ref(__APP_VERSION__)
 
 const menus = ref([
   { path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: [] },
+  {
+    path: '/admin/oauth-clients',
+    label: '认证应用',
+    icon: Lock,
+    permissions: ['oauth-client:list'],
+  },
   { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
   {
     path: '/admin/clubs',
@@ -295,7 +301,7 @@ async function handleCommand(command: string) {
     await authApi.logout()
   } finally {
     clearSession()
-    router.replace('/admin/login')
+    router.replace('/login')
   }
 }
 

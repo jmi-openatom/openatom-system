@@ -60,17 +60,17 @@ export const authApi = {
   logout(data: Record<string, unknown> = {}): Promise<any> {
     return request.post('/auth/logout', data)
   },
-	  me(): Promise<any> {
-	    return request.get('/auth/me')
-	  },
-	  oidcToken(data: Record<string, string>): Promise<any> {
-	    return request.post('/oauth/token', new URLSearchParams(data), {
-	      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-	    })
-	  },
-	  createQqBindToken(): Promise<any> {
-	    return request.post('/auth/qq-bind-token')
-	  },
+  me(): Promise<any> {
+    return request.get('/auth/me')
+  },
+  oidcToken(data: Record<string, string>): Promise<any> {
+    return request.post('/oauth/token', new URLSearchParams(data), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    })
+  },
+  createQqBindToken(): Promise<any> {
+    return request.post('/auth/qq-bind-token')
+  },
   unbindQq(): Promise<any> {
     return request.delete('/auth/qq-bind')
   },
@@ -87,6 +87,21 @@ export const authApi = {
   },
   removeAvatar(): Promise<any> {
     return request.delete('/auth/avatar')
+  },
+	}
+
+export const oauthClientApi = {
+  list(): Promise<any> {
+    return request.get('/oauth/admin/clients')
+  },
+  create(data: Record<string, unknown>): Promise<any> {
+    return request.post('/oauth/admin/clients', data)
+  },
+  update(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/oauth/admin/clients/${id}`, data)
+  },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/oauth/admin/clients/${id}`)
   },
 }
 

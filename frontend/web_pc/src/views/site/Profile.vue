@@ -284,7 +284,7 @@ async function fetchApplications() {
 async function logout() {
   await authApi.logout()
   clearSession()
-  router.push('/admin/login')
+  router.push('/login')
 }
 
 async function generateQqBindToken() {

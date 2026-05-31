@@ -175,7 +175,7 @@ async function fetchDetail() {
 async function submit() {
   if (!getToken()) {
     ElMessage.warning('请先登录后再报名')
-    router.push({ path: '/admin/login', query: { redirect: route.fullPath } })
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
     return
   }
   if (!hasRole('formal_member')) {

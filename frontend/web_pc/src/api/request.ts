@@ -20,11 +20,11 @@ function redirectToLogin(message?: string) {
   clearSession()
   ElMessage.error(message || '登录已过期，请重新登录')
 
-  if (redirectingToLogin || window.location.pathname === '/admin/login') return
+  if (redirectingToLogin || window.location.pathname === '/login') return
 
   redirectingToLogin = true
   const redirect = encodeURIComponent(currentRedirectPath())
-  window.location.replace(`/admin/login?redirect=${redirect}`)
+  window.location.replace(`/login?redirect=${redirect}`)
 }
 
 service.interceptors.request.use(

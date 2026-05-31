@@ -213,7 +213,7 @@ function canRedeem(item: any) {
 }
 
 function goLogin() {
-  router.push({ path: '/admin/login', query: { redirect: '/points' } })
+  router.push({ path: '/login', query: { redirect: '/points' } })
 }
 
 function openRedeemDialog(item: any) {

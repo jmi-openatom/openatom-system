@@ -77,7 +77,7 @@ const statusText = computed(() => {
 
 function redirectToLogin() {
   clearSession()
-  router.replace({ path: '/admin/login', query: { redirect: route.fullPath } })
+  router.replace({ path: '/login', query: { redirect: route.fullPath } })
 }
 
 function loadRouteToken() {

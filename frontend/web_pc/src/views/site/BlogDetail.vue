@@ -247,7 +247,7 @@ function cancelReply() {
 
 function ensureLogin() {
   if (getToken()) return true
-  router.push({ path: '/admin/login', query: { redirect: route.fullPath } })
+  router.push({ path: '/login', query: { redirect: route.fullPath } })
   return false
 }
 

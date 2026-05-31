@@ -9,11 +9,12 @@
 </template>
 
 <script setup lang="ts">
+import axios from 'axios'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ViewPage from '@/components/common/ViewPage.vue'
-import { authApi } from '@/api'
 import { setSession } from '@/utils/auth.ts'
+import { getOidcAuthority, getOidcClientId } from '@/utils/oidc.ts'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,14 +26,19 @@ onMounted(async () => {
     message.value = '缺少授权码'
     return
   }
-  try {
-    const redirectUri = `${window.location.origin}/auth/callback`
-    const result = await authApi.oidcToken({
-      grant_type: 'authorization_code',
-      client_id: 'openatom-web',
-      code,
-      redirect_uri: redirectUri,
-    })
+	try {
+	  const redirectUri = `${window.location.origin}/auth/callback`
+	  const response = await axios.post(
+	    `${getOidcAuthority()}/oauth/token`,
+	    new URLSearchParams({
+	      grant_type: 'authorization_code',
+	      client_id: getOidcClientId(),
+	      code,
+	      redirect_uri: redirectUri,
+	    }),
+	    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+	  )
+	  const result = response.data
     setSession({
       accessToken: result.access_token,
       refreshToken: result.refresh_token,
@@ -40,7 +46,8 @@ onMounted(async () => {
       roles: result.user?.roles || [],
       permissions: result.user?.permissions || [],
     })
-    router.replace('/admin/dashboard')
+    const state = Array.isArray(route.query.state) ? route.query.state[0] : route.query.state
+    router.replace(state && state.startsWith('/') ? state : '/admin/dashboard')
   } catch (_error) {
     message.value = '登录失败，请重新发起授权'
   }

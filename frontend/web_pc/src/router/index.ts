@@ -3,9 +3,11 @@ import { hasAdminAccess, hasAnyPermission } from '@/utils/permission.ts'
 import SiteLayout from '@/layouts/SiteLayout.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { getToken } from '@/utils/auth.ts'
+import { buildOidcAuthorizeUrl } from '@/utils/oidc.ts'
 
 const adminFallbackRoutes = [
   '/admin/dashboard',
+  '/admin/oauth-clients',
   '/admin/users',
   '/admin/clubs',
   '/admin/positions',
@@ -164,28 +166,38 @@ const routes = [
     name: 'lottery-screen',
     component: () => import('../views/site/LotteryScreen.vue'),
   },
-	  {
-	    path: '/admin/login',
-	    name: 'admin-login',
-	    component: () => import('../views/admin/Login.vue'),
-	  },
-	  {
-	    path: '/auth/callback',
-	    name: 'auth-callback',
-	    component: () => import('../views/AuthCallback.vue'),
-	  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/admin/Login.vue'),
+  },
+  {
+    path: '/admin/login',
+    redirect: (to) => ({ path: '/login', query: to.query }),
+  },
+  {
+    path: '/auth/callback',
+    name: 'auth-callback',
+    component: () => import('../views/AuthCallback.vue'),
+  },
   {
     path: '/admin',
     component: AdminLayout,
     meta: { requiresAuth: true },
     children: [
       { path: '', redirect: '/admin/dashboard' },
-      {
-        path: 'dashboard',
-        name: 'admin-dashboard',
-        meta: { permissions: [] },
-        component: () => import('../views/admin/Dashboard.vue'),
-      },
+	      {
+	        path: 'dashboard',
+	        name: 'admin-dashboard',
+	        meta: { permissions: [] },
+	        component: () => import('../views/admin/Dashboard.vue'),
+	      },
+	      {
+	        path: 'oauth-clients',
+	        name: 'admin-oauth-clients',
+	        meta: { permissions: ['oauth-client:list'] },
+	        component: () => import('../views/admin/OauthClients.vue'),
+	      },
       {
         path: 'users',
         name: 'admin-users',
@@ -344,7 +356,8 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   if ((requiresAdminAuth(to) || requiresSiteLogin(to)) && !getToken()) {
-    return { path: '/admin/login', query: { redirect: to.fullPath } }
+    window.location.assign(buildOidcAuthorizeUrl(to.fullPath))
+    return false
   }
 
   // 管理后台路径权限检查
@@ -358,7 +371,7 @@ router.beforeEach((to) => {
   }
 
 	  // 已登录用户访问登录页的处理
-	  if (to.path === '/admin/login' && getToken()) {
+  if (to.path === '/login' && getToken()) {
 	    const redirect = Array.isArray(to.query.redirect) ? to.query.redirect[0] : to.query.redirect
 	    if (redirect && (redirect.startsWith('/api/') || redirect.startsWith('/oauth/'))) {
 	      window.location.assign(redirect)

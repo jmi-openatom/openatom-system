@@ -112,7 +112,7 @@ public class OidcServiceImpl implements OidcService {
     if (!StpUtil.isLogin()) {
       String redirect = request.getRequestURI() + (request.getQueryString() == null ? "" : "?" + request.getQueryString());
       return ResponseEntity.status(HttpStatus.FOUND)
-          .location(URI.create("/admin/login?redirect=" + encode(redirect)))
+          .location(URI.create("/login?redirect=" + encode(redirect)))
           .build();
     }
     String grantedScope = normalizeScope(scope, client.getScopes());

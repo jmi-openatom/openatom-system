@@ -4,8 +4,8 @@
     <div class="login-panel">
       <div class="login-copy">
         <span class="login-logo">OA</span>
-        <h1>OpenAtom 登录</h1>
-        <p>登录后可统一维护社团、成员、审批、面试和权限等业务数据。</p>
+        <h1>OpenAtom 统一登录</h1>
+        <p>登录后可访问官网、管理后台和已接入的开放应用。</p>
       </div>
       <el-card class="login-card" shadow="never">
         <el-tabs v-model="activeTab">

@@ -2,7 +2,11 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 ARG VITE_APP_VERSION
+ARG VITE_OIDC_AUTHORITY
+ARG VITE_OIDC_CLIENT_ID
 ENV VITE_APP_VERSION=$VITE_APP_VERSION
+ENV VITE_OIDC_AUTHORITY=$VITE_OIDC_AUTHORITY
+ENV VITE_OIDC_CLIENT_ID=$VITE_OIDC_CLIENT_ID
 
 # Pin pnpm to a Node 20 compatible release that matches the lockfile generation.
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate

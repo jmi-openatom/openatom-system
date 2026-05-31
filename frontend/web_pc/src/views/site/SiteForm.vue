@@ -200,7 +200,7 @@ async function loadFormDetail() {
   }
   if (formMeta.value.id && requiresLogin.value && !hasToken.value) {
     ElMessage.warning('当前表单需要登录后填写，正在跳转到登录页')
-    router.replace({ path: '/admin/login', query: { redirect: route.fullPath } })
+    router.replace({ path: '/login', query: { redirect: route.fullPath } })
     return
   }
   if (club.value.id) {
@@ -271,7 +271,7 @@ function submitForm() {
     if (!valid) return
     if (requiresLogin.value && !getToken()) {
       ElMessage.warning('请先登录后再提交表单')
-      router.push({ path: '/admin/login', query: { redirect: route.fullPath } })
+      router.push({ path: '/login', query: { redirect: route.fullPath } })
       return
     }
     submitting.value = true
