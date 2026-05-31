@@ -11,9 +11,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FlywayRepairStrategyConfig {
   private static final String V3_CHECKSUM_MISMATCH = "Migration checksum mismatch for migration version 3";
+  private static final String V15_CHECKSUM_MISMATCH = "Migration checksum mismatch for migration version 15";
 
-  @Value("${app.flyway.auto-repair-v3-checksum-mismatch:true}")
-  private boolean autoRepairV3ChecksumMismatch;
+  @Value("${app.flyway.auto-repair-checksum-mismatch:true}")
+  private boolean autoRepairChecksumMismatch;
 
   @Bean
   public FlywayMigrationStrategy flywayMigrationStrategy() {
@@ -21,18 +22,19 @@ public class FlywayRepairStrategyConfig {
       try {
         flyway.migrate();
       } catch (FlywayValidateException ex) {
-        if (!autoRepairV3ChecksumMismatch || !isKnownV3ChecksumMismatch(ex)) {
+        if (!autoRepairChecksumMismatch || !isKnownChecksumMismatch(ex)) {
           throw ex;
         }
-        log.warn("Detected known Flyway V3 checksum mismatch. Running flyway repair once before migration.");
+        log.warn("Detected known Flyway checksum mismatch. Running flyway repair once before migration.");
         flyway.repair();
         flyway.migrate();
       }
     };
   }
 
-  private boolean isKnownV3ChecksumMismatch(FlywayValidateException ex) {
+  private boolean isKnownChecksumMismatch(FlywayValidateException ex) {
     String message = ex.getMessage();
-    return message != null && message.contains(V3_CHECKSUM_MISMATCH);
+    return message != null
+        && (message.contains(V3_CHECKSUM_MISMATCH) || message.contains(V15_CHECKSUM_MISMATCH));
   }
 }
