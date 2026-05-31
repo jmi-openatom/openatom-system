@@ -43,4 +43,16 @@ public interface DataOpenApplicationMapper extends BaseMapper<DataOpenApplicatio
             .eq(DataOpenApplication::getApiKey, apiKey.trim())
             .last("LIMIT 1"));
   }
+
+  default DataOpenApplication selectByIdAndApplicantContact(
+      Integer applicationId, String applicantContact) {
+    if (applicationId == null || applicantContact == null || applicantContact.isBlank()) {
+      return null;
+    }
+    return selectOne(
+        new LambdaQueryWrapper<DataOpenApplication>()
+            .eq(DataOpenApplication::getId, applicationId)
+            .eq(DataOpenApplication::getApplicantContact, applicantContact.trim())
+            .last("LIMIT 1"));
+  }
 }

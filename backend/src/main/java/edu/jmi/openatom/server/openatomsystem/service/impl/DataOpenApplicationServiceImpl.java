@@ -57,6 +57,19 @@ public class DataOpenApplicationServiceImpl implements DataOpenApplicationServic
   }
 
   @Override
+  public Result<ResponseDataOpenApplicationVO> publicDetail(
+      Integer applicationId, String applicantContact) {
+    String contact = trimToNull(applicantContact);
+    if (applicationId == null || contact == null) return Result.error(400, "申请编号和联系方式不能为空");
+    DataOpenApplication application =
+        dataOpenApplicationMapper.selectByIdAndApplicantContact(applicationId, contact);
+    if (application == null) return Result.error(404, "未找到匹配的开放平台申请");
+    User reviewer =
+        application.getReviewedBy() == null ? null : userMapper.selectById(application.getReviewedBy());
+    return Result.success(toResponse(application, reviewer));
+  }
+
+  @Override
   public Result<PageDataVO<ResponseDataOpenApplicationVO>> adminList(
       String keyword, String status, Long page, Long pageSize) {
     Page<DataOpenApplication> applicationPage =

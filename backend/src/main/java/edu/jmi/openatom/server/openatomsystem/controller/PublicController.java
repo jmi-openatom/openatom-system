@@ -10,9 +10,12 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponsePublicLoginVO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 
@@ -35,6 +38,13 @@ public class PublicController {
 	public Result<ResponseDataOpenApplicationVO> submitDataOpenApplication(
 			@Valid @RequestBody RequestDataOpenApplicationDTO request) {
 		return dataOpenApplicationService.submit(request);
+	}
+
+	@GetMapping("/data-open/applications/{applicationId}")
+	public Result<ResponseDataOpenApplicationVO> dataOpenApplicationDetail(
+			@PathVariable Integer applicationId,
+			@RequestParam String applicantContact) {
+		return dataOpenApplicationService.publicDetail(applicationId, applicantContact);
 	}
 
 	private String resolveApiKey(HttpServletRequest request) {

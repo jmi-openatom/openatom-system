@@ -164,11 +164,16 @@ const routes = [
     name: 'lottery-screen',
     component: () => import('../views/site/LotteryScreen.vue'),
   },
-  {
-    path: '/admin/login',
-    name: 'admin-login',
-    component: () => import('../views/admin/Login.vue'),
-  },
+	  {
+	    path: '/admin/login',
+	    name: 'admin-login',
+	    component: () => import('../views/admin/Login.vue'),
+	  },
+	  {
+	    path: '/auth/callback',
+	    name: 'auth-callback',
+	    component: () => import('../views/AuthCallback.vue'),
+	  },
   {
     path: '/admin',
     component: AdminLayout,
@@ -352,10 +357,15 @@ router.beforeEach((to) => {
     }
   }
 
-  // 已登录用户访问登录页的处理
-  if (to.path === '/admin/login' && getToken()) {
-    return hasAdminAccess() ? firstAccessibleAdminPath() : '/progress'
-  }
+	  // 已登录用户访问登录页的处理
+	  if (to.path === '/admin/login' && getToken()) {
+	    const redirect = Array.isArray(to.query.redirect) ? to.query.redirect[0] : to.query.redirect
+	    if (redirect && (redirect.startsWith('/api/') || redirect.startsWith('/oauth/'))) {
+	      window.location.assign(redirect)
+	      return false
+	    }
+	    return hasAdminAccess() ? firstAccessibleAdminPath() : '/progress'
+	  }
 
   return true
 })

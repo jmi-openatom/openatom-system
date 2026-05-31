@@ -60,12 +60,17 @@ export const authApi = {
   logout(data: Record<string, unknown> = {}): Promise<any> {
     return request.post('/auth/logout', data)
   },
-  me(): Promise<any> {
-    return request.get('/auth/me')
-  },
-  createQqBindToken(): Promise<any> {
-    return request.post('/auth/qq-bind-token')
-  },
+	  me(): Promise<any> {
+	    return request.get('/auth/me')
+	  },
+	  oidcToken(data: Record<string, string>): Promise<any> {
+	    return request.post('/oauth/token', new URLSearchParams(data), {
+	      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+	    })
+	  },
+	  createQqBindToken(): Promise<any> {
+	    return request.post('/auth/qq-bind-token')
+	  },
   unbindQq(): Promise<any> {
     return request.delete('/auth/qq-bind')
   },
@@ -276,6 +281,9 @@ export const imageHostingApi = {
 export const dataOpenApi = {
   apply(data: Record<string, unknown>): Promise<any> {
     return request.post('/public/data-open/applications', data)
+  },
+  publicDetail(id: string | number, applicantContact: string): Promise<any> {
+    return request.get(`/public/data-open/applications/${id}`, { params: { applicantContact } })
   },
   adminList(params?: Record<string, unknown>): Promise<any> {
     return request.get('/data-open/admin/applications', { params })

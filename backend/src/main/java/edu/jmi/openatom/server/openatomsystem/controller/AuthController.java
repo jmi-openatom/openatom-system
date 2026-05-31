@@ -7,6 +7,8 @@ import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseTokenIntrospectionVO;
+import edu.jmi.openatom.server.openatomsystem.service.AuthCenterService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RequestMapping("/auth")
 public class AuthController {
   private final AuthService authService;
+  private final AuthCenterService authCenterService;
 
   /**
    * 用户注册
@@ -105,6 +108,11 @@ public class AuthController {
       @Valid @RequestBody RequestRefreshTokenDTO requestRefreshTokenDTO) {
     return authService.refreshToken(
         requestRefreshTokenDTO == null ? null : requestRefreshTokenDTO.getRefreshToken());
+  }
+
+  @PostMapping("/introspect")
+  public Result<ResponseTokenIntrospectionVO> introspect(@RequestParam(required = false) String token) {
+    return authCenterService.introspect(token);
   }
 
   /**

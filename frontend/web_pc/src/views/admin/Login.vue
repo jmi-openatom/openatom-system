@@ -129,6 +129,15 @@ function loginRedirectTarget() {
   return value || (hasAdminAccess() ? '/admin/dashboard' : '/progress')
 }
 
+function finishLoginRedirect() {
+  const target = loginRedirectTarget()
+  if (target.startsWith('/api/') || target.startsWith('/oauth/')) {
+    window.location.assign(target)
+    return
+  }
+  router.replace(target)
+}
+
 async function fetchRegisterEnabled() {
   registerEnabled.value = Boolean(await siteApi.registerEnabled())
   if (!registerEnabled.value && activeTab.value === 'register') {
@@ -151,9 +160,9 @@ function handleLogin() {
       } else {
         clearRememberedLogin()
       }
-      setSession(result)
-      ElMessage.success('登录成功')
-      router.replace(loginRedirectTarget())
+	      setSession(result)
+	      ElMessage.success('登录成功')
+	      finishLoginRedirect()
     } finally {
       loading.value = false
     }
@@ -184,9 +193,9 @@ function handleRegister() {
       } else {
         clearRememberedLogin()
       }
-      setSession(result)
-      ElMessage.success('注册成功')
-      router.replace(loginRedirectTarget())
+	      setSession(result)
+	      ElMessage.success('注册成功')
+	      finishLoginRedirect()
     } finally {
       loading.value = false
     }

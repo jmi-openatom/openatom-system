@@ -3,8 +3,10 @@ package edu.jmi.openatom.server.openatomsystem.config;
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.filter.SaServletFilter;
 import cn.dev33.satoken.interceptor.SaInterceptor;
+import cn.dev33.satoken.jwt.StpLogicJwtForSimple;
 import cn.dev33.satoken.router.SaHttpMethod;
 import cn.dev33.satoken.router.SaRouter;
+import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.web.ApplicationSubmitRateLimitInterceptor;
 import edu.jmi.openatom.server.openatomsystem.common.web.OperationLogInterceptor;
@@ -30,6 +32,11 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 	@Value("${app.cors.allowed-origin-patterns:*}")
 	private String[] allowedOriginPatterns;
 
+	@Bean
+	public StpLogic getStpLogicJwt() {
+		return new StpLogicJwtForSimple();
+	}
+
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(operationLogInterceptor)
@@ -51,9 +58,16 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				"/auth/login",
 				"/auth/miniapp-login",
 				"/auth/refresh-token",
+				"/auth/introspect",
 				"/auth/qq-bind",
 				"/auth/qq-bind/confirm",
 				"/auth/qq-bind/status",
+				"/.well-known/openid-configuration",
+				"/oauth/authorize",
+				"/oauth/token",
+				"/oauth/introspect",
+				"/oauth/userinfo",
+				"/oauth/jwks",
 				"/bot/leave-applications",
 				"/bot/leave-applications/**",
 				"/bot/qq-events",

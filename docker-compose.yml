@@ -52,6 +52,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-openatom123}
+      - SA_TOKEN_JWT_SECRET_KEY=${SA_TOKEN_JWT_SECRET_KEY:-openatom-docker-jwt-secret-change-me}
+      - APP_OIDC_ISSUER=${APP_OIDC_ISSUER:-http://localhost:${FRONTEND_PORT:-18080}/api/v1}
       - APP_APPLICATION_SUBMIT_MAX_PER_SECOND=${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:-5}
       - APP_AVATAR_STORAGE_DIR=/app/uploads/avatars
       - APP_IMAGE_HOSTING_STORAGE_DIR=/app/uploads/images

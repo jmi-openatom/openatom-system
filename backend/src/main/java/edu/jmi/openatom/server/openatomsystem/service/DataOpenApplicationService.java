@@ -10,6 +10,8 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseDataOpenApplicationVO;
 public interface DataOpenApplicationService {
   Result<ResponseDataOpenApplicationVO> submit(RequestDataOpenApplicationDTO request);
 
+  Result<ResponseDataOpenApplicationVO> publicDetail(Integer applicationId, String applicantContact);
+
   Result<PageDataVO<ResponseDataOpenApplicationVO>> adminList(
       String keyword, String status, Long page, Long pageSize);
 

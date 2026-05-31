@@ -16,45 +16,84 @@
 
     <section class="open-platform-main">
       <div class="container open-platform-grid">
-        <div class="application-panel">
-          <div class="panel-heading">
-            <span>Application</span>
-            <h2>接入申请</h2>
-          </div>
-          <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-            <el-form-item label="应用名称" prop="appName">
-              <el-input v-model="form.appName" maxlength="120" placeholder="例如：社团积分同步服务" />
-            </el-form-item>
-            <el-form-item label="申请人" prop="applicantName">
-              <el-input v-model="form.applicantName" maxlength="80" placeholder="请输入姓名" />
-            </el-form-item>
-            <el-form-item label="联系方式" prop="applicantContact">
-              <el-input v-model="form.applicantContact" maxlength="160" placeholder="手机号、邮箱或 QQ" />
-            </el-form-item>
-            <el-form-item label="组织/团队">
-              <el-input v-model="form.organization" maxlength="160" placeholder="可选" />
-            </el-form-item>
-            <el-form-item label="使用场景" prop="purpose">
-              <el-input
-                v-model="form.purpose"
-                maxlength="800"
-                :rows="5"
-                show-word-limit
-                type="textarea"
-                placeholder="说明调用目的、使用范围和数据安全措施"
-              />
-            </el-form-item>
-            <div class="form-actions">
-              <el-button :icon="Refresh" @click="resetForm">重置</el-button>
-              <el-button type="primary" :icon="Promotion" :loading="submitting" @click="submit">
-                提交申请
-              </el-button>
+        <div class="left-stack">
+          <div class="application-panel">
+            <div class="panel-heading">
+              <span>Application</span>
+              <h2>接入申请</h2>
             </div>
-          </el-form>
-          <div v-if="submittedApplication" class="submit-result">
-            <strong>申请已提交</strong>
-            <span>申请编号：{{ submittedApplication.id }}</span>
-            <span>当前状态：{{ statusLabel(submittedApplication.status) }}</span>
+            <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
+              <el-form-item label="应用名称" prop="appName">
+                <el-input v-model="form.appName" maxlength="120" placeholder="例如：社团积分同步服务" />
+              </el-form-item>
+              <el-form-item label="申请人" prop="applicantName">
+                <el-input v-model="form.applicantName" maxlength="80" placeholder="请输入姓名" />
+              </el-form-item>
+              <el-form-item label="联系方式" prop="applicantContact">
+                <el-input v-model="form.applicantContact" maxlength="160" placeholder="手机号、邮箱或 QQ" />
+              </el-form-item>
+              <el-form-item label="组织/团队">
+                <el-input v-model="form.organization" maxlength="160" placeholder="可选" />
+              </el-form-item>
+              <el-form-item label="使用场景" prop="purpose">
+                <el-input
+                  v-model="form.purpose"
+                  maxlength="800"
+                  :rows="5"
+                  show-word-limit
+                  type="textarea"
+                  placeholder="说明调用目的、使用范围和数据安全措施"
+                />
+              </el-form-item>
+              <div class="form-actions">
+                <el-button :icon="Refresh" @click="resetForm">重置</el-button>
+                <el-button type="primary" :icon="Promotion" :loading="submitting" @click="submit">
+                  提交申请
+                </el-button>
+              </div>
+            </el-form>
+            <div v-if="submittedApplication" class="submit-result">
+              <strong>申请已提交</strong>
+              <span>申请编号：{{ submittedApplication.id }}</span>
+              <span>当前状态：{{ statusLabel(submittedApplication.status) }}</span>
+            </div>
+          </div>
+
+          <div class="query-panel">
+            <div class="panel-heading">
+              <span>Token</span>
+              <h2>查看申请与密钥</h2>
+            </div>
+            <el-form label-position="top" @submit.prevent>
+              <el-form-item label="申请编号">
+                <el-input v-model="lookupForm.id" placeholder="提交后生成的编号" />
+              </el-form-item>
+              <el-form-item label="联系方式">
+                <el-input v-model="lookupForm.applicantContact" maxlength="160" placeholder="填写申请时的联系方式" />
+              </el-form-item>
+              <el-button class="query-button" type="primary" :icon="Search" :loading="lookupLoading" @click="lookup">
+                查询密钥
+              </el-button>
+            </el-form>
+
+            <div v-if="lookupResult" class="lookup-result">
+              <div class="lookup-result__row">
+                <span>应用</span>
+                <strong>{{ lookupResult.appName }}</strong>
+              </div>
+              <div class="lookup-result__row">
+                <span>状态</span>
+                <el-tag :type="statusType(lookupResult.status)">{{ statusLabel(lookupResult.status) }}</el-tag>
+              </div>
+              <div v-if="lookupResult.reviewComment" class="lookup-result__note">
+                {{ lookupResult.reviewComment }}
+              </div>
+              <div v-if="lookupResult.apiKey" class="token-box">
+                <code>{{ lookupResult.apiKey }}</code>
+                <el-button :icon="DocumentCopy" @click="copyText(lookupResult.apiKey)">复制</el-button>
+              </div>
+              <p v-else class="lookup-hint">{{ tokenHint(lookupResult.status) }}</p>
+            </div>
           </div>
         </div>
 
@@ -87,12 +126,14 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import { dataOpenApi } from '@/api'
 import { computed, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { DocumentCopy, Promotion, Refresh } from '@element-plus/icons-vue'
+import { DocumentCopy, Promotion, Refresh, Search } from '@element-plus/icons-vue'
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const submitting = ref(false)
 const submittedApplication = ref<any>(null)
+const lookupLoading = ref(false)
+const lookupResult = ref<any>(null)
 const activeExample = ref('vue')
 
 const form = ref({
@@ -101,6 +142,11 @@ const form = ref({
   applicantContact: '',
   organization: '',
   purpose: '',
+})
+
+const lookupForm = ref({
+  id: '',
+  applicantContact: '',
 })
 
 const rules: FormRules = {
@@ -226,10 +272,27 @@ async function submit() {
   submitting.value = true
   try {
     submittedApplication.value = await dataOpenApi.apply({ ...form.value })
+    lookupForm.value.id = String(submittedApplication.value?.id || '')
+    lookupForm.value.applicantContact = submittedApplication.value?.applicantContact || form.value.applicantContact
     ElMessage.success('申请已提交')
     resetForm(false)
   } finally {
     submitting.value = false
+  }
+}
+
+async function lookup() {
+  const id = lookupForm.value.id.trim()
+  const applicantContact = lookupForm.value.applicantContact.trim()
+  if (!id || !applicantContact) {
+    ElMessage.warning('请填写申请编号和联系方式')
+    return
+  }
+  lookupLoading.value = true
+  try {
+    lookupResult.value = await dataOpenApi.publicDetail(id, applicantContact)
+  } finally {
+    lookupLoading.value = false
   }
 }
 
@@ -248,6 +311,16 @@ async function copyCode() {
   }
 }
 
+async function copyText(value: string) {
+  if (!value) return
+  try {
+    await navigator.clipboard?.writeText(value)
+    ElMessage.success('密钥已复制')
+  } catch (_error) {
+    ElMessage.warning('当前浏览器不允许直接复制，请手动选择密钥')
+  }
+}
+
 function statusLabel(status: string) {
   const map: Record<string, string> = {
     pending: '待审核',
@@ -255,6 +328,18 @@ function statusLabel(status: string) {
     rejected: '已驳回',
   }
   return map[status] || status || '-'
+}
+
+function statusType(status: string) {
+  if (status === 'approved') return 'success'
+  if (status === 'rejected') return 'danger'
+  return 'warning'
+}
+
+function tokenHint(status: string) {
+  if (status === 'approved') return '审核已通过，但密钥暂未生成，请联系管理员重新审核。'
+  if (status === 'rejected') return '申请未通过，请根据审核意见调整后重新提交。'
+  return '管理员审核通过后，这里会显示可复制的调用密钥。'
 }
 </script>
 
@@ -338,7 +423,13 @@ function statusLabel(status: string) {
   align-items: start;
 }
 
+.left-stack {
+  display: grid;
+  gap: 16px;
+}
+
 .application-panel,
+.query-panel,
 .code-panel {
   padding: 20px;
   background: var(--oa-elevated-bg);
@@ -380,6 +471,61 @@ function statusLabel(status: string) {
 .submit-result span {
   color: var(--oa-muted);
   font-size: 13px;
+}
+
+.query-button {
+  width: 100%;
+}
+
+.lookup-result {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--oa-border);
+}
+
+.lookup-result__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.lookup-result__row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--oa-text);
+  text-align: right;
+}
+
+.lookup-result__note,
+.lookup-hint {
+  margin: 0;
+  color: var(--oa-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.token-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  background: var(--oa-page-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+}
+
+.token-box code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--oa-text);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .code-panel :deep(.el-tabs__header) {

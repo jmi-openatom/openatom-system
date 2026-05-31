@@ -52,6 +52,7 @@ server:
 
 sa-token:
   token-name: jmiopenatom
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:d6f8a3c1e9b247a0f5d3e2b10a9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b10}
   timeout: ${SA_TOKEN_TIMEOUT:2592000}
   active-timeout: -1
   is-concurrent: true

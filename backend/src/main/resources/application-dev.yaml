@@ -30,6 +30,7 @@ server:
 
 sa-token:
   token-name: jmiopenatom
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:openatom-development-jwt-secret-change-me}
   timeout: 2592000
   active-timeout: -1
   is-concurrent: true
