@@ -65,7 +65,7 @@ public class BlogServiceImpl implements BlogService {
 
   @Override
   public Result<PageDataVO<ResponseBlogArticleVO>> publicArticles(
-      String keyword, String category, String tag, Long page, Long pageSize) {
+      String keyword, String category, String tag, Boolean featured, Long page, Long pageSize) {
     Page<BlogArticle> articlePage =
         blogArticleMapper.selectPageByConditions(
             new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)),
@@ -74,6 +74,7 @@ public class BlogServiceImpl implements BlogService {
             category,
             tag,
             null,
+            featured,
             true);
     return Result.success(toPage(articlePage));
   }
@@ -171,6 +172,7 @@ public class BlogServiceImpl implements BlogService {
             null,
             null,
             StpUtil.getLoginIdAsInt(),
+            null,
             false);
     return Result.success(toPage(articlePage));
   }
@@ -299,6 +301,7 @@ public class BlogServiceImpl implements BlogService {
             new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)),
             status,
             keyword,
+            null,
             null,
             null,
             null,

@@ -40,9 +40,10 @@ public class BlogController {
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) String category,
       @RequestParam(required = false) String tag,
+      @RequestParam(required = false) Boolean featured,
       @RequestParam(required = false) Long page,
       @RequestParam(required = false) Long pageSize) {
-    return blogService.publicArticles(keyword, category, tag, page, pageSize);
+    return blogService.publicArticles(keyword, category, tag, featured, page, pageSize);
   }
 
   @GetMapping("/site/blog/articles/{articleId}")

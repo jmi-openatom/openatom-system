@@ -1557,7 +1557,9 @@ html.dark .activity-stage__card {
 }
 
 html.dark .activity-stage__veil {
-  background: rgba(9, 9, 11, 0.46) !important;
+  background:
+    linear-gradient(180deg, rgba(9, 9, 11, 0.06) 0%, rgba(9, 9, 11, 0.26) 48%, rgba(9, 9, 11, 0.82) 100%),
+    linear-gradient(90deg, rgba(9, 9, 11, 0.56) 0%, rgba(9, 9, 11, 0.12) 58%, rgba(9, 9, 11, 0.4) 100%) !important;
 }
 
 html.dark .activity-stage__controls > button {

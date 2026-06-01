@@ -19,7 +19,7 @@ import java.util.List;
  */
 public interface BlogService {
   Result<PageDataVO<ResponseBlogArticleVO>> publicArticles(
-      String keyword, String category, String tag, Long page, Long pageSize);
+      String keyword, String category, String tag, Boolean featured, Long page, Long pageSize);
 
   Result<ResponseBlogArticleVO> publicDetail(Integer articleId);
 

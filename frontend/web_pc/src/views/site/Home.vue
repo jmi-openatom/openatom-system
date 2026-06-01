@@ -4,6 +4,7 @@
     <HomeOverviewPage :metrics="metrics" :tech-stack="techStack" @scroll-to="scrollTo" />
     <HomeFocusSection :club="club" :focus-areas="focusAreas" :loading="loading" />
     <HomeActivitiesSection :activities="activities" :loading="loading" />
+    <HomeFeaturedBlogsSection :articles="featuredBlogs" />
     <HomePeopleSection :people="people" :loading="loading" />
     <HomeAwardsSection :awards="awards" :loading="loading" />
   </ViewPage>
@@ -17,6 +18,7 @@ import { getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref } from 'v
 import { siteApi } from '@/api'
 import HomeActivitiesSection from '@/components/site/home/HomeActivitiesSection.vue'
 import HomeAwardsSection from '@/components/site/home/HomeAwardsSection.vue'
+import HomeFeaturedBlogsSection from '@/components/site/home/HomeFeaturedBlogsSection.vue'
 import HomeFocusSection from '@/components/site/home/HomeFocusSection.vue'
 import HomeHero from '@/components/site/home/HomeHero.vue'
 import HomeOverviewPage from '@/components/site/home/HomeOverviewPage.vue'
@@ -35,6 +37,8 @@ const techStack = ref<any[]>([])
 const focusAreas = ref<any[]>([])
 
 const activities = ref<any[]>([])
+
+const featuredBlogs = ref<any[]>([])
 
 const people = ref<any[]>([])
 
@@ -59,6 +63,7 @@ async function loadClubHome() {
     techStack.value = data.techStack || []
     focusAreas.value = data.focusAreas || []
     activities.value = data.activities || []
+    await loadFeaturedBlogs()
     people.value = data.people || []
     awards.value = data.awards || []
   } catch (error) {
@@ -67,10 +72,20 @@ async function loadClubHome() {
     techStack.value = []
     focusAreas.value = []
     activities.value = []
+    featuredBlogs.value = []
     people.value = []
     awards.value = []
   } finally {
     loading.value = false
+  }
+}
+
+async function loadFeaturedBlogs() {
+  try {
+    const data = await siteApi.blogArticles({ featured: true, page: 1, pageSize: 3 })
+    featuredBlogs.value = data?.list || []
+  } catch (error) {
+    featuredBlogs.value = []
   }
 }
 
@@ -1307,7 +1322,7 @@ onBeforeUnmount(() => {
   transform-origin: center center;
   transition:
     transform 0.72s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.48s ease,
+    opacity 0.28s ease,
     filter 0.48s ease,
     border-color 0.32s ease;
   box-shadow: 0 24px 72px rgba(15, 23, 42, 0.18);
@@ -1316,11 +1331,11 @@ onBeforeUnmount(() => {
 
 .activity-stage__card.is-far {
   pointer-events: none;
-  filter: saturate(0.5) brightness(0.78);
+  filter: saturate(0.9) brightness(0.88);
 }
 
 .activity-stage__card.is-near {
-  filter: saturate(0.72) brightness(0.84);
+  filter: saturate(0.96) brightness(0.94);
 }
 
 .activity-stage__card.is-active {
@@ -1339,14 +1354,14 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(1);
+  filter: saturate(1.04) contrast(1.03);
   transition:
     transform 0.72s cubic-bezier(0.22, 1, 0.36, 1),
     filter 0.35s ease;
 }
 
 .activity-stage__card.is-active .activity-stage__media img {
-  filter: grayscale(0.04);
+  filter: saturate(1.08) contrast(1.06);
   transform: scale(1.025);
 }
 
@@ -1359,7 +1374,9 @@ onBeforeUnmount(() => {
 
 .activity-stage__veil {
   z-index: 1;
-  background: rgba(2, 6, 23, 0.42);
+  background:
+    linear-gradient(180deg, rgba(2, 6, 23, 0.04) 0%, rgba(2, 6, 23, 0.2) 48%, rgba(2, 6, 23, 0.78) 100%),
+    linear-gradient(90deg, rgba(2, 6, 23, 0.48) 0%, rgba(2, 6, 23, 0.1) 58%, rgba(2, 6, 23, 0.34) 100%);
 }
 
 .activity-stage__content {
@@ -1378,9 +1395,10 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   gap: 18px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.84);
   font-size: 13px;
   letter-spacing: 0.12em;
+  text-shadow: 0 1px 14px rgba(2, 6, 23, 0.46);
 }
 
 .activity-stage__content h3 {
@@ -1394,13 +1412,15 @@ onBeforeUnmount(() => {
     sans-serif;
   font-size: clamp(28px, 3vw, 40px);
   line-height: 1.08;
+  text-shadow: 0 2px 18px rgba(2, 6, 23, 0.52);
 }
 
 .activity-stage__content p {
   max-width: 560px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.74);
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.7;
+  text-shadow: 0 1px 16px rgba(2, 6, 23, 0.5);
 }
 
 .activity-stage__controls {

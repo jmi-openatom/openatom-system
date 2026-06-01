@@ -124,7 +124,7 @@ function stageStyle(index: number) {
   const x = offset * 38
   const rotate = offset * -8
   const scale = absoluteOffset === 0 ? 1 : Math.max(0.76, 0.9 - absoluteOffset * 0.06)
-  const opacity = absoluteOffset === 0 ? 1 : Math.max(0.18, 0.7 - absoluteOffset * 0.22)
+  const opacity = absoluteOffset > 2 ? 0 : 1
   const zIndex = 10 - absoluteOffset
 
   return {

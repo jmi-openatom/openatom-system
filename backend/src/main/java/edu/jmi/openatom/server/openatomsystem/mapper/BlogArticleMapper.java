@@ -23,6 +23,7 @@ public interface BlogArticleMapper extends BaseMapper<BlogArticle> {
       String category,
       String tag,
       Integer authorId,
+      Boolean featured,
       boolean publicOnly) {
     LambdaQueryWrapper<BlogArticle> wrapper = new LambdaQueryWrapper<>();
     if (publicOnly) {
@@ -32,6 +33,7 @@ public interface BlogArticleMapper extends BaseMapper<BlogArticle> {
     }
     wrapper
         .eq(authorId != null, BlogArticle::getAuthorId, authorId)
+        .eq(featured != null, BlogArticle::getFeatured, featured)
         .eq(category != null && !category.isBlank(), BlogArticle::getCategory, category)
         .like(tag != null && !tag.isBlank(), BlogArticle::getTags, tag == null ? null : tag.trim())
         .and(
