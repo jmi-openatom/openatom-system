@@ -5,7 +5,7 @@ import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.entity.LoginLog;
 import edu.jmi.openatom.server.openatomsystem.entity.OperationLog;
 import edu.jmi.openatom.server.openatomsystem.service.LogService;
-import java.util.List;
+import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,17 +29,24 @@ public class LogController {
    * @param action 操作动作
    * @param startAt 开始时间
    * @param endAt 结束时间
+   * @param keyword 搜索关键词
+   * @param page 页码
+   * @param pageSize 每页条数
    * @return 操作日志列表
    */
   @GetMapping("/operation-logs")
   @SaCheckPermission("log:operation:list")
-  public Result<List<OperationLog>> operationLogs(
+  public Result<PageDataVO<OperationLog>> operationLogs(
       @RequestParam(required = false) Integer operatorId,
       @RequestParam(required = false) String module,
       @RequestParam(required = false) String action,
       @RequestParam(required = false) String startAt,
-      @RequestParam(required = false) String endAt) {
-    return logService.getOperationLogs(operatorId, module, action, startAt, endAt);
+      @RequestParam(required = false) String endAt,
+      @RequestParam(required = false) String keyword,
+      @RequestParam(defaultValue = "1") Long page,
+      @RequestParam(defaultValue = "10") Long pageSize) {
+    return logService.getOperationLogs(
+        operatorId, module, action, startAt, endAt, keyword, page, pageSize);
   }
 
   /**
@@ -49,7 +56,10 @@ public class LogController {
    */
   @GetMapping("/login-logs")
   @SaCheckPermission("log:login:list")
-  public Result<List<LoginLog>> loginLogs() {
-    return logService.getLoginLogs();
+  public Result<PageDataVO<LoginLog>> loginLogs(
+      @RequestParam(required = false) String keyword,
+      @RequestParam(defaultValue = "1") Long page,
+      @RequestParam(defaultValue = "10") Long pageSize) {
+    return logService.getLoginLogs(keyword, page, pageSize);
   }
 }

@@ -50,6 +50,7 @@
         <template #default="{ row }">
           <el-button link type="primary" @click="openPreview(row)">全屏预览</el-button>
           <el-button link type="success" @click="openRecords(row)">记录</el-button>
+          <el-button link type="primary" @click="openEditDialog(row)">编辑</el-button>
           <el-button v-if="row.status === 'open'" link type="danger" @click="closeSession(row)"
             >关闭</el-button
           >
@@ -60,7 +61,7 @@
 
     <el-empty v-if="!loading && !rows.length" description="暂无签到" />
 
-    <el-dialog v-model="dialogVisible" title="发布内部签到" width="920px">
+    <el-dialog v-model="dialogVisible" :title="editingSessionId ? '编辑内部签到' : '发布内部签到'" width="920px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <div class="form-grid">
           <el-form-item label="签到标题" prop="title">
@@ -146,7 +147,9 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="save">发布</el-button>
+        <el-button type="primary" :loading="saving" @click="save">{{
+          editingSessionId ? '保存' : '发布'
+        }}</el-button>
       </template>
     </el-dialog>
 
@@ -335,6 +338,8 @@ const saving = ref(false)
 
 const dialogVisible = ref(false)
 
+const editingSessionId = ref<any>(null)
+
 const groupVisible = ref(false)
 
 const previewVisible = ref(false)
@@ -469,6 +474,7 @@ async function loadOptions() {
 }
 
 function openDialog() {
+  editingSessionId.value = null
   form.value = {
     title: '',
     status: 'open',
@@ -483,6 +489,24 @@ function openDialog() {
   memberKeyword.value = ''
   dialogVisible.value = true
   syncMemberTableSelection([])
+}
+
+function openEditDialog(row: any) {
+  editingSessionId.value = row.id
+  form.value = {
+    title: row.title || '',
+    status: row.status || 'open',
+    startAt: toDateTimeLocalValue(row.startAt),
+    endAt: toDateTimeLocalValue(row.endAt),
+    location: row.location || '',
+    activityId: row.activityId || undefined,
+    groupId: row.groupId || undefined,
+    checkinPoints: row.checkinPoints || 0,
+    targetUserIds: [...(row.targetUserIds || [])],
+  }
+  memberKeyword.value = ''
+  dialogVisible.value = true
+  syncMemberTableSelection(form.value.targetUserIds)
 }
 
 function handleMemberSelection(selection: any) {
@@ -645,14 +669,33 @@ function save() {
     }
     saving.value = true
     try {
-      await checkInApi.create({ ...form.value, activityId: form.value.activityId || undefined })
-      ElMessage.success('签到已发布')
+      const payload = {
+        ...form.value,
+        activityId: form.value.activityId || undefined,
+        groupId: form.value.groupId || undefined,
+      }
+      if (editingSessionId.value) {
+        await checkInApi.update(editingSessionId.value, payload)
+        ElMessage.success('签到已更新')
+      } else {
+        await checkInApi.create(payload)
+        ElMessage.success('签到已发布')
+      }
       dialogVisible.value = false
+      editingSessionId.value = null
       fetchList()
     } finally {
       saving.value = false
     }
   })
+}
+
+function toDateTimeLocalValue(value: any) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 16)
+  const offsetMs = date.getTimezoneOffset() * 60 * 1000
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
 }
 
 function openPreview(row: any) {

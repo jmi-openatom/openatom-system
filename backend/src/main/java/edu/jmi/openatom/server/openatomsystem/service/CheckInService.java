@@ -31,6 +31,8 @@ public interface CheckInService {
 
   Result<Integer> create(RequestCreateCheckInSessionDTO request);
 
+  Result<String> update(Integer sessionId, RequestCreateCheckInSessionDTO request);
+
   Result<String> close(Integer sessionId);
 
   Result<String> delete(Integer sessionId);

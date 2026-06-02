@@ -85,6 +85,13 @@ public class CheckInController {
     return checkInService.create(request);
   }
 
+  @PatchMapping("/check-ins/{sessionId}")
+  @SaCheckPermission("check-in:update")
+  public Result<String> update(
+      @PathVariable Integer sessionId, @Valid @RequestBody RequestCreateCheckInSessionDTO request) {
+    return checkInService.update(sessionId, request);
+  }
+
   @PostMapping("/check-ins/{sessionId}/close")
   @SaCheckPermission("check-in:update")
   public Result<String> close(@PathVariable Integer sessionId) {

@@ -678,10 +678,23 @@
 - `action`
 - `startAt`
 - `endAt`
+- `keyword`
+- `page`
+- `pageSize`
+
+返回分页响应格式。
 
 ### GET `/login-logs`
 
 查询登录日志
+
+参数：
+
+- `keyword`
+- `page`
+- `pageSize`
+
+返回分页响应格式。
 
 ## 16. 推荐状态枚举
 

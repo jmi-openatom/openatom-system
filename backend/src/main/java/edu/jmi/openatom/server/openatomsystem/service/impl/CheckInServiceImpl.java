@@ -37,6 +37,7 @@ import java.util.HexFormat;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -181,6 +182,41 @@ public class CheckInServiceImpl implements CheckInService {
       targetMapper.insert(CheckInTarget.builder().sessionId(session.getId()).userId(userId).build());
     }
     return Result.success(session.getId(), "签到已发布");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> update(Integer sessionId, RequestCreateCheckInSessionDTO request) {
+    CheckInSession session = findSession(sessionId);
+    if (session == null) return Result.error(404, "签到不存在");
+    Club club = defaultClub();
+    if (club == null) return Result.error(404, "默认社团不存在");
+    String status = normalizeStatus(request.getStatus());
+    if (status == null) return Result.error(400, "签到状态不合法");
+    List<Integer> targetUserIds = resolveTargetUserIds(request.getGroupId(), request.getTargetUserIds());
+    if (targetUserIds.isEmpty()) return Result.error(400, "请选择发放人员");
+    Result<String> validResult = validateUsers(targetUserIds);
+    if (validResult.getCode() != Result.SUCCESS_CODE) return Result.error(validResult.getCode(), validResult.getMessage());
+    if (request.getActivityId() != null) {
+      ClubActivity activity = activityMapper.selectOneByIdAndClubId(request.getActivityId(), club.getId());
+      if (activity == null) return Result.error(404, "活动不存在");
+    }
+    if (request.getGroupId() != null && findGroup(request.getGroupId()) == null) {
+      return Result.error(404, "签到分组不存在");
+    }
+
+    ClubActivity revokeActivity = activityForSession(session);
+    session.setActivityId(request.getActivityId());
+    session.setGroupId(request.getGroupId());
+    session.setTitle(request.getTitle().trim());
+    session.setLocation(trimToNull(request.getLocation()));
+    session.setStartAt(Times.parseTimestamp(request.getStartAt()));
+    session.setEndAt(Times.parseTimestamp(request.getEndAt()));
+    session.setStatus(status);
+    session.setCheckinPoints(safePoints(request.getCheckinPoints()));
+    sessionMapper.updateById(session);
+    replaceSessionTargets(session, targetUserIds, revokeActivity);
+    return Result.success("签到已更新");
   }
 
   @Override
@@ -393,6 +429,29 @@ public class CheckInServiceImpl implements CheckInService {
     groupMemberMapper.deleteByGroupId(groupId);
     for (Integer userId : userIds) {
       groupMemberMapper.insert(CheckInGroupMember.builder().groupId(groupId).userId(userId).build());
+    }
+  }
+
+  private void replaceSessionTargets(
+      CheckInSession session, List<Integer> nextUserIds, ClubActivity revokeActivity) {
+    Set<Integer> nextSet = new LinkedHashSet<>(nextUserIds);
+    Set<Integer> existingSet =
+        targetMapper.selectBySessionId(session.getId()).stream()
+            .map(CheckInTarget::getUserId)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+    for (Integer userId : existingSet) {
+      if (!nextSet.contains(userId)) {
+        CheckInRecord record = recordMapper.selectOneBySessionAndUser(session.getId(), userId);
+        if (record != null) {
+          recordMapper.deleteById(record.getId());
+          pointService.revokeCheckInPoints(userId, session, revokeActivity, currentUserId());
+        }
+      }
+    }
+    targetMapper.deleteBySessionId(session.getId());
+    for (Integer userId : nextUserIds) {
+      targetMapper.insert(CheckInTarget.builder().sessionId(session.getId()).userId(userId).build());
     }
   }
 

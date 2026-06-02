@@ -2,8 +2,8 @@ package edu.jmi.openatom.server.openatomsystem.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.entity.LoginLog;
-import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -15,8 +15,30 @@ import org.apache.ibatis.annotations.Mapper;
 public interface LoginLogMapper extends BaseMapper<LoginLog> {
 
   /** 查所有登录日志（ordered by loginAt desc） */
-  default List<LoginLog> selectAllOrdered() {
-    return selectList(
-        new LambdaQueryWrapper<LoginLog>().orderByDesc(LoginLog::getLoginAt));
+  default Page<LoginLog> selectPageByKeyword(Page<LoginLog> page, String keyword) {
+    LambdaQueryWrapper<LoginLog> wrapper = new LambdaQueryWrapper<>();
+    String trimmedKeyword = keyword == null ? null : keyword.trim();
+    Integer keywordUserId = parseInteger(trimmedKeyword);
+    wrapper.and(
+        trimmedKeyword != null && !trimmedKeyword.isBlank(),
+        query -> {
+          query.like(LoginLog::getIp, trimmedKeyword).or().like(LoginLog::getUserAgent, trimmedKeyword);
+          if (keywordUserId != null) {
+            query.or().eq(LoginLog::getUserId, keywordUserId);
+          }
+        });
+    wrapper.orderByDesc(LoginLog::getLoginAt).orderByDesc(LoginLog::getId);
+    return selectPage(page, wrapper);
+  }
+
+  private Integer parseInteger(String value) {
+    if (value == null || !value.matches("\\d+")) {
+      return null;
+    }
+    try {
+      return Integer.valueOf(value);
+    } catch (NumberFormatException ignored) {
+      return null;
+    }
   }
 }

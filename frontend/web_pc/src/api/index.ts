@@ -396,6 +396,9 @@ export const checkInApi = {
   create(data: Record<string, unknown>): Promise<any> {
     return request.post('/check-ins', data)
   },
+  update(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/check-ins/${id}`, data)
+  },
   close(id: string | number): Promise<any> {
     return request.post(`/check-ins/${id}/close`)
   },

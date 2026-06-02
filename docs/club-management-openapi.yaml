@@ -1495,6 +1495,9 @@ paths:
           schema:
             type: string
             format: date-time
+        - $ref: '#/components/parameters/Keyword'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
       responses:
         '200':
           description: success
@@ -1502,17 +1505,26 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ApiResponse'
+                  - $ref: '#/components/schemas/PagedResponse'
                   - type: object
                     properties:
                       data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/OperationLog'
+                        allOf:
+                          - $ref: '#/components/schemas/PageData'
+                          - type: object
+                            properties:
+                              list:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/OperationLog'
   /login-logs:
     get:
       tags: [Logs]
       summary: 查询登录日志
+      parameters:
+        - $ref: '#/components/parameters/Keyword'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
       responses:
         '200':
           description: success
@@ -1520,13 +1532,18 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ApiResponse'
+                  - $ref: '#/components/schemas/PagedResponse'
                   - type: object
                     properties:
                       data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/LoginLog'
+                        allOf:
+                          - $ref: '#/components/schemas/PageData'
+                          - type: object
+                            properties:
+                              list:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/LoginLog'
 components:
   securitySchemes:
     bearerAuth:
@@ -2371,6 +2388,8 @@ components:
         action:
           type: string
         targetId:
+          type: string
+        content:
           type: string
         createdAt:
           type: string
