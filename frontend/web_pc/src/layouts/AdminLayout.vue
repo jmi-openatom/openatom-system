@@ -176,6 +176,12 @@ const menus = ref([
     permissions: ['lottery:list'],
   },
   {
+    path: '/admin/votes',
+    label: '投票管理',
+    icon: Tickets,
+    permissions: ['vote:list'],
+  },
+  {
     path: '/admin/points',
     label: '积分兑换',
     icon: Coin,

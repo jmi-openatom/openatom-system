@@ -24,6 +24,15 @@ export const siteApi = {
   formDetail(id: string | number): Promise<any> {
     return request.get(`/site/forms/${id}`)
   },
+  votes(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/site/votes', { params })
+  },
+  voteDetail(id: string | number): Promise<any> {
+    return request.get(`/site/votes/${id}`)
+  },
+  submitVote(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/site/votes/${id}/records`, data)
+  },
   blogArticles(params?: Record<string, unknown>): Promise<any> {
     return request.get('/site/blog/articles', { params })
   },
@@ -252,6 +261,30 @@ export const lotteryApi = {
   },
   screen(id: string | number): Promise<any> {
     return request.get(`/site/lotteries/${id}/screen`)
+  },
+}
+
+export const voteApi = {
+  list(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/votes', { params })
+  },
+  detail(id: string | number): Promise<any> {
+    return request.get(`/votes/${id}`)
+  },
+  create(clubId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/clubs/${clubId}/votes`, data)
+  },
+  update(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/votes/${id}`, data)
+  },
+  publish(id: string | number): Promise<any> {
+    return request.post(`/votes/${id}/publish`)
+  },
+  close(id: string | number): Promise<any> {
+    return request.post(`/votes/${id}/close`)
+  },
+  reset(id: string | number): Promise<any> {
+    return request.post(`/votes/${id}/reset`)
   },
 }
 

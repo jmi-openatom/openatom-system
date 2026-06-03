@@ -17,6 +17,7 @@
         <nav class="site-nav">
           <a href="/#overview">概览</a>
           <router-link to="/activities">活动</router-link>
+          <router-link to="/votes">投票</router-link>
           <router-link to="/blog">博客</router-link>
           <router-link to="/images">图床</router-link>
           <router-link to="/open-platform">开放平台</router-link>
@@ -70,6 +71,7 @@
       <nav class="mobile-nav">
         <a href="/#overview" @click="mobileNavVisible = false">概览</a>
         <router-link to="/activities" @click="mobileNavVisible = false">活动</router-link>
+        <router-link to="/votes" @click="mobileNavVisible = false">投票</router-link>
         <router-link to="/blog" @click="mobileNavVisible = false">博客</router-link>
         <router-link to="/images" @click="mobileNavVisible = false">图床</router-link>
         <router-link to="/open-platform" @click="mobileNavVisible = false">开放平台</router-link>

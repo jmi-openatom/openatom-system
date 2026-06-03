@@ -14,7 +14,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan("edu.jmi.openatom.server.openatomsystem.mapper")
 @EnableScheduling
 public class OpenAtomSystemApplication {
-
   public static void main(String[] args) {
     SpringApplication.run(OpenAtomSystemApplication.class, args);
   }

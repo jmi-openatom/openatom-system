@@ -15,6 +15,7 @@ const adminFallbackRoutes = [
   '/admin/site-forms',
   '/admin/form-submissions',
   '/admin/lotteries',
+  '/admin/votes',
   '/admin/points',
   '/admin/office-documents',
   '/admin/images',
@@ -86,6 +87,16 @@ const routes = [
         path: 'forms/:id',
         name: 'site-form-detail',
         component: () => import('../views/site/SiteForm.vue'),
+      },
+      {
+        path: 'votes',
+        name: 'site-votes',
+        component: () => import('../views/site/Votes.vue'),
+      },
+      {
+        path: 'votes/:id',
+        name: 'site-vote-detail',
+        component: () => import('../views/site/Votes.vue'),
       },
       {
         path: 'blog',
@@ -239,6 +250,12 @@ const routes = [
         name: 'admin-lotteries',
         meta: { permissions: ['lottery:list'] },
         component: () => import('../views/admin/Lotteries.vue'),
+      },
+      {
+        path: 'votes',
+        name: 'admin-votes',
+        meta: { permissions: ['vote:list'] },
+        component: () => import('../views/admin/Votes.vue'),
       },
       {
         path: 'points',
