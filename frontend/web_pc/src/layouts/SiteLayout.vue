@@ -27,7 +27,7 @@
           <router-link to="/progress">我的申请</router-link>
           <router-link to="/leaves">请假</router-link>
           <router-link to="/calendar">校历</router-link>
-<!--          <router-link to="/check-in/scan">扫码签到</router-link>-->
+          <!--          <router-link to="/check-in/scan">扫码签到</router-link>-->
         </nav>
         <el-button :icon="Menu" circle class="mobile-menu-btn" @click="mobileNavVisible = true" />
         <div class="site-header__actions">
@@ -72,17 +72,17 @@
       <nav class="mobile-nav">
         <a href="/#overview" @click="mobileNavVisible = false">概览</a>
         <router-link to="/activities" @click="mobileNavVisible = false">活动</router-link>
-        <router-link to="/votes" @click="mobileNavVisible = false">投票</router-link>
         <router-link to="/blog" @click="mobileNavVisible = false">博客</router-link>
         <router-link to="/apps" @click="mobileNavVisible = false">应用</router-link>
         <router-link to="/images" @click="mobileNavVisible = false">图床</router-link>
-        <router-link to="/open-platform" @click="mobileNavVisible = false">开放平台</router-link>
+        <router-link to="/votes" @click="mobileNavVisible = false">投票</router-link>
+        <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>
         <router-link to="/points" @click="mobileNavVisible = false">积分</router-link>
         <router-link to="/apply" @click="mobileNavVisible = false">入会申请</router-link>
         <router-link to="/progress" @click="mobileNavVisible = false">我的申请</router-link>
-        <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>
+        <router-link to="/open-platform" @click="mobileNavVisible = false">开放平台</router-link>
         <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
-        <router-link to="/check-in/scan" @click="mobileNavVisible = false">扫码签到</router-link>
+        <!--        <router-link to="/check-in/scan" @click="mobileNavVisible = false">扫码签到</router-link>-->
         <router-link v-if="isLoggedIn" to="/notifications" @click="mobileNavVisible = false">
           通知
         </router-link>
@@ -133,10 +133,10 @@
 
 <script lang="ts" setup>
 import {
-  Bell as BellIcon,
-  Menu as MenuIcon,
-  Setting as SettingIcon,
-  UserFilled as UserFilledIcon,
+    Bell as BellIcon,
+    Menu as MenuIcon,
+    Setting as SettingIcon,
+    UserFilled as UserFilledIcon,
 } from '@element-plus/icons-vue'
 import {computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute} from 'vue-router'
