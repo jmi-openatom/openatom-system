@@ -257,6 +257,10 @@ public enum SystemPermission {
   IMAGE_UPLOAD("上传图床图片", "image:upload", "api", "/image-hosting/images", "POST"),
   IMAGE_LIST("管理图床图片", "image:list", "api", "/image-hosting/admin/images", "GET"),
   IMAGE_DELETE("删除图床图片", "image:delete", "api", "/image-hosting/admin/images/{imageId}", "DELETE"),
+  SHOWCASE_APP_LIST("查询应用展示", "showcase-app:list", "api", "/showcase-apps", "GET"),
+  SHOWCASE_APP_MANAGE("管理应用展示", "showcase-app:manage", "api", "/showcase-apps/**", "POST"),
+  SHOWCASE_APP_DELETE(
+      "删除应用展示", "showcase-app:delete", "api", "/showcase-apps/{appId}", "DELETE"),
   DATA_OPEN_LIST("查询数据开放申请", "data-open:list", "api", "/data-open/admin/applications", "GET"),
 	  DATA_OPEN_REVIEW(
 	      "审核数据开放申请",

@@ -42,6 +42,12 @@ export const siteApi = {
   blogCategories(): Promise<any> {
     return request.get('/site/blog/categories')
   },
+  showcaseApps(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/site/apps', { params })
+  },
+  showcaseAppDetail(id: string | number): Promise<any> {
+    return request.get(`/site/apps/${id}`)
+  },
   blogComments(id: string | number): Promise<any> {
     return request.get(`/site/blog/articles/${id}/comments`)
   },
@@ -111,6 +117,24 @@ export const oauthClientApi = {
   },
   remove(id: string | number): Promise<any> {
     return request.delete(`/oauth/admin/clients/${id}`)
+  },
+}
+
+export const showcaseAppApi = {
+  list(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/showcase-apps', { params })
+  },
+  create(data: Record<string, unknown>): Promise<any> {
+    return request.post('/showcase-apps', data)
+  },
+  update(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/showcase-apps/${id}`, data)
+  },
+  updateStatus(id: string | number, status: string): Promise<any> {
+    return request.patch(`/showcase-apps/${id}/status`, null, { params: { status } })
+  },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/showcase-apps/${id}`)
   },
 }
 

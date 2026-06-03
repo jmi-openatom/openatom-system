@@ -105,6 +105,7 @@ import {
   ArrowDown,
   Bell,
   Calendar,
+  Box,
   ChatDotRound,
   Coin,
   Connection,
@@ -198,6 +199,12 @@ const menus = ref([
     label: '图床管理',
     icon: Picture,
     permissions: ['image:list'],
+  },
+  {
+    path: '/admin/showcase-apps',
+    label: '应用展示',
+    icon: Box,
+    permissions: ['showcase-app:list'],
   },
   {
     path: '/admin/data-open',
