@@ -32,7 +32,7 @@ OpenAtom System 是一个基于 Spring Boot 3 + Vue 3 Option 的社团/组织管
 ### 后端启动
 
 1. 本地开发如使用独立 MySQL，可执行 `backend/db/create_table.sql` 初始化。
-2. 修改配置：在 `backend/src/main/resources/application-dev.yaml` 中配置数据库连接。
+2. 在 `backend/src/main/resources/application-dev.yaml` 中直接填写本地 MySQL 的用户名和密码；默认连接 `127.0.0.1:3306/openatom-system`。
 3. 运行 `OpenatomSystemApplication`。
 
 ### 前端启动
@@ -57,12 +57,12 @@ docker-compose up -d --build
 
 该命令将启动：
 
-- **MySQL**: 宿主机暴露端口 3307（容器内仍为 3306）
+- **External MySQL**: 不启动 MySQL 容器，Backend 通过宿主机网关连接宿主机 `3306` 端口
 - **Backend**: 暴露端口 8921
 - **Frontend**: 暴露端口 80 (集成 Nginx 反向代理)
 - **Avatar Storage**: 用户头像写入 Docker 持久卷 `avatar_data`，容器重建后仍会保留
 
-Docker / 生产环境不再依赖 MySQL 容器首次启动时导入 SQL。后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
+Docker 部署前，请先在宿主机 MySQL 中创建 `openatom-system` 数据库，并在 `backend/src/main/resources/application-prod.yaml` 中直接填写数据库地址、用户名和密码。配置中的 `host.docker.internal:3306` 对应宿主机的 `localhost:3306`，后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
 
 > 头像上传后会保存到容器内 `/app/uploads/avatars`，该目录由 `avatar_data` 持久卷承载。  
 > 如果旧版本曾把头像直接写在容器临时文件系统中，那么在容器被重建后，数据库中的头像 URL 可能仍然存在，但原始图片文件已经丢失，需要用户重新上传一次。

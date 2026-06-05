@@ -4,9 +4,10 @@ spring:
   flyway:
     enabled: false
   datasource:
-    url: ${DB_URL:jdbc:mysql://156.239.2.231:3307/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root123456}
+    # 本地开发数据库配置，直接修改下面的连接地址、用户名和密码
+    url: jdbc:mysql://127.0.0.1:3306/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: root123456
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   servlet:

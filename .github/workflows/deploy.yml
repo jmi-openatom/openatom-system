@@ -118,7 +118,7 @@ jobs:
             sleep 15
             $COMPOSE_CMD ps
 
-            for service in mysql redis backend frontend astrbot napcat; do
+            for service in redis backend frontend astrbot napcat; do
               if ! $COMPOSE_CMD ps "$service" | grep -iq "Up"; then
                 echo "Critical Error: Service $service is not running!"
                 $COMPOSE_CMD logs --tail=100 "$service"
