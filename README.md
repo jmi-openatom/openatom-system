@@ -57,57 +57,43 @@ docker-compose up -d --build
 
 该命令将启动：
 
-- **External MySQL**: 不启动 MySQL 容器，Backend 通过宿主机网关连接宿主机 `3306` 端口
+- **External MySQL**: 不启动 MySQL 容器，Backend 使用 host 网络直接连接宿主机 `127.0.0.1:3306`
 - **Backend**: 暴露端口 8921
 - **Frontend**: 暴露端口 80 (集成 Nginx 反向代理)
 - **Avatar Storage**: 用户头像写入 Docker 持久卷 `avatar_data`，容器重建后仍会保留
 
-Docker 部署前，请先在宿主机 MySQL 中创建所需数据库，并在 `backend/src/main/resources/application-prod.yaml` 中直接填写数据库地址、用户名和密码。配置中的 `host.docker.internal` 指向宿主机网关，但 Docker 容器无法连接只监听 `127.0.0.1` 的 MySQL。宿主机 MySQL 必须监听 Docker 网桥可访问的地址，并允许配置文件中的数据库用户从 Docker 网段连接。后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
+Docker 部署前，请先在宿主机 MySQL 中创建所需数据库，并在 `backend/src/main/resources/application-prod.yaml` 中直接填写数据库地址、用户名和密码。生产 Backend 使用 Linux host 网络，可直接连接只监听 `127.0.0.1:3306` 的宝塔 MySQL，不需要开放 MySQL 到 Docker 网段或公网。后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
 
-在 Linux 部署服务器上可先检查 MySQL 监听地址和 Docker 网段：
-
-```bash
-sudo ss -lntp | grep ':3306'
-docker network inspect openatom-system_openatom-network
-```
-
-如果 MySQL 仅监听 `127.0.0.1:3306`，需要在 MySQL 配置中调整 `bind-address`，重启 MySQL，并为 Docker 网段授权。不要把 `3306` 端口直接开放到公网。完成后可重启并检查后端：
+修改数据库配置后可重启并检查后端：
 
 ```bash
-docker compose up -d --build backend frontend
+docker compose down --remove-orphans
+docker compose up -d --build
 docker compose logs --tail=200 backend
+curl -i http://127.0.0.1:8921/api/v1/site/register-enabled
 ```
 
 ### 宝塔 MySQL 配置
 
-宝塔面板中显示的“本地数据库”表示 MySQL 安装在服务器本机，但 Docker Backend 连接它时仍属于外部连接。配置步骤：
+宝塔面板中显示的“本地数据库”表示 MySQL 安装在服务器本机。Backend 使用 host 网络后，可以直接连接它。配置步骤：
 
-1. 在“数据库 > MySQL”页面找到目标数据库，点击“权限”，将访问权限设置为 Docker 网段。可先通过 `docker network inspect openatom-system_openatom-network` 查看网段；不建议把权限永久设置为“所有人”。
-2. 在“MySQL > 设置 > 配置修改”中检查 `bind-address`。如果当前为 `127.0.0.1`，改为 Docker 网桥可访问的地址或 `0.0.0.0`，保存并重启 MySQL。
-3. 在服务器防火墙和云安全组中不要向公网开放 `3306`，只允许服务器本机及 Docker 网段访问。
+1. 在“数据库 > MySQL”页面确认目标数据库、用户名和密码。
+2. 保持 MySQL 监听 `127.0.0.1:3306` 即可，不需要把权限设置为“所有人”。
+3. 在服务器防火墙和云安全组中不要向公网开放 `3306`。
 4. 确认 `backend/src/main/resources/application-prod.yaml` 中的数据库名、用户名和密码与宝塔数据库列表一致。
 
 如果页面仍显示 Nginx 错误页，请在服务器终端执行以下命令定位，不要只看宝塔数据库列表：
 
 ```bash
-# 应显示 0.0.0.0:3306、:::3306，或 Docker 网关地址；仅显示 127.0.0.1:3306 时容器无法连接
+# 宝塔 MySQL 可以只监听 127.0.0.1:3306
 ss -lntp | grep ':3306'
-
-# 查看 Docker 网络网关和网段
-docker network inspect openatom-system_openatom-network
-
-# 从与 Backend 相同的 Docker 网络测试宿主机 MySQL 端口
-docker run --rm \
-  --network openatom-system_openatom-network \
-  --add-host host.docker.internal:host-gateway \
-  busybox:1.36 nc -vz -w 5 host.docker.internal 3306
 
 # 查看后端真实错误
 docker compose ps -a
 docker compose logs --tail=200 backend
 ```
 
-端口测试超时表示 MySQL 监听地址或服务器防火墙未放行 Docker 网段；出现 `Access denied` 才表示需要继续修改宝塔数据库用户权限或密码。
+反复出现 `HikariPool-1 - Starting...` 表示 Backend 仍未成功连接 MySQL；出现 `Access denied` 表示需要修改宝塔数据库用户权限或密码。
 
 ### 宝塔 Nginx 反向代理
 

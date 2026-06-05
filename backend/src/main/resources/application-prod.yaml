@@ -2,8 +2,8 @@ spring:
   application:
     name: openatom-system
   datasource:
-    # Docker 中 host.docker.internal 指向宿主机网关；宿主机 MySQL 不能只监听 127.0.0.1
-    url: jdbc:mysql://host.docker.internal:3306/openatom-db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    # 生产 Backend 使用 host 网络，直接连接服务器本机的宝塔 MySQL
+    url: jdbc:mysql://127.0.0.1:3306/openatom-db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
     username: openatom-db
     password: 7jcAS4e8eBSbBFBt
     driver-class-name: com.mysql.cj.jdbc.Driver

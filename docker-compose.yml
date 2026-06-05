@@ -9,7 +9,7 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli -a \"${REDIS_PASSWORD:-openatom123}\" ping | grep -q PONG" ]
       interval: 10s
@@ -25,7 +25,7 @@ services:
       dockerfile: Dockerfile
     container_name: openatom-backend
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=127.0.0.1
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-openatom123}
       - SA_TOKEN_JWT_SECRET_KEY=${SA_TOKEN_JWT_SECRET_KEY:-openatom-docker-jwt-secret-change-me}
@@ -34,16 +34,13 @@ services:
       - APP_AVATAR_STORAGE_DIR=/app/uploads/avatars
       - APP_IMAGE_HOSTING_STORAGE_DIR=/app/uploads/images
       - APP_LEAVE_ATTACHMENT_STORAGE_DIR=/app/uploads/leave-attachments
-      - APP_BOT_LEAVE_REVIEW_CALLBACK_URL=${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:-http://astrbot:6198/openatom/leave-review}
+      - APP_BOT_LEAVE_REVIEW_CALLBACK_URL=${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:-http://127.0.0.1:6198/openatom/leave-review}
       - APP_BOT_CALLBACK_TOKEN=${APP_BOT_CALLBACK_TOKEN:-}
-      - APP_NAPCAT_BASE_URL=${APP_NAPCAT_BASE_URL:-http://napcat:3000}
+      - APP_NAPCAT_BASE_URL=${APP_NAPCAT_BASE_URL:-http://127.0.0.1:3000}
       - APP_NAPCAT_ACCESS_TOKEN=${APP_NAPCAT_ACCESS_TOKEN:-sRtnBQJy-lqPTWjj}
-    ports:
-      - "8921:8921"
+    network_mode: host
     volumes:
       - avatar_data:/app/uploads
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     healthcheck:
       test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8921'" ]
       interval: 10s
@@ -53,8 +50,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    networks:
-      - openatom-network
     restart: always
 
   frontend:
@@ -69,6 +64,8 @@ services:
     container_name: openatom-frontend
     ports:
       - "${FRONTEND_PORT:-18080}:80"
+    extra_hosts:
+      - "backend:host-gateway"
     depends_on:
       - backend
     networks:
@@ -82,8 +79,11 @@ services:
       - TZ=Asia/Shanghai
     ports:
       - "${ASTRBOT_PORT:-6185}:6185"
+      - "127.0.0.1:6198:6198"
     volumes:
       - ./astrbot/data:/AstrBot/data
+    extra_hosts:
+      - "backend:host-gateway"
     depends_on:
       - backend
     networks:
@@ -99,6 +99,7 @@ services:
       - MODE=astrbot
     ports:
       - "${NAPCAT_PORT:-6099}:6099"
+      - "127.0.0.1:3000:3000"
     volumes:
       - ./astrbot/data:/AstrBot/data
       - ./astrbot/napcat/config:/app/napcat/config
