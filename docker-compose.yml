@@ -44,6 +44,12 @@ services:
       - avatar_data:/app/uploads
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8921'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
     depends_on:
       redis:
         condition: service_healthy
@@ -57,7 +63,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_APP_VERSION=${VITE_APP_VERSION:-unknown}
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api/v1}
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://api.jmi-openatom.cn/api/v1}
         - VITE_OIDC_AUTHORITY=${VITE_OIDC_AUTHORITY:-https://oauth.jmi-openatom.cn/api/v1}
         - VITE_OIDC_CLIENT_ID=${VITE_OIDC_CLIENT_ID:-openatom-web}
     container_name: openatom-frontend

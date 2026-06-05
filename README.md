@@ -87,6 +87,84 @@ docker compose logs --tail=200 backend
 3. 在服务器防火墙和云安全组中不要向公网开放 `3306`，只允许服务器本机及 Docker 网段访问。
 4. 确认 `backend/src/main/resources/application-prod.yaml` 中的数据库名、用户名和密码与宝塔数据库列表一致。
 
+如果页面仍显示 Nginx 错误页，请在服务器终端执行以下命令定位，不要只看宝塔数据库列表：
+
+```bash
+# 应显示 0.0.0.0:3306、:::3306，或 Docker 网关地址；仅显示 127.0.0.1:3306 时容器无法连接
+ss -lntp | grep ':3306'
+
+# 查看 Docker 网络网关和网段
+docker network inspect openatom-system_openatom-network
+
+# 从与 Backend 相同的 Docker 网络测试宿主机 MySQL 端口
+docker run --rm \
+  --network openatom-system_openatom-network \
+  --add-host host.docker.internal:host-gateway \
+  busybox:1.36 nc -vz -w 5 host.docker.internal 3306
+
+# 查看后端真实错误
+docker compose ps -a
+docker compose logs --tail=200 backend
+```
+
+端口测试超时表示 MySQL 监听地址或服务器防火墙未放行 Docker 网段；出现 `Access denied` 才表示需要继续修改宝塔数据库用户权限或密码。
+
+### 宝塔 Nginx 反向代理
+
+生产环境使用两个独立域名：
+
+- `www.jmi-openatom.cn` 只代理 Frontend：`127.0.0.1:18080`
+- `api.jmi-openatom.cn` 只代理 Backend：`127.0.0.1:8921`
+
+如果宝塔 Nginx 和 Docker Compose 运行在同一台服务器，反向代理目标应使用本机地址，不要使用服务器公网 IP。`www.jmi-openatom.cn` 的反向代理配置：
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:18080;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+}
+```
+
+`api.jmi-openatom.cn` 需要在宝塔中创建独立站点并配置 SSL，然后将全部请求代理到 Backend：
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8921;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+Frontend Docker 镜像默认使用 `VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1`，浏览器 API 请求不应发送到 `www.jmi-openatom.cn/api/v1`。修改该构建参数后必须重新构建 Frontend 容器。
+
+出现 Nginx 错误页时，在服务器终端依次检查：
+
+```bash
+# 宝塔 Nginx能否连接 Frontend 容器
+curl -i http://127.0.0.1:18080/
+
+# 宿主机能否直接访问 Backend
+curl -i http://127.0.0.1:8921/api/v1/site/register-enabled
+
+# 验证公开 API 域名
+curl -i https://api.jmi-openatom.cn/api/v1/site/register-enabled
+
+# 查看两个宝塔站点的 Nginx 上游错误
+tail -n 100 /www/wwwlogs/www.jmi-openatom.cn.error.log
+tail -n 100 /www/wwwlogs/api.jmi-openatom.cn.error.log
+```
+
+Frontend 请求失败表示 Frontend 容器未运行或 `18080` 未监听；Backend 请求失败表示 Backend 未运行；本机 Backend 请求成功但公开 API 域名失败，表示 `api.jmi-openatom.cn` 的宝塔站点或 DNS 配置有误。错误日志中如果上游仍为服务器公网 IP，需要先改为对应的 `127.0.0.1` 端口。
+
 > 头像上传后会保存到容器内 `/app/uploads/avatars`，该目录由 `avatar_data` 持久卷承载。  
 > 如果旧版本曾把头像直接写在容器临时文件系统中，那么在容器被重建后，数据库中的头像 URL 可能仍然存在，但原始图片文件已经丢失，需要用户重新上传一次。
 

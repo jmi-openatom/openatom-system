@@ -112,10 +112,27 @@ jobs:
 
             echo "Step 2: Starting deployment with version: $APP_VER"
             $COMPOSE_CMD pull astrbot napcat || true
-            VITE_APP_VERSION=$APP_VER $COMPOSE_CMD up -d --build
-            
-            # 等待启动并检查
-            sleep 15
+            VITE_APP_VERSION=$APP_VER \
+              VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1 \
+              $COMPOSE_CMD up -d --build
+
+            # 等待后端真正监听端口，避免把启动失败但仍在重启的容器误判为部署成功
+            BACKEND_READY=false
+            for attempt in $(seq 1 36); do
+              if $COMPOSE_CMD exec -T backend bash -c 'exec 3<>/dev/tcp/127.0.0.1/8921' >/dev/null 2>&1; then
+                BACKEND_READY=true
+                break
+              fi
+              sleep 5
+            done
+
+            if [ "$BACKEND_READY" != "true" ]; then
+              echo "Critical Error: Backend did not become ready within 180 seconds."
+              $COMPOSE_CMD ps
+              $COMPOSE_CMD logs --tail=200 backend
+              exit 1
+            fi
+
             $COMPOSE_CMD ps
 
             for service in redis backend frontend astrbot napcat; do
