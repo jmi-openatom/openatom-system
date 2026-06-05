@@ -62,7 +62,30 @@ docker-compose up -d --build
 - **Frontend**: 暴露端口 80 (集成 Nginx 反向代理)
 - **Avatar Storage**: 用户头像写入 Docker 持久卷 `avatar_data`，容器重建后仍会保留
 
-Docker 部署前，请先在宿主机 MySQL 中创建 `openatom-system` 数据库，并在 `backend/src/main/resources/application-prod.yaml` 中直接填写数据库地址、用户名和密码。配置中的 `host.docker.internal:3306` 对应宿主机的 `localhost:3306`，后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
+Docker 部署前，请先在宿主机 MySQL 中创建所需数据库，并在 `backend/src/main/resources/application-prod.yaml` 中直接填写数据库地址、用户名和密码。配置中的 `host.docker.internal` 指向宿主机网关，但 Docker 容器无法连接只监听 `127.0.0.1` 的 MySQL。宿主机 MySQL 必须监听 Docker 网桥可访问的地址，并允许配置文件中的数据库用户从 Docker 网段连接。后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
+
+在 Linux 部署服务器上可先检查 MySQL 监听地址和 Docker 网段：
+
+```bash
+sudo ss -lntp | grep ':3306'
+docker network inspect openatom-system_openatom-network
+```
+
+如果 MySQL 仅监听 `127.0.0.1:3306`，需要在 MySQL 配置中调整 `bind-address`，重启 MySQL，并为 Docker 网段授权。不要把 `3306` 端口直接开放到公网。完成后可重启并检查后端：
+
+```bash
+docker compose up -d --build backend frontend
+docker compose logs --tail=200 backend
+```
+
+### 宝塔 MySQL 配置
+
+宝塔面板中显示的“本地数据库”表示 MySQL 安装在服务器本机，但 Docker Backend 连接它时仍属于外部连接。配置步骤：
+
+1. 在“数据库 > MySQL”页面找到目标数据库，点击“权限”，将访问权限设置为 Docker 网段。可先通过 `docker network inspect openatom-system_openatom-network` 查看网段；不建议把权限永久设置为“所有人”。
+2. 在“MySQL > 设置 > 配置修改”中检查 `bind-address`。如果当前为 `127.0.0.1`，改为 Docker 网桥可访问的地址或 `0.0.0.0`，保存并重启 MySQL。
+3. 在服务器防火墙和云安全组中不要向公网开放 `3306`，只允许服务器本机及 Docker 网段访问。
+4. 确认 `backend/src/main/resources/application-prod.yaml` 中的数据库名、用户名和密码与宝塔数据库列表一致。
 
 > 头像上传后会保存到容器内 `/app/uploads/avatars`，该目录由 `avatar_data` 持久卷承载。  
 > 如果旧版本曾把头像直接写在容器临时文件系统中，那么在容器被重建后，数据库中的头像 URL 可能仍然存在，但原始图片文件已经丢失，需要用户重新上传一次。

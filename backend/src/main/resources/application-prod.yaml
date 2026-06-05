@@ -2,7 +2,7 @@ spring:
   application:
     name: openatom-system
   datasource:
-    # Docker 中 host.docker.internal 对应宿主机；直接修改下面的连接地址、用户名和密码
+    # Docker 中 host.docker.internal 指向宿主机网关；宿主机 MySQL 不能只监听 127.0.0.1
     url: jdbc:mysql://host.docker.internal:3306/openatom-db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
     username: openatom-db
     password: 7jcAS4e8eBSbBFBt
