@@ -16,6 +16,8 @@ http://backend:8921/api/v1
 http://host.docker.internal:8921/api/v1
 ```
 
+`auto_approve_friend_requests` 默认开启。NapCat 将 OneBot 好友申请事件发送给 AstrBot 后，插件会立即调用 `set_friend_add_request` 自动同意；如需人工审批，可在插件配置中关闭。
+
 ## AI 工具
 
 插件只暴露一个 AI 工具：

@@ -22,6 +22,12 @@
     "default": 0,
     "hint": "0 表示不截断，确保所有获取到的数据都会语义化输出。"
   },
+  "auto_approve_friend_requests": {
+    "description": "自动同意 QQ 好友申请",
+    "type": "bool",
+    "default": true,
+    "hint": "开启后，NapCat/AstrBot 收到好友申请事件时会立即自动同意。"
+  },
   "callback_host": {
     "description": "后端审批回调监听地址",
     "type": "string",

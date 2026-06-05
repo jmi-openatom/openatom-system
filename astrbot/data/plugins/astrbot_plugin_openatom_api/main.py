@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.4.2"
+PLUGIN_VERSION = "1.4.3"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -56,6 +56,7 @@ class OpenAtomApiPlugin(Star):
         self.callback_host = str(self.config.get("callback_host", "0.0.0.0") or "0.0.0.0").strip()
         self.callback_port = int(self.config.get("callback_port", 6198) or 6198)
         self.callback_token = str(self.config.get("callback_token", "") or "").strip()
+        self.auto_approve_friend_requests = bool(self.config.get("auto_approve_friend_requests", True))
         self.leave_sessions: dict[str, dict[str, Any]] = {}
         self.callback_runner: web.AppRunner | None = None
         self.callback_site: web.TCPSite | None = None
@@ -103,6 +104,7 @@ class OpenAtomApiPlugin(Star):
             f"token: {token_status}\n"
             f"timeout: {self.timeout}s\n"
             f"max_reply_chars: {self.max_reply_chars}\n"
+            f"auto_approve_friend_requests: {self.auto_approve_friend_requests}\n"
             f"callback: http://{self.callback_host}:{self.callback_port}/openatom/leave-review"
         )
 
@@ -171,6 +173,32 @@ class OpenAtomApiPlugin(Star):
         query = self._parse_query(params)
         data, error = await self._get_data(path, query)
         yield self._plain_result(event, error or self._format_generic(data))
+
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
+    async def auto_approve_friend_request(self, event: AstrMessageEvent):
+        """自动同意 NapCat/OneBot 好友申请。"""
+        if not self.auto_approve_friend_requests:
+            return
+        raw = self._onebot_raw_event(event)
+        if (
+            self._raw_event_value(raw, "post_type") != "request"
+            or self._raw_event_value(raw, "request_type") != "friend"
+        ):
+            return
+        flag = str(self._raw_event_value(raw, "flag") or "").strip()
+        user_id = str(self._raw_event_value(raw, "user_id") or "").strip()
+        if not flag:
+            logger.warning(f"OpenAtom auto approve friend request skipped: missing flag, userId={user_id}")
+            return
+        bot = getattr(event, "bot", None)
+        if bot is None:
+            logger.warning(f"OpenAtom auto approve friend request skipped: missing aiocqhttp bot, userId={user_id}")
+            return
+        try:
+            await bot.call_action("set_friend_add_request", flag=flag, approve=True)
+            logger.info(f"OpenAtom friend request auto approved: userId={user_id or 'unknown'}")
+        except Exception as exc:
+            logger.warning(f"OpenAtom friend request auto approve failed: userId={user_id or 'unknown'}, error={exc}")
 
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_leave_conversation(self, event: AstrMessageEvent):
@@ -1001,6 +1029,18 @@ class OpenAtomApiPlugin(Star):
             return str(event.get_sender_id() or "").strip()
         except Exception:
             return ""
+
+    def _onebot_raw_event(self, event: AstrMessageEvent) -> Any:
+        message_obj = getattr(event, "message_obj", None)
+        return getattr(message_obj, "raw_message", None) if message_obj is not None else None
+
+    def _raw_event_value(self, raw: Any, key: str) -> Any:
+        if raw is None:
+            return None
+        getter = getattr(raw, "get", None)
+        if callable(getter):
+            return getter(key)
+        return getattr(raw, key, None)
 
     def _leave_session_key(self, event: AstrMessageEvent, sender_id: str) -> str:
         message_obj = getattr(event, "message_obj", None)
