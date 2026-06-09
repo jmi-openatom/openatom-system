@@ -48,8 +48,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class PointServiceImpl implements PointService {
   private static final String DAILY_LOGIN_POINTS_KEY = "point.daily_login_points";
   private static final String BLOG_PUBLISH_POINTS_KEY = "point.blog_publish_points";
-  private static final int DEFAULT_DAILY_LOGIN_POINTS = 1;
-  private static final int DEFAULT_BLOG_PUBLISH_POINTS = 20;
+  private static final long DEFAULT_DAILY_LOGIN_POINTS = 1L;
+  private static final long DEFAULT_BLOG_PUBLISH_POINTS = 20L;
+  private static final long MAX_POINT_AMOUNT = 9_000_000_000_000_000L;
   private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
   private static final Set<String> ITEM_STATUSES = Set.of("active", "inactive");
   private static final Set<String> REDEMPTION_STATUSES =
@@ -92,7 +93,7 @@ public class PointServiceImpl implements PointService {
     Integer userId = StpUtil.getLoginIdAsInt();
     PointRedeemItem item = itemMapper.selectById(itemId);
     if (item == null || !"active".equals(item.getStatus())) return Result.error(404, "兑换项不存在或已下架");
-    int cost = safe(item.getPointCost());
+    long cost = safe(item.getPointCost());
     if (cost <= 0) return Result.error(400, "兑换积分配置不正确");
     if (!hasStock(item)) return Result.error(400, "库存不足");
     PointAccount account = getOrCreateAccount(userId);
@@ -147,7 +148,7 @@ public class PointServiceImpl implements PointService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Result<String> adjust(RequestPointAdjustmentDTO request) {
-    if (request.getDelta() == null || request.getDelta() == 0) return Result.error(400, "调整积分不能为 0");
+    if (request.getDelta() == null || request.getDelta() == 0L) return Result.error(400, "调整积分不能为 0");
     if (userMapper.selectById(request.getUserId()) == null) return Result.error(404, "用户不存在");
     applyTransaction(
         request.getUserId(),
@@ -334,7 +335,7 @@ public class PointServiceImpl implements PointService {
   @Transactional(rollbackFor = Exception.class)
   public void grantDailyLoginPoints(Integer userId) {
     if (userId == null) return;
-    int points = pointSettingValue(DAILY_LOGIN_POINTS_KEY, DEFAULT_DAILY_LOGIN_POINTS);
+    long points = pointSettingValue(DAILY_LOGIN_POINTS_KEY, DEFAULT_DAILY_LOGIN_POINTS);
     if (points <= 0) return;
     LocalDate today = LocalDate.now(BUSINESS_ZONE);
     awardBySource(
@@ -352,7 +353,7 @@ public class PointServiceImpl implements PointService {
 	@Transactional(rollbackFor = Exception.class)
 	public void grantDailyLoginPointsPublic(Integer userId,String applicationName) {
 		if (userId == null) return;
-		int points = pointSettingValue(DAILY_LOGIN_POINTS_KEY, DEFAULT_DAILY_LOGIN_POINTS);
+		long points = pointSettingValue(DAILY_LOGIN_POINTS_KEY, DEFAULT_DAILY_LOGIN_POINTS);
 		if (points <= 0) return;
 		LocalDate today = LocalDate.now(BUSINESS_ZONE);
 		awardBySource(
@@ -372,7 +373,7 @@ public class PointServiceImpl implements PointService {
   public void grantBlogPublishPoints(
       Integer userId, Integer articleId, String articleTitle, Integer operatorId) {
     if (userId == null || articleId == null) return;
-    int points = pointSettingValue(BLOG_PUBLISH_POINTS_KEY, DEFAULT_BLOG_PUBLISH_POINTS);
+    long points = pointSettingValue(BLOG_PUBLISH_POINTS_KEY, DEFAULT_BLOG_PUBLISH_POINTS);
     if (points <= 0) return;
     String title = trimToNull(articleTitle);
     awardBySource(
@@ -388,7 +389,7 @@ public class PointServiceImpl implements PointService {
 
   private void awardBySource(
       Integer userId,
-      Integer points,
+      Long points,
       String type,
       String sourceType,
       Integer sourceId,
@@ -409,14 +410,14 @@ public class PointServiceImpl implements PointService {
       String description,
       Integer operatorId) {
     if (sourceKey == null) return;
-    int net = safe(transactionMapper.sumDeltaBySourceKey(userId, sourceKey));
+    long net = safe(transactionMapper.sumDeltaBySourceKey(userId, sourceKey));
     if (net <= 0) return;
     applyTransaction(userId, -net, type, sourceType, sourceId, sourceKey, description, operatorId);
   }
 
   private void refundRedemption(PointRedemption redemption) {
     String sourceKey = "redemption:" + redemption.getId();
-    int net = safe(transactionMapper.sumDeltaBySourceKey(redemption.getUserId(), sourceKey));
+    long net = safe(transactionMapper.sumDeltaBySourceKey(redemption.getUserId(), sourceKey));
     if (net >= 0) return;
     applyTransaction(
         redemption.getUserId(),
@@ -431,7 +432,7 @@ public class PointServiceImpl implements PointService {
 
   private PointTransaction applyTransaction(
       Integer userId,
-      Integer delta,
+      Long delta,
       String type,
       String sourceType,
       Integer sourceId,
@@ -439,14 +440,18 @@ public class PointServiceImpl implements PointService {
       String description,
       Integer operatorId) {
     PointAccount account = getOrCreateAccount(userId);
-    int balance = safe(account.getBalance()) + safe(delta);
+    long deltaValue = safe(delta);
+    if (deltaValue > MAX_POINT_AMOUNT || deltaValue < -MAX_POINT_AMOUNT) {
+      throw new IllegalArgumentException("单次积分变动超出系统支持范围");
+    }
+    long balance = checkedAdd(safe(account.getBalance()), deltaValue);
     account.setBalance(balance);
-    updateAccountTotals(account, safe(delta), type);
+    updateAccountTotals(account, deltaValue, type);
     accountMapper.updateById(account);
     PointTransaction transaction =
         PointTransaction.builder()
             .userId(userId)
-            .delta(delta)
+            .delta(deltaValue)
             .balanceAfter(balance)
             .type(type)
             .sourceType(sourceType)
@@ -459,26 +464,26 @@ public class PointServiceImpl implements PointService {
     return transaction;
   }
 
-  private void updateAccountTotals(PointAccount account, int delta, String type) {
+  private void updateAccountTotals(PointAccount account, long delta, String type) {
     if (delta > 0
         && ("checkin".equals(type)
             || "activity".equals(type)
             || "manual_adjust".equals(type)
             || "daily_login".equals(type)
             || "blog_publish".equals(type))) {
-      account.setTotalEarned(safe(account.getTotalEarned()) + delta);
+      account.setTotalEarned(checkedAdd(safe(account.getTotalEarned()), delta));
       return;
     }
     if (delta < 0 && ("checkin_revoke".equals(type) || "activity_revoke".equals(type))) {
-      account.setTotalEarned(Math.max(0, safe(account.getTotalEarned()) + delta));
+      account.setTotalEarned(Math.max(0L, checkedAdd(safe(account.getTotalEarned()), delta)));
       return;
     }
     if (delta < 0 && "redemption".equals(type)) {
-      account.setTotalSpent(safe(account.getTotalSpent()) - delta);
+      account.setTotalSpent(checkedAdd(safe(account.getTotalSpent()), -delta));
       return;
     }
     if (delta > 0 && "redemption_refund".equals(type)) {
-      account.setTotalSpent(Math.max(0, safe(account.getTotalSpent()) - delta));
+      account.setTotalSpent(Math.max(0L, checkedAdd(safe(account.getTotalSpent()), -delta)));
     }
   }
 
@@ -490,7 +495,7 @@ public class PointServiceImpl implements PointService {
     }
     try {
       account =
-          PointAccount.builder().userId(userId).balance(0).totalEarned(0).totalSpent(0).build();
+          PointAccount.builder().userId(userId).balance(0L).totalEarned(0L).totalSpent(0L).build();
       accountMapper.insert(account);
     } catch (DuplicateKeyException ignored) {
       account = accountMapper.selectOneByUserId(userId);
@@ -529,9 +534,9 @@ public class PointServiceImpl implements PointService {
         accounts.stream()
             .sorted(
                 (a, b) -> {
-                  int balanceCompare = Integer.compare(safe(b.getBalance()), safe(a.getBalance()));
+                  int balanceCompare = Long.compare(safe(b.getBalance()), safe(a.getBalance()));
                   if (balanceCompare != 0) return balanceCompare;
-                  int earnedCompare = Integer.compare(safe(b.getTotalEarned()), safe(a.getTotalEarned()));
+                  int earnedCompare = Long.compare(safe(b.getTotalEarned()), safe(a.getTotalEarned()));
                   if (earnedCompare != 0) return earnedCompare;
                   return Integer.compare(safe(a.getUserId()), safe(b.getUserId()));
                 })
@@ -677,7 +682,7 @@ public class PointServiceImpl implements PointService {
         BLOG_PUBLISH_POINTS_KEY, DEFAULT_BLOG_PUBLISH_POINTS, "博客审核通过奖励积分");
   }
 
-  private void ensurePointSetting(String key, int defaultValue, String description) {
+  private void ensurePointSetting(String key, long defaultValue, String description) {
     if (systemSettingMapper.selectById(key) != null) return;
     try {
       systemSettingMapper.insert(
@@ -691,7 +696,7 @@ public class PointServiceImpl implements PointService {
     }
   }
 
-  private void savePointSetting(String key, int value, String description) {
+  private void savePointSetting(String key, long value, String description) {
     systemSettingMapper.updateById(
         SystemSetting.builder()
             .settingKey(key)
@@ -700,12 +705,12 @@ public class PointServiceImpl implements PointService {
             .build());
   }
 
-  private int pointSettingValue(String key, int defaultValue) {
+  private long pointSettingValue(String key, long defaultValue) {
     ensurePointSetting(key, defaultValue, settingDescription(key));
     SystemSetting setting = systemSettingMapper.selectById(key);
     if (setting == null || setting.getSettingValue() == null) return defaultValue;
     try {
-      return normalizeRulePoints(Integer.valueOf(setting.getSettingValue().trim()));
+      return normalizeRulePoints(Long.valueOf(setting.getSettingValue().trim()));
     } catch (NumberFormatException ignored) {
       return defaultValue;
     }
@@ -717,9 +722,9 @@ public class PointServiceImpl implements PointService {
     return "积分规则";
   }
 
-  private int normalizeRulePoints(Integer value) {
-    if (value == null || value < 0) return 0;
-    return Math.min(value, 100000);
+  private long normalizeRulePoints(Long value) {
+    if (value == null || value < 0) return 0L;
+    return Math.min(value, MAX_POINT_AMOUNT);
   }
 
   private String checkInSourceKey(Integer sessionId) {
@@ -740,6 +745,18 @@ public class PointServiceImpl implements PointService {
 
   private int safe(Integer value) {
     return value == null ? 0 : value;
+  }
+
+  private long safe(Long value) {
+    return value == null ? 0L : value;
+  }
+
+  private long checkedAdd(long current, long delta) {
+    try {
+      return Math.addExact(current, delta);
+    } catch (ArithmeticException e) {
+      throw new IllegalArgumentException("积分数值超出系统支持范围");
+    }
   }
 
   private String trimToNull(String value) {

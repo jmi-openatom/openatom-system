@@ -178,11 +178,11 @@
           label-width="150px"
         >
           <el-form-item label="每日登录积分">
-            <el-input-number v-model="ruleForm.dailyLoginPoints" :min="0" :max="100000" :step="1" />
+            <el-input-number v-model="ruleForm.dailyLoginPoints" :min="0" :max="POINT_AMOUNT_MAX" :step="1" />
             <span class="rule-tip">每个账号每天首次登录只发放一次，填 0 表示关闭。</span>
           </el-form-item>
           <el-form-item label="博客审核通过积分">
-            <el-input-number v-model="ruleForm.blogPublishPoints" :min="0" :max="100000" :step="5" />
+            <el-input-number v-model="ruleForm.blogPublishPoints" :min="0" :max="POINT_AMOUNT_MAX" :step="5" />
             <span class="rule-tip">文章通过管理员审核并展示时发放，单篇文章只发放一次。</span>
           </el-form-item>
           <el-form-item>
@@ -205,7 +205,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="积分变动">
-          <el-input-number v-model="adjustForm.delta" :step="5" />
+          <el-input-number v-model="adjustForm.delta" :min="-POINT_AMOUNT_MAX" :max="POINT_AMOUNT_MAX" :step="5" />
         </el-form-item>
         <el-form-item label="说明">
           <el-input v-model="adjustForm.description" maxlength="120" show-word-limit />
@@ -223,7 +223,7 @@
           <el-input v-model="itemForm.name" />
         </el-form-item>
         <el-form-item label="所需积分">
-          <el-input-number v-model="itemForm.pointCost" :min="1" :step="10" />
+          <el-input-number v-model="itemForm.pointCost" :min="1" :max="POINT_AMOUNT_MAX" :step="10" />
         </el-form-item>
         <el-form-item label="库存">
           <el-input v-model="itemForm.stock" placeholder="留空或 -1 表示不限" type="number" />
@@ -282,6 +282,7 @@ import { Goods, Plus, Refresh } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
 
 const activeTab = ref('accounts')
+const POINT_AMOUNT_MAX = 9_000_000_000_000_000
 
 const loading = ref({
   accounts: false,

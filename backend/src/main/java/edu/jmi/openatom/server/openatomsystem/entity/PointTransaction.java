@@ -23,10 +23,10 @@ public class PointTransaction {
   @TableField("user_id")
   private Integer userId;
 
-  private Integer delta;
+  private Long delta;
 
   @TableField("balance_after")
-  private Integer balanceAfter;
+  private Long balanceAfter;
 
   private String type;
 

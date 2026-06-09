@@ -23,13 +23,13 @@ public class PointAccount {
   @TableField("user_id")
   private Integer userId;
 
-  private Integer balance;
+  private Long balance;
 
   @TableField("total_earned")
-  private Integer totalEarned;
+  private Long totalEarned;
 
   @TableField("total_spent")
-  private Integer totalSpent;
+  private Long totalSpent;
 
   @TableField("created_at")
   private Timestamp createdAt;

@@ -14,7 +14,7 @@ public class ResponsePointRedeemItemVO {
   private Integer id;
   private String name;
   private String description;
-  private Integer pointCost;
+  private Long pointCost;
   private Integer stock;
   private Integer exchangedCount;
   private Integer availableStock;

@@ -22,7 +22,7 @@ public class ResponseCheckInSessionVO {
   private Timestamp endAt;
   private String status;
   private String qrPayload;
-  private Integer checkinPoints;
+  private Long checkinPoints;
   private Integer targetCount;
   private Integer checkedCount;
   private List<Integer> targetUserIds;

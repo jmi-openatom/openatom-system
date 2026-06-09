@@ -24,7 +24,7 @@ public class PointRedeemItem {
   private String description;
 
   @TableField("point_cost")
-  private Integer pointCost;
+  private Long pointCost;
 
   private Integer stock;
 

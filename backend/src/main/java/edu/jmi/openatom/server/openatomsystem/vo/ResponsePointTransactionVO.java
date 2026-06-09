@@ -16,8 +16,8 @@ public class ResponsePointTransactionVO {
   private String userName;
   private String realName;
   private String studentId;
-  private Integer delta;
-  private Integer balanceAfter;
+  private Long delta;
+  private Long balanceAfter;
   private String type;
   private String sourceType;
   private Integer sourceId;

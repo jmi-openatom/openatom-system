@@ -16,7 +16,7 @@ public interface PointTransactionMapper extends BaseMapper<PointTransaction> {
       FROM point_transaction
       WHERE user_id = #{userId} AND source_key = #{sourceKey}
       """)
-  Integer sumDeltaBySourceKey(@Param("userId") Integer userId, @Param("sourceKey") String sourceKey);
+  Long sumDeltaBySourceKey(@Param("userId") Integer userId, @Param("sourceKey") String sourceKey);
 
   default List<PointTransaction> selectRecent(Integer userId, String type, int limit) {
     int safeLimit = Math.max(1, Math.min(limit, 300));

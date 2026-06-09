@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 @Builder
 public class ResponsePointRuleSettingsVO {
-  private Integer dailyLoginPoints;
-  private Integer blogPublishPoints;
+  private Long dailyLoginPoints;
+  private Long blogPublishPoints;
 }

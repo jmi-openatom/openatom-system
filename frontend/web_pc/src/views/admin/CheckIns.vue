@@ -120,7 +120,7 @@
                     </el-form-item>
 
                     <el-form-item label="签到积分">
-                        <el-input-number v-model="form.checkinPoints" :min="0" :step="1" />
+                        <el-input-number v-model="form.checkinPoints" :min="0" :max="POINT_AMOUNT_MAX" :step="1" />
                     </el-form-item>
 
                     <el-form-item label="签到分组">
@@ -395,6 +395,8 @@ import {activityApi, checkInApi} from '@/api'
 import {formatDateTime, statusType} from '@/utils/format.ts'
 import {qrSvgDataUrl} from '@/utils/qr.ts'
 import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
+
+const POINT_AMOUNT_MAX = 9_000_000_000_000_000
 
 const loading = ref(false)
 const saving = ref(false)

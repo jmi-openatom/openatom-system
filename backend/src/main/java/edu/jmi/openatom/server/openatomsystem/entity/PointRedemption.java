@@ -26,7 +26,7 @@ public class PointRedemption {
   @TableField("item_id")
   private Integer itemId;
 
-  private Integer points;
+  private Long points;
   private String status;
 
   @TableField("receiver_name")

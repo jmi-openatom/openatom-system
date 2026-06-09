@@ -9,7 +9,7 @@ public class RequestPointAdjustmentDTO {
   private Integer userId;
 
   @NotNull(message = "请输入调整积分")
-  private Integer delta;
+  private Long delta;
 
   private String description;
 }

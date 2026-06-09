@@ -42,7 +42,7 @@ public class CheckInSession {
   private String token;
 
   @TableField("checkin_points")
-  private Integer checkinPoints;
+  private Long checkinPoints;
 
   @TableField("created_by")
   private Integer createdBy;

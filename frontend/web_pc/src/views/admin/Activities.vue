@@ -85,7 +85,7 @@
             <el-input v-model="form.coverUrl" />
           </el-form-item>
           <el-form-item label="参加积分">
-            <el-input-number v-model="form.participationPoints" :min="0" :step="1" />
+            <el-input-number v-model="form.participationPoints" :min="0" :max="POINT_AMOUNT_MAX" :step="1" />
           </el-form-item>
         </div>
         <el-form-item label="活动摘要">
@@ -153,6 +153,7 @@ const defaultFields = [
   { label: '联系方式', type: 'text', required: true },
   { label: '备注', type: 'textarea', required: false },
 ]
+const POINT_AMOUNT_MAX = 9_000_000_000_000_000
 
 const loading = ref(false)
 

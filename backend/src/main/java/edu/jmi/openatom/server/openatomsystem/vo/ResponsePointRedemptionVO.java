@@ -18,7 +18,7 @@ public class ResponsePointRedemptionVO {
   private String studentId;
   private Integer itemId;
   private String itemName;
-  private Integer points;
+  private Long points;
   private String status;
   private String receiverName;
   private String receiverContact;

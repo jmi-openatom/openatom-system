@@ -156,7 +156,7 @@ public class ActivityServiceImpl implements ActivityService {
     return STATUSES.contains(value) ? value : null;
   }
 
-  private int safePoints(Integer value) {
-    return value == null ? 0 : Math.max(0, value);
+  private long safePoints(Long value) {
+    return value == null ? 0L : Math.max(0L, value);
   }
 }

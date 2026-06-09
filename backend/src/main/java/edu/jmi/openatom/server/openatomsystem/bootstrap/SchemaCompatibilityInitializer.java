@@ -774,20 +774,20 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     addColumnIfAbsent(
         "club_activity",
         "participation_points",
-        "INT NOT NULL DEFAULT 0 COMMENT '参加活动奖励积分' AFTER `registration_fields`");
+        "BIGINT NOT NULL DEFAULT 0 COMMENT '参加活动奖励积分' AFTER `registration_fields`");
     addColumnIfAbsent(
         "checkin_session",
         "checkin_points",
-        "INT NOT NULL DEFAULT 0 COMMENT '扫码签到奖励积分' AFTER `token`");
+        "BIGINT NOT NULL DEFAULT 0 COMMENT '扫码签到奖励积分' AFTER `token`");
     jdbcTemplate.execute(
         """
         CREATE TABLE IF NOT EXISTS `point_account`
         (
             `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
             `user_id` INT NOT NULL COMMENT '用户ID',
-            `balance` INT NOT NULL DEFAULT 0 COMMENT '当前积分余额',
-            `total_earned` INT NOT NULL DEFAULT 0 COMMENT '累计获得积分',
-            `total_spent` INT NOT NULL DEFAULT 0 COMMENT '累计兑换消耗积分',
+            `balance` BIGINT NOT NULL DEFAULT 0 COMMENT '当前积分余额',
+            `total_earned` BIGINT NOT NULL DEFAULT 0 COMMENT '累计获得积分',
+            `total_spent` BIGINT NOT NULL DEFAULT 0 COMMENT '累计兑换消耗积分',
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
             PRIMARY KEY (`id`),
@@ -801,8 +801,8 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
         (
             `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
             `user_id` INT NOT NULL COMMENT '用户ID',
-            `delta` INT NOT NULL COMMENT '积分变动',
-            `balance_after` INT NOT NULL COMMENT '变动后余额',
+            `delta` BIGINT NOT NULL COMMENT '积分变动',
+            `balance_after` BIGINT NOT NULL COMMENT '变动后余额',
             `type` VARCHAR(40) NOT NULL COMMENT '流水类型',
             `source_type` VARCHAR(60) DEFAULT NULL COMMENT '来源类型',
             `source_id` INT DEFAULT NULL COMMENT '来源ID',
@@ -823,7 +823,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
             `name` VARCHAR(120) NOT NULL COMMENT '兑换项名称',
             `description` VARCHAR(500) DEFAULT NULL COMMENT '兑换说明',
-            `point_cost` INT NOT NULL COMMENT '所需积分',
+            `point_cost` BIGINT NOT NULL COMMENT '所需积分',
             `stock` INT DEFAULT NULL COMMENT '库存，空表示不限',
             `exchanged_count` INT NOT NULL DEFAULT 0 COMMENT '已兑换数量',
             `status` VARCHAR(30) NOT NULL DEFAULT 'active' COMMENT '状态: active/inactive',
@@ -843,7 +843,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
             `user_id` INT NOT NULL COMMENT '兑换用户ID',
             `item_id` INT NOT NULL COMMENT '兑换项ID',
-            `points` INT NOT NULL COMMENT '消耗积分',
+            `points` BIGINT NOT NULL COMMENT '消耗积分',
             `status` VARCHAR(30) NOT NULL DEFAULT 'pending' COMMENT '状态: pending/fulfilled/cancelled/rejected',
             `receiver_name` VARCHAR(80) DEFAULT NULL COMMENT '领取人',
             `receiver_contact` VARCHAR(120) DEFAULT NULL COMMENT '联系方式',
@@ -859,6 +859,46 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             KEY `idx_point_redemption_status` (`status`, `created_at`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='积分兑换记录表'
         """);
+    ensurePointAmountColumns();
+  }
+
+  private void ensurePointAmountColumns() {
+    modifyColumnToBigIntIfNeeded(
+        "club_activity",
+        "participation_points",
+        "BIGINT NOT NULL DEFAULT 0 COMMENT '参加活动奖励积分'");
+    modifyColumnToBigIntIfNeeded(
+        "checkin_session",
+        "checkin_points",
+        "BIGINT NOT NULL DEFAULT 0 COMMENT '扫码签到奖励积分'");
+    modifyColumnToBigIntIfNeeded(
+        "point_account",
+        "balance",
+        "BIGINT NOT NULL DEFAULT 0 COMMENT '当前积分余额'");
+    modifyColumnToBigIntIfNeeded(
+        "point_account",
+        "total_earned",
+        "BIGINT NOT NULL DEFAULT 0 COMMENT '累计获得积分'");
+    modifyColumnToBigIntIfNeeded(
+        "point_account",
+        "total_spent",
+        "BIGINT NOT NULL DEFAULT 0 COMMENT '累计兑换消耗积分'");
+    modifyColumnToBigIntIfNeeded(
+        "point_transaction",
+        "delta",
+        "BIGINT NOT NULL COMMENT '积分变动'");
+    modifyColumnToBigIntIfNeeded(
+        "point_transaction",
+        "balance_after",
+        "BIGINT NOT NULL COMMENT '变动后余额'");
+    modifyColumnToBigIntIfNeeded(
+        "point_redeem_item",
+        "point_cost",
+        "BIGINT NOT NULL COMMENT '所需积分'");
+    modifyColumnToBigIntIfNeeded(
+        "point_redemption",
+        "points",
+        "BIGINT NOT NULL COMMENT '消耗积分'");
   }
 
   private void ensureLeaveApplicationTable() {
@@ -1207,6 +1247,28 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     }
     jdbcTemplate.execute("ALTER TABLE `" + tableName + "` ADD " + definition);
     log.info("Added missing index: {}.{}", tableName, indexName);
+  }
+
+  private void modifyColumnToBigIntIfNeeded(String tableName, String columnName, String definition) {
+    if (!tableExists(tableName) || !columnExists(tableName, columnName)) {
+      return;
+    }
+    String dataType =
+        jdbcTemplate.queryForObject(
+            """
+            SELECT DATA_TYPE
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?
+            """,
+            String.class,
+            tableName,
+            columnName);
+    if ("bigint".equalsIgnoreCase(dataType)) {
+      return;
+    }
+    jdbcTemplate.execute(
+        "ALTER TABLE `" + tableName + "` MODIFY COLUMN `" + columnName + "` " + definition);
+    log.info("Modified column to BIGINT: {}.{}", tableName, columnName);
   }
 
   private boolean tableExists(String tableName) {

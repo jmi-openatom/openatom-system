@@ -16,9 +16,9 @@ public class ResponsePointAccountVO {
   private String realName;
   private String studentId;
   private String className;
-  private Integer balance;
-  private Integer totalEarned;
-  private Integer totalSpent;
+  private Long balance;
+  private Long totalEarned;
+  private Long totalSpent;
   private Integer rank;
   private Timestamp updatedAt;
 }

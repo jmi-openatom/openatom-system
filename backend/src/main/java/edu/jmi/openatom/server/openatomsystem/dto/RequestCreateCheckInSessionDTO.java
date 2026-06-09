@@ -22,7 +22,7 @@ public class RequestCreateCheckInSessionDTO {
   private String startAt;
   private String endAt;
   private String status;
-  private Integer checkinPoints;
+  private Long checkinPoints;
 
   private List<Integer> targetUserIds;
 }
