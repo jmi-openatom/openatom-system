@@ -637,6 +637,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
 	    addIndexIfAbsent(
 	        "oauth_client", "uk_oauth_client_id", "UNIQUE KEY `uk_oauth_client_id` (`client_id`)");
 	    seedDefaultOauthClient();
+	    ensureDefaultOauthClientSettings();
 	    seedOauthPermissions();
 	  }
 
@@ -652,6 +653,47 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
 	               'authorization_code refresh_token'
 	        WHERE NOT EXISTS (SELECT 1 FROM `oauth_client` WHERE `client_id` = 'openatom-web')
 	        """);
+	  }
+
+	  private void ensureDefaultOauthClientSettings() {
+	    appendOauthRedirectUriIfMissing("openatom-web", "https://jmi-openatom.cn/auth/callback");
+	    appendOauthRedirectUriIfMissing("openatom-web", "https://www.jmi-openatom.cn/auth/callback");
+	    appendOauthScopeIfMissing("openatom-web", "roles");
+	    appendOauthScopeIfMissing("openatom-web", "permissions");
+	  }
+
+	  private void appendOauthRedirectUriIfMissing(String clientId, String redirectUri) {
+	    int updated =
+	        jdbcTemplate.update(
+	            """
+	            UPDATE `oauth_client`
+	            SET `redirect_uris` = CONCAT_WS(',', NULLIF(TRIM(BOTH ',' FROM `redirect_uris`), ''), ?)
+	            WHERE `client_id` = ?
+	              AND FIND_IN_SET(?, `redirect_uris`) = 0
+	            """,
+	            redirectUri,
+	            clientId,
+	            redirectUri);
+	    if (updated > 0) {
+	      log.info("Added OAuth redirect URI for {}: {}", clientId, redirectUri);
+	    }
+	  }
+
+	  private void appendOauthScopeIfMissing(String clientId, String scope) {
+	    int updated =
+	        jdbcTemplate.update(
+	            """
+	            UPDATE `oauth_client`
+	            SET `scopes` = TRIM(CONCAT(COALESCE(NULLIF(TRIM(`scopes`), ''), ''), ' ', ?))
+	            WHERE `client_id` = ?
+	              AND INSTR(CONCAT(' ', `scopes`, ' '), CONCAT(' ', ?, ' ')) = 0
+	            """,
+	            scope,
+	            clientId,
+	            scope);
+	    if (updated > 0) {
+	      log.info("Added OAuth scope for {}: {}", clientId, scope);
+	    }
 	  }
 
 	  private void seedOauthPermissions() {
