@@ -1,3 +1,5 @@
+import { getToken } from '@/utils/auth.ts'
+
 export function getOidcAuthority(): string {
   const configured = import.meta.env.VITE_OIDC_AUTHORITY || 'https://oauth.jmi-openatom.cn/api/v1'
   return configured.replace(/\/+$/, '')
@@ -15,5 +17,9 @@ export function buildOidcAuthorizeUrl(redirectPath: string): string {
     scope: 'openid profile email roles permissions',
     state: redirectPath || '/admin/dashboard',
   })
+  const token = getToken()
+  if (token) {
+    params.set('jmiopenatom', token)
+  }
   return `${getOidcAuthority()}/oauth/authorize?${params.toString()}`
 }

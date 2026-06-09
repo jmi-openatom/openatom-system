@@ -4,6 +4,7 @@ const USER_KEY = 'openatom_user'
 const ROLE_KEY = 'openatom_roles'
 const PERMISSION_KEY = 'openatom_permissions'
 const REMEMBER_LOGIN_KEY = 'openatom_remember_login'
+const SA_TOKEN_QUERY_KEY = 'jmiopenatom'
 
 interface SessionPayload {
   accessToken?: string
@@ -22,6 +23,20 @@ interface LoginPayload {
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
+}
+
+export function appendTokenQuery(target: string): string {
+  const token = getToken()
+  if (!target || !token) return target
+
+  try {
+    const isAbsolute = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(target)
+    const url = new URL(target, window.location.origin)
+    url.searchParams.set(SA_TOKEN_QUERY_KEY, token)
+    return isAbsolute ? url.toString() : `${url.pathname}${url.search}${url.hash}`
+  } catch (_error) {
+    return target
+  }
 }
 
 export function setSession(payload?: SessionPayload): void {

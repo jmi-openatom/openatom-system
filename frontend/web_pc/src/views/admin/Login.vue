@@ -76,6 +76,7 @@ import {
   getRememberedLogin,
   setRememberedLogin,
   setSession,
+  appendTokenQuery,
 } from '@/utils/auth.ts'
 import { hasAdminAccess, hasRole } from '@/utils/permission.ts'
 
@@ -132,7 +133,7 @@ function loginRedirectTarget() {
 function finishLoginRedirect() {
   const target = loginRedirectTarget()
   if (target.startsWith('/api/') || target.startsWith('/oauth/')) {
-    window.location.assign(target)
+    window.location.assign(appendTokenQuery(target))
     return
   }
   router.replace(target)
