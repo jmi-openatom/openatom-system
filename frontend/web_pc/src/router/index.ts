@@ -2,7 +2,7 @@ import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vu
 import { hasAdminAccess, hasAnyPermission } from '@/utils/permission.ts'
 import SiteLayout from '@/layouts/SiteLayout.vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import { appendTokenQuery, getToken } from '@/utils/auth.ts'
+import { appendTokenQuery, getToken, shouldUseFullPageAuthRedirect } from '@/utils/auth.ts'
 import { buildOidcAuthorizeUrl } from '@/utils/oidc.ts'
 
 const adminFallbackRoutes = [
@@ -407,7 +407,7 @@ router.beforeEach((to) => {
 	  // 已登录用户访问登录页的处理
   if (to.path === '/login' && getToken()) {
 	    const redirect = Array.isArray(to.query.redirect) ? to.query.redirect[0] : to.query.redirect
-	    if (redirect && (redirect.startsWith('/api/') || redirect.startsWith('/oauth/'))) {
+	    if (shouldUseFullPageAuthRedirect(redirect)) {
 	      window.location.assign(appendTokenQuery(redirect))
 	      return false
 	    }

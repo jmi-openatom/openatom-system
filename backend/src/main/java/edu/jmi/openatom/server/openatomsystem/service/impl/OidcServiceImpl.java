@@ -110,9 +110,9 @@ public class OidcServiceImpl implements OidcService {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
     if (!StpUtil.isLogin()) {
-      String redirect = request.getRequestURI() + (request.getQueryString() == null ? "" : "?" + request.getQueryString());
+      String redirect = authorizeUrl(request);
       return ResponseEntity.status(HttpStatus.FOUND)
-          .location(URI.create("/login?redirect=" + encode(redirect)))
+          .location(URI.create(loginUrl(redirectUri, redirect)))
           .build();
     }
     String grantedScope = normalizeScope(scope, client.getScopes());
@@ -335,6 +335,18 @@ public class OidcServiceImpl implements OidcService {
   private String issuer(HttpServletRequest request) {
     if (configuredIssuer != null && !configuredIssuer.isBlank()) return configuredIssuer;
     return request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
+  }
+
+  private String authorizeUrl(HttpServletRequest request) {
+    String query = request.getQueryString();
+    return issuer(request) + "/oauth/authorize" + (query == null || query.isBlank() ? "" : "?" + query);
+  }
+
+  private String loginUrl(String redirectUri, String authorizeUrl) {
+    URI uri = URI.create(redirectUri);
+    String port = uri.getPort() < 0 ? "" : ":" + uri.getPort();
+    String origin = uri.getScheme() + "://" + uri.getHost() + port;
+    return origin + "/login?redirect=" + encode(authorizeUrl);
   }
 
   private String encode(String value) {

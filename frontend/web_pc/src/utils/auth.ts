@@ -39,6 +39,39 @@ export function appendTokenQuery(target: string): string {
   }
 }
 
+export function shouldUseFullPageAuthRedirect(target?: string): boolean {
+  if (!target) return false
+  if (target.startsWith('/api/') || target.startsWith('/oauth/')) return true
+
+  try {
+    const url = new URL(target, window.location.origin)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false
+    if (!trustedRedirectOrigins().includes(url.origin)) return false
+    return url.pathname.startsWith('/api/') || url.pathname.startsWith('/oauth/')
+  } catch (_error) {
+    return false
+  }
+}
+
+function trustedRedirectOrigins(): string[] {
+  const origins = new Set<string>([window.location.origin])
+  appendOrigin(origins, import.meta.env.VITE_API_BASE_URL)
+  appendOrigin(
+    origins,
+    import.meta.env.VITE_OIDC_AUTHORITY || 'https://oauth.jmi-openatom.cn/api/v1',
+  )
+  return [...origins]
+}
+
+function appendOrigin(origins: Set<string>, value?: string) {
+  if (!value) return
+  try {
+    origins.add(new URL(value, window.location.origin).origin)
+  } catch (_error) {
+    // Ignore invalid runtime env values.
+  }
+}
+
 export function setSession(payload?: SessionPayload): void {
   const data = payload || {}
   const hasAccessToken =

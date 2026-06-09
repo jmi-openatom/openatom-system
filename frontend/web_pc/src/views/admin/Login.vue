@@ -77,6 +77,7 @@ import {
   setRememberedLogin,
   setSession,
   appendTokenQuery,
+  shouldUseFullPageAuthRedirect,
 } from '@/utils/auth.ts'
 import { hasAdminAccess, hasRole } from '@/utils/permission.ts'
 
@@ -132,7 +133,7 @@ function loginRedirectTarget() {
 
 function finishLoginRedirect() {
   const target = loginRedirectTarget()
-  if (target.startsWith('/api/') || target.startsWith('/oauth/')) {
+  if (shouldUseFullPageAuthRedirect(target)) {
     window.location.assign(appendTokenQuery(target))
     return
   }
