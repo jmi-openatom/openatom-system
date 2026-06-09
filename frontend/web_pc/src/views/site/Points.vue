@@ -158,6 +158,7 @@ import {computed, onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 
 const router = useRouter()
+const LEADERBOARD_LIMIT = 200
 
 const loading = ref({ page: false, redeem: false })
 const leaderboard = ref<any[]>([])
@@ -242,7 +243,7 @@ async function submitRedeem() {
 async function fetchAll() {
   loading.value.page = true
   try {
-    const tasks = [pointApi.leaderboard({ limit: 50 }), pointApi.siteItems()]
+    const tasks = [pointApi.leaderboard({ limit: LEADERBOARD_LIMIT }), pointApi.siteItems()]
     const [leaderboardResult, itemsResult] = await Promise.all(tasks)
     leaderboard.value = leaderboardResult || []
     items.value = itemsResult || []
@@ -360,6 +361,14 @@ onMounted(() => {
   gap: 10px;
 }
 
+.leaderboard-list {
+  --leaderboard-row-height: 64px;
+  max-height: calc(var(--leaderboard-row-height) * 30 + 10px * 29);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
 .leaderboard-row,
 .history-row {
   display: grid;
@@ -370,6 +379,10 @@ onMounted(() => {
   border: 1px solid var(--oa-border);
   border-radius: 8px;
   background: var(--oa-page-soft-bg);
+}
+
+.leaderboard-row {
+  min-height: var(--leaderboard-row-height);
 }
 
 .history-row {
@@ -392,6 +405,17 @@ onMounted(() => {
 .exchange-item h3,
 .redeem-head strong {
   color: var(--oa-text);
+}
+
+.leaderboard-row strong,
+.leaderboard-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-row > div:not(.rank-mark) {
+  min-width: 0;
 }
 
 .leaderboard-row span,
