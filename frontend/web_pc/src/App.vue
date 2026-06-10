@@ -23,7 +23,7 @@
 
 <script lang="ts" setup>
 import gsap from 'gsap'
-import {onBeforeUnmount, ref} from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 
 const transitionPlaneRef = ref<HTMLElement>()
 
@@ -42,9 +42,36 @@ function transitionElements() {
   }
 }
 
+function resetTransitionPlane() {
+  const { plane, bars, label } = transitionElements()
+  if (!plane) return
+
+  gsap.set(plane, {
+    autoAlpha: 0,
+    pointerEvents: 'none',
+  })
+  gsap.set(bars, {
+    clearProps: 'transform',
+  })
+  gsap.set(label, {
+    autoAlpha: 0,
+    y: 10,
+  })
+}
+
 function killActiveTimeline() {
   activeTimeline?.kill()
   activeTimeline = undefined
+  resetTransitionPlane()
+}
+
+function once(callback: () => void) {
+  let called = false
+  return () => {
+    if (called) return
+    called = true
+    callback()
+  }
 }
 
 function handleBeforeEnter(element: Element) {
@@ -66,23 +93,36 @@ function handleLeave(element: Element, done: () => void) {
   killActiveTimeline()
 
   if (prefersReducedMotion()) {
-    gsap.to(element, {
+    const finalize = once(() => {
+      activeTimeline = undefined
+      done()
+    })
+
+    activeTimeline = gsap.timeline({
+      onComplete: finalize,
+      onInterrupt: finalize,
+    })
+    activeTimeline.to(element, {
       autoAlpha: 0,
       duration: 0.12,
       ease: 'power1.out',
-      onComplete: done,
     })
     return
   }
 
   const { plane, bars, label } = transitionElements()
+  const finalize = once(() => {
+    activeTimeline = undefined
+    done()
+  })
 
   activeTimeline = gsap.timeline({
     defaults: {
       ease: 'power3.inOut',
       overwrite: 'auto',
     },
-    onComplete: done,
+    onComplete: finalize,
+    onInterrupt: finalize,
   })
 
   activeTimeline
@@ -137,36 +177,41 @@ function handleEnter(element: Element, done: () => void) {
   killActiveTimeline()
 
   if (prefersReducedMotion()) {
-    gsap.to(element, {
+    const finalize = once(() => {
+      activeTimeline = undefined
+      done()
+    })
+
+    activeTimeline = gsap.timeline({
+      onComplete: finalize,
+      onInterrupt: finalize,
+    })
+    activeTimeline.to(element, {
       autoAlpha: 1,
       duration: 0.16,
       ease: 'power1.out',
       clearProps: 'opacity,visibility',
-      onComplete: done,
     })
     return
   }
 
   const { plane, bars, label } = transitionElements()
+  const finalize = once(() => {
+    gsap.set(element, {
+      clearProps: 'transform,opacity,visibility,willChange',
+    })
+    resetTransitionPlane()
+    activeTimeline = undefined
+    done()
+  })
 
   activeTimeline = gsap.timeline({
     defaults: {
       ease: 'power3.out',
       overwrite: 'auto',
     },
-    onComplete: () => {
-      gsap.set(element, {
-        clearProps: 'transform,opacity,visibility,willChange',
-      })
-      gsap.set(plane, {
-        autoAlpha: 0,
-        pointerEvents: 'none',
-      })
-      gsap.set(bars, {
-        clearProps: 'transform',
-      })
-      done()
-    },
+    onComplete: finalize,
+    onInterrupt: finalize,
   })
 
   activeTimeline
