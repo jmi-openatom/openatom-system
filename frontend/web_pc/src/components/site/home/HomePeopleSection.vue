@@ -37,7 +37,12 @@
             <span class="people-person__index">{{ formatMemberIndex(person.sourceIndex) }}</span>
 
             <div class="people-person__portrait">
-              <UserAvatar :name="person.name" :size="112" :src="person.avatar" />
+              <UserAvatar
+                :fallback-src="person.qqAvatar"
+                :name="person.name"
+                :size="112"
+                :src="person.avatar"
+              />
             </div>
 
             <div class="people-person__meta">
@@ -71,6 +76,7 @@ const mappedPeople = computed(() =>
     userId: person.userId,
     name: person.name,
     avatar: person.avatar || '',
+    qqAvatar: person.qqAvatar || '',
     username: person.role || '',
     body: person.focus || '',
   })),

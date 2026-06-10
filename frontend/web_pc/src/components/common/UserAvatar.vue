@@ -11,12 +11,14 @@ import { computed, ref, watch } from 'vue'
 const props = withDefaults(
   defineProps<{
     src?: string
+    fallbackSrc?: string
     qqOpenid?: string
     name?: string
     size?: number
   }>(),
   {
     src: '',
+    fallbackSrc: '',
     qqOpenid: '',
     name: '',
     size: 56,
@@ -26,16 +28,18 @@ const props = withDefaults(
 const failedSources = ref<Set<string>>(new Set())
 
 watch(
-  [() => props.src, () => props.qqOpenid],
+  [() => props.src, () => props.fallbackSrc, () => props.qqOpenid],
   () => {
     failedSources.value = new Set()
   },
 )
 
 const uploadedSrc = computed(() => normalizeSource(props.src))
+const fallbackSrc = computed(() => normalizeSource(props.fallbackSrc))
 const qqSrc = computed(() => qqAvatarUrl(props.qqOpenid))
 const imageSrc = computed(() => {
   if (uploadedSrc.value && !failedSources.value.has(uploadedSrc.value)) return uploadedSrc.value
+  if (fallbackSrc.value && !failedSources.value.has(fallbackSrc.value)) return fallbackSrc.value
   if (qqSrc.value && !failedSources.value.has(qqSrc.value)) return qqSrc.value
   return ''
 })

@@ -69,6 +69,7 @@ public class ResponseClubHomeVO {
     private String role;
     private String focus;
     private String avatar;
+    private String qqAvatar;
   }
 
   @Data

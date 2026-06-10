@@ -373,7 +373,13 @@ public class SiteServiceImpl implements SiteService {
         .role(role)
         .focus(isBlank(department) ? user.getMajor() : department)
         .avatar(user.getAvatar())
+        .qqAvatar(qqAvatarUrl(user.getQqOpenid()))
         .build();
+  }
+
+  private String qqAvatarUrl(String qqOpenid) {
+    if (isBlank(qqOpenid) || !qqOpenid.matches("\\d{5,15}")) return null;
+    return "https://q1.qlogo.cn/g?b=qq&nk=" + qqOpenid + "&s=640";
   }
 
   private ResponseClubHomeVO.Award toAward(ClubAward award) {
