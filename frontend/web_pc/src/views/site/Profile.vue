@@ -16,7 +16,12 @@
           title="身份资料"
         >
           <div class="profile-avatar">
-            <UserAvatar :name="displayName" :size="88" :src="String(user.avatar || '')" />
+            <UserAvatar
+              :name="displayName"
+              :qq-openid="String(user.qqOpenid || '')"
+              :size="88"
+              :src="displayAvatar"
+            />
             <div>
               <strong>{{ displayName }}</strong>
               <span>未上传头像时，如已经绑定QQ,显示QQ头像,否则将显示姓氏默认头像</span>
@@ -35,7 +40,7 @@
             <el-button :loading="avatarUploading" plain type="primary" @click="chooseAvatar">
               上传头像
             </el-button>
-            <el-button v-if="user.avatar" :loading="avatarUploading" plain @click="removeAvatar">
+            <el-button v-if="uploadedAvatar" :loading="avatarUploading" plain @click="removeAvatar">
               恢复默认
             </el-button>
           </div>
@@ -223,6 +228,13 @@ const isLogin = computed(() => {
 })
 
 const displayName = computed(() => String(user.value.realName || user.value.userName || '用户'))
+const uploadedAvatar = computed(() => {
+  const avatar = String(user.value.avatar || '').trim()
+  return avatar && !isQqAvatarUrl(avatar) ? avatar : ''
+})
+const displayAvatar = computed(() =>
+  String(user.value.displayAvatar || user.value.avatar || ''),
+)
 
 const activeStatuses = new Set([
   'submitted',
@@ -393,6 +405,10 @@ function canLoadImage(src: string) {
     image.onerror = () => resolve(false)
     image.src = src
   })
+}
+
+function isQqAvatarUrl(src: string) {
+  return /qlogo\.cn\/g\?/.test(src) || /qlogo\.cn\/headimg_dl/.test(src)
 }
 
 onMounted(() => {

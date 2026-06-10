@@ -93,7 +93,12 @@
         </div>
 
         <div v-if="isLoggedIn" class="comment-composer">
-          <UserAvatar :name="currentUserName" :size="44" :src="currentUserAvatar" />
+          <UserAvatar
+            :name="currentUserName"
+            :qq-openid="currentUserQqOpenid"
+            :size="44"
+            :src="currentUserAvatar"
+          />
           <div class="comment-composer__main">
             <div v-if="replyTarget" class="comment-composer__replying">
               <span>正在回复 {{ replyTarget.userName || '匿名用户' }}</span>
@@ -170,7 +175,10 @@ const totalComments = computed(() => countComments(comments.value))
 const currentUserName = computed(
   () => currentUser.value?.realName || currentUser.value?.userName || '我',
 )
-const currentUserAvatar = computed(() => String(currentUser.value?.avatar || ''))
+const currentUserAvatar = computed(() =>
+  String(currentUser.value?.displayAvatar || currentUser.value?.avatar || ''),
+)
+const currentUserQqOpenid = computed(() => String(currentUser.value?.qqOpenid || ''))
 const commentPlaceholder = computed(() =>
   replyTarget.value ? `回复 ${replyTarget.value.userName || '匿名用户'}` : '写下你的观点',
 )
