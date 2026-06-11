@@ -182,6 +182,8 @@ function transactionTypeText(type: string) {
     {
       checkin: '签到',
       checkin_revoke: '签到撤销',
+      checkin_penalty: '签到扣分',
+      checkin_penalty_revoke: '签到扣分撤销',
       activity: '活动',
       activity_revoke: '活动撤销',
       daily_login: '每日登录',

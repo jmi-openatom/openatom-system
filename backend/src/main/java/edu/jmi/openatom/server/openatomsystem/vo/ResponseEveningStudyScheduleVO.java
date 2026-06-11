@@ -20,10 +20,18 @@ public class ResponseEveningStudyScheduleVO {
   private String startTime;
   private String endTime;
   private Long checkinPoints;
+  private Integer checkinWindowMinutes;
+  private Integer lateAfterMinutes;
+  private Long latePenaltyPoints;
+  private Long absentPenaltyPoints;
   private Boolean enabled;
   private Integer todaySessionId;
   private Integer todayTargetCount;
+  private Integer todaySignedCount;
   private Integer todayCheckedCount;
+  private Integer todayLateCount;
+  private Integer todayAbsentCount;
+  private Integer todayPendingCount;
   private Integer todayExcusedCount;
   private Timestamp createdAt;
   private Timestamp updatedAt;

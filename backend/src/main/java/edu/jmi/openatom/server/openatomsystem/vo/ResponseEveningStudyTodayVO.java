@@ -14,7 +14,10 @@ public class ResponseEveningStudyTodayVO {
   private String date;
   private Integer sessionCount;
   private Integer targetCount;
+  private Integer signedCount;
   private Integer checkedCount;
+  private Integer lateCount;
+  private Integer absentCount;
   private Integer pendingCount;
   private Integer excusedCount;
   private List<ResponseCheckInSessionVO> sessions;

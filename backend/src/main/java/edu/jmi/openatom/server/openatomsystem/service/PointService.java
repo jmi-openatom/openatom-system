@@ -53,6 +53,12 @@ public interface PointService {
 
   void revokeCheckInPoints(Integer userId, CheckInSession session, ClubActivity activity, Integer operatorId);
 
+  void applyCheckInPenalty(
+      Integer userId, CheckInSession session, String penaltyType, Long points, Integer operatorId);
+
+  void revokeCheckInPenalty(
+      Integer userId, CheckInSession session, String penaltyType, Integer operatorId);
+
   void grantDailyLoginPoints(Integer userId);
 
   void grantDailyLoginPointsPublic(Integer userId,String applicationName);

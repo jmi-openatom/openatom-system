@@ -12,7 +12,11 @@
         <div class="evening-toolbar site-system-surface site-reveal">
           <div>
             <strong>{{ overview?.date || date }}</strong>
-            <p>应到 {{ overview?.targetCount || 0 }} 人，已签到 {{ overview?.checkedCount || 0 }} 人，请假剔除 {{ overview?.excusedCount || 0 }} 人。</p>
+            <p>
+              应到 {{ overview?.targetCount || 0 }} 人，已签 {{ overview?.signedCount || 0 }} 人，
+              迟到 {{ overview?.lateCount || 0 }} 人，旷课 {{ overview?.absentCount || 0 }} 人，
+              请假剔除 {{ overview?.excusedCount || 0 }} 人。
+            </p>
           </div>
           <div class="evening-toolbar__actions">
             <el-date-picker
@@ -44,8 +48,11 @@
 
             <div class="session-meta">
               <span>{{ formatRange(item.startAt, item.endAt) }}</span>
+              <span>签到截止 {{ formatDateTime(item.checkinDeadlineAt) || '-' }}</span>
               <span>{{ item.location || '实验室' }}</span>
               <span v-if="item.checkinPoints">+{{ item.checkinPoints }} 积分</span>
+              <span>迟到 -{{ item.latePenaltyPoints ?? 1 }}</span>
+              <span>旷课 -{{ item.absentPenaltyPoints ?? 2 }}</span>
             </div>
 
             <div class="session-stats">
@@ -55,7 +62,15 @@
               </article>
               <article>
                 <span>已签到</span>
-                <strong>{{ item.checkedCount || 0 }}</strong>
+                <strong>{{ item.signedCount || 0 }}</strong>
+              </article>
+              <article>
+                <span>迟到</span>
+                <strong>{{ item.lateCount || 0 }}</strong>
+              </article>
+              <article>
+                <span>旷课</span>
+                <strong>{{ item.absentCount || 0 }}</strong>
               </article>
               <article>
                 <span>请假剔除</span>
@@ -201,7 +216,7 @@ onMounted(fetchToday)
 
 .session-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -233,6 +248,10 @@ onMounted(fetchToday)
 
   .evening-toolbar__actions .el-date-editor {
     width: 100% !important;
+  }
+
+  .session-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

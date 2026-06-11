@@ -58,4 +58,16 @@ public interface CheckInSessionMapper extends BaseMapper<CheckInSession> {
     }
     return selectList(wrapper.orderByAsc(CheckInSession::getStartAt).orderByAsc(CheckInSession::getId));
   }
+
+  default List<CheckInSession> selectOpenEveningStarted(Integer clubId, Timestamp now) {
+    return selectList(
+        new LambdaQueryWrapper<CheckInSession>()
+            .eq(CheckInSession::getClubId, clubId)
+            .eq(CheckInSession::getSessionType, "evening_study")
+            .eq(CheckInSession::getStatus, "open")
+            .isNotNull(CheckInSession::getStartAt)
+            .le(now != null, CheckInSession::getStartAt, now)
+            .orderByAsc(CheckInSession::getStartAt)
+            .orderByAsc(CheckInSession::getId));
+  }
 }

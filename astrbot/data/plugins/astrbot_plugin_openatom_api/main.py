@@ -766,7 +766,9 @@ class OpenAtomApiPlugin(Star):
         lines = [
             (
                 f"{date} 晚自习签到：应到 {data.get('targetCount') or 0} 人，"
-                f"已签到 {data.get('checkedCount') or 0} 人，"
+                f"已签 {data.get('signedCount') or 0} 人，"
+                f"迟到 {data.get('lateCount') or 0} 人，"
+                f"旷课 {data.get('absentCount') or 0} 人，"
                 f"未签到 {data.get('pendingCount') or 0} 人，"
                 f"请假剔除 {data.get('excusedCount') or 0} 人。"
             )
@@ -779,7 +781,8 @@ class OpenAtomApiPlugin(Star):
             time_range = self._short_time_range(item.get("startAt"), item.get("endAt"))
             location = item.get("location") or "未设置地点"
             lines.append(
-                f"- {group}：{status}，{item.get('checkedCount') or 0}/{item.get('targetCount') or 0}，"
+                f"- {group}：{status}，已签 {item.get('signedCount') or 0}/{item.get('targetCount') or 0}，"
+                f"迟到 {item.get('lateCount') or 0}，旷课 {item.get('absentCount') or 0}，"
                 f"请假 {item.get('excusedCount') or 0}，{time_range}，{location}"
             )
         return self._truncate("\n".join(lines))

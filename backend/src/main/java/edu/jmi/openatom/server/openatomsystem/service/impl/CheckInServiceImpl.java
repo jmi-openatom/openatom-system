@@ -76,6 +76,16 @@ public class CheckInServiceImpl implements CheckInService {
   private static final String ROTATING_PAYLOAD_PREFIX = "oaci2:";
   private static final long ROTATING_TOKEN_WINDOW_SECONDS = 30L;
   private static final long ROTATING_TOKEN_GRACE_WINDOWS = 10L;
+  private static final int DEFAULT_CHECKIN_WINDOW_MINUTES = 30;
+  private static final int DEFAULT_LATE_AFTER_MINUTES = 10;
+  private static final long DEFAULT_LATE_PENALTY_POINTS = 1L;
+  private static final long DEFAULT_ABSENT_PENALTY_POINTS = 2L;
+  private static final String RECORD_STATUS_CHECKED = "checked";
+  private static final String RECORD_STATUS_LATE = "late";
+  private static final String RECORD_STATUS_ABSENT = "absent";
+  private static final String RECORD_STATUS_PENDING = "pending";
+  private static final Set<String> RECORD_STATUSES =
+      Set.of(RECORD_STATUS_CHECKED, RECORD_STATUS_LATE, RECORD_STATUS_ABSENT, RECORD_STATUS_PENDING);
 
   private final ClubMapper clubMapper;
   private final ClubActivityMapper activityMapper;
@@ -97,6 +107,7 @@ public class CheckInServiceImpl implements CheckInService {
   public Result<List<ResponseCheckInSessionVO>> list(String status) {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
+    settleEndedEveningStudySessions(club);
     return Result.success(sessionMapper.selectByClubAndStatus(club.getId(), status).stream().map(this::toSessionVO).toList());
   }
 
@@ -324,25 +335,16 @@ public class CheckInServiceImpl implements CheckInService {
     CheckInTarget target = targetMapper.selectOneBySessionAndUser(sessionId, userId);
     if (target == null) return Result.error(404, "该用户不在本次签到名单中");
     String status = request.getStatus();
-    if (!"checked".equals(status) && !"pending".equals(status)) return Result.error(400, "签到状态不合法");
-    CheckInRecord record = recordMapper.selectOneBySessionAndUser(sessionId, userId);
-    if ("pending".equals(status)) {
-      if (record != null) recordMapper.deleteById(record.getId());
-      pointService.revokeCheckInPoints(userId, session, activityForSession(session), currentUserId());
+    if (!RECORD_STATUSES.contains(status)) return Result.error(400, "签到状态不合法");
+    if (!isEveningStudy(session) && (RECORD_STATUS_LATE.equals(status) || RECORD_STATUS_ABSENT.equals(status))) {
+      return Result.error(400, "普通签到不支持迟到或旷课状态");
+    }
+    if (RECORD_STATUS_PENDING.equals(status)) {
+      applyRecordStatus(session, userId, RECORD_STATUS_PENDING, "manual", currentUserId());
       return Result.success(toRecordVO(userMapper.selectById(userId), null), "已标记为未签到");
     }
-    if (record == null) {
-      record = CheckInRecord.builder().sessionId(sessionId).userId(userId)
-          .checkinAt(Times.now()).source("manual").status("checked").build();
-      recordMapper.insert(record);
-    } else {
-      record.setStatus("checked");
-      record.setCheckinAt(Times.now());
-      record.setSource("manual");
-      recordMapper.updateById(record);
-    }
-    pointService.grantCheckInPoints(userId, session, activityForSession(session), currentUserId());
-    return Result.success(toRecordVO(userMapper.selectById(userId), record), "已标记为已签到");
+    CheckInRecord record = applyRecordStatus(session, userId, status, "manual", currentUserId());
+    return Result.success(toRecordVO(userMapper.selectById(userId), record), recordStatusMessage(status));
   }
 
   @Override
@@ -354,17 +356,18 @@ public class CheckInServiceImpl implements CheckInService {
     if (!"open".equals(session.getStatus())) return Result.error(400, "签到未开放或已关闭");
     Timestamp now = Times.now();
     if (session.getStartAt() != null && now.before(session.getStartAt())) return Result.error(400, "签到尚未开始");
-    if (session.getEndAt() != null && now.after(session.getEndAt())) return Result.error(400, "签到已结束");
+    Timestamp deadlineAt = checkinDeadlineAt(session);
+    if (deadlineAt != null && now.after(deadlineAt)) return Result.error(400, "签到已结束");
     Integer userId = StpUtil.getLoginIdAsInt();
     CheckInTarget target = targetMapper.selectOneBySessionAndUser(session.getId(), userId);
     if (target == null) return Result.error(403, "你不在本次签到发放名单中");
     CheckInRecord record = recordMapper.selectOneBySessionAndUser(session.getId(), userId);
     if (record == null) {
-      record = CheckInRecord.builder().sessionId(session.getId()).userId(userId)
-          .checkinAt(now).source("miniapp_scan").status("checked").build();
-      recordMapper.insert(record);
-      pointService.grantCheckInPoints(userId, session, activityForSession(session), null);
-      return Result.success(toRecordVO(userMapper.selectById(userId), record), "签到成功");
+      String status = shouldMarkLate(session, now) ? RECORD_STATUS_LATE : RECORD_STATUS_CHECKED;
+      record = applyRecordStatus(session, userId, status, "miniapp_scan", null, now);
+      return Result.success(
+          toRecordVO(userMapper.selectById(userId), record),
+          RECORD_STATUS_LATE.equals(status) ? "签到成功，已记为迟到" : "签到成功");
     }
     return Result.success(toRecordVO(userMapper.selectById(userId), record), "已签到，无需重复签到");
   }
@@ -373,6 +376,7 @@ public class CheckInServiceImpl implements CheckInService {
   public Result<List<ResponseEveningStudyScheduleVO>> eveningStudySchedules() {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
+    settleEndedEveningStudySessions(club);
     LocalDate today = LocalDate.now(Times.BUSINESS_ZONE);
     return Result.success(
         eveningStudyScheduleMapper.selectByClubId(club.getId()).stream()
@@ -392,6 +396,8 @@ public class CheckInServiceImpl implements CheckInService {
     Time startTime = parseLocalTime(request.getStartTime());
     Time endTime = parseLocalTime(request.getEndTime());
     if (startTime == null || endTime == null) return Result.error(400, "晚自习时间格式不合法");
+    Result<String> ruleResult = validateEveningStudyRules(request);
+    if (ruleResult.getCode() != Result.SUCCESS_CODE) return Result.error(ruleResult.getCode(), ruleResult.getMessage());
     EveningStudySchedule schedule =
         EveningStudySchedule.builder()
             .clubId(club.getId())
@@ -401,6 +407,10 @@ public class CheckInServiceImpl implements CheckInService {
             .startTime(startTime)
             .endTime(endTime)
             .checkinPoints(safePoints(request.getCheckinPoints()))
+            .checkinWindowMinutes(normalizeCheckinWindowMinutes(request.getCheckinWindowMinutes()))
+            .lateAfterMinutes(normalizeLateAfterMinutes(request.getLateAfterMinutes()))
+            .latePenaltyPoints(normalizePenaltyPoints(request.getLatePenaltyPoints(), DEFAULT_LATE_PENALTY_POINTS))
+            .absentPenaltyPoints(normalizePenaltyPoints(request.getAbsentPenaltyPoints(), DEFAULT_ABSENT_PENALTY_POINTS))
             .enabled(request.getEnabled() == null || request.getEnabled())
             .createdBy(currentUserId())
             .build();
@@ -424,12 +434,18 @@ public class CheckInServiceImpl implements CheckInService {
     Time startTime = parseLocalTime(request.getStartTime());
     Time endTime = parseLocalTime(request.getEndTime());
     if (startTime == null || endTime == null) return Result.error(400, "晚自习时间格式不合法");
+    Result<String> ruleResult = validateEveningStudyRules(request);
+    if (ruleResult.getCode() != Result.SUCCESS_CODE) return Result.error(ruleResult.getCode(), ruleResult.getMessage());
     schedule.setGroupId(group.getId());
     schedule.setTitle(firstNonBlank(request.getTitle(), "晚自习签到"));
     schedule.setLocation(trimToNull(request.getLocation()));
     schedule.setStartTime(startTime);
     schedule.setEndTime(endTime);
     schedule.setCheckinPoints(safePoints(request.getCheckinPoints()));
+    schedule.setCheckinWindowMinutes(normalizeCheckinWindowMinutes(request.getCheckinWindowMinutes()));
+    schedule.setLateAfterMinutes(normalizeLateAfterMinutes(request.getLateAfterMinutes()));
+    schedule.setLatePenaltyPoints(normalizePenaltyPoints(request.getLatePenaltyPoints(), DEFAULT_LATE_PENALTY_POINTS));
+    schedule.setAbsentPenaltyPoints(normalizePenaltyPoints(request.getAbsentPenaltyPoints(), DEFAULT_ABSENT_PENALTY_POINTS));
     schedule.setEnabled(request.getEnabled() == null || request.getEnabled());
     eveningStudyScheduleMapper.updateById(schedule);
     CheckInSession todaySession =
@@ -461,6 +477,7 @@ public class CheckInServiceImpl implements CheckInService {
     for (EveningStudySchedule schedule : eveningStudyScheduleMapper.selectEnabledByClubId(club.getId())) {
       createOrRefreshEveningStudySession(schedule, attendanceDate);
     }
+    settleEndedEveningStudySessions(club);
     return Result.success(buildEveningStudyTodayVO(club, attendanceDate), "晚自习签到已生成");
   }
 
@@ -470,6 +487,7 @@ public class CheckInServiceImpl implements CheckInService {
     if (club == null) return Result.error(404, "默认社团不存在");
     LocalDate attendanceDate = parseDateOrToday(date);
     if (attendanceDate == null) return Result.error(400, "日期格式不合法");
+    settleEndedEveningStudySessions(club);
     return Result.success(buildEveningStudyTodayVO(club, attendanceDate));
   }
 
@@ -494,6 +512,8 @@ public class CheckInServiceImpl implements CheckInService {
     if (!eveningStudyAutoGenerateEnabled) return;
     try {
       generateEveningStudySessions(null);
+      Club club = defaultClub();
+      if (club != null) settleEndedEveningStudySessions(club);
     } catch (RuntimeException e) {
       log.warn("Auto generate evening study check-ins failed: {}", e.getMessage());
     }
@@ -503,7 +523,10 @@ public class CheckInServiceImpl implements CheckInService {
     List<CheckInTarget> targets = targetMapper.selectBySessionId(session.getId());
     List<CheckInRecord> records = recordMapper.selectBySessionId(session.getId());
     List<CheckInExclusion> exclusions = exclusionMapper.selectBySessionId(session.getId());
-    int checkedCount = records.size();
+    int checkedCount = countRecords(records, RECORD_STATUS_CHECKED);
+    int lateCount = countRecords(records, RECORD_STATUS_LATE);
+    int absentCount = countRecords(records, RECORD_STATUS_ABSENT);
+    int signedCount = checkedCount + lateCount;
     ClubActivity activity = session.getActivityId() == null ? null : activityMapper.selectById(session.getActivityId());
     CheckInGroup group = session.getGroupId() == null ? null : groupMapper.selectById(session.getGroupId());
     return ResponseCheckInSessionVO.builder()
@@ -515,10 +538,16 @@ public class CheckInServiceImpl implements CheckInService {
         .groupName(group == null ? null : group.getName())
         .title(session.getTitle()).location(session.getLocation())
         .startAt(session.getStartAt()).endAt(session.getEndAt())
+        .checkinDeadlineAt(checkinDeadlineAt(session))
         .status(session.getStatus()).qrPayload(rotatingPayload(session))
         .checkinPoints(safePoints(session.getCheckinPoints()))
-        .targetCount(targets.size()).checkedCount(checkedCount)
-        .pendingCount(Math.max(0, targets.size() - checkedCount))
+        .checkinWindowMinutes(normalizeCheckinWindowMinutes(session.getCheckinWindowMinutes()))
+        .lateAfterMinutes(normalizeLateAfterMinutes(session.getLateAfterMinutes()))
+        .latePenaltyPoints(normalizePenaltyPoints(session.getLatePenaltyPoints(), DEFAULT_LATE_PENALTY_POINTS))
+        .absentPenaltyPoints(normalizePenaltyPoints(session.getAbsentPenaltyPoints(), DEFAULT_ABSENT_PENALTY_POINTS))
+        .targetCount(targets.size()).signedCount(signedCount).checkedCount(checkedCount)
+        .lateCount(lateCount).absentCount(absentCount)
+        .pendingCount(Math.max(0, targets.size() - signedCount - absentCount))
         .excusedCount(exclusions.size())
         .targetUserIds(targets.stream().map(CheckInTarget::getUserId).toList())
         .excusedUserIds(exclusions.stream().map(CheckInExclusion::getUserId).toList())
@@ -533,7 +562,7 @@ public class CheckInServiceImpl implements CheckInService {
         .studentId(user == null ? null : user.getStudentId())
         .phone(user == null ? null : user.getPhone())
         .status(record == null ? "pending" : record.getStatus())
-        .checkinAt(record == null ? null : record.getCheckinAt())
+        .checkinAt(record == null || RECORD_STATUS_ABSENT.equals(record.getStatus()) ? null : record.getCheckinAt())
         .build();
   }
 
@@ -588,10 +617,18 @@ public class CheckInServiceImpl implements CheckInService {
         .startTime(formatTime(schedule.getStartTime()))
         .endTime(formatTime(schedule.getEndTime()))
         .checkinPoints(safePoints(schedule.getCheckinPoints()))
+        .checkinWindowMinutes(normalizeCheckinWindowMinutes(schedule.getCheckinWindowMinutes()))
+        .lateAfterMinutes(normalizeLateAfterMinutes(schedule.getLateAfterMinutes()))
+        .latePenaltyPoints(normalizePenaltyPoints(schedule.getLatePenaltyPoints(), DEFAULT_LATE_PENALTY_POINTS))
+        .absentPenaltyPoints(normalizePenaltyPoints(schedule.getAbsentPenaltyPoints(), DEFAULT_ABSENT_PENALTY_POINTS))
         .enabled(Boolean.TRUE.equals(schedule.getEnabled()))
         .todaySessionId(todaySession == null ? null : todaySession.getId())
         .todayTargetCount(sessionVO == null ? 0 : sessionVO.getTargetCount())
+        .todaySignedCount(sessionVO == null ? 0 : sessionVO.getSignedCount())
         .todayCheckedCount(sessionVO == null ? 0 : sessionVO.getCheckedCount())
+        .todayLateCount(sessionVO == null ? 0 : sessionVO.getLateCount())
+        .todayAbsentCount(sessionVO == null ? 0 : sessionVO.getAbsentCount())
+        .todayPendingCount(sessionVO == null ? 0 : sessionVO.getPendingCount())
         .todayExcusedCount(sessionVO == null ? 0 : sessionVO.getExcusedCount())
         .createdAt(schedule.getCreatedAt())
         .updatedAt(schedule.getUpdatedAt())
@@ -604,14 +641,21 @@ public class CheckInServiceImpl implements CheckInService {
             .map(this::toSessionVO)
             .toList();
     int targetCount = sessions.stream().mapToInt(value -> safeInt(value.getTargetCount())).sum();
+    int signedCount = sessions.stream().mapToInt(value -> safeInt(value.getSignedCount())).sum();
     int checkedCount = sessions.stream().mapToInt(value -> safeInt(value.getCheckedCount())).sum();
+    int lateCount = sessions.stream().mapToInt(value -> safeInt(value.getLateCount())).sum();
+    int absentCount = sessions.stream().mapToInt(value -> safeInt(value.getAbsentCount())).sum();
+    int pendingCount = sessions.stream().mapToInt(value -> safeInt(value.getPendingCount())).sum();
     int excusedCount = sessions.stream().mapToInt(value -> safeInt(value.getExcusedCount())).sum();
     return ResponseEveningStudyTodayVO.builder()
         .date(date.toString())
         .sessionCount(sessions.size())
         .targetCount(targetCount)
+        .signedCount(signedCount)
         .checkedCount(checkedCount)
-        .pendingCount(Math.max(0, targetCount - checkedCount))
+        .lateCount(lateCount)
+        .absentCount(absentCount)
+        .pendingCount(pendingCount)
         .excusedCount(excusedCount)
         .sessions(sessions)
         .build();
@@ -652,6 +696,10 @@ public class CheckInServiceImpl implements CheckInService {
               .status("open")
               .token(UUID.randomUUID().toString().replace("-", ""))
               .checkinPoints(safePoints(schedule.getCheckinPoints()))
+              .checkinWindowMinutes(normalizeCheckinWindowMinutes(schedule.getCheckinWindowMinutes()))
+              .lateAfterMinutes(normalizeLateAfterMinutes(schedule.getLateAfterMinutes()))
+              .latePenaltyPoints(normalizePenaltyPoints(schedule.getLatePenaltyPoints(), DEFAULT_LATE_PENALTY_POINTS))
+              .absentPenaltyPoints(normalizePenaltyPoints(schedule.getAbsentPenaltyPoints(), DEFAULT_ABSENT_PENALTY_POINTS))
               .createdBy(currentUserId())
               .build();
       sessionMapper.insert(session);
@@ -666,6 +714,10 @@ public class CheckInServiceImpl implements CheckInService {
       session.setStartAt(startAt);
       session.setEndAt(endAt);
       session.setCheckinPoints(safePoints(schedule.getCheckinPoints()));
+      session.setCheckinWindowMinutes(normalizeCheckinWindowMinutes(schedule.getCheckinWindowMinutes()));
+      session.setLateAfterMinutes(normalizeLateAfterMinutes(schedule.getLateAfterMinutes()));
+      session.setLatePenaltyPoints(normalizePenaltyPoints(schedule.getLatePenaltyPoints(), DEFAULT_LATE_PENALTY_POINTS));
+      session.setAbsentPenaltyPoints(normalizePenaltyPoints(schedule.getAbsentPenaltyPoints(), DEFAULT_ABSENT_PENALTY_POINTS));
       sessionMapper.updateById(session);
       replaceSessionTargets(session, targetUserIds, revokeActivity);
       replaceSessionExclusions(session, leaveByUser);
@@ -707,7 +759,7 @@ public class CheckInServiceImpl implements CheckInService {
     CheckInRecord record = recordMapper.selectOneBySessionAndUser(session.getId(), application.getUserId());
     if (record != null) {
       recordMapper.deleteById(record.getId());
-      pointService.revokeCheckInPoints(application.getUserId(), session, activityForSession(session), currentUserId());
+      clearAttendanceEffects(application.getUserId(), session, currentUserId());
     }
     targetMapper.deleteBySessionIdAndUserId(session.getId(), application.getUserId());
     CheckInExclusion exclusion = exclusionMapper.selectOneBySessionAndUser(session.getId(), application.getUserId());
@@ -741,6 +793,170 @@ public class CheckInServiceImpl implements CheckInService {
 
   private boolean hasCompleteLeaveTime(LeaveApplication application) {
     return application != null && application.getStartAt() != null && application.getEndAt() != null;
+  }
+
+  private CheckInRecord applyRecordStatus(
+      CheckInSession session, Integer userId, String status, String source, Integer operatorId) {
+    return applyRecordStatus(session, userId, status, source, operatorId, Times.now());
+  }
+
+  private CheckInRecord applyRecordStatus(
+      CheckInSession session,
+      Integer userId,
+      String status,
+      String source,
+      Integer operatorId,
+      Timestamp checkinAt) {
+    CheckInRecord record = recordMapper.selectOneBySessionAndUser(session.getId(), userId);
+    clearAttendanceEffects(userId, session, operatorId);
+    if (RECORD_STATUS_PENDING.equals(status)) {
+      if (record != null) recordMapper.deleteById(record.getId());
+      return null;
+    }
+
+    Timestamp effectiveCheckinAt =
+        RECORD_STATUS_ABSENT.equals(status)
+            ? firstNonNull(checkinDeadlineAt(session), Times.now())
+            : firstNonNull(checkinAt, Times.now());
+    if (record == null) {
+      record =
+          CheckInRecord.builder()
+              .sessionId(session.getId())
+              .userId(userId)
+              .checkinAt(effectiveCheckinAt)
+              .source(source)
+              .status(status)
+              .build();
+      recordMapper.insert(record);
+    } else {
+      record.setStatus(status);
+      record.setCheckinAt(effectiveCheckinAt);
+      record.setSource(source);
+      recordMapper.updateById(record);
+    }
+    applyAttendanceEffects(userId, session, status, operatorId);
+    return record;
+  }
+
+  private void applyAttendanceEffects(
+      Integer userId, CheckInSession session, String status, Integer operatorId) {
+    if (RECORD_STATUS_CHECKED.equals(status) || RECORD_STATUS_LATE.equals(status)) {
+      pointService.grantCheckInPoints(userId, session, activityForSession(session), operatorId);
+    }
+    if (!isEveningStudy(session)) return;
+    if (RECORD_STATUS_LATE.equals(status)) {
+      pointService.applyCheckInPenalty(
+          userId,
+          session,
+          RECORD_STATUS_LATE,
+          normalizePenaltyPoints(session.getLatePenaltyPoints(), DEFAULT_LATE_PENALTY_POINTS),
+          operatorId);
+    } else if (RECORD_STATUS_ABSENT.equals(status)) {
+      pointService.applyCheckInPenalty(
+          userId,
+          session,
+          RECORD_STATUS_ABSENT,
+          normalizePenaltyPoints(session.getAbsentPenaltyPoints(), DEFAULT_ABSENT_PENALTY_POINTS),
+          operatorId);
+    }
+  }
+
+  private void clearAttendanceEffects(Integer userId, CheckInSession session, Integer operatorId) {
+    clearAttendanceEffects(userId, session, activityForSession(session), operatorId);
+  }
+
+  private void clearAttendanceEffects(
+      Integer userId, CheckInSession session, ClubActivity activity, Integer operatorId) {
+    pointService.revokeCheckInPoints(userId, session, activity, operatorId);
+    pointService.revokeCheckInPenalty(userId, session, RECORD_STATUS_LATE, operatorId);
+    pointService.revokeCheckInPenalty(userId, session, RECORD_STATUS_ABSENT, operatorId);
+  }
+
+  private void settleEndedEveningStudySessions(Club club) {
+    if (club == null) return;
+    Timestamp now = Times.now();
+    for (CheckInSession session : sessionMapper.selectOpenEveningStarted(club.getId(), now)) {
+      if (!isEveningStudy(session) || !isCheckinWindowEnded(session, now)) continue;
+      for (CheckInTarget target : targetMapper.selectBySessionId(session.getId())) {
+        CheckInRecord record = recordMapper.selectOneBySessionAndUser(session.getId(), target.getUserId());
+        if (record == null) {
+          applyRecordStatus(session, target.getUserId(), RECORD_STATUS_ABSENT, "auto_absent", null, now);
+        }
+      }
+      session.setStatus("closed");
+      sessionMapper.updateById(session);
+    }
+  }
+
+  private Timestamp checkinDeadlineAt(CheckInSession session) {
+    if (session == null) return null;
+    if (!isEveningStudy(session)) return session.getEndAt();
+    if (session.getStartAt() == null) return session.getEndAt();
+    return Timestamp.from(
+        session
+            .getStartAt()
+            .toInstant()
+            .plusSeconds((long) normalizeCheckinWindowMinutes(session.getCheckinWindowMinutes()) * 60L));
+  }
+
+  private Timestamp lateDeadlineAt(CheckInSession session) {
+    if (session == null || !isEveningStudy(session) || session.getStartAt() == null) return null;
+    return Timestamp.from(
+        session
+            .getStartAt()
+            .toInstant()
+            .plusSeconds((long) normalizeLateAfterMinutes(session.getLateAfterMinutes()) * 60L));
+  }
+
+  private boolean shouldMarkLate(CheckInSession session, Timestamp now) {
+    Timestamp deadline = lateDeadlineAt(session);
+    return deadline != null && now != null && now.after(deadline);
+  }
+
+  private boolean isCheckinWindowEnded(CheckInSession session, Timestamp now) {
+    Timestamp deadline = checkinDeadlineAt(session);
+    return deadline != null && now != null && now.after(deadline);
+  }
+
+  private boolean isEveningStudy(CheckInSession session) {
+    return session != null && SESSION_TYPE_EVENING_STUDY.equals(firstNonBlank(session.getSessionType(), SESSION_TYPE_REGULAR));
+  }
+
+  private int countRecords(List<CheckInRecord> records, String status) {
+    if (records == null || records.isEmpty()) return 0;
+    return (int) records.stream().filter(record -> status.equals(record.getStatus())).count();
+  }
+
+  private Result<String> validateEveningStudyRules(RequestEveningStudyScheduleDTO request) {
+    int windowMinutes = normalizeCheckinWindowMinutes(request.getCheckinWindowMinutes());
+    int lateAfterMinutes = normalizeLateAfterMinutes(request.getLateAfterMinutes());
+    if (lateAfterMinutes >= windowMinutes) return Result.error(400, "迟到阈值必须小于签到窗口");
+    return Result.success();
+  }
+
+  private int normalizeCheckinWindowMinutes(Integer value) {
+    if (value == null) return DEFAULT_CHECKIN_WINDOW_MINUTES;
+    return Math.max(1, Math.min(value, 24 * 60));
+  }
+
+  private int normalizeLateAfterMinutes(Integer value) {
+    if (value == null) return DEFAULT_LATE_AFTER_MINUTES;
+    return Math.max(0, Math.min(value, 24 * 60));
+  }
+
+  private long normalizePenaltyPoints(Long value, long fallback) {
+    if (value == null) return fallback;
+    return Math.max(0L, value);
+  }
+
+  private Timestamp firstNonNull(Timestamp value, Timestamp fallback) {
+    return value == null ? fallback : value;
+  }
+
+  private String recordStatusMessage(String status) {
+    if (RECORD_STATUS_LATE.equals(status)) return "已标记为迟到";
+    if (RECORD_STATUS_ABSENT.equals(status)) return "已标记为旷课";
+    return "已标记为已签到";
   }
 
   private CheckInSession findSession(Integer sessionId) {
@@ -817,7 +1033,7 @@ public class CheckInServiceImpl implements CheckInService {
         CheckInRecord record = recordMapper.selectOneBySessionAndUser(session.getId(), userId);
         if (record != null) {
           recordMapper.deleteById(record.getId());
-          pointService.revokeCheckInPoints(userId, session, revokeActivity, currentUserId());
+          clearAttendanceEffects(userId, session, revokeActivity, currentUserId());
         }
       }
     }

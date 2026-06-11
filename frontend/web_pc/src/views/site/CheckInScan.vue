@@ -12,7 +12,7 @@
           <el-icon v-if="result"><Select /></el-icon>
           <el-icon v-else-if="autoSubmitting" class="is-loading"><Loading /></el-icon>
           <el-icon v-else><Link /></el-icon>
-          <strong>{{ result ? '已签到' : autoSubmitting ? '提交中' : '等待扫码' }}</strong>
+          <strong>{{ result ? recordStatusText(result.status) : autoSubmitting ? '提交中' : '等待扫码' }}</strong>
           <span v-if="result">
             {{ result.realName || result.userName || '当前账号' }} 已完成本次签到
           </span>
@@ -22,7 +22,7 @@
         <dl v-if="result" class="result-detail">
           <div>
             <dt>状态</dt>
-            <dd>{{ result.status === 'checked' ? '已签到' : result.status }}</dd>
+            <dd>{{ recordStatusText(result.status) }}</dd>
           </div>
           <div>
             <dt>签到时间</dt>
@@ -70,10 +70,15 @@ const router = useRouter()
 const route = useRoute()
 
 const statusText = computed(() => {
+  if (result.value?.status === 'late') return '签到信息已提交，本次已按晚自习规则记为迟到。'
   if (result.value) return '签到信息已提交，无需重复操作。'
   if (autoSubmitting.value) return '正在通过微信扫码带入的签到信息自动提交。'
   return '微信扫一扫管理员大屏二维码后会自动打开本页并完成签到。'
 })
+
+function recordStatusText(status: any) {
+  return { checked: '已签到', late: '迟到', absent: '旷课', pending: '未签到' }[status] || status || '-'
+}
 
 function redirectToLogin() {
   clearSession()
@@ -121,7 +126,7 @@ async function submitToken(value: any) {
     result.value = await checkInApi.scan({ token })
     localStorage.removeItem(PENDING_CHECK_IN_TOKEN)
     hideTokenFromAddressBar()
-    ElMessage.success('签到成功')
+    ElMessage.success(result.value?.status === 'late' ? '签到成功，已记为迟到' : '签到成功')
   } catch (error: any) {
     if ([401, 40100].includes(Number(error?.code || error?.response?.status))) {
       localStorage.setItem(PENDING_CHECK_IN_TOKEN, token)

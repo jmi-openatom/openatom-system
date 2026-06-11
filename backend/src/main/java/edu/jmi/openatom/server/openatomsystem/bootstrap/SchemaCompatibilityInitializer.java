@@ -851,6 +851,10 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `start_time` TIME NOT NULL DEFAULT '19:00:00' COMMENT '每日开始时间',
             `end_time` TIME NOT NULL DEFAULT '21:30:00' COMMENT '每日结束时间',
             `checkin_points` BIGINT NOT NULL DEFAULT 0 COMMENT '签到奖励积分',
+            `checkin_window_minutes` INT NOT NULL DEFAULT 30 COMMENT '签到窗口分钟数',
+            `late_after_minutes` INT NOT NULL DEFAULT 10 COMMENT '开始后超过多少分钟算迟到',
+            `late_penalty_points` BIGINT NOT NULL DEFAULT 1 COMMENT '迟到扣分',
+            `absent_penalty_points` BIGINT NOT NULL DEFAULT 2 COMMENT '旷课扣分',
             `enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
             `created_by` INT DEFAULT NULL COMMENT '创建人',
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -861,6 +865,38 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             KEY `idx_evening_schedule_enabled` (`enabled`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='晚自习签到计划表'
         """);
+    addColumnIfAbsent(
+        "evening_study_schedule",
+        "checkin_window_minutes",
+        "INT NOT NULL DEFAULT 30 COMMENT '签到窗口分钟数' AFTER `checkin_points`");
+    addColumnIfAbsent(
+        "evening_study_schedule",
+        "late_after_minutes",
+        "INT NOT NULL DEFAULT 10 COMMENT '开始后超过多少分钟算迟到' AFTER `checkin_window_minutes`");
+    addColumnIfAbsent(
+        "evening_study_schedule",
+        "late_penalty_points",
+        "BIGINT NOT NULL DEFAULT 1 COMMENT '迟到扣分' AFTER `late_after_minutes`");
+    addColumnIfAbsent(
+        "evening_study_schedule",
+        "absent_penalty_points",
+        "BIGINT NOT NULL DEFAULT 2 COMMENT '旷课扣分' AFTER `late_penalty_points`");
+    addColumnIfAbsent(
+        "checkin_session",
+        "checkin_window_minutes",
+        "INT NOT NULL DEFAULT 30 COMMENT '签到窗口分钟数' AFTER `token`");
+    addColumnIfAbsent(
+        "checkin_session",
+        "late_after_minutes",
+        "INT NOT NULL DEFAULT 10 COMMENT '开始后超过多少分钟算迟到' AFTER `checkin_window_minutes`");
+    addColumnIfAbsent(
+        "checkin_session",
+        "late_penalty_points",
+        "BIGINT NOT NULL DEFAULT 1 COMMENT '迟到扣分' AFTER `late_after_minutes`");
+    addColumnIfAbsent(
+        "checkin_session",
+        "absent_penalty_points",
+        "BIGINT NOT NULL DEFAULT 2 COMMENT '旷课扣分' AFTER `late_penalty_points`");
 
     jdbcTemplate.execute(
         """

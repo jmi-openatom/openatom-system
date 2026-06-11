@@ -54,6 +54,18 @@ public class CheckInSession {
   @TableField("checkin_points")
   private Long checkinPoints;
 
+  @TableField("checkin_window_minutes")
+  private Integer checkinWindowMinutes;
+
+  @TableField("late_after_minutes")
+  private Integer lateAfterMinutes;
+
+  @TableField("late_penalty_points")
+  private Long latePenaltyPoints;
+
+  @TableField("absent_penalty_points")
+  private Long absentPenaltyPoints;
+
   @TableField("created_by")
   private Integer createdBy;
 

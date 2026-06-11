@@ -22,5 +22,9 @@ public class RequestEveningStudyScheduleDTO {
   private String endTime;
 
   private Long checkinPoints;
+  private Integer checkinWindowMinutes;
+  private Integer lateAfterMinutes;
+  private Long latePenaltyPoints;
+  private Long absentPenaltyPoints;
   private Boolean enabled;
 }

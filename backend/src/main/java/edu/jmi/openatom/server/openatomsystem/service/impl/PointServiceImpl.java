@@ -333,6 +333,55 @@ public class PointServiceImpl implements PointService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  public void applyCheckInPenalty(
+      Integer userId, CheckInSession session, String penaltyType, Long points, Integer operatorId) {
+    if (userId == null || session == null) return;
+    long pointValue = normalizeRulePoints(points);
+    if (pointValue <= 0) {
+      revokeCheckInPenalty(userId, session, penaltyType, operatorId);
+      return;
+    }
+    String normalizedType = normalizeCheckInPenaltyType(penaltyType);
+    String sourceKey = checkInPenaltySourceKey(session.getId(), normalizedType);
+    long net = safe(transactionMapper.sumDeltaBySourceKey(userId, sourceKey));
+    long desiredNet = -pointValue;
+    if (net == desiredNet) return;
+    long delta = checkedAdd(desiredNet, -net);
+    applyTransaction(
+        userId,
+        delta,
+        delta < 0 ? "checkin_penalty" : "checkin_penalty_revoke",
+        "checkin_session",
+        session.getId(),
+        sourceKey,
+        delta < 0
+            ? checkInPenaltyDescription(normalizedType, session)
+            : "撤销" + checkInPenaltyDescription(normalizedType, session),
+        operatorId);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void revokeCheckInPenalty(
+      Integer userId, CheckInSession session, String penaltyType, Integer operatorId) {
+    if (userId == null || session == null) return;
+    String normalizedType = normalizeCheckInPenaltyType(penaltyType);
+    String sourceKey = checkInPenaltySourceKey(session.getId(), normalizedType);
+    long net = safe(transactionMapper.sumDeltaBySourceKey(userId, sourceKey));
+    if (net >= 0) return;
+    applyTransaction(
+        userId,
+        -net,
+        "checkin_penalty_revoke",
+        "checkin_session",
+        session.getId(),
+        sourceKey,
+        "撤销" + checkInPenaltyDescription(normalizedType, session),
+        operatorId);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
   public void grantDailyLoginPoints(Integer userId) {
     if (userId == null) return;
     long points = pointSettingValue(DAILY_LOGIN_POINTS_KEY, DEFAULT_DAILY_LOGIN_POINTS);
@@ -729,6 +778,19 @@ public class PointServiceImpl implements PointService {
 
   private String checkInSourceKey(Integer sessionId) {
     return "checkin:" + sessionId;
+  }
+
+  private String checkInPenaltySourceKey(Integer sessionId, String penaltyType) {
+    return "checkin_penalty:" + sessionId + ":" + normalizeCheckInPenaltyType(penaltyType);
+  }
+
+  private String normalizeCheckInPenaltyType(String penaltyType) {
+    return "absent".equals(penaltyType) ? "absent" : "late";
+  }
+
+  private String checkInPenaltyDescription(String penaltyType, CheckInSession session) {
+    String label = "absent".equals(penaltyType) ? "旷课扣分：" : "迟到扣分：";
+    return label + (session == null || session.getTitle() == null ? "签到" : session.getTitle());
   }
 
   private String activitySourceKey(Integer activityId) {

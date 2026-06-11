@@ -39,6 +39,18 @@ public class EveningStudySchedule {
   @TableField("checkin_points")
   private Long checkinPoints;
 
+  @TableField("checkin_window_minutes")
+  private Integer checkinWindowMinutes;
+
+  @TableField("late_after_minutes")
+  private Integer lateAfterMinutes;
+
+  @TableField("late_penalty_points")
+  private Long latePenaltyPoints;
+
+  @TableField("absent_penalty_points")
+  private Long absentPenaltyPoints;
+
   private Boolean enabled;
 
   @TableField("created_by")

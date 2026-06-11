@@ -65,6 +65,8 @@
         <div class="table-filter-row">
           <el-select v-model="transactionQuery.type" clearable placeholder="流水类型" style="width: 180px" @change="fetchTransactions">
             <el-option label="签到" value="checkin" />
+            <el-option label="签到扣分" value="checkin_penalty" />
+            <el-option label="签到扣分撤销" value="checkin_penalty_revoke" />
             <el-option label="活动" value="activity" />
             <el-option label="每日登录" value="daily_login" />
             <el-option label="博客发布" value="blog_publish" />
@@ -339,6 +341,8 @@ function transactionTypeText(type: string) {
     {
       checkin: '签到',
       checkin_revoke: '签到撤销',
+      checkin_penalty: '签到扣分',
+      checkin_penalty_revoke: '签到扣分撤销',
       activity: '活动',
       activity_revoke: '活动撤销',
       daily_login: '每日登录',

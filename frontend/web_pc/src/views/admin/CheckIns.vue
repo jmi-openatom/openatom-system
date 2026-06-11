@@ -52,7 +52,13 @@
 
             <el-table-column label="进度" width="150">
                 <template #default="{ row }">
-                    {{ row.checkedCount || 0 }} / {{ row.targetCount || 0 }}
+                    已签 {{ row.signedCount || 0 }} / {{ row.targetCount || 0 }}
+                    <span v-if="row.lateCount" class="muted-inline">
+                        迟到 {{ row.lateCount }}
+                    </span>
+                    <span v-if="row.absentCount" class="muted-inline">
+                        旷课 {{ row.absentCount }}
+                    </span>
                     <span v-if="row.excusedCount" class="muted-inline">
                         请假 {{ row.excusedCount }}
                     </span>
@@ -273,7 +279,11 @@
                 <el-input v-model="eveningForm.location" placeholder="地点" />
                 <el-input v-model="eveningForm.startTime" type="time" />
                 <el-input v-model="eveningForm.endTime" type="time" />
-                <el-input-number v-model="eveningForm.checkinPoints" :min="0" :max="POINT_AMOUNT_MAX" :step="1" />
+                <el-input-number v-model="eveningForm.checkinPoints" :min="0" :max="POINT_AMOUNT_MAX" :step="1" placeholder="签到积分" />
+                <el-input-number v-model="eveningForm.checkinWindowMinutes" :min="1" :max="1440" :step="5" placeholder="签到窗口(分钟)" />
+                <el-input-number v-model="eveningForm.lateAfterMinutes" :min="0" :max="1439" :step="5" placeholder="迟到阈值(分钟)" />
+                <el-input-number v-model="eveningForm.latePenaltyPoints" :min="0" :max="POINT_AMOUNT_MAX" :step="1" placeholder="迟到扣分" />
+                <el-input-number v-model="eveningForm.absentPenaltyPoints" :min="0" :max="POINT_AMOUNT_MAX" :step="1" placeholder="旷课扣分" />
                 <el-switch v-model="eveningForm.enabled" active-text="启用" inactive-text="停用" />
                 <el-button :loading="eveningSaving" type="primary" @click="saveEveningSchedule">
                     {{ eveningForm.id ? '更新' : '创建' }}
@@ -294,9 +304,23 @@
                         {{ row.startTime }} - {{ row.endTime }}
                     </template>
                 </el-table-column>
-                <el-table-column label="今日进度" width="170">
+                <el-table-column label="签到规则" width="190">
                     <template #default="{ row }">
-                        {{ row.todayCheckedCount || 0 }} / {{ row.todayTargetCount || 0 }}
+                        {{ row.checkinWindowMinutes || 30 }} 分钟，{{ row.lateAfterMinutes || 10 }} 分钟后迟到
+                        <p class="muted-line">
+                            迟到 -{{ row.latePenaltyPoints ?? 1 }}，旷课 -{{ row.absentPenaltyPoints ?? 2 }}
+                        </p>
+                    </template>
+                </el-table-column>
+                <el-table-column label="今日进度" width="220">
+                    <template #default="{ row }">
+                        已签 {{ row.todaySignedCount || 0 }} / {{ row.todayTargetCount || 0 }}
+                        <span v-if="row.todayLateCount" class="muted-inline">
+                            迟到 {{ row.todayLateCount }}
+                        </span>
+                        <span v-if="row.todayAbsentCount" class="muted-inline">
+                            旷课 {{ row.todayAbsentCount }}
+                        </span>
                         <span v-if="row.todayExcusedCount" class="muted-inline">
                             请假 {{ row.todayExcusedCount }}
                         </span>
@@ -340,6 +364,11 @@
                             <p v-if="previewRow.checkinPoints" class="preview-count">
                                 本次签到 +{{ previewRow.checkinPoints }} 积分
                             </p>
+                            <p v-if="previewRow.sessionType === 'evening_study'" class="preview-count">
+                                签到截止 {{ formatDateTime(previewRow.checkinDeadlineAt) || '-' }}，
+                                迟到扣 {{ previewRow.latePenaltyPoints ?? 1 }} 分，
+                                旷课扣 {{ previewRow.absentPenaltyPoints ?? 2 }} 分
+                            </p>
 
                             <div class="qr-box">
                                 <img
@@ -355,7 +384,7 @@
                             </div>
 
                             <p class="preview-count">
-                                已签到 {{ checkedRecords.length }} /
+                                已签到 {{ signedRecords.length }} /
                                 {{ activePreviewRecords.length || previewRow.targetCount || 0 }}
                             </p>
                         </section>
@@ -363,7 +392,7 @@
                         <section class="preview-roster">
                             <div class="roster-column roster-column--pending">
                                 <div class="roster-head">
-                                    <span>未签到</span>
+                                    <span>未签到/旷课</span>
                                     <strong>{{ pendingRecords.length }}</strong>
                                 </div>
 
@@ -374,7 +403,7 @@
                                         class="roster-item pending-item"
                                     >
                                         <span class="roster-name">{{ displayRecordName(item) }}</span>
-                                        <span class="roster-status">未签到</span>
+                                        <span class="roster-status">{{ recordStatusText(item.status) }}</span>
                                     </div>
 
                                     <el-empty
@@ -388,21 +417,21 @@
                             <div class="roster-column roster-column--checked">
                                 <div class="roster-head">
                                     <span>已签到</span>
-                                    <strong>{{ checkedRecords.length }}</strong>
+                                    <strong>{{ signedRecords.length }}</strong>
                                 </div>
 
                                 <div class="roster-scroll">
                                     <div
-                                        v-for="item in checkedRecords"
+                                        v-for="item in signedRecords"
                                         :key="`checked-${item.userId}`"
-                                        class="roster-item checked-item"
+                                        :class="['roster-item', item.status === 'late' ? 'late-item' : 'checked-item']"
                                     >
                                         <span class="roster-name">{{ displayRecordName(item) }}</span>
-                                        <span class="roster-status">已签到</span>
+                                        <span class="roster-status">{{ recordStatusText(item.status) }}</span>
                                     </div>
 
                                     <el-empty
-                                        v-if="!checkedRecords.length"
+                                    v-if="!signedRecords.length"
                                         :image-size="72"
                                         description="暂无签到"
                                     />
@@ -475,14 +504,21 @@
                 </el-table-column>
                 <el-table-column label="操作" width="140">
                     <template #default="{ row }">
-                        <el-button
+                        <el-dropdown
                             v-if="row.status !== 'excused'"
-                            link
-                            type="primary"
-                            @click="toggleRecordStatus(row)"
+                            trigger="click"
+                            @command="(status) => changeRecordStatus(row, status)"
                         >
-                            {{ row.status === 'checked' ? '改未签到' : '改已签到' }}
-                        </el-button>
+                            <el-button link type="primary">改状态</el-button>
+                            <template #dropdown>
+                                <el-dropdown-menu>
+                                    <el-dropdown-item command="checked">正常签到</el-dropdown-item>
+                                    <el-dropdown-item command="late">迟到</el-dropdown-item>
+                                    <el-dropdown-item command="absent">旷课</el-dropdown-item>
+                                    <el-dropdown-item command="pending">未签到</el-dropdown-item>
+                                </el-dropdown-menu>
+                            </template>
+                        </el-dropdown>
                         <span v-else class="muted-line">{{ row.exclusionReason || '已通过请假' }}</span>
                     </template>
                 </el-table-column>
@@ -557,6 +593,10 @@ const eveningForm = ref({
     startTime: '19:00',
     endTime: '21:30',
     checkinPoints: 0,
+    checkinWindowMinutes: 30,
+    lateAfterMinutes: 10,
+    latePenaltyPoints: 1,
+    absentPenaltyPoints: 2,
     enabled: true,
 })
 
@@ -586,8 +626,8 @@ const filteredMembers = computed(() => {
     )
 })
 
-const checkedRecords = computed(() => {
-    return previewRecords.value.filter((item) => item.status === 'checked')
+const signedRecords = computed(() => {
+    return previewRecords.value.filter((item) => ['checked', 'late'].includes(item.status))
 })
 
 const excusedRecords = computed(() => {
@@ -599,7 +639,7 @@ const activePreviewRecords = computed(() => {
 })
 
 const pendingRecords = computed(() => {
-    return previewRecords.value.filter((item) => item.status !== 'checked' && item.status !== 'excused')
+    return previewRecords.value.filter((item) => !['checked', 'late', 'excused'].includes(item.status))
 })
 
 const filteredGroupUsers = computed(() => {
@@ -636,11 +676,11 @@ function userStatusText(status: any) {
 }
 
 function recordStatusText(status: any) {
-    return { checked: '已签到', pending: '未签到', excused: '已请假' }[status] || status || '-'
+    return { checked: '正常签到', late: '迟到', absent: '旷课', pending: '未签到', excused: '已请假' }[status] || status || '-'
 }
 
 function recordStatusType(status: any) {
-    return { checked: 'success', pending: 'info', excused: 'warning' }[status] || 'info'
+    return { checked: 'success', late: 'warning', absent: 'danger', pending: 'info', excused: 'warning' }[status] || 'info'
 }
 
 function formatRange(startAt: any, endAt: any) {
@@ -695,6 +735,10 @@ function resetEveningForm() {
         startTime: '19:00',
         endTime: '21:30',
         checkinPoints: 0,
+        checkinWindowMinutes: 30,
+        lateAfterMinutes: 10,
+        latePenaltyPoints: 1,
+        absentPenaltyPoints: 2,
         enabled: true,
     }
 }
@@ -708,6 +752,10 @@ function editEveningSchedule(row: any) {
         startTime: normalizeTimeValue(row.startTime) || '19:00',
         endTime: normalizeTimeValue(row.endTime) || '21:30',
         checkinPoints: row.checkinPoints || 0,
+        checkinWindowMinutes: row.checkinWindowMinutes || 30,
+        lateAfterMinutes: row.lateAfterMinutes ?? 10,
+        latePenaltyPoints: row.latePenaltyPoints ?? 1,
+        absentPenaltyPoints: row.absentPenaltyPoints ?? 2,
         enabled: row.enabled !== false,
     }
 }
@@ -720,6 +768,11 @@ async function saveEveningSchedule() {
 
     if (!eveningForm.value.title.trim()) {
         ElMessage.error('请输入计划标题')
+        return
+    }
+
+    if ((eveningForm.value.lateAfterMinutes ?? 10) >= (eveningForm.value.checkinWindowMinutes || 30)) {
+        ElMessage.error('迟到阈值必须小于签到窗口')
         return
     }
 
@@ -1133,16 +1186,14 @@ async function addTargetsToSession() {
     fetchList()
 }
 
-async function toggleRecordStatus(row: any) {
+async function changeRecordStatus(row: any, status: any) {
     if (!recordsRow.value) return
-
-    const status = row.status === 'checked' ? 'pending' : 'checked'
 
     await checkInApi.updateRecordStatus(recordsRow.value.id, row.userId, {
         status,
     })
 
-    ElMessage.success(status === 'checked' ? '已改为已签到' : '已改为未签到')
+    ElMessage.success(`已改为${recordStatusText(status)}`)
 
     records.value = await checkInApi.records(recordsRow.value.id)
 
@@ -1245,7 +1296,7 @@ onBeforeUnmount(() => {
 
 .evening-form {
     display: grid;
-    grid-template-columns: minmax(150px, 1.1fr) minmax(150px, 1.1fr) minmax(130px, 1fr) 110px 110px 140px 120px auto auto;
+    grid-template-columns: repeat(5, minmax(130px, 1fr));
     gap: 10px;
     align-items: center;
     margin-bottom: 14px;
