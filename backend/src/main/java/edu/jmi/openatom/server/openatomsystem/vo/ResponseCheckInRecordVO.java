@@ -18,4 +18,6 @@ public class ResponseCheckInRecordVO {
   private String phone;
   private String status;
   private Timestamp checkinAt;
+  private Integer leaveApplicationId;
+  private String exclusionReason;
 }

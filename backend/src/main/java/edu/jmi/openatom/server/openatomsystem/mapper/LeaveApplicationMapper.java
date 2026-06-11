@@ -3,6 +3,7 @@ package edu.jmi.openatom.server.openatomsystem.mapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.LeaveApplication;
+import java.sql.Timestamp;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -30,5 +31,22 @@ public interface LeaveApplicationMapper extends BaseMapper<LeaveApplication> {
         new LambdaQueryWrapper<LeaveApplication>()
             .like(LeaveApplication::getAttachments, fileName.trim())
             .last("LIMIT 1"));
+  }
+
+  default List<LeaveApplication> selectApprovedOverlapsByUsers(
+      Integer clubId, List<Integer> userIds, Timestamp startAt, Timestamp endAt) {
+    if (userIds == null || userIds.isEmpty()) return List.of();
+    LambdaQueryWrapper<LeaveApplication> wrapper =
+        new LambdaQueryWrapper<LeaveApplication>()
+            .eq(LeaveApplication::getClubId, clubId)
+            .eq(LeaveApplication::getStatus, "approved")
+            .in(LeaveApplication::getUserId, userIds);
+    if (endAt != null) {
+      wrapper.and(query -> query.isNull(LeaveApplication::getStartAt).or().lt(LeaveApplication::getStartAt, endAt));
+    }
+    if (startAt != null) {
+      wrapper.and(query -> query.isNull(LeaveApplication::getEndAt).or().gt(LeaveApplication::getEndAt, startAt));
+    }
+    return selectList(wrapper.orderByAsc(LeaveApplication::getUserId).orderByDesc(LeaveApplication::getReviewedAt));
   }
 }

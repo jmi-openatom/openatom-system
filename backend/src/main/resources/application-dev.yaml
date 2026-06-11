@@ -5,9 +5,9 @@ spring:
     enabled: false
   datasource:
     # 本地开发数据库配置，直接修改下面的连接地址、用户名和密码
-    url: jdbc:mysql://127.0.0.1:3306/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-    username: root
-    password: root123456
+    url: jdbc:mysql://34.150.118.16:3306/openatom-system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: openatom-system
+    password: 7jcAS4e8eBSbBFBt
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   servlet:

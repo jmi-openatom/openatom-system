@@ -15,7 +15,11 @@ public class ResponseCheckInSessionVO {
   private Integer id;
   private Integer activityId;
   private Integer groupId;
+  private Integer scheduleId;
+  private String sessionType;
+  private String attendanceDate;
   private String title;
+  private String groupName;
   private String activityTitle;
   private String location;
   private Timestamp startAt;
@@ -25,5 +29,8 @@ public class ResponseCheckInSessionVO {
   private Long checkinPoints;
   private Integer targetCount;
   private Integer checkedCount;
+  private Integer pendingCount;
+  private Integer excusedCount;
   private List<Integer> targetUserIds;
+  private List<Integer> excusedUserIds;
 }

@@ -1,6 +1,6 @@
 # OpenAtom API AstrBot 插件
 
-这个插件用于让 AstrBot/NapCat 机器人查询 OpenAtom System 后端数据，并支持用户通过网页登录生成的一次性绑定码绑定 QQ，以及通过 QQ 号或姓名查系统用户。
+这个插件用于让 AstrBot/NapCat 机器人查询 OpenAtom System 后端数据，并支持用户通过网页登录生成的一次性绑定码绑定 QQ、通过 QQ 号或姓名查系统用户、查询当天晚自习签到概览。
 
 ## 配置
 
@@ -40,6 +40,7 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 社团荣誉/获奖 -> 查询 /site/club-home 的 awards
 查人 张三 -> 查询 /bot/users/lookup?keyword=张三
 通过QQ号123456查人 -> 查询 /bot/users/lookup?qqOpenid=123456
+今晚晚自习签到 -> 查询 /bot/evening-study/today
 有哪些部门 -> 查询 /clubs/1/departments
 招新开了吗 -> 查询 /site/recruitment
 校历怎么安排 -> 查询 /site/school-calendar
@@ -65,6 +66,7 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 /oa bind-qq 绑定码
 /oa 查人 qq 123456
 /oa 查人 张三
+/oa 晚自习
 /群里艾特机器人发送：我要请假，然后在机器人私聊里继续
 /oa ask 社团有多少人
 /oa ask 主要人员有哪些
@@ -98,6 +100,17 @@ AI 必须把用户原始问题传给 `question`，插件内部根据问题自动
 ```
 
 查人接口读取后端 public 接口 `/bot/users/lookup`，不需要登录，也不需要在插件配置里填写 `access_token`。后端只返回姓名、ID、用户名、学号、院系专业班级、QQ 绑定状态和账号状态，不直接暴露密码、token、手机号、邮箱或 QQ 原始绑定值。
+
+## 晚自习签到
+
+机器人支持查询当天晚自习签到概览：
+
+```text
+/oa 晚自习
+/oa ask 今晚晚自习签到
+```
+
+接口读取后端 public 接口 `/bot/evening-study/today`，按后台创建的实验室分组返回当天生成的晚自习签到场次、应到/已到/未到和已请假剔除人数。
 
 ## 机器人请假
 

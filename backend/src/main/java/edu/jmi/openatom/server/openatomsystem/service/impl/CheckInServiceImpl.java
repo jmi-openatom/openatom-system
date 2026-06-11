@@ -8,6 +8,8 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInRecordStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInScanDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInTargetsDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateCheckInSessionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestEveningStudyScheduleDTO;
+import edu.jmi.openatom.server.openatomsystem.entity.CheckInExclusion;
 import edu.jmi.openatom.server.openatomsystem.entity.CheckInGroup;
 import edu.jmi.openatom.server.openatomsystem.entity.CheckInGroupMember;
 import edu.jmi.openatom.server.openatomsystem.entity.CheckInRecord;
@@ -15,7 +17,10 @@ import edu.jmi.openatom.server.openatomsystem.entity.CheckInSession;
 import edu.jmi.openatom.server.openatomsystem.entity.CheckInTarget;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
+import edu.jmi.openatom.server.openatomsystem.entity.EveningStudySchedule;
+import edu.jmi.openatom.server.openatomsystem.entity.LeaveApplication;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
+import edu.jmi.openatom.server.openatomsystem.mapper.CheckInExclusionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.CheckInGroupMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.CheckInGroupMemberMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.CheckInRecordMapper;
@@ -23,17 +28,28 @@ import edu.jmi.openatom.server.openatomsystem.mapper.CheckInSessionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.CheckInTargetMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubActivityMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.EveningStudyScheduleMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.LeaveApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.CheckInService;
 import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInGroupVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInRecordVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInSessionVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseEveningStudyScheduleVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseEveningStudyTodayVO;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,14 +58,20 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CheckInServiceImpl implements CheckInService {
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
   private static final List<String> STATUSES = List.of("draft", "open", "closed");
+  private static final String SESSION_TYPE_REGULAR = "regular";
+  private static final String SESSION_TYPE_EVENING_STUDY = "evening_study";
   private static final String PAYLOAD_PREFIX = "openatom-checkin:";
   private static final String ROTATING_PAYLOAD_PREFIX = "oaci2:";
   private static final long ROTATING_TOKEN_WINDOW_SECONDS = 30L;
@@ -63,7 +85,13 @@ public class CheckInServiceImpl implements CheckInService {
   private final CheckInSessionMapper sessionMapper;
   private final CheckInTargetMapper targetMapper;
   private final CheckInRecordMapper recordMapper;
+  private final CheckInExclusionMapper exclusionMapper;
+  private final EveningStudyScheduleMapper eveningStudyScheduleMapper;
+  private final LeaveApplicationMapper leaveApplicationMapper;
   private final PointService pointService;
+
+  @Value("${app.checkin.evening-study-auto-generate-enabled:true}")
+  private boolean eveningStudyAutoGenerateEnabled;
 
   @Override
   public Result<List<ResponseCheckInSessionVO>> list(String status) {
@@ -168,6 +196,7 @@ public class CheckInServiceImpl implements CheckInService {
         .clubId(club.getId())
         .activityId(request.getActivityId())
         .groupId(request.getGroupId())
+        .sessionType(SESSION_TYPE_REGULAR)
         .title(request.getTitle().trim())
         .location(trimToNull(request.getLocation()))
         .startAt(Times.parseTimestamp(request.getStartAt()))
@@ -235,6 +264,7 @@ public class CheckInServiceImpl implements CheckInService {
     if (session == null) return Result.error(404, "签到不存在");
     recordMapper.deleteBySessionId(sessionId);
     targetMapper.deleteBySessionId(sessionId);
+    exclusionMapper.deleteBySessionId(sessionId);
     int rows = sessionMapper.deleteById(sessionId);
     return rows > 0 ? Result.success("签到已删除") : Result.error("签到删除失败");
   }
@@ -252,6 +282,7 @@ public class CheckInServiceImpl implements CheckInService {
     for (Integer userId : userIds) {
       CheckInTarget exists = targetMapper.selectOneBySessionAndUser(sessionId, userId);
       if (exists == null) {
+        exclusionMapper.deleteBySessionIdAndUserId(sessionId, userId);
         targetMapper.insert(CheckInTarget.builder().sessionId(sessionId).userId(userId).build());
         added++;
       }
@@ -265,9 +296,22 @@ public class CheckInServiceImpl implements CheckInService {
     if (session == null) return Result.error(404, "签到不存在");
     List<CheckInTarget> targets = targetMapper.selectBySessionId(sessionId);
     List<CheckInRecord> records = recordMapper.selectBySessionId(sessionId);
-    Map<Integer, CheckInRecord> recordMap = records.stream().collect(Collectors.toMap(CheckInRecord::getUserId, Function.identity(), (a, b) -> a));
-    Map<Integer, User> users = loadUsers(targets.stream().map(CheckInTarget::getUserId).toList());
-    return Result.success(targets.stream().map(target -> toRecordVO(users.get(target.getUserId()), recordMap.get(target.getUserId()))).toList());
+    List<CheckInExclusion> exclusions = exclusionMapper.selectBySessionId(sessionId);
+    Map<Integer, CheckInRecord> recordMap =
+        records.stream()
+            .collect(Collectors.toMap(CheckInRecord::getUserId, Function.identity(), (a, b) -> a));
+    List<Integer> userIds = new ArrayList<>();
+    targets.stream().map(CheckInTarget::getUserId).forEach(userIds::add);
+    exclusions.stream().map(CheckInExclusion::getUserId).forEach(userIds::add);
+    Map<Integer, User> users = loadUsers(userIds);
+    List<ResponseCheckInRecordVO> values = new ArrayList<>();
+    targets.stream()
+        .map(target -> toRecordVO(users.get(target.getUserId()), recordMap.get(target.getUserId())))
+        .forEach(values::add);
+    exclusions.stream()
+        .map(exclusion -> toExclusionRecordVO(users.get(exclusion.getUserId()), exclusion))
+        .forEach(values::add);
+    return Result.success(values);
   }
 
   @Override
@@ -325,19 +369,159 @@ public class CheckInServiceImpl implements CheckInService {
     return Result.success(toRecordVO(userMapper.selectById(userId), record), "已签到，无需重复签到");
   }
 
+  @Override
+  public Result<List<ResponseEveningStudyScheduleVO>> eveningStudySchedules() {
+    Club club = defaultClub();
+    if (club == null) return Result.error(404, "默认社团不存在");
+    LocalDate today = LocalDate.now(Times.BUSINESS_ZONE);
+    return Result.success(
+        eveningStudyScheduleMapper.selectByClubId(club.getId()).stream()
+            .map(schedule -> toEveningStudyScheduleVO(schedule, today))
+            .toList());
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<Integer> createEveningStudySchedule(RequestEveningStudyScheduleDTO request) {
+    Club club = defaultClub();
+    if (club == null) return Result.error(404, "默认社团不存在");
+    CheckInGroup group = findGroup(request.getGroupId());
+    if (group == null) return Result.error(404, "实验室分组不存在");
+    EveningStudySchedule exists = eveningStudyScheduleMapper.selectByGroupId(group.getId());
+    if (exists != null) return Result.error(409, "该实验室分组已经配置晚自习计划");
+    Time startTime = parseLocalTime(request.getStartTime());
+    Time endTime = parseLocalTime(request.getEndTime());
+    if (startTime == null || endTime == null) return Result.error(400, "晚自习时间格式不合法");
+    EveningStudySchedule schedule =
+        EveningStudySchedule.builder()
+            .clubId(club.getId())
+            .groupId(group.getId())
+            .title(firstNonBlank(request.getTitle(), "晚自习签到"))
+            .location(trimToNull(request.getLocation()))
+            .startTime(startTime)
+            .endTime(endTime)
+            .checkinPoints(safePoints(request.getCheckinPoints()))
+            .enabled(request.getEnabled() == null || request.getEnabled())
+            .createdBy(currentUserId())
+            .build();
+    eveningStudyScheduleMapper.insert(schedule);
+    return Result.success(schedule.getId(), "晚自习计划已创建");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> updateEveningStudySchedule(Integer scheduleId, RequestEveningStudyScheduleDTO request) {
+    Club club = defaultClub();
+    if (club == null) return Result.error(404, "默认社团不存在");
+    EveningStudySchedule schedule = eveningStudyScheduleMapper.selectByIdAndClubId(scheduleId, club.getId());
+    if (schedule == null) return Result.error(404, "晚自习计划不存在");
+    CheckInGroup group = findGroup(request.getGroupId());
+    if (group == null) return Result.error(404, "实验室分组不存在");
+    EveningStudySchedule sameGroup = eveningStudyScheduleMapper.selectByGroupId(group.getId());
+    if (sameGroup != null && !sameGroup.getId().equals(schedule.getId())) {
+      return Result.error(409, "该实验室分组已经配置晚自习计划");
+    }
+    Time startTime = parseLocalTime(request.getStartTime());
+    Time endTime = parseLocalTime(request.getEndTime());
+    if (startTime == null || endTime == null) return Result.error(400, "晚自习时间格式不合法");
+    schedule.setGroupId(group.getId());
+    schedule.setTitle(firstNonBlank(request.getTitle(), "晚自习签到"));
+    schedule.setLocation(trimToNull(request.getLocation()));
+    schedule.setStartTime(startTime);
+    schedule.setEndTime(endTime);
+    schedule.setCheckinPoints(safePoints(request.getCheckinPoints()));
+    schedule.setEnabled(request.getEnabled() == null || request.getEnabled());
+    eveningStudyScheduleMapper.updateById(schedule);
+    CheckInSession todaySession =
+        sessionMapper.selectEveningByScheduleAndDate(schedule.getId(), Date.valueOf(LocalDate.now(Times.BUSINESS_ZONE)));
+    if (todaySession != null) {
+      createOrRefreshEveningStudySession(schedule, LocalDate.now(Times.BUSINESS_ZONE));
+    }
+    return Result.success("晚自习计划已更新");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> deleteEveningStudySchedule(Integer scheduleId) {
+    Club club = defaultClub();
+    if (club == null) return Result.error(404, "默认社团不存在");
+    EveningStudySchedule schedule = eveningStudyScheduleMapper.selectByIdAndClubId(scheduleId, club.getId());
+    if (schedule == null) return Result.error(404, "晚自习计划不存在");
+    eveningStudyScheduleMapper.deleteById(scheduleId);
+    return Result.success("晚自习计划已删除，历史签到场次保留");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseEveningStudyTodayVO> generateEveningStudySessions(String date) {
+    Club club = defaultClub();
+    if (club == null) return Result.error(404, "默认社团不存在");
+    LocalDate attendanceDate = parseDateOrToday(date);
+    if (attendanceDate == null) return Result.error(400, "日期格式不合法");
+    for (EveningStudySchedule schedule : eveningStudyScheduleMapper.selectEnabledByClubId(club.getId())) {
+      createOrRefreshEveningStudySession(schedule, attendanceDate);
+    }
+    return Result.success(buildEveningStudyTodayVO(club, attendanceDate), "晚自习签到已生成");
+  }
+
+  @Override
+  public Result<ResponseEveningStudyTodayVO> eveningStudyToday(String date) {
+    Club club = defaultClub();
+    if (club == null) return Result.error(404, "默认社团不存在");
+    LocalDate attendanceDate = parseDateOrToday(date);
+    if (attendanceDate == null) return Result.error(400, "日期格式不合法");
+    return Result.success(buildEveningStudyTodayVO(club, attendanceDate));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void syncApprovedLeave(LeaveApplication application) {
+    if (application == null || !"approved".equals(application.getStatus())) return;
+    Club club = defaultClub();
+    if (club == null || !club.getId().equals(application.getClubId())) return;
+    Timestamp startAt = fallbackRangeStart(application);
+    Timestamp endAt = fallbackRangeEnd(application);
+    for (CheckInSession session : sessionMapper.selectEveningOverlaps(club.getId(), startAt, endAt)) {
+      if (!isGroupMember(session.getGroupId(), application.getUserId())) continue;
+      removeTargetForApprovedLeave(session, application);
+    }
+  }
+
+  @Scheduled(
+      initialDelayString = "${app.checkin.evening-study-initial-delay-ms:30000}",
+      fixedDelayString = "${app.checkin.evening-study-scan-ms:600000}")
+  public void autoGenerateTodayEveningStudySessions() {
+    if (!eveningStudyAutoGenerateEnabled) return;
+    try {
+      generateEveningStudySessions(null);
+    } catch (RuntimeException e) {
+      log.warn("Auto generate evening study check-ins failed: {}", e.getMessage());
+    }
+  }
+
   private ResponseCheckInSessionVO toSessionVO(CheckInSession session) {
     List<CheckInTarget> targets = targetMapper.selectBySessionId(session.getId());
-    int checkedCount = recordMapper.selectBySessionId(session.getId()).size();
+    List<CheckInRecord> records = recordMapper.selectBySessionId(session.getId());
+    List<CheckInExclusion> exclusions = exclusionMapper.selectBySessionId(session.getId());
+    int checkedCount = records.size();
     ClubActivity activity = session.getActivityId() == null ? null : activityMapper.selectById(session.getActivityId());
+    CheckInGroup group = session.getGroupId() == null ? null : groupMapper.selectById(session.getGroupId());
     return ResponseCheckInSessionVO.builder()
         .id(session.getId()).activityId(session.getActivityId()).groupId(session.getGroupId())
+        .scheduleId(session.getScheduleId())
+        .sessionType(firstNonBlank(session.getSessionType(), SESSION_TYPE_REGULAR))
+        .attendanceDate(session.getAttendanceDate() == null ? null : session.getAttendanceDate().toString())
         .activityTitle(activity == null ? null : activity.getTitle())
+        .groupName(group == null ? null : group.getName())
         .title(session.getTitle()).location(session.getLocation())
         .startAt(session.getStartAt()).endAt(session.getEndAt())
         .status(session.getStatus()).qrPayload(rotatingPayload(session))
         .checkinPoints(safePoints(session.getCheckinPoints()))
         .targetCount(targets.size()).checkedCount(checkedCount)
+        .pendingCount(Math.max(0, targets.size() - checkedCount))
+        .excusedCount(exclusions.size())
         .targetUserIds(targets.stream().map(CheckInTarget::getUserId).toList())
+        .excusedUserIds(exclusions.stream().map(CheckInExclusion::getUserId).toList())
         .build();
   }
 
@@ -353,6 +537,19 @@ public class CheckInServiceImpl implements CheckInService {
         .build();
   }
 
+  private ResponseCheckInRecordVO toExclusionRecordVO(User user, CheckInExclusion exclusion) {
+    return ResponseCheckInRecordVO.builder()
+        .userId(user != null ? user.getId() : exclusion.getUserId())
+        .userName(user == null ? null : user.getUserName())
+        .realName(user == null ? null : user.getRealName())
+        .studentId(user == null ? null : user.getStudentId())
+        .phone(user == null ? null : user.getPhone())
+        .status("excused")
+        .leaveApplicationId(exclusion.getSourceId())
+        .exclusionReason(exclusion.getReason())
+        .build();
+  }
+
   private User buildSafeUser(User user) {
     return User.builder().id(user.getId()).userName(user.getUserName()).realName(user.getRealName())
         .phone(user.getPhone()).email(user.getEmail()).studentId(user.getStudentId())
@@ -361,14 +558,185 @@ public class CheckInServiceImpl implements CheckInService {
   }
 
   private ResponseCheckInGroupVO toGroupVO(CheckInGroup group) {
-    List<Integer> userIds = groupMemberMapper.selectByGroupId(group.getId()).stream()
-        .map(CheckInGroupMember::getUserId).toList();
+    List<Integer> userIds =
+        groupMemberMapper.selectByGroupId(group.getId()).stream()
+            .map(CheckInGroupMember::getUserId)
+            .toList();
     return ResponseCheckInGroupVO.builder()
         .id(group.getId())
         .name(group.getName())
         .memberCount(userIds.size())
         .userIds(userIds)
         .build();
+  }
+
+  private ResponseEveningStudyScheduleVO toEveningStudyScheduleVO(
+      EveningStudySchedule schedule, LocalDate today) {
+    CheckInGroup group = schedule.getGroupId() == null ? null : groupMapper.selectById(schedule.getGroupId());
+    CheckInSession todaySession =
+        sessionMapper.selectEveningByScheduleAndDate(schedule.getId(), Date.valueOf(today));
+    ResponseCheckInSessionVO sessionVO = todaySession == null ? null : toSessionVO(todaySession);
+    int memberCount =
+        schedule.getGroupId() == null ? 0 : groupMemberMapper.selectByGroupId(schedule.getGroupId()).size();
+    return ResponseEveningStudyScheduleVO.builder()
+        .id(schedule.getId())
+        .groupId(schedule.getGroupId())
+        .groupName(group == null ? null : group.getName())
+        .memberCount(memberCount)
+        .title(schedule.getTitle())
+        .location(schedule.getLocation())
+        .startTime(formatTime(schedule.getStartTime()))
+        .endTime(formatTime(schedule.getEndTime()))
+        .checkinPoints(safePoints(schedule.getCheckinPoints()))
+        .enabled(Boolean.TRUE.equals(schedule.getEnabled()))
+        .todaySessionId(todaySession == null ? null : todaySession.getId())
+        .todayTargetCount(sessionVO == null ? 0 : sessionVO.getTargetCount())
+        .todayCheckedCount(sessionVO == null ? 0 : sessionVO.getCheckedCount())
+        .todayExcusedCount(sessionVO == null ? 0 : sessionVO.getExcusedCount())
+        .createdAt(schedule.getCreatedAt())
+        .updatedAt(schedule.getUpdatedAt())
+        .build();
+  }
+
+  private ResponseEveningStudyTodayVO buildEveningStudyTodayVO(Club club, LocalDate date) {
+    List<ResponseCheckInSessionVO> sessions =
+        sessionMapper.selectEveningByClubAndDate(club.getId(), Date.valueOf(date)).stream()
+            .map(this::toSessionVO)
+            .toList();
+    int targetCount = sessions.stream().mapToInt(value -> safeInt(value.getTargetCount())).sum();
+    int checkedCount = sessions.stream().mapToInt(value -> safeInt(value.getCheckedCount())).sum();
+    int excusedCount = sessions.stream().mapToInt(value -> safeInt(value.getExcusedCount())).sum();
+    return ResponseEveningStudyTodayVO.builder()
+        .date(date.toString())
+        .sessionCount(sessions.size())
+        .targetCount(targetCount)
+        .checkedCount(checkedCount)
+        .pendingCount(Math.max(0, targetCount - checkedCount))
+        .excusedCount(excusedCount)
+        .sessions(sessions)
+        .build();
+  }
+
+  private CheckInSession createOrRefreshEveningStudySession(
+      EveningStudySchedule schedule, LocalDate attendanceDate) {
+    CheckInGroup group = findGroup(schedule.getGroupId());
+    if (group == null) return null;
+    Timestamp startAt = timestampOf(attendanceDate, schedule.getStartTime());
+    LocalDate endDate = endDateFor(attendanceDate, schedule.getStartTime(), schedule.getEndTime());
+    Timestamp endAt = timestampOf(endDate, schedule.getEndTime());
+    List<Integer> groupUserIds =
+        groupMemberMapper.selectByGroupId(group.getId()).stream()
+            .map(CheckInGroupMember::getUserId)
+            .filter(id -> id != null && id > 0)
+            .collect(Collectors.toCollection(LinkedHashSet::new))
+            .stream()
+            .toList();
+    Map<Integer, LeaveApplication> leaveByUser =
+        approvedLeaveByUser(schedule.getClubId(), groupUserIds, startAt, endAt);
+    List<Integer> targetUserIds =
+        groupUserIds.stream().filter(userId -> !leaveByUser.containsKey(userId)).toList();
+    Date sqlDate = Date.valueOf(attendanceDate);
+    CheckInSession session = sessionMapper.selectEveningByScheduleAndDate(schedule.getId(), sqlDate);
+    if (session == null) {
+      session =
+          CheckInSession.builder()
+              .clubId(schedule.getClubId())
+              .groupId(schedule.getGroupId())
+              .scheduleId(schedule.getId())
+              .sessionType(SESSION_TYPE_EVENING_STUDY)
+              .attendanceDate(sqlDate)
+              .title(eveningSessionTitle(schedule, group))
+              .location(schedule.getLocation())
+              .startAt(startAt)
+              .endAt(endAt)
+              .status("open")
+              .token(UUID.randomUUID().toString().replace("-", ""))
+              .checkinPoints(safePoints(schedule.getCheckinPoints()))
+              .createdBy(currentUserId())
+              .build();
+      sessionMapper.insert(session);
+    } else {
+      ClubActivity revokeActivity = activityForSession(session);
+      session.setGroupId(schedule.getGroupId());
+      session.setScheduleId(schedule.getId());
+      session.setSessionType(SESSION_TYPE_EVENING_STUDY);
+      session.setAttendanceDate(sqlDate);
+      session.setTitle(eveningSessionTitle(schedule, group));
+      session.setLocation(schedule.getLocation());
+      session.setStartAt(startAt);
+      session.setEndAt(endAt);
+      session.setCheckinPoints(safePoints(schedule.getCheckinPoints()));
+      sessionMapper.updateById(session);
+      replaceSessionTargets(session, targetUserIds, revokeActivity);
+      replaceSessionExclusions(session, leaveByUser);
+      return session;
+    }
+    replaceSessionTargets(session, targetUserIds, null);
+    replaceSessionExclusions(session, leaveByUser);
+    return session;
+  }
+
+  private void replaceSessionExclusions(
+      CheckInSession session, Map<Integer, LeaveApplication> leaveByUser) {
+    exclusionMapper.deleteBySessionId(session.getId());
+    for (Map.Entry<Integer, LeaveApplication> entry : leaveByUser.entrySet()) {
+      LeaveApplication leave = entry.getValue();
+      exclusionMapper.insert(
+          CheckInExclusion.builder()
+              .sessionId(session.getId())
+              .userId(entry.getKey())
+              .sourceType("leave")
+              .sourceId(leave == null ? null : leave.getId())
+              .reason(leave == null ? "已通过请假" : "已通过请假：" + leave.getTitle())
+              .build());
+    }
+  }
+
+  private Map<Integer, LeaveApplication> approvedLeaveByUser(
+      Integer clubId, List<Integer> userIds, Timestamp startAt, Timestamp endAt) {
+    if (clubId == null || userIds == null || userIds.isEmpty()) return Map.of();
+    Map<Integer, LeaveApplication> values = new LinkedHashMap<>();
+    for (LeaveApplication leave :
+        leaveApplicationMapper.selectApprovedOverlapsByUsers(clubId, userIds, startAt, endAt)) {
+      values.putIfAbsent(leave.getUserId(), leave);
+    }
+    return values;
+  }
+
+  private void removeTargetForApprovedLeave(CheckInSession session, LeaveApplication application) {
+    CheckInRecord record = recordMapper.selectOneBySessionAndUser(session.getId(), application.getUserId());
+    if (record != null) {
+      recordMapper.deleteById(record.getId());
+      pointService.revokeCheckInPoints(application.getUserId(), session, activityForSession(session), currentUserId());
+    }
+    targetMapper.deleteBySessionIdAndUserId(session.getId(), application.getUserId());
+    CheckInExclusion exclusion = exclusionMapper.selectOneBySessionAndUser(session.getId(), application.getUserId());
+    String reason = "已通过请假：" + application.getTitle();
+    if (exclusion == null) {
+      exclusionMapper.insert(
+          CheckInExclusion.builder()
+              .sessionId(session.getId())
+              .userId(application.getUserId())
+              .sourceType("leave")
+              .sourceId(application.getId())
+              .reason(reason)
+              .build());
+    } else {
+      exclusion.setSourceType("leave");
+      exclusion.setSourceId(application.getId());
+      exclusion.setReason(reason);
+      exclusionMapper.updateById(exclusion);
+    }
+  }
+
+  private boolean isGroupMember(Integer groupId, Integer userId) {
+    if (groupId == null || userId == null) return false;
+    return groupMemberMapper.selectByGroupId(groupId).stream()
+        .anyMatch(member -> userId.equals(member.getUserId()));
+  }
+
+  private String eveningSessionTitle(EveningStudySchedule schedule, CheckInGroup group) {
+    return firstNonBlank(schedule.getTitle(), "晚自习签到") + " - " + group.getName();
   }
 
   private CheckInSession findSession(Integer sessionId) {
@@ -451,6 +819,7 @@ public class CheckInServiceImpl implements CheckInService {
     }
     targetMapper.deleteBySessionId(session.getId());
     for (Integer userId : nextUserIds) {
+      exclusionMapper.deleteBySessionIdAndUserId(session.getId(), userId);
       targetMapper.insert(CheckInTarget.builder().sessionId(session.getId()).userId(userId).build());
     }
   }
@@ -521,5 +890,64 @@ public class CheckInServiceImpl implements CheckInService {
 
   private long safePoints(Long value) {
     return value == null ? 0L : Math.max(0L, value);
+  }
+
+  private int safeInt(Integer value) {
+    return value == null ? 0 : value;
+  }
+
+  private String firstNonBlank(String value, String fallback) {
+    return value == null || value.isBlank() ? fallback : value.trim();
+  }
+
+  private Time parseLocalTime(String value) {
+    if (value == null || value.isBlank()) return null;
+    String trimmed = value.trim();
+    try {
+      return Time.valueOf(LocalTime.parse(trimmed.length() == 5 ? trimmed + ":00" : trimmed));
+    } catch (RuntimeException e) {
+      return null;
+    }
+  }
+
+  private String formatTime(Time value) {
+    return value == null ? null : value.toLocalTime().toString();
+  }
+
+  private LocalDate parseDateOrToday(String value) {
+    if (value == null || value.isBlank()) return LocalDate.now(Times.BUSINESS_ZONE);
+    try {
+      return LocalDate.parse(value.trim());
+    } catch (RuntimeException e) {
+      return null;
+    }
+  }
+
+  private Timestamp timestampOf(LocalDate date, Time time) {
+    LocalTime localTime = time == null ? LocalTime.MIDNIGHT : time.toLocalTime();
+    return Timestamp.from(LocalDateTime.of(date, localTime).atZone(Times.BUSINESS_ZONE).toInstant());
+  }
+
+  private LocalDate endDateFor(LocalDate date, Time startTime, Time endTime) {
+    if (startTime == null || endTime == null) return date;
+    return endTime.toLocalTime().isAfter(startTime.toLocalTime()) ? date : date.plusDays(1);
+  }
+
+  private Timestamp fallbackRangeStart(LeaveApplication application) {
+    if (application.getStartAt() != null) return application.getStartAt();
+    LocalDate date = dateOf(application.getEndAt() != null ? application.getEndAt() : application.getCreatedAt());
+    return timestampOf(date, Time.valueOf(LocalTime.MIDNIGHT));
+  }
+
+  private Timestamp fallbackRangeEnd(LeaveApplication application) {
+    if (application.getEndAt() != null) return application.getEndAt();
+    LocalDate date = dateOf(application.getStartAt() != null ? application.getStartAt() : application.getCreatedAt());
+    return timestampOf(date.plusDays(1), Time.valueOf(LocalTime.MIDNIGHT));
+  }
+
+  private LocalDate dateOf(Timestamp value) {
+    return value == null
+        ? LocalDate.now(Times.BUSINESS_ZONE)
+        : value.toInstant().atZone(Times.BUSINESS_ZONE).toLocalDate();
   }
 }

@@ -23,4 +23,11 @@ public interface CheckInTargetMapper extends BaseMapper<CheckInTarget> {
   default int deleteBySessionId(Integer sessionId) {
     return delete(new LambdaQueryWrapper<CheckInTarget>().eq(CheckInTarget::getSessionId, sessionId));
   }
+
+  default int deleteBySessionIdAndUserId(Integer sessionId, Integer userId) {
+    return delete(
+        new LambdaQueryWrapper<CheckInTarget>()
+            .eq(CheckInTarget::getSessionId, sessionId)
+            .eq(CheckInTarget::getUserId, userId));
+  }
 }

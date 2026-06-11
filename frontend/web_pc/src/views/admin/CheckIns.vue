@@ -17,6 +17,17 @@
             </div>
 
             <div class="toolbar__actions">
+                <el-date-picker
+                    v-model="eveningDate"
+                    type="date"
+                    value-format="YYYY-MM-DD"
+                    placeholder="晚自习日期"
+                    style="width: 150px"
+                />
+                <el-button :icon="Calendar" type="success" @click="generateEveningStudy">
+                    生成晚自习
+                </el-button>
+                <el-button :icon="Setting" @click="openEveningManager">晚自习计划</el-button>
                 <el-button @click="openGroupManager">签到分组</el-button>
                 <el-button :icon="Plus" type="primary" @click="openDialog">发布签到</el-button>
             </div>
@@ -27,7 +38,8 @@
                 <template #default="{ row }">
                     <strong>{{ row.title }}</strong>
                     <p class="muted-line">
-                        {{ row.activityTitle || '独立签到' }} / {{ row.location || '未设置地点' }}
+                        {{ row.activityTitle || typeText(row.sessionType) }} / {{ row.groupName || '未绑定分组' }} /
+                        {{ row.location || '未设置地点' }}
                     </p>
                 </template>
             </el-table-column>
@@ -41,6 +53,9 @@
             <el-table-column label="进度" width="150">
                 <template #default="{ row }">
                     {{ row.checkedCount || 0 }} / {{ row.targetCount || 0 }}
+                    <span v-if="row.excusedCount" class="muted-inline">
+                        请假 {{ row.excusedCount }}
+                    </span>
                 </template>
             </el-table-column>
 
@@ -244,6 +259,66 @@
             </el-table>
         </el-dialog>
 
+        <el-dialog v-model="eveningVisible" title="晚自习计划" width="1080px">
+            <div class="evening-form">
+                <el-select v-model="eveningForm.groupId" filterable placeholder="实验室分组">
+                    <el-option
+                        v-for="item in groups"
+                        :key="item.id"
+                        :label="`${item.name}（${item.memberCount || 0}人）`"
+                        :value="item.id"
+                    />
+                </el-select>
+                <el-input v-model="eveningForm.title" placeholder="计划标题" />
+                <el-input v-model="eveningForm.location" placeholder="地点" />
+                <el-input v-model="eveningForm.startTime" type="time" />
+                <el-input v-model="eveningForm.endTime" type="time" />
+                <el-input-number v-model="eveningForm.checkinPoints" :min="0" :max="POINT_AMOUNT_MAX" :step="1" />
+                <el-switch v-model="eveningForm.enabled" active-text="启用" inactive-text="停用" />
+                <el-button :loading="eveningSaving" type="primary" @click="saveEveningSchedule">
+                    {{ eveningForm.id ? '更新' : '创建' }}
+                </el-button>
+                <el-button v-if="eveningForm.id" @click="resetEveningForm">新建</el-button>
+            </div>
+
+            <el-table v-loading="eveningLoading" :data="eveningSchedules" height="420">
+                <el-table-column label="实验室分组" min-width="160" prop="groupName" />
+                <el-table-column label="计划" min-width="170">
+                    <template #default="{ row }">
+                        <strong>{{ row.title }}</strong>
+                        <p class="muted-line">{{ row.location || '未设置地点' }}</p>
+                    </template>
+                </el-table-column>
+                <el-table-column label="时间" width="150">
+                    <template #default="{ row }">
+                        {{ row.startTime }} - {{ row.endTime }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="今日进度" width="170">
+                    <template #default="{ row }">
+                        {{ row.todayCheckedCount || 0 }} / {{ row.todayTargetCount || 0 }}
+                        <span v-if="row.todayExcusedCount" class="muted-inline">
+                            请假 {{ row.todayExcusedCount }}
+                        </span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="积分" width="90" prop="checkinPoints" />
+                <el-table-column label="状态" width="90">
+                    <template #default="{ row }">
+                        <el-tag :type="row.enabled ? 'success' : 'info'">
+                            {{ row.enabled ? '启用' : '停用' }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="150">
+                    <template #default="{ row }">
+                        <el-button link type="primary" @click="editEveningSchedule(row)">编辑</el-button>
+                        <el-button link type="danger" @click="deleteEveningSchedule(row)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-dialog>
+
         <Teleport to="body">
             <div v-if="previewVisible && previewRow" class="checkin-preview-overlay">
                 <div class="preview-screen">
@@ -281,7 +356,7 @@
 
                             <p class="preview-count">
                                 已签到 {{ checkedRecords.length }} /
-                                {{ previewRecords.length || previewRow.targetCount || 0 }}
+                                {{ activePreviewRecords.length || previewRow.targetCount || 0 }}
                             </p>
                         </section>
 
@@ -333,6 +408,30 @@
                                     />
                                 </div>
                             </div>
+
+                            <div class="roster-column roster-column--excused">
+                                <div class="roster-head">
+                                    <span>请假剔除</span>
+                                    <strong>{{ excusedRecords.length }}</strong>
+                                </div>
+
+                                <div class="roster-scroll">
+                                    <div
+                                        v-for="item in excusedRecords"
+                                        :key="`excused-${item.userId}`"
+                                        class="roster-item excused-item"
+                                    >
+                                        <span class="roster-name">{{ displayRecordName(item) }}</span>
+                                        <span class="roster-status">已请假</span>
+                                    </div>
+
+                                    <el-empty
+                                        v-if="!excusedRecords.length"
+                                        :image-size="72"
+                                        description="暂无请假"
+                                    />
+                                </div>
+                            </div>
                         </section>
                     </div>
                 </div>
@@ -364,8 +463,8 @@
                 <el-table-column label="手机号" min-width="140" prop="phone" />
                 <el-table-column label="状态" width="110">
                     <template #default="{ row }">
-                        <el-tag :type="row.status === 'checked' ? 'success' : 'info'">
-                            {{ row.status === 'checked' ? '已签到' : '未签到' }}
+                        <el-tag :type="recordStatusType(row.status)">
+                            {{ recordStatusText(row.status) }}
                         </el-tag>
                     </template>
                 </el-table-column>
@@ -376,9 +475,15 @@
                 </el-table-column>
                 <el-table-column label="操作" width="140">
                     <template #default="{ row }">
-                        <el-button link type="primary" @click="toggleRecordStatus(row)">
+                        <el-button
+                            v-if="row.status !== 'excused'"
+                            link
+                            type="primary"
+                            @click="toggleRecordStatus(row)"
+                        >
                             {{ row.status === 'checked' ? '改未签到' : '改已签到' }}
                         </el-button>
+                        <span v-else class="muted-line">{{ row.exclusionReason || '已通过请假' }}</span>
                     </template>
                 </el-table-column>
             </el-table>
@@ -390,7 +495,7 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {Plus, Refresh} from '@element-plus/icons-vue'
+import {Calendar, Plus, Refresh, Setting} from '@element-plus/icons-vue'
 import {activityApi, checkInApi} from '@/api'
 import {formatDateTime, statusType} from '@/utils/format.ts'
 import {qrSvgDataUrl} from '@/utils/qr.ts'
@@ -403,8 +508,11 @@ const saving = ref(false)
 const dialogVisible = ref(false)
 const editingSessionId = ref<any>(null)
 const groupVisible = ref(false)
+const eveningVisible = ref(false)
 const previewVisible = ref(false)
 const recordsVisible = ref(false)
+const eveningLoading = ref(false)
+const eveningSaving = ref(false)
 
 const rows = ref<any[]>([])
 const records = ref<any[]>([])
@@ -412,6 +520,7 @@ const recordsRow = ref<any>(null)
 const previewRecords = ref<any[]>([])
 const activities = ref<any[]>([])
 const groups = ref<any[]>([])
+const eveningSchedules = ref<any[]>([])
 const members = ref<any[]>([])
 const appendUserIds = ref<any[]>([])
 const liveTimer = ref<any>(null)
@@ -420,6 +529,7 @@ const memberKeyword = ref('')
 const groupKeyword = ref('')
 const previewRow = ref<any>(null)
 const query = ref({ status: '' })
+const eveningDate = ref(todayString())
 
 const form = ref({
     title: '',
@@ -437,6 +547,17 @@ const groupForm = ref({
     id: null as any,
     name: '',
     userIds: [] as any[],
+})
+
+const eveningForm = ref({
+    id: null as any,
+    groupId: undefined as any,
+    title: '晚自习签到',
+    location: '实验室',
+    startTime: '19:00',
+    endTime: '21:30',
+    checkinPoints: 0,
+    enabled: true,
 })
 
 const groupSaving = ref(false)
@@ -469,8 +590,16 @@ const checkedRecords = computed(() => {
     return previewRecords.value.filter((item) => item.status === 'checked')
 })
 
+const excusedRecords = computed(() => {
+    return previewRecords.value.filter((item) => item.status === 'excused')
+})
+
+const activePreviewRecords = computed(() => {
+    return previewRecords.value.filter((item) => item.status !== 'excused')
+})
+
 const pendingRecords = computed(() => {
-    return previewRecords.value.filter((item) => item.status !== 'checked')
+    return previewRecords.value.filter((item) => item.status !== 'checked' && item.status !== 'excused')
 })
 
 const filteredGroupUsers = computed(() => {
@@ -498,8 +627,20 @@ function statusText(status: any) {
     return { draft: '草稿', open: '进行中', closed: '已关闭' }[status] || status || '-'
 }
 
+function typeText(type: any) {
+    return type === 'evening_study' ? '晚自习签到' : '独立签到'
+}
+
 function userStatusText(status: any) {
     return { active: '启用', disabled: '禁用', locked: '锁定' }[status] || status || '-'
+}
+
+function recordStatusText(status: any) {
+    return { checked: '已签到', pending: '未签到', excused: '已请假' }[status] || status || '-'
+}
+
+function recordStatusType(status: any) {
+    return { checked: 'success', pending: 'info', excused: 'warning' }[status] || 'info'
 }
 
 function formatRange(startAt: any, endAt: any) {
@@ -527,6 +668,103 @@ async function loadOptions() {
     members.value =
         usersResult.status === 'fulfilled' ? (usersResult.value || []).filter((item) => item.id) : []
     groups.value = groupsResult.status === 'fulfilled' ? groupsResult.value || [] : []
+}
+
+async function loadEveningSchedules() {
+    eveningLoading.value = true
+
+    try {
+        eveningSchedules.value = (await checkInApi.eveningSchedules()) || []
+    } finally {
+        eveningLoading.value = false
+    }
+}
+
+function openEveningManager() {
+    resetEveningForm()
+    eveningVisible.value = true
+    loadEveningSchedules()
+}
+
+function resetEveningForm() {
+    eveningForm.value = {
+        id: null,
+        groupId: undefined,
+        title: '晚自习签到',
+        location: '实验室',
+        startTime: '19:00',
+        endTime: '21:30',
+        checkinPoints: 0,
+        enabled: true,
+    }
+}
+
+function editEveningSchedule(row: any) {
+    eveningForm.value = {
+        id: row.id,
+        groupId: row.groupId,
+        title: row.title || '晚自习签到',
+        location: row.location || '',
+        startTime: normalizeTimeValue(row.startTime) || '19:00',
+        endTime: normalizeTimeValue(row.endTime) || '21:30',
+        checkinPoints: row.checkinPoints || 0,
+        enabled: row.enabled !== false,
+    }
+}
+
+async function saveEveningSchedule() {
+    if (!eveningForm.value.groupId) {
+        ElMessage.error('请选择实验室分组')
+        return
+    }
+
+    if (!eveningForm.value.title.trim()) {
+        ElMessage.error('请输入计划标题')
+        return
+    }
+
+    eveningSaving.value = true
+
+    try {
+        const payload = {
+            ...eveningForm.value,
+            startTime: normalizeTimeValue(eveningForm.value.startTime),
+            endTime: normalizeTimeValue(eveningForm.value.endTime),
+        }
+
+        if (eveningForm.value.id) {
+            await checkInApi.updateEveningSchedule(eveningForm.value.id, payload)
+            ElMessage.success('晚自习计划已更新')
+        } else {
+            await checkInApi.createEveningSchedule(payload)
+            ElMessage.success('晚自习计划已创建')
+        }
+
+        resetEveningForm()
+        await loadEveningSchedules()
+        await fetchList()
+    } finally {
+        eveningSaving.value = false
+    }
+}
+
+async function deleteEveningSchedule(row: any) {
+    await ElMessageBox.confirm(`确定删除“${row.groupName || row.title}”的晚自习计划吗？`, '删除计划', {
+        type: 'warning',
+    })
+
+    await checkInApi.deleteEveningSchedule(row.id)
+    ElMessage.success('晚自习计划已删除')
+    await loadEveningSchedules()
+}
+
+async function generateEveningStudy() {
+    await checkInApi.generateEveningStudy({ date: eveningDate.value || todayString() })
+    ElMessage.success('晚自习签到已生成')
+    await fetchList()
+    if (eveningVisible.value) {
+        await loadEveningSchedules()
+    }
 }
 
 function openDialog() {
@@ -809,6 +1047,17 @@ function toDateTimeLocalValue(value: any) {
     return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
 }
 
+function todayString() {
+    const date = new Date()
+    const offsetMs = date.getTimezoneOffset() * 60 * 1000
+    return new Date(date.getTime() - offsetMs).toISOString().slice(0, 10)
+}
+
+function normalizeTimeValue(value: any) {
+    if (!value) return ''
+    return String(value).slice(0, 5)
+}
+
 function openPreview(row: any) {
     previewRow.value = row
     previewRecords.value = []
@@ -974,6 +1223,13 @@ onBeforeUnmount(() => {
     font-size: 13px;
 }
 
+.muted-inline {
+    display: inline-flex;
+    margin-left: 8px;
+    color: var(--oa-muted);
+    font-size: 12px;
+}
+
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -985,6 +1241,14 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 12px;
     margin-bottom: 12px;
+}
+
+.evening-form {
+    display: grid;
+    grid-template-columns: minmax(150px, 1.1fr) minmax(150px, 1.1fr) minmax(130px, 1fr) 110px 110px 140px 120px auto auto;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
 }
 
 .checkin-preview-overlay {
@@ -1015,7 +1279,7 @@ onBeforeUnmount(() => {
 
 .preview-content {
     display: grid;
-    grid-template-columns: minmax(380px, 0.85fr) minmax(560px, 1.15fr);
+    grid-template-columns: minmax(360px, 0.75fr) minmax(680px, 1.25fr);
     align-items: stretch;
     gap: 20px;
     height: 100vh;
@@ -1085,7 +1349,7 @@ onBeforeUnmount(() => {
 
 .preview-roster {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     min-width: 0;
     min-height: 0;
@@ -1195,6 +1459,10 @@ onBeforeUnmount(() => {
     background: rgba(144, 147, 153, 0.12);
 }
 
+.excused-item {
+    background: rgba(230, 162, 60, 0.14);
+}
+
 @media (max-width: 760px) {
     .form-grid {
         grid-template-columns: 1fr;
@@ -1207,6 +1475,10 @@ onBeforeUnmount(() => {
 
     .member-toolbar .el-input {
         width: 100% !important;
+    }
+
+    .evening-form {
+        grid-template-columns: 1fr;
     }
 
     .preview-top {

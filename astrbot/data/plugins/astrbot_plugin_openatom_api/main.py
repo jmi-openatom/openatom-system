@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.4.3"
+PLUGIN_VERSION = "1.4.4"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -80,6 +80,7 @@ class OpenAtomApiPlugin(Star):
                     "/oa bind-qq 绑定码",
                     "/oa 查人 qq 123456",
                     "/oa 查人 张三",
+                    "/oa 晚自习",
                     "群里艾特我发送“我要请假 / 请个假 / 今天去不了”，我会私聊你继续办理",
                     "/oa ask 社团有多少人",
                     "/oa ask 主要人员有哪些",
@@ -160,6 +161,11 @@ class OpenAtomApiPlugin(Star):
         """按 QQ 号或姓名查询系统用户"""
         lookup_type, keyword = self._parse_user_lookup_command(parts)
         yield self._plain_result(event, await self._answer_user_lookup(keyword, lookup_type))
+
+    @oa.command("evening-study", alias={"晚自习", "晚自习签到", "自习签到"})
+    async def evening_study(self, event: AstrMessageEvent):
+        """查看今天晚自习签到概览"""
+        yield self._plain_result(event, await self._answer_evening_study())
 
     @oa.command("ask", alias={"问"})
     async def ask(self, event: AstrMessageEvent, *question_parts: str):
@@ -385,6 +391,8 @@ class OpenAtomApiPlugin(Star):
             return await self._answer_site_progress()
         if self._has_any(text, ("请假", "假条", "请假记录", "请假申请")):
             return await self._answer_site_leaves()
+        if self._has_any(text, ("晚自习", "自习签到", "今晚签到", "实验室签到")):
+            return await self._answer_evening_study()
         if self._has_any(text, ("表单", "问卷", "收集")):
             form_id = self._extract_id(text, ("表单", "问卷", "收集", "form"))
             return await self._answer_form(form_id) if form_id else "需要告诉我表单编号，我才能查询表单详情。"
@@ -741,6 +749,52 @@ class OpenAtomApiPlugin(Star):
         if error:
             return error
         return self._format_generic(data)
+
+    async def _answer_evening_study(self) -> str:
+        data, error = await self._get_data("/bot/evening-study/today")
+        if error:
+            return error
+        return self._format_evening_study(data)
+
+    def _format_evening_study(self, data: Any) -> str:
+        if not isinstance(data, dict):
+            return self._format_generic(data)
+        sessions = data.get("sessions") if isinstance(data.get("sessions"), list) else []
+        date = data.get("date") or "今天"
+        if not sessions:
+            return f"{date} 暂未生成晚自习签到。"
+        lines = [
+            (
+                f"{date} 晚自习签到：应到 {data.get('targetCount') or 0} 人，"
+                f"已签到 {data.get('checkedCount') or 0} 人，"
+                f"未签到 {data.get('pendingCount') or 0} 人，"
+                f"请假剔除 {data.get('excusedCount') or 0} 人。"
+            )
+        ]
+        for item in sessions[:8]:
+            if not isinstance(item, dict):
+                continue
+            group = item.get("groupName") or "实验室分组"
+            status = {"draft": "草稿", "open": "进行中", "closed": "已关闭"}.get(str(item.get("status") or ""), item.get("status") or "-")
+            time_range = self._short_time_range(item.get("startAt"), item.get("endAt"))
+            location = item.get("location") or "未设置地点"
+            lines.append(
+                f"- {group}：{status}，{item.get('checkedCount') or 0}/{item.get('targetCount') or 0}，"
+                f"请假 {item.get('excusedCount') or 0}，{time_range}，{location}"
+            )
+        return self._truncate("\n".join(lines))
+
+    def _short_time_range(self, start: Any, end: Any) -> str:
+        return f"{self._short_time(start)}-{self._short_time(end)}"
+
+    def _short_time(self, value: Any) -> str:
+        text = str(value or "").strip()
+        if not text:
+            return "不限"
+        match = re.search(r"(\d{2}:\d{2})", text)
+        if match:
+            return match.group(1)
+        return self._excerpt(text, 16) or "不限"
 
     async def _answer_form(self, form_id: str) -> str:
         data, error = await self._get_data(f"/site/forms/{form_id}")

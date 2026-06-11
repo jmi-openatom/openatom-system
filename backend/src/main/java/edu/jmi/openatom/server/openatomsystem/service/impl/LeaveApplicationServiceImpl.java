@@ -13,6 +13,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.LeaveApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
+import edu.jmi.openatom.server.openatomsystem.service.CheckInService;
 import edu.jmi.openatom.server.openatomsystem.service.LeaveApplicationService;
 import edu.jmi.openatom.server.openatomsystem.service.impl.LeaveAttachmentStorageServiceImpl.StoredLeaveAttachment;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLeaveApplicationVO;
@@ -45,6 +46,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
   private final UserMapper userMapper;
   private final LeaveApplicationMapper leaveApplicationMapper;
   private final LeaveAttachmentStorageServiceImpl leaveAttachmentStorageService;
+  private final CheckInService checkInService;
   private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Value("${app.bot.leave-review-callback-url:http://astrbot:6198/openatom/leave-review}")
@@ -176,6 +178,9 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     application.setReviewerId(reviewerId);
     application.setReviewComment(comment);
     application.setReviewedAt(reviewedAt);
+    if ("approved".equals(status)) {
+      checkInService.syncApprovedLeave(application);
+    }
     scheduleBotReviewResultNotification(application);
     return Result.success("approve".equals(action) ? "请假申请已通过" : "请假申请已驳回");
   }

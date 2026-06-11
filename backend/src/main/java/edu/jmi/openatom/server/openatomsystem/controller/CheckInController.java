@@ -7,11 +7,14 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInRecordStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInScanDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInTargetsDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateCheckInSessionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestEveningStudyScheduleDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.service.CheckInService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInGroupVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInRecordVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInSessionVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseEveningStudyScheduleVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseEveningStudyTodayVO;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -129,5 +132,58 @@ public class CheckInController {
   @PostMapping("/site/check-ins/scan")
   public Result<ResponseCheckInRecordVO> scan(@Valid @RequestBody RequestCheckInScanDTO request) {
     return checkInService.scan(request);
+  }
+
+  @GetMapping("/evening-study/schedules")
+  @SaCheckPermission("check-in:list")
+  public Result<List<ResponseEveningStudyScheduleVO>> eveningStudySchedules() {
+    return checkInService.eveningStudySchedules();
+  }
+
+  @PostMapping("/evening-study/schedules")
+  @SaCheckPermission("check-in:create")
+  public Result<Integer> createEveningStudySchedule(
+      @Valid @RequestBody RequestEveningStudyScheduleDTO request) {
+    return checkInService.createEveningStudySchedule(request);
+  }
+
+  @PutMapping("/evening-study/schedules/{scheduleId}")
+  @SaCheckPermission("check-in:update")
+  public Result<String> updateEveningStudySchedule(
+      @PathVariable Integer scheduleId,
+      @Valid @RequestBody RequestEveningStudyScheduleDTO request) {
+    return checkInService.updateEveningStudySchedule(scheduleId, request);
+  }
+
+  @DeleteMapping("/evening-study/schedules/{scheduleId}")
+  @SaCheckPermission("check-in:delete")
+  public Result<String> deleteEveningStudySchedule(@PathVariable Integer scheduleId) {
+    return checkInService.deleteEveningStudySchedule(scheduleId);
+  }
+
+  @PostMapping("/evening-study/sessions/generate")
+  @SaCheckPermission("check-in:create")
+  public Result<ResponseEveningStudyTodayVO> generateEveningStudySessions(
+      @RequestParam(required = false) String date) {
+    return checkInService.generateEveningStudySessions(date);
+  }
+
+  @GetMapping("/evening-study/today")
+  @SaCheckPermission("check-in:list")
+  public Result<ResponseEveningStudyTodayVO> eveningStudyToday(
+      @RequestParam(required = false) String date) {
+    return checkInService.eveningStudyToday(date);
+  }
+
+  @GetMapping("/site/evening-study/today")
+  public Result<ResponseEveningStudyTodayVO> siteEveningStudyToday(
+      @RequestParam(required = false) String date) {
+    return checkInService.eveningStudyToday(date);
+  }
+
+  @GetMapping("/bot/evening-study/today")
+  public Result<ResponseEveningStudyTodayVO> botEveningStudyToday(
+      @RequestParam(required = false) String date) {
+    return checkInService.eveningStudyToday(date);
   }
 }

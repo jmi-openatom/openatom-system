@@ -165,14 +165,20 @@ const routes = [
         meta: { requiresSiteLogin: true },
         component: () => import('../views/site/Notifications.vue'),
       },
+	      {
+	        path: 'leaves',
+	        name: 'site-leaves',
+	        meta: { requiresSiteLogin: true },
+	        component: () => import('../views/site/Leaves.vue'),
+	      },
       {
-        path: 'leaves',
-        name: 'site-leaves',
+        path: 'evening-study',
+        name: 'site-evening-study',
         meta: { requiresSiteLogin: true },
-        component: () => import('../views/site/Leaves.vue'),
+        component: () => import('../views/site/EveningStudy.vue'),
       },
-      {
-        path: 'calendar',
+	      {
+	        path: 'calendar',
         name: 'site-calendar',
         component: () => import('../views/site/SchoolCalendar.vue'),
       },

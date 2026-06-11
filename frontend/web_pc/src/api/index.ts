@@ -447,6 +447,27 @@ export const checkInApi = {
   removeGroupMember(id: string | number, userId: string | number): Promise<any> {
     return request.delete(`/check-in-groups/${id}/members/${userId}`)
   },
+  eveningSchedules(): Promise<any> {
+    return request.get('/evening-study/schedules')
+  },
+  createEveningSchedule(data: Record<string, unknown>): Promise<any> {
+    return request.post('/evening-study/schedules', data)
+  },
+  updateEveningSchedule(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.put(`/evening-study/schedules/${id}`, data)
+  },
+  deleteEveningSchedule(id: string | number): Promise<any> {
+    return request.delete(`/evening-study/schedules/${id}`)
+  },
+  generateEveningStudy(params?: Record<string, unknown>): Promise<any> {
+    return request.post('/evening-study/sessions/generate', null, { params })
+  },
+  eveningStudyToday(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/evening-study/today', { params })
+  },
+  siteEveningStudyToday(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/site/evening-study/today', { params })
+  },
   detail(id: string | number): Promise<any> {
     return request.get(`/check-ins/${id}`)
   },
