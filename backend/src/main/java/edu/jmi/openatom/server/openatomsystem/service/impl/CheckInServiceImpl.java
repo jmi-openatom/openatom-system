@@ -477,11 +477,11 @@ public class CheckInServiceImpl implements CheckInService {
   @Transactional(rollbackFor = Exception.class)
   public void syncApprovedLeave(LeaveApplication application) {
     if (application == null || !"approved".equals(application.getStatus())) return;
+    if (!hasCompleteLeaveTime(application)) return;
     Club club = defaultClub();
     if (club == null || !club.getId().equals(application.getClubId())) return;
-    Timestamp startAt = fallbackRangeStart(application);
-    Timestamp endAt = fallbackRangeEnd(application);
-    for (CheckInSession session : sessionMapper.selectEveningOverlaps(club.getId(), startAt, endAt)) {
+    for (CheckInSession session :
+        sessionMapper.selectEveningOverlaps(club.getId(), application.getStartAt(), application.getEndAt())) {
       if (!isGroupMember(session.getGroupId(), application.getUserId())) continue;
       removeTargetForApprovedLeave(session, application);
     }
@@ -739,6 +739,10 @@ public class CheckInServiceImpl implements CheckInService {
     return firstNonBlank(schedule.getTitle(), "晚自习签到") + " - " + group.getName();
   }
 
+  private boolean hasCompleteLeaveTime(LeaveApplication application) {
+    return application != null && application.getStartAt() != null && application.getEndAt() != null;
+  }
+
   private CheckInSession findSession(Integer sessionId) {
     if (sessionId == null) return null;
     Club club = defaultClub();
@@ -933,21 +937,4 @@ public class CheckInServiceImpl implements CheckInService {
     return endTime.toLocalTime().isAfter(startTime.toLocalTime()) ? date : date.plusDays(1);
   }
 
-  private Timestamp fallbackRangeStart(LeaveApplication application) {
-    if (application.getStartAt() != null) return application.getStartAt();
-    LocalDate date = dateOf(application.getEndAt() != null ? application.getEndAt() : application.getCreatedAt());
-    return timestampOf(date, Time.valueOf(LocalTime.MIDNIGHT));
-  }
-
-  private Timestamp fallbackRangeEnd(LeaveApplication application) {
-    if (application.getEndAt() != null) return application.getEndAt();
-    LocalDate date = dateOf(application.getStartAt() != null ? application.getStartAt() : application.getCreatedAt());
-    return timestampOf(date.plusDays(1), Time.valueOf(LocalTime.MIDNIGHT));
-  }
-
-  private LocalDate dateOf(Timestamp value) {
-    return value == null
-        ? LocalDate.now(Times.BUSINESS_ZONE)
-        : value.toInstant().atZone(Times.BUSINESS_ZONE).toLocalDate();
-  }
 }

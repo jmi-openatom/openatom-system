@@ -179,7 +179,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     application.setReviewComment(comment);
     application.setReviewedAt(reviewedAt);
     if ("approved".equals(status)) {
-      checkInService.syncApprovedLeave(application);
+      syncApprovedLeaveBestEffort(application);
     }
     scheduleBotReviewResultNotification(application);
     return Result.success("approve".equals(action) ? "请假申请已通过" : "请假申请已驳回");
@@ -210,6 +210,17 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     if (!StpUtil.isLogin()) return false;
     Integer currentUserId = StpUtil.getLoginIdAsInt();
     return currentUserId.equals(application.getUserId()) || StpUtil.hasPermission("leave-application:delete");
+  }
+
+  private void syncApprovedLeaveBestEffort(LeaveApplication application) {
+    try {
+      checkInService.syncApprovedLeave(application);
+    } catch (RuntimeException e) {
+      log.warn(
+          "Sync approved leave to check-ins failed, leaveApplicationId={}: {}",
+          application == null ? null : application.getId(),
+          e.getMessage());
+    }
   }
 
   private ResponseLeaveApplicationVO toVO(LeaveApplication application) {

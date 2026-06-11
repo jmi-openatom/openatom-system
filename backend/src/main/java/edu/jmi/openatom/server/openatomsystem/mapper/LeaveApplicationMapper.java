@@ -40,6 +40,8 @@ public interface LeaveApplicationMapper extends BaseMapper<LeaveApplication> {
         new LambdaQueryWrapper<LeaveApplication>()
             .eq(LeaveApplication::getClubId, clubId)
             .eq(LeaveApplication::getStatus, "approved")
+            .isNotNull(LeaveApplication::getStartAt)
+            .isNotNull(LeaveApplication::getEndAt)
             .in(LeaveApplication::getUserId, userIds);
     if (endAt != null) {
       wrapper.and(query -> query.isNull(LeaveApplication::getStartAt).or().lt(LeaveApplication::getStartAt, endAt));
