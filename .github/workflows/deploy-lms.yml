@@ -1,0 +1,126 @@
+name: LMS CI/CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'lab-management-system/**'
+      - '.github/workflows/deploy-lms.yml'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'lab-management-system/**'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  lms-frontend-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: lab-management-system/lab-ui-web/pnpm-lock.yaml
+      - name: LMS Frontend Build Check
+        run: |
+          cd lab-management-system/lab-ui-web
+          pnpm install --frozen-lockfile
+          pnpm run typecheck || true
+          pnpm run build
+
+  lms-backend-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: LMS Backend Build Check
+        run: |
+          cd lab-management-system/backend
+          mvn -q -DskipTests compile
+
+  deploy-lms:
+    needs: [ lms-frontend-check, lms-backend-check ]
+    if: |
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: SERVER
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy LMS to Server via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            set -eu
+            cd /www/wwwroot/openatom-system/lab-management-system || { echo "LMS directory not found"; exit 1; }
+
+            git fetch --all
+            git reset --hard origin/main
+
+            if command -v docker-compose >/dev/null 2>&1; then
+              COMPOSE_CMD="docker-compose"
+            else
+              COMPOSE_CMD="docker compose"
+            fi
+
+            echo "Step 1: Stopping and cleaning up existing LMS containers..."
+            $COMPOSE_CMD down --remove-orphans
+
+            BUILD_NUMBER="${{ github.run_number }}"
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            PKG_VER=$(grep -oP '"version"\s*:\s*"\K[^"]+' lab-ui-web/package.json || echo "1.0.0")
+            APP_VER="v$PKG_VER.$BUILD_NUMBER-$SHORT_SHA"
+
+            echo "Step 2: Starting LMS deployment with version: $APP_VER"
+            VITE_APP_VERSION=$APP_VER \
+              VITE_LMS_API_BASE_URL=https://lms-api.jmi-openatom.cn/api/v1 \
+              $COMPOSE_CMD up -d --build
+
+            LMS_BACKEND_READY=false
+            for attempt in $(seq 1 36); do
+              if $COMPOSE_CMD exec -T lms-backend bash -c 'exec 3<>/dev/tcp/127.0.0.1/8922' >/dev/null 2>&1; then
+                LMS_BACKEND_READY=true
+                break
+              fi
+              sleep 5
+            done
+
+            if [ "$LMS_BACKEND_READY" != "true" ]; then
+              echo "Critical Error: LMS Backend did not become ready within 180 seconds."
+              $COMPOSE_CMD ps
+              $COMPOSE_CMD logs --tail=200 lms-backend
+              exit 1
+            fi
+
+            $COMPOSE_CMD ps
+
+            for service in lms-mysql lms-redis lms-backend lms-frontend; do
+              if ! $COMPOSE_CMD ps "$service" | grep -iq "Up"; then
+                echo "Critical Error: Service $service is not running!"
+                $COMPOSE_CMD logs --tail=100 "$service"
+                exit 1
+              fi
+            done
+            echo "LMS deployment finished successfully."

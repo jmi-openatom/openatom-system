@@ -1,34 +1,40 @@
 package edu.jmi.openatom.lab.controller;
 
-import edu.jmi.openatom.lab.common.ApiResponse;
-import edu.jmi.openatom.lab.domain.LabModels.CmsLoginRequest;
-import edu.jmi.openatom.lab.domain.LabModels.SessionResponse;
-import edu.jmi.openatom.lab.service.LabStore;
-import jakarta.validation.Valid;
+import cn.dev33.satoken.stp.StpUtil;
+import edu.jmi.openatom.lab.dto.ApiResponse;
+import edu.jmi.openatom.lab.entity.LabUser;
+import edu.jmi.openatom.lab.service.AuthService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.Map;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
-  private final LabStore labStore;
+    private final AuthService authService;
 
-  public AuthController(LabStore labStore) {
-    this.labStore = labStore;
-  }
+    @PostMapping("/login")
+    public ApiResponse<Map<String, Object>> login(@RequestBody Map<String, String> request) {
+        String cmsToken = request.get("cmsToken");
+        LabUser user = authService.loginWithCMSToken(cmsToken);
 
-  @GetMapping("/login-url")
-  public ApiResponse<Map<String, String>> loginUrl(@RequestParam String redirectUri) {
-    return ApiResponse.ok(Map.of("url", labStore.cmsAuthorizeUrl(redirectUri)));
-  }
+        return ApiResponse.success(Map.of(
+            "token", StpUtil.getTokenValue(),
+            "user", user
+        ));
+    }
 
-  @PostMapping("/cms-callback")
-  public ApiResponse<SessionResponse> cmsCallback(@Valid @RequestBody CmsLoginRequest request) {
-    return ApiResponse.ok(labStore.loginFromCms(request));
-  }
+    @GetMapping("/me")
+    public ApiResponse<LabUser> getCurrentUser() {
+        LabUser user = authService.getCurrentUser();
+        return ApiResponse.success(user);
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout() {
+        StpUtil.logout();
+        return ApiResponse.success(null);
+    }
 }
