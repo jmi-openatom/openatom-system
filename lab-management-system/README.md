@@ -75,7 +75,7 @@ LMS 是独立部署单元，生产部署文件在：
 流水线行为：
 
 - Pull Request: 构建后端和前端，只做校验。
-- main 分支 push 或手动触发: 构建并推送 GHCR 镜像，然后 SSH 到服务器部署。
+- main 分支 push 或手动触发: 上传 LMS 源码到服务器，然后在服务器本地 `docker compose build` 和部署。
 - 前端生产镜像使用 Nginx，同源代理 `/api` 到 `lab-backend:8091`，前端构建变量固定为 `VITE_API_BASE_URL=/api`。
 
 GitHub Environment 使用现有 `SERVER`。必须配置这些 Secrets：
@@ -104,8 +104,6 @@ LAB_RABBITMQ_USERNAME
 LAB_RABBITMQ_PASSWORD
 LAB_JWT_SECRET
 CMS_OAUTH_CLIENT_SECRET
-GHCR_USERNAME
-GHCR_TOKEN
 LAB_AI_API_KEY
 ```
 
@@ -147,6 +145,5 @@ LAB_RABBITMQ_PUBLIC_PORT=5673
 本地验证生产编排：
 
 ```bash
-cd lab-management-system
-docker compose --env-file .env.production.example -f docker-compose.prod.yml config
+docker compose --env-file lab-management-system/.env.production.example -f lab-management-system/docker-compose.prod.yml config
 ```

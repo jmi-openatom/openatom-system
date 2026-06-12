@@ -18,12 +18,10 @@ on:
       - .github/workflows/lab-lms.yml
 
 env:
-  REGISTRY: ghcr.io
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   backend-check:
@@ -57,63 +55,37 @@ jobs:
           npm ci
           npm run build
 
-  docker-images:
+  deploy:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     needs:
       - backend-check
       - frontend-check
     runs-on: ubuntu-latest
-    outputs:
-      backend_image_sha: ${{ steps.images.outputs.backend_sha }}
-      frontend_image_sha: ${{ steps.images.outputs.frontend_sha }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Prepare image names
-        id: images
-        run: |
-          repo="$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
-          backend="${REGISTRY}/${repo}/lab-lms-backend"
-          frontend="${REGISTRY}/${repo}/lab-lms-frontend"
-          echo "backend=${backend}" >> "$GITHUB_OUTPUT"
-          echo "frontend=${frontend}" >> "$GITHUB_OUTPUT"
-          echo "backend_sha=${backend}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          echo "frontend_sha=${frontend}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: lab-management-system/Dockerfile
-          push: true
-          tags: |
-            ${{ steps.images.outputs.backend_sha }}
-            ${{ steps.images.outputs.backend }}:latest
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: lab-ui-web
-          file: lab-ui-web/Dockerfile
-          push: true
-          build-args: |
-            VITE_API_BASE_URL=/api
-          tags: |
-            ${{ steps.images.outputs.frontend_sha }}
-            ${{ steps.images.outputs.frontend }}:latest
-
-  deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-    needs: docker-images
-    runs-on: ubuntu-latest
     environment: SERVER
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare deployment bundle
+        run: |
+          rm -rf .deploy/lms
+          mkdir -p .deploy/lms
+          rsync -a --delete \
+            --exclude target \
+            --exclude .idea \
+            --include .env.example \
+            --include .env.production.example \
+            --exclude .env \
+            --exclude .env.* \
+            lab-management-system/ .deploy/lms/lab-management-system/
+          rsync -a --delete \
+            --exclude node_modules \
+            --exclude dist \
+            --exclude .vite \
+            --include .env.example \
+            --include .env.production.example \
+            --exclude .env \
+            --exclude .env.* \
+            lab-ui-web/ .deploy/lms/lab-ui-web/
+          cp .dockerignore .deploy/lms/.dockerignore
       - name: Prepare deploy directory
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -124,16 +96,16 @@ jobs:
           script: |
             set -eu
             mkdir -p "${{ vars.LAB_DEPLOY_PATH || '/www/wwwroot/openatom-lms' }}"
-      - name: Upload production compose
+      - name: Upload deployment source
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT || '22' }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: lab-management-system/docker-compose.prod.yml
+          source: .deploy/lms/lab-management-system,.deploy/lms/lab-ui-web,.deploy/lms/.dockerignore
           target: ${{ vars.LAB_DEPLOY_PATH || '/www/wwwroot/openatom-lms' }}
-          strip_components: 1
+          strip_components: 2
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -149,10 +121,6 @@ jobs:
               COMPOSE_CMD="docker-compose"
             else
               COMPOSE_CMD="docker compose"
-            fi
-
-            if [ -n "${{ secrets.GHCR_USERNAME }}" ] && [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
-              echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
             fi
 
             EXISTING_LMS_ENV=".env"
@@ -241,8 +209,7 @@ jobs:
 
             umask 077
             {
-              printf 'LAB_BACKEND_IMAGE=%s\n' '${{ needs.docker-images.outputs.backend_image_sha }}'
-              printf 'LAB_FRONTEND_IMAGE=%s\n' '${{ needs.docker-images.outputs.frontend_image_sha }}'
+              printf 'LAB_IMAGE_TAG=%s\n' '${{ github.sha }}'
               printf 'LAB_FRONTEND_PORT=%s\n' "$(existing_or_literal "${{ vars.LAB_FRONTEND_PORT || '18091' }}" LAB_FRONTEND_PORT)"
               printf 'LAB_SERVER_PORT=%s\n' "$(existing_or_literal "${{ vars.LAB_SERVER_PORT || '8091' }}" LAB_SERVER_PORT)"
               printf 'JAVA_OPTS=%s\n' "$(existing_or_literal "${{ vars.LAB_JAVA_OPTS || '-Xms256m -Xmx768m' }}" JAVA_OPTS)"
@@ -286,18 +253,19 @@ jobs:
             mv .env.next .env
             chmod 600 .env
 
-            $COMPOSE_CMD -f docker-compose.prod.yml pull
-            $COMPOSE_CMD -f docker-compose.prod.yml up -d --remove-orphans
+            $COMPOSE_CMD --env-file .env -f lab-management-system/docker-compose.prod.yml pull lab-mysql lab-rabbitmq || true
+            $COMPOSE_CMD --env-file .env -f lab-management-system/docker-compose.prod.yml build lab-backend lab-frontend
+            $COMPOSE_CMD --env-file .env -f lab-management-system/docker-compose.prod.yml up -d --remove-orphans
 
             for attempt in $(seq 1 36); do
               if curl -fsS "http://127.0.0.1:${{ vars.LAB_FRONTEND_PORT || '18091' }}/api/health" >/dev/null; then
-                $COMPOSE_CMD -f docker-compose.prod.yml ps
+                $COMPOSE_CMD --env-file .env -f lab-management-system/docker-compose.prod.yml ps
                 exit 0
               fi
               sleep 5
             done
 
             echo "LMS deployment failed health check."
-            $COMPOSE_CMD -f docker-compose.prod.yml ps
-            $COMPOSE_CMD -f docker-compose.prod.yml logs --tail=200 lab-backend
+            $COMPOSE_CMD --env-file .env -f lab-management-system/docker-compose.prod.yml ps
+            $COMPOSE_CMD --env-file .env -f lab-management-system/docker-compose.prod.yml logs --tail=200 lab-backend
             exit 1

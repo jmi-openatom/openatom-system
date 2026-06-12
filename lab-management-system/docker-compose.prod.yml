@@ -45,7 +45,10 @@ services:
     restart: unless-stopped
 
   lab-backend:
-    image: ${LAB_BACKEND_IMAGE:?LAB_BACKEND_IMAGE is required}
+    image: openatom-lms-backend:${LAB_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: lab-management-system/Dockerfile
     container_name: openatom-lms-backend
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -94,7 +97,12 @@ services:
     restart: unless-stopped
 
   lab-frontend:
-    image: ${LAB_FRONTEND_IMAGE:?LAB_FRONTEND_IMAGE is required}
+    image: openatom-lms-frontend:${LAB_IMAGE_TAG:-latest}
+    build:
+      context: ../lab-ui-web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
     container_name: openatom-lms-frontend
     ports:
       - "${LAB_FRONTEND_PORT:-18091}:80"
