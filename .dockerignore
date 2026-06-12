@@ -1,0 +1,12 @@
+.git
+.github
+.idea
+.vscode
+**/.DS_Store
+**/.idea
+**/node_modules
+**/dist
+**/target
+**/.vite
+**/*.log
+astrbot/data

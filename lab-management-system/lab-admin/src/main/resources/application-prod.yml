@@ -1,0 +1,47 @@
+server:
+  port: ${LAB_SERVER_PORT:8091}
+
+spring:
+  datasource:
+    url: ${LAB_DB_URL}
+    username: ${LAB_DB_USERNAME}
+    password: ${LAB_DB_PASSWORD}
+  rabbitmq:
+    host: ${LAB_RABBITMQ_HOST}
+    port: ${LAB_RABBITMQ_PORT:5672}
+    username: ${LAB_RABBITMQ_USERNAME}
+    password: ${LAB_RABBITMQ_PASSWORD}
+    virtual-host: ${LAB_RABBITMQ_VHOST:/}
+
+lab:
+  auth:
+    jwt-secret: ${LAB_JWT_SECRET}
+    token-ttl-minutes: ${LAB_TOKEN_TTL_MINUTES:720}
+    dev-login-enabled: ${LAB_DEV_LOGIN_ENABLED:false}
+    oauth:
+      authorize-url: ${CMS_OAUTH_AUTHORIZE_URL}
+      token-url: ${CMS_OAUTH_TOKEN_URL}
+      user-info-url: ${CMS_OAUTH_USERINFO_URL}
+      client-id: ${CMS_OAUTH_CLIENT_ID}
+      client-secret: ${CMS_OAUTH_CLIENT_SECRET}
+      redirect-uri: ${LAB_OAUTH_REDIRECT_URI}
+      scopes: ${CMS_OAUTH_SCOPES:openid profile}
+  mq:
+    exchange: ${LAB_MQ_EXCHANGE:openatom.lab.events}
+    club-score-routing-key: ${LAB_MQ_CLUB_SCORE_ROUTING_KEY:club.score.add}
+  attendance:
+    standard-time: ${LAB_ATTENDANCE_STANDARD_TIME:09:00}
+    late-cutoff-time: ${LAB_ATTENDANCE_LATE_CUTOFF_TIME:09:30}
+    onsite-score-award: ${LAB_ONSITE_SCORE_AWARD:2}
+    auto-score-award: ${LAB_AUTO_SCORE_AWARD:3}
+    late-penalty: ${LAB_LATE_PENALTY:-5}
+    absent-penalty: ${LAB_ABSENT_PENALTY:-10}
+    allowed-cidrs: ${LAB_ALLOWED_CIDRS:127.0.0.1/32,::1/128}
+  ai:
+    enabled: ${LAB_AI_ENABLED:false}
+    endpoint: ${LAB_AI_ENDPOINT:}
+    api-key: ${LAB_AI_API_KEY:}
+    model: ${LAB_AI_MODEL:gpt-4.1-mini}
+  sandbox:
+    endpoint: ${LAB_SANDBOX_ENDPOINT:}
+    timeout-ms: ${LAB_SANDBOX_TIMEOUT_MS:5000}

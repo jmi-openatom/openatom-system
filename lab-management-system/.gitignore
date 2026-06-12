@@ -1,0 +1,9 @@
+.idea/
+target/
+*/target/
+*/*/target/
+*/*/*/target/
+.env
+.env.*
+!.env.example
+!.env.production.example

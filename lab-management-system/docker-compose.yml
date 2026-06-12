@@ -1,0 +1,27 @@
+services:
+  lab-mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: db_lab_management
+      TZ: Asia/Shanghai
+    ports:
+      - "3307:3306"
+    volumes:
+      - lab_mysql_data:/var/lib/mysql
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+
+  lab-rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - lab_rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  lab_mysql_data:
+  lab_rabbitmq_data:
