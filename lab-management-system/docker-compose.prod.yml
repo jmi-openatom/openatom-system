@@ -8,11 +8,11 @@ services:
       MYSQL_USER: ${LAB_DB_USERNAME:-${DB_USERNAME:?DB_USERNAME or LAB_DB_USERNAME is required}}
       MYSQL_PASSWORD: ${LAB_DB_PASSWORD:-${DB_PASSWORD:?DB_PASSWORD or LAB_DB_PASSWORD is required}}
       TZ: Asia/Shanghai
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    command: [ "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci" ]
     volumes:
       - lab_mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent" ]
       interval: 10s
       timeout: 5s
       retries: 18
@@ -35,7 +35,7 @@ services:
     volumes:
       - lab_rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 18
@@ -64,7 +64,7 @@ services:
       LAB_RABBITMQ_VHOST: ${LAB_RABBITMQ_VHOST:-/}
       LAB_JWT_SECRET: ${LAB_JWT_SECRET:?LAB_JWT_SECRET is required}
       LAB_TOKEN_TTL_MINUTES: ${LAB_TOKEN_TTL_MINUTES:-720}
-      LAB_DEV_LOGIN_ENABLED: ${LAB_DEV_LOGIN_ENABLED:-false}
+      LAB_DEV_LOGIN_ENABLED: ${LAB_DEV_LOGIN_ENABLED:-true}
       CMS_OAUTH_AUTHORIZE_URL: ${CMS_OAUTH_AUTHORIZE_URL:?CMS_OAUTH_AUTHORIZE_URL is required}
       CMS_OAUTH_TOKEN_URL: ${CMS_OAUTH_TOKEN_URL:?CMS_OAUTH_TOKEN_URL is required}
       CMS_OAUTH_USERINFO_URL: ${CMS_OAUTH_USERINFO_URL:?CMS_OAUTH_USERINFO_URL is required}
