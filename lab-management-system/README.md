@@ -125,9 +125,9 @@ LAB_RABBITMQ_PASSWORD <- LAB_DB_PASSWORD <- CMS_DB_PASSWORD <- DB_PASSWORD <- MY
 LAB_DEPLOY_PATH=/www/wwwroot/openatom-lms
 LAB_FRONTEND_PORT=18091
 LAB_OAUTH_REDIRECT_URI=https://lab.jmi-openatom.cn/auth/callback
-CMS_OAUTH_AUTHORIZE_URL=https://oauth.jmi-openatom.cn/oauth/authorize
-CMS_OAUTH_TOKEN_URL=https://oauth.jmi-openatom.cn/oauth/token
-CMS_OAUTH_USERINFO_URL=https://oauth.jmi-openatom.cn/oauth/userinfo
+CMS_OAUTH_AUTHORIZE_URL=https://oauth.jmi-openatom.cn/api/v1/oauth/authorize
+CMS_OAUTH_TOKEN_URL=https://oauth.jmi-openatom.cn/api/v1/oauth/token
+CMS_OAUTH_USERINFO_URL=https://oauth.jmi-openatom.cn/api/v1/oauth/userinfo
 CMS_OAUTH_CLIENT_ID=lab-lms
 LAB_RABBITMQ_PUBLIC_BIND=127.0.0.1
 LAB_RABBITMQ_PUBLIC_PORT=5673

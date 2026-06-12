@@ -37,9 +37,9 @@ lab:
     token-ttl-minutes: ${LAB_TOKEN_TTL_MINUTES:720}
     dev-login-enabled: ${LAB_DEV_LOGIN_ENABLED:false}
     oauth:
-      authorize-url: ${CMS_OAUTH_AUTHORIZE_URL:http://127.0.0.1:8080/oauth/authorize}
-      token-url: ${CMS_OAUTH_TOKEN_URL:http://127.0.0.1:8080/oauth/token}
-      user-info-url: ${CMS_OAUTH_USERINFO_URL:http://127.0.0.1:8080/oauth/userinfo}
+      authorize-url: ${CMS_OAUTH_AUTHORIZE_URL:http://127.0.0.1:8080/api/v1/oauth/authorize}
+      token-url: ${CMS_OAUTH_TOKEN_URL:http://127.0.0.1:8080/api/v1/oauth/token}
+      user-info-url: ${CMS_OAUTH_USERINFO_URL:http://127.0.0.1:8080/api/v1/oauth/userinfo}
       client-id: ${CMS_OAUTH_CLIENT_ID:lab-lms}
       client-secret: ${CMS_OAUTH_CLIENT_SECRET:lab-lms-secret}
       redirect-uri: ${LAB_OAUTH_REDIRECT_URI:http://127.0.0.1:5174/auth/callback}

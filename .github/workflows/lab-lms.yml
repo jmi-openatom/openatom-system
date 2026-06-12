@@ -194,6 +194,18 @@ jobs:
               fi
             }
 
+            normalize_cms_oauth_url() {
+              value="$1"
+              case "$value" in
+                https://oauth.jmi-openatom.cn/oauth/*)
+                  printf '%s\n' "$value" | sed 's#https://oauth.jmi-openatom.cn/oauth/#https://oauth.jmi-openatom.cn/api/v1/oauth/#'
+                  ;;
+                *)
+                  printf '%s' "$value"
+                  ;;
+              esac
+            }
+
             LAB_MYSQL_DATABASE="$(existing_or_literal "${{ vars.LAB_MYSQL_DATABASE || 'db_lab_management' }}" LAB_MYSQL_DATABASE)"
             LAB_DB_USERNAME="$(literal_or_existing "${{ secrets.LAB_DB_USERNAME || secrets.CMS_DB_USERNAME || secrets.DB_USERNAME || secrets.MYSQL_USERNAME }}" LAB_DB_USERNAME CMS_DB_USERNAME DB_USERNAME MYSQL_USERNAME)"
             LAB_DB_PASSWORD="$(literal_or_existing "${{ secrets.LAB_DB_PASSWORD || secrets.CMS_DB_PASSWORD || secrets.DB_PASSWORD || secrets.MYSQL_PASSWORD }}" LAB_DB_PASSWORD CMS_DB_PASSWORD DB_PASSWORD MYSQL_PASSWORD)"
@@ -227,9 +239,9 @@ jobs:
               printf 'LAB_JWT_SECRET=%s\n' "$LAB_JWT_SECRET"
               printf 'LAB_TOKEN_TTL_MINUTES=%s\n' "$(existing_or_literal "${{ vars.LAB_TOKEN_TTL_MINUTES || '720' }}" LAB_TOKEN_TTL_MINUTES)"
               printf 'LAB_DEV_LOGIN_ENABLED=false\n'
-              printf 'CMS_OAUTH_AUTHORIZE_URL=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_AUTHORIZE_URL || 'https://oauth.jmi-openatom.cn/oauth/authorize' }}" CMS_OAUTH_AUTHORIZE_URL)"
-              printf 'CMS_OAUTH_TOKEN_URL=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_TOKEN_URL || 'https://oauth.jmi-openatom.cn/oauth/token' }}" CMS_OAUTH_TOKEN_URL)"
-              printf 'CMS_OAUTH_USERINFO_URL=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_USERINFO_URL || 'https://oauth.jmi-openatom.cn/oauth/userinfo' }}" CMS_OAUTH_USERINFO_URL)"
+              printf 'CMS_OAUTH_AUTHORIZE_URL=%s\n' "$(normalize_cms_oauth_url "$(existing_or_literal "${{ vars.CMS_OAUTH_AUTHORIZE_URL || 'https://oauth.jmi-openatom.cn/api/v1/oauth/authorize' }}" CMS_OAUTH_AUTHORIZE_URL)")"
+              printf 'CMS_OAUTH_TOKEN_URL=%s\n' "$(normalize_cms_oauth_url "$(existing_or_literal "${{ vars.CMS_OAUTH_TOKEN_URL || 'https://oauth.jmi-openatom.cn/api/v1/oauth/token' }}" CMS_OAUTH_TOKEN_URL)")"
+              printf 'CMS_OAUTH_USERINFO_URL=%s\n' "$(normalize_cms_oauth_url "$(existing_or_literal "${{ vars.CMS_OAUTH_USERINFO_URL || 'https://oauth.jmi-openatom.cn/api/v1/oauth/userinfo' }}" CMS_OAUTH_USERINFO_URL)")"
               printf 'CMS_OAUTH_CLIENT_ID=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_CLIENT_ID || 'lab-lms' }}" CMS_OAUTH_CLIENT_ID)"
               printf 'CMS_OAUTH_CLIENT_SECRET=%s\n' "$CMS_OAUTH_CLIENT_SECRET"
               printf 'LAB_OAUTH_REDIRECT_URI=%s\n' "$(existing_or_literal "${{ vars.LAB_OAUTH_REDIRECT_URI || 'https://lab.jmi-openatom.cn/auth/callback' }}" LAB_OAUTH_REDIRECT_URI)"
