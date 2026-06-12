@@ -22,7 +22,6 @@
           <router-link to="/images">图床</router-link>
           <router-link to="/points">积分</router-link>
           <router-link to="/leaves">请假</router-link>
-          <router-link to="/evening-study">晚自习</router-link>
           <router-link to="/votes">投票</router-link>
           <router-link to="/open-platform">开放平台</router-link>
           <router-link to="/calendar">校历</router-link>
@@ -78,7 +77,6 @@
         <router-link to="/images" @click="mobileNavVisible = false">图床</router-link>
         <router-link to="/votes" @click="mobileNavVisible = false">投票</router-link>
         <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>
-        <router-link to="/evening-study" @click="mobileNavVisible = false">晚自习</router-link>
         <router-link to="/points" @click="mobileNavVisible = false">积分</router-link>
         <router-link to="/apply" @click="mobileNavVisible = false">入会申请</router-link>
         <router-link to="/progress" @click="mobileNavVisible = false">我的申请</router-link>
