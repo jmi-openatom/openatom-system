@@ -71,6 +71,7 @@ LMS 是独立部署单元，生产部署文件在：
 - 前端镜像: `lab-ui-web/Dockerfile`
 - 生产编排: `lab-management-system/docker-compose.prod.yml`
 - 生产环境模板: `lab-management-system/.env.production.example`
+- Nginx 示例: `lab-management-system/deploy/nginx/`
 
 流水线行为：
 
@@ -124,7 +125,7 @@ LAB_RABBITMQ_PASSWORD <- LAB_DB_PASSWORD <- CMS_DB_PASSWORD <- DB_PASSWORD <- MY
 ```text
 LAB_DEPLOY_PATH=/www/wwwroot/openatom-lms
 LAB_FRONTEND_PORT=18091
-LAB_OAUTH_REDIRECT_URI=https://lab.jmi-openatom.cn/auth/callback
+LAB_OAUTH_REDIRECT_URI=https://lms.jmi-openatom.cn/auth/callback
 CMS_OAUTH_AUTHORIZE_URL=https://oauth.jmi-openatom.cn/api/v1/oauth/authorize
 CMS_OAUTH_TOKEN_URL=https://oauth.jmi-openatom.cn/api/v1/oauth/token
 CMS_OAUTH_USERINFO_URL=https://oauth.jmi-openatom.cn/api/v1/oauth/userinfo
@@ -141,6 +142,13 @@ LAB_RABBITMQ_PUBLIC_PORT=5673
 - 后端仅在 Docker 网络内暴露 `8091`
 - MySQL 默认不对宿主机暴露端口
 - RabbitMQ 默认只绑定宿主机本地 `127.0.0.1:5673`，供同机 CMS 消费 `openatom.lab.events`；不要直接公网开放 5672/15672
+
+域名解析：
+
+- `lms.jmi-openatom.cn` 添加 A 记录到服务器公网 IP，然后 Nginx 反代 `http://127.0.0.1:18091`
+- `oauth.jmi-openatom.cn` 仍指向 CMS 所在服务器；根路径可以反代 CMS 前端 `http://127.0.0.1:18080`
+- `oauth.jmi-openatom.cn/api/v1/` 必须单独反代 CMS 后端 `http://127.0.0.1:8921/api/v1/`，认证 API 使用 `https://oauth.jmi-openatom.cn/api/v1/oauth/*`
+- LMS 不需要单独的 `api-lms` 域名，生产前端默认同源请求 `/api`
 
 本地验证生产编排：
 

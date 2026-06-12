@@ -244,14 +244,22 @@ public class OidcServiceImpl implements OidcService {
   }
 
   private Map<String, Object> userInfo(User user, List<String> roles, List<String> permissions) {
+    boolean labMember =
+        roles.stream().anyMatch(role -> Set.of("super_admin", "club_admin", "formal_member").contains(role));
     return ordered(
         "sub", String.valueOf(user.getId()),
+        "club_user_id", user.getId(),
         "preferred_username", user.getUserName(),
+        "username", user.getUserName(),
         "name", user.getRealName(),
+        "nickname", user.getRealName(),
         "email", user.getEmail(),
+        "phone", user.getPhone(),
         "phone_number", user.getPhone(),
         "student_id", user.getStudentId(),
         "avatar", user.getAvatar(),
+        "is_lab_member", labMember,
+        "lab_role", roles.contains("super_admin") || roles.contains("club_admin") ? 2 : 0,
         "roles", roles,
         "permissions", permissions);
   }

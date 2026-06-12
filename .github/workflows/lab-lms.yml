@@ -244,7 +244,7 @@ jobs:
               printf 'CMS_OAUTH_USERINFO_URL=%s\n' "$(normalize_cms_oauth_url "$(existing_or_literal "${{ vars.CMS_OAUTH_USERINFO_URL || 'https://oauth.jmi-openatom.cn/api/v1/oauth/userinfo' }}" CMS_OAUTH_USERINFO_URL)")"
               printf 'CMS_OAUTH_CLIENT_ID=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_CLIENT_ID || 'lab-lms' }}" CMS_OAUTH_CLIENT_ID)"
               printf 'CMS_OAUTH_CLIENT_SECRET=%s\n' "$CMS_OAUTH_CLIENT_SECRET"
-              printf 'LAB_OAUTH_REDIRECT_URI=%s\n' "$(existing_or_literal "${{ vars.LAB_OAUTH_REDIRECT_URI || 'https://lab.jmi-openatom.cn/auth/callback' }}" LAB_OAUTH_REDIRECT_URI)"
+              printf 'LAB_OAUTH_REDIRECT_URI=%s\n' "$(existing_or_literal "${{ vars.LAB_OAUTH_REDIRECT_URI || 'https://lms.jmi-openatom.cn/auth/callback' }}" LAB_OAUTH_REDIRECT_URI)"
               printf 'CMS_OAUTH_SCOPES=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_SCOPES || 'openid profile' }}" CMS_OAUTH_SCOPES)"
               printf 'LAB_MQ_EXCHANGE=%s\n' "$(existing_or_literal "${{ vars.LAB_MQ_EXCHANGE || 'openatom.lab.events' }}" LAB_MQ_EXCHANGE)"
               printf 'LAB_MQ_CLUB_SCORE_ROUTING_KEY=%s\n' "$(existing_or_literal "${{ vars.LAB_MQ_CLUB_SCORE_ROUTING_KEY || 'club.score.add' }}" LAB_MQ_CLUB_SCORE_ROUTING_KEY)"

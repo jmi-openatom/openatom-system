@@ -638,6 +638,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
 	    addIndexIfAbsent(
 	        "oauth_client", "uk_oauth_client_id", "UNIQUE KEY `uk_oauth_client_id` (`client_id`)");
 	    seedDefaultOauthClient();
+	    seedLabLmsOauthClient();
 	    ensureDefaultOauthClientSettings();
 	    seedOauthPermissions();
 	  }
@@ -654,6 +655,29 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
 	               'authorization_code refresh_token'
 	        WHERE NOT EXISTS (SELECT 1 FROM `oauth_client` WHERE `client_id` = 'openatom-web')
 	        """);
+	  }
+
+	  private void seedLabLmsOauthClient() {
+	    jdbcTemplate.update(
+	        """
+	        INSERT INTO `oauth_client` (`client_id`, `client_secret`, `client_name`, `redirect_uris`, `scopes`, `grant_types`, `enabled`)
+	        SELECT 'lab-lms',
+	               NULL,
+	               'OpenAtom Lab LMS',
+	               'https://lms.jmi-openatom.cn/auth/callback,https://lab.jmi-openatom.cn/auth/callback,http://127.0.0.1:5174/auth/callback',
+	               'openid profile email roles permissions',
+	               'authorization_code refresh_token',
+	               1
+	        WHERE NOT EXISTS (SELECT 1 FROM `oauth_client` WHERE `client_id` = 'lab-lms')
+	        """);
+	    jdbcTemplate.update("UPDATE `oauth_client` SET `client_secret` = NULL, `enabled` = 1 WHERE `client_id` = 'lab-lms'");
+	    appendOauthRedirectUriIfMissing("lab-lms", "https://lms.jmi-openatom.cn/auth/callback");
+	    appendOauthRedirectUriIfMissing("lab-lms", "https://lab.jmi-openatom.cn/auth/callback");
+	    appendOauthRedirectUriIfMissing("lab-lms", "http://127.0.0.1:5174/auth/callback");
+	    appendOauthGrantTypeIfMissing("lab-lms", "authorization_code");
+	    appendOauthGrantTypeIfMissing("lab-lms", "refresh_token");
+	    appendOauthScopeIfMissing("lab-lms", "openid");
+	    appendOauthScopeIfMissing("lab-lms", "profile");
 	  }
 
 	  private void ensureDefaultOauthClientSettings() {
@@ -694,6 +718,23 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
 	            scope);
 	    if (updated > 0) {
 	      log.info("Added OAuth scope for {}: {}", clientId, scope);
+	    }
+	  }
+
+	  private void appendOauthGrantTypeIfMissing(String clientId, String grantType) {
+	    int updated =
+	        jdbcTemplate.update(
+	            """
+	            UPDATE `oauth_client`
+	            SET `grant_types` = TRIM(CONCAT(COALESCE(NULLIF(TRIM(`grant_types`), ''), ''), ' ', ?))
+	            WHERE `client_id` = ?
+	              AND INSTR(CONCAT(' ', `grant_types`, ' '), CONCAT(' ', ?, ' ')) = 0
+	            """,
+	            grantType,
+	            clientId,
+	            grantType);
+	    if (updated > 0) {
+	      log.info("Added OAuth grant type for {}: {}", clientId, grantType);
 	    }
 	  }
 
