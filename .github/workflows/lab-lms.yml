@@ -155,50 +155,135 @@ jobs:
               echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
             fi
 
+            EXISTING_LMS_ENV=".env"
+            CMS_ENV="${{ vars.CMS_DEPLOY_PATH || '/www/wwwroot/openatom-system' }}/.env"
+
+            env_file_value() {
+              key="$1"
+              file="$2"
+              [ -f "$file" ] || return 0
+              awk -v wanted="$key" '
+                /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
+                {
+                  line = $0
+                  sub(/^[[:space:]]*export[[:space:]]+/, "", line)
+                  pos = index(line, "=")
+                  if (pos == 0) next
+                  name = substr(line, 1, pos - 1)
+                  gsub(/^[[:space:]]+|[[:space:]]+$/, "", name)
+                  if (name == wanted) {
+                    value = substr(line, pos + 1)
+                    sub(/^[[:space:]]+/, "", value)
+                    print value
+                  }
+                }
+              ' "$file" | tail -n 1
+            }
+
+            first_existing_env() {
+              for key in "$@"; do
+                value="$(env_file_value "$key" "$EXISTING_LMS_ENV")"
+                if [ -n "$value" ]; then
+                  printf '%s' "$value"
+                  return 0
+                fi
+                value="$(env_file_value "$key" "$CMS_ENV")"
+                if [ -n "$value" ]; then
+                  printf '%s' "$value"
+                  return 0
+                fi
+              done
+              return 0
+            }
+
+            literal_or_existing() {
+              literal="$1"
+              shift
+              if [ -n "$literal" ]; then
+                printf '%s' "$literal"
+                return 0
+              fi
+              first_existing_env "$@"
+            }
+
+            existing_or_literal() {
+              literal="$1"
+              shift
+              value="$(first_existing_env "$@")"
+              if [ -n "$value" ]; then
+                printf '%s' "$value"
+                return 0
+              fi
+              printf '%s' "$literal"
+            }
+
+            generated_secret() {
+              if command -v openssl >/dev/null 2>&1; then
+                openssl rand -hex 32
+              else
+                tr -dc 'A-Za-z0-9' </dev/urandom | head -c 64
+                printf '\n'
+              fi
+            }
+
+            LAB_MYSQL_DATABASE="$(existing_or_literal "${{ vars.LAB_MYSQL_DATABASE || 'db_lab_management' }}" LAB_MYSQL_DATABASE)"
+            LAB_DB_USERNAME="$(literal_or_existing "${{ secrets.LAB_DB_USERNAME || secrets.CMS_DB_USERNAME || secrets.DB_USERNAME || secrets.MYSQL_USERNAME }}" LAB_DB_USERNAME CMS_DB_USERNAME DB_USERNAME MYSQL_USERNAME)"
+            LAB_DB_PASSWORD="$(literal_or_existing "${{ secrets.LAB_DB_PASSWORD || secrets.CMS_DB_PASSWORD || secrets.DB_PASSWORD || secrets.MYSQL_PASSWORD }}" LAB_DB_PASSWORD CMS_DB_PASSWORD DB_PASSWORD MYSQL_PASSWORD)"
+            LAB_MYSQL_ROOT_PASSWORD="$(literal_or_existing "${{ secrets.LAB_MYSQL_ROOT_PASSWORD || secrets.LAB_DB_PASSWORD || secrets.CMS_DB_PASSWORD || secrets.DB_PASSWORD || secrets.MYSQL_PASSWORD }}" LAB_MYSQL_ROOT_PASSWORD LAB_DB_PASSWORD CMS_DB_PASSWORD DB_PASSWORD MYSQL_PASSWORD)"
+            LAB_RABBITMQ_USERNAME="$(literal_or_existing "${{ secrets.LAB_RABBITMQ_USERNAME || secrets.LAB_DB_USERNAME || secrets.CMS_DB_USERNAME || secrets.DB_USERNAME || secrets.MYSQL_USERNAME }}" LAB_RABBITMQ_USERNAME LAB_DB_USERNAME CMS_DB_USERNAME DB_USERNAME MYSQL_USERNAME)"
+            LAB_RABBITMQ_PASSWORD="$(literal_or_existing "${{ secrets.LAB_RABBITMQ_PASSWORD || secrets.LAB_DB_PASSWORD || secrets.CMS_DB_PASSWORD || secrets.DB_PASSWORD || secrets.MYSQL_PASSWORD }}" LAB_RABBITMQ_PASSWORD LAB_DB_PASSWORD CMS_DB_PASSWORD DB_PASSWORD MYSQL_PASSWORD)"
+            LAB_JWT_SECRET="$(literal_or_existing "${{ secrets.LAB_JWT_SECRET }}" LAB_JWT_SECRET SA_TOKEN_JWT_SECRET_KEY)"
+            if [ -z "$LAB_JWT_SECRET" ]; then
+              LAB_JWT_SECRET="$(generated_secret)"
+            fi
+            CMS_OAUTH_CLIENT_SECRET="$(literal_or_existing "${{ secrets.CMS_OAUTH_CLIENT_SECRET }}" CMS_OAUTH_CLIENT_SECRET OAUTH_CLIENT_SECRET)"
+            LAB_AI_API_KEY="$(literal_or_existing "${{ secrets.LAB_AI_API_KEY }}" LAB_AI_API_KEY)"
+
             umask 077
-            cat > .env <<'LAB_ENV'
-            LAB_BACKEND_IMAGE=${{ needs.docker-images.outputs.backend_image_sha }}
-            LAB_FRONTEND_IMAGE=${{ needs.docker-images.outputs.frontend_image_sha }}
-            LAB_FRONTEND_PORT=${{ vars.LAB_FRONTEND_PORT || '18091' }}
-            LAB_SERVER_PORT=${{ vars.LAB_SERVER_PORT || '8091' }}
-            JAVA_OPTS=${{ vars.LAB_JAVA_OPTS || '-Xms256m -Xmx768m' }}
-            LAB_MYSQL_DATABASE=${{ vars.LAB_MYSQL_DATABASE || vars.CMS_MYSQL_DATABASE || vars.MYSQL_DATABASE || 'db_lab_management' }}
-            LAB_MYSQL_ROOT_PASSWORD=${{ secrets.LAB_MYSQL_ROOT_PASSWORD || secrets.LAB_DB_PASSWORD || secrets.CMS_DB_PASSWORD || secrets.DB_PASSWORD || secrets.MYSQL_PASSWORD }}
-            LAB_DB_USERNAME=${{ secrets.LAB_DB_USERNAME || secrets.CMS_DB_USERNAME || secrets.DB_USERNAME || secrets.MYSQL_USERNAME }}
-            LAB_DB_PASSWORD=${{ secrets.LAB_DB_PASSWORD || secrets.CMS_DB_PASSWORD || secrets.DB_PASSWORD || secrets.MYSQL_PASSWORD }}
-            LAB_RABBITMQ_USERNAME=${{ secrets.LAB_RABBITMQ_USERNAME || secrets.LAB_DB_USERNAME || secrets.CMS_DB_USERNAME || secrets.DB_USERNAME || secrets.MYSQL_USERNAME }}
-            LAB_RABBITMQ_PASSWORD=${{ secrets.LAB_RABBITMQ_PASSWORD || secrets.LAB_DB_PASSWORD || secrets.CMS_DB_PASSWORD || secrets.DB_PASSWORD || secrets.MYSQL_PASSWORD }}
-            LAB_RABBITMQ_VHOST=${{ vars.LAB_RABBITMQ_VHOST || '/' }}
-            LAB_RABBITMQ_PUBLIC_BIND=${{ vars.LAB_RABBITMQ_PUBLIC_BIND || '127.0.0.1' }}
-            LAB_RABBITMQ_PUBLIC_PORT=${{ vars.LAB_RABBITMQ_PUBLIC_PORT || '5673' }}
-            LAB_RABBITMQ_MANAGEMENT_BIND=${{ vars.LAB_RABBITMQ_MANAGEMENT_BIND || '127.0.0.1' }}
-            LAB_RABBITMQ_MANAGEMENT_PORT=${{ vars.LAB_RABBITMQ_MANAGEMENT_PORT || '15673' }}
-            LAB_JWT_SECRET=${{ secrets.LAB_JWT_SECRET }}
-            LAB_TOKEN_TTL_MINUTES=${{ vars.LAB_TOKEN_TTL_MINUTES || '720' }}
-            LAB_DEV_LOGIN_ENABLED=false
-            CMS_OAUTH_AUTHORIZE_URL=${{ vars.CMS_OAUTH_AUTHORIZE_URL || 'https://oauth.jmi-openatom.cn/oauth/authorize' }}
-            CMS_OAUTH_TOKEN_URL=${{ vars.CMS_OAUTH_TOKEN_URL || 'https://oauth.jmi-openatom.cn/oauth/token' }}
-            CMS_OAUTH_USERINFO_URL=${{ vars.CMS_OAUTH_USERINFO_URL || 'https://oauth.jmi-openatom.cn/oauth/userinfo' }}
-            CMS_OAUTH_CLIENT_ID=${{ vars.CMS_OAUTH_CLIENT_ID || 'lab-lms' }}
-            CMS_OAUTH_CLIENT_SECRET=${{ secrets.CMS_OAUTH_CLIENT_SECRET }}
-            LAB_OAUTH_REDIRECT_URI=${{ vars.LAB_OAUTH_REDIRECT_URI || 'https://lab.jmi-openatom.cn/auth/callback' }}
-            CMS_OAUTH_SCOPES=${{ vars.CMS_OAUTH_SCOPES || 'openid profile' }}
-            LAB_MQ_EXCHANGE=${{ vars.LAB_MQ_EXCHANGE || 'openatom.lab.events' }}
-            LAB_MQ_CLUB_SCORE_ROUTING_KEY=${{ vars.LAB_MQ_CLUB_SCORE_ROUTING_KEY || 'club.score.add' }}
-            LAB_ATTENDANCE_STANDARD_TIME=${{ vars.LAB_ATTENDANCE_STANDARD_TIME || '09:00' }}
-            LAB_ATTENDANCE_LATE_CUTOFF_TIME=${{ vars.LAB_ATTENDANCE_LATE_CUTOFF_TIME || '09:30' }}
-            LAB_ONSITE_SCORE_AWARD=${{ vars.LAB_ONSITE_SCORE_AWARD || '2' }}
-            LAB_AUTO_SCORE_AWARD=${{ vars.LAB_AUTO_SCORE_AWARD || '3' }}
-            LAB_LATE_PENALTY=${{ vars.LAB_LATE_PENALTY || '-5' }}
-            LAB_ABSENT_PENALTY=${{ vars.LAB_ABSENT_PENALTY || '-10' }}
-            LAB_ALLOWED_CIDRS=${{ vars.LAB_ALLOWED_CIDRS || '127.0.0.1/32,::1/128' }}
-            LAB_AI_ENABLED=${{ vars.LAB_AI_ENABLED || 'false' }}
-            LAB_AI_ENDPOINT=${{ vars.LAB_AI_ENDPOINT }}
-            LAB_AI_API_KEY=${{ secrets.LAB_AI_API_KEY }}
-            LAB_AI_MODEL=${{ vars.LAB_AI_MODEL || 'gpt-4.1-mini' }}
-            LAB_SANDBOX_ENDPOINT=${{ vars.LAB_SANDBOX_ENDPOINT }}
-            LAB_SANDBOX_TIMEOUT_MS=${{ vars.LAB_SANDBOX_TIMEOUT_MS || '5000' }}
-            LAB_ENV
+            {
+              printf 'LAB_BACKEND_IMAGE=%s\n' '${{ needs.docker-images.outputs.backend_image_sha }}'
+              printf 'LAB_FRONTEND_IMAGE=%s\n' '${{ needs.docker-images.outputs.frontend_image_sha }}'
+              printf 'LAB_FRONTEND_PORT=%s\n' "$(existing_or_literal "${{ vars.LAB_FRONTEND_PORT || '18091' }}" LAB_FRONTEND_PORT)"
+              printf 'LAB_SERVER_PORT=%s\n' "$(existing_or_literal "${{ vars.LAB_SERVER_PORT || '8091' }}" LAB_SERVER_PORT)"
+              printf 'JAVA_OPTS=%s\n' "$(existing_or_literal "${{ vars.LAB_JAVA_OPTS || '-Xms256m -Xmx768m' }}" JAVA_OPTS)"
+              printf 'LAB_MYSQL_DATABASE=%s\n' "$LAB_MYSQL_DATABASE"
+              printf 'LAB_MYSQL_ROOT_PASSWORD=%s\n' "$LAB_MYSQL_ROOT_PASSWORD"
+              printf 'LAB_DB_USERNAME=%s\n' "$LAB_DB_USERNAME"
+              printf 'LAB_DB_PASSWORD=%s\n' "$LAB_DB_PASSWORD"
+              printf 'LAB_RABBITMQ_USERNAME=%s\n' "$LAB_RABBITMQ_USERNAME"
+              printf 'LAB_RABBITMQ_PASSWORD=%s\n' "$LAB_RABBITMQ_PASSWORD"
+              printf 'LAB_RABBITMQ_VHOST=%s\n' "$(existing_or_literal "${{ vars.LAB_RABBITMQ_VHOST || '/' }}" LAB_RABBITMQ_VHOST)"
+              printf 'LAB_RABBITMQ_PUBLIC_BIND=%s\n' "$(existing_or_literal "${{ vars.LAB_RABBITMQ_PUBLIC_BIND || '127.0.0.1' }}" LAB_RABBITMQ_PUBLIC_BIND)"
+              printf 'LAB_RABBITMQ_PUBLIC_PORT=%s\n' "$(existing_or_literal "${{ vars.LAB_RABBITMQ_PUBLIC_PORT || '5673' }}" LAB_RABBITMQ_PUBLIC_PORT)"
+              printf 'LAB_RABBITMQ_MANAGEMENT_BIND=%s\n' "$(existing_or_literal "${{ vars.LAB_RABBITMQ_MANAGEMENT_BIND || '127.0.0.1' }}" LAB_RABBITMQ_MANAGEMENT_BIND)"
+              printf 'LAB_RABBITMQ_MANAGEMENT_PORT=%s\n' "$(existing_or_literal "${{ vars.LAB_RABBITMQ_MANAGEMENT_PORT || '15673' }}" LAB_RABBITMQ_MANAGEMENT_PORT)"
+              printf 'LAB_JWT_SECRET=%s\n' "$LAB_JWT_SECRET"
+              printf 'LAB_TOKEN_TTL_MINUTES=%s\n' "$(existing_or_literal "${{ vars.LAB_TOKEN_TTL_MINUTES || '720' }}" LAB_TOKEN_TTL_MINUTES)"
+              printf 'LAB_DEV_LOGIN_ENABLED=false\n'
+              printf 'CMS_OAUTH_AUTHORIZE_URL=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_AUTHORIZE_URL || 'https://oauth.jmi-openatom.cn/oauth/authorize' }}" CMS_OAUTH_AUTHORIZE_URL)"
+              printf 'CMS_OAUTH_TOKEN_URL=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_TOKEN_URL || 'https://oauth.jmi-openatom.cn/oauth/token' }}" CMS_OAUTH_TOKEN_URL)"
+              printf 'CMS_OAUTH_USERINFO_URL=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_USERINFO_URL || 'https://oauth.jmi-openatom.cn/oauth/userinfo' }}" CMS_OAUTH_USERINFO_URL)"
+              printf 'CMS_OAUTH_CLIENT_ID=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_CLIENT_ID || 'lab-lms' }}" CMS_OAUTH_CLIENT_ID)"
+              printf 'CMS_OAUTH_CLIENT_SECRET=%s\n' "$CMS_OAUTH_CLIENT_SECRET"
+              printf 'LAB_OAUTH_REDIRECT_URI=%s\n' "$(existing_or_literal "${{ vars.LAB_OAUTH_REDIRECT_URI || 'https://lab.jmi-openatom.cn/auth/callback' }}" LAB_OAUTH_REDIRECT_URI)"
+              printf 'CMS_OAUTH_SCOPES=%s\n' "$(existing_or_literal "${{ vars.CMS_OAUTH_SCOPES || 'openid profile' }}" CMS_OAUTH_SCOPES)"
+              printf 'LAB_MQ_EXCHANGE=%s\n' "$(existing_or_literal "${{ vars.LAB_MQ_EXCHANGE || 'openatom.lab.events' }}" LAB_MQ_EXCHANGE)"
+              printf 'LAB_MQ_CLUB_SCORE_ROUTING_KEY=%s\n' "$(existing_or_literal "${{ vars.LAB_MQ_CLUB_SCORE_ROUTING_KEY || 'club.score.add' }}" LAB_MQ_CLUB_SCORE_ROUTING_KEY)"
+              printf 'LAB_ATTENDANCE_STANDARD_TIME=%s\n' "$(existing_or_literal "${{ vars.LAB_ATTENDANCE_STANDARD_TIME || '09:00' }}" LAB_ATTENDANCE_STANDARD_TIME)"
+              printf 'LAB_ATTENDANCE_LATE_CUTOFF_TIME=%s\n' "$(existing_or_literal "${{ vars.LAB_ATTENDANCE_LATE_CUTOFF_TIME || '09:30' }}" LAB_ATTENDANCE_LATE_CUTOFF_TIME)"
+              printf 'LAB_ONSITE_SCORE_AWARD=%s\n' "$(existing_or_literal "${{ vars.LAB_ONSITE_SCORE_AWARD || '2' }}" LAB_ONSITE_SCORE_AWARD)"
+              printf 'LAB_AUTO_SCORE_AWARD=%s\n' "$(existing_or_literal "${{ vars.LAB_AUTO_SCORE_AWARD || '3' }}" LAB_AUTO_SCORE_AWARD)"
+              printf 'LAB_LATE_PENALTY=%s\n' "$(existing_or_literal "${{ vars.LAB_LATE_PENALTY || '-5' }}" LAB_LATE_PENALTY)"
+              printf 'LAB_ABSENT_PENALTY=%s\n' "$(existing_or_literal "${{ vars.LAB_ABSENT_PENALTY || '-10' }}" LAB_ABSENT_PENALTY)"
+              printf 'LAB_ALLOWED_CIDRS=%s\n' "$(existing_or_literal "${{ vars.LAB_ALLOWED_CIDRS || '127.0.0.1/32,::1/128' }}" LAB_ALLOWED_CIDRS)"
+              printf 'LAB_AI_ENABLED=%s\n' "$(existing_or_literal "${{ vars.LAB_AI_ENABLED || 'false' }}" LAB_AI_ENABLED)"
+              printf 'LAB_AI_ENDPOINT=%s\n' "$(existing_or_literal "${{ vars.LAB_AI_ENDPOINT }}" LAB_AI_ENDPOINT)"
+              printf 'LAB_AI_API_KEY=%s\n' "$LAB_AI_API_KEY"
+              printf 'LAB_AI_MODEL=%s\n' "$(existing_or_literal "${{ vars.LAB_AI_MODEL || 'gpt-4.1-mini' }}" LAB_AI_MODEL)"
+              printf 'LAB_SANDBOX_ENDPOINT=%s\n' "$(existing_or_literal "${{ vars.LAB_SANDBOX_ENDPOINT }}" LAB_SANDBOX_ENDPOINT)"
+              printf 'LAB_SANDBOX_TIMEOUT_MS=%s\n' "$(existing_or_literal "${{ vars.LAB_SANDBOX_TIMEOUT_MS || '5000' }}" LAB_SANDBOX_TIMEOUT_MS)"
+            } > .env.next
+            mv .env.next .env
             chmod 600 .env
 
             $COMPOSE_CMD -f docker-compose.prod.yml pull

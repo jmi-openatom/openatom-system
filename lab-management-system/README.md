@@ -84,19 +84,26 @@ GitHub Environment 使用现有 `SERVER`。必须配置这些 Secrets：
 SERVER_HOST
 SERVER_USER
 SERVER_PASSWORD
-LAB_DB_USERNAME
-LAB_DB_PASSWORD
-LAB_JWT_SECRET
-CMS_OAUTH_CLIENT_SECRET
 ```
 
-可选 Secrets：
+部署脚本会优先读取服务器上的已有配置，不需要把 LMS 业务密钥都手工填到 GitHub Environment：
+
+- 先读 `LAB_DEPLOY_PATH/.env`，默认 `/www/wwwroot/openatom-lms/.env`
+- 再读 `CMS_DEPLOY_PATH/.env`，默认 `/www/wwwroot/openatom-system/.env`
+- `LAB_JWT_SECRET` 缺失时会自动生成并写回 LMS `.env`
+- 数据库和 RabbitMQ 账号密码可以复用 CMS 的 `DB_USERNAME/DB_PASSWORD`、`MYSQL_USERNAME/MYSQL_PASSWORD` 或对应的 `LAB_*` 变量
+
+可选 Secrets/Variables：
 
 ```text
 SERVER_PORT
 LAB_MYSQL_ROOT_PASSWORD
+LAB_DB_USERNAME
+LAB_DB_PASSWORD
 LAB_RABBITMQ_USERNAME
 LAB_RABBITMQ_PASSWORD
+LAB_JWT_SECRET
+CMS_OAUTH_CLIENT_SECRET
 GHCR_USERNAME
 GHCR_TOKEN
 LAB_AI_API_KEY
@@ -111,6 +118,8 @@ LAB_MYSQL_ROOT_PASSWORD <- LAB_DB_PASSWORD <- CMS_DB_PASSWORD <- DB_PASSWORD <- 
 LAB_RABBITMQ_USERNAME <- LAB_DB_USERNAME <- CMS_DB_USERNAME <- DB_USERNAME <- MYSQL_USERNAME
 LAB_RABBITMQ_PASSWORD <- LAB_DB_PASSWORD <- CMS_DB_PASSWORD <- DB_PASSWORD <- MYSQL_PASSWORD
 ```
+
+`CMS_OAUTH_CLIENT_SECRET` 如果 CMS OAuth 客户端是公开客户端，可以留空；如果是保密客户端，必须和 CMS 后台 OAuth 客户端里的 Secret 一致。
 
 必须按实际域名检查这些 Variables：
 
