@@ -1,6 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreatePositionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdatePositionDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePositionVO;
@@ -34,6 +36,7 @@ public class PositionServiceImpl implements PositionService {
   private final RoleMapper roleMapper;
 
   @Override
+  @RedisCached(cacheName = "lookup:position", key = "'club:' + #p0", ttlSeconds = 1800)
   public Result<List<ResponsePositionVO>> getPositionsByClubId(Integer clubId) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     if (clubMapper.selectById(clubId) == null) return Result.error(404, "社团不存在");
@@ -44,6 +47,7 @@ public class PositionServiceImpl implements PositionService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"lookup:position", "site"})
   public Result<String> createPosition(Integer clubId, RequestCreatePositionDTO dto) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     if (dto == null) return Result.error("请求参数为空");
@@ -62,6 +66,7 @@ public class PositionServiceImpl implements PositionService {
   }
 
   @Override
+  @RedisCached(cacheName = "lookup:position", key = "'detail:' + #p0", ttlSeconds = 1800)
   public Result<ResponsePositionVO> getPositionById(Integer positionId) {
     if (positionId == null) return Result.error(400, "positionId不能为空");
     ClubPosition position = clubPositionMapper.selectById(positionId);
@@ -71,6 +76,7 @@ public class PositionServiceImpl implements PositionService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"lookup:position", "site"})
   public Result<String> updatePosition(Integer positionId, RequestUpdatePositionDTO dto) {
     if (positionId == null) return Result.error(400, "positionId不能为空");
     if (dto == null) return Result.error("请求参数为空");
@@ -94,6 +100,7 @@ public class PositionServiceImpl implements PositionService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"lookup:position", "site"})
   public Result<String> deletePosition(Integer positionId) {
     if (positionId == null) return Result.error(400, "positionId不能为空");
     ClubPosition position = clubPositionMapper.selectById(positionId);

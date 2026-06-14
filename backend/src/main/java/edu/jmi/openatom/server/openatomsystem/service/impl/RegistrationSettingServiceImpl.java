@@ -1,6 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.entity.SystemSetting;
 import edu.jmi.openatom.server.openatomsystem.mapper.SystemSettingMapper;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
@@ -22,6 +24,7 @@ public class RegistrationSettingServiceImpl extends ServiceImpl<SystemSettingMap
   private final JdbcTemplate jdbcTemplate;
 
   @Override
+  @RedisCached(cacheName = "registration", key = "'register-enabled'", ttlSeconds = 3600)
   public boolean isRegisterEnabled() {
     ensureSettingRow();
     SystemSetting setting = getById(REGISTER_ENABLED_KEY);
@@ -29,6 +32,7 @@ public class RegistrationSettingServiceImpl extends ServiceImpl<SystemSettingMap
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"registration", "site"})
   public boolean updateRegisterEnabled(boolean enabled) {
     ensureSettingRow();
     SystemSetting setting =

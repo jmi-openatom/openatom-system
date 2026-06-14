@@ -1,6 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateClubDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateClubDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateClubStatusDTO;
@@ -28,12 +30,18 @@ public class ClubServiceImpl implements ClubService {
   private final UserMapper userMapper;
 
   @Override
+  @RedisCached(
+      cacheName = "lookup:club",
+      key =
+          "'list:' + (#p0 == null ? '' : #p0) + ':' + (#p1 == null ? '' : #p1) + ':' + (#p2 == null ? '' : #p2) + ':' + (#p3 == null ? '' : #p3)",
+      ttlSeconds = 1800)
   public Result<List<Club>> getClubs(
       String keyword, String category, String status, String recruitmentStatus) {
     return Result.success(clubMapper.selectByConditions(keyword, category, status, recruitmentStatus));
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"lookup:club", "site"})
   public Result<String> createClub(RequestCreateClubDTO requestCreateClubDTO) {
     if (requestCreateClubDTO == null) {
       return Result.error("请求参数为空");
@@ -65,6 +73,7 @@ public class ClubServiceImpl implements ClubService {
   }
 
   @Override
+  @RedisCached(cacheName = "lookup:club", key = "'detail:' + #p0", ttlSeconds = 1800)
   public Result<Club> getClubById(Integer clubId) {
     if (clubId == null) {
       return Result.error(400, "clubId不能为空");
@@ -77,6 +86,7 @@ public class ClubServiceImpl implements ClubService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"lookup:club", "site"})
   public Result<String> updateClub(Integer clubId, RequestUpdateClubDTO requestUpdateClubDTO) {
     if (clubId == null) {
       return Result.error(400, "clubId不能为空");
@@ -115,6 +125,7 @@ public class ClubServiceImpl implements ClubService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"lookup:club", "site"})
   public Result<String> updateStatus(
       Integer clubId, RequestUpdateClubStatusDTO requestUpdateClubStatusDTO) {
     if (requestUpdateClubStatusDTO == null || isBlank(requestUpdateClubStatusDTO.getStatus())) {
@@ -127,6 +138,7 @@ public class ClubServiceImpl implements ClubService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"lookup:club", "site"})
   public Result<String> updateRecruitmentStatus(
       Integer clubId, RequestUpdateRecruitmentStatusDTO requestUpdateRecruitmentStatusDTO) {
     if (requestUpdateRecruitmentStatusDTO == null

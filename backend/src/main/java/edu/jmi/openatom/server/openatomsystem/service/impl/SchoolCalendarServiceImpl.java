@@ -2,6 +2,8 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveSchoolCalendarAdjustmentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveSchoolCalendarDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.SchoolCalendarAdjustment;
@@ -28,11 +30,13 @@ public class SchoolCalendarServiceImpl implements SchoolCalendarService {
   private final SchoolCalendarAdjustmentMapper adjustmentMapper;
 
   @Override
+  @RedisCached(cacheName = "school-calendar", key = "'current'", ttlSeconds = 86400)
   public Result<ResponseSchoolCalendarVO> detail() {
     return Result.success(buildCalendar());
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"school-calendar"})
   public Result<ResponseSchoolCalendarVO> save(RequestSaveSchoolCalendarDTO request) {
     LocalDate startDate = parseDate(request.getStartDate());
     if (startDate == null) return Result.error(400, "开学日期格式不正确");
@@ -54,6 +58,7 @@ public class SchoolCalendarServiceImpl implements SchoolCalendarService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"school-calendar"})
   public Result<ResponseSchoolCalendarVO> saveAdjustment(RequestSaveSchoolCalendarAdjustmentDTO request) {
     LocalDate date = parseDate(request.getDate());
     if (date == null) return Result.error(400, "调休日期格式不正确");
@@ -81,6 +86,7 @@ public class SchoolCalendarServiceImpl implements SchoolCalendarService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"school-calendar"})
   public Result<String> deleteAdjustment(Integer adjustmentId) {
     if (adjustmentId == null) return Result.error(400, "调休记录不合法");
     int rows = adjustmentMapper.deleteById(adjustmentId);

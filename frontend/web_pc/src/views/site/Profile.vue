@@ -186,7 +186,7 @@ import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
 import {authApi, siteApi} from '@/api'
 import {clearSession, getCurrentUser, getToken, setSession} from '@/utils/auth.ts'
 import {applicationStatusText, formatDateTime, statusType} from '@/utils/format.ts'
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {computed, onMounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 

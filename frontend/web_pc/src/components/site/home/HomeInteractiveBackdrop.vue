@@ -28,8 +28,10 @@ const { resolvedTheme } = useTheme()
 let host: HTMLElement | null = null
 let ctx: CanvasRenderingContext2D | null = null
 let resizeObserver: ResizeObserver | null = null
+let visibilityObserver: IntersectionObserver | null = null
 let handleWindowResize: (() => void) | null = null
 let animationFrame = 0
+let drawing = false
 let width = 0
 let height = 0
 let dpr = 1
@@ -55,6 +57,14 @@ const activeTo = gsap.quickTo(pointer, 'active', {
 
 function prefersReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
+
+function shouldUseStaticBackdrop() {
+  const connection = (navigator as any).connection
+  const saveData = Boolean(connection?.saveData)
+  const lowMemory = typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4
+  const lowCpu = typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4
+  return prefersReducedMotion() || saveData || lowMemory || lowCpu
 }
 
 function colors() {
@@ -151,7 +161,23 @@ function draw() {
   }
 
   ctx.globalAlpha = 1
+  if (drawing) {
+    animationFrame = window.requestAnimationFrame(draw)
+  }
+}
+
+function startDrawing() {
+  if (drawing) return
+  drawing = true
   animationFrame = window.requestAnimationFrame(draw)
+}
+
+function stopDrawing() {
+  drawing = false
+  if (animationFrame) {
+    window.cancelAnimationFrame(animationFrame)
+    animationFrame = 0
+  }
 }
 
 function handlePointerMove(event: PointerEvent) {
@@ -179,6 +205,11 @@ onMounted(() => {
     handleWindowResize = resizeCanvas
     window.addEventListener('resize', handleWindowResize)
   }
+  if (shouldUseStaticBackdrop()) {
+    draw()
+    return
+  }
+
   if (props.trackWindow) {
     window.addEventListener('pointermove', handlePointerMove, { passive: true })
     window.addEventListener('pointerleave', handlePointerLeave)
@@ -187,25 +218,32 @@ onMounted(() => {
     host.addEventListener('pointerleave', handlePointerLeave)
   }
 
-  if (prefersReducedMotion()) {
-    draw()
-    if (animationFrame) {
-      window.cancelAnimationFrame(animationFrame)
-      animationFrame = 0
-    }
-    return
+  if ('IntersectionObserver' in window) {
+    visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          startDrawing()
+        } else {
+          stopDrawing()
+        }
+      },
+      { rootMargin: '160px 0px', threshold: 0.01 },
+    )
+    visibilityObserver.observe(host)
+  } else {
+    startDrawing()
   }
-
-  animationFrame = window.requestAnimationFrame(draw)
 })
 
 watch(resolvedTheme, () => {
   resizeCanvas()
+  if (!drawing) draw()
 })
 
 onBeforeUnmount(() => {
-  if (animationFrame) window.cancelAnimationFrame(animationFrame)
+  stopDrawing()
   resizeObserver?.disconnect()
+  visibilityObserver?.disconnect()
   if (handleWindowResize) {
     window.removeEventListener('resize', handleWindowResize)
   }

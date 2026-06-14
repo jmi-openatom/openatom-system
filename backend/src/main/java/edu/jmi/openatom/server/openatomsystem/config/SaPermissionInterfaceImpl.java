@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.config;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import cn.dev33.satoken.stp.StpInterface;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.mapper.PermissionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RoleMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RolePermissionMapper;
@@ -32,6 +33,10 @@ public class SaPermissionInterfaceImpl implements StpInterface {
   private final PermissionMapper permissionMapper;
 
   @Override
+  @RedisCached(
+      cacheName = "auth",
+      key = "'permissions:' + #p0 + ':' + (#p1 == null ? 'default' : #p1)",
+      ttlSeconds = 600)
   public List<String> getPermissionList(Object loginId, String loginType) {
     Integer userId = Integer.valueOf(String.valueOf(loginId));
     List<Integer> roleIds =
@@ -67,6 +72,10 @@ public class SaPermissionInterfaceImpl implements StpInterface {
   }
 
   @Override
+  @RedisCached(
+      cacheName = "auth",
+      key = "'roles:' + #p0 + ':' + (#p1 == null ? 'default' : #p1)",
+      ttlSeconds = 600)
   public List<String> getRoleList(Object loginId, String loginType) {
     Integer userId = Integer.valueOf(String.valueOf(loginId));
     List<Integer> roleIds =

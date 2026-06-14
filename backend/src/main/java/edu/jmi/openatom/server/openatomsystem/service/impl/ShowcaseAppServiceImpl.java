@@ -3,6 +3,8 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveShowcaseAppDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.ShowcaseApp;
@@ -29,11 +31,16 @@ public class ShowcaseAppServiceImpl implements ShowcaseAppService {
   private final ShowcaseAppMapper showcaseAppMapper;
 
   @Override
+  @RedisCached(
+      cacheName = "showcase-app",
+      key = "'public-list:' + (#p0 == null ? '' : #p0) + ':' + (#p1 == null ? 'all' : #p1)",
+      ttlSeconds = 600)
   public Result<List<ShowcaseApp>> publicList(String keyword, Boolean openSource) {
     return Result.success(showcaseAppMapper.selectPublished(trimToNull(keyword), openSource));
   }
 
   @Override
+  @RedisCached(cacheName = "showcase-app", key = "'public-detail:' + #p0", ttlSeconds = 600)
   public Result<ShowcaseApp> publicDetail(Integer appId) {
     ShowcaseApp app = showcaseAppMapper.selectPublishedById(appId);
     return app == null ? Result.error(404, "应用不存在或未发布") : Result.success(app);
@@ -53,6 +60,7 @@ public class ShowcaseAppServiceImpl implements ShowcaseAppService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"showcase-app"})
   public Result<ShowcaseApp> create(RequestSaveShowcaseAppDTO request, Integer operatorId) {
     if (request == null) return Result.error(400, "应用信息不能为空");
     ShowcaseApp app = new ShowcaseApp();
@@ -67,6 +75,7 @@ public class ShowcaseAppServiceImpl implements ShowcaseAppService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"showcase-app"})
   public Result<ShowcaseApp> update(
       Integer appId, RequestSaveShowcaseAppDTO request, Integer operatorId) {
     ShowcaseApp app = appId == null ? null : showcaseAppMapper.selectById(appId);
@@ -81,6 +90,7 @@ public class ShowcaseAppServiceImpl implements ShowcaseAppService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"showcase-app"})
   public Result<ShowcaseApp> updateStatus(Integer appId, String status, Integer operatorId) {
     ShowcaseApp app = appId == null ? null : showcaseAppMapper.selectById(appId);
     if (app == null) return Result.error(404, "应用不存在");
@@ -92,6 +102,7 @@ public class ShowcaseAppServiceImpl implements ShowcaseAppService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"showcase-app"})
   public Result<String> delete(Integer appId) {
     ShowcaseApp app = appId == null ? null : showcaseAppMapper.selectById(appId);
     if (app == null) return Result.error(404, "应用不存在");

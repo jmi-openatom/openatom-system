@@ -3,6 +3,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.bootstrap.RoleSeedTemplate;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateUserDTO;
@@ -84,6 +85,7 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
+	@RedisCacheEvict(cacheNames = {"site", "auth"})
 	public Result<String> createUser(RequestCreateUserDTO requestCreateUserDTO) {
 		if (requestCreateUserDTO == null) return Result.error("请求参数为空");
 		if (isBlank(requestCreateUserDTO.getUsername()) || isBlank(requestCreateUserDTO.getPassword())
@@ -113,6 +115,7 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
+	@RedisCacheEvict(cacheNames = {"site", "auth"})
 	public Result<String> importUsers(MultipartFile file) {
 		if (file == null || file.isEmpty()) return Result.error("上传文件为空");
 		try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
@@ -202,6 +205,7 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
+	@RedisCacheEvict(cacheNames = {"site"})
 	public Result<Integer> cleanupInvalidAvatars() {
 		List<User> invalidUsers =
 				userMapper.selectUsersWithAvatar().stream()
@@ -278,6 +282,7 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
+	@RedisCacheEvict(cacheNames = {"site"})
 	public Result<String> updateUserInfo(Integer userId, RequestUserUpdateDTO requestUserUpdate) {
 		if (userId == null) return Result.error(400, "userId不能为空");
 		if (requestUserUpdate == null) return Result.error("请求参数为空");
@@ -298,6 +303,7 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
+	@RedisCacheEvict(cacheNames = {"site"})
 	public Result<String> updateUserStatus(Integer userId, RequestUpdateUserStatusDTO requestUpdateUserStatusDTO) {
 		if (userId == null) return Result.error(400, "userId不能为空");
 		if (requestUpdateUserStatusDTO == null || requestUpdateUserStatusDTO.getStatus() == null)
@@ -333,6 +339,7 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
+	@RedisCacheEvict(cacheNames = {"site", "auth"})
 	public Result<String> deleteUser(Integer userId) {
 		if (userId == null) return Result.error(400, "userId不能为空");
 		if (StpUtil.isLogin() && userId.equals(StpUtil.getLoginIdAsInt()))

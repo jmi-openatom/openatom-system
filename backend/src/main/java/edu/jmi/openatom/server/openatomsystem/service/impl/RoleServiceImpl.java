@@ -1,6 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNewRoleDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRoleDTO;
 import edu.jmi.openatom.server.openatomsystem.mapper.PermissionMapper;
@@ -34,9 +36,11 @@ public class RoleServiceImpl implements RoleService {
   private final UserRoleMapper userRoleMapper;
 
   @Override
+  @RedisCached(cacheName = "lookup:role", key = "'all'", ttlSeconds = 1800)
   public Result<List<Role>> getRoles() { return Result.success(roleMapper.selectList(null)); }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"lookup:role", "auth"})
   public Result<String> createNewRole(RequestCreateNewRoleDTO dto) {
     if (dto == null) return Result.error("请求参数为空");
     if (isBlank(dto.getName()) || isBlank(dto.getCode())) return Result.error(400, "角色名称和角色编码不能为空");
@@ -47,6 +51,7 @@ public class RoleServiceImpl implements RoleService {
   }
 
   @Override
+  @RedisCached(cacheName = "lookup:role", key = "'detail:' + #p0", ttlSeconds = 1800)
   public Result<Role> getRoleByRoleId(Integer roleId) {
     if (roleId == null) return Result.error(400, "roleId不能为空");
     Role role = roleMapper.selectById(roleId);
@@ -55,6 +60,7 @@ public class RoleServiceImpl implements RoleService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"lookup:role", "auth"})
   public Result<String> updateRole(Integer roleId, RequestUpdateRoleDTO dto) {
     if (roleId == null) return Result.error(400, "roleId不能为空");
     if (dto == null) return Result.error("请求参数为空");
@@ -70,6 +76,7 @@ public class RoleServiceImpl implements RoleService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"lookup:role", "auth"})
   public Result<String> deleteRole(Integer roleId) {
     if (roleId == null) return Result.error(400, "roleId不能为空");
     Role role = roleMapper.selectById(roleId);
@@ -82,6 +89,7 @@ public class RoleServiceImpl implements RoleService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"lookup:role", "auth"})
   public Result<String> assignRolePermissions(Integer roleId, List<Integer> permissionIds) {
     if (roleId == null) return Result.error(400, "roleId不能为空");
     if (permissionIds == null) return Result.error(400, "permissionIds不能为空");
@@ -101,6 +109,7 @@ public class RoleServiceImpl implements RoleService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"auth"})
   public Result<String> assignUserRoles(Integer userId, List<Integer> roleIds) {
     if (userId == null) return Result.error(400, "userId不能为空");
     if (roleIds == null) return Result.error(400, "roleIds不能为空");
@@ -119,6 +128,7 @@ public class RoleServiceImpl implements RoleService {
   }
 
   @Override
+  @RedisCached(cacheName = "auth", key = "'user-roles:' + #p0", ttlSeconds = 600)
   public Result<List<Role>> getUserRoles(Integer userId) {
     if (userId == null) return Result.error(400, "userId不能为空");
     List<UserRole> userRoles = userRoleMapper.selectByUserId(userId);

@@ -123,7 +123,7 @@
 
 <script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {activityApi, siteApi} from '@/api'
 import {formatDateTime, monthDayParts} from '@/utils/format.ts'
 import {getToken} from '@/utils/auth.ts'

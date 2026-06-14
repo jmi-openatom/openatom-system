@@ -1,8 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.vo;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 社团主页VO
@@ -11,6 +13,8 @@ import lombok.Data;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ResponseClubHomeVO {
   private ClubProfile club;
   private List<Metric> metrics;
@@ -22,6 +26,8 @@ public class ResponseClubHomeVO {
 
   @Data
   @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
   public static class ClubProfile {
     private Integer id;
     private String name;
@@ -34,6 +40,8 @@ public class ResponseClubHomeVO {
 
   @Data
   @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
   public static class Metric {
     private String label;
     private String value;
@@ -42,6 +50,8 @@ public class ResponseClubHomeVO {
 
   @Data
   @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
   public static class FocusArea {
     private String title;
     private String description;
@@ -50,6 +60,8 @@ public class ResponseClubHomeVO {
 
   @Data
   @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
   public static class Activity {
     private Integer id;
     private String date;
@@ -62,6 +74,8 @@ public class ResponseClubHomeVO {
 
   @Data
   @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
   public static class Person {
     private Integer userId;
     private String name;
@@ -74,6 +88,8 @@ public class ResponseClubHomeVO {
 
   @Data
   @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
   public static class Award {
     private Integer id;
     private Integer year;

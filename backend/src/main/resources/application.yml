@@ -3,3 +3,11 @@ spring:
     active: dev
   jackson:
     time-zone: ${JACKSON_TIME_ZONE:Asia/Shanghai}
+
+app:
+  cache:
+    redis:
+      enabled: ${APP_REDIS_CACHE_ENABLED:true}
+      key-prefix: ${APP_REDIS_CACHE_KEY_PREFIX:openatom:cache}
+      default-ttl: ${APP_REDIS_CACHE_DEFAULT_TTL:10m}
+      scan-batch-size: ${APP_REDIS_CACHE_SCAN_BATCH_SIZE:500}

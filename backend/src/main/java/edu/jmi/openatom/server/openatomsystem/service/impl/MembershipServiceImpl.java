@@ -4,6 +4,7 @@ import edu.jmi.openatom.server.openatomsystem.common.Times;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
 import edu.jmi.openatom.server.openatomsystem.dto.*;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
@@ -46,6 +47,7 @@ public class MembershipServiceImpl implements MembershipService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> finalDecision(Integer applicationId, RequestFinalDecisionDTO request) {
     MembershipApplication application = applicationId == null ? null : applicationMapper.selectById(applicationId);
     if (application == null) return Result.error(404, "申请不存在");
@@ -104,6 +106,7 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> create(RequestCreateMembershipDTO request) {
     Result<String> v = validateMembershipRefs(request.getUserId(), request.getClubId(), request.getDepartmentId(), request.getPositionId());
     if (v != null) return v;
@@ -119,6 +122,7 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> update(Integer membershipId, RequestUpdateMembershipDTO request) {
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");
@@ -135,6 +139,7 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> assignPosition(Integer membershipId, RequestAssignPositionDTO request) {
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");
@@ -146,6 +151,7 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> changeStatus(Integer membershipId, RequestChangeMembershipStatusDTO request) {
     if (!STATUSES.contains(request.getStatus())) return Result.error(400, "成员状态不合法");
     ClubMembership m = findMembership(membershipId);
@@ -159,6 +165,7 @@ public class MembershipServiceImpl implements MembershipService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> batchChangeStatus(RequestBatchChangeMembershipStatusDTO request) {
     if (!STATUSES.contains(request.getStatus())) return Result.error(400, "成员状态不合法");
     int count = 0;
@@ -176,6 +183,7 @@ public class MembershipServiceImpl implements MembershipService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> batchCreate(RequestBatchCreateMembershipDTO request) {
     int count = 0;
     for (RequestBatchCreateMembershipDTO.MembershipItem item : request.getMemberships()) {
@@ -190,6 +198,7 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> forceExit(Integer membershipId, String reason) {
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");

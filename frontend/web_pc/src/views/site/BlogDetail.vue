@@ -144,7 +144,7 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import BlogCommentItem from '@/components/site/blog/BlogCommentItem.vue'
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {Pointer, Share, Star} from '@element-plus/icons-vue'
 import {siteApi} from '@/api'
 import {formatDateTime} from '@/utils/format.ts'

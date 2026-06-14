@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseClubHomeVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentDetailVO;
@@ -48,6 +49,10 @@ public class SiteServiceImpl implements SiteService {
   private final RegistrationSettingService registrationSettingService;
 
   @Override
+  @RedisCached(
+      cacheName = "site",
+      key = "'club-home:' + (#p0 == null || #p0.isBlank() ? 'default' : #p0)",
+      ttlSeconds = 600)
   public Result<ResponseClubHomeVO> getClubHome(String clubCode) {
     Club club = findClub(clubCode);
     if (club == null) {
@@ -72,6 +77,7 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'activities'", ttlSeconds = 300)
   public Result<List<ClubActivity>> getActivities() {
     Club club = findClub(null);
     if (club == null) {
@@ -81,6 +87,7 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'activity:' + #p0", ttlSeconds = 300)
   public Result<ClubActivity> getActivityDetail(Integer activityId) {
     Club club = findClub(null);
     if (club == null) {
@@ -92,11 +99,13 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'public-clubs'", ttlSeconds = 600)
   public Result<List<Club>> getPublicClubs() {
     return Result.success(clubMapper.selectActiveClubs());
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'forms:' + (#p0 == null ? 'default' : #p0)", ttlSeconds = 300)
   public Result<ResponseSiteFormsVO> getPublicForms(Integer clubId) {
     Club club = findClub(clubId, null);
     if (club == null) {
@@ -168,11 +177,16 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'register-enabled'", ttlSeconds = 600)
   public Result<Boolean> getRegisterEnabled() {
     return Result.success(registrationSettingService.isRegisterEnabled());
   }
 
   @Override
+  @RedisCached(
+      cacheName = "site",
+      key = "'recruitment:' + (#p0 == null ? 'default' : #p0)",
+      ttlSeconds = 300)
   public Result<ResponseRecruitmentVO> getRecruitment(Integer clubId) {
     Club club = findClub(clubId, null);
     if (club == null) {
@@ -190,6 +204,7 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'recruitment-detail:' + #p0", ttlSeconds = 300)
   public Result<ResponseRecruitmentDetailVO> getRecruitmentDetail(Integer campaignId) {
     RecruitmentCampaign campaign =
         campaignId == null ? null : recruitmentCampaignMapper.selectById(campaignId);
@@ -206,6 +221,7 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'form-detail:' + #p0", ttlSeconds = 300)
   public Result<ResponseSiteFormDetailVO> getFormDetail(Integer formId) {
     SiteForm form = siteFormMapper.selectById(formId);
     if (form == null) return Result.error(404, "表单不存在");

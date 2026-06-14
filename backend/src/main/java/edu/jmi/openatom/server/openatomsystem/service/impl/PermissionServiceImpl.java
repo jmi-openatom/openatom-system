@@ -1,6 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreatePermissionDTO;
 import edu.jmi.openatom.server.openatomsystem.mapper.PermissionMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.Permission;
@@ -20,11 +22,13 @@ public class PermissionServiceImpl implements PermissionService {
   private final PermissionMapper permissionMapper;
 
   @Override
+  @RedisCached(cacheName = "lookup:permission", key = "'all'", ttlSeconds = 1800)
   public Result<List<Permission>> getPermissions() {
     return Result.success(permissionMapper.selectList(null));
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"lookup:permission", "auth"})
   public Result<String> createPermission(RequestCreatePermissionDTO dto) {
     if (dto == null) return Result.error("请求参数为空");
     if (isBlank(dto.getName()) || isBlank(dto.getCode()) || isBlank(dto.getType()))

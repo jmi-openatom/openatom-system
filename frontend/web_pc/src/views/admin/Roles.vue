@@ -68,7 +68,8 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { Plus } from '@element-plus/icons-vue'
 import { rbacApi } from '@/api'
 import { onMounted, ref } from 'vue'

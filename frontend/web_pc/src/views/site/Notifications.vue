@@ -84,7 +84,7 @@ import WorkspaceHero from '@/components/site/workspace/WorkspaceHero.vue'
 import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
 import { computed, ref, onMounted } from 'vue'
 import { Bell, CircleCheck } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { notificationApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 

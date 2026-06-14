@@ -4,8 +4,10 @@ import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubDepartment;
 import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 社团招新数据VO
@@ -14,6 +16,8 @@ import lombok.Data;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ResponseRecruitmentVO {
   private Club club;
   private List<RecruitmentCampaign> campaigns;

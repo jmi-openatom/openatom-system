@@ -3,6 +3,8 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateRecruitmentCampaignDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRecruitmentCampaignDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
@@ -28,6 +30,7 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
   private final ClubMapper clubMapper;
 
   @Override
+  @RedisCached(cacheName = "site", key = "'admin-recruitment:' + #p0", ttlSeconds = 300)
   public Result<List<RecruitmentCampaign>> listByClub(Integer clubId) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     if (clubMapper.selectById(clubId) == null) return Result.error(404, "社团不存在");
@@ -35,6 +38,7 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> create(Integer clubId, RequestCreateRecruitmentCampaignDTO request) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     Club club = clubMapper.selectById(clubId);
@@ -52,12 +56,14 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'admin-recruitment-detail:' + #p0", ttlSeconds = 300)
   public Result<RecruitmentCampaign> detail(Integer campaignId) {
     RecruitmentCampaign campaign = findCampaign(campaignId);
     return campaign == null ? Result.error(404, "招新计划不存在") : Result.success(campaign);
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> update(Integer campaignId, RequestUpdateRecruitmentCampaignDTO request) {
     RecruitmentCampaign campaign = findCampaign(campaignId);
     if (campaign == null) return Result.error(404, "招新计划不存在");
@@ -80,9 +86,11 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> publish(Integer campaignId) { return updateStatus(campaignId, "open", "招新计划发布成功"); }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> close(Integer campaignId) { return updateStatus(campaignId, "closed", "招新计划关闭成功"); }
 
   private Result<String> updateStatus(Integer campaignId, String status, String message) {

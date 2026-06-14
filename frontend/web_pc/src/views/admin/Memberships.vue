@@ -170,7 +170,8 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { clubApi, membershipApi } from '@/api'
 import { membershipStatusText, statusType } from '@/utils/format.ts'

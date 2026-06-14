@@ -8,11 +8,18 @@ spring:
     password: 7jcAS4e8eBSbBFBt
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
+      pool-name: ${DB_POOL_NAME:openatom-prod-hikari}
       maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
       minimum-idle: ${DB_POOL_MIN_IDLE:5}
       connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}
       idle-timeout: ${DB_IDLE_TIMEOUT_MS:600000}
       max-lifetime: ${DB_MAX_LIFETIME_MS:1800000}
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+        rewriteBatchedStatements: true
   flyway:
     enabled: true
     locations: classpath:db/migration

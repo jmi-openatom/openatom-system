@@ -178,7 +178,8 @@
 <script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import {Refresh} from '@element-plus/icons-vue'
 import {leaveApplicationApi} from '@/api'
 import {formatDateTime} from '@/utils/format.ts'

@@ -19,10 +19,7 @@
 <script setup lang="ts">
 import HomeMapSection from './HomeMapSection.vue'
 import { MorphingText } from '@/components/ui/morphing-text'
-import type { BaseProps } from '../../ui/pattern-background'
-import { PATTERN_BACKGROUND_SPEED } from '../../ui/pattern-background'
-// 1. Define a single interface for all props
-interface HeroProps extends BaseProps {
+interface HeroProps {
   text?: string
   revealDelayMs?: number
   coolDownTime?: number
@@ -30,15 +27,8 @@ interface HeroProps extends BaseProps {
   texts: string[]
 }
 
-// 2. Use withDefaults to handle your default values cleanly
 withDefaults(defineProps<HeroProps>(), {
   text: '技术分享 · 项目实践 · 竞赛训练 · 开源协作',
   revealDelayMs: 100,
-  animate: true,
-  direction: 'bottom',
-  variant: 'big-dot',
-  size: 'md',
-  mask: 'ellipse-top',
-  speed: () => PATTERN_BACKGROUND_SPEED.Slow,
 })
 </script>

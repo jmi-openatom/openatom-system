@@ -1,5 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.common;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import lombok.Getter;
 
@@ -22,7 +24,12 @@ public class Result<T> implements Serializable {
   private final String traceId;
 
   // 私有化构造方法，强制使用静态工厂方法
-  private Result(Integer code, String message, T data, String traceId) {
+  @JsonCreator
+  private Result(
+      @JsonProperty("code") Integer code,
+      @JsonProperty("message") String message,
+      @JsonProperty("data") T data,
+      @JsonProperty("traceId") String traceId) {
     this.code = code;
     this.message = message;
     this.data = data;

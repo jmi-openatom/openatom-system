@@ -204,7 +204,7 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { officeDocumentApi } from '@/api'
 import { formatDateTime, todayDateValue } from '@/utils/format.ts'
 import { onMounted, ref } from 'vue'

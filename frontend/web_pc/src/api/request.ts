@@ -1,5 +1,5 @@
 import axios, {type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig,} from 'axios'
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {clearSession, getToken} from '@/utils/auth.ts'
 
 const UNAUTHORIZED_CODES = new Set([401, 40100])

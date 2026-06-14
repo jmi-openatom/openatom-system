@@ -153,7 +153,7 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import {pointApi} from '@/api'
 import {getToken} from '@/utils/auth.ts'
 import {formatDateTime} from '@/utils/format.ts'
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import {computed, onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 

@@ -2,31 +2,40 @@
   <ViewPage class="home-page" :loading="loading">
     <HomeHero :cool-down-time="heroMorphCoolDownTime" :morph-time="heroMorphTime" :texts="texts" />
     <HomeOverviewPage :metrics="metrics" :tech-stack="techStack" @scroll-to="scrollTo" />
-    <HomeFocusSection :club="club" :focus-areas="focusAreas" :loading="loading" />
-    <HomeActivitiesSection :activities="activities" :loading="loading" />
-    <HomeFeaturedBlogsSection :articles="featuredBlogs" />
-    <HomePeopleSection :people="people" :loading="loading" />
-    <HomeAwardsSection :awards="awards" :loading="loading" />
+    <template v-if="renderDeferredSections">
+      <HomeFocusSection :club="club" :focus-areas="focusAreas" :loading="loading" />
+      <HomeActivitiesSection :activities="activities" :loading="loading" />
+      <HomeFeaturedBlogsSection :articles="featuredBlogs" />
+      <HomePeopleSection :people="people" :loading="loading" />
+      <HomeAwardsSection :awards="awards" :loading="loading" />
+    </template>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { defineAsyncComponent, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { siteApi } from '@/api'
-import HomeActivitiesSection from '@/components/site/home/HomeActivitiesSection.vue'
-import HomeAwardsSection from '@/components/site/home/HomeAwardsSection.vue'
-import HomeFeaturedBlogsSection from '@/components/site/home/HomeFeaturedBlogsSection.vue'
-import HomeFocusSection from '@/components/site/home/HomeFocusSection.vue'
 import HomeHero from '@/components/site/home/HomeHero.vue'
 import HomeOverviewPage from '@/components/site/home/HomeOverviewPage.vue'
-import HomePeopleSection from '@/components/site/home/HomePeopleSection.vue'
 
-gsap.registerPlugin(ScrollTrigger)
+const HomeActivitiesSection = defineAsyncComponent(
+  () => import('@/components/site/home/HomeActivitiesSection.vue'),
+)
+const HomeAwardsSection = defineAsyncComponent(
+  () => import('@/components/site/home/HomeAwardsSection.vue'),
+)
+const HomeFeaturedBlogsSection = defineAsyncComponent(
+  () => import('@/components/site/home/HomeFeaturedBlogsSection.vue'),
+)
+const HomeFocusSection = defineAsyncComponent(() => import('@/components/site/home/HomeFocusSection.vue'))
+const HomePeopleSection = defineAsyncComponent(
+  () => import('@/components/site/home/HomePeopleSection.vue'),
+)
 
 const loading = ref(false)
+
+const renderDeferredSections = ref(false)
 
 const club = ref<Record<string, any>>({})
 
@@ -54,16 +63,23 @@ const heroMorphTime = 0.86
 
 const heroMorphCoolDownTime = 2.4
 
+let isUnmounted = false
+let cancelHomeAnimationIdle: (() => void) | undefined
+let cancelDeferredSectionsIdle: (() => void) | undefined
+
 async function loadClubHome() {
   loading.value = true
   try {
-    const data = await siteApi.clubHome()
+    const [data, blogData] = await Promise.all([
+      siteApi.clubHome(),
+      siteApi.blogArticles({ featured: true, page: 1, pageSize: 3 }).catch(() => null),
+    ])
     club.value = data.club || {}
     metrics.value = data.metrics || []
     techStack.value = data.techStack || []
     focusAreas.value = data.focusAreas || []
     activities.value = data.activities || []
-    await loadFeaturedBlogs()
+    featuredBlogs.value = blogData?.list || []
     people.value = data.people || []
     awards.value = data.awards || []
   } catch (error) {
@@ -80,20 +96,39 @@ async function loadClubHome() {
   }
 }
 
-async function loadFeaturedBlogs() {
-  try {
-    const data = await siteApi.blogArticles({ featured: true, page: 1, pageSize: 3 })
-    featuredBlogs.value = data?.list || []
-  } catch (error) {
-    featuredBlogs.value = []
+function shouldUseReducedHomeMotion() {
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  const connection = (navigator as any).connection
+  const saveData = Boolean(connection?.saveData)
+  const lowMemory = typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4
+  const lowCpu = typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4
+  return reducedMotion || saveData || lowMemory || lowCpu
+}
+
+function runWhenIdle(callback: () => void) {
+  const requestIdle = window.requestIdleCallback
+  if (requestIdle) {
+    const idleId = requestIdle(callback, { timeout: 900 })
+    return () => window.cancelIdleCallback?.(idleId)
   }
+  const timeoutId = window.setTimeout(callback, 120)
+  return () => window.clearTimeout(timeoutId)
 }
 
 function scrollTo(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function animateMetricValue(element: HTMLElement) {
+async function loadHomeMotion() {
+  const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
+    import('gsap'),
+    import('gsap/ScrollTrigger'),
+  ])
+  gsap.registerPlugin(ScrollTrigger)
+  return { gsap, ScrollTrigger }
+}
+
+function animateMetricValue(element: HTMLElement, gsap: any) {
   const rawText = element.textContent?.trim() || ''
   const match = rawText.match(/\d+(?:\.\d+)?/)
   if (!match) return
@@ -122,7 +157,10 @@ function animateMetricValue(element: HTMLElement) {
   })
 }
 
-function createHomeAnimations() {
+async function createHomeAnimations() {
+  const { gsap, ScrollTrigger } = await loadHomeMotion()
+  if (isUnmounted) return
+
   animationContext.value = gsap.context(() => {
     const prefersReducedMotion =
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -300,7 +338,7 @@ function createHomeAnimations() {
 
     gsap.utils
       .toArray<HTMLElement>('.metric-console__core strong, .metric-node strong')
-      .forEach(animateMetricValue)
+      .forEach((element) => animateMetricValue(element, gsap))
 
     gsap.set('.reveal-block', {
       y: 58,
@@ -367,10 +405,20 @@ function createHomeAnimations() {
 onMounted(async () => {
   await loadClubHome()
   await nextTick()
-  createHomeAnimations()
+  cancelDeferredSectionsIdle = runWhenIdle(() => {
+    renderDeferredSections.value = true
+  })
+  if (!shouldUseReducedHomeMotion()) {
+    cancelHomeAnimationIdle = runWhenIdle(() => {
+      void createHomeAnimations()
+    })
+  }
 })
 
 onBeforeUnmount(() => {
+  isUnmounted = true
+  cancelHomeAnimationIdle?.()
+  cancelDeferredSectionsIdle?.()
   animationContext.value?.revert()
 })
 </script>
@@ -1716,6 +1764,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
   opacity: 1;
   will-change: transform, opacity;
 }

@@ -6,6 +6,7 @@ import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import edu.jmi.openatom.server.openatomsystem.bootstrap.RoleSeedTemplate;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.web.ClientIpResolver;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
@@ -92,6 +93,7 @@ public class AuthServiceImpl implements AuthService {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
+	@RedisCacheEvict(cacheNames = {"site", "auth"})
 	public Result<String> register(RequestRegisterDTO requestRegisterDTO) {
 		if (requestRegisterDTO == null
 				|| requestRegisterDTO.getUsername() == null
@@ -228,6 +230,7 @@ public class AuthServiceImpl implements AuthService {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
+	@RedisCacheEvict(cacheNames = {"site"})
 	public Result<String> confirmQqBind(RequestConfirmQqBindDTO requestConfirmQqBindDTO) {
 		if (requestConfirmQqBindDTO == null || isBlank(requestConfirmQqBindDTO.getToken())) {
 			return Result.error("绑定码不能为空");
@@ -282,6 +285,7 @@ public class AuthServiceImpl implements AuthService {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
+	@RedisCacheEvict(cacheNames = {"site"})
 	public Result<String> unbindQq() {
 		if (!StpUtil.isLogin()) return Result.error(401, "请先登录后解绑QQ");
 		Integer currentUserId = StpUtil.getLoginIdAsInt();
@@ -373,6 +377,7 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
+	@RedisCacheEvict(cacheNames = {"site"})
 	public Result<User> updateAvatar(MultipartFile file, String avatarBaseUrl) {
 		if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
 		if (avatarBaseUrl == null || avatarBaseUrl.isBlank()) return Result.error(500, "头像地址生成失败");
@@ -393,6 +398,7 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
+	@RedisCacheEvict(cacheNames = {"site"})
 	public Result<User> removeAvatar() {
 		if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
 		int id = StpUtil.getLoginIdAsInt();

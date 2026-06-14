@@ -12,10 +12,13 @@
 </template>
 
 <script setup lang="ts">
-import type { CameraOptions, Layer, Map, Marker } from 'mapbox-gl'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useTheme, type ResolvedTheme } from '@/composables/useTheme'
-import 'mapbox-gl/dist/mapbox-gl.css'
+
+type MapboxCameraOptions = Record<string, unknown>
+type MapboxModule = any
+type MapboxMap = any
+type MapboxMarker = any
 
 const props = withDefaults(
   defineProps<{
@@ -42,12 +45,15 @@ const mapboxStyle = computed(() => {
   return resolvedTheme.value === 'dark' ? mapboxDarkStyle : mapboxLightStyle
 })
 
-let map: Map | null = null
+let map: MapboxMap | null = null
 let campusHoldTimer: number | undefined
 let earthRotationTimer: number | undefined
 let nextCampusHoldTimer: number | undefined
 let rotationFrame: number | undefined
-let campusMarker: Marker | null = null
+let campusMarker: MapboxMarker | null = null
+let visibilityObserver: IntersectionObserver | undefined
+let idleHandle: number | undefined
+let mapInitStarted = false
 
 const CAMPUS_CENTER: [number, number] = [118.903, 31.920]
 const EARTH_CENTER: [number, number] = [-40, 26]
@@ -62,14 +68,14 @@ const earthCamera = {
   zoom: 1.3,
   pitch: 0,
   bearing: 0,
-} satisfies CameraOptions
+} satisfies MapboxCameraOptions
 
 const campusCamera = {
   center: CAMPUS_CENTER,
   zoom: 16.25,
   pitch: 58,
   bearing: -18,
-} satisfies CameraOptions
+} satisfies MapboxCameraOptions
 
 function mapFog(theme: ResolvedTheme) {
   if (theme === 'dark') {
@@ -291,7 +297,7 @@ function restoreStyleOverlays() {
   add3dBuildings()
 }
 
-function addCampusMarker(mapboxgl: typeof import('mapbox-gl').default) {
+function addCampusMarker(mapboxgl: MapboxModule) {
   if (!map || campusMarker) return
 
   const markerElement = document.createElement('div')
@@ -396,12 +402,36 @@ function zoomToCampus() {
   }, FLY_TO_CAMPUS_MS)
 }
 
-onMounted(async () => {
+function shouldSkipInteractiveMap() {
+  const connection = (navigator as any).connection
+  const saveData = Boolean(connection?.saveData)
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false
+  const smallViewport = window.matchMedia?.('(max-width: 900px)').matches ?? false
+  const lowMemory = typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4
+  const lowCpu = typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4
+  return saveData || lowMemory || lowCpu || (props.background && coarsePointer && smallViewport)
+}
+
+function runWhenIdle(callback: () => void) {
+  const requestIdle = window.requestIdleCallback
+  if (requestIdle) {
+    idleHandle = requestIdle(callback, { timeout: 1200 })
+    return
+  }
+  idleHandle = window.setTimeout(callback, 220)
+}
+
+async function initMap() {
+  if (mapInitStarted) return
+  mapInitStarted = true
   if (!mapboxToken || !mapContainer.value) return
 
-  let mapboxgl: typeof import('mapbox-gl').default
+  let mapboxgl: MapboxModule
   try {
-    const mapboxModule = await import('mapbox-gl')
+    const [mapboxModule] = await Promise.all([
+      import('mapbox-gl'),
+      import('mapbox-gl/dist/mapbox-gl.css'),
+    ])
     mapboxgl = mapboxModule.default
   } catch (error) {
     mapError.value = '地图资源加载失败。'
@@ -440,6 +470,23 @@ onMounted(async () => {
       mapError.value = event.error?.message || '请检查 Mapbox Token、样式地址或网络连接。'
     }
   })
+}
+
+onMounted(() => {
+  if (!mapboxToken || !mapContainer.value || shouldSkipInteractiveMap()) return
+
+  visibilityObserver = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      visibilityObserver?.disconnect()
+      visibilityObserver = undefined
+      runWhenIdle(() => {
+        void initMap()
+      })
+    },
+    { rootMargin: '280px 0px', threshold: 0.01 },
+  )
+  visibilityObserver.observe(mapContainer.value)
 })
 
 watch(mapboxStyle, () => {
@@ -447,6 +494,14 @@ watch(mapboxStyle, () => {
 })
 
 onBeforeUnmount(() => {
+  visibilityObserver?.disconnect()
+  if (idleHandle) {
+    if (window.cancelIdleCallback) {
+      window.cancelIdleCallback(idleHandle)
+    } else {
+      window.clearTimeout(idleHandle)
+    }
+  }
   clearMapTimers()
   campusMarker?.remove()
   campusMarker = null

@@ -451,7 +451,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { Refresh, RefreshRight, Search, Setting } from '@element-plus/icons-vue'
 import { botManagementApi } from '@/api'
 import ViewPage from '@/components/common/ViewPage.vue'

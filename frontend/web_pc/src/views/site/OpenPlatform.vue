@@ -125,7 +125,8 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import { dataOpenApi } from '@/api'
 import { computed, ref } from 'vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { DocumentCopy, Promotion, Refresh, Search } from '@element-plus/icons-vue'
 
 const formRef = ref<FormInstance>()

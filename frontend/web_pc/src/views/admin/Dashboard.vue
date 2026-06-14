@@ -87,7 +87,7 @@ import {
   statusType,
 } from '@/utils/format.ts'
 import { hasAdminAccess, hasAnyPermission } from '@/utils/permission.ts'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 type DashboardStatKey = 'users' | 'clubs' | 'applications' | 'memberships'
 

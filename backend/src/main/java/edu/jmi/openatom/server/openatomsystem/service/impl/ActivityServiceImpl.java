@@ -4,6 +4,8 @@ import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestActivityRegistrationDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateActivityDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateActivityDTO;
@@ -38,6 +40,7 @@ public class ActivityServiceImpl implements ActivityService {
   private final ClubMembershipMapper clubMembershipMapper;
 
   @Override
+  @RedisCached(cacheName = "site", key = "'admin-activities:' + (#p0 == null ? 'all' : #p0)", ttlSeconds = 300)
   public Result<List<ClubActivity>> list(String status) {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
@@ -45,12 +48,14 @@ public class ActivityServiceImpl implements ActivityService {
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'admin-activity:' + #p0", ttlSeconds = 300)
   public Result<ClubActivity> detail(Integer activityId) {
     ClubActivity activity = findActivity(activityId);
     return activity == null ? Result.error(404, "活动不存在") : Result.success(activity);
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> create(RequestCreateActivityDTO request) {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
@@ -72,6 +77,7 @@ public class ActivityServiceImpl implements ActivityService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> update(Integer activityId, RequestUpdateActivityDTO request) {
     ClubActivity activity = findActivity(activityId);
     if (activity == null) return Result.error(404, "活动不存在");
@@ -97,6 +103,7 @@ public class ActivityServiceImpl implements ActivityService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> delete(Integer activityId) {
     ClubActivity activity = findActivity(activityId);
     if (activity == null) return Result.error(404, "活动不存在");

@@ -3,6 +3,8 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateSiteFormDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateSiteFormDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
@@ -28,6 +30,7 @@ public class SiteFormServiceImpl implements SiteFormService {
   private final ClubMapper clubMapper;
 
   @Override
+  @RedisCached(cacheName = "site", key = "'admin-site-forms:' + #p0", ttlSeconds = 300)
   public Result<List<SiteForm>> listByClub(Integer clubId) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     if (clubMapper.selectById(clubId) == null) return Result.error(404, "社团不存在");
@@ -35,6 +38,7 @@ public class SiteFormServiceImpl implements SiteFormService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> create(Integer clubId, RequestCreateSiteFormDTO request) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     Club club = clubMapper.selectById(clubId);
@@ -50,12 +54,14 @@ public class SiteFormServiceImpl implements SiteFormService {
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'admin-site-form-detail:' + #p0", ttlSeconds = 300)
   public Result<SiteForm> detail(Integer formId) {
     SiteForm form = findSiteForm(formId);
     return form == null ? Result.error(404, "表单不存在") : Result.success(form);
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> update(Integer formId, RequestUpdateSiteFormDTO request) {
     SiteForm form = findSiteForm(formId);
     if (form == null) return Result.error(404, "表单不存在");
@@ -73,9 +79,11 @@ public class SiteFormServiceImpl implements SiteFormService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> publish(Integer formId) { return updateStatus(formId, "open", "表单发布成功"); }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> close(Integer formId) { return updateStatus(formId, "closed", "表单关闭成功"); }
 
   private Result<String> updateStatus(Integer formId, String status, String message) {

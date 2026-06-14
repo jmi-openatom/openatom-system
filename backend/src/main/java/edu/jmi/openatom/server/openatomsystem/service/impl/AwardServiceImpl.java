@@ -1,6 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateAwardDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateAwardDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
@@ -26,6 +28,7 @@ public class AwardServiceImpl implements AwardService {
   private final ClubAwardMapper clubAwardMapper;
 
   @Override
+  @RedisCached(cacheName = "site", key = "'admin-awards'", ttlSeconds = 300)
   public Result<List<ClubAward>> list() {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
@@ -33,6 +36,7 @@ public class AwardServiceImpl implements AwardService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> create(RequestCreateAwardDTO request) {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
@@ -45,6 +49,7 @@ public class AwardServiceImpl implements AwardService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> update(Integer awardId, RequestUpdateAwardDTO request) {
     ClubAward award = findAward(awardId);
     if (award == null) return Result.error(404, "获奖经历不存在");
@@ -60,6 +65,7 @@ public class AwardServiceImpl implements AwardService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"site"})
   public Result<String> delete(Integer awardId) {
     ClubAward award = findAward(awardId);
     if (award == null) return Result.error(404, "获奖经历不存在");

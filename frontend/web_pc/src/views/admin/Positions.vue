@@ -120,7 +120,7 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { clubApi, positionApi, rbacApi } from '@/api'
 import { onMounted, ref } from 'vue'

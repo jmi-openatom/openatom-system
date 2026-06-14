@@ -47,7 +47,7 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Link, Loading, Refresh, Select } from '@element-plus/icons-vue'
 import { checkInApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'

@@ -203,7 +203,7 @@ import { siteApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
 import { getToken } from '@/utils/auth.ts'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 

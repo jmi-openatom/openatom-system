@@ -135,7 +135,7 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import SitePageHero from '@/components/site/shell/SitePageHero.vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { formSubmissionApi, clubApi, siteApi } from '@/api'
 import { getToken } from '@/utils/auth.ts'
 import { formatDateTime } from '@/utils/format.ts'

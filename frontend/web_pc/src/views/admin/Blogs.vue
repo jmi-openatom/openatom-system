@@ -247,7 +247,7 @@ import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { blogApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
 import { renderMarkdown } from '@/utils/markdown.ts'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Refresh, Tickets } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
 

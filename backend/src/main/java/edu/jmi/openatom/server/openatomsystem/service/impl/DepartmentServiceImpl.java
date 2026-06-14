@@ -1,6 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateDepartmentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateDepartmentDTO;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubDepartmentMapper;
@@ -26,6 +28,7 @@ public class DepartmentServiceImpl implements DepartmentService {
   private final UserMapper userMapper;
 
   @Override
+  @RedisCached(cacheName = "lookup:department", key = "'club:' + #p0", ttlSeconds = 1800)
   public Result<List<ClubDepartment>> getDepartmentsByClubId(Integer clubId) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     if (!clubExists(clubId)) return Result.error(404, "社团不存在");
@@ -33,6 +36,7 @@ public class DepartmentServiceImpl implements DepartmentService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"lookup:department", "site"})
   public Result<String> createDepartment(Integer clubId, RequestCreateDepartmentDTO dto) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     if (dto == null) return Result.error("请求参数为空");
@@ -48,6 +52,7 @@ public class DepartmentServiceImpl implements DepartmentService {
   }
 
   @Override
+  @RedisCached(cacheName = "lookup:department", key = "'detail:' + #p0", ttlSeconds = 1800)
   public Result<ClubDepartment> getDepartmentById(Integer departmentId) {
     if (departmentId == null) return Result.error(400, "departmentId不能为空");
     ClubDepartment department = clubDepartmentMapper.selectById(departmentId);
@@ -56,6 +61,7 @@ public class DepartmentServiceImpl implements DepartmentService {
   }
 
   @Override
+  @RedisCacheEvict(cacheNames = {"lookup:department", "site"})
   public Result<String> updateDepartment(Integer departmentId, RequestUpdateDepartmentDTO dto) {
     if (departmentId == null) return Result.error(400, "departmentId不能为空");
     if (dto == null) return Result.error("请求参数为空");
@@ -78,6 +84,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"lookup:department", "site"})
   public Result<String> deleteDepartment(Integer departmentId) {
     if (departmentId == null) return Result.error(400, "departmentId不能为空");
     ClubDepartment department = clubDepartmentMapper.selectById(departmentId);

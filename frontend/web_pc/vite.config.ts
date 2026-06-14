@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { fileURLToPath, URL } from 'node:url'
 import { execSync } from 'node:child_process'
 import pkg from './package.json'
@@ -16,7 +18,13 @@ try {
 }
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    Components({
+      dts: false,
+      resolvers: [ElementPlusResolver({ directives: false, importStyle: 'css' })],
+    }),
+  ],
   define: {
     __APP_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION || appVersion),
   },
@@ -27,5 +35,21 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+  },
+  build: {
+    modulePreload: false,
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (id.includes('mapbox-gl')) return 'mapbox-gl'
+          if (id.includes('markdown-it')) return 'markdown'
+          if (id.includes('gsap') || id.includes('motion-v')) return 'vendor-motion'
+          if (id.includes('/vue/') || id.includes('vue-router')) return 'vendor-vue'
+          return undefined
+        },
+      },
+    },
   },
 })

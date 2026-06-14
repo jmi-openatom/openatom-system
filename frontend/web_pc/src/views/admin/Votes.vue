@@ -234,7 +234,8 @@ import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { clubApi, voteApi } from '@/api'
 import { formatDateTime, statusType, toDateTimeInputValue } from '@/utils/format.ts'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { onMounted, ref } from 'vue'
 
 type OptionDraft = {

@@ -1,7 +1,5 @@
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 import { hasAdminAccess, hasAnyPermission } from '@/utils/permission.ts'
-import SiteLayout from '@/layouts/SiteLayout.vue'
-import AdminLayout from '@/layouts/AdminLayout.vue'
 import { appendTokenQuery, getToken, shouldUseFullPageAuthRedirect } from '@/utils/auth.ts'
 import { buildOidcAuthorizeUrl } from '@/utils/oidc.ts'
 
@@ -61,7 +59,7 @@ function firstAccessibleAdminPath(): string {
 const routes = [
   {
     path: '/',
-    component: SiteLayout,
+    component: () => import('@/layouts/SiteLayout.vue'),
     children: [
       { path: '', name: 'site-home', component: () => import('../views/site/Home.vue') },
       {
@@ -210,7 +208,7 @@ const routes = [
   },
   {
     path: '/admin',
-    component: AdminLayout,
+    component: () => import('@/layouts/AdminLayout.vue'),
     meta: { requiresAuth: true },
     children: [
       { path: '', redirect: '/admin/dashboard' },

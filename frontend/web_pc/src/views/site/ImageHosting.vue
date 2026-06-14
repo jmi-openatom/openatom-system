@@ -109,7 +109,7 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { imageHostingApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { Delete, DocumentCopy, Link, Refresh, Upload, UploadFilled } from '@element-plus/icons-vue'
 import { onMounted, ref } from 'vue'
 
