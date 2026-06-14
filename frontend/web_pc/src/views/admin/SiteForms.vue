@@ -47,12 +47,13 @@
           <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="360" fixed="right">
+      <el-table-column label="操作" width="430" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
           <el-button link type="success" @click="openSubmissions(row)">记录</el-button>
           <el-button link type="info" @click="previewSchema(row)">预览字段</el-button>
           <el-button link type="warning" @click="copyFormLink(row)">复制链接</el-button>
+          <el-button link type="primary" @click="openQrDialog(row)">二维码</el-button>
           <el-button link type="success" @click="publish(row)" v-if="row.status !== 'open'"
             >发布</el-button
           >
@@ -222,6 +223,35 @@
         </el-table-column>
       </el-table>
     </el-dialog>
+
+    <el-dialog v-model="qrVisible" title="二维码分享" width="720px">
+      <div class="qr-share">
+        <div class="qr-share__preview">
+          <img v-if="qrTargetUrl" :src="qrPreviewUrl" alt="表单二维码" />
+          <span v-else>请输入 URL</span>
+        </div>
+        <div class="qr-share__content">
+          <el-form label-position="top">
+            <el-form-item label="展示标题">
+              <el-input :model-value="qrTitle" disabled />
+            </el-form-item>
+            <el-form-item label="二维码 URL">
+              <el-input
+                v-model="customQrUrl"
+                type="textarea"
+                :rows="4"
+                placeholder="输入任意 URL，即可生成二维码"
+              />
+            </el-form-item>
+          </el-form>
+          <div class="qr-share__actions">
+            <el-button :icon="CopyDocument" @click="copyQrUrl">复制 URL</el-button>
+            <el-button :icon="Link" @click="copyQrScreenLink">复制大屏链接</el-button>
+            <el-button type="primary" :icon="Monitor" @click="openQrScreen">大屏展示</el-button>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </ViewPage>
 </template>
 
@@ -229,11 +259,12 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
-import { Plus, Refresh } from '@element-plus/icons-vue'
+import { CopyDocument, Link, Monitor, Plus, Refresh } from '@element-plus/icons-vue'
 import { siteFormApi, clubApi } from '@/api'
 import { formatDateTime, statusType, toDateTimeInputValue } from '@/utils/format.ts'
-import { nextTick, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { qrSvgDataUrl } from '@/utils/qr.ts'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const defaultFormSchema = [
   { key: 'name', label: '姓名', type: 'text', required: true, placeholder: '请输入姓名' },
@@ -252,6 +283,8 @@ const dialogVisible = ref(false)
 
 const previewVisible = ref(false)
 
+const qrVisible = ref(false)
+
 const clubs = ref<any[]>([])
 
 const selectedClubId = ref('')
@@ -265,6 +298,10 @@ const form = ref<Record<string, any>>({})
 const previewFields = ref<any[]>([])
 
 const schemaFields = ref<any[]>([])
+
+const qrForm = ref<Record<string, any>>({})
+
+const customQrUrl = ref('')
 
 const draggedFieldIndex = ref(-1)
 
@@ -285,7 +322,11 @@ const formRef = ref<any>()
 
 const router = useRouter()
 
-const route = useRoute()
+const qrTitle = computed(() => qrForm.value?.name || '扫码填写表单')
+
+const qrTargetUrl = computed(() => customQrUrl.value.trim())
+
+const qrPreviewUrl = computed(() => (qrTargetUrl.value ? qrSvgDataUrl(qrTargetUrl.value) : ''))
 
 async function loadClubs() {
   const result = await clubApi.list({ page: 1, pageSize: 100 })
@@ -425,8 +466,24 @@ function openSubmissions(row: any) {
   })
 }
 
+function buildFormWebLink(row: any) {
+  return `${window.location.origin}${router.resolve({ path: `/forms/${row.id}` }).href}`
+}
+
+function buildQrScreenLink() {
+  const href = router.resolve({
+    path: '/qr-screen',
+    query: {
+      url: qrTargetUrl.value,
+      title: qrTitle.value,
+      subtitle: '扫码进入在线表单',
+    },
+  }).href
+  return `${window.location.origin}${href}`
+}
+
 async function copyFormLink(row: any) {
-  const webLink = `${window.location.origin}${router.resolve({ path: `/forms/${row.id}` }).href}`
+  const webLink = buildFormWebLink(row)
   const mpPath = `/pages/forms/index?id=${row.id}`
   const fullText = `Web链接: ${webLink}\n小程序路径: ${mpPath}`
   try {
@@ -435,6 +492,47 @@ async function copyFormLink(row: any) {
   } catch {
     ElMessage.info(fullText)
   }
+}
+
+function openQrDialog(row: any) {
+  qrForm.value = row || {}
+  customQrUrl.value = row?.id ? buildFormWebLink(row) : ''
+  qrVisible.value = true
+}
+
+async function copyQrUrl() {
+  if (!qrTargetUrl.value) {
+    ElMessage.warning('请先输入 URL')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(qrTargetUrl.value)
+    ElMessage.success('URL 已复制')
+  } catch {
+    ElMessage.info(qrTargetUrl.value)
+  }
+}
+
+async function copyQrScreenLink() {
+  if (!qrTargetUrl.value) {
+    ElMessage.warning('请先输入 URL')
+    return
+  }
+  const screenLink = buildQrScreenLink()
+  try {
+    await navigator.clipboard.writeText(screenLink)
+    ElMessage.success('大屏链接已复制')
+  } catch {
+    ElMessage.info(screenLink)
+  }
+}
+
+function openQrScreen() {
+  if (!qrTargetUrl.value) {
+    ElMessage.warning('请先输入 URL')
+    return
+  }
+  window.open(buildQrScreenLink(), '_blank')
 }
 
 function previewSchema(row: any) {
@@ -733,9 +831,57 @@ onMounted(() => {
   align-items: center;
 }
 
+.qr-share {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.qr-share__preview {
+  display: grid;
+  aspect-ratio: 1;
+  place-items: center;
+  padding: 16px;
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.qr-share__preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.qr-share__preview span {
+  color: var(--oa-muted);
+  font-weight: 700;
+}
+
+.qr-share__content {
+  min-width: 0;
+}
+
+.qr-share__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 @media (max-width: 760px) {
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .qr-share {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-share__preview {
+    width: min(100%, 280px);
+    justify-self: center;
   }
 
   .designer-card__grid,

@@ -193,6 +193,11 @@ const routes = [
     component: () => import('../views/site/LotteryScreen.vue'),
   },
   {
+    path: '/qr-screen',
+    name: 'qr-screen',
+    component: () => import('../views/site/QrScreen.vue'),
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('../views/admin/Login.vue'),

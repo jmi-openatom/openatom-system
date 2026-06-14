@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install *)",
+      "Bash(pnpm run *)",
+      "Bash(./mvnw clean *)",
+      "Bash(mvn wrapper:wrapper *)",
+      "Bash(curl -o lab-management-system/backend/mvnw https://raw.githubusercontent.com/takari/maven-wrapper/master/mvnw)",
+      "Bash(chmod +x lab-management-system/backend/mvnw)",
+      "Bash(curl -o mvnw https://raw.githubusercontent.com/takari/maven-wrapper/master/mvnw)",
+      "Bash(chmod +x mvnw)",
+      "Bash(chmod +x ../../mvnw)",
+      "Bash(cp ../../mvnw .)"
+    ]
+  }
+}
