@@ -11,6 +11,7 @@ const adminFallbackRoutes = [
   '/admin/positions',
   '/admin/recruitment-campaigns',
   '/admin/site-forms',
+  '/admin/qr-center',
   '/admin/form-submissions',
   '/admin/lotteries',
   '/admin/votes',
@@ -258,6 +259,12 @@ const routes = [
         name: 'admin-site-forms',
         meta: { permissions: ['site-form:list'] },
         component: () => import('../views/admin/SiteForms.vue'),
+      },
+      {
+        path: 'qr-center',
+        name: 'admin-qr-center',
+        meta: { permissions: [] },
+        component: () => import('../views/admin/QrCenter.vue'),
       },
       {
         path: 'form-submissions',

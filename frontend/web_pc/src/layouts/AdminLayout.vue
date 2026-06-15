@@ -117,6 +117,7 @@ import {
   Lock,
   Menu,
   MessageBox,
+  Monitor,
   OfficeBuilding,
   Picture,
   Tickets,
@@ -163,6 +164,12 @@ const menus = ref([
     label: '表单管理',
     icon: DocumentChecked,
     permissions: ['site-form:list'],
+  },
+  {
+    path: '/admin/qr-center',
+    label: '二维码中心',
+    icon: Monitor,
+    permissions: [],
   },
   {
     path: '/admin/form-submissions',

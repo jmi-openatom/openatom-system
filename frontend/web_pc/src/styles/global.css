@@ -24,17 +24,15 @@
   --input: 0 0% 88%;
   --ring: 240 3% 12%;
   --radius: 0.5rem;
-  --oa-primary: #0f172a;
-  --oa-primary-dark: #020617;
-  --oa-primary-soft: #e0f2fe;
-  --oa-accent: #06b6d4;
-  --oa-accent-2: #22c55e;
-  --oa-warm: #f59e0b;
-  --oa-gradient: linear-gradient(135deg, #0f172a 0%, #0e7490 48%, #16a34a 100%);
+  --oa-primary: #1d1d1f;
+  --oa-primary-dark: #000000;
+  --oa-primary-soft: #f5f5f7;
+  --oa-accent: #333333;
+  --oa-accent-2: #7a7a7a;
+  --oa-warm: #666666;
+  --oa-gradient: linear-gradient(135deg, #1d1d1f 0%, #333333 52%, #6e6e73 100%);
   --oa-hero-gradient:
-    radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.24), transparent 32%),
-    radial-gradient(circle at 86% 18%, rgba(34, 197, 94, 0.16), transparent 34%),
-    linear-gradient(180deg, #f8fbff 0%, #edf7ff 42%, #ffffff 100%);
+    linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 48%, #ffffff 100%);
   --oa-primary-on-dark: #ffffff;
   --oa-focus-ring: rgba(29, 29, 31, 0.12);
   --oa-text: #1d1d1f;
@@ -243,7 +241,7 @@ body {
 
 ::selection {
   color: #ffffff;
-  background: rgba(14, 116, 144, 0.86);
+  background: rgba(29, 29, 31, 0.86);
 }
 
 a {
@@ -524,6 +522,21 @@ svg {
   --el-button-active-bg-color: var(--oa-active-hover-bg);
   --el-button-active-border-color: var(--oa-active-hover-bg);
   --el-button-active-text-color: var(--oa-active-text);
+}
+
+.el-button--success.is-plain,
+.el-button--warning.is-plain,
+.el-button--info.is-plain,
+.el-button--danger.is-plain {
+  --el-button-bg-color: var(--oa-button-bg);
+  --el-button-border-color: var(--oa-button-border);
+  --el-button-text-color: var(--oa-button-text);
+  --el-button-hover-bg-color: var(--oa-button-hover-bg);
+  --el-button-hover-border-color: var(--oa-button-hover-border);
+  --el-button-hover-text-color: var(--oa-button-hover-text);
+  --el-button-active-bg-color: var(--oa-button-hover-bg);
+  --el-button-active-border-color: var(--oa-button-hover-border);
+  --el-button-active-text-color: var(--oa-button-hover-text);
 }
 
 .el-button--primary:focus-visible,
