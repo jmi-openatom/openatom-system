@@ -1,6 +1,6 @@
 # OpenAtom System
 
-OpenAtom System 是一个基于 Spring Boot 3 + Vue 3 Option 的社团/组织管理系统，旨在提供高效的成员管理、招新流程、活动组织及文书审批功能。
+OpenAtom System 是一个基于 Spring Boot 3 + Vue 3 组合式 的社团/组织管理系统，旨在提供高效的成员管理、招新流程、活动组织及文书审批功能。
 
 ## 🚀 技术栈
 
@@ -32,7 +32,8 @@ OpenAtom System 是一个基于 Spring Boot 3 + Vue 3 Option 的社团/组织管
 ### 后端启动
 
 1. 本地开发如使用独立 MySQL，可执行 `backend/db/create_table.sql` 初始化。
-2. 在 `backend/src/main/resources/application-dev.yaml` 中直接填写本地 MySQL 的用户名和密码；默认连接 `127.0.0.1:3306/openatom-system`。
+2. 在 `backend/src/main/resources/application-dev.yaml` 中直接填写本地 MySQL 的用户名和密码；默认连接
+   `127.0.0.1:3306/openatom-system`。
 3. 运行 `OpenatomSystemApplication`。
 
 ### 前端启动
@@ -62,7 +63,9 @@ docker-compose up -d --build
 - **Frontend**: 暴露端口 80 (集成 Nginx 反向代理)
 - **Avatar Storage**: 用户头像写入 Docker 持久卷 `avatar_data`，容器重建后仍会保留
 
-Docker 部署前，请先在宿主机 MySQL 中创建所需数据库，并在 `backend/src/main/resources/application-prod.yaml` 中直接填写数据库地址、用户名和密码。生产 Backend 使用 Linux host 网络，可直接连接只监听 `127.0.0.1:3306` 的宝塔 MySQL，不需要开放 MySQL 到 Docker 网段或公网。后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
+Docker 部署前，请先在宿主机 MySQL 中创建所需数据库，并在 `backend/src/main/resources/application-prod.yaml`
+中直接填写数据库地址、用户名和密码。生产 Backend 使用 Linux host 网络，可直接连接只监听 `127.0.0.1:3306` 的宝塔 MySQL，不需要开放
+MySQL 到 Docker 网段或公网。后端启动时会通过 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的版本化迁移脚本。
 
 修改数据库配置后可重启并检查后端：
 
@@ -102,7 +105,8 @@ docker compose logs --tail=200 backend
 - `www.jmi-openatom.cn` 只代理 Frontend：`127.0.0.1:18080`
 - `api.jmi-openatom.cn` 只代理 Backend：`127.0.0.1:8921`
 
-如果宝塔 Nginx 和 Docker Compose 运行在同一台服务器，反向代理目标应使用本机地址，不要使用服务器公网 IP。`www.jmi-openatom.cn` 的反向代理配置：
+如果宝塔 Nginx 和 Docker Compose 运行在同一台服务器，反向代理目标应使用本机地址，不要使用服务器公网 IP。
+`www.jmi-openatom.cn` 的反向代理配置：
 
 ```nginx
 location / {
@@ -130,7 +134,9 @@ location / {
 }
 ```
 
-Frontend Docker 镜像默认使用 `VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1`，浏览器 API 请求不应发送到 `www.jmi-openatom.cn/api/v1`。修改该构建参数后必须重新构建 Frontend 容器。
+Frontend Docker 镜像默认使用
+`VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1`，浏览器 API 请求不应发送到 `www.jmi-openatom.cn/api/v1`。修改该构建参数后必须重新构建
+Frontend 容器。
 
 出现 Nginx 错误页时，在服务器终端依次检查：
 
@@ -149,12 +155,16 @@ tail -n 100 /www/wwwlogs/www.jmi-openatom.cn.error.log
 tail -n 100 /www/wwwlogs/api.jmi-openatom.cn.error.log
 ```
 
-Frontend 请求失败表示 Frontend 容器未运行或 `18080` 未监听；Backend 请求失败表示 Backend 未运行；本机 Backend 请求成功但公开 API 域名失败，表示 `api.jmi-openatom.cn` 的宝塔站点或 DNS 配置有误。错误日志中如果上游仍为服务器公网 IP，需要先改为对应的 `127.0.0.1` 端口。
+Frontend 请求失败表示 Frontend 容器未运行或 `18080` 未监听；Backend 请求失败表示 Backend 未运行；本机 Backend 请求成功但公开
+API 域名失败，表示 `api.jmi-openatom.cn` 的宝塔站点或 DNS 配置有误。错误日志中如果上游仍为服务器公网 IP，需要先改为对应的
+`127.0.0.1` 端口。
 
 > 头像上传后会保存到容器内 `/app/uploads/avatars`，该目录由 `avatar_data` 持久卷承载。  
 > 如果旧版本曾把头像直接写在容器临时文件系统中，那么在容器被重建后，数据库中的头像 URL 可能仍然存在，但原始图片文件已经丢失，需要用户重新上传一次。
 
-当前接入方式采用保守切换：已有生产库首次接入 Flyway 时会先 baseline 到版本 `0`，随后执行幂等的 `V1__init_schema.sql` 以补齐基础表；现存历史兼容逻辑仍由应用内的 `SchemaCompatibilityInitializer` 兜底；从后续新增数据库变更开始，再按 `V2__...sql`、`V3__...sql` 的方式持续演进。
+当前接入方式采用保守切换：已有生产库首次接入 Flyway 时会先 baseline 到版本 `0`，随后执行幂等的 `V1__init_schema.sql`
+以补齐基础表；现存历史兼容逻辑仍由应用内的 `SchemaCompatibilityInitializer` 兜底；从后续新增数据库变更开始，再按
+`V2__...sql`、`V3__...sql` 的方式持续演进。
 
 ## 🔄 持续集成与部署 (CI/CD)
 
