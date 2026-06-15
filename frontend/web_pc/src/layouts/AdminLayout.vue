@@ -42,6 +42,21 @@
           </div>
         </div>
         <div class="admin-header__actions">
+          <el-select
+            v-if="manageableClubs.length"
+            :model-value="currentClubId"
+            class="admin-club-switcher"
+            filterable
+            placeholder="当前社团"
+            @change="handleClubChange"
+          >
+            <el-option
+              v-for="club in manageableClubs"
+              :key="club.clubId"
+              :label="club.clubName"
+              :value="club.clubId"
+            />
+          </el-select>
           <ThemeToggle />
           <el-button :icon="HomeFilled" @click="$router.push('/')">官网</el-button>
           <el-dropdown @command="handleCommand">
@@ -99,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowDown,
@@ -130,12 +145,15 @@ import { clearSession, getCurrentUser } from '@/utils/auth.ts'
 import { hasAnyPermission } from '@/utils/permission.ts'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { useRouteTransition } from '@/composables/useRouteTransition'
+import { useCurrentClub } from '@/composables/useCurrentClub'
 
 const mobileMenuVisible = ref(false)
 
 const user = ref(getCurrentUser())
 
 const version = ref(__APP_VERSION__)
+
+const { manageableClubs, currentClubId, loadCurrentClubs, setCurrentClub } = useCurrentClub()
 
 const menus = ref([
   // ==== 1. 数据概览 ====
@@ -216,6 +234,15 @@ async function handleCommand(command: string) {
     router.replace('/login')
   }
 }
+
+function handleClubChange(clubId: string | number) {
+  setCurrentClub(clubId)
+  router.replace({ path: route.path, query: { ...route.query, clubId: String(clubId) } })
+}
+
+onMounted(() => {
+  loadCurrentClubs()
+})
 
 onBeforeUnmount(() => {
   routeTransition.kill()
@@ -354,6 +381,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.admin-club-switcher {
+  width: 190px;
+  flex: 0 0 190px;
 }
 
 .admin-main {
@@ -516,6 +548,11 @@ onBeforeUnmount(() => {
     justify-content: flex-end;
   }
 
+  .admin-club-switcher {
+    width: 150px;
+    flex-basis: 150px;
+  }
+
   .admin-main {
     padding: 12px;
     overflow-x: hidden;
@@ -531,6 +568,11 @@ onBeforeUnmount(() => {
 
   .admin-header__actions {
     gap: 6px;
+  }
+
+  .admin-club-switcher {
+    width: 128px;
+    flex-basis: 128px;
   }
 
   .admin-header__actions :deep(.el-button span) {

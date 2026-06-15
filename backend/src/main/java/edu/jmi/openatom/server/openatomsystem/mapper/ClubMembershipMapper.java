@@ -93,9 +93,17 @@ public interface ClubMembershipMapper extends BaseMapper<ClubMembership> {
   default List<ClubMembership> selectByConditions(
       Integer clubId, Integer departmentId, Integer positionId, String status,
       List<Integer> userIds) {
+    return selectByConditions(clubId, null, departmentId, positionId, status, userIds);
+  }
+
+  /** 按条件查询成员列表，并限制在指定社团集合内 */
+  default List<ClubMembership> selectByConditions(
+      Integer clubId, List<Integer> clubIds, Integer departmentId, Integer positionId, String status,
+      List<Integer> userIds) {
     LambdaQueryWrapper<ClubMembership> wrapper = new LambdaQueryWrapper<>();
     wrapper
         .eq(clubId != null, ClubMembership::getClubId, clubId)
+        .in(clubId == null && clubIds != null && !clubIds.isEmpty(), ClubMembership::getClubId, clubIds)
         .eq(departmentId != null, ClubMembership::getDepartmentId, departmentId)
         .eq(positionId != null, ClubMembership::getPositionId, positionId)
         .eq(status != null && !status.isBlank(), ClubMembership::getStatus, status)

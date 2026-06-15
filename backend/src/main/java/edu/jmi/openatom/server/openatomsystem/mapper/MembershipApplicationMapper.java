@@ -49,10 +49,24 @@ public interface MembershipApplicationMapper extends BaseMapper<MembershipApplic
       Integer departmentId,
       String keyword,
       List<Integer> userIds) {
+    return selectPageByConditions(page, campaignId, clubId, null, status, departmentId, keyword, userIds);
+  }
+
+  /** 条件查询申请分页，并限制在指定社团集合内 */
+  default Page<MembershipApplication> selectPageByConditions(
+      Page<MembershipApplication> page,
+      Integer campaignId,
+      Integer clubId,
+      List<Integer> clubIds,
+      String status,
+      Integer departmentId,
+      String keyword,
+      List<Integer> userIds) {
     LambdaQueryWrapper<MembershipApplication> wrapper = new LambdaQueryWrapper<>();
     wrapper
         .eq(campaignId != null, MembershipApplication::getCampaignId, campaignId)
         .eq(clubId != null, MembershipApplication::getClubId, clubId)
+        .in(clubId == null && clubIds != null && !clubIds.isEmpty(), MembershipApplication::getClubId, clubIds)
         .eq(status != null && !status.isBlank(), MembershipApplication::getStatus, status)
         .and(
             departmentId != null,
@@ -75,10 +89,17 @@ public interface MembershipApplicationMapper extends BaseMapper<MembershipApplic
   /** 按条件查询所有申请（不分页，用于导出） */
   default List<MembershipApplication> selectAllByConditions(
       Integer campaignId, Integer clubId, String status, Integer departmentId, String keyword, List<Integer> userIds) {
+    return selectAllByConditions(campaignId, clubId, null, status, departmentId, keyword, userIds);
+  }
+
+  /** 按条件查询所有申请（不分页，用于导出），并限制在指定社团集合内 */
+  default List<MembershipApplication> selectAllByConditions(
+      Integer campaignId, Integer clubId, List<Integer> clubIds, String status, Integer departmentId, String keyword, List<Integer> userIds) {
     LambdaQueryWrapper<MembershipApplication> wrapper = new LambdaQueryWrapper<>();
     wrapper
         .eq(campaignId != null, MembershipApplication::getCampaignId, campaignId)
         .eq(clubId != null, MembershipApplication::getClubId, clubId)
+        .in(clubId == null && clubIds != null && !clubIds.isEmpty(), MembershipApplication::getClubId, clubIds)
         .eq(status != null && !status.isBlank(), MembershipApplication::getStatus, status)
         .and(
             departmentId != null,

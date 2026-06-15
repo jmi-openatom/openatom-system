@@ -22,6 +22,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
+import edu.jmi.openatom.server.openatomsystem.service.ClubAccessService;
 import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -83,6 +84,7 @@ public class AuthServiceImpl implements AuthService {
 	private final ClientIpResolver clientIpResolver;
 	private final RegistrationSettingService registrationSettingService;
 	private final PointService pointService;
+	private final ClubAccessService clubAccessService;
 	private final HttpClient httpClient = HttpClient.newHttpClient();
 
 	@Value("${app.miniapp.app-id:}")
@@ -347,7 +349,8 @@ public class AuthServiceImpl implements AuthService {
 		AuthSnapshot snapshot = buildAuthSnapshot(userId);
 		return Result.success(
 				ResponseCurrentUserVO.builder().user(buildSafeUser(user))
-						.roles(snapshot.roles()).permissions(snapshot.permissions()).build());
+						.roles(snapshot.roles()).permissions(snapshot.permissions())
+						.clubs(clubAccessService.myClubs().getData()).build());
 	}
 
 	@Override

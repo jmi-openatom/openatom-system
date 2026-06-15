@@ -20,4 +20,5 @@ public class ResponseCurrentUserVO {
   private User user;
   private List<String> roles;
   private List<String> permissions;
+  private List<ResponseClubAccessVO> clubs;
 }

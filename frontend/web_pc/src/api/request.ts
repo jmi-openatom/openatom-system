@@ -34,6 +34,8 @@ service.interceptors.request.use(
       config.headers.jmiopenatom = token
       config.headers.Authorization = `Bearer ${token}` // 兼容常见 Bearer 鉴权
     }
+    const currentClubId = localStorage.getItem('openatom_current_club_id')
+    if (currentClubId) config.headers['X-Club-Id'] = currentClubId
     return config
   },
 )
