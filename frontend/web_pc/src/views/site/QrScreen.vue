@@ -8,7 +8,7 @@
     <section class="qr-panel" aria-live="polite">
       <div class="qr-copy">
         <span class="qr-kicker">OpenAtom QR System</span>
-        <h1>{{ titleText }}</h1>
+        <h1 :style="titleStyle">{{ titleText }}</h1>
         <p>{{ subtitleText }}</p>
         <div class="qr-status">
           <span>{{ targetUrl ? 'READY' : 'WAITING' }}</span>
@@ -42,6 +42,13 @@ const targetUrl = computed(() => normalizeQueryValue(route.query.url))
 const titleText = computed(() => normalizeQueryValue(route.query.title) || '扫码填写表单')
 const subtitleText = computed(() => normalizeQueryValue(route.query.subtitle) || 'OpenAtom 在线二维码')
 const qrUrl = computed(() => (targetUrl.value ? qrSvgDataUrl(targetUrl.value) : ''))
+const titleStyle = computed(() => {
+  const length = titleText.value.length
+  const size = Math.max(30, Math.min(76, 92 - length * 1.45))
+  return {
+    fontSize: `${size}px`,
+  }
+})
 
 function normalizeQueryValue(value: unknown) {
   if (Array.isArray(value)) return String(value[0] || '').trim()
@@ -57,7 +64,7 @@ function normalizeQueryValue(value: unknown) {
   min-height: 100svh;
   place-items: center;
   overflow: hidden;
-  padding: clamp(28px, 5vw, 72px);
+  padding: 44px;
   background:
     linear-gradient(rgba(29, 29, 31, 0.055) 1px, transparent 1px),
     linear-gradient(90deg, rgba(29, 29, 31, 0.055) 1px, transparent 1px),
@@ -98,23 +105,26 @@ function normalizeQueryValue(value: unknown) {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 42vw);
-  gap: clamp(32px, 6.5vw, 104px);
-  align-items: center;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 24px;
   width: min(1280px, 100%);
 }
 
 .qr-copy {
   display: grid;
-  gap: clamp(16px, 2vw, 28px);
+  justify-items: center;
+  gap: 14px;
+  width: 100%;
   min-width: 0;
+  text-align: center;
 }
 
 .qr-kicker,
 .qr-copy p {
   margin: 0;
   color: #6e6e73;
-  font-size: clamp(17px, 1.5vw, 24px);
+  font-size: 22px;
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -133,12 +143,14 @@ function normalizeQueryValue(value: unknown) {
 }
 
 .qr-copy h1 {
+  max-width: 100%;
   margin: 0;
-  overflow-wrap: anywhere;
-  font-size: clamp(48px, 7.2vw, 118px);
+  overflow: hidden;
   font-weight: 700;
   letter-spacing: 0;
-  line-height: 0.94;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .qr-status {
@@ -168,7 +180,7 @@ function normalizeQueryValue(value: unknown) {
 
 .qr-status strong {
   color: #333333;
-  font-size: clamp(14px, 1.2vw, 18px);
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -177,9 +189,9 @@ function normalizeQueryValue(value: unknown) {
   display: grid;
   aspect-ratio: 1;
   place-items: center;
-  width: min(42vw, 560px);
+  width: min(44vh, 520px);
   min-width: 360px;
-  padding: clamp(12px, 1.8vw, 24px);
+  padding: 20px;
   border: 1px solid rgba(29, 29, 31, 0.12);
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.72);
@@ -206,7 +218,7 @@ function normalizeQueryValue(value: unknown) {
   aspect-ratio: 1;
   width: 100%;
   place-items: center;
-  padding: clamp(20px, 3vw, 42px);
+  padding: 38px;
   background: #ffffff;
   border-radius: 18px;
 }
@@ -229,7 +241,7 @@ function normalizeQueryValue(value: unknown) {
 
 .qr-empty span {
   color: #1d1d1f;
-  font-size: clamp(64px, 8vw, 112px);
+  font-size: 88px;
   font-weight: 700;
   line-height: 1;
 }
@@ -243,14 +255,14 @@ function normalizeQueryValue(value: unknown) {
 .qr-url {
   grid-column: 1 / -1;
   max-width: 100%;
-  margin: clamp(10px, 2vw, 24px) 0 0;
+  margin: 2px 0 0;
   overflow: hidden;
   padding: 14px 18px;
   color: #6e6e73;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 999px;
-  font-size: clamp(14px, 1.35vw, 20px);
+  font-size: 18px;
   font-weight: 500;
   letter-spacing: 0;
   line-height: 1.25;
@@ -261,19 +273,19 @@ function normalizeQueryValue(value: unknown) {
 
 @media (max-width: 860px) {
   .qr-screen {
-    padding: 28px 0;
+    padding: 28px 16px;
     overflow: auto;
   }
 
   .qr-panel {
     grid-template-columns: 1fr;
     justify-items: center;
-    width: min(100%, calc(100vw - 32px));
+    width: 100%;
     text-align: center;
   }
 
-  .qr-copy {
-    justify-items: center;
+  .qr-copy h1 {
+    white-space: normal;
   }
 
   .qr-frame {
