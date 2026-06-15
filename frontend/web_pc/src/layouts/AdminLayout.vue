@@ -138,160 +138,52 @@ const user = ref(getCurrentUser())
 const version = ref(__APP_VERSION__)
 
 const menus = ref([
+  // ==== 1. 数据概览 ====
   { path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: [] },
-  {
-    path: '/admin/oauth-clients',
-    label: '认证应用',
-    icon: Lock,
-    permissions: ['oauth-client:list'],
-  },
+
+  // ==== 2. 日常最高频：用户与核心业务（活动、签到、请假） ====
   { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
-  {
-    path: '/admin/clubs',
-    label: '社团管理',
-    icon: OfficeBuilding,
-    permissions: ['club:list'],
-  },
+  { path: '/admin/memberships', label: '成员管理', icon: UserFilled, permissions: ['membership:list'] },
+  { path: '/admin/activities', label: '活动管理', icon: Calendar, permissions: ['activity:list'] },
+  { path: '/admin/check-ins', label: '扫码签到', icon: Tickets, permissions: ['check-in:list'] },
+  { path: '/admin/leaves', label: '请假审批', icon: DocumentChecked, permissions: ['leave-application:list'] },
+
+  // ==== 3. 表单与数据收集（高频） ====
+  { path: '/admin/site-forms', label: '表单管理', icon: DocumentChecked, permissions: ['site-form:list'] },
+  { path: '/admin/form-submissions', label: '表单记录', icon: Tickets, permissions: ['site-form:detail'] },
+
+  // ==== 4. 社团基础与招新链路 ====
+  { path: '/admin/clubs', label: '社团管理', icon: OfficeBuilding, permissions: ['club:list'] },
   { path: '/admin/positions', label: '岗位管理', icon: List, permissions: ['position:list'] },
-  {
-    path: '/admin/recruitment-campaigns',
-    label: '招新计划',
-    icon: DocumentChecked,
-    permissions: ['recruitment-campaign:list'],
-  },
-  {
-    path: '/admin/site-forms',
-    label: '表单管理',
-    icon: DocumentChecked,
-    permissions: ['site-form:list'],
-  },
-  {
-    path: '/admin/qr-center',
-    label: '二维码中心',
-    icon: Monitor,
-    permissions: [],
-  },
-  {
-    path: '/admin/form-submissions',
-    label: '表单记录',
-    icon: Tickets,
-    permissions: ['site-form:detail'],
-  },
-  {
-    path: '/admin/lotteries',
-    label: '抽奖系统',
-    icon: Trophy,
-    permissions: ['lottery:list'],
-  },
-  {
-    path: '/admin/votes',
-    label: '投票管理',
-    icon: Tickets,
-    permissions: ['vote:list'],
-  },
-  {
-    path: '/admin/points',
-    label: '积分兑换',
-    icon: Coin,
-    permissions: ['point:account:list', 'point:item:list', 'point:redemption:list'],
-  },
-  {
-    path: '/admin/office-documents',
-    label: '文书中心',
-    icon: DocumentChecked,
-    permissions: ['document:list'],
-  },
-  {
-    path: '/admin/images',
-    label: '图床管理',
-    icon: Picture,
-    permissions: ['image:list'],
-  },
-  {
-    path: '/admin/showcase-apps',
-    label: '应用展示',
-    icon: Box,
-    permissions: ['showcase-app:list'],
-  },
-  {
-    path: '/admin/data-open',
-    label: '开放平台',
-    icon: Connection,
-    permissions: ['data-open:list'],
-  },
-  {
-    path: '/admin/leaves',
-    label: '请假审批',
-    icon: DocumentChecked,
-    permissions: ['leave-application:list'],
-  },
-  {
-    path: '/admin/school-calendar',
-    label: '校历设置',
-    icon: Calendar,
-    permissions: ['school-calendar:manage'],
-  },
-  {
-    path: '/admin/activities',
-    label: '活动管理',
-    icon: Calendar,
-    permissions: ['activity:list'],
-  },
-  {
-    path: '/admin/blogs',
-    label: '博客管理',
-    icon: EditPen,
-    permissions: ['blog:list'],
-  },
-  {
-    path: '/admin/check-ins',
-    label: '扫码签到',
-    icon: Tickets,
-    permissions: ['check-in:list'],
-  },
-  {
-    path: '/admin/bot-groups',
-    label: 'QQ机器人',
-    icon: ChatDotRound,
-    permissions: ['bot-management:list'],
-  },
+  { path: '/admin/recruitment-campaigns', label: '招新计划', icon: DocumentChecked, permissions: ['recruitment-campaign:list'] },
+  { path: '/admin/applications', label: '入会申请', icon: DocumentChecked, permissions: ['application:list'] },
+  { path: '/admin/interviews', label: '面试管理', icon: MessageBox, permissions: ['interview:list'] },
+
+  // ==== 5. 互动营销与运营工具 ====
+  { path: '/admin/votes', label: '投票管理', icon: Tickets, permissions: ['vote:list'] },
+  { path: '/admin/lotteries', label: '抽奖系统', icon: Trophy, permissions: ['lottery:list'] },
+  { path: '/admin/points', label: '积分兑换', icon: Coin, permissions: ['point:account:list', 'point:item:list', 'point:redemption:list'] },
   { path: '/admin/awards', label: '获奖经历', icon: Trophy, permissions: ['award:list'] },
-  {
-    path: '/admin/applications',
-    label: '入会申请',
-    icon: DocumentChecked,
-    permissions: ['application:list'],
-  },
-  {
-    path: '/admin/interviews',
-    label: '面试管理',
-    icon: MessageBox,
-    permissions: ['interview:list'],
-  },
-  {
-    path: '/admin/memberships',
-    label: '成员管理',
-    icon: UserFilled,
-    permissions: ['membership:list'],
-  },
-  {
-    path: '/admin/roles',
-    label: '角色权限',
-    icon: Lock,
-    permissions: ['role:list', 'permission:list'],
-  },
-  {
-    path: '/admin/logs',
-    label: '系统日志',
-    icon: List,
-    permissions: ['log:operation:list', 'log:login:list'],
-  },
-  {
-    path: '/admin/notifications',
-    label: '通知管理',
-    icon: Bell,
-    permissions: ['notification:list'],
-  },
+
+  // ==== 6. 内容与媒体中心 ====
+  { path: '/admin/blogs', label: '博客管理', icon: EditPen, permissions: ['blog:list'] },
+  { path: '/admin/office-documents', label: '文书中心', icon: DocumentChecked, permissions: ['document:list'] },
+  { path: '/admin/images', label: '图床管理', icon: Picture, permissions: ['image:list'] },
+
+  // ==== 7. 公共通知与基础配置 ====
+  { path: '/admin/school-calendar', label: '校历设置', icon: Calendar, permissions: ['school-calendar:manage'] },
+  { path: '/admin/notifications', label: '通知管理', icon: Bell, permissions: ['notification:list'] },
+  { path: '/admin/qr-center', label: '二维码中心', icon: Monitor, permissions: [] },
+
+  // ==== 8. 后台管理、权限与安全配置（低频操作下沉） ====
+  { path: '/admin/roles', label: '角色权限', icon: Lock, permissions: ['role:list', 'permission:list'] },
+  { path: '/admin/oauth-clients', label: '认证应用', icon: Lock, permissions: ['oauth-client:list'] },
+  { path: '/admin/showcase-apps', label: '应用展示', icon: Box, permissions: ['showcase-app:list'] },
+  { path: '/admin/data-open', label: '开放平台', icon: Connection, permissions: ['data-open:list'] },
+  { path: '/admin/bot-groups', label: 'QQ机器人', icon: ChatDotRound, permissions: ['bot-management:list'] },
+  { path: '/admin/logs', label: '系统日志', icon: List, permissions: ['log:operation:list', 'log:login:list'] },
+
+  // ==== 9. 出口 ====
   { path: '/', label: '返回官网', icon: Connection, permissions: [] },
 ])
 
