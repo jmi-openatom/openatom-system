@@ -11,6 +11,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import edu.jmi.openatom.server.openatomsystem.service.ClubAccessService;
 import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
 import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import java.util.List;
@@ -44,6 +45,7 @@ public class MembershipServiceImpl implements MembershipService {
   private final PasswordService passwordService;
   private final RoleMapper roleMapper;
   private final UserRoleMapper userRoleMapper;
+  private final ClubAccessService clubAccessService;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -51,6 +53,7 @@ public class MembershipServiceImpl implements MembershipService {
   public Result<String> finalDecision(Integer applicationId, RequestFinalDecisionDTO request) {
     MembershipApplication application = applicationId == null ? null : applicationMapper.selectById(applicationId);
     if (application == null) return Result.error(404, "申请不存在");
+    if (!clubAccessService.canManageClub(application.getClubId())) return Result.error(403, "无权处理该社团申请");
     if (!DECISIONS.contains(request.getDecision())) return Result.error(400, "终审决策不合法");
     Integer userId = application.getUserId();
     String credentialInfo = "";
@@ -97,17 +100,22 @@ public class MembershipServiceImpl implements MembershipService {
 
   @Override
   public Result<List<ResponseMembershipVO>> list(Integer clubId, Integer departmentId, Integer positionId, String status, String keyword) {
+    Integer scopedClubId = clubAccessService.requireManageableClub(clubId);
+    if (clubId != null && scopedClubId == null) return Result.error(403, "无权查看该社团成员");
+    List<Integer> scopedClubIds = scopedClubId == null ? clubAccessService.manageableClubIds() : null;
+    if (scopedClubId == null && scopedClubIds.isEmpty()) return Result.success(List.of());
     List<Integer> userIds = null;
     if (keyword != null && !keyword.isBlank()) {
       userIds = userMapper.searchByNameKeyword(keyword).stream().map(User::getId).toList();
       if (userIds.isEmpty()) return Result.success(List.of());
     }
-    return Result.success(toResponseList(membershipMapper.selectByConditions(clubId, departmentId, positionId, status, userIds)));
+    return Result.success(toResponseList(membershipMapper.selectByConditions(scopedClubId, scopedClubIds, departmentId, positionId, status, userIds)));
   }
 
   @Override
   @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> create(RequestCreateMembershipDTO request) {
+    if (!clubAccessService.canManageClub(request.getClubId())) return Result.error(403, "无权在该社团新增成员");
     Result<String> v = validateMembershipRefs(request.getUserId(), request.getClubId(), request.getDepartmentId(), request.getPositionId());
     if (v != null) return v;
     if (membershipMapper.countActiveNotLeft(request.getUserId(), request.getClubId()) > 0) return Result.error(409, "用户已是该社团成员");
@@ -118,6 +126,7 @@ public class MembershipServiceImpl implements MembershipService {
   @Override
   public Result<ClubMembership> detail(Integer membershipId) {
     ClubMembership m = findMembership(membershipId);
+    if (m != null && !clubAccessService.canManageClub(m.getClubId()) && !isSelfMembership(m)) return Result.error(403, "无权查看该成员");
     return m == null ? Result.error(404, "成员不存在") : Result.success(m);
   }
 
@@ -126,6 +135,7 @@ public class MembershipServiceImpl implements MembershipService {
   public Result<String> update(Integer membershipId, RequestUpdateMembershipDTO request) {
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");
+    if (!clubAccessService.canManageClub(m.getClubId())) return Result.error(403, "无权修改该社团成员");
     Result<String> v = validateMembershipRefs(m.getUserId(), m.getClubId(), request.getDepartmentId(), request.getPositionId());
     if (v != null) return v;
     if (request.getDepartmentId() != null) m.setDepartmentId(request.getDepartmentId());
@@ -143,6 +153,7 @@ public class MembershipServiceImpl implements MembershipService {
   public Result<String> assignPosition(Integer membershipId, RequestAssignPositionDTO request) {
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");
+    if (!clubAccessService.canManageClub(m.getClubId())) return Result.error(403, "无权分配该社团岗位");
     ClubPosition p = positionMapper.selectById(request.getPositionId());
     if (p == null || !m.getClubId().equals(p.getClubId())) return Result.error(400, "岗位不存在或不属于当前社团");
     m.setPositionId(p.getId()); m.setDepartmentId(p.getDepartmentId());
@@ -156,6 +167,7 @@ public class MembershipServiceImpl implements MembershipService {
     if (!STATUSES.contains(request.getStatus())) return Result.error(400, "成员状态不合法");
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");
+    if (!clubAccessService.canManageClub(m.getClubId())) return Result.error(403, "无权修改该社团成员状态");
     m.setStatus(request.getStatus());
     if ("left".equals(request.getStatus())) m.setLeftAt(Times.now());
     membershipMapper.updateById(m);
@@ -172,6 +184,7 @@ public class MembershipServiceImpl implements MembershipService {
     for (Integer id : request.getMembershipIds()) {
       ClubMembership m = findMembership(id);
       if (m == null) continue;
+      if (!clubAccessService.canManageClub(m.getClubId())) continue;
       m.setStatus(request.getStatus());
       if ("left".equals(request.getStatus())) m.setLeftAt(Times.now());
       membershipMapper.updateById(m);
@@ -187,10 +200,12 @@ public class MembershipServiceImpl implements MembershipService {
   public Result<String> batchCreate(RequestBatchCreateMembershipDTO request) {
     int count = 0;
     for (RequestBatchCreateMembershipDTO.MembershipItem item : request.getMemberships()) {
-      Result<String> v = validateMembershipRefs(item.getUserId(), item.getClubId(), item.getDepartmentId(), item.getPositionId());
+      Integer itemClubId = item.getClubId();
+      if (!clubAccessService.canManageClub(itemClubId)) continue;
+      Result<String> v = validateMembershipRefs(item.getUserId(), itemClubId, item.getDepartmentId(), item.getPositionId());
       if (v != null) continue;
-      if (membershipMapper.countActiveNotLeft(item.getUserId(), item.getClubId()) > 0) continue;
-      ensureMembership(item.getUserId(), item.getClubId(), item.getDepartmentId(), item.getPositionId(),
+      if (membershipMapper.countActiveNotLeft(item.getUserId(), itemClubId) > 0) continue;
+      ensureMembership(item.getUserId(), itemClubId, item.getDepartmentId(), item.getPositionId(),
           item.getStatus() == null ? "probation" : item.getStatus(), item.getFeatured(), item.getSortOrder());
       count++;
     }
@@ -202,6 +217,7 @@ public class MembershipServiceImpl implements MembershipService {
   public Result<String> forceExit(Integer membershipId, String reason) {
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");
+    if (!clubAccessService.canManageClub(m.getClubId())) return Result.error(403, "无权移出该社团成员");
     m.setStatus("left"); m.setLeftAt(Times.now());
     membershipMapper.updateById(m);
     syncUserRole(m.getUserId(), m.getStatus());
@@ -247,12 +263,22 @@ public class MembershipServiceImpl implements MembershipService {
   private Result<String> validateMembershipRefs(Integer userId, Integer clubId, Integer departmentId, Integer positionId) {
     if (userMapper.selectById(userId) == null) return Result.error(404, "用户不存在");
     if (clubMapper.selectById(clubId) == null) return Result.error(404, "社团不存在");
-    if (departmentId != null && departmentMapper.selectById(departmentId) == null) return Result.error(400, "部门不存在");
+    if (departmentId != null) {
+      ClubDepartment department = departmentMapper.selectById(departmentId);
+      if (department == null) return Result.error(400, "部门不存在");
+      if (!clubId.equals(department.getClubId())) return Result.error(400, "部门不属于当前社团");
+    }
     if (positionId != null) { ClubPosition p = positionMapper.selectById(positionId); if (p == null || !clubId.equals(p.getClubId())) return Result.error(400, "岗位不存在或不属于当前社团"); }
     return null;
   }
 
   private ClubMembership findMembership(Integer id) { return id == null ? null : membershipMapper.selectById(id); }
+
+  private boolean isSelfMembership(ClubMembership membership) {
+    return cn.dev33.satoken.stp.StpUtil.isLogin()
+        && membership.getUserId() != null
+        && membership.getUserId().equals(cn.dev33.satoken.stp.StpUtil.getLoginIdAsInt());
+  }
 
   private List<ResponseMembershipVO> toResponseList(List<ClubMembership> memberships) {
     if (memberships == null || memberships.isEmpty()) return List.of();

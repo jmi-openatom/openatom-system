@@ -21,6 +21,14 @@ public interface ClubPositionRoleMapper extends BaseMapper<ClubPositionRole> {
             .eq(ClubPositionRole::getPositionId, positionId));
   }
 
+  /** 按岗位ID批量查 */
+  default List<ClubPositionRole> selectByPositionIds(List<Integer> positionIds) {
+    if (positionIds == null || positionIds.isEmpty()) return List.of();
+    return selectList(
+        new LambdaQueryWrapper<ClubPositionRole>()
+            .in(ClubPositionRole::getPositionId, positionIds));
+  }
+
   /** 按岗位ID删除 */
   default int deleteByPositionId(Integer positionId) {
     return delete(

@@ -176,7 +176,8 @@ import { Plus, Search } from '@element-plus/icons-vue'
 import { clubApi, membershipApi } from '@/api'
 import { membershipStatusText, statusType } from '@/utils/format.ts'
 import { hasPermission } from '@/utils/permission.ts'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useCurrentClub } from '@/composables/useCurrentClub'
 
 const loading = ref(false)
 
@@ -184,15 +185,13 @@ const rows = ref<any[]>([])
 
 const selection = ref<any[]>([])
 
-const clubs = ref<any[]>([])
-
 const departments = ref<any[]>([])
 
 const positions = ref<any[]>([])
 
-const currentClubId = ref(undefined)
+const { currentClubId, currentClub, loadCurrentClubs } = useCurrentClub()
 
-const currentClubName = ref('')
+const currentClubName = computed(() => currentClub.value?.clubName || '未选择社团')
 
 const query = ref({ keyword: '', status: '', page: 1, pageSize: 20 })
 
@@ -221,6 +220,10 @@ const canForceExit = computed(() => {
 })
 
 async function fetchList() {
+  if (!currentClubId.value) {
+    rows.value = []
+    return
+  }
   loading.value = true
   try {
     const result = await membershipApi.list({ ...query.value, clubId: currentClubId.value })
@@ -231,11 +234,6 @@ async function fetchList() {
 }
 
 async function loadOptions() {
-  const clubResult = await clubApi.list({})
-  clubs.value = clubResult?.list || clubResult || []
-  const defaultClub = clubs.value.find((item) => item.code === 'JMI-OPENATOM') || clubs.value[0]
-  currentClubId.value = defaultClub?.id
-  currentClubName.value = defaultClub?.name || '默认社团'
   if (!currentClubId.value) return
   departments.value = await clubApi.departments(currentClubId.value)
   positions.value = await clubApi.positions(currentClubId.value)
@@ -332,6 +330,14 @@ function positionLabel(position: any) {
 }
 
 onMounted(async () => {
+  await loadCurrentClubs()
+  await loadOptions()
+  fetchList()
+})
+
+watch(currentClubId, async () => {
+  departments.value = []
+  positions.value = []
   await loadOptions()
   fetchList()
 })

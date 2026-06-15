@@ -24,6 +24,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper
 import edu.jmi.openatom.server.openatomsystem.mapper.RecruitmentCampaignMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.ApplicationService;
+import edu.jmi.openatom.server.openatomsystem.service.ClubAccessService;
 
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 	private final ClubDepartmentMapper departmentMapper;
 	private final UserMapper userMapper;
 	private final ApplicationSubmissionRedisServiceImpl applicationSubmissionRedisService;
+	private final ClubAccessService clubAccessService;
 
 	@Override
 	public Result<PageDataVO<ResponseApplicationVO>> list(
@@ -61,12 +63,19 @@ public class ApplicationServiceImpl implements ApplicationService {
 			String keyword, Long page, Long pageSize) {
 		long current = PageRequests.page(page);
 		long size = PageRequests.pageSize(pageSize);
+		Integer scopedClubId = clubAccessService.requireManageableClub(clubId);
+		if (clubId != null && scopedClubId == null) return Result.error(403, "无权查看该社团申请");
+		List<Integer> scopedClubIds = scopedClubId == null ? clubAccessService.manageableClubIds() : null;
+		if (scopedClubId == null && scopedClubIds.isEmpty()) {
+			return Result.success(PageDataVO.<ResponseApplicationVO>builder()
+					.list(List.of()).page(current).pageSize(size).total(0L).build());
+		}
 		List<Integer> userIds = null;
 		if (keyword != null && !keyword.isBlank()) {
 			userIds = userMapper.searchByNameKeyword(keyword).stream().map(User::getId).toList();
 		}
 		Page<MembershipApplication> applicationPage = applicationMapper.selectPageByConditions(
-				new Page<>(current, size), campaignId, clubId, status, departmentId, keyword, userIds);
+				new Page<>(current, size), campaignId, scopedClubId, scopedClubIds, status, departmentId, keyword, userIds);
 		return Result.success(PageDataVO.<ResponseApplicationVO>builder()
 				.list(toResponseList(applicationPage.getRecords())).page(applicationPage.getCurrent())
 				.pageSize(applicationPage.getSize()).total(applicationPage.getTotal()).build());
@@ -96,6 +105,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 	@Override
 	public Result<MembershipApplication> detail(Integer applicationId) {
 		MembershipApplication application = findApplication(applicationId);
+		if (application != null && !canAccessApplication(application)) return Result.error(403, "无权查看该申请");
 		return application == null ? Result.error(404, "申请不存在") : Result.success(application);
 	}
 
@@ -103,6 +113,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 	public Result<String> update(Integer applicationId, RequestUpdateApplicationDTO request) {
 		MembershipApplication application = findApplication(applicationId);
 		if (application == null) return Result.error(404, "申请不存在");
+		if (!canAccessApplication(application)) return Result.error(403, "无权修改该申请");
 		if (!EDITABLE_STATUSES.contains(application.getStatus()))
 			return Result.error(422, "当前申请状态不允许修改");
 		if (request.getFirstChoiceDepartmentId() != null)
@@ -123,6 +134,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 	public Result<String> withdraw(Integer applicationId) {
 		MembershipApplication application = findApplication(applicationId);
 		if (application == null) return Result.error(404, "申请不存在");
+		if (!canAccessApplication(application)) return Result.error(403, "无权撤回该申请");
 		if (List.of("final_approved", "rejected", "cancelled").contains(application.getStatus()))
 			return Result.error(422, "当前申请状态不允许撤回");
 		application.setStatus("cancelled");
@@ -133,12 +145,16 @@ public class ApplicationServiceImpl implements ApplicationService {
 	@Override
 	public byte[] exportExcel(
 			Integer campaignId, Integer clubId, String status, Integer departmentId, String keyword) {
+		Integer scopedClubId = clubAccessService.requireManageableClub(clubId);
+		if (clubId != null && scopedClubId == null) return new byte[0];
+		List<Integer> scopedClubIds = scopedClubId == null ? clubAccessService.manageableClubIds() : null;
+		if (scopedClubId == null && scopedClubIds.isEmpty()) return new byte[0];
 		List<Integer> userIds = null;
 		if (keyword != null && !keyword.isBlank()) {
 			userIds = userMapper.searchByNameKeyword(keyword).stream().map(User::getId).toList();
 		}
 		List<MembershipApplication> applications =
-				applicationMapper.selectAllByConditions(campaignId, clubId, status, departmentId, keyword, userIds);
+				applicationMapper.selectAllByConditions(campaignId, scopedClubId, scopedClubIds, status, departmentId, keyword, userIds);
 		List<ResponseApplicationVO> rows = toResponseList(applications);
 		try (XSSFWorkbook workbook = new XSSFWorkbook();
 		     ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -168,6 +184,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 	private Result<String> changeStatus(Integer applicationId, String requiredStatus, String targetStatus, String message) {
 		MembershipApplication application = findApplication(applicationId);
 		if (application == null) return Result.error(404, "申请不存在");
+		if (!canAccessApplication(application)) return Result.error(403, "无权操作该申请");
 		if (!requiredStatus.equals(application.getStatus())) return Result.error(422, "当前申请状态不允许执行该操作");
 		application.setStatus(targetStatus);
 		int row = applicationMapper.updateById(application);
@@ -189,11 +206,25 @@ public class ApplicationServiceImpl implements ApplicationService {
 		if (formValidation != null) return formValidation;
 		if (!request.getClubId().equals(campaign.getClubId())) return Result.error(400, "招新计划不属于当前社团");
 		if (clubMapper.selectById(request.getClubId()) == null) return Result.error(404, "社团不存在");
-		if (request.getFirstChoiceDepartmentId() != null && departmentMapper.selectById(request.getFirstChoiceDepartmentId()) == null)
-			return Result.error(400, "第一志愿部门不存在");
-		if (request.getSecondChoiceDepartmentId() != null && departmentMapper.selectById(request.getSecondChoiceDepartmentId()) == null)
-			return Result.error(400, "第二志愿部门不存在");
+		if (request.getFirstChoiceDepartmentId() != null) {
+			ClubDepartment department = departmentMapper.selectById(request.getFirstChoiceDepartmentId());
+			if (department == null) return Result.error(400, "第一志愿部门不存在");
+			if (!request.getClubId().equals(department.getClubId())) return Result.error(400, "第一志愿部门不属于当前社团");
+		}
+		if (request.getSecondChoiceDepartmentId() != null) {
+			ClubDepartment department = departmentMapper.selectById(request.getSecondChoiceDepartmentId());
+			if (department == null) return Result.error(400, "第二志愿部门不存在");
+			if (!request.getClubId().equals(department.getClubId())) return Result.error(400, "第二志愿部门不属于当前社团");
+		}
 		return null;
+	}
+
+	private boolean canAccessApplication(MembershipApplication application) {
+		if (application == null) return false;
+		if (clubAccessService.canManageClub(application.getClubId())) return true;
+		return StpUtil.isLogin()
+				&& application.getUserId() != null
+				&& application.getUserId().equals(StpUtil.getLoginIdAsInt());
 	}
 
 	private Result<String> validateDynamicFields(String formSchema, Map<String, Object> profile) {

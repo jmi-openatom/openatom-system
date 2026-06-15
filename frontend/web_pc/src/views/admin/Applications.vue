@@ -410,7 +410,8 @@ import { ElMessage } from 'element-plus/es/components/message/index'
 import { Search } from '@element-plus/icons-vue'
 import { applicationApi, approvalApi, clubApi, interviewApi, membershipApi } from '@/api'
 import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useCurrentClub } from '@/composables/useCurrentClub'
 
 const loading = ref(false)
 
@@ -422,7 +423,9 @@ const total = ref(0)
 
 const selection = ref<any[]>([])
 
-const query = ref({ keyword: '', status: '', page: 1, pageSize: 10 })
+const { currentClubId, loadCurrentClubs } = useCurrentClub()
+
+const query = ref<any>({ keyword: '', status: '', clubId: '', page: 1, pageSize: 10 })
 
 const approvalVisible = ref(false)
 
@@ -601,6 +604,12 @@ async function openProfile(row: any) {
 }
 
 async function fetchList() {
+  query.value.clubId = currentClubId.value || ''
+  if (!query.value.clubId) {
+    rows.value = []
+    total.value = 0
+    return
+  }
   loading.value = true
   try {
     const result = await applicationApi.list(query.value)
@@ -836,7 +845,7 @@ async function exportExcel() {
   try {
     const blob = await applicationApi.export({
       campaignId: query.value.campaignId || undefined,
-      clubId: query.value.clubId || undefined,
+      clubId: currentClubId.value || query.value.clubId || undefined,
       status: query.value.status || undefined,
       keyword: query.value.keyword || undefined,
     })
@@ -856,7 +865,13 @@ async function exportExcel() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadCurrentClubs()
+  fetchList()
+})
+
+watch(currentClubId, () => {
+  query.value.page = 1
   fetchList()
 })
 </script>
