@@ -102,7 +102,45 @@
                     :class="`message--${message.role}`"
                   >
                     <div class="message-role">{{ message.role === 'user' ? '我' : 'AI' }}</div>
-                    <pre>{{ displayMessage(message) }}</pre>
+                    <div v-if="isStructuredAssistant(message)" class="ai-card">
+                      <p v-if="structuredMessage(message).summary" class="ai-summary">
+                        {{ structuredMessage(message).summary }}
+                      </p>
+
+                      <div v-if="structuredMessage(message).suggestions?.length" class="ai-block">
+                        <strong>建议</strong>
+                        <ul>
+                          <li v-for="item in structuredMessage(message).suggestions" :key="item">{{ item }}</li>
+                        </ul>
+                      </div>
+
+                      <div v-if="structuredMessage(message).questions?.length" class="ai-block">
+                        <strong>需要补充</strong>
+                        <div class="question-list">
+                          <button
+                            v-for="question in structuredMessage(message).questions"
+                            :key="question"
+                            type="button"
+                            class="question-item"
+                            @click="useQuestion(question)"
+                          >
+                            {{ question }}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div v-if="structuredMessage(message).missingFields?.length" class="field-tags">
+                        <el-tag
+                          v-for="field in structuredMessage(message).missingFields"
+                          :key="field"
+                          size="small"
+                          type="info"
+                        >
+                          {{ field }}
+                        </el-tag>
+                      </div>
+                    </div>
+                    <pre v-else>{{ displayMessage(message) }}</pre>
                   </div>
                 </div>
                 <div class="composer">
@@ -443,15 +481,34 @@ function documentTypeLabel(value: string) {
   return documentTypes.find((item) => item.value === value)?.label || value
 }
 
+function structuredMessage(message: any) {
+  if (!message?.structuredPayload) return {}
+  if (typeof message.structuredPayload === 'object') return message.structuredPayload
+  try {
+    return JSON.parse(message.structuredPayload)
+  } catch {
+    return {}
+  }
+}
+
+function isStructuredAssistant(message: any) {
+  return message?.role === 'assistant' && Boolean(message?.structuredPayload) && Object.keys(structuredMessage(message)).length > 0
+}
+
 function displayMessage(message: any) {
   if (message.structuredPayload) {
     try {
-      return JSON.stringify(JSON.parse(message.structuredPayload), null, 2)
+      const parsed = structuredMessage(message)
+      return parsed.summary || message.content
     } catch {
       return message.content
     }
   }
   return message.content
+}
+
+function useQuestion(question: string) {
+  messageText.value = messageText.value ? `${messageText.value}\n${question}：` : `${question}：`
 }
 
 function templateByType(type: string) {
@@ -1056,6 +1113,67 @@ onMounted(async () => {
 
 .message--user pre {
   background: var(--el-color-primary-light-9);
+}
+
+.ai-card {
+  display: grid;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 8px;
+  background: var(--el-fill-color-light);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ai-summary {
+  margin: 0;
+  color: var(--el-text-color-primary);
+}
+
+.ai-block {
+  display: grid;
+  gap: 8px;
+}
+
+.ai-block strong {
+  font-size: 13px;
+}
+
+.ai-block ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.ai-block li + li {
+  margin-top: 4px;
+}
+
+.question-list {
+  display: grid;
+  gap: 8px;
+}
+
+.question-item {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  text-align: left;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.question-item:hover {
+  border-color: var(--el-color-primary);
+  color: var(--el-color-primary);
+}
+
+.field-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .composer {
