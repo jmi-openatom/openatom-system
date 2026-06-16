@@ -80,7 +80,7 @@
               >
                 生成策划案
               </el-button>
-              <el-button type="success" :disabled="streaming || !canConfirmPlan" @click="confirmPlan">确认策划案</el-button>
+              <el-button type="success" :disabled="!canConfirmPlan" @click="confirmPlan">确认策划案</el-button>
               <el-button
                 :disabled="streaming || (!canGenerateDocuments && !canCreateActivityDraft)"
                 :loading="generatingDocs"
@@ -382,6 +382,7 @@ const streamingPlan = ref(false)
 const aiResponsePending = ref(false)
 const streamPhase = ref('')
 const testResult = ref('')
+const streamController = ref<AbortController | null>(null)
 const templateFile = ref<File | null>(null)
 const newSession = ref({ title: '', initialMessage: '' })
 const templateForm = ref({
@@ -439,7 +440,10 @@ const currentNextAction = computed(() => {
 
 const canConfirmRequirement = computed(() => current.value?.status === 'drafting')
 const canGeneratePlan = computed(() => current.value?.status === 'requirement_confirmed')
-const canConfirmPlan = computed(() => current.value?.status === 'plan_generated' && Boolean(latestPlan.value || planText.value.trim()))
+const canConfirmPlan = computed(() =>
+  ['requirement_confirmed', 'plan_generated', 'plan_confirmed'].includes(current.value?.status || '')
+  && Boolean(latestPlan.value || planText.value.trim())
+)
 const canGenerateDocuments = computed(() => current.value?.status === 'plan_confirmed')
 const canCreateActivityDraft = computed(() =>
   ['documents_generated', 'submitted'].includes(current.value?.status || '')
@@ -626,14 +630,31 @@ async function runAiStream(
   options: { hideDelta?: boolean } = {},
 ) {
   let assistantMessage: any | null = null
-  await postAiStream(path, body, ({ event, data }) => {
-    if (event === 'delta' && options.hideDelta) return
-    if (event === 'delta' && onDelta) {
-      onDelta(data?.content || '')
-      return
-    }
-    assistantMessage = applyStreamEvent(event, data, assistantMessage)
-  })
+  const controller = new AbortController()
+  streamController.value = controller
+  try {
+    await postAiStream(path, body, ({ event, data }) => {
+      if (event === 'delta' && options.hideDelta) return
+      if (event === 'delta' && onDelta) {
+        onDelta(data?.content || '')
+        return
+      }
+      assistantMessage = applyStreamEvent(event, data, assistantMessage)
+    }, controller.signal)
+  } finally {
+    if (streamController.value === controller) streamController.value = null
+  }
+}
+
+function stopCurrentStream() {
+  if (streamController.value) {
+    streamController.value.abort()
+    streamController.value = null
+  }
+  streaming.value = false
+  streamingPlan.value = false
+  aiResponsePending.value = false
+  streamPhase.value = ''
 }
 
 async function createSession() {
@@ -710,6 +731,8 @@ async function generatePlan() {
     activeTab.value = 'plan'
     ElMessage.success('策划案已生成')
     await loadSessions()
+  } catch (error: any) {
+    if (error?.name !== 'AbortError') throw error
   } finally {
     generatingPlan.value = false
     streaming.value = false
@@ -744,6 +767,8 @@ async function revisePlan() {
     }
     reviseInstruction.value = ''
     ElMessage.success('策划案已修改')
+  } catch (error: any) {
+    if (error?.name !== 'AbortError') throw error
   } finally {
     revising.value = false
     streaming.value = false
@@ -755,7 +780,8 @@ async function revisePlan() {
 async function confirmPlan() {
   if (!current.value) return
   const sessionId = current.value.id
-  if (!latestPlan.value && planText.value.trim()) {
+  if (streamingPlan.value || streaming.value) stopCurrentStream()
+  if (planText.value.trim()) {
     await syncSavedPlan(sessionId, planText.value)
   }
   current.value = await aiActivityApi.confirmPlan(sessionId)

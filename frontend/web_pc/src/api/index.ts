@@ -475,6 +475,7 @@ export async function postAiStream(
   path: string,
   body: Record<string, unknown>,
   onEvent: (event: AiStreamEvent) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   const token = getToken()
   const headers: Record<string, string> = {
@@ -489,6 +490,7 @@ export async function postAiStream(
     method: 'POST',
     headers,
     credentials: 'include',
+    signal,
     body: JSON.stringify(body || {}),
   })
   if (!response.ok || !response.body) {
