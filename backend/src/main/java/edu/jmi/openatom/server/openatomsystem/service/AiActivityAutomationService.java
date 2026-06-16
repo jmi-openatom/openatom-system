@@ -8,6 +8,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestGenerateActivityDocumen
 import edu.jmi.openatom.server.openatomsystem.dto.RequestReviseAiActivityPlanDTO;
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface AiActivityAutomationService {
   Result<Map<String, Object>> createSession(RequestCreateAiActivitySessionDTO request);
@@ -18,11 +19,19 @@ public interface AiActivityAutomationService {
 
   Result<Map<String, Object>> sendMessage(Long sessionId, RequestAiActivityMessageDTO request);
 
+  SseEmitter createSessionStream(RequestCreateAiActivitySessionDTO request);
+
+  SseEmitter sendMessageStream(Long sessionId, RequestAiActivityMessageDTO request);
+
   Result<Map<String, Object>> confirmRequirement(Long sessionId, RequestConfirmAiRequirementDTO request);
 
   Result<Map<String, Object>> generatePlan(Long sessionId);
 
+  SseEmitter generatePlanStream(Long sessionId);
+
   Result<Map<String, Object>> revisePlan(Long sessionId, RequestReviseAiActivityPlanDTO request);
+
+  SseEmitter revisePlanStream(Long sessionId, RequestReviseAiActivityPlanDTO request);
 
   Result<Map<String, Object>> confirmPlan(Long sessionId);
 

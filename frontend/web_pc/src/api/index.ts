@@ -1,4 +1,5 @@
 import request from './request'
+import { getToken } from '@/utils/auth.ts'
 export const siteApi = {
   clubHome(params?: Record<string, unknown>): Promise<any> {
     return request.get('/site/club-home', { params })
@@ -458,12 +459,80 @@ export const aiActivityApi = {
   },
 }
 
+export interface AiStreamEvent {
+  event: string
+  data: any
+}
+
+function apiBaseUrl(): string {
+  return import.meta.env.VITE_API_BASE_URL || '/api/v1'
+}
+
+export async function postAiStream(
+  path: string,
+  body: Record<string, unknown>,
+  onEvent: (event: AiStreamEvent) => void,
+): Promise<void> {
+  const token = getToken()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'text/event-stream',
+  }
+  if (token) {
+    headers.jmiopenatom = token
+    headers.Authorization = `Bearer ${token}`
+  }
+  const response = await fetch(`${apiBaseUrl()}${path}`, {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: JSON.stringify(body || {}),
+  })
+  if (!response.ok || !response.body) {
+    throw new Error(`流式请求失败：HTTP ${response.status}`)
+  }
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  const flushEvent = (raw: string) => {
+    const lines = raw.split(/\r?\n/)
+    let event = 'message'
+    const dataLines: string[] = []
+    for (const line of lines) {
+      if (line.startsWith('event:')) event = line.slice(6).trim()
+      if (line.startsWith('data:')) dataLines.push(line.slice(5).trim())
+    }
+    if (!dataLines.length) return
+    const dataText = dataLines.join('\n')
+    try {
+      onEvent({ event, data: JSON.parse(dataText) })
+    } catch {
+      onEvent({ event, data: dataText })
+    }
+  }
+
+  while (true) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const chunks = buffer.split(/\r?\n\r?\n/)
+    buffer = chunks.pop() || ''
+    chunks.forEach(flushEvent)
+  }
+  buffer += decoder.decode()
+  if (buffer.trim()) flushEvent(buffer)
+}
+
 export const aiSettingsApi = {
   get(): Promise<any> {
     return request.get('/ai/settings')
   },
   update(data: Record<string, unknown>): Promise<any> {
     return request.put('/ai/settings', data)
+  },
+  test(): Promise<any> {
+    return request.post('/ai/settings/test')
   },
 }
 

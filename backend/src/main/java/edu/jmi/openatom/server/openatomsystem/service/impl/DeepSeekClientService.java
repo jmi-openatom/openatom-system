@@ -7,6 +7,10 @@ import edu.jmi.openatom.server.openatomsystem.entity.AiCallLog;
 import edu.jmi.openatom.server.openatomsystem.mapper.AiCallLogMapper;
 import edu.jmi.openatom.server.openatomsystem.service.AiSettingsService;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -43,6 +47,54 @@ public class DeepSeekClientService {
       log(settings, scene, requestSummary, null, "failed", truncate(e.getMessage(), 900), System.currentTimeMillis() - start);
       return fallback(scene, messages);
     }
+  }
+
+  public String chatStream(
+      String scene,
+      String systemPrompt,
+      List<Map<String, String>> messages,
+      StreamChunkConsumer consumer,
+      Integer userId) {
+    long start = System.currentTimeMillis();
+    AiSettingsService.RuntimeSettings settings = aiSettingsService.runtimeSettings();
+    String requestSummary = truncate(messages.isEmpty() ? "" : messages.getLast().get("content"), 900);
+    StringBuilder response = new StringBuilder();
+    try {
+      if (!settings.enabled() || !settings.hasApiKey()) {
+        streamFallback(scene, messages, consumer, response);
+      } else {
+        callDeepSeekStream(settings, systemPrompt, messages, consumer, response);
+      }
+      String content = response.toString();
+      log(userId, settings, scene, requestSummary, truncate(content, 900), "success", null, System.currentTimeMillis() - start);
+      return content;
+    } catch (Exception e) {
+      log(userId, settings, scene, requestSummary, null, "failed", truncate(e.getMessage(), 900), System.currentTimeMillis() - start);
+      String fallback = fallback(scene, messages);
+      response.setLength(0);
+      try {
+        streamText(fallback, consumer, response);
+      } catch (Exception streamError) {
+        throw new IllegalStateException(streamError);
+      }
+      return response.toString();
+    }
+  }
+
+  public Map<String, Object> testConnection() throws IOException, InterruptedException {
+    AiSettingsService.RuntimeSettings settings = aiSettingsService.runtimeSettings();
+    if (!settings.enabled()) throw new IOException("AI 未启用");
+    if (!settings.hasApiKey()) throw new IOException("请先配置 DeepSeek API Key");
+    String content =
+        callDeepSeek(
+            settings,
+            "你是系统连通性测试助手。请用一句中文回复。",
+            List.of(Map.of("role", "user", "content", "请回复：DeepSeek 配置测试通过")));
+    Map<String, Object> map = new LinkedHashMap<>();
+    map.put("ok", true);
+    map.put("model", settings.model());
+    map.put("message", content);
+    return map;
   }
 
   private String callDeepSeek(
@@ -83,6 +135,89 @@ public class DeepSeekClientService {
       }
     }
     throw new IOException("DeepSeek 响应格式不正确");
+  }
+
+  private void callDeepSeekStream(
+      AiSettingsService.RuntimeSettings settings,
+      String systemPrompt,
+      List<Map<String, String>> messages,
+      StreamChunkConsumer consumer,
+      StringBuilder responseBuilder)
+      throws Exception {
+    List<Map<String, String>> payloadMessages = new ArrayList<>();
+    payloadMessages.add(Map.of("role", "system", "content", systemPrompt));
+    payloadMessages.addAll(messages);
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("model", settings.model());
+    payload.put("messages", payloadMessages);
+    payload.put("temperature", 0.4);
+    payload.put("stream", true);
+    String body = OBJECT_MAPPER.writeValueAsString(payload);
+    HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(settings.baseUrl().replaceAll("/+$", "") + "/chat/completions"))
+            .timeout(Duration.ofSeconds(Math.max(5, settings.timeoutSeconds())))
+            .header("Content-Type", "application/json")
+            .header("Accept", "text/event-stream")
+            .header("Authorization", "Bearer " + settings.apiKey())
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build();
+    HttpResponse<java.io.InputStream> response =
+        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
+            .send(request, HttpResponse.BodyHandlers.ofInputStream());
+    if (response.statusCode() < 200 || response.statusCode() >= 300) {
+      throw new IOException("DeepSeek 调用失败: HTTP " + response.statusCode());
+    }
+    try (BufferedReader reader =
+        new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        if (!line.startsWith("data:")) continue;
+        String data = line.substring(5).trim();
+        if (data.isBlank()) continue;
+        if ("[DONE]".equals(data)) break;
+        String delta = parseStreamDelta(data);
+        if (delta == null || delta.isEmpty()) continue;
+        responseBuilder.append(delta);
+        consumer.accept(delta);
+      }
+    } catch (UncheckedIOException e) {
+      throw e.getCause();
+    }
+  }
+
+  private String parseStreamDelta(String data) throws IOException {
+    Map<String, Object> responseBody =
+        OBJECT_MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {});
+    Object choices = responseBody.get("choices");
+    if (choices instanceof List<?> list && !list.isEmpty() && list.getFirst() instanceof Map<?, ?> first) {
+      Object delta = first.get("delta");
+      if (delta instanceof Map<?, ?> deltaMap && deltaMap.get("content") != null) {
+        return String.valueOf(deltaMap.get("content"));
+      }
+    }
+    return "";
+  }
+
+  private void streamFallback(
+      String scene,
+      List<Map<String, String>> messages,
+      StreamChunkConsumer consumer,
+      StringBuilder responseBuilder)
+      throws Exception {
+    streamText(fallback(scene, messages), consumer, responseBuilder);
+  }
+
+  private void streamText(String text, StreamChunkConsumer consumer, StringBuilder responseBuilder)
+      throws Exception {
+    int index = 0;
+    while (index < text.length()) {
+      int end = Math.min(text.length(), index + 18);
+      String chunk = text.substring(index, end);
+      responseBuilder.append(chunk);
+      consumer.accept(chunk);
+      index = end;
+    }
   }
 
   private String fallback(String scene, List<Map<String, String>> messages) {
@@ -168,6 +303,18 @@ public class DeepSeekClientService {
       String errorMessage,
       long durationMs) {
     Integer userId = StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null;
+    log(userId, settings, scene, requestSummary, responseSummary, status, errorMessage, durationMs);
+  }
+
+  private void log(
+      Integer userId,
+      AiSettingsService.RuntimeSettings settings,
+      String scene,
+      String requestSummary,
+      String responseSummary,
+      String status,
+      String errorMessage,
+      long durationMs) {
     aiCallLogMapper.insert(
         AiCallLog.builder()
             .userId(userId)
@@ -186,5 +333,10 @@ public class DeepSeekClientService {
   private String truncate(String value, int maxLength) {
     if (value == null || value.length() <= maxLength) return value;
     return value.substring(0, maxLength);
+  }
+
+  @FunctionalInterface
+  public interface StreamChunkConsumer {
+    void accept(String chunk) throws Exception;
   }
 }

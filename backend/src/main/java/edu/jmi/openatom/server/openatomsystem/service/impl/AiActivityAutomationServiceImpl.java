@@ -37,6 +37,7 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 @RequiredArgsConstructor
@@ -118,6 +119,70 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
   }
 
   @Override
+  public SseEmitter createSessionStream(RequestCreateAiActivitySessionDTO request) {
+    SseEmitter emitter = newEmitter();
+    if (!StpUtil.isLogin()) {
+      streamError(emitter, "请先登录");
+      return emitter;
+    }
+    Integer userId = StpUtil.getLoginIdAsInt();
+    Thread.startVirtualThread(
+        () -> {
+          try {
+            Club club = defaultClub();
+            String title =
+                request.getTitle() == null || request.getTitle().isBlank()
+                    ? titleFrom(request.getInitialMessage())
+                    : request.getTitle().trim();
+            AiActivitySession session =
+                AiActivitySession.builder()
+                    .clubId(club == null ? null : club.getId())
+                    .userId(userId)
+                    .title(title)
+                    .status("drafting")
+                    .build();
+            sessionMapper.insert(session);
+            String message = request.getInitialMessage().trim();
+            messageMapper.insert(
+                AiActivityMessage.builder().sessionId(session.getId()).role("user").content(message).build());
+            emit(emitter, "session", Map.of("detail", detailMap(sessionMapper.selectById(session.getId()))));
+            streamRequirementResponse(emitter, userId, session);
+          } catch (Exception e) {
+            streamError(emitter, e.getMessage());
+          }
+        });
+    return emitter;
+  }
+
+  @Override
+  public SseEmitter sendMessageStream(Long sessionId, RequestAiActivityMessageDTO request) {
+    SseEmitter emitter = newEmitter();
+    if (!StpUtil.isLogin()) {
+      streamError(emitter, "请先登录");
+      return emitter;
+    }
+    Integer userId = StpUtil.getLoginIdAsInt();
+    Thread.startVirtualThread(
+        () -> {
+          try {
+            AiActivitySession session = sessionForUser(sessionId, userId);
+            if (session == null) {
+              streamError(emitter, "会话不存在");
+              return;
+            }
+            String message = request.getMessage().trim();
+            messageMapper.insert(
+                AiActivityMessage.builder().sessionId(sessionId).role("user").content(message).build());
+            emit(emitter, "message", Map.of("detail", detailMap(sessionMapper.selectById(sessionId))));
+            streamRequirementResponse(emitter, userId, session);
+          } catch (Exception e) {
+            streamError(emitter, e.getMessage());
+          }
+        });
+    return emitter;
+  }
+
+  @Override
   @Transactional(rollbackFor = Exception.class)
   public Result<Map<String, Object>> confirmRequirement(
       Long sessionId, RequestConfirmAiRequirementDTO request) {
@@ -153,6 +218,46 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
   }
 
   @Override
+  public SseEmitter generatePlanStream(Long sessionId) {
+    SseEmitter emitter = newEmitter();
+    if (!StpUtil.isLogin()) {
+      streamError(emitter, "请先登录");
+      return emitter;
+    }
+    Integer userId = StpUtil.getLoginIdAsInt();
+    Thread.startVirtualThread(
+        () -> {
+          try {
+            AiActivitySession session = sessionForUser(sessionId, userId);
+            if (session == null) {
+              streamError(emitter, "会话不存在");
+              return;
+            }
+            String promptInput =
+                "已确认需求摘要：\n"
+                    + Objects.toString(session.getRequirementSummary(), "")
+                    + "\n\n完整对话：\n"
+                    + conversationText(sessionId);
+            emit(emitter, "phase", Map.of("message", "正在生成策划案"));
+            String content =
+                deepSeekClientService.chatStream(
+                    "activity_plan",
+                    planPrompt(),
+                    List.of(Map.of("role", "user", "content", promptInput)),
+                    chunk -> emit(emitter, "delta", Map.of("content", chunk)),
+                    userId);
+            emit(emitter, "phase", Map.of("message", "正在抽取申请表字段"));
+            Result<Map<String, Object>> result = savePlan(session, content, "plan_generated");
+            emit(emitter, "complete", Map.of("detail", result.getData()));
+            emitter.complete();
+          } catch (Exception e) {
+            streamError(emitter, e.getMessage());
+          }
+        });
+    return emitter;
+  }
+
+  @Override
   @Transactional(rollbackFor = Exception.class)
   public Result<Map<String, Object>> revisePlan(Long sessionId, RequestReviseAiActivityPlanDTO request) {
     AiActivitySession session = sessionForCurrentUser(sessionId);
@@ -173,6 +278,54 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
                         + "\n\n请按以下要求修改：\n"
                         + request.getInstruction())));
     return savePlan(session, content, "plan_generated");
+  }
+
+  @Override
+  public SseEmitter revisePlanStream(Long sessionId, RequestReviseAiActivityPlanDTO request) {
+    SseEmitter emitter = newEmitter();
+    if (!StpUtil.isLogin()) {
+      streamError(emitter, "请先登录");
+      return emitter;
+    }
+    Integer userId = StpUtil.getLoginIdAsInt();
+    Thread.startVirtualThread(
+        () -> {
+          try {
+            AiActivitySession session = sessionForUser(sessionId, userId);
+            if (session == null) {
+              streamError(emitter, "会话不存在");
+              return;
+            }
+            AiActivityPlan latest = planMapper.selectLatestBySessionId(sessionId);
+            if (latest == null) {
+              streamError(emitter, "请先生成策划案");
+              return;
+            }
+            emit(emitter, "phase", Map.of("message", "正在按要求修改策划案"));
+            String content =
+                deepSeekClientService.chatStream(
+                    "activity_plan_revision",
+                    planPrompt(),
+                    List.of(
+                        Map.of(
+                            "role",
+                            "user",
+                            "content",
+                            "当前策划案：\n"
+                                + latest.getContentMarkdown()
+                                + "\n\n请按以下要求修改：\n"
+                                + request.getInstruction())),
+                    chunk -> emit(emitter, "delta", Map.of("content", chunk)),
+                    userId);
+            emit(emitter, "phase", Map.of("message", "正在更新申请表字段"));
+            Result<Map<String, Object>> result = savePlan(session, content, "plan_generated");
+            emit(emitter, "complete", Map.of("detail", result.getData()));
+            emitter.complete();
+          } catch (Exception e) {
+            streamError(emitter, e.getMessage());
+          }
+        });
+    return emitter;
   }
 
   @Override
@@ -282,6 +435,36 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     return Result.success(detailMap(session));
   }
 
+  private void streamRequirementResponse(SseEmitter emitter, Integer userId, AiActivitySession session) {
+    try {
+      emit(emitter, "phase", Map.of("message", "AI 正在澄清活动需求"));
+      List<Map<String, String>> messages = buildMessages(session.getId());
+      String response =
+          deepSeekClientService.chatStream(
+              "activity_requirement",
+              requirementPrompt(),
+              messages,
+              chunk -> emit(emitter, "delta", Map.of("content", chunk)),
+              userId);
+      Map<String, Object> structured = parseJsonObject(response);
+      messageMapper.insert(
+          AiActivityMessage.builder()
+              .sessionId(session.getId())
+              .role("assistant")
+              .content(response)
+              .structuredPayload(structured.isEmpty() ? null : Jsons.stringify(structured))
+              .build());
+      touch(session);
+      emit(
+          emitter,
+          "complete",
+          Map.of("detail", detailMap(sessionMapper.selectById(session.getId()))));
+      emitter.complete();
+    } catch (Exception e) {
+      streamError(emitter, e.getMessage());
+    }
+  }
+
   private Map<String, Object> extractFields(Long sessionId, String planContent) {
     String response =
         deepSeekClientService.chat(
@@ -339,6 +522,34 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     Integer currentUserId = StpUtil.getLoginIdAsInt();
     if (!currentUserId.equals(session.getUserId()) && !StpUtil.hasPermission("activity:create")) return null;
     return session;
+  }
+
+  private AiActivitySession sessionForUser(Long sessionId, Integer userId) {
+    if (sessionId == null || userId == null) return null;
+    AiActivitySession session = sessionMapper.selectById(sessionId);
+    if (session == null) return null;
+    return userId.equals(session.getUserId()) ? session : null;
+  }
+
+  private SseEmitter newEmitter() {
+    return new SseEmitter(180_000L);
+  }
+
+  private void emit(SseEmitter emitter, String eventName, Map<String, Object> data) throws IOException {
+    emitter.send(SseEmitter.event().name(eventName).data(Jsons.stringify(data)));
+  }
+
+  private void streamError(SseEmitter emitter, String message) {
+    try {
+      emit(
+          emitter,
+          "error",
+          Map.of("message", message == null || message.isBlank() ? "AI 流式输出失败" : message));
+    } catch (Exception ignored) {
+      // 客户端可能已经断开，此处只需要结束服务端 emitter。
+    } finally {
+      emitter.complete();
+    }
   }
 
   private Map<String, Object> detailMap(AiActivitySession session) {

@@ -12,11 +12,13 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /** AI 活动自动化控制器。 */
 @RestController
@@ -29,6 +31,13 @@ public class AiActivityAutomationController {
   public Result<Map<String, Object>> createSession(
       @Valid @RequestBody RequestCreateAiActivitySessionDTO request) {
     return aiActivityAutomationService.createSession(request);
+  }
+
+  @PostMapping(value = "/ai/activity/sessions/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  @SaCheckPermission("activity:create")
+  public SseEmitter createSessionStream(
+      @Valid @RequestBody RequestCreateAiActivitySessionDTO request) {
+    return aiActivityAutomationService.createSessionStream(request);
   }
 
   @GetMapping("/ai/activity/sessions")
@@ -50,6 +59,13 @@ public class AiActivityAutomationController {
     return aiActivityAutomationService.sendMessage(sessionId, request);
   }
 
+  @PostMapping(value = "/ai/activity/sessions/{sessionId}/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  @SaCheckPermission("activity:create")
+  public SseEmitter sendMessageStream(
+      @PathVariable Long sessionId, @Valid @RequestBody RequestAiActivityMessageDTO request) {
+    return aiActivityAutomationService.sendMessageStream(sessionId, request);
+  }
+
   @PostMapping("/ai/activity/sessions/{sessionId}/confirm-requirement")
   @SaCheckPermission("activity:create")
   public Result<Map<String, Object>> confirmRequirement(
@@ -64,11 +80,24 @@ public class AiActivityAutomationController {
     return aiActivityAutomationService.generatePlan(sessionId);
   }
 
+  @PostMapping(value = "/ai/activity/sessions/{sessionId}/generate-plan/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  @SaCheckPermission("activity:create")
+  public SseEmitter generatePlanStream(@PathVariable Long sessionId) {
+    return aiActivityAutomationService.generatePlanStream(sessionId);
+  }
+
   @PostMapping("/ai/activity/sessions/{sessionId}/revise-plan")
   @SaCheckPermission("activity:create")
   public Result<Map<String, Object>> revisePlan(
       @PathVariable Long sessionId, @Valid @RequestBody RequestReviseAiActivityPlanDTO request) {
     return aiActivityAutomationService.revisePlan(sessionId, request);
+  }
+
+  @PostMapping(value = "/ai/activity/sessions/{sessionId}/revise-plan/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  @SaCheckPermission("activity:create")
+  public SseEmitter revisePlanStream(
+      @PathVariable Long sessionId, @Valid @RequestBody RequestReviseAiActivityPlanDTO request) {
+    return aiActivityAutomationService.revisePlanStream(sessionId, request);
   }
 
   @PostMapping("/ai/activity/sessions/{sessionId}/confirm-plan")
