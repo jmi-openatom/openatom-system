@@ -589,8 +589,37 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
 
   private List<Map<String, String>> buildMessages(Long sessionId) {
     return messageMapper.selectBySessionId(sessionId).stream()
-        .map(item -> Map.of("role", item.getRole(), "content", item.getContent()))
+        .map(item -> Map.of("role", item.getRole(), "content", readableMessageContent(item)))
         .toList();
+  }
+
+  private String readableMessageContent(AiActivityMessage message) {
+    if (!"assistant".equals(message.getRole())) return message.getContent();
+    Map<String, Object> payload = Jsons.parseObject(message.getStructuredPayload());
+    if (payload.isEmpty()) return message.getContent();
+    StringBuilder builder = new StringBuilder();
+    appendReadableSection(builder, "当前理解", payload.get("summary"));
+    appendReadableSection(builder, "建议", payload.get("suggestions"));
+    appendReadableSection(builder, "待补充问题", payload.get("questions"));
+    appendReadableSection(builder, "缺失信息", payload.get("missingFields"));
+    String text = builder.toString().trim();
+    return text.isBlank() ? message.getContent() : text;
+  }
+
+  private void appendReadableSection(StringBuilder builder, String title, Object value) {
+    if (value == null) return;
+    if (value instanceof List<?> list) {
+      if (list.isEmpty()) return;
+      builder.append(title).append("：\n");
+      for (Object item : list) {
+        if (item != null && !String.valueOf(item).isBlank()) {
+          builder.append("- ").append(item).append("\n");
+        }
+      }
+      return;
+    }
+    String text = String.valueOf(value);
+    if (!text.isBlank()) builder.append(title).append("：").append(text).append("\n");
   }
 
   private Map<String, Object> latestAssistantPayload(Long sessionId) {
@@ -608,7 +637,7 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
   private String conversationText(Long sessionId) {
     StringBuilder builder = new StringBuilder();
     for (AiActivityMessage message : messageMapper.selectBySessionId(sessionId)) {
-      builder.append(message.getRole()).append(": ").append(message.getContent()).append("\n\n");
+      builder.append(message.getRole()).append(": ").append(readableMessageContent(message)).append("\n\n");
     }
     return builder.toString();
   }

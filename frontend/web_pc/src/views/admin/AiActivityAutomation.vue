@@ -142,6 +142,14 @@
                     </div>
                     <pre v-else>{{ displayMessage(message) }}</pre>
                   </div>
+                  <div v-if="aiResponsePending" class="message message--assistant">
+                    <div class="message-role">AI</div>
+                    <div class="ai-skeleton">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
                 </div>
                 <div class="composer">
                   <el-input
@@ -158,7 +166,7 @@
             </el-tab-pane>
 
             <el-tab-pane label="策划案" name="plan">
-              <div v-if="latestPlan || streamingPlan" class="plan-editor">
+              <div v-if="hasPlanEditorContent" class="plan-editor">
                 <div class="plan-toolbar">
                   <div>
                     <strong>{{ latestPlan?.title || 'AI 正在生成策划案' }}</strong>
@@ -371,6 +379,7 @@ const savingSettings = ref(false)
 const testingSettings = ref(false)
 const streaming = ref(false)
 const streamingPlan = ref(false)
+const aiResponsePending = ref(false)
 const streamPhase = ref('')
 const testResult = ref('')
 const templateFile = ref<File | null>(null)
@@ -393,6 +402,8 @@ const latestPlan = computed(() => {
   const plans = current.value?.plans || []
   return plans.length ? plans[0] : null
 })
+
+const hasPlanEditorContent = computed(() => Boolean(latestPlan.value || streamingPlan.value || planText.value.trim()))
 
 const stepActive = computed(() => {
   const status = current.value?.status
@@ -587,9 +598,11 @@ async function runAiStream(
   path: string,
   body: Record<string, unknown>,
   onDelta?: (content: string) => void,
+  options: { hideDelta?: boolean } = {},
 ) {
   let assistantMessage: any | null = null
   await postAiStream(path, body, ({ event, data }) => {
+    if (event === 'delta' && options.hideDelta) return
     if (event === 'delta' && onDelta) {
       onDelta(data?.content || '')
       return
@@ -605,9 +618,10 @@ async function createSession() {
   }
   creating.value = true
   streaming.value = true
+  aiResponsePending.value = true
   streamPhase.value = 'AI 正在澄清活动需求'
   try {
-    await runAiStream('/ai/activity/sessions/stream', newSession.value)
+    await runAiStream('/ai/activity/sessions/stream', newSession.value, undefined, { hideDelta: true })
     activeTab.value = 'chat'
     newSessionVisible.value = false
     newSession.value = { title: '', initialMessage: '' }
@@ -615,6 +629,7 @@ async function createSession() {
   } finally {
     creating.value = false
     streaming.value = false
+    aiResponsePending.value = false
     streamPhase.value = ''
   }
 }
@@ -626,16 +641,18 @@ async function sendMessage() {
   appendTempMessage('user', message)
   sending.value = true
   streaming.value = true
+  aiResponsePending.value = true
   streamPhase.value = 'AI 正在回复'
   try {
     await runAiStream(`/ai/activity/sessions/${current.value.id}/messages/stream`, {
       message,
       mode: 'requirement_clarification',
-    })
+    }, undefined, { hideDelta: true })
     await loadSessions()
   } finally {
     sending.value = false
     streaming.value = false
+    aiResponsePending.value = false
     streamPhase.value = ''
   }
 }
@@ -649,6 +666,7 @@ async function confirmRequirement() {
 
 async function generatePlan() {
   if (!current.value) return
+  const sessionId = current.value.id
   generatingPlan.value = true
   streaming.value = true
   streamingPlan.value = true
@@ -656,9 +674,17 @@ async function generatePlan() {
   planText.value = ''
   activeTab.value = 'plan'
   try {
-    await runAiStream(`/ai/activity/sessions/${current.value.id}/generate-plan/stream`, {}, (content) => {
+    await runAiStream(`/ai/activity/sessions/${sessionId}/generate-plan/stream`, {}, (content) => {
       planText.value += content
     })
+    const refreshed = await aiActivityApi.detail(sessionId)
+    current.value = refreshed
+    const savedPlanText = refreshed?.plans?.[0]?.contentMarkdown
+    if (savedPlanText) {
+      planText.value = savedPlanText
+    } else {
+      ElMessage.warning('策划案已生成，但暂未读到保存记录，已保留当前正文')
+    }
     activeTab.value = 'plan'
     ElMessage.success('策划案已生成')
     await loadSessions()
@@ -672,6 +698,7 @@ async function generatePlan() {
 
 async function revisePlan() {
   if (!current.value || !reviseInstruction.value.trim()) return
+  const sessionId = current.value.id
   const instruction = `${reviseInstruction.value}\n\n用户当前编辑稿：\n${planText.value}`
   revising.value = true
   streaming.value = true
@@ -679,11 +706,19 @@ async function revisePlan() {
   streamPhase.value = '正在修改策划案'
   planText.value = ''
   try {
-    await runAiStream(`/ai/activity/sessions/${current.value.id}/revise-plan/stream`, {
+    await runAiStream(`/ai/activity/sessions/${sessionId}/revise-plan/stream`, {
       instruction,
     }, (content) => {
       planText.value += content
     })
+    const refreshed = await aiActivityApi.detail(sessionId)
+    current.value = refreshed
+    const savedPlanText = refreshed?.plans?.[0]?.contentMarkdown
+    if (savedPlanText) {
+      planText.value = savedPlanText
+    } else {
+      ElMessage.warning('策划案已修改，但暂未读到保存记录，已保留当前正文')
+    }
     reviseInstruction.value = ''
     ElMessage.success('策划案已修改')
   } finally {
@@ -1174,6 +1209,46 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.ai-skeleton {
+  display: grid;
+  gap: 8px;
+  width: min(360px, 100%);
+  padding: 13px 14px;
+  border-radius: 8px;
+  background: var(--el-fill-color-light);
+}
+
+.ai-skeleton span {
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--el-fill-color) 0%,
+    var(--el-fill-color-dark) 50%,
+    var(--el-fill-color) 100%
+  );
+  background-size: 200% 100%;
+  animation: ai-loading 1.2s ease-in-out infinite;
+}
+
+.ai-skeleton span:nth-child(2) {
+  width: 86%;
+}
+
+.ai-skeleton span:nth-child(3) {
+  width: 62%;
+}
+
+@keyframes ai-loading {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
 }
 
 .composer {
