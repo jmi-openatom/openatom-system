@@ -439,7 +439,7 @@ const currentNextAction = computed(() => {
 
 const canConfirmRequirement = computed(() => current.value?.status === 'drafting')
 const canGeneratePlan = computed(() => current.value?.status === 'requirement_confirmed')
-const canConfirmPlan = computed(() => current.value?.status === 'plan_generated' && Boolean(latestPlan.value))
+const canConfirmPlan = computed(() => current.value?.status === 'plan_generated' && Boolean(latestPlan.value || planText.value.trim()))
 const canGenerateDocuments = computed(() => current.value?.status === 'plan_confirmed')
 const canCreateActivityDraft = computed(() =>
   ['documents_generated', 'submitted'].includes(current.value?.status || '')
@@ -549,7 +549,29 @@ async function loadAiSettings() {
 
 async function openSession(id: string | number) {
   current.value = await aiActivityApi.detail(id)
+  planText.value = current.value?.plans?.[0]?.contentMarkdown || ''
   activeTab.value = latestPlan.value ? 'plan' : 'chat'
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms))
+}
+
+async function syncSavedPlan(sessionId: string | number, fallbackText: string) {
+  let refreshed: any = null
+  for (let index = 0; index < 5; index += 1) {
+    refreshed = await aiActivityApi.detail(sessionId)
+    if (refreshed?.plans?.[0]) break
+    await wait(250)
+  }
+  current.value = refreshed || current.value
+  const savedPlanText = refreshed?.plans?.[0]?.contentMarkdown
+  if (savedPlanText) {
+    planText.value = savedPlanText
+    return true
+  }
+  planText.value = fallbackText
+  return false
 }
 
 function ensureMessageList() {
@@ -677,12 +699,9 @@ async function generatePlan() {
     await runAiStream(`/ai/activity/sessions/${sessionId}/generate-plan/stream`, {}, (content) => {
       planText.value += content
     })
-    const refreshed = await aiActivityApi.detail(sessionId)
-    current.value = refreshed
-    const savedPlanText = refreshed?.plans?.[0]?.contentMarkdown
-    if (savedPlanText) {
-      planText.value = savedPlanText
-    } else {
+    const streamedText = planText.value
+    const synced = await syncSavedPlan(sessionId, streamedText)
+    if (!synced) {
       ElMessage.warning('策划案已生成，但暂未读到保存记录，已保留当前正文')
     }
     activeTab.value = 'plan'
@@ -700,23 +719,24 @@ async function revisePlan() {
   if (!current.value || !reviseInstruction.value.trim()) return
   const sessionId = current.value.id
   const instruction = `${reviseInstruction.value}\n\n用户当前编辑稿：\n${planText.value}`
+  const previousPlanText = planText.value
+  let hasRevisionDelta = false
   revising.value = true
   streaming.value = true
   streamingPlan.value = true
   streamPhase.value = '正在修改策划案'
-  planText.value = ''
   try {
     await runAiStream(`/ai/activity/sessions/${sessionId}/revise-plan/stream`, {
       instruction,
     }, (content) => {
+      if (!hasRevisionDelta) {
+        planText.value = ''
+        hasRevisionDelta = true
+      }
       planText.value += content
     })
-    const refreshed = await aiActivityApi.detail(sessionId)
-    current.value = refreshed
-    const savedPlanText = refreshed?.plans?.[0]?.contentMarkdown
-    if (savedPlanText) {
-      planText.value = savedPlanText
-    } else {
+    const synced = await syncSavedPlan(sessionId, hasRevisionDelta ? planText.value : previousPlanText)
+    if (!synced) {
       ElMessage.warning('策划案已修改，但暂未读到保存记录，已保留当前正文')
     }
     reviseInstruction.value = ''
@@ -731,7 +751,10 @@ async function revisePlan() {
 
 async function confirmPlan() {
   if (!current.value) return
-  current.value = await aiActivityApi.confirmPlan(current.value.id)
+  const sessionId = current.value.id
+  current.value = await aiActivityApi.confirmPlan(sessionId)
+  current.value = await aiActivityApi.detail(sessionId)
+  planText.value = current.value?.plans?.[0]?.contentMarkdown || planText.value
   ElMessage.success('策划案已确认')
   await loadSessions()
 }
