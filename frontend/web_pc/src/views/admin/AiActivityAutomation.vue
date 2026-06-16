@@ -564,6 +564,9 @@ async function syncSavedPlan(sessionId: string | number, fallbackText: string) {
     if (refreshed?.plans?.[0]) break
     await wait(250)
   }
+  if (!refreshed?.plans?.[0] && fallbackText.trim()) {
+    refreshed = await aiActivityApi.savePlan(sessionId, { contentMarkdown: fallbackText })
+  }
   current.value = refreshed || current.value
   const savedPlanText = refreshed?.plans?.[0]?.contentMarkdown
   if (savedPlanText) {
@@ -752,6 +755,9 @@ async function revisePlan() {
 async function confirmPlan() {
   if (!current.value) return
   const sessionId = current.value.id
+  if (!latestPlan.value && planText.value.trim()) {
+    await syncSavedPlan(sessionId, planText.value)
+  }
   current.value = await aiActivityApi.confirmPlan(sessionId)
   current.value = await aiActivityApi.detail(sessionId)
   planText.value = current.value?.plans?.[0]?.contentMarkdown || planText.value

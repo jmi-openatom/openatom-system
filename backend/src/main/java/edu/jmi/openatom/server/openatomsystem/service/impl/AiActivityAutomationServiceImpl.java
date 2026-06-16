@@ -11,6 +11,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestConfirmAiRequirementDTO
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateAiActivitySessionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestGenerateActivityDocumentsDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestReviseAiActivityPlanDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveAiActivityPlanDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.AiActivityMessage;
 import edu.jmi.openatom.server.openatomsystem.entity.AiActivityPlan;
 import edu.jmi.openatom.server.openatomsystem.entity.AiActivitySession;
@@ -326,6 +327,17 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
           }
         });
     return emitter;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<Map<String, Object>> savePlanDraft(Long sessionId, RequestSaveAiActivityPlanDTO request) {
+    AiActivitySession session = sessionForCurrentUser(sessionId);
+    if (session == null) return Result.error(404, "会话不存在");
+    if (request == null || request.getContentMarkdown() == null || request.getContentMarkdown().isBlank()) {
+      return Result.error(400, "策划案内容不能为空");
+    }
+    return savePlan(session, request.getContentMarkdown(), "plan_generated");
   }
 
   @Override

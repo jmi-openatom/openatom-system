@@ -448,6 +448,9 @@ export const aiActivityApi = {
   revisePlan(id: string | number, data: Record<string, unknown>): Promise<any> {
     return request.post(`/ai/activity/sessions/${id}/revise-plan`, data)
   },
+  savePlan(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/ai/activity/sessions/${id}/plans`, data)
+  },
   confirmPlan(id: string | number): Promise<any> {
     return request.post(`/ai/activity/sessions/${id}/confirm-plan`)
   },

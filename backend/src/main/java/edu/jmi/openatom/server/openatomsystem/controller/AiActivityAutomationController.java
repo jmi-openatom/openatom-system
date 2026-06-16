@@ -7,6 +7,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestConfirmAiRequirementDTO
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateAiActivitySessionDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestGenerateActivityDocumentsDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestReviseAiActivityPlanDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveAiActivityPlanDTO;
 import edu.jmi.openatom.server.openatomsystem.service.AiActivityAutomationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -98,6 +99,13 @@ public class AiActivityAutomationController {
   public SseEmitter revisePlanStream(
       @PathVariable Long sessionId, @Valid @RequestBody RequestReviseAiActivityPlanDTO request) {
     return aiActivityAutomationService.revisePlanStream(sessionId, request);
+  }
+
+  @PostMapping("/ai/activity/sessions/{sessionId}/plans")
+  @SaCheckPermission("activity:create")
+  public Result<Map<String, Object>> savePlanDraft(
+      @PathVariable Long sessionId, @Valid @RequestBody RequestSaveAiActivityPlanDTO request) {
+    return aiActivityAutomationService.savePlanDraft(sessionId, request);
   }
 
   @PostMapping("/ai/activity/sessions/{sessionId}/confirm-plan")
