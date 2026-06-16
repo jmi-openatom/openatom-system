@@ -145,6 +145,7 @@ const menus = ref([
   { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
   { path: '/admin/memberships', label: '成员管理', icon: UserFilled, permissions: ['membership:list'] },
   { path: '/admin/activities', label: '活动管理', icon: Calendar, permissions: ['activity:list'] },
+  { path: '/admin/ai-activities', label: 'AI活动自动化', icon: Calendar, permissions: ['activity:create'] },
   { path: '/admin/check-ins', label: '扫码签到', icon: Tickets, permissions: ['check-in:list'] },
   { path: '/admin/leaves', label: '请假审批', icon: DocumentChecked, permissions: ['leave-application:list'] },
 

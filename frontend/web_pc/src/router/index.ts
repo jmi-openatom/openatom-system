@@ -23,6 +23,7 @@ const adminFallbackRoutes = [
   '/admin/leaves',
   '/admin/school-calendar',
   '/admin/activities',
+  '/admin/ai-activities',
   '/admin/blogs',
   '/admin/check-ins',
   '/admin/bot-groups',
@@ -331,6 +332,12 @@ const routes = [
         name: 'admin-activities',
         meta: { permissions: ['activity:list'] },
         component: () => import('../views/admin/Activities.vue'),
+      },
+      {
+        path: 'ai-activities',
+        name: 'admin-ai-activities',
+        meta: { permissions: ['activity:create'] },
+        component: () => import('../views/admin/AiActivityAutomation.vue'),
       },
       {
         path: 'blogs',

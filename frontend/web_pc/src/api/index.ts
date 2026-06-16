@@ -425,6 +425,70 @@ export const activityApi = {
   },
 }
 
+export const aiActivityApi = {
+  sessions(): Promise<any> {
+    return request.get('/ai/activity/sessions')
+  },
+  detail(id: string | number): Promise<any> {
+    return request.get(`/ai/activity/sessions/${id}`)
+  },
+  createSession(data: Record<string, unknown>): Promise<any> {
+    return request.post('/ai/activity/sessions', data)
+  },
+  sendMessage(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/ai/activity/sessions/${id}/messages`, data)
+  },
+  confirmRequirement(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
+    return request.post(`/ai/activity/sessions/${id}/confirm-requirement`, data)
+  },
+  generatePlan(id: string | number): Promise<any> {
+    return request.post(`/ai/activity/sessions/${id}/generate-plan`)
+  },
+  revisePlan(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/ai/activity/sessions/${id}/revise-plan`, data)
+  },
+  confirmPlan(id: string | number): Promise<any> {
+    return request.post(`/ai/activity/sessions/${id}/confirm-plan`)
+  },
+  createActivity(id: string | number): Promise<any> {
+    return request.post(`/ai/activity/sessions/${id}/create-activity`)
+  },
+  generateDocuments(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
+    return request.post(`/ai/activity/sessions/${id}/documents/generate`, data)
+  },
+}
+
+export const aiSettingsApi = {
+  get(): Promise<any> {
+    return request.get('/ai/settings')
+  },
+  update(data: Record<string, unknown>): Promise<any> {
+    return request.put('/ai/settings', data)
+  },
+}
+
+export const documentTemplateApi = {
+  list(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/document-templates', { params })
+  },
+  upload(data: { templateType: string; templateName: string; file: File }): Promise<any> {
+    const formData = new FormData()
+    formData.append('templateType', data.templateType)
+    formData.append('templateName', data.templateName)
+    formData.append('file', data.file)
+    return request.post('/document-templates', formData)
+  },
+  variables(id: string | number): Promise<any> {
+    return request.get(`/document-templates/${id}/variables`)
+  },
+  saveVariables(id: string | number, variables: Array<Record<string, unknown>>): Promise<any> {
+    return request.put(`/document-templates/${id}/variables`, { variables })
+  },
+  downloadGenerated(id: string | number): Promise<any> {
+    return request.get(`/generated-documents/${id}/download`, { responseType: 'blob' })
+  },
+}
+
 export const checkInApi = {
   list(params?: Record<string, unknown>): Promise<any> {
     return request.get('/check-ins', { params })

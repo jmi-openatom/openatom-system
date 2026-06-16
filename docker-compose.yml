@@ -34,6 +34,11 @@ services:
       - APP_AVATAR_STORAGE_DIR=/app/uploads/avatars
       - APP_IMAGE_HOSTING_STORAGE_DIR=/app/uploads/images
       - APP_LEAVE_ATTACHMENT_STORAGE_DIR=/app/uploads/leave-attachments
+      - APP_DOCUMENT_TEMPLATE_STORAGE_DIR=/app/uploads/document-templates
+      - APP_GENERATED_DOCUMENT_STORAGE_DIR=/app/uploads/generated-documents
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
       - APP_BOT_LEAVE_REVIEW_CALLBACK_URL=${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:-http://127.0.0.1:6198/openatom/leave-review}
       - APP_BOT_CALLBACK_TOKEN=${APP_BOT_CALLBACK_TOKEN:-}
       - APP_NAPCAT_BASE_URL=${APP_NAPCAT_BASE_URL:-http://127.0.0.1:3000}
