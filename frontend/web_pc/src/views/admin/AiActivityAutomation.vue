@@ -320,7 +320,19 @@
         />
         <el-form label-width="128px">
           <el-form-item v-for="field in supplementFields" :key="field.key" :label="field.label">
+            <el-date-picker
+              v-if="field.control === 'datetimeRange'"
+              v-model="field.value"
+              class="supplement-date-picker"
+              type="datetimerange"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              range-separator="至"
+              value-format="YYYY-MM-DD HH:mm"
+              format="YYYY 年 MM 月 DD 日 HH:mm"
+            />
             <el-input
+              v-else
               v-model="field.value"
               :type="field.multiline ? 'textarea' : 'text'"
               :rows="field.multiline ? 3 : undefined"
@@ -432,14 +444,15 @@ const aiSettings = ref<Record<string, any>>({
 type SupplementField = {
   key: string
   label: string
-  value: string
+  value: string | string[]
   placeholder: string
   multiline?: boolean
+  control?: 'datetimeRange'
 }
 
 const supplementFieldMeta: Record<string, Omit<SupplementField, 'key' | 'value'>> = {
-  activityDateRange: { label: '活动时间', placeholder: '例如：2026 年 9 月 20 日 14:00-17:00' },
-  registrationDateRange: { label: '报名时间', placeholder: '例如：2026 年 9 月 10 日 12:00 至 9 月 18 日 18:00' },
+  activityDateRange: { label: '活动时间', placeholder: '请选择活动开始和结束时间', control: 'datetimeRange' },
+  registrationDateRange: { label: '报名时间', placeholder: '请选择报名开始和结束时间', control: 'datetimeRange' },
   location: { label: '活动地点', placeholder: '例如：教学楼 A101 / 大学生活动中心报告厅' },
   expectedParticipants: { label: '活动人数', placeholder: '例如：100 人' },
   registrationQuota: { label: '报名名额', placeholder: '例如：100 人' },
@@ -574,7 +587,67 @@ function displayMessage(message: any) {
       return message.content
     }
   }
+  if (message.role === 'assistant') {
+    return requirementStreamPreview(message.content) || message.content
+  }
   return message.content
+}
+
+function requirementStreamPreview(content: string) {
+  const text = (content || '').trim()
+  if (!text.startsWith('{')) return ''
+  try {
+    return structuredPreviewText(JSON.parse(text))
+  } catch {
+    const preview: string[] = []
+    const summary = extractJsonString(text, 'summary')
+    if (summary) preview.push(summary)
+    const suggestions = extractJsonArrayStrings(text, 'suggestions')
+    if (suggestions.length) preview.push(`建议：\n${suggestions.map((item) => `- ${item}`).join('\n')}`)
+    const questions = extractJsonArrayStrings(text, 'questions')
+    if (questions.length) preview.push(`需要补充：\n${questions.map((item) => `- ${item}`).join('\n')}`)
+    const missingFields = extractJsonArrayStrings(text, 'missingFields')
+    if (missingFields.length) preview.push(`缺失字段：${missingFields.join('、')}`)
+    return preview.join('\n\n') || 'AI 正在整理需求...'
+  }
+}
+
+function structuredPreviewText(payload: any) {
+  const preview: string[] = []
+  if (payload?.summary) preview.push(String(payload.summary))
+  if (Array.isArray(payload?.suggestions) && payload.suggestions.length) {
+    preview.push(`建议：\n${payload.suggestions.map((item: string) => `- ${item}`).join('\n')}`)
+  }
+  if (Array.isArray(payload?.questions) && payload.questions.length) {
+    preview.push(`需要补充：\n${payload.questions.map((item: string) => `- ${item}`).join('\n')}`)
+  }
+  if (Array.isArray(payload?.missingFields) && payload.missingFields.length) {
+    preview.push(`缺失字段：${payload.missingFields.join('、')}`)
+  }
+  return preview.join('\n\n')
+}
+
+function extractJsonString(text: string, key: string) {
+  const match = text.match(new RegExp(`"${key}"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"`))
+  return match ? unescapeJsonString(match[1]) : ''
+}
+
+function extractJsonArrayStrings(text: string, key: string) {
+  const match = text.match(new RegExp(`"${key}"\\s*:\\s*\\[([\\s\\S]*?)(?:\\]|$)`))
+  if (!match) return []
+  const values: string[] = []
+  const itemPattern = /"((?:\\.|[^"\\])*)"/g
+  let item: RegExpExecArray | null
+  while ((item = itemPattern.exec(match[1])) !== null) values.push(unescapeJsonString(item[1]))
+  return values
+}
+
+function unescapeJsonString(value: string) {
+  try {
+    return JSON.parse(`"${value}"`)
+  } catch {
+    return value
+  }
 }
 
 function useQuestion(question: string) {
@@ -663,12 +736,14 @@ function applyStreamEvent(event: string, data: any, assistantMessage: any | null
     return null
   }
   if (event === 'delta') {
+    aiResponsePending.value = false
     if (!assistantMessage) assistantMessage = appendTempMessage('assistant')
     assistantMessage.content += data?.content || ''
     return assistantMessage
   }
   if (event === 'complete') {
     current.value = data?.detail || current.value
+    aiResponsePending.value = false
     streamPhase.value = ''
     return null
   }
@@ -722,7 +797,7 @@ async function createSession() {
   aiResponsePending.value = true
   streamPhase.value = 'AI 正在澄清活动需求'
   try {
-    await runAiStream('/ai/activity/sessions/stream', newSession.value, undefined, { hideDelta: true })
+    await runAiStream('/ai/activity/sessions/stream', newSession.value)
     activeTab.value = 'chat'
     newSessionVisible.value = false
     newSession.value = { title: '', initialMessage: '' }
@@ -748,7 +823,7 @@ async function sendMessage() {
     await runAiStream(`/ai/activity/sessions/${current.value.id}/messages/stream`, {
       message,
       mode: 'requirement_clarification',
-    }, undefined, { hideDelta: true })
+    })
     await loadSessions()
   } finally {
     sending.value = false
@@ -861,7 +936,7 @@ async function generateDocuments() {
 async function submitSupplementAndGenerate() {
   const variables: Record<string, string> = { ...pendingSupplementVariables.value }
   for (const field of supplementFields.value) {
-    const value = field.value.trim()
+    const value = supplementFieldValue(field)
     if (value) variables[field.key] = value
   }
   if (variables.expectedParticipants && !variables.registrationQuota) {
@@ -909,9 +984,25 @@ function collectSupplementFields() {
     .filter((key) => needsSupplement(fields[key]))
     .map((key) => ({
       key,
-      value: '',
+      value: supplementFieldMeta[key]?.control === 'datetimeRange' ? [] : '',
       ...supplementFieldMeta[key],
     }))
+}
+
+function supplementFieldValue(field: SupplementField) {
+  if (Array.isArray(field.value)) {
+    const [start, end] = field.value
+    if (!start || !end) return ''
+    return `${formatDateTimeText(start)} 至 ${formatDateTimeText(end)}`
+  }
+  return field.value.trim()
+}
+
+function formatDateTimeText(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/)
+  if (!match) return value
+  const [, year, month, day, hour, minute] = match
+  return `${year} 年 ${Number(month)} 月 ${Number(day)} 日 ${hour}:${minute}`
 }
 
 function collectMissingFieldsFromError(message: string) {
@@ -924,10 +1015,11 @@ function collectMissingFieldsFromError(message: string) {
     .filter((key) => needsSupplement(pendingSupplementVariables.value[key]))
     .map((key) => ({
       key,
-      value: '',
+      value: supplementFieldMeta[key]?.control === 'datetimeRange' ? [] : '',
       label: supplementFieldMeta[key]?.label || key,
       placeholder: supplementFieldMeta[key]?.placeholder || `请输入 ${key}`,
       multiline: supplementFieldMeta[key]?.multiline,
+      control: supplementFieldMeta[key]?.control,
     }))
 }
 
@@ -1579,6 +1671,10 @@ onMounted(async () => {
 
 .supplement-dialog :deep(.el-alert) {
   align-items: flex-start;
+}
+
+.supplement-date-picker {
+  width: 100%;
 }
 
 @media (max-width: 1280px) {

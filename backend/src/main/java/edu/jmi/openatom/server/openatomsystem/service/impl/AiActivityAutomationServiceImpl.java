@@ -571,9 +571,9 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     String name = value(variables, "activityName", "本次活动");
     String audience = value(variables, "targetAudience", "校内学生");
     String location = value(variables, "location", "活动现场");
-    String purpose = summaryText(value(variables, "activityPurpose", ""), 220);
-    String content = summaryText(value(variables, "activityContentFull", value(variables, "activityContent", "")), 360);
-    String effect = summaryText(value(variables, "expectedEffect", value(variables, "activityHighlights", "")), 220);
+    String purpose = introSummaryText(value(variables, "activityPurpose", ""), 220);
+    String content = introSummaryText(value(variables, "activityContentFull", value(variables, "activityContent", "")), 360);
+    String effect = introSummaryText(value(variables, "expectedEffect", value(variables, "activityHighlights", "")), 220);
     return """
         为丰富校园科技文化生活，增强同学们对开源文化、社团项目与协作实践的了解，开放原子开源社团拟开展“%s”主题活动。本次活动面向%s开展，计划在%s组织实施，围绕社团特色、开源理念、团队协作与实践体验等内容进行设计，力求以轻松、有趣、可参与的形式降低同学们了解开源的门槛。
 
@@ -587,7 +587,7 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
 
   private String volunteerIntro(Map<String, Object> variables) {
     String name = value(variables, "activityName", "本次活动");
-    String responsibilities = summaryText(value(variables, "volunteerResponsibilities", ""), 320);
+    String responsibilities = introSummaryText(value(variables, "volunteerResponsibilities", ""), 320);
     return """
         “%s”志愿服务工作是保障活动顺利开展的重要组成部分，也是连接组织方、参与同学与现场执行环节的重要纽带。志愿者需以认真负责、热情耐心的态度参与活动筹备与现场服务，协助完成签到引导、秩序维护、流程提醒、物资整理、现场答疑和突发情况协助处理等工作。
 
@@ -644,6 +644,25 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     if (text == null || text.isBlank() || "见活动策划案".equals(text)) return "待补充";
     text = text.replaceAll("\\n+", "，").replaceAll("，{2,}", "，");
     return text.length() <= maxLength ? text : text.substring(0, maxLength) + "。";
+  }
+
+  private String introSummaryText(String value, int maxLength) {
+    String text = toDocText(value);
+    if (text == null || text.isBlank() || "见活动策划案".equals(text)) return "待补充";
+    text = text.replaceAll("\\n+", "，");
+    text = text.replaceAll("(?<!\\d)\\b\\d{1,2}[、.)．]\\s*", "");
+    text = text.replaceAll("第[一二三四五六七八九十]+[、.)．]\\s*", "");
+    text = text.replaceAll("[;；]\\s*", "，");
+    text = text.replaceAll("，{2,}", "，");
+    text = text.replaceAll("^，+|，+$", "");
+    if (text.isBlank()) return "待补充";
+    return text.length() <= maxLength ? ensureSentenceEnd(text) : ensureSentenceEnd(text.substring(0, maxLength));
+  }
+
+  private String ensureSentenceEnd(String text) {
+    String trimmed = text == null ? "" : text.trim();
+    if (trimmed.isBlank()) return trimmed;
+    return trimmed.matches(".*[。！？]$") ? trimmed : trimmed + "。";
   }
 
   private String bulletText(String value, int maxItems) {
@@ -895,9 +914,9 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
         contactText, registrationMethod, volunteerRegistrationMethod, checkinStudentId, activityDateShort,
         activityTimeShort, activitySummary, activityIntroduction, activityHighlights, volunteerActivitySummary,
         volunteerResponsibilities, activityContentFull, expectedEffect。
-        activitySummary 要写成适合 PU 活动申请书“活动简介”的 300-500 字正式段落；
+        activitySummary 要写成适合 PU 活动申请书“活动简介”的 300-500 字正式自然段，总结活动内容，不要使用 1、2、3、项目符号或分点列表；
         activityContentFull 要写成适合社团活动申请表“活动内容”的正式文本，包含活动简介、参加方式、活动安排、活动意义；
-        volunteerActivitySummary 要写成适合志愿者 PU 活动申请书的正式简介段落。
+        volunteerActivitySummary 要写成适合志愿者 PU 活动申请书的正式简介自然段，不要使用编号或分点列表。
         缺失字段返回空字符串，不要编造。
         """;
   }

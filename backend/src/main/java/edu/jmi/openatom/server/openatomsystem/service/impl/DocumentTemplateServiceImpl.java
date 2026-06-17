@@ -43,6 +43,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class DocumentTemplateServiceImpl implements DocumentTemplateService {
   private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{\\s*([a-zA-Z][a-zA-Z0-9_]*)\\s*}}");
+  private static final Pattern SINGLE_VARIABLE_PATTERN = Pattern.compile("^\\s*\\{\\{\\s*([a-zA-Z][a-zA-Z0-9_]*)\\s*}}\\s*$");
+  private static final String DOC_FONT = "宋体";
 
   private final DocumentTemplateMapper documentTemplateMapper;
   private final GeneratedDocumentMapper generatedDocumentMapper;
@@ -233,6 +235,11 @@ public class DocumentTemplateServiceImpl implements DocumentTemplateService {
   private void replaceParagraph(XWPFParagraph paragraph, Map<String, Object> variables) {
     String text = paragraph.getText();
     if (text == null || !text.contains("{{")) return;
+    Matcher singleVariable = SINGLE_VARIABLE_PATTERN.matcher(text);
+    if (singleVariable.matches() && "activityContentFull".equals(singleVariable.group(1))) {
+      replaceActivityApplicationContent(paragraph, String.valueOf(variables.getOrDefault("activityContentFull", "")));
+      return;
+    }
     String replaced = replaceText(text, variables);
     List<XWPFRun> runs = paragraph.getRuns();
     if (runs.isEmpty()) {
@@ -242,6 +249,40 @@ public class DocumentTemplateServiceImpl implements DocumentTemplateService {
     runs.getFirst().setText(replaced, 0);
     for (int i = 1; i < runs.size(); i++) {
       runs.get(i).setText("", 0);
+    }
+  }
+
+  private void replaceActivityApplicationContent(XWPFParagraph paragraph, String value) {
+    clearRuns(paragraph);
+    paragraph.setSpacingBetween(1.25);
+    paragraph.setSpacingBefore(0);
+    paragraph.setSpacingAfter(120);
+    String[] lines = value == null ? new String[0] : value.replace("\r\n", "\n").replace('\r', '\n').split("\\n");
+    boolean firstWritten = false;
+    for (String rawLine : lines) {
+      String line = rawLine == null ? "" : rawLine.trim();
+      if (line.isBlank()) {
+        if (firstWritten) paragraph.createRun().addBreak();
+        continue;
+      }
+      if (firstWritten) paragraph.createRun().addBreak();
+      boolean heading = isApplicationSectionHeading(line);
+      XWPFRun run = paragraph.createRun();
+      run.setFontFamily(DOC_FONT);
+      run.setFontSize(heading ? 12 : 11);
+      run.setBold(heading);
+      run.setText(line);
+      firstWritten = true;
+    }
+  }
+
+  private boolean isApplicationSectionHeading(String line) {
+    return line != null && line.matches("^[一二三四五六七八九十]+、.{2,18}$");
+  }
+
+  private void clearRuns(XWPFParagraph paragraph) {
+    for (int i = paragraph.getRuns().size() - 1; i >= 0; i--) {
+      paragraph.removeRun(i);
     }
   }
 
