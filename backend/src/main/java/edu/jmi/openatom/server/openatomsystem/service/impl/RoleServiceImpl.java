@@ -38,7 +38,6 @@ public class RoleServiceImpl implements RoleService {
   private final UserRoleMapper userRoleMapper;
 
   @Override
-  @RedisCached(cacheName = "lookup:role", key = "'all'", ttlSeconds = 1800)
   public Result<List<Role>> getRoles() { return Result.success(roleMapper.selectList(null)); }
 
   @Override
