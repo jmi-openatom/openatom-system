@@ -416,7 +416,7 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     if (request != null && request.getVariables() != null) variables.putAll(request.getVariables());
     variables = documentReadyVariables(variables);
     Map<String, Long> templateIds = request == null ? null : request.getTemplateIds();
-    List<Map<String, Object>> generated = new ArrayList<>();
+    Map<String, DocumentTemplate> selectedTemplates = new LinkedHashMap<>();
     for (String documentType : DOCUMENT_TYPES) {
       DocumentTemplate template =
           templateIds != null && templateIds.get(documentType) != null
@@ -424,7 +424,17 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
               : templateMapper.selectLatestEnabledByType(documentType);
       if (template == null) return Result.error(400, "缺少模板: " + documentType);
       List<String> missing = documentTemplateService.missingRequiredVariables(template, variables);
-      if (!missing.isEmpty()) return Result.error(400, "模板 " + template.getTemplateName() + " 缺少变量: " + String.join(", ", missing));
+      if (!missing.isEmpty()) {
+        return Result.error(
+            400, "模板 " + template.getTemplateName() + " 缺少变量: " + String.join(", ", missing));
+      }
+      selectedTemplates.put(documentType, template);
+    }
+    cleanGeneratedDocuments(sessionId);
+    List<Map<String, Object>> generated = new ArrayList<>();
+    for (Map.Entry<String, DocumentTemplate> entry : selectedTemplates.entrySet()) {
+      String documentType = entry.getKey();
+      DocumentTemplate template = entry.getValue();
       String fileName = documentFileName(documentType, variables, plan);
       try {
         Path path = documentTemplateService.generateDocx(template, variables, fileName);
@@ -468,6 +478,13 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     session.setStatus("documents_generated");
     sessionMapper.updateById(session);
     return Result.success(generated);
+  }
+
+  private void cleanGeneratedDocuments(Long sessionId) {
+    for (GeneratedDocument document : generatedDocumentMapper.selectBySessionId(sessionId)) {
+      deleteGeneratedFileQuietly(document);
+    }
+    generatedDocumentMapper.deleteBySessionId(sessionId);
   }
 
   private GeneratedDocument saveMarkdownDocument(

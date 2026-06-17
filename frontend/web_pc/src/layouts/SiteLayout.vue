@@ -337,7 +337,7 @@ onBeforeUnmount(() => {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  filter: grayscale(1) contrast(1.05);
+  //filter: grayscale(1) contrast(1.05);
 }
 
 .brand-text .name {

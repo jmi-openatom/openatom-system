@@ -105,7 +105,7 @@
                 :loading="generatingDocs"
                 @click="canGenerateDocuments ? generateDocuments() : createActivityDraft()"
               >
-                {{ canGenerateDocuments ? '生成三份 docx' : '创建活动草稿' }}
+                {{ canGenerateDocuments ? '生成五份材料' : '创建活动草稿' }}
               </el-button>
             </div>
           </div>
@@ -243,7 +243,7 @@
             :loading="generatingDocs"
             @click="generateDocuments"
           >
-            生成三份 docx
+            生成五份材料
           </el-button>
           <div class="doc-list">
             <div v-for="doc in current?.documents || []" :key="doc.id" class="doc-item">
@@ -471,21 +471,54 @@ type SupplementField = {
 }
 
 const supplementFieldMeta: Record<string, Omit<SupplementField, 'key' | 'value'>> = {
+  clubName: { label: '社团名称', placeholder: '例如：开放原子开源社团' },
+  activityName: { label: '活动名称', placeholder: '例如：新生开源破冰活动' },
+  activityCategory: { label: '活动类别', placeholder: '例如：创新创业' },
+  activityLevel: { label: '活动级别', placeholder: '例如：校级' },
   activityDateRange: { label: '活动时间', placeholder: '请选择活动开始和结束时间', control: 'datetimeRange' },
   registrationDateRange: { label: '报名时间', placeholder: '请选择报名开始和结束时间', control: 'datetimeRange' },
   location: { label: '活动地点', placeholder: '例如：教学楼 A101 / 学生活动中心报告厅' },
+  targetAudience: { label: '活动对象', placeholder: '例如：全校学生 / 社团新成员' },
+  targetCollege: { label: '面向院系', placeholder: '例如：全部' },
+  targetGrade: { label: '面向年级', placeholder: '例如：全部' },
   expectedParticipants: { label: '活动人数', placeholder: '例如：100 人' },
   registrationQuota: { label: '报名名额', placeholder: '例如：100 人' },
+  practiceHours: { label: '实践学时', placeholder: '例如：3' },
+  needCheckout: { label: '是否签退', placeholder: '例如：否' },
+  needFieldCheckin: { label: '是否外勤打卡', placeholder: '例如：否' },
   volunteerCount: { label: '志愿者人数', placeholder: '例如：10 人' },
+  volunteerCategory: { label: '志愿者类别', placeholder: '例如：志愿公益服务' },
   principalName: { label: '负责人', placeholder: '例如：张三' },
   principalPhone: { label: '负责人电话', placeholder: '例如：13800000000' },
+  contactText: { label: '联系方式', placeholder: '例如：张三，联系电话 13800000000' },
   advisorName: { label: '指导老师', placeholder: '例如：李老师' },
   checkinStudentId: { label: '签到员学号', placeholder: '例如：2026xxxxxx' },
+  registrationMethod: { label: '报名方式', placeholder: '例如：报名制（报名不需审核，人满截止）' },
+  volunteerRegistrationMethod: { label: '志愿者报名方式', placeholder: '例如：报名制（报名需审核，人满截止）' },
   budgetTotal: { label: '预算总额', placeholder: '例如：300 元' },
   budgetDetails: { label: '预算明细', placeholder: '例如：物资 150 元，奖品 100 元，打印 50 元', multiline: true },
+  activitySummary: { label: '活动简介', placeholder: '请输入适合申请书的活动简介', multiline: true },
+  activityIntroduction: { label: '活动介绍', placeholder: '请输入活动背景或介绍', multiline: true },
+  activityHighlights: { label: '活动亮点', placeholder: '请输入活动亮点', multiline: true },
+  activityContentFull: { label: '活动内容', placeholder: '请输入申请表活动内容', multiline: true },
+  volunteerActivitySummary: { label: '志愿者活动简介', placeholder: '请输入志愿者申请书简介', multiline: true },
+  volunteerResponsibilities: { label: '志愿者职责', placeholder: '请输入志愿者职责', multiline: true },
 }
 
-const supplementFieldOrder = Object.keys(supplementFieldMeta)
+const supplementFieldOrder = [
+  'activityDateRange',
+  'registrationDateRange',
+  'location',
+  'expectedParticipants',
+  'registrationQuota',
+  'volunteerCount',
+  'principalName',
+  'principalPhone',
+  'advisorName',
+  'checkinStudentId',
+  'budgetTotal',
+  'budgetDetails',
+]
 
 const latestPlan = computed(() => {
   const plans = current.value?.plans || []
@@ -508,7 +541,7 @@ const progressItems = computed(() => {
     { key: 'chat', title: '澄清需求', description: '补齐时间、地点、人数、预算', index: '01' },
     { key: 'requirement', title: '确认需求', description: '锁定活动关键信息', index: '02' },
     { key: 'plan', title: '确认策划案', description: '生成并修订正式策划案', index: '03' },
-    { key: 'docs', title: '生成材料', description: '输出三份 PU docx', index: '04' },
+    { key: 'docs', title: '生成材料', description: '输出三份 docx 与两份 Markdown', index: '04' },
   ]
   return items.map((item, index) => ({
     ...item,
@@ -521,7 +554,7 @@ const currentNextAction = computed(() => {
   if (status === 'drafting') return '继续补齐活动信息，确认后再生成策划案。'
   if (status === 'requirement_confirmed') return '需求已锁定，可以生成活动策划案。'
   if (status === 'plan_generated') return '检查策划案内容，必要时让 AI 局部修改。'
-  if (status === 'plan_confirmed') return '策划案已确认，可以生成三份 docx 材料。'
+  if (status === 'plan_confirmed') return '策划案已确认，可以生成三份 docx 与两份 Markdown。'
   if (status === 'documents_generated') return '材料已生成，可下载或创建活动草稿。'
   return '选择下一步操作。'
 })
@@ -542,7 +575,7 @@ const primaryActionLabel = computed(() => {
   if (canConfirmRequirement.value) return '确认需求'
   if (canGeneratePlan.value) return '生成策划案'
   if (canConfirmPlan.value) return '确认策划案'
-  if (canGenerateDocuments.value) return '生成三份 docx'
+  if (canGenerateDocuments.value) return '生成五份材料'
   if (canCreateActivityDraft.value) return '创建活动草稿'
   return '继续补充信息'
 })
@@ -1051,14 +1084,18 @@ function collectMissingFieldsFromError(message: string) {
     .map((key) => key.trim())
     .filter(Boolean)
     .filter((key) => needsSupplement(pendingSupplementVariables.value[key]))
-    .map((key) => ({
-      key,
-      value: supplementFieldMeta[key]?.control === 'datetimeRange' ? [] : '',
-      label: supplementFieldMeta[key]?.label || key,
-      placeholder: supplementFieldMeta[key]?.placeholder || `请输入 ${key}`,
-      multiline: supplementFieldMeta[key]?.multiline,
-      control: supplementFieldMeta[key]?.control,
-    }))
+    .map((key) => {
+      const meta = supplementFieldMeta[key]
+      const label = meta?.label || '补充信息'
+      return {
+        key,
+        value: meta?.control === 'datetimeRange' ? [] : '',
+        label,
+        placeholder: meta?.placeholder || `请输入${label}`,
+        multiline: meta?.multiline,
+        control: meta?.control,
+      }
+    })
 }
 
 function planStructuredFields() {
