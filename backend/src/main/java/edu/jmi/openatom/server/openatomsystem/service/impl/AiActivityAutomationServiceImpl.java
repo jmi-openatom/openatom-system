@@ -398,6 +398,7 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     if (plan == null) return Result.error(400, "请先确认策划案");
     Map<String, Object> variables = normalizeActivityFields(Jsons.parseObject(plan.getStructuredFields()));
     if (request != null && request.getVariables() != null) variables.putAll(request.getVariables());
+    variables = documentReadyVariables(variables);
     Map<String, Long> templateIds = request == null ? null : request.getTemplateIds();
     List<Map<String, Object>> generated = new ArrayList<>();
     for (String documentType : DOCUMENT_TYPES) {
@@ -537,6 +538,66 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     fields.putIfAbsent("volunteerResponsibilities", value(fields, "volunteerRequirements", "协助完成签到引导、现场秩序维护、活动讲解、物资整理和突发情况协助处理等工作。"));
     fields.putIfAbsent("activityContentFull", value(fields, "activityContent", value(fields, "activityPurpose", "见活动策划案")));
     return fields;
+  }
+
+  private Map<String, Object> documentReadyVariables(Map<String, Object> source) {
+    Map<String, Object> variables = new LinkedHashMap<>();
+    for (Map.Entry<String, Object> entry : source.entrySet()) {
+      Object raw = entry.getValue();
+      variables.put(entry.getKey(), raw instanceof String text ? toDocText(text) : raw);
+    }
+    variables.put("activitySummary", summaryText(value(variables, "activitySummary", value(variables, "activityPurpose", "")), 160));
+    variables.put("activityIntroduction", summaryText(value(variables, "activityIntroduction", value(variables, "activityBackground", "")), 260));
+    variables.put("activityHighlights", summaryText(value(variables, "activityHighlights", value(variables, "expectedEffect", "")), 220));
+    variables.put("volunteerActivitySummary", summaryText(value(variables, "volunteerActivitySummary", ""), 180));
+    variables.put("volunteerResponsibilities", bulletText(value(variables, "volunteerResponsibilities", ""), 6));
+    variables.put("activityContentFull", bulletText(value(variables, "activityContentFull", ""), 12));
+    return variables;
+  }
+
+  private String toDocText(String value) {
+    if (value == null || value.isBlank()) return value;
+    String text = value.replace("\r\n", "\n").replace('\r', '\n');
+    text = text.replaceAll("(?m)^\\s{0,3}#{1,6}\\s*", "");
+    text = text.replaceAll("\\*\\*([^*]+)\\*\\*", "$1");
+    text = text.replaceAll("__([^_]+)__", "$1");
+    text = text.replaceAll("`([^`]+)`", "$1");
+    text = text.replaceAll("(?m)^\\s*[-*+]\\s+", "");
+    text = text.replaceAll("(?m)^\\s*\\d+[.)、]\\s+", "");
+    text = text.replaceAll("\\[([^\\]]+)]\\([^)]*\\)", "$1");
+    text = text.replaceAll("[*_`>#|]+", "");
+    text = text.replaceAll("(?m)^\\s*-{3,}\\s*$", "");
+    text = text.replaceAll("[ \\t]+", " ");
+    text = text.replaceAll("\\n{3,}", "\n\n");
+    return text.trim();
+  }
+
+  private String summaryText(String value, int maxLength) {
+    String text = toDocText(value);
+    if (text == null || text.isBlank() || "见活动策划案".equals(text)) return "待补充";
+    text = text.replaceAll("\\n+", "，").replaceAll("，{2,}", "，");
+    return text.length() <= maxLength ? text : text.substring(0, maxLength) + "。";
+  }
+
+  private String bulletText(String value, int maxItems) {
+    String text = toDocText(value);
+    if (text == null || text.isBlank() || "见活动策划案".equals(text)) return "待补充";
+    String[] lines = text.split("\\n+");
+    List<String> items = new ArrayList<>();
+    for (String line : lines) {
+      String item = line.trim();
+      if (item.isBlank()) continue;
+      if (item.length() > 120) item = item.substring(0, 120) + "。";
+      items.add(item);
+      if (items.size() >= maxItems) break;
+    }
+    if (items.isEmpty()) return summaryText(text, 300);
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < items.size(); i++) {
+      if (i > 0) builder.append("\n");
+      builder.append(i + 1).append("、").append(items.get(i));
+    }
+    return builder.toString();
   }
 
   private void putIfBlank(Map<String, Object> fields, String key, String fallback) {
