@@ -86,7 +86,7 @@ import {
   interviewStatusText,
   statusType,
 } from '@/utils/format.ts'
-import { hasAdminAccess, hasAnyPermission } from '@/utils/permission.ts'
+import { hasAnyPermission, hasRole } from '@/utils/permission.ts'
 import { ElMessage } from 'element-plus/es/components/message/index'
 
 type DashboardStatKey = 'users' | 'clubs' | 'applications' | 'memberships'
@@ -151,7 +151,7 @@ const canViewInterviews = computed(() => {
 })
 
 const canManageRegistration = computed(() => {
-  return hasAdminAccess()
+  return hasRole('super_admin') || hasRole('club_admin')
 })
 
 const hasDashboardSections = computed(() => {
@@ -246,7 +246,9 @@ async function handleRegisterSwitch(value: any) {
 
 onMounted(() => {
   loadDashboard()
-  fetchRegisterEnabled() // 页面加载时获取初始状态
+  if (canManageRegistration.value) {
+    fetchRegisterEnabled()
+  }
 })
 </script>
 

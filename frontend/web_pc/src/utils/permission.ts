@@ -1,6 +1,6 @@
 import { getCurrentPermissions, getCurrentRoles, getToken } from '@/utils/auth.ts'
 
-const adminRoles = ['super_admin', 'club_admin', 'department_head']
+const adminRoles = ['super_admin', 'club_admin', 'department_head', 'operations_lead']
 
 export function hasRole(roleCode: string): boolean {
   return getCurrentRoles().includes(roleCode)
