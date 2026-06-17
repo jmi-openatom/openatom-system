@@ -32,6 +32,11 @@ public record RoleSeedTemplate(
 				"department_head", "部门负责人", "department", "管理所属部门基础事务", departmentHeadPermissionCodes());
 	}
 
+	public static RoleSeedTemplate operationsLead() {
+		return new RoleSeedTemplate(
+				"operations_lead", "运营负责人", "club", "发布活动和签到，查看后台运营数据，不管理成员和高危删除操作", operationsLeadPermissionCodes());
+	}
+
 	public static RoleSeedTemplate probationaryMember() {
 		return new RoleSeedTemplate(
 				"probationary_member", "非正式成员", "self", "社团非正式成员基础角色", probationaryMemberPermissionCodes());
@@ -184,6 +189,67 @@ public record RoleSeedTemplate(
 				SystemPermission.IMAGE_LIST,
 				SystemPermission.EXIT_APPLICATION_LIST,
 				SystemPermission.EXIT_APPLICATION_DETAIL);
+	}
+
+	public static List<String> operationsLeadPermissionCodes() {
+		return SystemPermission.codes(
+				SystemPermission.AUTH_ME,
+				SystemPermission.AUTH_LOGOUT,
+				SystemPermission.CLUB_LIST,
+				SystemPermission.CLUB_DETAIL,
+				SystemPermission.DEPARTMENT_LIST,
+				SystemPermission.DEPARTMENT_DETAIL,
+				SystemPermission.POSITION_LIST,
+				SystemPermission.POSITION_DETAIL,
+				SystemPermission.USER_LIST,
+				SystemPermission.USER_INFO,
+				SystemPermission.USER_MEMBERSHIP_LIST,
+				SystemPermission.RECRUITMENT_CAMPAIGN_LIST,
+				SystemPermission.RECRUITMENT_CAMPAIGN_DETAIL,
+				SystemPermission.APPLICATION_LIST,
+				SystemPermission.APPLICATION_DETAIL,
+				SystemPermission.APPROVAL_RECORD_LIST,
+				SystemPermission.INTERVIEW_LIST,
+				SystemPermission.INTERVIEW_DETAIL,
+				SystemPermission.MEMBERSHIP_LIST,
+				SystemPermission.MEMBERSHIP_DETAIL,
+				SystemPermission.EXIT_APPLICATION_LIST,
+				SystemPermission.EXIT_APPLICATION_DETAIL,
+				SystemPermission.ACTIVITY_LIST,
+				SystemPermission.ACTIVITY_CREATE,
+				SystemPermission.ACTIVITY_DETAIL,
+				SystemPermission.ACTIVITY_UPDATE,
+				SystemPermission.ACTIVITY_REGISTRATION_LIST,
+				SystemPermission.CHECK_IN_LIST,
+				SystemPermission.CHECK_IN_DETAIL,
+				SystemPermission.CHECK_IN_CREATE,
+				SystemPermission.CHECK_IN_UPDATE,
+				SystemPermission.CHECK_IN_RECORDS,
+				SystemPermission.LEAVE_APPLICATION_LIST,
+				SystemPermission.LEAVE_APPLICATION_DETAIL,
+				SystemPermission.SITE_FORM_LIST,
+				SystemPermission.SITE_FORM_DETAIL,
+				SystemPermission.LOTTERY_LIST,
+				SystemPermission.LOTTERY_DETAIL,
+				SystemPermission.VOTE_LIST,
+				SystemPermission.VOTE_DETAIL,
+				SystemPermission.POINT_ACCOUNT_LIST,
+				SystemPermission.POINT_TRANSACTION_LIST,
+				SystemPermission.POINT_ITEM_LIST,
+				SystemPermission.POINT_REDEMPTION_LIST,
+				SystemPermission.AWARD_LIST,
+				SystemPermission.DOCUMENT_LIST,
+				SystemPermission.IMAGE_LIST,
+				SystemPermission.SHOWCASE_APP_LIST,
+				SystemPermission.DATA_OPEN_LIST,
+				SystemPermission.BLOG_LIST,
+				SystemPermission.BLOG_COMMENT_LIST,
+				SystemPermission.BLOG_INTERACTION_LIST,
+				SystemPermission.NOTIFICATION_LIST,
+				SystemPermission.BOT_MANAGEMENT_LIST,
+				SystemPermission.BOT_MANAGEMENT_DETAIL,
+				SystemPermission.BOT_MANAGEMENT_MEMBERS,
+				SystemPermission.BOT_MANAGEMENT_STATISTICS);
 	}
 
 	public static List<String> formalMemberPermissionCodes() {

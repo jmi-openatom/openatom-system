@@ -44,6 +44,7 @@ public class SystemUserInitializer implements ApplicationRunner {
     initRoleTemplate(RoleSeedTemplate.formalMember());
     initRoleTemplate(RoleSeedTemplate.probationaryMember());
     initRoleTemplate(RoleSeedTemplate.departmentHead());
+    initRoleTemplate(RoleSeedTemplate.operationsLead());
     initRoleTemplate(RoleSeedTemplate.clubAdmin());
 
     RoleSeedTemplate adminRoleTemplate = RoleSeedTemplate.superAdmin();
