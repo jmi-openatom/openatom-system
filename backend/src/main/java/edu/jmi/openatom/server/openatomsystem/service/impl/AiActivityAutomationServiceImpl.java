@@ -35,6 +35,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequiredArgsConstructor
 public class AiActivityAutomationServiceImpl implements AiActivityAutomationService {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final Pattern PARTICIPANT_PATTERN = Pattern.compile("(?:预计|约|大约|左右)?\\s*(\\d{1,5})\\s*[人名]");
   private static final String DEFAULT_CLUB_CODE = "JMI-OPENATOM";
   private static final List<String> DOCUMENT_TYPES =
       List.of("activity_proposal", "activity_application_form", "volunteer_application_form");
@@ -393,7 +396,7 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     if (session == null) return Result.error(404, "会话不存在");
     AiActivityPlan plan = confirmedOrLatestPlan(session);
     if (plan == null) return Result.error(400, "请先确认策划案");
-    Map<String, Object> variables = new LinkedHashMap<>(Jsons.parseObject(plan.getStructuredFields()));
+    Map<String, Object> variables = normalizeActivityFields(Jsons.parseObject(plan.getStructuredFields()));
     if (request != null && request.getVariables() != null) variables.putAll(request.getVariables());
     Map<String, Long> templateIds = request == null ? null : request.getTemplateIds();
     List<Map<String, Object>> generated = new ArrayList<>();
@@ -484,11 +487,19 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
             extractPrompt(),
             List.of(Map.of("role", "user", "content", planContent)));
     Map<String, Object> parsed = parseJsonObject(response);
-    if (!parsed.isEmpty()) return normalizeActivityFields(parsed);
+    if (!parsed.isEmpty()) {
+      Map<String, Object> merged = latestAssistantPayload(sessionId);
+      merged.putAll(parsed);
+      String participantText = extractParticipantText(planContent);
+      if (participantText != null) merged.putIfAbsent("expectedParticipants", participantText);
+      return normalizeActivityFields(merged);
+    }
     Map<String, Object> fallback = latestAssistantPayload(sessionId);
     fallback.putIfAbsent("activityName", titleFrom(planContent));
     fallback.putIfAbsent("activityPurpose", "见活动策划案");
     fallback.putIfAbsent("location", "待补充");
+    String participantText = extractParticipantText(planContent);
+    if (participantText != null) fallback.putIfAbsent("expectedParticipants", participantText);
     fallback.putIfAbsent("activityContentFull", planContent);
     return normalizeActivityFields(fallback);
   }
@@ -505,7 +516,8 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     fields.putIfAbsent("practiceHours", "3");
     fields.putIfAbsent("needCheckout", "否");
     fields.putIfAbsent("needFieldCheckin", "否");
-    fields.putIfAbsent("registrationQuota", value(fields, "expectedParticipants", "待补充"));
+    putIfBlank(fields, "expectedParticipants", value(fields, "registrationQuota", value(fields, "targetAudience", "待补充")));
+    putIfBlank(fields, "registrationQuota", value(fields, "expectedParticipants", "待补充"));
     fields.putIfAbsent("volunteerCount", "待补充");
     fields.putIfAbsent("principalName", "待补充");
     fields.putIfAbsent("principalPhone", "待补充");
@@ -525,6 +537,18 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     fields.putIfAbsent("volunteerResponsibilities", value(fields, "volunteerRequirements", "协助完成签到引导、现场秩序维护、活动讲解、物资整理和突发情况协助处理等工作。"));
     fields.putIfAbsent("activityContentFull", value(fields, "activityContent", value(fields, "activityPurpose", "见活动策划案")));
     return fields;
+  }
+
+  private void putIfBlank(Map<String, Object> fields, String key, String fallback) {
+    Object current = fields.get(key);
+    if (current == null || String.valueOf(current).isBlank()) fields.put(key, fallback);
+  }
+
+  private String extractParticipantText(String text) {
+    if (text == null || text.isBlank()) return null;
+    Matcher matcher = PARTICIPANT_PATTERN.matcher(text);
+    if (matcher.find()) return matcher.group(1) + "人";
+    return null;
   }
 
   private AiActivitySession sessionForCurrentUser(Long sessionId) {
