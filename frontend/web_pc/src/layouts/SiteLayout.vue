@@ -8,7 +8,7 @@
     >
       <div class="container site-header__inner">
         <router-link class="brand" to="/">
-          <img alt="徽标" class="site-footer__logo" src="/logo.png" />
+          <img alt="徽标" class="site-footer__logo" src="../../public/logo.png" />
           <span>
             <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
