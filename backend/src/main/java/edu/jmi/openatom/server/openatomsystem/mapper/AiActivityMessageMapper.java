@@ -14,4 +14,8 @@ public interface AiActivityMessageMapper extends BaseMapper<AiActivityMessage> {
             .eq(AiActivityMessage::getSessionId, sessionId)
             .orderByAsc(AiActivityMessage::getId));
   }
+
+  default int deleteBySessionId(Long sessionId) {
+    return delete(new LambdaQueryWrapper<AiActivityMessage>().eq(AiActivityMessage::getSessionId, sessionId));
+  }
 }

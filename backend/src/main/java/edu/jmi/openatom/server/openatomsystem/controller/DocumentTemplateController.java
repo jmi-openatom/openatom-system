@@ -73,9 +73,13 @@ public class DocumentTemplateController {
         .header(
             HttpHeaders.CONTENT_DISPOSITION,
             ContentDisposition.attachment().filename(fileName, StandardCharsets.UTF_8).build().toString())
-        .contentType(
-            MediaType.parseMediaType(
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+        .contentType(generatedDocumentMediaType(document.getFileName()))
         .body(bytes);
+  }
+
+  private MediaType generatedDocumentMediaType(String fileName) {
+    String lower = fileName == null ? "" : fileName.toLowerCase();
+    if (lower.endsWith(".md")) return MediaType.parseMediaType("text/markdown;charset=UTF-8");
+    return MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
   }
 }

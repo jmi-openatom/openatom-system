@@ -29,4 +29,8 @@ public interface AiActivityPlanMapper extends BaseMapper<AiActivityPlan> {
     AiActivityPlan latest = selectLatestBySessionId(sessionId);
     return latest == null || latest.getVersion() == null ? 1 : latest.getVersion() + 1;
   }
+
+  default int deleteBySessionId(Long sessionId) {
+    return delete(new LambdaQueryWrapper<AiActivityPlan>().eq(AiActivityPlan::getSessionId, sessionId));
+  }
 }

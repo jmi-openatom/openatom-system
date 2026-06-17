@@ -14,4 +14,8 @@ public interface GeneratedDocumentMapper extends BaseMapper<GeneratedDocument> {
             .eq(GeneratedDocument::getSessionId, sessionId)
             .orderByDesc(GeneratedDocument::getId));
   }
+
+  default int deleteBySessionId(Long sessionId) {
+    return delete(new LambdaQueryWrapper<GeneratedDocument>().eq(GeneratedDocument::getSessionId, sessionId));
+  }
 }

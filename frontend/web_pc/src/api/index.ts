@@ -436,6 +436,9 @@ export const aiActivityApi = {
   createSession(data: Record<string, unknown>): Promise<any> {
     return request.post('/ai/activity/sessions', data)
   },
+  deleteSession(id: string | number): Promise<any> {
+    return request.delete(`/ai/activity/sessions/${id}`)
+  },
   sendMessage(id: string | number, data: Record<string, unknown>): Promise<any> {
     return request.post(`/ai/activity/sessions/${id}/messages`, data)
   },

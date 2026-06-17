@@ -28,6 +28,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.DocumentTemplateMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.GeneratedDocumentMapper;
 import edu.jmi.openatom.server.openatomsystem.service.AiActivityAutomationService;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -97,6 +98,21 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     AiActivitySession session = sessionForCurrentUser(sessionId);
     if (session == null) return Result.error(404, "会话不存在");
     return Result.success(detailMap(session));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> deleteSession(Long sessionId) {
+    AiActivitySession session = sessionForCurrentUser(sessionId);
+    if (session == null) return Result.error(404, "会话不存在");
+    for (GeneratedDocument document : generatedDocumentMapper.selectBySessionId(sessionId)) {
+      deleteGeneratedFileQuietly(document);
+    }
+    generatedDocumentMapper.deleteBySessionId(sessionId);
+    planMapper.deleteBySessionId(sessionId);
+    messageMapper.deleteBySessionId(sessionId);
+    sessionMapper.deleteById(sessionId);
+    return Result.success("对话已删除");
   }
 
   @Override
@@ -429,9 +445,48 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
         return Result.error(500, "文档生成失败: " + e.getMessage());
       }
     }
+    try {
+      generated.add(
+          generatedMap(
+              saveMarkdownDocument(
+                  sessionId,
+                  plan,
+                  "activity_plan_markdown",
+                  "活动策划案.md",
+                  activityPlanMarkdown(variables, plan))));
+      generated.add(
+          generatedMap(
+              saveMarkdownDocument(
+                  sessionId,
+                  plan,
+                  "activity_volunteer_markdown",
+                  "活动志愿者.md",
+                  activityVolunteerMarkdown(variables))));
+    } catch (IOException e) {
+      return Result.error(500, "Markdown 生成失败: " + e.getMessage());
+    }
     session.setStatus("documents_generated");
     sessionMapper.updateById(session);
     return Result.success(generated);
+  }
+
+  private GeneratedDocument saveMarkdownDocument(
+      Long sessionId, AiActivityPlan plan, String documentType, String fileName, String content)
+      throws IOException {
+    Path path = documentTemplateService.generateTextFile(fileName, content);
+    GeneratedDocument document =
+        GeneratedDocument.builder()
+            .sessionId(sessionId)
+            .planId(plan.getId())
+            .templateId(0L)
+            .documentType(documentType)
+            .fileName(fileName)
+            .filePath(path.toString())
+            .filledVariables("{}")
+            .createdBy(StpUtil.getLoginIdAsInt())
+            .build();
+    generatedDocumentMapper.insert(document);
+    return document;
   }
 
   private Result<Map<String, Object>> savePlan(AiActivitySession session, String content, String status) {
@@ -565,6 +620,142 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
           default -> documentType;
         };
     return safeName("开放原子开源社团" + suffix + "-" + activityName + ".docx");
+  }
+
+  private String activityPlanMarkdown(Map<String, Object> variables, AiActivityPlan plan) {
+    String name = value(variables, "activityName", plan.getTitle());
+    String intro = value(variables, "activitySummary", value(variables, "activityPurpose", "待补充"));
+    String highlights = value(variables, "activityHighlights", value(variables, "expectedEffect", "待补充"));
+    String registration = value(variables, "registrationMethod", "待补充");
+    String content = value(variables, "activityContentFull", plan.getContentMarkdown());
+    String significance = value(variables, "expectedEffect", highlights);
+    String participants = value(variables, "expectedParticipants", "待补充");
+    String hours = value(variables, "practiceHours", "待补充");
+    String category = value(variables, "activityCategory", "待补充");
+    String volunteerCount = value(variables, "volunteerCount", "待补充");
+    return """
+        ---
+        tags:
+          - 活动
+          - 策划案
+          - 活动系列
+        活动时间: %s
+        活动地点: %s
+        活动状态: 待提交
+        主讲人: %s
+        ---
+
+        # 一、活动主题
+
+        ## 活动名称：%s
+
+        ## 活动简介
+
+        %s
+
+        # 二、活动亮点
+
+        %s
+
+        # 三、参加方式
+
+        %s
+
+        # 四、活动内容安排
+
+        %s
+
+        # 五、活动意义
+
+        %s
+
+        # 六、推文文案
+
+        ```text
+        %s
+        ```
+
+        # 七、活动人员
+
+        ### 主要活动人员
+
+        - 参与人数：%s
+        - PU 分数：%s 分
+        - PU 类别：%s
+
+        ### 活动志愿者
+
+        - 志愿者人数：%s
+        - 志愿者安排：见《活动志愿者》模板
+        """
+        .formatted(
+            value(variables, "activityDateRange", "待补充"),
+            value(variables, "location", "待补充"),
+            value(variables, "speaker", value(variables, "principalName", "待补充")),
+            name,
+            intro,
+            highlights,
+            registration,
+            content,
+            significance,
+            intro,
+            participants,
+            hours,
+            category,
+            volunteerCount)
+        .trim();
+  }
+
+  private String activityVolunteerMarkdown(Map<String, Object> variables) {
+    String volunteerCount = value(variables, "volunteerCount", "待补充");
+    return """
+        ---
+        tags:
+          - 活动
+          - 志愿者
+        活动名称: %s
+        活动时间: %s
+        活动地点: %s
+        ---
+
+        # 志愿者分配
+
+        ### 1. 签到员
+
+        #### 人数：%s 名
+
+        | 班级 | 姓名 |
+        | --- | --- |
+        |     |     |
+
+        ### 2. 摄影师
+
+        #### 人数：%s 名
+
+        | 班级 | 姓名 |
+        | --- | --- |
+        |     |     |
+
+        ### 3. 工作人员
+
+        #### 人数：%s 名
+
+        | 班级 | 姓名 |
+        | --- | --- |
+        |     |     |
+
+        ### 可拓展岗位
+
+        可按以上格式继续添加主持人、场控、物资、引导、技术支持等岗位。
+        """
+        .formatted(
+            value(variables, "activityName", "待补充"),
+            value(variables, "activityDateRange", "待补充"),
+            value(variables, "location", "待补充"),
+            volunteerCount,
+            volunteerCount,
+            volunteerCount)
+        .trim();
   }
 
   private String puActivityIntro(Map<String, Object> variables) {
@@ -770,6 +961,15 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     return map;
   }
 
+  private void deleteGeneratedFileQuietly(GeneratedDocument document) {
+    if (document == null || document.getFilePath() == null || document.getFilePath().isBlank()) return;
+    try {
+      Files.deleteIfExists(Path.of(document.getFilePath()).toAbsolutePath().normalize());
+    } catch (Exception ignored) {
+      // 文档记录删除不应被本地文件清理失败阻塞。
+    }
+  }
+
   private List<Map<String, String>> buildMessages(Long sessionId) {
     return messageMapper.selectBySessionId(sessionId).stream()
         .map(item -> Map.of("role", item.getRole(), "content", readableMessageContent(item)))
@@ -879,7 +1079,8 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
 
   private String requirementPrompt() {
     return """
-        你是高校社团活动策划顾问。请帮助用户把模糊活动想法澄清成可执行需求。
+        你是高职专科院校社团活动策划顾问。请帮助用户把模糊活动想法澄清成可执行需求。
+        场景为江苏海事职业技术学院开放原子开源社团，属于专科/高职院校社团活动，不要使用“XX大学”“XX校区”“本科院校”等占位或错层级表述。
         每轮最多问 5 个关键问题，优先确认活动对象、时间、地点、人数、负责人、预算、志愿者和安全事项。
         必须返回 JSON，不要输出 Markdown。字段：
         summary: 当前理解；
@@ -892,9 +1093,10 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
 
   private String planPrompt() {
     return """
-        你是高校社团活动策划案撰写助手。请生成正式、完整、可提交审批的活动策划案。
+        你是高职专科院校社团活动策划案撰写助手。请生成正式、完整、可提交审批的活动策划案。
+        场景为江苏海事职业技术学院开放原子开源社团，属于专科/高职院校社团活动，不要使用“XX大学”“XX校区”“本科院校”等占位或错层级表述。
         章节必须包含：活动名称、活动背景、活动目的与意义、活动主题、活动时间、活动地点、活动对象、主办单位/承办单位、活动流程、人员分工、宣传方案、报名方式、志愿者需求、物资清单、经费预算、风险预案、应急处理、预期效果。
-        写作风格参考高校 PU 活动申请材料：表述正式、具体、可执行，突出“活动简介、参加方式、活动意义”，避免口语化和空泛口号。
+        写作风格参考高职专科院校 PU 活动申请材料：表述正式、具体、可执行，突出“活动简介、参加方式、活动意义”，避免口语化和空泛口号。
         活动简介应不少于 300 字，说明活动面向对象、活动形式、核心环节、参与门槛、组织方式和预期收获。
         活动内容应能直接整理进社团活动申请表，使用“一、活动简介；二、参加方式；三、活动安排；四、活动意义”的规范表达。
         不得编造具体姓名、电话、预算金额；缺失信息标注“待补充”。

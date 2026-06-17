@@ -18,6 +18,8 @@ public interface AiActivityAutomationService {
 
   Result<Map<String, Object>> detail(Long sessionId);
 
+  Result<String> deleteSession(Long sessionId);
+
   Result<Map<String, Object>> sendMessage(Long sessionId, RequestAiActivityMessageDTO request);
 
   SseEmitter createSessionStream(RequestCreateAiActivitySessionDTO request);

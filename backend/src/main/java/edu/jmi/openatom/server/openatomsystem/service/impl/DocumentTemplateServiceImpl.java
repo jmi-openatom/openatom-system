@@ -12,6 +12,7 @@ import edu.jmi.openatom.server.openatomsystem.service.DocumentTemplateService;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -165,6 +166,16 @@ public class DocumentTemplateServiceImpl implements DocumentTemplateService {
       Files.write(target, out.toByteArray());
       return target;
     }
+  }
+
+  public Path generateTextFile(String fileName, String content) throws IOException {
+    Path root = root(generatedStorageDir);
+    Files.createDirectories(root);
+    String storedName = UUID.randomUUID() + "-" + safeFileName(fileName);
+    Path target = root.resolve(storedName).normalize();
+    if (!target.getParent().equals(root)) throw new IOException("生成文件名不合法");
+    Files.writeString(target, content == null ? "" : content, StandardCharsets.UTF_8);
+    return target;
   }
 
   public List<String> missingRequiredVariables(DocumentTemplate template, Map<String, Object> values) {

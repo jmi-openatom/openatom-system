@@ -30,19 +30,38 @@
           <el-button link :icon="Refresh" @click="loadSessions">刷新</el-button>
         </div>
         <div class="session-scroll">
-          <button
+          <div
             v-for="item in sessions"
             :key="item.id"
             class="session-item"
             :class="{ active: current?.id === item.id }"
-            @click="openSession(item.id)"
           >
-            <span class="session-main">
+            <button class="session-main" type="button" @click="openSession(item.id)">
               <strong>{{ item.title }}</strong>
               <small>{{ statusText(item.status) }}</small>
-            </span>
-            <el-tag size="small" :type="statusTypeOf(item.status)">{{ sessionBadge(item.status) }}</el-tag>
-          </button>
+            </button>
+            <div class="session-actions">
+              <el-tag size="small" :type="statusTypeOf(item.status)">{{ sessionBadge(item.status) }}</el-tag>
+              <el-popconfirm
+                title="确定删除这个对话吗？"
+                confirm-button-text="删除"
+                cancel-button-text="取消"
+                width="220"
+                @confirm="deleteSession(item)"
+              >
+                <template #reference>
+                  <el-button
+                    class="session-delete"
+                    link
+                    type="danger"
+                    :icon="Delete"
+                    :disabled="deletingSessionId === item.id || streaming"
+                    :loading="deletingSessionId === item.id"
+                  />
+                </template>
+              </el-popconfirm>
+            </div>
+          </div>
           <div v-if="!sessions.length" class="empty-inline">
             <strong>还没有活动</strong>
             <span>从一个活动想法开始，AI 会帮你往下问。</span>
@@ -389,7 +408,7 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import { aiActivityApi, aiSettingsApi, documentTemplateApi, postAiStream } from '@/api/index.ts'
 import { ElMessage } from 'element-plus/es/components/message/index'
-import { Plus, Refresh, Setting, Upload } from '@element-plus/icons-vue'
+import { Delete, Plus, Refresh, Setting, Upload } from '@element-plus/icons-vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 const documentTypes = [
@@ -417,6 +436,7 @@ const generatingDocs = ref(false)
 const uploadingTemplate = ref(false)
 const savingSettings = ref(false)
 const testingSettings = ref(false)
+const deletingSessionId = ref<string | number | null>(null)
 const streaming = ref(false)
 const streamingPlan = ref(false)
 const aiResponsePending = ref(false)
@@ -453,7 +473,7 @@ type SupplementField = {
 const supplementFieldMeta: Record<string, Omit<SupplementField, 'key' | 'value'>> = {
   activityDateRange: { label: '活动时间', placeholder: '请选择活动开始和结束时间', control: 'datetimeRange' },
   registrationDateRange: { label: '报名时间', placeholder: '请选择报名开始和结束时间', control: 'datetimeRange' },
-  location: { label: '活动地点', placeholder: '例如：教学楼 A101 / 大学生活动中心报告厅' },
+  location: { label: '活动地点', placeholder: '例如：教学楼 A101 / 学生活动中心报告厅' },
   expectedParticipants: { label: '活动人数', placeholder: '例如：100 人' },
   registrationQuota: { label: '报名名额', placeholder: '例如：100 人' },
   volunteerCount: { label: '志愿者人数', placeholder: '例如：10 人' },
@@ -683,6 +703,24 @@ async function openSession(id: string | number) {
   current.value = await aiActivityApi.detail(id)
   planText.value = current.value?.plans?.[0]?.contentMarkdown || ''
   activeTab.value = latestPlan.value ? 'plan' : 'chat'
+}
+
+async function deleteSession(item: any) {
+  if (!item?.id || streaming.value) return
+  deletingSessionId.value = item.id
+  try {
+    await aiActivityApi.deleteSession(item.id)
+    if (current.value?.id === item.id) {
+      current.value = null
+      planText.value = ''
+      reviseInstruction.value = ''
+      activeTab.value = 'chat'
+    }
+    ElMessage.success('对话已删除')
+    await loadSessions()
+  } finally {
+    deletingSessionId.value = null
+  }
 }
 
 function wait(ms: number) {
@@ -1288,7 +1326,6 @@ onMounted(async () => {
   background: transparent;
   color: var(--el-text-color-primary);
   text-align: left;
-  cursor: pointer;
 }
 
 .session-item:hover,
@@ -1303,6 +1340,27 @@ onMounted(async () => {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
+}
+
+.session-main {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.session-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.session-delete {
+  width: 24px;
+  height: 24px;
 }
 
 .main-panel {
