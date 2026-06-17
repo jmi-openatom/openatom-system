@@ -310,6 +310,33 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="supplementVisible" title="补充材料生成信息" width="720px">
+      <div class="supplement-dialog">
+        <el-alert
+          title="这些信息会写入正式申请材料，未填写的字段将继续保留“待补充”。"
+          type="warning"
+          :closable="false"
+          show-icon
+        />
+        <el-form label-width="128px">
+          <el-form-item v-for="field in supplementFields" :key="field.key" :label="field.label">
+            <el-input
+              v-model="field.value"
+              :type="field.multiline ? 'textarea' : 'text'"
+              :rows="field.multiline ? 3 : undefined"
+              :placeholder="field.placeholder"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <el-button @click="supplementVisible = false">取消</el-button>
+        <el-button type="primary" :loading="generatingDocs" @click="submitSupplementAndGenerate">
+          生成正式材料
+        </el-button>
+      </template>
+    </el-dialog>
+
     <el-drawer v-model="settingsVisible" title="DeepSeek 配置" size="520px" @open="loadAiSettings">
       <el-form label-width="124px">
         <el-form-item label="启用 AI">
@@ -369,6 +396,7 @@ const activeTab = ref('chat')
 const newSessionVisible = ref(false)
 const templateVisible = ref(false)
 const settingsVisible = ref(false)
+const supplementVisible = ref(false)
 const creating = ref(false)
 const sending = ref(false)
 const generatingPlan = ref(false)
@@ -389,6 +417,8 @@ const templateForm = ref({
   templateType: 'activity_proposal',
   templateName: '',
 })
+const supplementFields = ref<SupplementField[]>([])
+const pendingSupplementVariables = ref<Record<string, string>>({})
 const aiSettings = ref<Record<string, any>>({
   enabled: true,
   baseUrl: 'https://api.deepseek.com',
@@ -398,6 +428,31 @@ const aiSettings = ref<Record<string, any>>({
   hasApiKey: false,
   apiKeyMasked: '',
 })
+
+type SupplementField = {
+  key: string
+  label: string
+  value: string
+  placeholder: string
+  multiline?: boolean
+}
+
+const supplementFieldMeta: Record<string, Omit<SupplementField, 'key' | 'value'>> = {
+  activityDateRange: { label: '活动时间', placeholder: '例如：2026 年 9 月 20 日 14:00-17:00' },
+  registrationDateRange: { label: '报名时间', placeholder: '例如：2026 年 9 月 10 日 12:00 至 9 月 18 日 18:00' },
+  location: { label: '活动地点', placeholder: '例如：教学楼 A101 / 大学生活动中心报告厅' },
+  expectedParticipants: { label: '活动人数', placeholder: '例如：100 人' },
+  registrationQuota: { label: '报名名额', placeholder: '例如：100 人' },
+  volunteerCount: { label: '志愿者人数', placeholder: '例如：10 人' },
+  principalName: { label: '负责人', placeholder: '例如：张三' },
+  principalPhone: { label: '负责人电话', placeholder: '例如：13800000000' },
+  advisorName: { label: '指导老师', placeholder: '例如：李老师' },
+  checkinStudentId: { label: '签到员学号', placeholder: '例如：2026xxxxxx' },
+  budgetTotal: { label: '预算总额', placeholder: '例如：300 元' },
+  budgetDetails: { label: '预算明细', placeholder: '例如：物资 150 元，奖品 100 元，打印 50 元', multiline: true },
+}
+
+const supplementFieldOrder = Object.keys(supplementFieldMeta)
 
 const latestPlan = computed(() => {
   const plans = current.value?.plans || []
@@ -793,15 +848,104 @@ async function confirmPlan() {
 
 async function generateDocuments() {
   if (!current.value) return
+  const missingFields = collectSupplementFields()
+  if (missingFields.length) {
+    pendingSupplementVariables.value = {}
+    supplementFields.value = missingFields
+    supplementVisible.value = true
+    return
+  }
+  await doGenerateDocuments({})
+}
+
+async function submitSupplementAndGenerate() {
+  const variables: Record<string, string> = { ...pendingSupplementVariables.value }
+  for (const field of supplementFields.value) {
+    const value = field.value.trim()
+    if (value) variables[field.key] = value
+  }
+  if (variables.expectedParticipants && !variables.registrationQuota) {
+    variables.registrationQuota = variables.expectedParticipants
+  }
+  if (variables.registrationQuota && !variables.expectedParticipants) {
+    variables.expectedParticipants = variables.registrationQuota
+  }
+  if (variables.principalName || variables.principalPhone) {
+    variables.contactText = `${variables.principalName || '待补充'}，联系电话 ${variables.principalPhone || '待补充'}`
+  }
+  supplementVisible.value = false
+  pendingSupplementVariables.value = variables
+  await doGenerateDocuments(variables)
+}
+
+async function doGenerateDocuments(variables: Record<string, unknown>) {
+  if (!current.value) return
   generatingDocs.value = true
   try {
-    current.value.documents = await aiActivityApi.generateDocuments(current.value.id, {})
+    current.value.documents = await aiActivityApi.generateDocuments(current.value.id, { variables })
     current.value = await aiActivityApi.detail(current.value.id)
+    pendingSupplementVariables.value = {}
     ElMessage.success('文档已生成')
     await loadSessions()
+  } catch (error: any) {
+    const missingFields = collectMissingFieldsFromError(error?.message || '')
+    if (missingFields.length) {
+      pendingSupplementVariables.value = Object.fromEntries(
+        Object.entries(variables).map(([key, value]) => [key, String(value ?? '')]),
+      )
+      supplementFields.value = missingFields
+      supplementVisible.value = true
+    } else {
+      throw error
+    }
   } finally {
     generatingDocs.value = false
   }
+}
+
+function collectSupplementFields() {
+  const fields = planStructuredFields()
+  return supplementFieldOrder
+    .filter((key) => needsSupplement(fields[key]))
+    .map((key) => ({
+      key,
+      value: '',
+      ...supplementFieldMeta[key],
+    }))
+}
+
+function collectMissingFieldsFromError(message: string) {
+  const match = message.match(/缺少变量[:：]\s*(.+)$/)
+  if (!match) return []
+  return match[1]
+    .split(',')
+    .map((key) => key.trim())
+    .filter(Boolean)
+    .filter((key) => needsSupplement(pendingSupplementVariables.value[key]))
+    .map((key) => ({
+      key,
+      value: '',
+      label: supplementFieldMeta[key]?.label || key,
+      placeholder: supplementFieldMeta[key]?.placeholder || `请输入 ${key}`,
+      multiline: supplementFieldMeta[key]?.multiline,
+    }))
+}
+
+function planStructuredFields() {
+  const raw = latestPlan.value?.structuredFields
+  if (!raw) return {}
+  if (typeof raw === 'object') return raw as Record<string, unknown>
+  try {
+    return JSON.parse(raw) as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
+function needsSupplement(value: unknown) {
+  if (value === null || value === undefined) return true
+  const text = String(value).trim()
+  return !text || text.includes('待补充')
 }
 
 async function createActivityDraft() {
@@ -1427,9 +1571,14 @@ onMounted(async () => {
   line-height: 1.5;
 }
 
-.template-dialog {
+.template-dialog,
+.supplement-dialog {
   display: grid;
   gap: 12px;
+}
+
+.supplement-dialog :deep(.el-alert) {
+  align-items: flex-start;
 }
 
 @media (max-width: 1280px) {

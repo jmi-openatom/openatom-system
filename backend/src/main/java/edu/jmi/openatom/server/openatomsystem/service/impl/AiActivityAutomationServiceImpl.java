@@ -409,7 +409,7 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
       if (template == null) return Result.error(400, "缺少模板: " + documentType);
       List<String> missing = documentTemplateService.missingRequiredVariables(template, variables);
       if (!missing.isEmpty()) return Result.error(400, "模板 " + template.getTemplateName() + " 缺少变量: " + String.join(", ", missing));
-      String fileName = safeName(value(variables, "activityName", plan.getTitle()) + "-" + documentType + "-" + System.currentTimeMillis() + ".docx");
+      String fileName = documentFileName(documentType, variables, plan);
       try {
         Path path = documentTemplateService.generateDocx(template, variables, fileName);
         GeneratedDocument document =
@@ -546,13 +546,80 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
       Object raw = entry.getValue();
       variables.put(entry.getKey(), raw instanceof String text ? toDocText(text) : raw);
     }
-    variables.put("activitySummary", summaryText(value(variables, "activitySummary", value(variables, "activityPurpose", "")), 160));
-    variables.put("activityIntroduction", summaryText(value(variables, "activityIntroduction", value(variables, "activityBackground", "")), 260));
-    variables.put("activityHighlights", summaryText(value(variables, "activityHighlights", value(variables, "expectedEffect", "")), 220));
-    variables.put("volunteerActivitySummary", summaryText(value(variables, "volunteerActivitySummary", ""), 180));
+    variables.put("activitySummary", puActivityIntro(variables));
+    variables.put("activityIntroduction", summaryText(value(variables, "activityIntroduction", value(variables, "activityBackground", "")), 420));
+    variables.put("activityHighlights", summaryText(value(variables, "activityHighlights", value(variables, "expectedEffect", "")), 320));
+    variables.put("volunteerActivitySummary", volunteerIntro(variables));
     variables.put("volunteerResponsibilities", bulletText(value(variables, "volunteerResponsibilities", ""), 6));
-    variables.put("activityContentFull", bulletText(value(variables, "activityContentFull", ""), 12));
+    variables.put("activityContentFull", activityApplicationContent(variables));
     return variables;
+  }
+
+  private String documentFileName(String documentType, Map<String, Object> variables, AiActivityPlan plan) {
+    String activityName = value(variables, "activityName", plan.getTitle()).replace("【开放原子开源社团】", "");
+    String suffix =
+        switch (documentType) {
+          case "activity_proposal" -> "PU活动申请书";
+          case "volunteer_application_form" -> "志愿者PU活动申请书";
+          case "activity_application_form" -> "活动申请表";
+          default -> documentType;
+        };
+    return safeName("开放原子开源社团" + suffix + "-" + activityName + ".docx");
+  }
+
+  private String puActivityIntro(Map<String, Object> variables) {
+    String name = value(variables, "activityName", "本次活动");
+    String audience = value(variables, "targetAudience", "校内学生");
+    String location = value(variables, "location", "活动现场");
+    String purpose = summaryText(value(variables, "activityPurpose", ""), 220);
+    String content = summaryText(value(variables, "activityContentFull", value(variables, "activityContent", "")), 360);
+    String effect = summaryText(value(variables, "expectedEffect", value(variables, "activityHighlights", "")), 220);
+    return """
+        为丰富校园科技文化生活，增强同学们对开源文化、社团项目与协作实践的了解，开放原子开源社团拟开展“%s”主题活动。本次活动面向%s开展，计划在%s组织实施，围绕社团特色、开源理念、团队协作与实践体验等内容进行设计，力求以轻松、有趣、可参与的形式降低同学们了解开源的门槛。
+
+        活动将结合现场讲解、互动体验、分组协作、任务挑战和交流分享等环节，引导参与者在真实互动中认识社团文化、熟悉活动主题、建立成员之间的初步联系。%s
+
+        通过本次活动，预期能够帮助参与同学快速融入社团氛围，提升对开放共享、协同共建理念的理解，增强新成员之间的沟通协作意识，同时为后续社团招新、项目实践、技术分享和常态化活动开展积累良好基础。%s
+        """
+        .formatted(name, audience, location, content, "待补充".equals(effect) ? purpose : effect)
+        .trim();
+  }
+
+  private String volunteerIntro(Map<String, Object> variables) {
+    String name = value(variables, "activityName", "本次活动");
+    String responsibilities = summaryText(value(variables, "volunteerResponsibilities", ""), 320);
+    return """
+        “%s”志愿服务工作是保障活动顺利开展的重要组成部分，也是连接组织方、参与同学与现场执行环节的重要纽带。志愿者需以认真负责、热情耐心的态度参与活动筹备与现场服务，协助完成签到引导、秩序维护、流程提醒、物资整理、现场答疑和突发情况协助处理等工作。
+
+        活动期间，志愿者应服从组织安排，提前熟悉活动流程、场地动线和岗位职责，主动配合负责人做好参与者接待、分组引导、环节衔接和活动记录等事项。%s通过规范有序的志愿服务，保障活动安全、高效、顺利开展，展现开放原子开源社团成员积极奉献、协同合作的良好风貌。
+        """
+        .formatted(name, "待补充".equals(responsibilities) ? "" : responsibilities)
+        .trim();
+  }
+
+  private String activityApplicationContent(Map<String, Object> variables) {
+    String intro = puActivityIntro(variables);
+    String registration = value(variables, "registrationMethod", "通过 PU 平台报名，按报名顺序确认参与资格。");
+    String audience = value(variables, "targetAudience", "校内学生");
+    String process = bulletText(value(variables, "activityContentFull", value(variables, "activityContent", "")), 8);
+    String effect = summaryText(value(variables, "expectedEffect", value(variables, "activityHighlights", "")), 360);
+    return """
+        一、活动简介
+        %s
+
+        二、参加方式
+        报名方式：%s
+        参与对象：%s
+        参与流程：活动参与者按通知时间到达活动地点，在工作人员引导下完成签到、分组、规则说明、主题互动和总结交流等环节。活动过程中，工作人员将根据现场情况做好秩序维护、流程衔接和安全提醒，确保活动有序开展。
+
+        三、活动安排
+        %s
+
+        四、活动意义
+        %s
+        """
+        .formatted(intro, registration, audience, process, effect)
+        .trim();
   }
 
   private String toDocText(String value) {
@@ -808,6 +875,9 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
     return """
         你是高校社团活动策划案撰写助手。请生成正式、完整、可提交审批的活动策划案。
         章节必须包含：活动名称、活动背景、活动目的与意义、活动主题、活动时间、活动地点、活动对象、主办单位/承办单位、活动流程、人员分工、宣传方案、报名方式、志愿者需求、物资清单、经费预算、风险预案、应急处理、预期效果。
+        写作风格参考高校 PU 活动申请材料：表述正式、具体、可执行，突出“活动简介、参加方式、活动意义”，避免口语化和空泛口号。
+        活动简介应不少于 300 字，说明活动面向对象、活动形式、核心环节、参与门槛、组织方式和预期收获。
+        活动内容应能直接整理进社团活动申请表，使用“一、活动简介；二、参加方式；三、活动安排；四、活动意义”的规范表达。
         不得编造具体姓名、电话、预算金额；缺失信息标注“待补充”。
         输出 Markdown。
         """;
@@ -825,6 +895,9 @@ public class AiActivityAutomationServiceImpl implements AiActivityAutomationServ
         contactText, registrationMethod, volunteerRegistrationMethod, checkinStudentId, activityDateShort,
         activityTimeShort, activitySummary, activityIntroduction, activityHighlights, volunteerActivitySummary,
         volunteerResponsibilities, activityContentFull, expectedEffect。
+        activitySummary 要写成适合 PU 活动申请书“活动简介”的 300-500 字正式段落；
+        activityContentFull 要写成适合社团活动申请表“活动内容”的正式文本，包含活动简介、参加方式、活动安排、活动意义；
+        volunteerActivitySummary 要写成适合志愿者 PU 活动申请书的正式简介段落。
         缺失字段返回空字符串，不要编造。
         """;
   }
