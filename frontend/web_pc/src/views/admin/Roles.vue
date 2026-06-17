@@ -38,11 +38,30 @@
       />
       <div v-else>
         <p class="muted">当前角色：{{ currentRole.name }}</p>
-        <el-checkbox-group v-model="checkedPermissionIds" class="permission-list">
-          <el-checkbox v-for="item in permissions" :key="item.id" :label="item.id">
-            {{ item.name || item.code }} <span class="muted">({{ item.code }})</span>
-          </el-checkbox>
-        </el-checkbox-group>
+        <section class="permission-section">
+          <div class="permission-section__head">
+            <strong>后台入口显示权限</strong>
+            <span class="muted">勾选后会自动带上进入该后台菜单所需权限</span>
+          </div>
+          <el-checkbox-group v-model="checkedMenuKeys" class="permission-list">
+            <el-checkbox v-for="item in adminMenuPermissions" :key="item.key" :label="item.key">
+              {{ item.label }}
+              <span class="muted">({{ item.permissions.join(' / ') || '默认显示' }})</span>
+            </el-checkbox>
+          </el-checkbox-group>
+        </section>
+
+        <section class="permission-section">
+          <div class="permission-section__head">
+            <strong>接口权限</strong>
+            <span class="muted">用于控制具体接口操作，已包含上方入口所需权限</span>
+          </div>
+          <el-checkbox-group v-model="checkedPermissionIds" class="permission-list">
+            <el-checkbox v-for="item in permissions" :key="item.id" :label="item.id">
+              {{ item.name || item.code }} <span class="muted">({{ item.code }})</span>
+            </el-checkbox>
+          </el-checkbox-group>
+        </section>
       </div>
     </el-card>
 
@@ -72,7 +91,7 @@ import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { Plus } from '@element-plus/icons-vue'
 import { rbacApi } from '@/api'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 const roleLoading = ref(false)
 
@@ -84,9 +103,52 @@ const currentRole = ref<Record<string, any>>({})
 
 const checkedPermissionIds = ref<any[]>([])
 
+const checkedMenuKeys = ref<string[]>([])
+
+const syncingMenus = ref(false)
+
 const roleVisible = ref(false)
 
 const roleForm = ref<Record<string, any>>({})
+
+const adminMenuPermissions = [
+  { key: 'users', label: '用户管理', permissions: ['user:list'] },
+  { key: 'memberships', label: '成员管理', permissions: ['membership:list'] },
+  { key: 'activities', label: '活动管理', permissions: ['activity:list'] },
+  { key: 'ai-activities', label: 'AI 活动自动化', permissions: ['activity:create'] },
+  { key: 'check-ins', label: '扫码签到', permissions: ['check-in:list'] },
+  { key: 'leaves', label: '请假审批', permissions: ['leave-application:list'] },
+  { key: 'site-forms', label: '表单管理', permissions: ['site-form:list'] },
+  { key: 'form-submissions', label: '表单记录', permissions: ['site-form:detail'] },
+  { key: 'clubs', label: '社团管理', permissions: ['club:list'] },
+  { key: 'positions', label: '岗位管理', permissions: ['position:list'] },
+  { key: 'recruitment-campaigns', label: '招新计划', permissions: ['recruitment-campaign:list'] },
+  { key: 'applications', label: '入会申请', permissions: ['application:list'] },
+  { key: 'interviews', label: '面试管理', permissions: ['interview:list'] },
+  { key: 'votes', label: '投票管理', permissions: ['vote:list'] },
+  { key: 'lotteries', label: '抽奖系统', permissions: ['lottery:list'] },
+  { key: 'points', label: '积分兑换', permissions: ['point:account:list', 'point:item:list', 'point:redemption:list'] },
+  { key: 'awards', label: '获奖经历', permissions: ['award:list'] },
+  { key: 'blogs', label: '博客管理', permissions: ['blog:list'] },
+  { key: 'office-documents', label: '文书中心', permissions: ['document:list'] },
+  { key: 'images', label: '图床管理', permissions: ['image:list'] },
+  { key: 'school-calendar', label: '校历设置', permissions: ['school-calendar:manage'] },
+  { key: 'notifications', label: '通知管理', permissions: ['notification:list'] },
+  { key: 'roles', label: '角色权限', permissions: ['role:list', 'permission:list'] },
+  { key: 'oauth-clients', label: '认证应用', permissions: ['oauth-client:list'] },
+  { key: 'showcase-apps', label: '应用展示', permissions: ['showcase-app:list'] },
+  { key: 'data-open', label: '开放平台', permissions: ['data-open:list'] },
+  { key: 'bot-groups', label: 'QQ 机器人', permissions: ['bot-management:list'] },
+  { key: 'logs', label: '系统日志', permissions: ['log:operation:list', 'log:login:list'] },
+]
+
+const permissionIdByCode = computed(() => {
+  const map = new Map<string, number>()
+  for (const permission of permissions.value) {
+    if (permission?.code && permission?.id) map.set(permission.code, permission.id)
+  }
+  return map
+})
 
 async function fetchRoles() {
   roleLoading.value = true
@@ -101,12 +163,15 @@ async function fetchRoles() {
 async function fetchPermissions() {
   const result = await rbacApi.permissions({ page: 1, pageSize: 200 })
   permissions.value = result?.list || result || []
+  if (currentRole.value.id) syncMenusFromPermissions()
 }
 
-function selectRole(row: any) {
+async function selectRole(row: any) {
   currentRole.value = row
-  // 如果后端角色详情返回 permissions，可直接回填；否则让管理员重新勾选。
-  checkedPermissionIds.value = (row.permissions || []).map((item) => item.id)
+  const detail = await rbacApi.roleDetail(row.id)
+  currentRole.value = { ...row, ...detail }
+  checkedPermissionIds.value = normalizePermissionIds(detail)
+  syncMenusFromPermissions()
 }
 
 function openRole(row: any) {
@@ -130,16 +195,53 @@ async function deleteRole(row: any) {
 }
 
 async function savePermissions() {
+  applyMenuPermissionsToChecked()
   await rbacApi.assignRolePermissions(currentRole.value.id, {
-    permissionIds: checkedPermissionIds.value,
+    permissionIds: Array.from(new Set(checkedPermissionIds.value)),
   })
   ElMessage.success('权限已保存')
+  await selectRole(currentRole.value)
 }
 
 onMounted(() => {
   fetchRoles()
   fetchPermissions()
 })
+
+watch(checkedMenuKeys, () => {
+  if (syncingMenus.value) return
+  applyMenuPermissionsToChecked()
+})
+
+function normalizePermissionIds(detail: any) {
+  if (Array.isArray(detail?.permissionIds)) return detail.permissionIds
+  if (Array.isArray(detail?.permissions)) return detail.permissions.map((item: any) => item.id).filter(Boolean)
+  return []
+}
+
+function syncMenusFromPermissions() {
+  const checkedCodes = new Set(
+    permissions.value
+      .filter((permission) => checkedPermissionIds.value.includes(permission.id))
+      .map((permission) => permission.code),
+  )
+  syncingMenus.value = true
+  checkedMenuKeys.value = adminMenuPermissions
+    .filter((item) => item.permissions.length && item.permissions.every((code) => checkedCodes.has(code)))
+    .map((item) => item.key)
+  syncingMenus.value = false
+}
+
+function applyMenuPermissionsToChecked() {
+  const next = new Set(checkedPermissionIds.value)
+  for (const menu of adminMenuPermissions.filter((item) => checkedMenuKeys.value.includes(item.key))) {
+    for (const code of menu.permissions) {
+      const id = permissionIdByCode.value.get(code)
+      if (id) next.add(id)
+    }
+  }
+  checkedPermissionIds.value = Array.from(next)
+}
 </script>
 
 <style scoped>
@@ -169,6 +271,20 @@ onMounted(() => {
   display: grid;
   gap: 12px;
   margin-top: 16px;
+}
+
+.permission-section {
+  padding: 14px 0;
+  border-top: 1px solid var(--oa-border);
+}
+
+.permission-section:first-of-type {
+  margin-top: 12px;
+}
+
+.permission-section__head {
+  display: grid;
+  gap: 4px;
 }
 
 @media (max-width: 980px) {

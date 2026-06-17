@@ -16,7 +16,9 @@ import edu.jmi.openatom.server.openatomsystem.entity.RolePermission;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.entity.UserRole;
 import edu.jmi.openatom.server.openatomsystem.service.RoleService;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,11 +54,25 @@ public class RoleServiceImpl implements RoleService {
 
   @Override
   @RedisCached(cacheName = "lookup:role", key = "'detail:' + #p0", ttlSeconds = 1800)
-  public Result<Role> getRoleByRoleId(Integer roleId) {
+  public Result<Map<String, Object>> getRoleByRoleId(Integer roleId) {
     if (roleId == null) return Result.error(400, "roleId不能为空");
     Role role = roleMapper.selectById(roleId);
     if (role == null) return Result.error(404, "角色不存在");
-    return Result.success(role);
+    List<Integer> permissionIds =
+        rolePermissionMapper.selectByRoleIds(List.of(roleId)).stream()
+            .map(RolePermission::getPermissionId)
+            .toList();
+    List<Permission> permissions =
+        permissionIds.isEmpty() ? List.of() : permissionMapper.selectBatchIds(permissionIds);
+    Map<String, Object> detail = new LinkedHashMap<>();
+    detail.put("id", role.getId());
+    detail.put("name", role.getName());
+    detail.put("code", role.getCode());
+    detail.put("dataScope", role.getDataScope());
+    detail.put("description", role.getDescription());
+    detail.put("permissionIds", permissionIds);
+    detail.put("permissions", permissions);
+    return Result.success(detail);
   }
 
   @Override

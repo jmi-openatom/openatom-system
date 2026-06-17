@@ -5,6 +5,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNewRoleDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRoleDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Role;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 角色管理服务接口
@@ -16,7 +17,7 @@ public interface RoleService {
 
   Result<String> createNewRole(RequestCreateNewRoleDTO requestCreateNewRoleDTO);
 
-  Result<Role> getRoleByRoleId(Integer roleId);
+  Result<Map<String, Object>> getRoleByRoleId(Integer roleId);
 
   Result<String> updateRole(Integer roleId, RequestUpdateRoleDTO requestUpdateRoleDTO);
 

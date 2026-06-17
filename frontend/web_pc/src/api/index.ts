@@ -844,6 +844,9 @@ export const rbacApi = {
   roles(params?: Record<string, unknown>): Promise<any> {
     return request.get('/roles', { params })
   },
+  roleDetail(id: string | number): Promise<any> {
+    return request.get(`/roles/${id}`)
+  },
   createRole(data: Record<string, unknown>): Promise<any> {
     return request.post('/roles', data)
   },

@@ -9,6 +9,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.Role;
 import edu.jmi.openatom.server.openatomsystem.service.RoleService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,7 +56,7 @@ public class RoleController {
    */
   @GetMapping("/{roleId}")
   @SaCheckPermission("role:detail")
-  public Result<Role> getRoleByRoleId(@PathVariable Integer roleId) {
+  public Result<Map<String, Object>> getRoleByRoleId(@PathVariable Integer roleId) {
     return roleService.getRoleByRoleId(roleId);
   }
 
