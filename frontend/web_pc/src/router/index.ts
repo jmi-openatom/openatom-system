@@ -31,6 +31,7 @@ const adminFallbackRoutes = [
   '/admin/activities',
   '/admin/ai-activities',
   '/admin/blogs',
+  '/admin/regulations',
   '/admin/check-ins',
   '/admin/bot-groups',
   '/admin/awards',
@@ -109,6 +110,16 @@ const routes = [
         path: 'blog',
         name: 'site-blog',
         component: () => import('../views/site/Blog.vue'),
+      },
+      {
+        path: 'regulations',
+        name: 'site-regulations',
+        component: () => import('../views/site/Regulations.vue'),
+      },
+      {
+        path: 'regulations/:id',
+        name: 'site-regulation-detail',
+        component: () => import('../views/site/Regulations.vue'),
       },
       {
         path: 'images',
@@ -350,6 +361,12 @@ const routes = [
         name: 'admin-blogs',
         meta: { permissions: ['blog:list'] },
         component: () => import('../views/admin/Blogs.vue'),
+      },
+      {
+        path: 'regulations',
+        name: 'admin-regulations',
+        meta: { permissions: ['regulation:list'] },
+        component: () => import('../views/admin/Regulations.vue'),
       },
       {
         path: 'check-ins',

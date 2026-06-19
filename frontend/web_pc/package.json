@@ -24,6 +24,7 @@
     "lucide-vue-next": "^1.0.0",
     "mapbox-gl": "^3.23.1",
     "markdown-it": "^14.2.0",
+    "mermaid": "10.9.1",
     "motion-v": "^2.2.1",
     "tailwind-merge": "^3.6.0",
     "theme-colors": "^0.1.0",

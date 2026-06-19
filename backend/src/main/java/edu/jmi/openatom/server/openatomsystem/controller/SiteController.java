@@ -1,13 +1,14 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.entity.Club;
+import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
+import edu.jmi.openatom.server.openatomsystem.service.SiteService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseClubHomeVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentDetailVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteFormDetailVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteProgressVO;
-import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
-import edu.jmi.openatom.server.openatomsystem.service.SiteService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,6 +57,12 @@ public class SiteController {
   public Result<ClubActivity> getActivityDetail(
       @org.springframework.web.bind.annotation.PathVariable Integer activityId) {
     return siteService.getActivityDetail(activityId);
+  }
+
+  /** 获取公开展示的活跃社团列表 */
+  @GetMapping("/site/clubs")
+  public Result<List<Club>> getPublicClubs() {
+    return siteService.getPublicClubs();
   }
 
   /**

@@ -1,10 +1,10 @@
 <template>
-  <article class="markdown-content" v-html="html"></article>
+  <article ref="contentRef" class="markdown-content" v-html="html"></article>
 </template>
 
 <script setup lang="ts">
 import { renderMarkdown } from '@/utils/markdown.ts'
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 const props = withDefaults(
   defineProps<{
@@ -16,6 +16,51 @@ const props = withDefaults(
 )
 
 const html = computed(() => renderMarkdown(props.content))
+const contentRef = ref<HTMLElement>()
+let renderSequence = 0
+
+async function renderMermaid() {
+  await nextTick()
+  const root = contentRef.value
+  if (!root) return
+  const codeBlocks = Array.from(root.querySelectorAll<HTMLElement>('pre > code.language-mermaid'))
+  if (!codeBlocks.length) return
+
+  const { default: mermaid } = await import('mermaid')
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    theme: 'neutral',
+  })
+
+  for (const codeBlock of codeBlocks) {
+    const pre = codeBlock.parentElement
+    if (!pre) continue
+    const diagram = document.createElement('div')
+    diagram.className = 'mermaid-diagram'
+    pre.replaceWith(diagram)
+    try {
+      renderSequence += 1
+      const result = await mermaid.render(
+        `oa-mermaid-${renderSequence}`,
+        codeBlock.textContent || '',
+      )
+      diagram.innerHTML = result.svg
+      result.bindFunctions?.(diagram)
+    } catch (_error) {
+      diagram.classList.add('is-error')
+      diagram.textContent = 'Mermaid 图表语法有误，请检查后重试。'
+    }
+  }
+}
+
+watch(
+  () => props.content,
+  () => renderMermaid(),
+  { flush: 'post' },
+)
+
+onMounted(renderMermaid)
 </script>
 
 <style scoped>
@@ -120,5 +165,28 @@ const html = computed(() => renderMarkdown(props.content))
   margin: 24px 0;
   border: 0;
   border-top: 1px solid var(--oa-border);
+}
+
+.markdown-content :deep(.mermaid-diagram) {
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid var(--oa-border);
+  border-radius: 16px;
+  background: #ffffff;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.markdown-content :deep(.mermaid-diagram svg) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.markdown-content :deep(.mermaid-diagram.is-error) {
+  color: var(--el-color-danger);
+  background: var(--oa-page-soft-bg);
+  text-align: left;
 }
 </style>

@@ -7,6 +7,9 @@ export const siteApi = {
   activities(): Promise<any> {
     return request.get('/site/activities')
   },
+  clubs(): Promise<any> {
+    return request.get('/site/clubs')
+  },
   activityDetail(id: string | number): Promise<any> {
     return request.get(`/site/activities/${id}`)
   },
@@ -30,6 +33,12 @@ export const siteApi = {
   },
   voteDetail(id: string | number): Promise<any> {
     return request.get(`/site/votes/${id}`)
+  },
+  regulations(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/site/regulations', { params })
+  },
+  regulationDetail(id: string | number): Promise<any> {
+    return request.get(`/site/regulations/${id}`)
   },
   submitVote(id: string | number, data: Record<string, unknown>): Promise<any> {
     return request.post(`/site/votes/${id}/records`, data)
@@ -894,6 +903,24 @@ export const notificationApi = {
   },
   delete(id: string | number): Promise<any> {
     return request.delete(`/notifications/admin/${id}`)
+  },
+}
+
+export const regulationApi = {
+  list(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/regulations', { params })
+  },
+  detail(id: string | number): Promise<any> {
+    return request.get(`/regulations/${id}`)
+  },
+  create(clubId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/clubs/${clubId}/regulations`, data)
+  },
+  update(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/regulations/${id}`, data)
+  },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/regulations/${id}`)
   },
 }
 

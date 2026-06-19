@@ -168,6 +168,12 @@ const menus = ref([
 
   // ==== 6. 内容与媒体中心 ====
   { path: '/admin/blogs', label: '博客管理', icon: EditPen, permissions: ['blog:list'] },
+  {
+    path: '/admin/regulations',
+    label: '规章制度',
+    icon: DocumentChecked,
+    permissions: ['regulation:list'],
+  },
   { path: '/admin/office-documents', label: '文书中心', icon: DocumentChecked, permissions: ['document:list'] },
   { path: '/admin/images', label: '图床管理', icon: Picture, permissions: ['image:list'] },
 

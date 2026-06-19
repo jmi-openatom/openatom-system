@@ -125,6 +125,13 @@ public enum SystemPermission {
       "/leave-applications/{leaveApplicationId}",
       "DELETE"),
   SCHOOL_CALENDAR_MANAGE("管理校历", "school-calendar:manage", "api", "/school-calendar", "POST"),
+  REGULATION_LIST("查询社团规章制度", "regulation:list", "api", "/regulations", "GET"),
+  REGULATION_CREATE(
+      "创建社团规章制度", "regulation:create", "api", "/clubs/{clubId}/regulations", "POST"),
+  REGULATION_UPDATE(
+      "更新社团规章制度", "regulation:update", "api", "/regulations/{regulationId}", "PATCH"),
+  REGULATION_DELETE(
+      "删除社团规章制度", "regulation:delete", "api", "/regulations/{regulationId}", "DELETE"),
   AWARD_LIST("查询获奖经历", "award:list", "api", "/awards", "GET"),
   AWARD_CREATE("创建获奖经历", "award:create", "api", "/awards", "POST"),
   AWARD_UPDATE("更新获奖经历", "award:update", "api", "/awards/{awardId}", "PATCH"),
