@@ -30,7 +30,24 @@ async function renderMermaid() {
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
-    theme: 'neutral',
+    theme: 'base',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+    themeVariables: {
+      fontFamily:
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+      textColor: '#1d1d1f',
+      primaryTextColor: '#1d1d1f',
+      secondaryTextColor: '#1d1d1f',
+      tertiaryTextColor: '#1d1d1f',
+      primaryColor: '#eef3ff',
+      primaryBorderColor: '#6687ff',
+      lineColor: '#6b7280',
+    },
+    flowchart: {
+      htmlLabels: false,
+      useMaxWidth: true,
+    },
   })
 
   for (const codeBlock of codeBlocks) {
@@ -79,6 +96,7 @@ onMounted(renderMermaid)
   margin: 1.35em 0 0.65em;
   color: var(--oa-text);
   line-height: 1.35;
+  scroll-margin-top: calc(var(--oa-site-header-height) + 24px);
 }
 
 .markdown-content :deep(h1:first-child),
@@ -182,6 +200,24 @@ onMounted(renderMermaid)
   max-width: 100%;
   height: auto;
   margin: 0 auto;
+}
+
+.markdown-content :deep(.mermaid-diagram text),
+.markdown-content :deep(.mermaid-diagram .label text),
+.markdown-content :deep(.mermaid-diagram .nodeLabel) {
+  fill: #1d1d1f !important;
+  color: #1d1d1f !important;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
+  font-size: 14px !important;
+  opacity: 1 !important;
+}
+
+.markdown-content :deep(.mermaid-diagram foreignObject div),
+.markdown-content :deep(.mermaid-diagram foreignObject span) {
+  color: #1d1d1f !important;
+  -webkit-text-fill-color: #1d1d1f !important;
+  opacity: 1 !important;
 }
 
 .markdown-content :deep(.mermaid-diagram.is-error) {

@@ -85,27 +85,56 @@
 
       <section class="site-system-section">
         <div v-if="detail" class="container regulation-detail-layout">
-          <article class="regulation-document site-system-surface">
+          <article ref="regulationDocumentRef" class="regulation-document site-system-surface">
             <MarkdownContent :content="detail.contentMarkdown" />
           </article>
-          <aside class="regulation-meta site-system-surface">
-            <div>
-              <span>所属社团</span>
-              <strong>{{ detail.clubName || '开放原子开源社团' }}</strong>
-            </div>
-            <div>
-              <span>发布状态</span>
-              <strong>正式发布</strong>
-            </div>
-            <div>
-              <span>发布时间</span>
-              <strong>{{ formatDateTime(detail.publishedAt || detail.createdAt) }}</strong>
-            </div>
-            <div>
-              <span>最近更新</span>
-              <strong>{{ formatDateTime(detail.updatedAt || detail.publishedAt) }}</strong>
-            </div>
-            <p>正文支持 Markdown 排版与 Mermaid 流程图。</p>
+          <aside class="regulation-sidebar">
+            <nav
+              v-if="tableOfContents.length"
+              class="regulation-toc site-system-surface"
+              aria-label="规章制度目录"
+            >
+              <span class="regulation-toc__eyebrow">内容目录</span>
+              <button class="regulation-toc__title" type="button" @click="scrollToDocumentTop">
+                {{ detail.title }}
+              </button>
+              <div class="regulation-toc__list">
+                <button
+                  v-for="heading in tableOfContents"
+                  :key="heading.id"
+                  type="button"
+                  class="regulation-toc__item"
+                  :class="[
+                    `is-level-${Math.min(heading.level, 4)}`,
+                    { 'is-active': activeHeadingId === heading.id },
+                  ]"
+                  :aria-current="activeHeadingId === heading.id ? 'location' : undefined"
+                  @click="scrollToHeading(heading.id)"
+                >
+                  {{ heading.text }}
+                </button>
+              </div>
+            </nav>
+
+            <section class="regulation-meta site-system-surface" aria-label="制度信息">
+              <div>
+                <span>所属社团</span>
+                <strong>{{ detail.clubName || '开放原子开源社团' }}</strong>
+              </div>
+              <div>
+                <span>发布状态</span>
+                <strong>正式发布</strong>
+              </div>
+              <div>
+                <span>发布时间</span>
+                <strong>{{ formatDateTime(detail.publishedAt || detail.createdAt) }}</strong>
+              </div>
+              <div>
+                <span>最近更新</span>
+                <strong>{{ formatDateTime(detail.updatedAt || detail.publishedAt) }}</strong>
+              </div>
+              <p>正文支持 Markdown 排版与 Mermaid 流程图。</p>
+            </section>
           </aside>
         </div>
         <el-empty
@@ -125,8 +154,9 @@ import SitePageHero from '@/components/site/shell/SitePageHero.vue'
 import SiteSectionHeading from '@/components/site/shell/SiteSectionHeading.vue'
 import { siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
+import { extractMarkdownHeadings } from '@/utils/markdown.ts'
 import { ArrowLeft, ArrowRight, Search } from '@element-plus/icons-vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -136,8 +166,25 @@ const rows = ref<any[]>([])
 const detail = ref<any>(null)
 const selectedClubId = ref<number | string>('')
 const keyword = ref('')
+const regulationDocumentRef = ref<HTMLElement>()
+const activeHeadingId = ref('')
+let headingFrame = 0
 
 const isDetailRoute = computed(() => Boolean(route.params.id))
+const documentHeadings = computed(() =>
+  extractMarkdownHeadings(detail.value?.contentMarkdown || ''),
+)
+const tableOfContents = computed(() => {
+  const title = String(detail.value?.title || '').trim()
+  return documentHeadings.value.filter(
+    (heading, index) =>
+      !(
+        index === 0 &&
+        heading.level === 1 &&
+        heading.text.trim().toLocaleLowerCase() === title.toLocaleLowerCase()
+      ),
+  )
+})
 
 async function loadClubs() {
   const result = await siteApi.clubs()
@@ -162,11 +209,60 @@ async function fetchDetail() {
   if (!route.params.id) return
   loading.value = true
   detail.value = null
+  activeHeadingId.value = ''
   try {
     detail.value = await siteApi.regulationDetail(route.params.id as string)
+    await nextTick()
+    window.requestAnimationFrame(() => {
+      const hash = decodeURIComponent(window.location.hash.slice(1))
+      if (hash) document.getElementById(hash)?.scrollIntoView({ block: 'start' })
+      queueHeadingUpdate()
+    })
   } finally {
     loading.value = false
   }
+}
+
+function updateActiveHeading() {
+  headingFrame = 0
+  const root = regulationDocumentRef.value
+  if (!root) return
+  const elements = documentHeadings.value
+    .map((heading) => root.querySelector<HTMLElement>(`#${CSS.escape(heading.id)}`))
+    .filter((element): element is HTMLElement => Boolean(element))
+  if (!elements.length) return
+
+  const offset = 128
+  let active = elements[0]
+  for (const element of elements) {
+    if (element.getBoundingClientRect().top <= offset) active = element
+    else break
+  }
+  activeHeadingId.value = active.id
+}
+
+function queueHeadingUpdate() {
+  if (headingFrame) return
+  headingFrame = window.requestAnimationFrame(updateActiveHeading)
+}
+
+function scrollToHeading(id: string) {
+  const target = regulationDocumentRef.value?.querySelector<HTMLElement>(`#${CSS.escape(id)}`)
+  if (!target) return
+  activeHeadingId.value = id
+  target.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    block: 'start',
+  })
+  window.history.replaceState(null, '', `#${encodeURIComponent(id)}`)
+}
+
+function scrollToDocumentTop() {
+  regulationDocumentRef.value?.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    block: 'start',
+  })
+  window.history.replaceState(null, '', window.location.pathname + window.location.search)
 }
 
 function reload() {
@@ -187,10 +283,25 @@ watch(
   () => loadByRoute(),
 )
 
-onMounted(loadByRoute)
+onMounted(() => {
+  window.addEventListener('scroll', queueHeadingUpdate, { passive: true })
+  window.addEventListener('resize', queueHeadingUpdate, { passive: true })
+  loadByRoute()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', queueHeadingUpdate)
+  window.removeEventListener('resize', queueHeadingUpdate)
+  if (headingFrame) window.cancelAnimationFrame(headingFrame)
+})
 </script>
 
 <style scoped>
+:global(html:has(.regulations-page)),
+:global(body:has(.regulations-page)) {
+  overflow-x: clip;
+}
+
 .regulations-page {
   min-height: calc(100vh - var(--oa-site-header-height));
   background: var(--oa-page-soft-bg);
@@ -296,11 +407,111 @@ onMounted(loadByRoute)
   padding: clamp(26px, 4vw, 48px);
 }
 
-.regulation-meta {
+.regulation-sidebar {
   position: sticky;
   top: calc(var(--oa-site-header-height) + 20px);
+  display: block;
+  min-width: 0;
+  max-height: calc(100vh - var(--oa-site-header-height) - 40px);
+  align-self: start;
+  padding-right: 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.regulation-toc {
+  --regulation-toc-accent: #0a5cff;
+
+  padding: 24px 18px 20px;
+}
+
+.regulation-toc__eyebrow {
+  display: block;
+  margin: 0 6px 8px;
+  color: var(--oa-muted);
+  font-size: 12px;
+}
+
+.regulation-toc__title,
+.regulation-toc__item {
+  display: block;
+  width: 100%;
+  border: 0;
+  color: var(--oa-muted);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.regulation-toc__title {
+  padding: 8px 6px 14px;
+  border-bottom: 1px solid var(--oa-border);
+  color: var(--oa-text);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.regulation-toc__list {
+  max-height: min(42vh, 430px);
+  margin-top: 10px;
+  padding-right: 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.regulation-toc__item {
+  position: relative;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.regulation-toc__item:hover,
+.regulation-toc__item.is-active {
+  color: var(--regulation-toc-accent);
+  background: color-mix(in srgb, var(--regulation-toc-accent) 8%, transparent);
+}
+
+.regulation-toc__title:focus-visible,
+.regulation-toc__item:focus-visible {
+  outline: 2px solid var(--regulation-toc-accent);
+  outline-offset: 2px;
+}
+
+.regulation-toc__item.is-active::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 2px;
+  border-radius: 99px;
+  background: var(--regulation-toc-accent);
+  content: '';
+}
+
+.regulation-toc__item.is-level-2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.regulation-toc__item.is-level-3 {
+  padding-left: 26px;
+}
+
+.regulation-toc__item.is-level-4 {
+  padding-left: 42px;
+  font-size: 13px;
+}
+
+.regulation-meta {
   display: grid;
   gap: 20px;
+  margin-top: 16px;
   padding: 24px;
 }
 
@@ -341,6 +552,18 @@ onMounted(loadByRoute)
 
   .regulation-meta {
     position: static;
+  }
+
+  .regulation-sidebar {
+    position: static;
+    order: -1;
+    max-height: none;
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  .regulation-toc__list {
+    max-height: 360px;
   }
 }
 
