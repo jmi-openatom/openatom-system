@@ -82,12 +82,25 @@
           </el-select>
         </el-form-item>
         <el-form-item label="通知内容" prop="content">
-          <el-input
-            v-model="form.content"
-            type="textarea"
-            :rows="6"
-            placeholder="请输入通知正文内容..."
-          />
+          <div class="notification-editor">
+            <el-tabs v-model="editorMode">
+              <el-tab-pane label="Markdown 编辑" name="write">
+                <el-input
+                  v-model="form.content"
+                  type="textarea"
+                  :rows="10"
+                  placeholder="# 通知标题&#10;&#10;支持列表、链接、图片、引用和代码块。"
+                />
+              </el-tab-pane>
+              <el-tab-pane label="预览" name="preview">
+                <div class="editor-preview">
+                  <MarkdownContent v-if="form.content.trim()" :content="form.content" />
+                  <el-empty v-else description="输入 Markdown 后可在这里预览" :image-size="72" />
+                </div>
+              </el-tab-pane>
+            </el-tabs>
+            <p class="editor-tip">支持 Markdown，用户通知列表会自动生成纯文本摘要。</p>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -106,18 +119,17 @@
           <span class="time">{{ formatDateTime(currentNotification.createdAt) }}</span>
         </div>
         <el-divider />
-        <div class="content">
-          {{ currentNotification.content }}
-        </div>
+        <MarkdownContent :content="currentNotification.content" />
       </div>
     </el-dialog>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { notificationApi, userApi } from '@/api'
@@ -128,9 +140,11 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const detailVisible = ref(false)
+const editorMode = ref('write')
 const keyword = ref('')
-const rows = ref([])
-const currentNotification = ref(null)
+const rows = ref<any[]>([])
+const currentNotification = ref<any>(null)
+const formRef = ref<any>()
 
 const canCreate = computed(() => hasPermission('notification:create'))
 const canDelete = computed(() => hasPermission('notification:delete'))
@@ -207,16 +221,14 @@ const openDialog = () => {
     isAll: true,
     receiverUserIds: [],
   }
+  editorMode.value = 'write'
   dialogVisible.value = true
 }
 
 const handleSave = async () => {
-  const formRef = ref(null)
-  // Note: in setup, we'd use a template ref. For simplicity in this script,
-  // I'll assume validation passes if fields are filled or use the ref properly if I had it.
-  // Let's just do manual check for now or rely on the formRef if I define it.
-  if (!form.value.title || !form.value.content) {
-    ElMessage.warning('请完善通知内容')
+  try {
+    await formRef.value?.validate()
+  } catch {
     return
   }
 
@@ -282,9 +294,23 @@ onMounted(fetchList)
   color: var(--oa-muted);
 }
 
-.notification-detail .content {
-  line-height: 1.6;
-  white-space: pre-wrap;
+.notification-editor {
+  width: 100%;
+}
+
+.editor-preview {
+  min-height: 230px;
+  max-height: 460px;
+  padding: 18px;
+  border: 1px solid var(--oa-border);
+  border-radius: 12px;
+  background: var(--oa-elevated-bg);
+  overflow: auto;
+}
+
+.editor-tip {
+  margin: 8px 0 0;
   color: var(--oa-muted);
+  font-size: 12px;
 }
 </style>

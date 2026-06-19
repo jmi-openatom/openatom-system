@@ -18,8 +18,8 @@
               <span>投票活动</span>
             </article>
             <article>
-              <strong>{{ totalVoters }}</strong>
-              <span>累计参与</span>
+              <strong>{{ openVoters }}</strong>
+              <span>进行中参与</span>
             </article>
           </div>
         </div>
@@ -42,12 +42,15 @@
                 <el-tag :type="statusType(item.status)" effect="plain">{{
                   statusText(item.status)
                 }}</el-tag>
-                <span>{{ item.voteType === 'multiple' ? `多选 · ${item.maxChoices}` : '单选' }}</span>
+                <span>{{
+                  item.voteType === 'multiple' ? `多选 · ${item.maxChoices}` : '单选'
+                }}</span>
               </header>
               <h3>{{ item.title }}</h3>
               <p>{{ item.description || '暂无投票说明' }}</p>
               <footer>
-                <span>{{ item.voterCount || 0 }} 人参与</span>
+                <span v-if="item.status !== 'closed'">{{ item.voterCount || 0 }} 人参与</span>
+                <span v-else>参与人数已隐藏</span>
                 <span>{{ formatRange(item.startAt, item.endAt) }}</span>
               </footer>
             </article>
@@ -79,7 +82,10 @@
                 }}</el-tag>
                 <span>{{ voteTypeText(detail.vote) }}</span>
               </div>
-              <strong>{{ detail.vote.voterCount || 0 }} 人参与</strong>
+              <strong v-if="detail.vote.status !== 'closed'">
+                {{ detail.vote.voterCount || 0 }} 人参与
+              </strong>
+              <strong v-else>参与人数已隐藏</strong>
             </div>
 
             <el-radio-group
@@ -183,11 +189,15 @@
             </div>
             <div>
               <span>参与限制</span>
-              <strong>{{ detail.vote.anonymousAllowed === false ? '登录参与' : '支持匿名' }}</strong>
+              <strong>{{
+                detail.vote.anonymousAllowed === false ? '登录参与' : '支持匿名'
+              }}</strong>
             </div>
             <div>
               <span>结果可见</span>
-              <strong>{{ detail.vote.resultVisible === false ? '投后或结束可见' : '公开可见' }}</strong>
+              <strong>{{
+                detail.vote.resultVisible === false ? '投后或结束可见' : '公开可见'
+              }}</strong>
             </div>
           </aside>
         </div>
@@ -226,11 +236,17 @@ const router = useRouter()
 const isDetailRoute = computed(() => Boolean(route.params.id))
 const hasToken = computed(() => Boolean(getToken()))
 const openCount = computed(() => rows.value.filter((item) => item.status === 'open').length)
-const totalVoters = computed(() =>
-  rows.value.reduce((total, item) => total + Number(item.voterCount || 0), 0),
+const openVoters = computed(() =>
+  rows.value
+    .filter((item) => item.status === 'open')
+    .reduce((total, item) => total + Number(item.voterCount || 0), 0),
 )
 const resultsVisible = computed(() =>
-  Boolean(detail.value?.options?.some((option) => option.voteCount !== null && option.voteCount !== undefined)),
+  Boolean(
+    detail.value?.options?.some(
+      (option) => option.voteCount !== null && option.voteCount !== undefined,
+    ),
+  ),
 )
 const requiresLogin = computed(
   () => detail.value?.vote?.anonymousAllowed === false && !hasToken.value,

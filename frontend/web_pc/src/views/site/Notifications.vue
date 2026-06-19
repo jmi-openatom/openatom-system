@@ -45,7 +45,7 @@
           class="notification-console site-reveal"
           eyebrow="Feed"
           title="消息流"
-          description="点击未读消息即可完成确认。"
+          description="默认显示内容摘要，点击查看完整通知。"
         >
           <div v-loading="loading" class="notification-list">
             <div v-if="notifications.length === 0 && !loading" class="empty-state">
@@ -57,7 +57,11 @@
               :key="item.id"
               class="notification-item"
               :class="{ 'is-unread': item.readFlag === 0 }"
-              @click="handleRead(item)"
+              role="button"
+              tabindex="0"
+              @click="openDetail(item)"
+              @keydown.enter="openDetail(item)"
+              @keydown.space.prevent="openDetail(item)"
             >
               <div class="item-icon" :class="item.type || 'other'">
                 <el-icon><Bell /></el-icon>
@@ -67,32 +71,60 @@
                   <span class="item-title">{{ item.title }}</span>
                   <span v-if="item.readFlag === 0" class="unread-pill">未读</span>
                 </div>
-                <div class="item-content">{{ item.content }}</div>
-                <time class="item-time">{{ formatDateTime(item.createdAt) }}</time>
+                <div class="item-content">
+                  {{ markdownToPlainText(item.content) || '暂无正文内容' }}
+                </div>
+                <div class="item-footer">
+                  <time class="item-time">{{ formatDateTime(item.createdAt) }}</time>
+                  <span class="detail-link">
+                    查看详情
+                    <el-icon><ArrowRight /></el-icon>
+                  </span>
+                </div>
               </div>
             </article>
           </div>
         </WorkspacePanel>
       </div>
     </section>
+
+    <el-dialog v-model="detailVisible" title="通知详情" width="min(760px, 92vw)" append-to-body>
+      <div v-if="currentNotification" class="notification-detail">
+        <div class="detail-heading">
+          <div>
+            <span>{{ typeText(currentNotification.type) }}</span>
+            <h2>{{ currentNotification.title }}</h2>
+          </div>
+          <time>{{ formatDateTime(currentNotification.createdAt) }}</time>
+        </div>
+        <el-divider />
+        <MarkdownContent :content="currentNotification.content" />
+      </div>
+    </el-dialog>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import WorkspaceHero from '@/components/site/workspace/WorkspaceHero.vue'
 import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
-import { computed, ref, onMounted } from 'vue'
-import { Bell, CircleCheck } from '@element-plus/icons-vue'
+import { computed, onMounted, ref } from 'vue'
+import { ArrowRight, Bell, CircleCheck } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { notificationApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
+import { markdownToPlainText } from '@/utils/markdown.ts'
 
 const loading = ref(false)
-const notifications = ref([])
+const detailVisible = ref(false)
+const notifications = ref<any[]>([])
+const currentNotification = ref<any>(null)
 const unreadCount = computed(() => notifications.value.filter((n: any) => n.readFlag === 0).length)
 const readCount = computed(() => notifications.value.length - unreadCount.value)
-const systemCount = computed(() => notifications.value.filter((n: any) => n.type === 'system').length)
+const systemCount = computed(
+  () => notifications.value.filter((n: any) => n.type === 'system').length,
+)
 const workspaceMetrics = computed(() => [
   { label: '全部消息', value: notifications.value.length, note: '累计通知' },
   { label: '未读消息', value: unreadCount.value, note: '需要处理' },
@@ -110,7 +142,17 @@ const fetchNotifications = async () => {
   }
 }
 
-const handleRead = async (item: any) => {
+const typeText = (type: string) =>
+  ({
+    system: '系统通知',
+    activity: '活动通知',
+    approval: '审批通知',
+    other: '其他通知',
+  })[type] || '通知'
+
+const openDetail = async (item: any) => {
+  currentNotification.value = item
+  detailVisible.value = true
   if (item.readFlag === 1) return
   try {
     await notificationApi.markRead(item.id)
@@ -204,6 +246,11 @@ onMounted(fetchNotifications)
   border-color: var(--oa-text);
 }
 
+.notification-item:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--oa-primary) 24%, transparent);
+  outline-offset: 3px;
+}
+
 .notification-item.is-unread {
   background: var(--oa-elevated-bg);
   border-color: var(--oa-text);
@@ -266,21 +313,70 @@ onMounted(fetchNotifications)
 }
 
 .item-content {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   font-size: 14px;
   color: var(--oa-muted);
   line-height: 1.7;
 }
 
+.item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
 .item-time {
   display: inline-flex;
   width: fit-content;
-  margin-top: 14px;
   padding: 6px 10px;
   border-radius: 999px;
   color: var(--oa-muted);
   background: var(--oa-page-soft-bg);
   font-size: 12px;
   line-height: 1;
+}
+
+.detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--oa-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.notification-detail {
+  min-height: 240px;
+}
+
+.detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.detail-heading span,
+.detail-heading time {
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.detail-heading h2 {
+  margin: 8px 0 0;
+  color: var(--oa-text);
+  font-size: 24px;
+  line-height: 1.4;
+}
+
+.detail-heading time {
+  flex: 0 0 auto;
+  padding-top: 4px;
 }
 
 .empty-state {
@@ -303,6 +399,12 @@ onMounted(fetchNotifications)
   }
 
   .item-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .item-footer,
+  .detail-heading {
     align-items: flex-start;
     flex-direction: column;
   }

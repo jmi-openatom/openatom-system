@@ -43,3 +43,18 @@ markdown.renderer.rules.image = (tokens, index, options, env, self) => {
 export function renderMarkdown(value = ''): string {
   return markdown.render(String(value || ''))
 }
+
+export function markdownToPlainText(value = ''): string {
+  return String(value || '')
+    .replace(/```[^\n]*\n?([\s\S]*?)```/g, '$1')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^>\s?/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    .replace(/[*_~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}

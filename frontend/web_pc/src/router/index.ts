@@ -1,6 +1,12 @@
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
+import { authApi } from '@/api'
 import { hasAdminAccess, hasAnyPermission } from '@/utils/permission.ts'
-import { appendTokenQuery, getToken, shouldUseFullPageAuthRedirect } from '@/utils/auth.ts'
+import {
+  appendTokenQuery,
+  clearSession,
+  getToken,
+  shouldUseFullPageAuthRedirect,
+} from '@/utils/auth.ts'
 import { buildOidcAuthorizeUrl } from '@/utils/oidc.ts'
 
 const adminFallbackRoutes = [
@@ -411,7 +417,7 @@ const router = createRouter({
   },
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   if ((requiresAdminAuth(to) || requiresSiteLogin(to)) && !getToken()) {
     window.location.assign(buildOidcAuthorizeUrl(to.fullPath))
     return false
@@ -427,15 +433,23 @@ router.beforeEach((to) => {
     }
   }
 
-	  // 已登录用户访问登录页的处理
+  // 登录页不能仅凭本地 token 判断登录状态。失效 token 若被继续带回 OAuth
+  // authorize，会在认证中心与客户端登录页之间形成重定向循环。
   if (to.path === '/login' && getToken()) {
-	    const redirect = Array.isArray(to.query.redirect) ? to.query.redirect[0] : to.query.redirect
-	    if (shouldUseFullPageAuthRedirect(redirect)) {
-	      window.location.assign(appendTokenQuery(redirect))
-	      return false
-	    }
-	    return hasAdminAccess() ? firstAccessibleAdminPath() : '/progress'
-	  }
+    try {
+      await authApi.me()
+    } catch (_error) {
+      clearSession()
+      return true
+    }
+
+    const redirect = Array.isArray(to.query.redirect) ? to.query.redirect[0] : to.query.redirect
+    if (shouldUseFullPageAuthRedirect(redirect)) {
+      window.location.assign(appendTokenQuery(redirect))
+      return false
+    }
+    return hasAdminAccess() ? firstAccessibleAdminPath() : '/progress'
+  }
 
   return true
 })

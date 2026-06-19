@@ -168,7 +168,7 @@ public class VoteServiceImpl implements VoteService {
             .in(VoteCampaign::getStatus, List.of("open", "closed"))
             .orderByDesc(VoteCampaign::getId);
     return Result.success(
-        voteCampaignMapper.selectList(wrapper).stream().map(this::toSummary).toList());
+        voteCampaignMapper.selectList(wrapper).stream().map(this::toPublicSummary).toList());
   }
 
   @Override
@@ -252,7 +252,7 @@ public class VoteServiceImpl implements VoteService {
     boolean showResults =
         Boolean.TRUE.equals(campaign.getResultVisible()) || "closed".equals(campaign.getStatus()) || voted;
     return ResponseVoteDetailVO.builder()
-        .vote(toSummary(campaign, options, records))
+        .vote(toPublicSummary(campaign, options, records))
         .options(toOptionVOs(options, countSelections(records), records.size(), showResults))
         .records(List.of())
         .voted(voted)
@@ -263,6 +263,22 @@ public class VoteServiceImpl implements VoteService {
     List<VoteOption> options = voteOptionMapper.selectByVoteId(campaign.getId());
     List<VoteRecord> records = voteRecordMapper.selectByVoteId(campaign.getId());
     return toSummary(campaign, options, records);
+  }
+
+  private ResponseVoteVO toPublicSummary(VoteCampaign campaign) {
+    List<VoteOption> options = voteOptionMapper.selectByVoteId(campaign.getId());
+    List<VoteRecord> records = voteRecordMapper.selectByVoteId(campaign.getId());
+    return toPublicSummary(campaign, options, records);
+  }
+
+  private ResponseVoteVO toPublicSummary(
+      VoteCampaign campaign, List<VoteOption> options, List<VoteRecord> records) {
+    ResponseVoteVO summary = toSummary(campaign, options, records);
+    if ("closed".equals(campaign.getStatus())) {
+      summary.setVoterCount(null);
+      summary.setTotalVoteCount(null);
+    }
+    return summary;
   }
 
   private ResponseVoteVO toSummary(
