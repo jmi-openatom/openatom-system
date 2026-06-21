@@ -301,6 +301,9 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
   }
 
   private void ensureVoteTables() {
+    boolean hadVoteCampaignTable = tableExists("vote_campaign");
+    boolean hadResultVisibilityColumn =
+        hadVoteCampaignTable && columnExists("vote_campaign", "result_visibility");
     jdbcTemplate.execute(
         """
         CREATE TABLE IF NOT EXISTS `vote_campaign`
@@ -314,6 +317,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `max_choices` INT NOT NULL DEFAULT 1 COMMENT '最多可选数量',
             `anonymous_allowed` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否允许匿名投票',
             `result_visible` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '前台是否公开结果',
+            `result_visibility` VARCHAR(20) NOT NULL DEFAULT 'public' COMMENT '前台结果可见范围: public/after_vote/private',
             `start_at` TIMESTAMP NULL DEFAULT NULL COMMENT '投票开始时间',
             `end_at` TIMESTAMP NULL DEFAULT NULL COMMENT '投票结束时间',
             `created_by` INT DEFAULT NULL COMMENT '创建人ID',
@@ -360,6 +364,21 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             KEY `idx_vote_record_user` (`user_id`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='投票记录表'
         """);
+    addColumnIfAbsent(
+        "vote_campaign",
+        "result_visibility",
+        "VARCHAR(20) NOT NULL DEFAULT 'public' COMMENT '前台结果可见范围: public/after_vote/private' AFTER `result_visible`");
+    if (hadVoteCampaignTable && !hadResultVisibilityColumn) {
+      jdbcTemplate.update(
+          """
+          UPDATE `vote_campaign`
+          SET `result_visibility` = CASE
+              WHEN `result_visible` = 0 THEN 'after_vote'
+              ELSE 'public'
+          END
+          """);
+      log.info("Backfilled vote_campaign.result_visibility from legacy result_visible");
+    }
   }
 
   private void ensureOfficeDocumentTable() {

@@ -1,39 +1,44 @@
-# 规章制度页面视觉验证
+# 投票结果可见性视觉验证
 
-- source visual truth:
-  - `/var/folders/9r/pmbkyp5s08dcmd8smh6k65yw0000gn/T/codex-clipboard-b6c61fe6-1aac-47fc-8248-b9964621c544.png`
-  - `/var/folders/9r/pmbkyp5s08dcmd8smh6k65yw0000gn/T/codex-clipboard-e8b93653-cc0c-4243-b0dc-0cac51c18c6c.png`
-- implementation screenshots:
-  - `/var/folders/9r/pmbkyp5s08dcmd8smh6k65yw0000gn/T/openatom-regulations-qa/regulations-mermaid.png`
-  - `/var/folders/9r/pmbkyp5s08dcmd8smh6k65yw0000gn/T/openatom-regulations-qa/regulations-toc.png`
-- viewport: `1280 x 720`
-- state: 浅色模式；Mermaid 组织架构图；规章长文第四章激活
+- source visual truth: `/var/folders/9r/pmbkyp5s08dcmd8smh6k65yw0000gn/T/codex-clipboard-c0e6a828-f46d-4faa-8540-fdfd6643cd46.png`
+- implementation screenshot: `/tmp/openatom-vote-private-site.png`
+- viewport: `599 x 823`
+- state: 浅色模式；投票结果设置为“不公开”；公开投票详情页
 
 ## Full-view comparison evidence
 
-已分别打开参考图和本地实现截图。实现中 Mermaid 节点中文文字已显示，目录按 Markdown 二级、三级标题分层，并在长文滚动时保持侧栏可见。
+已打开参考后台编辑弹窗，并在本地实现中确认“结果可见”使用与现有“投票类型”一致的三段选择控件，三个选项为“公开 / 投后可见 / 不公开”，“不公开”正确回显为选中状态。
+
+公开页截图显示“不公开”状态下不展示参与人数、票数、百分比和进度条，并明确提示“本次投票结果不公开，仅后台管理员可查看”。
 
 ## Focused region comparison evidence
 
-已分别检查 Mermaid 节点区域与目录区域。浏览器安全策略阻止创建包含两张本地截图的数据页，因此无法完成同一画布中的并排视觉比较。
+已通过页面 DOM 检查后台设置区域：
+
+- `结果可见` 下存在三个单选状态；
+- `不公开` 为选中状态；
+- 辅助说明为“前台始终不展示票数、占比和参与人数，仅后台可查看。”。
+
+公开页检查结果：
+
+- 结果进度条数量为 `0`；
+- 不公开提示数量为 `1`；
+- 选项标题和说明仍正常展示，投票功能不受影响。
 
 ## Findings
 
-- Mermaid 图形包含 1 个 SVG、57 个文本分段；中文标签颜色可见且不透明。
-- 目录点击会更新 URL 锚点并滚动到对应标题。
-- 当前章节使用蓝色文字、浅蓝背景和左侧标记，三级标题按参考图缩进。
-- 目录侧栏在长文滚动时固定于页头下方，内部内容可滚动。
-- 未发现独立检查可见的 P0、P1 或 P2 问题。
+- 未发现功能或 DOM 层面的 P0、P1、P2 问题。
+- 后台弹窗的截图命令持续超时，因此无法将参考后台弹窗与实现后台弹窗放入同一张视觉比较图。
 
 ## Patches made
 
-- Mermaid 流程图改用原生 SVG 标签并显式设置中文字体和文字颜色。
-- Markdown 标题生成稳定且可去重的锚点。
-- 制度详情页自动生成章节目录，支持点击跳转、滚动高亮和链接锚点。
-- 修正长目录吸顶、内部滚动和移动端回落布局。
+- 将布尔结果开关升级为“公开 / 投后可见 / 不公开”三段选择。
+- 为“不公开”增加后台说明和前台提示。
+- 前台接口在“不公开”模式下隐藏参与人数、累计选择、票数和百分比。
+- 后台结果详情继续展示完整统计与投票记录。
 
 ## Final result
 
 final result: blocked
 
-Blocker: required side-by-side comparison input could not be created because the browser rejected the local data URL under its security policy.
+Blocker: the in-app browser repeatedly timed out while capturing the admin dialog, so the required same-state side-by-side visual comparison could not be completed.

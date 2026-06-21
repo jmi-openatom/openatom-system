@@ -14,6 +14,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.entity.VoteCampaign;
 import edu.jmi.openatom.server.openatomsystem.entity.VoteOption;
 import edu.jmi.openatom.server.openatomsystem.entity.VoteRecord;
+import edu.jmi.openatom.server.openatomsystem.enums.VoteResultVisibility;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.VoteCampaignMapper;
@@ -45,6 +46,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class VoteServiceImpl implements VoteService {
   private static final List<String> STATUSES = List.of("draft", "open", "closed");
   private static final List<String> VOTE_TYPES = List.of("single", "multiple");
+  private static final List<String> RESULT_VISIBILITIES =
+      List.of(
+          VoteResultVisibility.PUBLIC.getValue(),
+          VoteResultVisibility.AFTER_VOTE.getValue(),
+          VoteResultVisibility.PRIVATE.getValue());
 
   private final VoteCampaignMapper voteCampaignMapper;
   private final VoteOptionMapper voteOptionMapper;
@@ -80,10 +86,16 @@ public class VoteServiceImpl implements VoteService {
             request.getStatus(),
             request.getVoteType(),
             request.getMaxChoices(),
+            request.getResultVisibility(),
             request.getStartAt(),
             request.getEndAt(),
             request.getOptions());
     if (campaignValidation != null) return campaignValidation;
+    VoteResultVisibility resultVisibility =
+        requestedResultVisibility(
+            request.getResultVisibility(),
+            request.getResultVisible(),
+            VoteResultVisibility.PUBLIC);
     VoteCampaign campaign =
         VoteCampaign.builder()
             .clubId(clubId)
@@ -93,7 +105,8 @@ public class VoteServiceImpl implements VoteService {
             .voteType(normalizeVoteType(request.getVoteType()))
             .maxChoices(normalizeMaxChoices(request.getVoteType(), request.getMaxChoices()))
             .anonymousAllowed(request.getAnonymousAllowed() == null || request.getAnonymousAllowed())
-            .resultVisible(request.getResultVisible() == null || request.getResultVisible())
+            .resultVisible(resultVisibility == VoteResultVisibility.PUBLIC)
+            .resultVisibility(resultVisibility.getValue())
             .startAt(Times.parseTimestamp(request.getStartAt()))
             .endAt(Times.parseTimestamp(request.getEndAt()))
             .createdBy(StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null)
@@ -117,6 +130,7 @@ public class VoteServiceImpl implements VoteService {
             request.getStatus(),
             request.getVoteType(),
             request.getMaxChoices(),
+            request.getResultVisibility(),
             request.getStartAt(),
             request.getEndAt(),
             request.getOptions());
@@ -129,7 +143,15 @@ public class VoteServiceImpl implements VoteService {
       campaign.setMaxChoices(normalizeMaxChoices(campaign.getVoteType(), request.getMaxChoices()));
     }
     if (request.getAnonymousAllowed() != null) campaign.setAnonymousAllowed(request.getAnonymousAllowed());
-    if (request.getResultVisible() != null) campaign.setResultVisible(request.getResultVisible());
+    if (request.getResultVisibility() != null || request.getResultVisible() != null) {
+      VoteResultVisibility resultVisibility =
+          requestedResultVisibility(
+              request.getResultVisibility(),
+              request.getResultVisible(),
+              effectiveResultVisibility(campaign));
+      campaign.setResultVisible(resultVisibility == VoteResultVisibility.PUBLIC);
+      campaign.setResultVisibility(resultVisibility.getValue());
+    }
     if (request.getStartAt() != null) campaign.setStartAt(Times.parseTimestamp(request.getStartAt()));
     if (request.getEndAt() != null) campaign.setEndAt(Times.parseTimestamp(request.getEndAt()));
     Result<String> timeValidation = validateTimeRange(campaign.getStartAt(), campaign.getEndAt());
@@ -249,8 +271,9 @@ public class VoteServiceImpl implements VoteService {
     List<VoteOption> options = voteOptionMapper.selectByVoteId(campaign.getId());
     List<VoteRecord> records = voteRecordMapper.selectByVoteId(campaign.getId());
     boolean voted = hasCurrentVoted(campaign.getId());
+    VoteResultVisibility resultVisibility = effectiveResultVisibility(campaign);
     boolean showResults =
-        Boolean.TRUE.equals(campaign.getResultVisible()) || "closed".equals(campaign.getStatus()) || voted;
+        resultVisibility.isVisibleToSite(voted, "closed".equals(campaign.getStatus()));
     return ResponseVoteDetailVO.builder()
         .vote(toPublicSummary(campaign, options, records))
         .options(toOptionVOs(options, countSelections(records), records.size(), showResults))
@@ -274,7 +297,8 @@ public class VoteServiceImpl implements VoteService {
   private ResponseVoteVO toPublicSummary(
       VoteCampaign campaign, List<VoteOption> options, List<VoteRecord> records) {
     ResponseVoteVO summary = toSummary(campaign, options, records);
-    if ("closed".equals(campaign.getStatus())) {
+    if ("closed".equals(campaign.getStatus())
+        || effectiveResultVisibility(campaign).hidesSiteCounts()) {
       summary.setVoterCount(null);
       summary.setTotalVoteCount(null);
     }
@@ -285,6 +309,7 @@ public class VoteServiceImpl implements VoteService {
       VoteCampaign campaign, List<VoteOption> options, List<VoteRecord> records) {
     Club club = clubMapper.selectById(campaign.getClubId());
     int totalVoteCount = countSelections(records).values().stream().mapToInt(Integer::intValue).sum();
+    VoteResultVisibility resultVisibility = effectiveResultVisibility(campaign);
     return ResponseVoteVO.builder()
         .id(campaign.getId())
         .clubId(campaign.getClubId())
@@ -295,7 +320,8 @@ public class VoteServiceImpl implements VoteService {
         .voteType(campaign.getVoteType())
         .maxChoices(campaign.getMaxChoices())
         .anonymousAllowed(campaign.getAnonymousAllowed())
-        .resultVisible(campaign.getResultVisible())
+        .resultVisible(resultVisibility == VoteResultVisibility.PUBLIC)
+        .resultVisibility(resultVisibility.getValue())
         .optionCount(options.size())
         .voterCount(records.size())
         .totalVoteCount(totalVoteCount)
@@ -397,6 +423,7 @@ public class VoteServiceImpl implements VoteService {
       String status,
       String voteType,
       Integer maxChoices,
+      String resultVisibility,
       String startAt,
       String endAt,
       List<RequestVoteOptionDTO> options) {
@@ -405,6 +432,9 @@ public class VoteServiceImpl implements VoteService {
     if (isBlank(title)) return Result.error(400, "投票标题不能为空");
     if (status != null && !STATUSES.contains(status.trim())) return Result.error(400, "投票状态不合法");
     if (voteType != null && !VOTE_TYPES.contains(voteType.trim())) return Result.error(400, "投票类型不合法");
+    if (resultVisibility != null && !RESULT_VISIBILITIES.contains(resultVisibility.trim())) {
+      return Result.error(400, "结果可见范围不合法");
+    }
     if (maxChoices != null && maxChoices <= 0) return Result.error(400, "最多可选数量必须大于0");
     if (options != null && options.size() < 2) return Result.error(400, "请至少配置两个投票选项");
     Timestamp parsedStart = startAt == null ? null : Times.parseTimestamp(startAt);
@@ -515,6 +545,24 @@ public class VoteServiceImpl implements VoteService {
 
   private String normalizeVoteType(String voteType) {
     return isBlank(voteType) ? "single" : voteType.trim();
+  }
+
+  private VoteResultVisibility requestedResultVisibility(
+      String resultVisibility,
+      Boolean legacyResultVisible,
+      VoteResultVisibility fallback) {
+    VoteResultVisibility requested = VoteResultVisibility.fromValue(resultVisibility);
+    if (requested != null) return requested;
+    if (legacyResultVisible != null) return VoteResultVisibility.fromLegacy(legacyResultVisible);
+    return fallback;
+  }
+
+  private VoteResultVisibility effectiveResultVisibility(VoteCampaign campaign) {
+    VoteResultVisibility visibility =
+        VoteResultVisibility.fromValue(campaign.getResultVisibility());
+    return visibility == null
+        ? VoteResultVisibility.fromLegacy(campaign.getResultVisible())
+        : visibility;
   }
 
   private Integer normalizeMaxChoices(String voteType, Integer maxChoices) {

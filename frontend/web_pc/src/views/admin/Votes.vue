@@ -42,7 +42,9 @@
         <template #default="{ row }">{{ voteTypeText(row) }}</template>
       </el-table-column>
       <el-table-column label="投票/选项" width="130">
-        <template #default="{ row }">{{ row.voterCount || 0 }} / {{ row.optionCount || 0 }}</template>
+        <template #default="{ row }"
+          >{{ row.voterCount || 0 }} / {{ row.optionCount || 0 }}</template
+        >
       </el-table-column>
       <el-table-column label="投票时间" min-width="230">
         <template #default="{ row }">{{ formatRange(row.startAt, row.endAt) }}</template>
@@ -98,13 +100,28 @@
             />
           </el-form-item>
           <el-form-item v-if="draft.voteType === 'multiple'" label="最多可选">
-            <el-input-number v-model="draft.maxChoices" :min="2" :step="1" controls-position="right" />
+            <el-input-number
+              v-model="draft.maxChoices"
+              :min="2"
+              :step="1"
+              controls-position="right"
+            />
           </el-form-item>
           <el-form-item label="匿名投票">
             <el-switch v-model="draft.anonymousAllowed" active-text="允许" inactive-text="需登录" />
           </el-form-item>
-          <el-form-item label="公开结果">
-            <el-switch v-model="draft.resultVisible" active-text="公开" inactive-text="投后可见" />
+          <el-form-item label="结果可见">
+            <div class="visibility-setting">
+              <el-segmented
+                v-model="draft.resultVisibility"
+                :options="[
+                  { label: '公开', value: 'public' },
+                  { label: '投后可见', value: 'after_vote' },
+                  { label: '不公开', value: 'private' },
+                ]"
+              />
+              <span>{{ resultVisibilityDescription(draft.resultVisibility) }}</span>
+            </div>
           </el-form-item>
           <el-form-item label="开始时间">
             <el-input v-model="draft.startAt" type="datetime-local" />
@@ -213,7 +230,9 @@
             <template #default="{ row }">{{ row.voterContact || '-' }}</template>
           </el-table-column>
           <el-table-column label="选择" min-width="220">
-            <template #default="{ row }">{{ (row.optionTitles || []).join(' / ') || '-' }}</template>
+            <template #default="{ row }">{{
+              (row.optionTitles || []).join(' / ') || '-'
+            }}</template>
           </el-table-column>
           <el-table-column prop="remark" label="备注" min-width="160">
             <template #default="{ row }">{{ row.remark || '-' }}</template>
@@ -256,7 +275,7 @@ type VoteDraft = {
   voteType: string
   maxChoices: number
   anonymousAllowed: boolean
-  resultVisible: boolean
+  resultVisibility: string
   startAt: string
   endAt: string
   options: OptionDraft[]
@@ -294,7 +313,7 @@ function createEmptyDraft(): VoteDraft {
     voteType: 'single',
     maxChoices: 2,
     anonymousAllowed: true,
-    resultVisible: true,
+    resultVisibility: 'public',
     startAt: '',
     endAt: '',
     options: [createOption({ title: '选项 A' }), createOption({ title: '选项 B' })],
@@ -353,7 +372,8 @@ async function openDialog(row?: Record<string, any>) {
     voteType: vote.voteType || 'single',
     maxChoices: Number(vote.maxChoices || 2),
     anonymousAllowed: vote.anonymousAllowed !== false,
-    resultVisible: vote.resultVisible !== false,
+    resultVisibility:
+      vote.resultVisibility || (vote.resultVisible === false ? 'after_vote' : 'public'),
     startAt: toDateTimeInputValue(vote.startAt),
     endAt: toDateTimeInputValue(vote.endAt),
     options: (result.options || []).map((option) => createOption(option)),
@@ -399,7 +419,7 @@ function save() {
         voteType: draft.value.voteType,
         maxChoices: draft.value.voteType === 'multiple' ? draft.value.maxChoices : 1,
         anonymousAllowed: draft.value.anonymousAllowed,
-        resultVisible: draft.value.resultVisible,
+        resultVisibility: draft.value.resultVisibility,
         startAt: draft.value.startAt,
         endAt: draft.value.endAt,
         options,
@@ -480,6 +500,16 @@ function voteTypeText(row: Record<string, any>) {
   return row.voteType === 'multiple' ? `多选 · ${row.maxChoices || 2}` : '单选'
 }
 
+function resultVisibilityDescription(value: string) {
+  return (
+    {
+      public: '所有人都可以随时查看票数和占比。',
+      after_vote: '参与者投票后可查看，投票结束后所有人可查看。',
+      private: '前台始终不展示票数、占比和参与人数，仅后台可查看。',
+    }[value] || ''
+  )
+}
+
 function formatRange(startAt: any, endAt: any) {
   return `${formatDateTime(startAt)} 至 ${formatDateTime(endAt)}`
 }
@@ -506,6 +536,17 @@ onMounted(() => {
 
 .option-edit-table :deep(.el-input-number) {
   width: 100%;
+}
+
+.visibility-setting {
+  display: grid;
+  gap: 8px;
+}
+
+.visibility-setting > span {
+  color: var(--oa-muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .vote-detail {

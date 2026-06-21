@@ -22,6 +22,7 @@ public class ResponseVoteVO {
   private Integer maxChoices;
   private Boolean anonymousAllowed;
   private Boolean resultVisible;
+  private String resultVisibility;
   private Integer optionCount;
   private Integer voterCount;
   private Integer totalVoteCount;

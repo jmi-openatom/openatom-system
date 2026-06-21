@@ -20,6 +20,7 @@ public class RequestUpdateVoteDTO {
   private Integer maxChoices;
   private Boolean anonymousAllowed;
   private Boolean resultVisible;
+  private String resultVisibility;
   private String startAt;
   private String endAt;
 

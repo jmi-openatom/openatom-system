@@ -41,6 +41,9 @@ public class VoteCampaign {
   @TableField("result_visible")
   private Boolean resultVisible;
 
+  @TableField("result_visibility")
+  private String resultVisibility;
+
   @TableField("start_at")
   private Timestamp startAt;
 

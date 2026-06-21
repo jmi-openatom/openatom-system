@@ -49,7 +49,10 @@
               <h3>{{ item.title }}</h3>
               <p>{{ item.description || '暂无投票说明' }}</p>
               <footer>
-                <span v-if="item.status !== 'closed'">{{ item.voterCount || 0 }} 人参与</span>
+                <span v-if="item.voterCount !== null && item.voterCount !== undefined">
+                  {{ item.voterCount || 0 }} 人参与
+                </span>
+                <span v-else-if="resultVisibility(item) === 'private'">结果不公开</span>
                 <span v-else>参与人数已隐藏</span>
                 <span>{{ formatRange(item.startAt, item.endAt) }}</span>
               </footer>
@@ -82,9 +85,12 @@
                 }}</el-tag>
                 <span>{{ voteTypeText(detail.vote) }}</span>
               </div>
-              <strong v-if="detail.vote.status !== 'closed'">
+              <strong
+                v-if="detail.vote.voterCount !== null && detail.vote.voterCount !== undefined"
+              >
                 {{ detail.vote.voterCount || 0 }} 人参与
               </strong>
+              <strong v-else-if="isPrivateResult">结果不公开</strong>
               <strong v-else>参与人数已隐藏</strong>
             </div>
 
@@ -127,6 +133,15 @@
                 </div>
               </label>
             </el-checkbox-group>
+
+            <el-alert
+              v-if="isPrivateResult"
+              class="private-result-alert"
+              type="info"
+              show-icon
+              :closable="false"
+              title="本次投票结果不公开，仅后台管理员可查看"
+            />
 
             <div v-if="requiresAnonymousInfo" class="anonymous-fields">
               <el-input v-model="form.voterName" placeholder="姓名" />
@@ -195,9 +210,7 @@
             </div>
             <div>
               <span>结果可见</span>
-              <strong>{{
-                detail.vote.resultVisible === false ? '投后或结束可见' : '公开可见'
-              }}</strong>
+              <strong>{{ resultVisibilityText(detail.vote) }}</strong>
             </div>
           </aside>
         </div>
@@ -248,6 +261,7 @@ const resultsVisible = computed(() =>
     ),
   ),
 )
+const isPrivateResult = computed(() => resultVisibility(detail.value?.vote) === 'private')
 const requiresLogin = computed(
   () => detail.value?.vote?.anonymousAllowed === false && !hasToken.value,
 )
@@ -337,6 +351,21 @@ function statusText(status: string) {
 
 function voteTypeText(vote: Record<string, any>) {
   return vote.voteType === 'multiple' ? `多选，最多 ${vote.maxChoices || 2} 项` : '单选'
+}
+
+function resultVisibility(vote?: Record<string, any>) {
+  if (vote?.resultVisibility) return vote.resultVisibility
+  return vote?.resultVisible === false ? 'after_vote' : 'public'
+}
+
+function resultVisibilityText(vote: Record<string, any>) {
+  return (
+    {
+      public: '公开可见',
+      after_vote: '投后或结束可见',
+      private: '不公开，仅后台可见',
+    }[resultVisibility(vote)] || '公开可见'
+  )
 }
 
 function formatRange(startAt: any, endAt: any) {
@@ -581,6 +610,10 @@ onMounted(() => {
 .vote-remark,
 .vote-actions,
 .vote-panel :deep(.el-alert) {
+  margin-top: 14px;
+}
+
+.private-result-alert {
   margin-top: 14px;
 }
 
