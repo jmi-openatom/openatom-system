@@ -420,7 +420,7 @@ onBeforeUnmount(() => {
 }
 
 .regulation-toc {
-  --regulation-toc-accent: #0a5cff;
+  --regulation-toc-accent: var(--oa-text);
 
   padding: 24px 18px 20px;
 }

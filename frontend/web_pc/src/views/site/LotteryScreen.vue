@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
   place-items: center;
   overflow: hidden;
   background: #ffffff;
-  color: #020617;
+  color: #000000;
 }
 
 .winner-stage {
@@ -330,7 +330,7 @@ onBeforeUnmount(() => {
 .winner-stage strong {
   max-width: 100%;
   overflow-wrap: anywhere;
-  color: #020617;
+  color: #000000;
   font-size: clamp(64px, 12vw, 180px);
   font-weight: 850;
   letter-spacing: 0;
@@ -342,7 +342,7 @@ onBeforeUnmount(() => {
   max-width: min(100%, 900px);
   margin: 0;
   overflow: hidden;
-  color: #475569;
+  color: #66666b;
   font-size: clamp(18px, 4.6vw, 36px);
   font-weight: 760;
   letter-spacing: 0;
@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
   place-items: center;
   padding: 32px;
   background: #ffffff;
-  color: #020617;
+  color: #000000;
   text-align: center;
   animation: introExit 1.2s cubic-bezier(0.76, 0, 0.24, 1) forwards;
 }
@@ -382,7 +382,7 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   overflow: hidden;
-  color: #020617;
+  color: #000000;
 }
 
 .curtain-panel {
@@ -397,12 +397,12 @@ onBeforeUnmount(() => {
 
 .curtain-panel--top {
   top: 0;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 0 rgba(29, 29, 31, 0.08);
 }
 
 .curtain-panel--bottom {
   bottom: 0;
-  box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.08);
+  box-shadow: 0 -1px 0 rgba(29, 29, 31, 0.08);
 }
 
 .draw-curtain.is-entering .curtain-panel--top {
@@ -444,7 +444,7 @@ onBeforeUnmount(() => {
 }
 
 .curtain-copy strong {
-  color: #020617;
+  color: #000000;
   font-size: clamp(64px, 12vw, 180px);
   font-weight: 850;
   letter-spacing: 0;
@@ -454,7 +454,7 @@ onBeforeUnmount(() => {
 
 .curtain-copy p {
   margin: 0;
-  color: #475569;
+  color: #66666b;
   font-size: clamp(28px, 5vw, 78px);
   font-weight: 760;
   line-height: 1.05;

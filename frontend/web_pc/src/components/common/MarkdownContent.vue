@@ -1,10 +1,11 @@
 <template>
-  <article ref="contentRef" class="markdown-content" v-html="html"></article>
+  <article :key="resolvedTheme" ref="contentRef" class="markdown-content" v-html="html"></article>
 </template>
 
 <script setup lang="ts">
 import { renderMarkdown } from '@/utils/markdown.ts'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useTheme } from '@/composables/useTheme'
 
 const props = withDefaults(
   defineProps<{
@@ -17,6 +18,7 @@ const props = withDefaults(
 
 const html = computed(() => renderMarkdown(props.content))
 const contentRef = ref<HTMLElement>()
+const { resolvedTheme } = useTheme()
 let renderSequence = 0
 
 async function renderMermaid() {
@@ -27,6 +29,7 @@ async function renderMermaid() {
   if (!codeBlocks.length) return
 
   const { default: mermaid } = await import('mermaid')
+  const dark = resolvedTheme.value === 'dark'
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
@@ -36,13 +39,19 @@ async function renderMermaid() {
     themeVariables: {
       fontFamily:
         '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
-      textColor: '#1d1d1f',
-      primaryTextColor: '#1d1d1f',
-      secondaryTextColor: '#1d1d1f',
-      tertiaryTextColor: '#1d1d1f',
-      primaryColor: '#eef3ff',
-      primaryBorderColor: '#6687ff',
-      lineColor: '#6b7280',
+      background: dark ? '#1c1c1f' : '#ffffff',
+      mainBkg: dark ? '#252529' : '#f2f2f4',
+      secondBkg: dark ? '#303035' : '#e8e8eb',
+      tertiaryColor: dark ? '#38383d' : '#dedee1',
+      textColor: dark ? '#f7f7f8' : '#1d1d1f',
+      primaryTextColor: dark ? '#f7f7f8' : '#1d1d1f',
+      secondaryTextColor: dark ? '#e2e2e5' : '#333336',
+      tertiaryTextColor: dark ? '#e2e2e5' : '#333336',
+      primaryColor: dark ? '#252529' : '#f2f2f4',
+      primaryBorderColor: dark ? '#68686f' : '#8e8e93',
+      lineColor: dark ? '#b8b8be' : '#6e6e73',
+      clusterBkg: dark ? '#202024' : '#f7f7f8',
+      clusterBorder: dark ? '#55555b' : '#b8b8bd',
     },
     flowchart: {
       htmlLabels: false,
@@ -71,11 +80,7 @@ async function renderMermaid() {
   }
 }
 
-watch(
-  () => props.content,
-  () => renderMermaid(),
-  { flush: 'post' },
-)
+watch([() => props.content, resolvedTheme], () => renderMermaid(), { flush: 'post' })
 
 onMounted(renderMermaid)
 </script>
@@ -190,7 +195,7 @@ onMounted(renderMermaid)
   padding: 20px;
   border: 1px solid var(--oa-border);
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--oa-elevated-bg);
   overflow-x: auto;
   text-align: center;
 }
@@ -205,8 +210,8 @@ onMounted(renderMermaid)
 .markdown-content :deep(.mermaid-diagram text),
 .markdown-content :deep(.mermaid-diagram .label text),
 .markdown-content :deep(.mermaid-diagram .nodeLabel) {
-  fill: #1d1d1f !important;
-  color: #1d1d1f !important;
+  fill: var(--oa-text) !important;
+  color: var(--oa-text) !important;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
   font-size: 14px !important;
@@ -215,8 +220,8 @@ onMounted(renderMermaid)
 
 .markdown-content :deep(.mermaid-diagram foreignObject div),
 .markdown-content :deep(.mermaid-diagram foreignObject span) {
-  color: #1d1d1f !important;
-  -webkit-text-fill-color: #1d1d1f !important;
+  color: var(--oa-text) !important;
+  -webkit-text-fill-color: var(--oa-text) !important;
   opacity: 1 !important;
 }
 

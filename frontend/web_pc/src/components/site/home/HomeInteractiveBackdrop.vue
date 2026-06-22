@@ -62,8 +62,10 @@ function prefersReducedMotion() {
 function shouldUseStaticBackdrop() {
   const connection = (navigator as any).connection
   const saveData = Boolean(connection?.saveData)
-  const lowMemory = typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4
-  const lowCpu = typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4
+  const lowMemory =
+    typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4
+  const lowCpu =
+    typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4
   return prefersReducedMotion() || saveData || lowMemory || lowCpu
 }
 
@@ -78,10 +80,10 @@ function colors() {
   }
 
   return {
-    dot: 'rgba(15, 23, 42, 0.13)',
-    dotActive: 'rgba(15, 23, 42, 0.56)',
-    line: 'rgba(15, 23, 42, 0.16)',
-    ring: 'rgba(15, 23, 42, 0.24)',
+    dot: 'rgba(29, 29, 31, 0.13)',
+    dotActive: 'rgba(29, 29, 31, 0.56)',
+    line: 'rgba(29, 29, 31, 0.16)',
+    ring: 'rgba(29, 29, 31, 0.24)',
   }
 }
 

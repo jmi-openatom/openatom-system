@@ -332,7 +332,7 @@ onMounted(() => {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 25% 25%, rgba(15, 23, 42, 0.14), transparent 38%),
+    radial-gradient(circle at 25% 25%, rgba(29, 29, 31, 0.14), transparent 38%),
     linear-gradient(180deg, var(--oa-page-soft-bg) 0%, var(--oa-elevated-bg) 100%);
 }
 

@@ -281,7 +281,7 @@ type VoteDraft = {
   options: OptionDraft[]
 }
 
-const optionColors = ['#1d1d1f', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6']
+const optionColors = ['#1d1d1f', '#4a4a4e', '#6e6e73', '#8e8e93', '#a1a1a6', '#c7c7cc']
 
 const loading = ref(false)
 const saving = ref(false)

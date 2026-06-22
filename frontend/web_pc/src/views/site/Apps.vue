@@ -24,7 +24,11 @@
             @clear="fetchList"
             @keyup.enter="fetchList"
           />
-          <el-segmented v-model="query.openSource" :options="openSourceOptions" @change="fetchList" />
+          <el-segmented
+            v-model="query.openSource"
+            :options="openSourceOptions"
+            @change="fetchList"
+          />
           <el-button type="primary" :icon="Search" @click="fetchList">搜索</el-button>
         </div>
 
@@ -169,7 +173,9 @@ function goDetail(id: number) {
 }
 
 function appInitial(name: string) {
-  return String(name || 'A').slice(0, 1).toUpperCase()
+  return String(name || 'A')
+    .slice(0, 1)
+    .toUpperCase()
 }
 
 onMounted(fetchList)
@@ -187,7 +193,7 @@ onMounted(fetchList)
   overflow: hidden;
   padding: clamp(96px, 11vw, 140px) 0 clamp(48px, 6vw, 78px);
   background:
-    linear-gradient(90deg, rgba(8, 16, 28, 0.82), rgba(8, 16, 28, 0.48)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.48)),
     url('/project.png') center / cover;
   color: #fff;
 }
@@ -197,7 +203,7 @@ onMounted(fetchList)
   position: absolute;
   inset: auto 0 0;
   height: 42%;
-  background: linear-gradient(180deg, rgba(8, 16, 28, 0), var(--oa-page-soft-bg));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0), var(--oa-page-soft-bg));
 }
 
 .apps-hero__inner {
@@ -385,7 +391,7 @@ onMounted(fetchList)
     min-height: 180px;
   }
 
-.app-card__head {
+  .app-card__head {
     flex-direction: column;
     align-items: flex-start;
   }

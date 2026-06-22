@@ -23,7 +23,7 @@
           <span class="reply-text">回复</span>
         </el-button>
       </header>
-      <div class=" blog-comment-item__content" v-html="contentHtml"></div>
+      <div class="blog-comment-item__content" v-html="contentHtml"></div>
 
       <div v-if="comment.replies?.length" class="blog-comment-item__replies">
         <BlogCommentItem
@@ -40,10 +40,10 @@
 
 <script lang="ts" setup>
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import {ChatLineRound} from '@element-plus/icons-vue'
-import {formatDateTime} from '@/utils/format.ts'
-import {renderMarkdown} from '@/utils/markdown.ts'
-import {computed} from 'vue'
+import { ChatLineRound } from '@element-plus/icons-vue'
+import { formatDateTime } from '@/utils/format.ts'
+import { renderMarkdown } from '@/utils/markdown.ts'
+import { computed } from 'vue'
 
 defineOptions({ name: 'BlogCommentItem' })
 
@@ -119,8 +119,6 @@ function handleReply(comment: Record<string, any>) {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-
-
 .blog-comment-item__head {
   display: flex;
   gap: 12px;
@@ -166,8 +164,8 @@ function handleReply(comment: Record<string, any>) {
 }
 
 .blog-comment-item__reply:hover {
-  color: var(--oa-primary, #2563eb) !important;
-  background: color-mix(in srgb, var(--oa-primary, #2563eb) 8%, transparent);
+  color: var(--oa-primary, #1d1d1f) !important;
+  background: color-mix(in srgb, var(--oa-primary, #1d1d1f) 8%, transparent);
 }
 
 .reply-icon {
@@ -207,8 +205,8 @@ function handleReply(comment: Record<string, any>) {
   padding: 2px 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 13px;
-  color: var(--oa-primary, #2563eb);
-  background: color-mix(in srgb, var(--oa-primary, #2563eb) 6%, var(--oa-page-soft-bg));
+  color: var(--oa-primary, #1d1d1f);
+  background: color-mix(in srgb, var(--oa-primary, #1d1d1f) 6%, var(--oa-page-soft-bg));
   border-radius: 4px;
 }
 

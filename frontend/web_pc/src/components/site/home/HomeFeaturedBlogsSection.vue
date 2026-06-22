@@ -1,5 +1,9 @@
 <template>
-  <section v-if="articles.length" id="featured-blogs" class="featured-blog-section home-interactive-section">
+  <section
+    v-if="articles.length"
+    id="featured-blogs"
+    class="featured-blog-section home-interactive-section"
+  >
     <HomeInteractiveBackdrop :radius="220" :spacing="66" :strength="18" />
 
     <div class="container featured-blog-section__inner">
@@ -69,7 +73,9 @@ function openArticle(article: any) {
 }
 
 function coverInitial(title: string) {
-  return String(title || 'B').slice(0, 1).toUpperCase()
+  return String(title || 'B')
+    .slice(0, 1)
+    .toUpperCase()
 }
 
 function formatBlogDate(value: string) {
@@ -113,12 +119,12 @@ function formatBlogDate(value: string) {
   display: grid;
   min-height: 260px;
   overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 28px;
   background: var(--oa-elevated-bg);
   cursor: pointer;
   isolation: isolate;
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 44px rgba(29, 29, 31, 0.08);
   transition:
     transform 0.24s ease,
     border-color 0.24s ease,
@@ -126,8 +132,8 @@ function formatBlogDate(value: string) {
 }
 
 .featured-blog-card:hover {
-  border-color: rgba(15, 23, 42, 0.24);
-  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.14);
+  border-color: rgba(29, 29, 31, 0.24);
+  box-shadow: 0 28px 70px rgba(29, 29, 31, 0.14);
   transform: translateY(-4px);
 }
 
@@ -139,7 +145,7 @@ function formatBlogDate(value: string) {
 .featured-blog-card__media {
   position: absolute;
   inset: 0;
-  background: #0f172a;
+  background: #1d1d1f;
 }
 
 .featured-blog-card__media::after {
@@ -147,8 +153,18 @@ function formatBlogDate(value: string) {
   inset: 0;
   content: '';
   background:
-    linear-gradient(180deg, rgba(2, 6, 23, 0.02) 0%, rgba(2, 6, 23, 0.28) 42%, rgba(2, 6, 23, 0.86) 100%),
-    linear-gradient(90deg, rgba(2, 6, 23, 0.54) 0%, rgba(2, 6, 23, 0.08) 64%, rgba(2, 6, 23, 0.28) 100%);
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.02) 0%,
+      rgba(0, 0, 0, 0.28) 42%,
+      rgba(0, 0, 0, 0.86) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.54) 0%,
+      rgba(0, 0, 0, 0.08) 64%,
+      rgba(0, 0, 0, 0.28) 100%
+    );
 }
 
 .featured-blog-card__media img {
@@ -167,9 +183,8 @@ function formatBlogDate(value: string) {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 18% 16%, rgba(34, 211, 238, 0.22), transparent 30%),
-    radial-gradient(circle at 86% 18%, rgba(34, 197, 94, 0.14), transparent 28%),
-    #0f172a;
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.16), transparent 30%),
+    radial-gradient(circle at 86% 18%, rgba(161, 161, 170, 0.12), transparent 28%), #1d1d1f;
 }
 
 .featured-blog-card__media span {
@@ -197,7 +212,7 @@ function formatBlogDate(value: string) {
   color: rgba(255, 255, 255, 0.78);
   font-size: 13px;
   letter-spacing: 0.04em;
-  text-shadow: 0 1px 14px rgba(2, 6, 23, 0.48);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.48);
 }
 
 .featured-blog-card h3 {
@@ -206,7 +221,7 @@ function formatBlogDate(value: string) {
   color: #ffffff;
   font-size: clamp(24px, 2.8vw, 44px);
   line-height: 1.12;
-  text-shadow: 0 2px 20px rgba(2, 6, 23, 0.55);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.55);
 }
 
 .featured-blog-card:not(.is-primary) h3 {
@@ -220,7 +235,7 @@ function formatBlogDate(value: string) {
   overflow: hidden;
   color: rgba(255, 255, 255, 0.88);
   line-height: 1.7;
-  text-shadow: 0 1px 16px rgba(2, 6, 23, 0.5);
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.5);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -245,7 +260,7 @@ function formatBlogDate(value: string) {
   min-width: 152px;
   height: 44px;
   padding: 0 20px;
-  border: 1px solid rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(29, 29, 31, 0.14);
   border-radius: 999px;
   background: var(--oa-elevated-bg);
   color: var(--oa-text);
@@ -258,8 +273,8 @@ function formatBlogDate(value: string) {
 }
 
 .featured-blog-section__more:hover {
-  border-color: #0f172a;
-  background: #0f172a;
+  border-color: #1d1d1f;
+  background: #1d1d1f;
   color: #ffffff;
   transform: translateY(-2px);
 }

@@ -1,14 +1,12 @@
 <template>
   <ViewPage :loading="loading" class="blog-detail">
     <section class="blog-detail__hero home-interactive-section">
-
-
       <div class="container blog-detail__hero-inner">
         <div class="blog-detail__copy">
-    <div>
-        <el-button size="large" type="primary" @click="$router.back()"> 返回博客 </el-button>
-    </div>
-            <br>
+          <div>
+            <el-button size="large" type="primary" @click="$router.back()"> 返回博客 </el-button>
+          </div>
+          <br />
 
           <div class="blog-detail__meta">
             <el-tag v-if="article.featured" effect="plain" type="warning">推荐</el-tag>
@@ -145,13 +143,13 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import BlogCommentItem from '@/components/site/blog/BlogCommentItem.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
-import {Pointer, Share, Star} from '@element-plus/icons-vue'
-import {siteApi} from '@/api'
-import {formatDateTime} from '@/utils/format.ts'
-import {getCurrentUser, getToken} from '@/utils/auth.ts'
-import {renderMarkdown} from '@/utils/markdown.ts'
-import {computed, onMounted, ref} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
+import { Pointer, Share, Star } from '@element-plus/icons-vue'
+import { siteApi } from '@/api'
+import { formatDateTime } from '@/utils/format.ts'
+import { getCurrentUser, getToken } from '@/utils/auth.ts'
+import { renderMarkdown } from '@/utils/markdown.ts'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
@@ -235,7 +233,7 @@ async function shareArticle() {
   if (!ensureLogin()) return
   article.value = await siteApi.shareBlogArticle(route.params.id, { channel: 'copy_link' })
   try {
-    await navigator.clipboard?.writeText(article.value.title+"\n"+window.location.href)
+    await navigator.clipboard?.writeText(article.value.title + '\n' + window.location.href)
     ElMessage.success('链接已复制，分享记录已保存')
   } catch (_error) {
     ElMessage.success('分享记录已保存')
@@ -465,9 +463,9 @@ onMounted(() => {
   min-height: 32px;
   align-items: center;
   padding: 0 16px;
-  color: var(--oa-primary, #2563eb);
-  background: color-mix(in srgb, var(--oa-primary, #2563eb) 8%, var(--oa-elevated-bg));
-  border: 1px solid color-mix(in srgb, var(--oa-primary, #2563eb) 15%, var(--oa-border));
+  color: var(--oa-primary, #1d1d1f);
+  background: color-mix(in srgb, var(--oa-primary, #1d1d1f) 8%, var(--oa-elevated-bg));
+  border: 1px solid color-mix(in srgb, var(--oa-primary, #1d1d1f) 15%, var(--oa-border));
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
@@ -496,9 +494,9 @@ onMounted(() => {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 14px;
-  color: var(--oa-primary, #2563eb);
-  background: color-mix(in srgb, var(--oa-primary, #2563eb) 6%, var(--oa-elevated-bg));
-  border: 1px solid color-mix(in srgb, var(--oa-primary, #2563eb) 12%, var(--oa-border));
+  color: var(--oa-primary, #1d1d1f);
+  background: color-mix(in srgb, var(--oa-primary, #1d1d1f) 6%, var(--oa-elevated-bg));
+  border: 1px solid color-mix(in srgb, var(--oa-primary, #1d1d1f) 12%, var(--oa-border));
   border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
@@ -519,9 +517,9 @@ onMounted(() => {
 }
 
 .comment-composer__input :deep(.el-textarea__inner:focus) {
-  border-color: color-mix(in srgb, var(--oa-primary, #2563eb) 45%, var(--oa-border));
+  border-color: color-mix(in srgb, var(--oa-primary, #1d1d1f) 45%, var(--oa-border));
   background: var(--oa-page-bg);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--oa-primary, #2563eb) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--oa-primary, #1d1d1f) 10%, transparent);
 }
 
 .comment-composer__footer {

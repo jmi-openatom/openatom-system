@@ -14,7 +14,14 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
-import { defineAsyncComponent, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import {
+  defineAsyncComponent,
+  getCurrentInstance,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from 'vue'
 import { siteApi } from '@/api'
 import HomeHero from '@/components/site/home/HomeHero.vue'
 import HomeOverviewPage from '@/components/site/home/HomeOverviewPage.vue'
@@ -28,7 +35,9 @@ const HomeAwardsSection = defineAsyncComponent(
 const HomeFeaturedBlogsSection = defineAsyncComponent(
   () => import('@/components/site/home/HomeFeaturedBlogsSection.vue'),
 )
-const HomeFocusSection = defineAsyncComponent(() => import('@/components/site/home/HomeFocusSection.vue'))
+const HomeFocusSection = defineAsyncComponent(
+  () => import('@/components/site/home/HomeFocusSection.vue'),
+)
 const HomePeopleSection = defineAsyncComponent(
   () => import('@/components/site/home/HomePeopleSection.vue'),
 )
@@ -100,8 +109,10 @@ function shouldUseReducedHomeMotion() {
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   const connection = (navigator as any).connection
   const saveData = Boolean(connection?.saveData)
-  const lowMemory = typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4
-  const lowCpu = typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4
+  const lowMemory =
+    typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4
+  const lowCpu =
+    typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4
   return reducedMotion || saveData || lowMemory || lowCpu
 }
 
@@ -1208,7 +1219,7 @@ onBeforeUnmount(() => {
   height: 1px;
   margin: 0 auto 18px;
   content: '';
-  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.78), transparent);
+  background: linear-gradient(90deg, transparent, rgba(29, 29, 31, 0.78), transparent);
 }
 
 .section-heading span {
@@ -1359,9 +1370,9 @@ onBeforeUnmount(() => {
   width: min(820px, calc(100% - 120px));
   height: 500px;
   overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 32px;
-  background: #0f172a;
+  background: #1d1d1f;
   opacity: var(--card-opacity);
   cursor: pointer;
   transform: translateX(calc(-50% + var(--card-x)))
@@ -1373,7 +1384,7 @@ onBeforeUnmount(() => {
     opacity 0.28s ease,
     filter 0.48s ease,
     border-color 0.32s ease;
-  box-shadow: 0 24px 72px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 24px 72px rgba(29, 29, 31, 0.18);
   will-change: transform;
 }
 
@@ -1387,7 +1398,7 @@ onBeforeUnmount(() => {
 }
 
 .activity-stage__card.is-active {
-  border-color: rgba(15, 23, 42, 0.2);
+  border-color: rgba(29, 29, 31, 0.2);
 }
 
 .activity-stage__media,
@@ -1423,8 +1434,13 @@ onBeforeUnmount(() => {
 .activity-stage__veil {
   z-index: 1;
   background:
-    linear-gradient(180deg, rgba(2, 6, 23, 0.04) 0%, rgba(2, 6, 23, 0.2) 48%, rgba(2, 6, 23, 0.78) 100%),
-    linear-gradient(90deg, rgba(2, 6, 23, 0.48) 0%, rgba(2, 6, 23, 0.1) 58%, rgba(2, 6, 23, 0.34) 100%);
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.04) 0%,
+      rgba(0, 0, 0, 0.2) 48%,
+      rgba(0, 0, 0, 0.78) 100%
+    ),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.48) 0%, rgba(0, 0, 0, 0.1) 58%, rgba(0, 0, 0, 0.34) 100%);
 }
 
 .activity-stage__content {
@@ -1446,7 +1462,7 @@ onBeforeUnmount(() => {
   color: rgba(255, 255, 255, 0.84);
   font-size: 13px;
   letter-spacing: 0.12em;
-  text-shadow: 0 1px 14px rgba(2, 6, 23, 0.46);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.46);
 }
 
 .activity-stage__content h3 {
@@ -1460,7 +1476,7 @@ onBeforeUnmount(() => {
     sans-serif;
   font-size: clamp(28px, 3vw, 40px);
   line-height: 1.08;
-  text-shadow: 0 2px 18px rgba(2, 6, 23, 0.52);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.52);
 }
 
 .activity-stage__content p {
@@ -1468,7 +1484,7 @@ onBeforeUnmount(() => {
   margin: 0;
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.7;
-  text-shadow: 0 1px 16px rgba(2, 6, 23, 0.5);
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.5);
 }
 
 .activity-stage__controls {
@@ -1494,10 +1510,10 @@ onBeforeUnmount(() => {
   width: 44px;
   height: 44px;
   place-items: center;
-  border: 1px solid rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(29, 29, 31, 0.14);
   border-radius: 999px;
   background: var(--oa-elevated-bg);
-  color: #0f172a;
+  color: #1d1d1f;
   cursor: pointer;
   transition:
     transform 0.22s ease,
@@ -1506,7 +1522,7 @@ onBeforeUnmount(() => {
 }
 
 .activity-stage__controls > button:hover {
-  background: #0f172a;
+  background: #1d1d1f;
   color: #ffffff;
   transform: translateY(-2px);
 }
@@ -1521,7 +1537,7 @@ onBeforeUnmount(() => {
   width: 28px;
   height: 2px;
   padding: 0;
-  background: rgba(15, 23, 42, 0.18);
+  background: rgba(29, 29, 31, 0.18);
   cursor: pointer;
   transition:
     width 0.24s ease,
@@ -1530,7 +1546,7 @@ onBeforeUnmount(() => {
 
 .activity-stage__progress button.is-active {
   width: 52px;
-  background: #0f172a;
+  background: #1d1d1f;
 }
 
 .award-exhibit {
@@ -1548,7 +1564,7 @@ onBeforeUnmount(() => {
   position: absolute;
   right: -8px;
   bottom: -22px;
-  color: rgba(15, 23, 42, 0.055);
+  color: rgba(29, 29, 31, 0.055);
   font-family: 'SF Pro Display', system-ui, sans-serif;
   font-size: clamp(120px, 19vw, 280px);
   font-weight: 700;
@@ -1564,7 +1580,7 @@ onBeforeUnmount(() => {
   bottom: 18px;
   left: 148px;
   width: 1px;
-  background: rgba(15, 23, 42, 0.14);
+  background: rgba(29, 29, 31, 0.14);
 }
 
 .award-exhibit__trace {
@@ -1574,7 +1590,7 @@ onBeforeUnmount(() => {
   left: 148px;
   width: 1px;
   height: calc((100% - 36px) * var(--award-progress));
-  background: #0f172a;
+  background: #1d1d1f;
   transition: height 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1601,11 +1617,11 @@ onBeforeUnmount(() => {
   left: 164px;
   height: 1px;
   content: '';
-  background: rgba(15, 23, 42, 0.08);
+  background: rgba(29, 29, 31, 0.08);
 }
 
 .award-exhibit__year {
-  color: rgba(15, 23, 42, 0.36);
+  color: rgba(29, 29, 31, 0.36);
   font-family: 'SF Pro Display', system-ui, sans-serif;
   font-size: 42px;
   font-weight: 600;
@@ -1620,7 +1636,7 @@ onBeforeUnmount(() => {
   display: block;
   width: 12px;
   height: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.28);
+  border: 1px solid rgba(29, 29, 31, 0.28);
   border-radius: 999px;
   background: var(--oa-elevated-bg);
   transition:
@@ -1634,13 +1650,13 @@ onBeforeUnmount(() => {
 .award-exhibit__dot i {
   position: absolute;
   inset: -1px;
-  border: 1px solid #0f172a;
+  border: 1px solid #1d1d1f;
   border-radius: inherit;
   opacity: 0;
 }
 
 .award-exhibit__title {
-  color: rgba(15, 23, 42, 0.48);
+  color: rgba(29, 29, 31, 0.48);
   font-size: 18px;
   transition:
     color 0.28s ease,
@@ -1648,15 +1664,15 @@ onBeforeUnmount(() => {
 }
 
 .award-exhibit__item.is-active .award-exhibit__year {
-  color: #0f172a;
+  color: #1d1d1f;
   transform: translateX(8px);
 }
 
 .award-exhibit__item.is-active .award-exhibit__dot {
   width: 18px;
   height: 18px;
-  border-color: #0f172a;
-  background: #0f172a;
+  border-color: #1d1d1f;
+  background: #1d1d1f;
   transform: translateX(-3px);
 }
 
@@ -1665,7 +1681,7 @@ onBeforeUnmount(() => {
 }
 
 .award-exhibit__item.is-active .award-exhibit__title {
-  color: #0f172a;
+  color: #1d1d1f;
   transform: translateX(8px);
 }
 
@@ -1701,18 +1717,18 @@ onBeforeUnmount(() => {
   left: 0;
   height: 1px;
   content: '';
-  background: #0f172a;
+  background: #1d1d1f;
 }
 
 .award-exhibit__spotlight span {
-  color: rgba(15, 23, 42, 0.42);
+  color: rgba(29, 29, 31, 0.42);
   font-size: 13px;
   letter-spacing: 0.2em;
 }
 
 .award-exhibit__spotlight h3 {
   margin: 0;
-  color: #0f172a;
+  color: #1d1d1f;
   font-family: 'SF Pro Display', system-ui, sans-serif;
   font-size: clamp(30px, 3vw, 44px);
   line-height: 1.08;
@@ -1720,7 +1736,7 @@ onBeforeUnmount(() => {
 
 .award-exhibit__spotlight p {
   margin: 0;
-  color: rgba(15, 23, 42, 0.58);
+  color: rgba(29, 29, 31, 0.58);
   font-size: 18px;
 }
 
@@ -1730,12 +1746,12 @@ onBeforeUnmount(() => {
 }
 
 .award-exhibit__spotlight strong {
-  color: #0f172a;
+  color: #1d1d1f;
   font-size: 18px;
 }
 
 .award-exhibit__spotlight small {
-  color: rgba(15, 23, 42, 0.48);
+  color: rgba(29, 29, 31, 0.48);
 }
 
 @keyframes awardPulse {
@@ -1755,8 +1771,8 @@ onBeforeUnmount(() => {
   min-height: 100vh;
   min-height: 100svh;
   overflow: hidden;
-  color: #0f172a;
-  background: #f8fbff;
+  color: #1d1d1f;
+  background: #f7f7f8;
   isolation: isolate;
 }
 
@@ -1823,11 +1839,11 @@ onBeforeUnmount(() => {
   gap: 10px;
   min-height: 40px;
   padding: 6px 14px 6px 8px;
-  border: 1px solid rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(29, 29, 31, 0.1);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.78);
-  color: #334155;
-  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.06);
+  color: #4a4a4e;
+  box-shadow: 0 12px 36px rgba(29, 29, 31, 0.06);
   backdrop-filter: blur(16px);
   font-size: 13px;
 }
@@ -1842,7 +1858,7 @@ onBeforeUnmount(() => {
   width: min(100%, 980px, calc(100vw - 48px));
   height: clamp(82px, 9vw, 118px);
   min-height: clamp(82px, 9vw, 118px);
-  color: #0f172a;
+  color: #1d1d1f;
   filter: none;
   font-size: clamp(44px, 6.8vw, 92px);
   font-weight: 700;
@@ -1858,13 +1874,13 @@ onBeforeUnmount(() => {
 }
 
 .home-hero__morph span {
-  color: #020617;
+  color: #000000;
 }
 
 .hero__subtitle {
   max-width: 660px;
   margin: 0 auto;
-  color: #475569;
+  color: #66666b;
   font-size: 18px;
   line-height: 1.7;
   letter-spacing: 0;
@@ -1879,7 +1895,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
 }
 
 .home-interactive-section {
@@ -1914,7 +1930,7 @@ onBeforeUnmount(() => {
 
 .brief-card:hover,
 .person-card:hover {
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 18px 44px rgba(29, 29, 31, 0.12);
 }
 
 @media (max-width: 1040px) {

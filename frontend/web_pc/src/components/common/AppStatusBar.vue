@@ -26,28 +26,28 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from 'vue-router'
-import { startNavigation, useAppStatus } from '@/composables/useAppStatus'
+import { useRouter } from "vue-router";
+import { startNavigation, useAppStatus } from "@/composables/useAppStatus";
 
-const router = useRouter()
-const { state, busy, showNotice, noticeMessage } = useAppStatus()
+const router = useRouter();
+const { state, busy, showNotice, noticeMessage } = useAppStatus();
 
 async function retry() {
-  if (!state.online) return
-  const target = state.navigationTarget || router.currentRoute.value.fullPath
+  if (!state.online) return;
+  const target = state.navigationTarget || router.currentRoute.value.fullPath;
   if (state.navigationSlow) {
-    window.location.assign(target)
-    return
+    window.location.assign(target);
+    return;
   }
-  const wasCurrentRoute = router.currentRoute.value.fullPath === target
-  startNavigation(target)
+  const wasCurrentRoute = router.currentRoute.value.fullPath === target;
+  startNavigation(target);
   try {
-    await router.replace(target)
+    await router.replace(target);
     if (wasCurrentRoute) {
-      window.location.reload()
+      window.location.reload();
     }
   } catch {
-    window.location.assign(target)
+    window.location.assign(target);
   }
 }
 </script>
@@ -56,7 +56,7 @@ async function retry() {
 .app-status {
   position: fixed;
   inset: 0 0 auto;
-  z-index: 5000;
+  z-index: 1900;
   pointer-events: none;
 }
 

@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import { cn } from "@inspira-ui/plugins";
-import { computed } from "vue";
+import { cn } from '@inspira-ui/plugins'
+import { computed } from 'vue'
 
 interface AuroraBackgroundProps {
-  radialGradient?: boolean;
-  class?: string;
+  radialGradient?: boolean
+  class?: string
 }
 
 const props = withDefaults(defineProps<AuroraBackgroundProps>(), {
   radialGradient: true,
-});
+})
 
 const styles = computed(() => {
   return {
-    "--aurora":
-      "repeating-linear-gradient(100deg,#3b82f6_10%,#a5b4fc_15%,#93c5fd_20%,#ddd6fe_25%,#60a5fa_30%)",
-    "--dark-gradient":
-      "repeating-linear-gradient(100deg,#000_0%,#000_7%,transparent_10%,transparent_12%,#000_16%)",
-    "--white-gradient":
-      "repeating-linear-gradient(100deg,#fff_0%,#fff_7%,transparent_10%,transparent_12%,#fff_16%)",
+    '--aurora':
+      'repeating-linear-gradient(100deg,#1d1d1f_10%,#6e6e73_15%,#a1a1a6_20%,#d2d2d7_25%,#8e8e93_30%)',
+    '--dark-gradient':
+      'repeating-linear-gradient(100deg,#000_0%,#000_7%,transparent_10%,transparent_12%,#000_16%)',
+    '--white-gradient':
+      'repeating-linear-gradient(100deg,#fff_0%,#fff_7%,transparent_10%,transparent_12%,#fff_16%)',
 
-    "--blue-300": "#93c5fd",
-    "--blue-400": "#60a5fa",
-    "--blue-500": "#3b82f6",
-    "--indigo-300": "#a5b4fc",
-    "--violet-200": "#ddd6fe",
-    "--black": "#000",
-    "--white": "#fff",
-    "--transparent": "transparent",
-    "--animate-aurora": "aurora 60s linear infinite",
-  };
-});
+    '--blue-300': '#a1a1a6',
+    '--blue-400': '#8e8e93',
+    '--blue-500': '#1d1d1f',
+    '--indigo-300': '#6e6e73',
+    '--violet-200': '#ddd6fe',
+    '--black': '#000',
+    '--white': '#fff',
+    '--transparent': 'transparent',
+    '--animate-aurora': 'aurora 60s linear infinite',
+  }
+})
 </script>
 
 <template>
@@ -44,10 +44,7 @@ const styles = computed(() => {
         )
       "
     >
-      <div
-        :style="styles"
-        class="absolute inset-0 overflow-hidden"
-      >
+      <div :style="styles" class="absolute inset-0 overflow-hidden">
         <div
           :class="
             cn(

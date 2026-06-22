@@ -59,39 +59,37 @@ const { isDark } = useTheme()
 
 <style scoped>
 .workspace-hero {
-  --workspace-hero-text: #0f172a;
-  --workspace-hero-muted: rgba(15, 23, 42, 0.68);
-  --workspace-hero-soft: rgba(15, 23, 42, 0.54);
-  --workspace-hero-grid: rgba(15, 23, 42, 0.05);
-  --workspace-hero-orb: rgba(56, 189, 248, 0.14);
-  --workspace-hero-chip-border: rgba(15, 23, 42, 0.12);
+  --workspace-hero-text: #1d1d1f;
+  --workspace-hero-muted: rgba(29, 29, 31, 0.72);
+  --workspace-hero-soft: rgba(29, 29, 31, 0.58);
+  --workspace-hero-grid: rgba(29, 29, 31, 0.05);
+  --workspace-hero-orb: rgba(29, 29, 31, 0.08);
+  --workspace-hero-chip-border: rgba(29, 29, 31, 0.12);
   --workspace-hero-chip-bg: rgba(255, 255, 255, 0.72);
-  --workspace-hero-panel-border: rgba(15, 23, 42, 0.1);
+  --workspace-hero-panel-border: rgba(29, 29, 31, 0.1);
   --workspace-hero-panel-bg: rgba(255, 255, 255, 0.7);
-  --workspace-hero-tile-border: rgba(15, 23, 42, 0.08);
+  --workspace-hero-tile-border: rgba(29, 29, 31, 0.08);
   --workspace-hero-tile-bg: rgba(255, 255, 255, 0.62);
-  --workspace-hero-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 24px 80px rgba(15, 23, 42, 0.12);
-  --workspace-hero-solid-button-border: #0f172a;
-  --workspace-hero-solid-button-bg: #0f172a;
+  --workspace-hero-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 24px 80px rgba(0, 0, 0, 0.1);
+  --workspace-hero-solid-button-border: #1d1d1f;
+  --workspace-hero-solid-button-bg: #1d1d1f;
   --workspace-hero-solid-button-text: #ffffff;
-  --workspace-hero-solid-button-hover-border: #020617;
-  --workspace-hero-solid-button-hover-bg: #020617;
+  --workspace-hero-solid-button-hover-border: #000000;
+  --workspace-hero-solid-button-hover-bg: #000000;
   --workspace-hero-solid-button-hover-text: #ffffff;
-  --workspace-hero-plain-button-border: rgba(15, 23, 42, 0.14);
+  --workspace-hero-plain-button-border: rgba(29, 29, 31, 0.14);
   --workspace-hero-plain-button-bg: rgba(255, 255, 255, 0.54);
-  --workspace-hero-plain-button-text: #0f172a;
-  --workspace-hero-plain-button-hover-border: rgba(15, 23, 42, 0.26);
+  --workspace-hero-plain-button-text: #1d1d1f;
+  --workspace-hero-plain-button-hover-border: rgba(29, 29, 31, 0.26);
   --workspace-hero-plain-button-hover-bg: rgba(255, 255, 255, 0.86);
-  --workspace-hero-plain-button-hover-text: #020617;
+  --workspace-hero-plain-button-hover-text: #000000;
   position: relative;
   overflow: hidden;
   color: var(--workspace-hero-text);
   background:
-    radial-gradient(circle at 15% 16%, rgba(14, 165, 233, 0.18), transparent 28%),
-    radial-gradient(circle at 84% 8%, rgba(34, 197, 94, 0.12), transparent 26%),
-    linear-gradient(135deg, #f8fbff 0%, #edf5ff 48%, #f7fbff 100%);
+    radial-gradient(circle at 15% 16%, rgba(29, 29, 31, 0.08), transparent 28%),
+    radial-gradient(circle at 84% 8%, rgba(110, 110, 115, 0.06), transparent 26%),
+    linear-gradient(135deg, #fafafa 0%, #f2f2f4 48%, #f8f8f9 100%);
   transition:
     color 0.24s ease,
     background 0.24s ease;
@@ -294,35 +292,33 @@ const { isDark } = useTheme()
 
 .workspace-hero--dark {
   --workspace-hero-text: #ffffff;
-  --workspace-hero-muted: rgba(255, 255, 255, 0.72);
-  --workspace-hero-soft: rgba(255, 255, 255, 0.62);
-  --workspace-hero-grid: rgba(255, 255, 255, 0.035);
-  --workspace-hero-orb: rgba(255, 255, 255, 0.08);
-  --workspace-hero-chip-border: rgba(255, 255, 255, 0.18);
-  --workspace-hero-chip-bg: rgba(255, 255, 255, 0.05);
-  --workspace-hero-panel-border: rgba(255, 255, 255, 0.16);
-  --workspace-hero-panel-bg: rgba(255, 255, 255, 0.08);
-  --workspace-hero-tile-border: rgba(255, 255, 255, 0.12);
-  --workspace-hero-tile-bg: rgba(255, 255, 255, 0.055);
-  --workspace-hero-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 24px 80px rgba(0, 0, 0, 0.28);
+  --workspace-hero-muted: rgba(255, 255, 255, 0.86);
+  --workspace-hero-soft: rgba(255, 255, 255, 0.74);
+  --workspace-hero-grid: rgba(255, 255, 255, 0.055);
+  --workspace-hero-orb: rgba(255, 255, 255, 0.1);
+  --workspace-hero-chip-border: rgba(255, 255, 255, 0.24);
+  --workspace-hero-chip-bg: rgba(255, 255, 255, 0.08);
+  --workspace-hero-panel-border: rgba(255, 255, 255, 0.24);
+  --workspace-hero-panel-bg: rgba(255, 255, 255, 0.1);
+  --workspace-hero-tile-border: rgba(255, 255, 255, 0.2);
+  --workspace-hero-tile-bg: rgba(255, 255, 255, 0.08);
+  --workspace-hero-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 24px 80px rgba(0, 0, 0, 0.28);
   --workspace-hero-solid-button-border: #ffffff;
   --workspace-hero-solid-button-bg: #ffffff;
-  --workspace-hero-solid-button-text: #111827;
+  --workspace-hero-solid-button-text: #101012;
   --workspace-hero-solid-button-hover-border: #ffffff;
   --workspace-hero-solid-button-hover-bg: rgba(255, 255, 255, 0.92);
   --workspace-hero-solid-button-hover-text: #05070b;
   --workspace-hero-plain-button-border: rgba(255, 255, 255, 0.24);
-  --workspace-hero-plain-button-bg: rgba(255, 255, 255, 0.06);
+  --workspace-hero-plain-button-bg: rgba(255, 255, 255, 0.09);
   --workspace-hero-plain-button-text: #ffffff;
   --workspace-hero-plain-button-hover-border: rgba(255, 255, 255, 0.4);
   --workspace-hero-plain-button-hover-bg: rgba(255, 255, 255, 0.12);
   --workspace-hero-plain-button-hover-text: #ffffff;
   background:
-    radial-gradient(circle at 15% 16%, rgba(34, 211, 238, 0.22), transparent 28%),
-    radial-gradient(circle at 84% 8%, rgba(34, 197, 94, 0.14), transparent 26%),
-    linear-gradient(135deg, #0a0b0f 0%, #111827 46%, #05070b 100%);
+    radial-gradient(circle at 15% 16%, rgba(255, 255, 255, 0.08), transparent 28%),
+    radial-gradient(circle at 84% 8%, rgba(161, 161, 170, 0.06), transparent 26%),
+    linear-gradient(135deg, #0c0c0e 0%, #18181b 46%, #101012 100%);
 }
 
 @media (max-width: 980px) {

@@ -27,12 +27,9 @@ const props = withDefaults(
 
 const failedSources = ref<Set<string>>(new Set())
 
-watch(
-  [() => props.src, () => props.fallbackSrc, () => props.qqOpenid],
-  () => {
-    failedSources.value = new Set()
-  },
-)
+watch([() => props.src, () => props.fallbackSrc, () => props.qqOpenid], () => {
+  failedSources.value = new Set()
+})
 
 const uploadedSrc = computed(() => normalizeSource(props.src))
 const fallbackSrc = computed(() => normalizeSource(props.fallbackSrc))
@@ -74,14 +71,11 @@ function qqAvatarUrl(value?: string) {
   flex: 0 0 auto;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(29, 29, 31, 0.12);
   border-radius: 999px;
   background: #1d1d1f;
   color: #ffffff;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    sans-serif;
+  font-family: 'SF Pro Display', system-ui, sans-serif;
   font-size: calc(var(--avatar-size) * 0.42);
   font-weight: 600;
   line-height: 1;
@@ -92,5 +86,4 @@ function qqAvatarUrl(value?: string) {
   height: 100%;
   object-fit: cover;
 }
-
 </style>

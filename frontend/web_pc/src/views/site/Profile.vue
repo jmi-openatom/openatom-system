@@ -106,7 +106,11 @@
             <div class="qq-bind-box">
               <div>
                 <strong>QQ 机器人绑定</strong>
-                <span>{{ user.qqOpenid ? '当前账号已绑定 QQ，可在需要时解绑后重新绑定。' : '生成一次性绑定码后，发给 QQ 机器人完成绑定。' }}</span>
+                <span>{{
+                  user.qqOpenid
+                    ? '当前账号已绑定 QQ，可在需要时解绑后重新绑定。'
+                    : '生成一次性绑定码后，发给 QQ 机器人完成绑定。'
+                }}</span>
               </div>
               <el-button
                 v-if="!user.qqOpenid"
@@ -183,12 +187,12 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceHero from '@/components/site/workspace/WorkspaceHero.vue'
 import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
-import {authApi, siteApi} from '@/api'
-import {clearSession, getCurrentUser, getToken, setSession} from '@/utils/auth.ts'
-import {applicationStatusText, formatDateTime, statusType} from '@/utils/format.ts'
+import { authApi, siteApi } from '@/api'
+import { clearSession, getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
+import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
 import { ElMessage } from 'element-plus/es/components/message/index'
-import {computed, onMounted, ref} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const user = ref(getCurrentUser() || {})
 
@@ -232,9 +236,7 @@ const uploadedAvatar = computed(() => {
   const avatar = String(user.value.avatar || '').trim()
   return avatar && !isQqAvatarUrl(avatar) ? avatar : ''
 })
-const displayAvatar = computed(() =>
-  String(user.value.displayAvatar || user.value.avatar || ''),
-)
+const displayAvatar = computed(() => String(user.value.displayAvatar || user.value.avatar || ''))
 
 const activeStatuses = new Set([
   'submitted',
@@ -246,8 +248,8 @@ const activeStatuses = new Set([
   'waitlisted',
 ])
 
-const activeApplicationCount = computed(() =>
-  applications.value.filter((item) => activeStatuses.has(item.status)).length,
+const activeApplicationCount = computed(
+  () => applications.value.filter((item) => activeStatuses.has(item.status)).length,
 )
 
 const qqTokenMinutes = computed(() => Math.max(1, Math.ceil(qqBindExpiresIn.value / 60)))
@@ -518,7 +520,7 @@ onMounted(() => {
   width: 100%;
   padding: 10px 12px;
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.06);
+  background: rgba(29, 29, 31, 0.06);
   color: var(--oa-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   white-space: normal;

@@ -4,7 +4,7 @@
       <div class="container detail-hero__inner">
         <div class="detail-hero__copy">
           <div>
-              <el-button text type="primary" @click="$router.back()">返回活动</el-button>
+            <el-button text type="primary" @click="$router.back()">返回活动</el-button>
           </div>
           <span>活动详情</span>
           <h1>{{ activity.title || '活动详情' }}</h1>
@@ -124,13 +124,13 @@
 <script lang="ts" setup>
 import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
-import {activityApi, siteApi} from '@/api'
-import {formatDateTime, monthDayParts} from '@/utils/format.ts'
-import {getToken} from '@/utils/auth.ts'
-import {renderMarkdown} from '@/utils/markdown.ts'
-import {hasRole} from '@/utils/permission.ts'
-import {computed, onMounted, ref} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
+import { activityApi, siteApi } from '@/api'
+import { formatDateTime, monthDayParts } from '@/utils/format.ts'
+import { getToken } from '@/utils/auth.ts'
+import { renderMarkdown } from '@/utils/markdown.ts'
+import { hasRole } from '@/utils/permission.ts'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -296,7 +296,7 @@ onMounted(() => {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 28% 24%, rgba(15, 23, 42, 0.14), transparent 34%),
+    radial-gradient(circle at 28% 24%, rgba(29, 29, 31, 0.14), transparent 34%),
     linear-gradient(180deg, var(--oa-page-soft-bg) 0%, var(--oa-elevated-bg) 100%);
 }
 
