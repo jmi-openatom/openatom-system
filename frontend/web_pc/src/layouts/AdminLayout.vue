@@ -1,9 +1,17 @@
 <template>
   <el-container class="admin-shell">
-    <el-aside class="admin-aside" width="248px">
+    <el-aside :class="{ 'is-collapsed': sidebarCollapsed }" :width="sidebarWidth" class="admin-aside">
+      <el-button
+        :aria-label="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+        :icon="sidebarCollapsed ? Expand : Fold"
+        :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+        circle
+        class="admin-aside__collapse"
+        @click="toggleSidebar"
+      />
       <div class="admin-brand">
         <span class="admin-brand__mark">OA</span>
-        <div>
+        <div class="admin-brand__copy">
           <strong>OpenAtom</strong>
           <small>管理员后台</small>
         </div>
@@ -11,6 +19,8 @@
       <el-menu
         router
         :default-active="$route.path"
+        :collapse="sidebarCollapsed"
+        :collapse-transition="false"
         class="admin-menu"
         background-color="transparent"
         text-color="var(--oa-muted)"
@@ -24,18 +34,19 @@
         </el-menu-item>
       </el-menu>
       <div class="admin-aside__footer">
-        <span class="version-tag">{{ version }}</span>
+        <AdminMenuPreferences
+          v-model="customVisibleMenuPaths"
+          v-model:order-value="customMenuOrderPaths"
+          :compact="sidebarCollapsed"
+          :items="customizableMenus"
+        />
+        <span v-if="!sidebarCollapsed" class="version-tag">{{ version }}</span>
       </div>
     </el-aside>
     <el-container class="admin-content">
       <el-header class="admin-header">
         <div class="admin-header__title">
-          <el-button
-            class="admin-mobile-menu-btn"
-            circle
-            :icon="Menu"
-            @click="mobileMenuVisible = true"
-          />
+          <el-button class="admin-mobile-menu-btn" circle :icon="Menu" @click="mobileMenuVisible = true" />
           <div>
             <h1>{{ pageTitle }}</h1>
             <p>统一维护社团、用户、审批、面试与权限数据</p>
@@ -73,19 +84,16 @@
         </router-view>
       </el-main>
     </el-container>
-    <el-drawer
-      v-model="mobileMenuVisible"
-      class="admin-mobile-drawer"
-      direction="ltr"
-      size="84%"
-      title="管理后台"
-    >
-      <el-menu
-        router
-        :default-active="$route.path"
-        class="admin-drawer-menu"
-        @select="mobileMenuVisible = false"
-      >
+    <el-drawer v-model="mobileMenuVisible" class="admin-mobile-drawer" direction="ltr" size="84%" title="管理后台">
+      <div class="admin-mobile-drawer__tools">
+        <AdminMenuPreferences
+          v-model="customVisibleMenuPaths"
+          v-model:order-value="customMenuOrderPaths"
+          :items="customizableMenus"
+          placement="bottom-start"
+        />
+      </div>
+      <el-menu router :default-active="$route.path" class="admin-drawer-menu" @select="mobileMenuVisible = false">
         <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
           <el-icon>
             <component :is="item.icon" />
@@ -112,6 +120,8 @@ import {
   DataAnalysis,
   DocumentChecked,
   EditPen,
+  Expand,
+  Fold,
   HomeFilled,
   List,
   Lock,
@@ -129,6 +139,7 @@ import { authApi } from '@/api'
 import { clearSession, getCurrentUser } from '@/utils/auth.ts'
 import { hasAnyPermission } from '@/utils/permission.ts'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import AdminMenuPreferences from '@/components/admin/AdminMenuPreferences.vue'
 import { useRouteTransition } from '@/composables/useRouteTransition'
 
 const mobileMenuVisible = ref(false)
@@ -137,9 +148,17 @@ const user = ref(getCurrentUser())
 
 const version = ref(__APP_VERSION__)
 
-const menus = ref([
+interface AdminMenuItem {
+  path: string
+  label: string
+  icon: unknown
+  permissions: string[]
+  pinned?: boolean
+}
+
+const menus = ref<AdminMenuItem[]>([
   // ==== 1. 数据概览 ====
-  { path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: [] },
+  { path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: [], pinned: true },
 
   // ==== 2. 日常最高频：用户与核心业务（活动、签到、请假） ====
   { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
@@ -156,14 +175,24 @@ const menus = ref([
   // ==== 4. 社团基础与招新链路 ====
   { path: '/admin/clubs', label: '社团管理', icon: OfficeBuilding, permissions: ['club:list'] },
   { path: '/admin/positions', label: '岗位管理', icon: List, permissions: ['position:list'] },
-  { path: '/admin/recruitment-campaigns', label: '招新计划', icon: DocumentChecked, permissions: ['recruitment-campaign:list'] },
+  {
+    path: '/admin/recruitment-campaigns',
+    label: '招新计划',
+    icon: DocumentChecked,
+    permissions: ['recruitment-campaign:list'],
+  },
   { path: '/admin/applications', label: '入会申请', icon: DocumentChecked, permissions: ['application:list'] },
   { path: '/admin/interviews', label: '面试管理', icon: MessageBox, permissions: ['interview:list'] },
 
   // ==== 5. 互动营销与运营工具 ====
   { path: '/admin/votes', label: '投票管理', icon: Tickets, permissions: ['vote:list'] },
   { path: '/admin/lotteries', label: '抽奖系统', icon: Trophy, permissions: ['lottery:list'] },
-  { path: '/admin/points', label: '积分兑换', icon: Coin, permissions: ['point:account:list', 'point:item:list', 'point:redemption:list'] },
+  {
+    path: '/admin/points',
+    label: '积分兑换',
+    icon: Coin,
+    permissions: ['point:account:list', 'point:item:list', 'point:redemption:list'],
+  },
   { path: '/admin/awards', label: '获奖经历', icon: Trophy, permissions: ['award:list'] },
 
   // ==== 6. 内容与媒体中心 ====
@@ -191,7 +220,7 @@ const menus = ref([
   { path: '/admin/logs', label: '系统日志', icon: List, permissions: ['log:operation:list', 'log:login:list'] },
 
   // ==== 9. 出口 ====
-  { path: '/', label: '返回官网', icon: Connection, permissions: [] },
+  { path: '/', label: '返回官网', icon: Connection, permissions: [], pinned: true },
 ])
 
 const router = useRouter()
@@ -205,14 +234,117 @@ const routeTransition = useRouteTransition({
   leaveDuration: 140,
 })
 
-const visibleMenus = computed(() => {
+const sidebarPreferenceKey = `oa:admin-sidebar:${String(user.value.id || user.value.username || 'default')}`
+
+const storedSidebarPreferences = readSidebarPreferences()
+const sidebarCollapsed = ref(storedSidebarPreferences.collapsed)
+const hiddenMenuPaths = ref(storedSidebarPreferences.hiddenMenuPaths)
+const menuOrderPaths = ref(storedSidebarPreferences.menuOrderPaths)
+
+const sidebarWidth = computed(() => (sidebarCollapsed.value ? '76px' : '248px'))
+
+const authorizedMenus = computed(() => {
   return menus.value.filter((item) => item.path === '/' || hasAnyPermission(item.permissions || []))
+})
+
+const customizableMenus = computed(() => authorizedMenus.value.filter((item) => !item.pinned))
+
+const orderedCustomizableMenus = computed(() => {
+  const itemMap = new Map(customizableMenus.value.map((item) => [item.path, item]))
+  const orderedItems = menuOrderPaths.value.map((path) => itemMap.get(path)).filter(Boolean) as AdminMenuItem[]
+  const orderedPaths = new Set(orderedItems.map((item) => item.path))
+  return [...orderedItems, ...customizableMenus.value.filter((item) => !orderedPaths.has(item.path))]
+})
+
+const customMenuOrderPaths = computed({
+  get() {
+    return orderedCustomizableMenus.value.map((item) => item.path)
+  },
+  set(paths: string[]) {
+    const allowedPaths = new Set(customizableMenus.value.map((item) => item.path))
+    const normalizedPaths = paths.filter((path, index) => allowedPaths.has(path) && paths.indexOf(path) === index)
+    const includedPaths = new Set(normalizedPaths)
+    menuOrderPaths.value = [
+      ...normalizedPaths,
+      ...customizableMenus.value.filter((item) => !includedPaths.has(item.path)).map((item) => item.path),
+    ]
+    persistSidebarPreferences()
+  },
+})
+
+const customVisibleMenuPaths = computed({
+  get() {
+    const hiddenPaths = new Set(hiddenMenuPaths.value)
+    return customizableMenus.value.filter((item) => !hiddenPaths.has(item.path)).map((item) => item.path)
+  },
+  set(paths: string[]) {
+    const visiblePaths = new Set(paths)
+    hiddenMenuPaths.value = customizableMenus.value
+      .filter((item) => !visiblePaths.has(item.path))
+      .map((item) => item.path)
+    persistSidebarPreferences()
+  },
+})
+
+const visibleMenus = computed(() => {
+  const hiddenPaths = new Set(hiddenMenuPaths.value)
+  const dashboardMenu = authorizedMenus.value.filter((item) => item.path === '/admin/dashboard')
+  const websiteMenu = authorizedMenus.value.filter((item) => item.path === '/')
+  const customMenus = orderedCustomizableMenus.value.filter((item) => !hiddenPaths.has(item.path))
+  return [...dashboardMenu, ...customMenus, ...websiteMenu]
 })
 
 const pageTitle = computed(() => {
   const current = menus.value.find((item) => item.path === route.path)
   return current ? current.label : '管理后台'
 })
+
+function readSidebarPreferences() {
+  const fallback = {
+    collapsed: false,
+    hiddenMenuPaths: [] as string[],
+    menuOrderPaths: [] as string[],
+  }
+  if (typeof window === 'undefined') return fallback
+
+  try {
+    const storedValue = window.localStorage.getItem(sidebarPreferenceKey)
+    if (!storedValue) return fallback
+    const parsed = JSON.parse(storedValue)
+    return {
+      collapsed: parsed?.collapsed === true,
+      hiddenMenuPaths: Array.isArray(parsed?.hiddenMenuPaths)
+        ? parsed.hiddenMenuPaths.map((item: unknown) => String(item))
+        : [],
+      menuOrderPaths: Array.isArray(parsed?.menuOrderPaths)
+        ? parsed.menuOrderPaths.map((item: unknown) => String(item))
+        : [],
+    }
+  } catch {
+    return fallback
+  }
+}
+
+function persistSidebarPreferences() {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(
+      sidebarPreferenceKey,
+      JSON.stringify({
+        collapsed: sidebarCollapsed.value,
+        hiddenMenuPaths: hiddenMenuPaths.value,
+        menuOrderPaths: menuOrderPaths.value,
+      }),
+    )
+  } catch {
+    // 本地存储不可用时仍保留当前会话内的交互状态。
+  }
+}
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  persistSidebarPreferences()
+}
 
 async function handleCommand(command: string) {
   if (command !== 'logout') return
@@ -247,9 +379,10 @@ onBeforeUnmount(() => {
 .admin-aside {
   display: flex;
   position: sticky;
+  z-index: 3;
   top: 0;
   align-self: flex-start;
-  flex: 0 0 248px;
+  flex: 0 0 auto;
   height: 100vh;
   flex-direction: column;
   margin: 0;
@@ -260,6 +393,20 @@ onBeforeUnmount(() => {
   box-shadow: none;
   backdrop-filter: none;
   animation: adminRailIn 0.42s ease both;
+  transition: width 0.22s ease;
+}
+
+.admin-aside__collapse {
+  position: absolute;
+  z-index: 2;
+  top: 24px;
+  right: -14px;
+  width: 28px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--oa-elevated-bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
 }
 
 .admin-brand {
@@ -270,6 +417,26 @@ onBeforeUnmount(() => {
   padding: 16px 18px 14px;
   color: var(--oa-text);
   border-bottom: 1px solid var(--oa-divider);
+}
+
+.admin-brand__copy {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    width 0.18s ease,
+    opacity 0.14s ease;
+}
+
+.admin-aside.is-collapsed .admin-brand {
+  justify-content: center;
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+.admin-aside.is-collapsed .admin-brand__copy {
+  width: 0;
+  opacity: 0;
 }
 
 .admin-brand__mark {
@@ -283,6 +450,7 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   font-weight: 600;
   font-size: 14px;
+  flex: 0 0 auto;
 }
 
 .admin-brand strong {
@@ -309,6 +477,12 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   border-right: 0;
   scrollbar-width: none;
+}
+
+.admin-menu.el-menu--collapse {
+  width: 100%;
+  padding-right: 8px;
+  padding-left: 8px;
 }
 
 .admin-menu::-webkit-scrollbar {
@@ -402,6 +576,15 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.admin-menu.el-menu--collapse :deep(.el-menu-item) {
+  justify-content: center;
+  padding: 0 !important;
+}
+
+.admin-menu.el-menu--collapse :deep(.el-menu-item .el-icon) {
+  margin-right: 0;
+}
+
 .admin-menu :deep(.el-menu-item:hover) {
   background: var(--oa-nav-hover-bg);
   color: var(--oa-text);
@@ -444,9 +627,20 @@ onBeforeUnmount(() => {
 .admin-aside__footer {
   display: flex;
   margin-top: auto;
+  flex-direction: column;
   justify-content: center;
+  gap: 10px;
   padding: 14px 16px 18px;
   border-top: 1px solid var(--oa-divider);
+}
+
+.admin-aside.is-collapsed .admin-aside__footer {
+  padding-right: 14px;
+  padding-left: 14px;
+}
+
+.admin-mobile-drawer__tools {
+  margin-bottom: 14px;
 }
 
 .admin-drawer-menu {

@@ -529,6 +529,39 @@ svg {
   --el-button-active-text-color: var(--oa-active-text);
 }
 
+/* Element Plus 的按需组件样式会在页面样式之后加载。
+   提高选择器优先级，保证深色模式的浅色主按钮始终使用深色文字。 */
+html
+  .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(
+    .is-disabled
+  ) {
+  --el-button-bg-color: var(--oa-active-bg);
+  --el-button-border-color: var(--oa-active-bg);
+  --el-button-text-color: var(--oa-active-text);
+  --el-button-hover-bg-color: var(--oa-active-hover-bg);
+  --el-button-hover-border-color: var(--oa-active-hover-bg);
+  --el-button-hover-text-color: var(--oa-active-text);
+  --el-button-active-bg-color: var(--oa-active-bg);
+  --el-button-active-border-color: var(--oa-active-bg);
+  --el-button-active-text-color: var(--oa-active-text);
+  color: var(--oa-active-text) !important;
+  background-color: var(--oa-active-bg) !important;
+  border-color: var(--oa-active-bg) !important;
+}
+
+html
+  .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(
+    .is-disabled
+  ):hover,
+html
+  .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(
+    .is-disabled
+  ):focus {
+  color: var(--oa-active-text) !important;
+  background-color: var(--oa-active-hover-bg) !important;
+  border-color: var(--oa-active-hover-bg) !important;
+}
+
 .el-button--primary.is-plain {
   --el-button-bg-color: var(--oa-button-bg);
   --el-button-border-color: var(--oa-button-border);
@@ -539,6 +572,19 @@ svg {
   --el-button-text-color: var(--oa-button-text);
   --el-button-hover-text-color: var(--oa-active-text);
   --el-button-active-text-color: var(--oa-active-text);
+}
+
+html .el-button--primary.is-plain:not(.is-disabled) {
+  color: var(--oa-button-text) !important;
+  background-color: var(--oa-button-bg) !important;
+  border-color: var(--oa-button-border) !important;
+}
+
+html .el-button--primary.is-plain:not(.is-disabled):hover,
+html .el-button--primary.is-plain:not(.is-disabled):focus {
+  color: var(--oa-active-text) !important;
+  background-color: var(--oa-active-bg) !important;
+  border-color: var(--oa-active-bg) !important;
 }
 
 .el-button.is-link,
