@@ -56,6 +56,7 @@ onMounted(() => {
 })
 
 async function onLogin(data: LoginFormData) {
+    if (accountSubmitting.value || wechatSubmitting.value) return
     accountSubmitting.value = true
     try {
         const res: any = await authApi.login({
@@ -76,6 +77,7 @@ async function onLogin(data: LoginFormData) {
 }
 
 async function onMiniappLogin() {
+    if (wechatSubmitting.value || accountSubmitting.value) return
     wechatSubmitting.value = true
     try {
         const loginResult: any = await uniLogin()

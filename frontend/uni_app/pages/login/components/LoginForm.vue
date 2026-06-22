@@ -29,6 +29,7 @@ onMounted(() => {
 })
 
 function onSubmit() {
+    if (props.loading) return
     if (!username.value.trim()) {
         uni.showToast({title: '请输入账号', icon: 'none'})
         return

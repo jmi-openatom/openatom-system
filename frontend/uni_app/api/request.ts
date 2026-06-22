@@ -18,12 +18,20 @@ interface RequestConfig {
     header?: Record<string, string>
     timeout?: number
     responseType?: string
+    retry?: number
+    cache?: boolean
 }
 
 interface GetConfig {
     params?: Record<string, unknown>
     responseType?: string
+    retry?: number
+    cache?: boolean
 }
+
+const responseCache = new Map<string, unknown>()
+let lastToast = ''
+let lastToastAt = 0
 
 // ---------- query builder ----------
 
@@ -50,59 +58,99 @@ function requestInterceptor(config: RequestConfig): RequestConfig {
     }
 }
 
+function showToast(message: string): void {
+    const now = Date.now()
+    if (message === lastToast && now - lastToastAt < 1800) return
+    lastToast = message
+    lastToastAt = now
+    uni.showToast({title: message, icon: 'none'})
+}
+
 // ---------- core ----------
 
 function request<T = unknown>(config: RequestConfig): Promise<T> {
     const finalConfig = requestInterceptor(config)
     const queryString = buildQuery(finalConfig.params)
+    const method = finalConfig.method || 'GET'
+    const maxRetries = method === 'GET' ? (finalConfig.retry ?? 1) : 0
+    const cacheEnabled = method === 'GET' && finalConfig.cache !== false
+    const cacheKey = `${getToken() || 'anonymous'}:${method}:${finalConfig.url}${queryString}`
 
     return new Promise((resolve, reject) => {
-        uni.request({
-            url: BASE_URL + finalConfig.url + queryString,
-            method: finalConfig.method || 'GET' as any,
-            data: finalConfig.data || {},
-            header: {
-                'Content-Type': 'application/json',
-                ...finalConfig.header,
-            },
-            timeout: finalConfig.timeout || 15000,
-            responseType: (finalConfig.responseType || 'text') as any,
-            success: (res) => {
-                const {statusCode} = res
-                const body = res.data as BackendResponse<T>
+        const fallbackOrReject = (error: unknown, message: string) => {
+            if (cacheEnabled && responseCache.has(cacheKey)) {
+                showToast('网络较弱，已显示最近数据')
+                resolve(responseCache.get(cacheKey) as T)
+                return
+            }
+            showToast(message)
+            reject(error)
+        }
 
-                if (statusCode === 401) {
-                    clearSession()
-                    uni.showToast({title: '登录已过期，请重新登录', icon: 'none'})
-                    uni.redirectTo({url: '/pages/login/index'})
-                    reject(res)
-                    return
-                }
+        const run = (attempt: number) => {
+            uni.request({
+                url: BASE_URL + finalConfig.url + queryString,
+                method: method as any,
+                data: finalConfig.data || {},
+                header: {
+                    'Content-Type': 'application/json',
+                    ...finalConfig.header,
+                },
+                timeout: finalConfig.timeout ?? 20000,
+                responseType: (finalConfig.responseType || 'text') as any,
+                success: (res) => {
+                    const {statusCode} = res
+                    const body = res.data as BackendResponse<T>
 
-                if (statusCode !== 200) {
-                    const msg = (body && body.message) || `请求错误 ${statusCode}`
-                    uni.showToast({title: msg, icon: 'none'})
-                    reject(res)
-                    return
-                }
+                    if (statusCode === 401) {
+                        responseCache.clear()
+                        clearSession()
+                        showToast('登录已过期，请重新登录')
+                        uni.redirectTo({url: '/pages/login/index'})
+                        reject(res)
+                        return
+                    }
 
-                if (body && typeof body.code !== 'undefined' && body.code !== 0) {
-                    uni.showToast({title: body.message || '操作失败', icon: 'none'})
-                    reject(body)
-                    return
-                }
+                    if (
+                        method === 'GET' &&
+                        attempt < maxRetries &&
+                        [408, 425, 429, 500, 502, 503, 504].includes(statusCode)
+                    ) {
+                        setTimeout(() => run(attempt + 1), 500 * 2 ** attempt)
+                        return
+                    }
 
-                resolve(
-                    body && Object.prototype.hasOwnProperty.call(body, 'data')
-                        ? (body.data as T)
-                        : (body as unknown as T),
-                )
-            },
-            fail: (err) => {
-                uni.showToast({title: '网络异常', icon: 'none'})
-                reject(err)
-            },
-        })
+                    if (statusCode < 200 || statusCode >= 300) {
+                        const msg = (body && body.message) || `请求错误 ${statusCode}`
+                        fallbackOrReject(res, msg)
+                        return
+                    }
+
+                    if (body && typeof body.code !== 'undefined' && body.code !== 0) {
+                        showToast(body.message || '操作失败')
+                        reject(body)
+                        return
+                    }
+
+                    const result =
+                        body && Object.prototype.hasOwnProperty.call(body, 'data')
+                            ? (body.data as T)
+                            : (body as unknown as T)
+                    if (cacheEnabled) responseCache.set(cacheKey, result)
+                    resolve(result)
+                },
+                fail: (err) => {
+                    if (method === 'GET' && attempt < maxRetries) {
+                        setTimeout(() => run(attempt + 1), 500 * 2 ** attempt)
+                        return
+                    }
+                    const timedOut = /timeout/i.test(err.errMsg || '')
+                    fallbackOrReject(err, timedOut ? '网络响应超时，请重试' : '网络异常，请检查连接')
+                },
+            })
+        }
+
+        run(0)
     })
 }
 
@@ -115,6 +163,8 @@ const service = {
             method: 'GET',
             params: config?.params,
             responseType: config?.responseType,
+            retry: config?.retry,
+            cache: config?.cache,
         })
     },
     post<T = unknown>(url: string, data?: Record<string, unknown>): Promise<T> {

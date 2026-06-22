@@ -4,6 +4,12 @@ import {routeByDomain} from '@/utils/domainRoute'
 
 onLaunch(() => {
     console.log('App Launch')
+    uni.onNetworkStatusChange((result) => {
+        uni.showToast({
+            title: result.isConnected ? '网络已恢复' : '网络已断开，已保留当前页面',
+            icon: 'none',
+        })
+    })
     routeByDomain()
 })
 

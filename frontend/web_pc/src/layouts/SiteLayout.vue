@@ -178,8 +178,8 @@ const isHomeRoute = computed(() => route.name === 'site-home')
 const routeTransition = useRouteTransition({
   enterY: 18,
   leaveY: -8,
-  enterDuration: 0.3,
-  leaveDuration: 0.16,
+  enterDuration: 300,
+  leaveDuration: 160,
 })
 
 const headerVisible = computed(() => {

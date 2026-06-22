@@ -201,8 +201,8 @@ const route = useRoute()
 const routeTransition = useRouteTransition({
   enterY: 16,
   leaveY: -8,
-  enterDuration: 0.28,
-  leaveDuration: 0.14,
+  enterDuration: 280,
+  leaveDuration: 140,
 })
 
 const visibleMenus = computed(() => {

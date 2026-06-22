@@ -7,12 +7,16 @@ type RouteTransitionOptions = {
 
 const activeAnimations = new WeakMap<Element, Animation[]>()
 const runningAnimations = new Set<Animation>()
+const animationFallbacks = new WeakMap<Element, number>()
 
 function prefersReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 }
 
 function cancelAnimations(element: Element) {
+  const fallback = animationFallbacks.get(element)
+  if (fallback) window.clearTimeout(fallback)
+  animationFallbacks.delete(element)
   activeAnimations.get(element)?.forEach((animation) => animation.cancel())
   activeAnimations.delete(element)
 }
@@ -24,15 +28,50 @@ function animate(
   done: () => void,
 ) {
   cancelAnimations(element)
-  const animation = element.animate(keyframes, options)
+  if (typeof element.animate !== 'function') {
+    done()
+    return
+  }
+
+  let completed = false
+  const finish = () => {
+    if (completed) return
+    completed = true
+    const fallback = animationFallbacks.get(element)
+    if (fallback) window.clearTimeout(fallback)
+    animationFallbacks.delete(element)
+    activeAnimations.delete(element)
+    done()
+  }
+
+  let animation: Animation
+  try {
+    animation = element.animate(keyframes, options)
+  } catch (_error) {
+    finish()
+    return
+  }
+
   runningAnimations.add(animation)
   activeAnimations.set(element, [animation])
+  const duration =
+    typeof options.duration === 'number' ? options.duration : Number(options.duration || 0)
+  animationFallbacks.set(
+    element,
+    window.setTimeout(
+      () => {
+        animation.cancel()
+        runningAnimations.delete(animation)
+        finish()
+      },
+      Math.max(100, duration + 180),
+    ),
+  )
   animation.finished
     .catch(() => undefined)
     .finally(() => {
       runningAnimations.delete(animation)
-      activeAnimations.delete(element)
-      done()
+      finish()
     })
 }
 
@@ -45,9 +84,7 @@ export function useRouteTransition(options: RouteTransitionOptions = {}) {
   function beforeEnter(element: Element) {
     const htmlElement = element as HTMLElement
     htmlElement.style.opacity = '0'
-    htmlElement.style.transform = prefersReducedMotion()
-      ? 'none'
-      : `translate3d(0, ${enterY}px, 0)`
+    htmlElement.style.transform = prefersReducedMotion() ? 'none' : `translate3d(0, ${enterY}px, 0)`
   }
 
   function enter(element: Element, done: () => void) {
