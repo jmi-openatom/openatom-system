@@ -23,11 +23,7 @@
         </div>
 
         <div :class="{ 'is-fallback': !activity.coverUrl }" class="detail-hero__visual">
-          <img
-            v-if="activity.coverUrl"
-            :alt="activity.title || '活动封面'"
-            :src="activity.coverUrl"
-          />
+          <img v-if="activity.coverUrl" :alt="activity.title || '活动封面'" :src="activity.coverUrl" />
           <div v-else class="detail-hero__placeholder">
             <strong>{{ day(activity.activityAt) }}</strong>
             <span>{{ month(activity.activityAt) }}</span>
@@ -83,33 +79,14 @@
               type="warning"
             />
             <el-form label-position="top">
-              <el-form-item
-                v-for="field in fields"
-                :key="field.label"
-                :label="field.label"
-                :required="field.required"
-              >
-                <el-select
-                  v-if="field.type === 'select'"
-                  v-model="form[field.label]"
-                  placeholder="请选择"
-                >
-                  <el-option
-                    v-for="option in field.options || []"
-                    :key="option"
-                    :label="option"
-                    :value="option"
-                  />
+              <el-form-item v-for="field in fields" :key="field.label" :label="field.label" :required="field.required">
+                <el-select v-if="field.type === 'select'" v-model="form[field.label]" placeholder="请选择">
+                  <el-option v-for="option in field.options || []" :key="option" :label="option" :value="option" />
                 </el-select>
                 <el-radio-group v-else-if="field.type === 'radio'" v-model="form[field.label]">
                   <el-radio v-for="option in field.options || []" :key="option" :label="option" />
                 </el-radio-group>
-                <el-input
-                  v-else-if="field.type === 'textarea'"
-                  v-model="form[field.label]"
-                  :rows="3"
-                  type="textarea"
-                />
+                <el-input v-else-if="field.type === 'textarea'" v-model="form[field.label]" :rows="3" type="textarea" />
                 <el-input v-else v-model="form[field.label]" />
               </el-form-item>
             </el-form>
@@ -125,8 +102,9 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { activityApi, siteApi } from '@/api'
+import { ensureCollegeRegistrationField, resolveCollegeValue } from '@/constants/colleges'
 import { formatDateTime, monthDayParts } from '@/utils/format.ts'
-import { getToken } from '@/utils/auth.ts'
+import { getCurrentUser, getToken } from '@/utils/auth.ts'
 import { renderMarkdown } from '@/utils/markdown.ts'
 import { hasRole } from '@/utils/permission.ts'
 import { computed, onMounted, ref } from 'vue'
@@ -150,9 +128,9 @@ const fields = computed(() => {
       typeof activity.value.registrationFields === 'string'
         ? JSON.parse(activity.value.registrationFields || '[]')
         : activity.value.registrationFields
-    return Array.isArray(parsed) ? parsed : []
+    return ensureCollegeRegistrationField(parsed)
   } catch {
-    return []
+    return ensureCollegeRegistrationField([])
   }
 })
 
@@ -167,9 +145,17 @@ async function fetchDetail() {
   loading.value = true
   try {
     activity.value = await siteApi.activityDetail(route.params.id)
+    initializeForm()
   } finally {
     loading.value = false
   }
+}
+
+function initializeForm() {
+  const currentUser = getCurrentUser()
+  form.value = Object.fromEntries(
+    fields.value.map((field) => [field.label, field.label === '学院' ? resolveCollegeValue(currentUser?.college) : '']),
+  )
 }
 
 async function submit() {
@@ -184,7 +170,7 @@ async function submit() {
   }
   const missing = fields.value.find((field) => field.required && !form.value[field.label])
   if (missing) {
-    ElMessage.warning(`请填写${missing.label}`)
+    ElMessage.warning(`${missing.type === 'select' ? '请选择' : '请填写'}${missing.label}`)
     return
   }
   submitting.value = true

@@ -3,6 +3,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
+import edu.jmi.openatom.server.openatomsystem.common.FormSchemaFields;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 
@@ -197,12 +198,14 @@ public class ApplicationServiceImpl implements ApplicationService {
 	}
 
 	private Result<String> validateDynamicFields(String formSchema, Map<String, Object> profile) {
-		for (Map<String, Object> field : Jsons.parseListOfObjects(formSchema)) {
+		for (Map<String, Object> field :
+				FormSchemaFields.ensureCollegeField(Jsons.parseListOfObjects(formSchema))) {
 			String key = readString(field.get("key"));
 			if (isBlank(key) || !Boolean.TRUE.equals(field.get("required"))) continue;
 			if (isBlank(readProfileValue(profile, key))) {
 				String label = readString(field.get("label"));
-				return Result.error(400, "请填写" + (isBlank(label) ? key : label));
+				String action = "select".equals(readString(field.get("type"))) ? "请选择" : "请填写";
+				return Result.error(400, action + (isBlank(label) ? key : label));
 			}
 		}
 		return null;

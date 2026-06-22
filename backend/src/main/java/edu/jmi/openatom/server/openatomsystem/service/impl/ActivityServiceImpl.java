@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
+import edu.jmi.openatom.server.openatomsystem.common.FormSchemaFields;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
@@ -19,6 +20,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.service.ActivityService;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,7 +71,9 @@ public class ActivityServiceImpl implements ActivityService {
         .registrationRequired(Boolean.TRUE.equals(request.getRegistrationRequired()))
         .registrationStartAt(Times.parseTimestamp(request.getRegistrationStartAt()))
         .registrationEndAt(Times.parseTimestamp(request.getRegistrationEndAt()))
-        .registrationFields(Jsons.stringify(request.getRegistrationFields()))
+        .registrationFields(
+            Jsons.stringify(
+                FormSchemaFields.ensureCollegeRegistrationFields(request.getRegistrationFields())))
         .participationPoints(safePoints(request.getParticipationPoints()))
         .build();
     int rows = clubActivityMapper.insert(activity);
@@ -96,7 +100,10 @@ public class ActivityServiceImpl implements ActivityService {
     if (request.getRegistrationRequired() != null) activity.setRegistrationRequired(request.getRegistrationRequired());
     if (request.getRegistrationStartAt() != null) activity.setRegistrationStartAt(Times.parseTimestamp(request.getRegistrationStartAt()));
     if (request.getRegistrationEndAt() != null) activity.setRegistrationEndAt(Times.parseTimestamp(request.getRegistrationEndAt()));
-    if (request.getRegistrationFields() != null) activity.setRegistrationFields(Jsons.stringify(request.getRegistrationFields()));
+    if (request.getRegistrationFields() != null)
+      activity.setRegistrationFields(
+          Jsons.stringify(
+              FormSchemaFields.ensureCollegeRegistrationFields(request.getRegistrationFields())));
     if (request.getParticipationPoints() != null) activity.setParticipationPoints(safePoints(request.getParticipationPoints()));
     int rows = clubActivityMapper.updateById(activity);
     return rows > 0 ? Result.success("活动更新成功") : Result.error("活动更新失败");
@@ -129,6 +136,10 @@ public class ActivityServiceImpl implements ActivityService {
     Long membershipCount = clubMembershipMapper.countActiveMembership(userId, activity.getClubId(), "active");
     if (membershipCount == null || membershipCount == 0)
       return Result.error(403, "无权限，请先加入社团");
+    Result<String> validation =
+        validateRegistrationFields(
+            activity.getRegistrationFields(), request == null ? null : request.getFormData());
+    if (validation != null) return validation;
     ActivityRegistration exists = activityRegistrationMapper.selectOneByActivityAndUser(activityId, userId);
     if (exists != null) {
       exists.setFormData(Jsons.stringify(request == null ? null : request.getFormData()));
@@ -152,6 +163,23 @@ public class ActivityServiceImpl implements ActivityService {
     Club club = defaultClub();
     if (club == null) return null;
     return clubActivityMapper.selectOneByIdAndClubId(activityId, club.getId());
+  }
+
+  private Result<String> validateRegistrationFields(String formSchema, Object formData) {
+    Map<String, Object> values =
+        formData == null ? Map.of() : Jsons.parseObject(Jsons.stringify(formData));
+    Object normalizedFields = FormSchemaFields.ensureCollegeRegistrationFields(formSchema);
+    for (Map<String, Object> field :
+        Jsons.parseListOfObjects(Jsons.stringify(normalizedFields))) {
+      if (!Boolean.TRUE.equals(field.get("required"))) continue;
+      String label = String.valueOf(field.getOrDefault("label", "")).trim();
+      Object value = values.get(label);
+      if (value == null || String.valueOf(value).isBlank()) {
+        String action = "select".equals(String.valueOf(field.get("type"))) ? "请选择" : "请填写";
+        return Result.error(400, action + label);
+      }
+    }
+    return null;
   }
 
   private Club defaultClub() {

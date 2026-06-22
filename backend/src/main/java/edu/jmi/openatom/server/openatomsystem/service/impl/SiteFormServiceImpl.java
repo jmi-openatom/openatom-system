@@ -3,6 +3,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.common.FormSchemaFields;
 import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
 import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateSiteFormDTO;
@@ -34,7 +35,8 @@ public class SiteFormServiceImpl implements SiteFormService {
   public Result<List<SiteForm>> listByClub(Integer clubId) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     if (clubMapper.selectById(clubId) == null) return Result.error(404, "社团不存在");
-    return Result.success(siteFormMapper.selectByClubIdOrdered(clubId));
+    return Result.success(
+        siteFormMapper.selectByClubIdOrdered(clubId).stream().map(this::withCollegeField).toList());
   }
 
   @Override
@@ -48,7 +50,8 @@ public class SiteFormServiceImpl implements SiteFormService {
     SiteForm form = SiteForm.builder().clubId(clubId).name(request.getName())
         .startAt(Times.parseTimestamp(request.getStartAt())).endAt(Times.parseTimestamp(request.getEndAt()))
         .loginRequired(Boolean.TRUE.equals(request.getLoginRequired()))
-        .formSchema(Jsons.stringify(request.getFormSchema())).status(status).build();
+        .formSchema(Jsons.stringify(FormSchemaFields.ensureCollegeField(request.getFormSchema())))
+        .status(status).build();
     int row = siteFormMapper.insert(form);
     return row > 0 ? Result.success("表单创建成功") : Result.error("表单创建失败");
   }
@@ -57,7 +60,7 @@ public class SiteFormServiceImpl implements SiteFormService {
   @RedisCached(cacheName = "site", key = "'admin-site-form-detail:' + #p0", ttlSeconds = 300)
   public Result<SiteForm> detail(Integer formId) {
     SiteForm form = findSiteForm(formId);
-    return form == null ? Result.error(404, "表单不存在") : Result.success(form);
+    return form == null ? Result.error(404, "表单不存在") : Result.success(withCollegeField(form));
   }
 
   @Override
@@ -69,7 +72,8 @@ public class SiteFormServiceImpl implements SiteFormService {
     if (request.getStartAt() != null) form.setStartAt(Times.parseTimestamp(request.getStartAt()));
     if (request.getEndAt() != null) form.setEndAt(Times.parseTimestamp(request.getEndAt()));
     if (request.getLoginRequired() != null) form.setLoginRequired(request.getLoginRequired());
-    if (request.getFormSchema() != null) form.setFormSchema(Jsons.stringify(request.getFormSchema()));
+    if (request.getFormSchema() != null)
+      form.setFormSchema(Jsons.stringify(FormSchemaFields.ensureCollegeField(request.getFormSchema())));
     if (request.getStatus() != null) {
       if (!STATUSES.contains(request.getStatus())) return Result.error(400, "表单状态不合法");
       form.setStatus(request.getStatus());
@@ -95,4 +99,9 @@ public class SiteFormServiceImpl implements SiteFormService {
   }
 
   private SiteForm findSiteForm(Integer formId) { return formId == null ? null : siteFormMapper.selectById(formId); }
+
+  private SiteForm withCollegeField(SiteForm form) {
+    if (form != null) form.setFormSchema(FormSchemaFields.ensureCollegeFieldJson(form.getFormSchema()));
+    return form;
+  }
 }

@@ -12,13 +12,7 @@
         >
           <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
         </el-select>
-        <el-select
-          v-model="query.status"
-          clearable
-          placeholder="招新计划状态"
-          style="width: 150px"
-          @change="fetchList"
-        >
+        <el-select v-model="query.status" clearable placeholder="招新计划状态" style="width: 150px" @change="fetchList">
           <el-option label="草稿" value="draft" />
           <el-option label="已发布" value="published" />
           <el-option label="收集中" value="open" />
@@ -43,9 +37,7 @@
       </el-table-column>
       <el-table-column prop="loginRequired" label="登录" width="110">
         <template #default="{ row }">
-          <el-tag :type="row.loginRequired ? 'success' : 'warning'">{{
-            row.loginRequired ? '需要' : '可匿名'
-          }}</el-tag>
+          <el-tag :type="row.loginRequired ? 'success' : 'warning'">{{ row.loginRequired ? '需要' : '可匿名' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="120">
@@ -59,9 +51,7 @@
           <el-button link type="success" @click="openSubmissions(row)">记录</el-button>
           <el-button link type="info" @click="previewSchema(row)">预览字段</el-button>
           <el-button link type="warning" @click="copyFormLink(row)">复制链接</el-button>
-          <el-button link type="success" @click="publish(row)" v-if="row.status !== 'open'"
-            >发布</el-button
-          >
+          <el-button link type="success" @click="publish(row)" v-if="row.status !== 'open'">发布</el-button>
           <el-button
             link
             type="danger"
@@ -133,20 +123,11 @@
               clearable
               placeholder="不限制则留空"
             >
-              <el-option
-                v-for="item in gradeOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
+              <el-option v-for="item in gradeOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="需先登录">
-            <el-switch
-              v-model="form.loginRequired"
-              active-text="需要登录"
-              inactive-text="匿名可填"
-            />
+            <el-switch v-model="form.loginRequired" active-text="需要登录" inactive-text="匿名可填" />
           </el-form-item>
         </div>
 
@@ -155,9 +136,7 @@
           <el-button size="small" @click="addField('text')">新增单行输入</el-button>
           <el-button size="small" @click="addField('textarea')">新增多行输入</el-button>
           <el-button size="small" @click="addField('select')">新增下拉选择</el-button>
-          <el-button size="small" type="warning" plain @click="useDefaultFields"
-            >恢复默认字段</el-button
-          >
+          <el-button size="small" type="warning" plain @click="useDefaultFields">恢复默认字段</el-button>
         </div>
         <el-alert
           type="info"
@@ -188,11 +167,7 @@
             </div>
             <div class="designer-card__grid">
               <el-form-item label="字段名称" label-width="84px" required>
-                <el-input
-                  v-model="field.label"
-                  placeholder="如：申请理由"
-                  @blur="fillFieldKey(field)"
-                />
+                <el-input v-model="field.label" placeholder="如：申请理由" @blur="fillFieldKey(field)" />
               </el-form-item>
               <el-form-item label="字段 Key" label-width="84px" required>
                 <el-input v-model="field.key" placeholder="如：reason" />
@@ -220,16 +195,10 @@
                 <el-button size="small" @click="addOption(field)">新增选项</el-button>
               </div>
               <div v-if="field.options.length" class="designer-options__list">
-                <div
-                  v-for="(option, optionIndex) in field.options"
-                  :key="option.uid"
-                  class="designer-option-row"
-                >
+                <div v-for="(option, optionIndex) in field.options" :key="option.uid" class="designer-option-row">
                   <el-input v-model="option.label" placeholder="显示文案" />
                   <el-input v-model="option.value" placeholder="提交值" />
-                  <el-button link type="danger" @click="removeOption(field, optionIndex)"
-                    >删除</el-button
-                  >
+                  <el-button link type="danger" @click="removeOption(field, optionIndex)">删除</el-button>
                 </div>
               </div>
               <el-empty v-else description="请至少配置一个下拉选项" :image-size="70" />
@@ -251,9 +220,7 @@
         <el-table-column prop="type" label="类型" width="120" />
         <el-table-column prop="required" label="必填" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.required ? 'danger' : 'info'">{{
-              row.required ? '是' : '否'
-            }}</el-tag>
+            <el-tag :type="row.required ? 'danger' : 'info'">{{ row.required ? '是' : '否' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="选项/提示" min-width="220">
@@ -272,6 +239,7 @@ import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { campaignApi, clubApi } from '@/api'
+import { createCollegeFormField, ensureCollegeFormField } from '@/constants/colleges'
 import { formatDateTime, statusType, toDateTimeInputValue } from '@/utils/format.ts'
 import { nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -279,6 +247,7 @@ import { useRoute, useRouter } from 'vue-router'
 const defaultFormSchema = [
   { key: 'name', label: '姓名', type: 'text', required: true, placeholder: '请输入姓名' },
   { key: 'studentId', label: '学号', type: 'text', required: false, placeholder: '请输入学号' },
+  createCollegeFormField(),
 ]
 
 function toInputTime(value) {
@@ -355,9 +324,7 @@ async function fetchList() {
   try {
     const result = await clubApi.campaigns(selectedClubId.value)
     const list = result?.list || result || []
-    rows.value = query.value.status
-      ? list.filter((item) => item.status === query.value.status)
-      : list
+    rows.value = query.value.status ? list.filter((item) => item.status === query.value.status) : list
   } finally {
     loading.value = false
   }
@@ -544,7 +511,7 @@ function createField(type: any) {
   }
 }
 
-function createOption(option: any) {
+function createOption(option: any = {}) {
   return {
     uid: nextUid(),
     label: option.label || '',
@@ -654,7 +621,7 @@ function buildFormSchema() {
       placeholder: field.placeholder?.trim() || '',
     })
   }
-  return schema
+  return ensureCollegeFormField(schema)
 }
 
 function validateSchedule() {
@@ -694,7 +661,7 @@ function parseTimeValue(value: any) {
 }
 
 function normalizeSchema(value: any) {
-  const parsed = parseJsonMaybe(value, defaultFormSchema)
+  const parsed = ensureCollegeFormField(parseJsonMaybe(value, defaultFormSchema))
   return (parsed || []).map((field) => ({
     uid: nextUid(),
     key: field.key || '',

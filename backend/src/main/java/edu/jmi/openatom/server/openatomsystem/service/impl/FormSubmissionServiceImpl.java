@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
+import edu.jmi.openatom.server.openatomsystem.common.FormSchemaFields;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateFormSubmissionDTO;
@@ -98,7 +99,8 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
     SiteForm form = siteFormMapper.selectById(formId);
     if (form == null) throw new IllegalArgumentException("表单不存在");
     List<FormSubmission> submissions = formSubmissionMapper.selectByFormIdOrdered(formId);
-    List<Map<String, Object>> schema = Jsons.parseListOfObjects(form.getFormSchema());
+    List<Map<String, Object>> schema =
+        FormSchemaFields.ensureCollegeField(Jsons.parseListOfObjects(form.getFormSchema()));
     try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
       Sheet sheet = workbook.createSheet(safeSheetName(form.getName()));
       writeHeader(sheet, schema);
@@ -128,12 +130,16 @@ public class FormSubmissionServiceImpl implements FormSubmissionService {
 
   private Result<String> validateFormData(String formSchema, Map<String, Object> formData) {
     Map<String, Object> values = formData == null ? Map.of() : formData;
-    for (Map<String, Object> field : Jsons.parseListOfObjects(formSchema)) {
+    for (Map<String, Object> field :
+        FormSchemaFields.ensureCollegeField(Jsons.parseListOfObjects(formSchema))) {
       if (Boolean.TRUE.equals(field.get("required"))) {
         String key = asString(field.get("key"), "");
         if (key.isBlank()) continue;
         Object value = values.get(key);
-        if (value == null || formatValue(value).isBlank()) return Result.error(400, "请填写" + asString(field.get("label"), key));
+        if (value == null || formatValue(value).isBlank()) {
+          String action = "select".equals(asString(field.get("type"), "")) ? "请选择" : "请填写";
+          return Result.error(400, action + asString(field.get("label"), key));
+        }
       }
     }
     return null;

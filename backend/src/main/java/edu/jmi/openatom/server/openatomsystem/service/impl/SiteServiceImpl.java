@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.common.FormSchemaFields;
 import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseClubHomeVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentVO;
@@ -95,6 +96,9 @@ public class SiteServiceImpl implements SiteService {
     }
     ClubActivity activity =
         clubActivityMapper.selectPublishedByIdAndClubId(activityId, club.getId());
+    if (activity != null)
+      activity.setRegistrationFields(
+          FormSchemaFields.ensureCollegeRegistrationFieldsJson(activity.getRegistrationFields()));
     return activity == null ? Result.error(404, "活动不存在") : Result.success(activity);
   }
 
@@ -112,6 +116,8 @@ public class SiteServiceImpl implements SiteService {
       return Result.error(404, "默认社团不存在");
     }
     List<SiteForm> forms = siteFormMapper.selectOpenByClubId(club.getId());
+    forms.forEach(
+        form -> form.setFormSchema(FormSchemaFields.ensureCollegeFieldJson(form.getFormSchema())));
     return Result.success(ResponseSiteFormsVO.builder().club(club).forms(forms).build());
   }
 
@@ -209,6 +215,7 @@ public class SiteServiceImpl implements SiteService {
     RecruitmentCampaign campaign =
         campaignId == null ? null : recruitmentCampaignMapper.selectById(campaignId);
     if (campaign == null) return Result.error(404, "招新计划不存在");
+    campaign.setFormSchema(FormSchemaFields.ensureCollegeFieldJson(campaign.getFormSchema()));
     Club club = clubMapper.selectById(campaign.getClubId());
     if (club == null) return Result.error(404, "社团不存在");
     List<ClubDepartment> departments = clubDepartmentMapper.selectByClubIdOrdered(club.getId());
@@ -225,6 +232,7 @@ public class SiteServiceImpl implements SiteService {
   public Result<ResponseSiteFormDetailVO> getFormDetail(Integer formId) {
     SiteForm form = siteFormMapper.selectById(formId);
     if (form == null) return Result.error(404, "表单不存在");
+    form.setFormSchema(FormSchemaFields.ensureCollegeFieldJson(form.getFormSchema()));
     Club club = clubMapper.selectById(form.getClubId());
     if (club == null) return Result.error(404, "社团不存在");
     return Result.success(ResponseSiteFormDetailVO.builder().club(club).form(form).build());

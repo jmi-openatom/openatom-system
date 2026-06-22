@@ -30,11 +30,7 @@
         />
         <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
-      <el-button
-        type="success"
-        :disabled="!selectedFormId"
-        :loading="exporting"
-        @click="exportExcel"
+      <el-button type="success" :disabled="!selectedFormId" :loading="exporting" @click="exportExcel"
         >导出 Excel
       </el-button>
     </ViewToolbar>
@@ -87,26 +83,14 @@
     <el-dialog v-model="detailVisible" title="提交内容" width="760px">
       <div v-if="detailRow" class="detail-panel">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="提交人">{{
-            detailRow.submitterName || '-'
-          }}</el-descriptions-item>
-          <el-descriptions-item label="联系方式">{{
-            detailRow.contact || '-'
-          }}</el-descriptions-item>
-          <el-descriptions-item label="账号">{{
-            detailRow.submitterAccount || '匿名提交'
-          }}</el-descriptions-item>
-          <el-descriptions-item label="提交时间">{{
-            formatDateTime(detailRow.createdAt)
-          }}</el-descriptions-item>
+          <el-descriptions-item label="提交人">{{ detailRow.submitterName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="联系方式">{{ detailRow.contact || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="账号">{{ detailRow.submitterAccount || '匿名提交' }}</el-descriptions-item>
+          <el-descriptions-item label="提交时间">{{ formatDateTime(detailRow.createdAt) }}</el-descriptions-item>
         </el-descriptions>
         <el-divider content-position="left">字段内容</el-divider>
         <el-descriptions :column="1" border>
-          <el-descriptions-item
-            v-for="field in previewEntries"
-            :key="field.key"
-            :label="field.label"
-          >
+          <el-descriptions-item v-for="field in previewEntries" :key="field.key" :label="field.label">
             <div class="detail-value">{{ field.value }}</div>
           </el-descriptions-item>
         </el-descriptions>
@@ -121,6 +105,7 @@ import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Refresh } from '@element-plus/icons-vue'
 import { clubApi, formSubmissionApi } from '@/api'
+import { ensureCollegeFormField } from '@/constants/colleges'
 import { formatDateTime } from '@/utils/format.ts'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -255,12 +240,12 @@ function openDetail(row: any) {
 }
 
 function parseSchema(value: any) {
-  if (Array.isArray(value)) return value
-  if (!value) return []
+  if (Array.isArray(value)) return ensureCollegeFormField(value)
+  if (!value) return ensureCollegeFormField([])
   try {
-    return JSON.parse(value)
+    return ensureCollegeFormField(JSON.parse(value))
   } catch {
-    return []
+    return ensureCollegeFormField([])
   }
 }
 

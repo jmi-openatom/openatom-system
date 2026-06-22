@@ -2,13 +2,7 @@
   <ViewPage class="admin-page">
     <ViewToolbar>
       <div class="toolbar__filters">
-        <el-select
-          v-model="query.status"
-          clearable
-          placeholder="活动状态"
-          style="width: 150px"
-          @change="fetchList"
-        >
+        <el-select v-model="query.status" clearable placeholder="活动状态" style="width: 150px" @change="fetchList">
           <el-option label="草稿" value="draft" />
           <el-option label="已发布" value="published" />
           <el-option label="已关闭" value="closed" />
@@ -89,24 +83,14 @@
           </el-form-item>
         </div>
         <el-form-item label="活动摘要">
-          <el-input
-            v-model="form.summary"
-            type="textarea"
-            :rows="2"
-            maxlength="500"
-            show-word-limit
-          />
+          <el-input v-model="form.summary" type="textarea" :rows="2" maxlength="500" show-word-limit />
         </el-form-item>
         <el-form-item label="Markdown介绍">
           <el-input v-model="form.descriptionMarkdown" type="textarea" :rows="10" />
         </el-form-item>
         <el-divider content-position="left">报名设置</el-divider>
         <el-form-item label="官网报名">
-          <el-switch
-            v-model="form.registrationRequired"
-            active-text="需要"
-            inactive-text="不需要"
-          />
+          <el-switch v-model="form.registrationRequired" active-text="需要" inactive-text="不需要" />
         </el-form-item>
         <div class="form-grid" v-if="form.registrationRequired">
           <el-form-item label="报名开始">
@@ -145,11 +129,13 @@ import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { activityApi } from '@/api/index.ts'
+import { createCollegeRegistrationField, ensureCollegeRegistrationField } from '@/constants/colleges'
 import { formatDateTime, statusType, toDateTimeInputValue } from '@/utils/format.ts'
 import { onMounted, ref } from 'vue'
 
 const defaultFields = [
   { label: '姓名', type: 'text', required: true },
+  createCollegeRegistrationField(),
   { label: '联系方式', type: 'text', required: true },
   { label: '备注', type: 'textarea', required: false },
 ]
@@ -180,11 +166,7 @@ const rules = ref({
 const formRef = ref<any>()
 
 function statusText(status: any) {
-  return (
-    { draft: '草稿', published: '已发布', closed: '已关闭', cancelled: '已取消' }[status] ||
-    status ||
-    '-'
-  )
+  return { draft: '草稿', published: '已发布', closed: '已关闭', cancelled: '已取消' }[status] || status || '-'
 }
 
 async function fetchList() {
@@ -223,7 +205,7 @@ function save() {
     let fields = null
     if (form.value.registrationRequired) {
       try {
-        fields = JSON.parse(registrationFieldsText.value || '[]')
+        fields = ensureCollegeRegistrationField(JSON.parse(registrationFieldsText.value || '[]'))
       } catch {
         ElMessage.warning('自定义字段必须是 JSON 数组')
         return
@@ -261,7 +243,7 @@ function toInputTime(value: any) {
 function prettyFields(value: any) {
   try {
     const parsed = typeof value === 'string' ? JSON.parse(value || '[]') : value
-    return JSON.stringify(parsed || [], null, 2)
+    return JSON.stringify(ensureCollegeRegistrationField(parsed), null, 2)
   } catch {
     return JSON.stringify(defaultFields, null, 2)
   }

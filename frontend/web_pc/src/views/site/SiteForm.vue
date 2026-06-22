@@ -23,23 +23,13 @@
             <p class="campaign-line">
               <strong>{{ formMeta.name || '信息收集表单' }}</strong>
             </p>
-            <p class="campaign-line">
-              提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}
-            </p>
-            <p class="campaign-line">
-              收集时间：{{ formatRange(formMeta.startAt, formMeta.endAt) }}
-            </p>
+            <p class="campaign-line">提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}</p>
+            <p class="campaign-line">收集时间：{{ formatRange(formMeta.startAt, formMeta.endAt) }}</p>
           </div>
         </div>
         <el-card class="apply-form-card site-reveal" shadow="never">
           <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
-            <el-alert
-              v-if="!formMeta.id"
-              type="warning"
-              show-icon
-              :closable="false"
-              title="表单不存在或暂未开放"
-            />
+            <el-alert v-if="!formMeta.id" type="warning" show-icon :closable="false" title="表单不存在或暂未开放" />
             <el-alert
               v-else-if="requiresLogin && !hasToken"
               type="info"
@@ -67,22 +57,11 @@
             <el-form-item label="表单名称">
               <el-input :model-value="formMeta.name || '-'" disabled />
             </el-form-item>
-            <el-form-item
-              v-if="!requiresLogin && !hasApplicantNameField"
-              label="联系人"
-              prop="formData.anonymousName"
-            >
+            <el-form-item v-if="!requiresLogin && !hasApplicantNameField" label="联系人" prop="formData.anonymousName">
               <el-input v-model="form.formData.anonymousName" placeholder="请输入姓名" />
             </el-form-item>
-            <el-form-item
-              v-if="!requiresLogin && !hasContactField"
-              label="联系方式"
-              prop="formData.anonymousContact"
-            >
-              <el-input
-                v-model="form.formData.anonymousContact"
-                placeholder="请填写手机号、邮箱或微信"
-              />
+            <el-form-item v-if="!requiresLogin && !hasContactField" label="联系方式" prop="formData.anonymousContact">
+              <el-input v-model="form.formData.anonymousContact" placeholder="请填写手机号、邮箱或微信" />
             </el-form-item>
             <el-divider v-if="dynamicFields.length" content-position="left">详细信息</el-divider>
             <template v-for="field in dynamicFields" :key="field.key">
@@ -137,7 +116,8 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import SitePageHero from '@/components/site/shell/SitePageHero.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { formSubmissionApi, clubApi, siteApi } from '@/api'
-import { getToken } from '@/utils/auth.ts'
+import { COLLEGE_FIELD_KEY, ensureCollegeFormField, resolveCollegeValue } from '@/constants/colleges'
+import { getCurrentUser, getToken } from '@/utils/auth.ts'
 import { formatDateTime } from '@/utils/format.ts'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -173,8 +153,7 @@ const requiresLogin = computed(() => {
 const canSubmit = computed(() => {
   if (!formMeta.value?.id) return false
   if (['closed', 'archived'].includes(formMeta.value.status)) return false
-  if (formMeta.value.startAt && new Date(formMeta.value.startAt).getTime() > Date.now())
-    return false
+  if (formMeta.value.startAt && new Date(formMeta.value.startAt).getTime() > Date.now()) return false
   if (!formMeta.value.endAt) return true
   return new Date(formMeta.value.endAt).getTime() >= Date.now()
 })
@@ -219,25 +198,17 @@ function buildRules() {
       : {
           ...(applicantFieldKey
             ? {
-                [`formData.${applicantFieldKey}`]: [
-                  { required: true, message: '请填写联系人', trigger: 'blur' },
-                ],
+                [`formData.${applicantFieldKey}`]: [{ required: true, message: '请填写联系人', trigger: 'blur' }],
               }
             : {
-                'formData.anonymousName': [
-                  { required: true, message: '请填写联系人', trigger: 'blur' },
-                ],
+                'formData.anonymousName': [{ required: true, message: '请填写联系人', trigger: 'blur' }],
               }),
           ...(contactFieldKey
             ? {
-                [`formData.${contactFieldKey}`]: [
-                  { required: true, message: '请填写联系方式', trigger: 'blur' },
-                ],
+                [`formData.${contactFieldKey}`]: [{ required: true, message: '请填写联系方式', trigger: 'blur' }],
               }
             : {
-                'formData.anonymousContact': [
-                  { required: true, message: '请填写联系方式', trigger: 'blur' },
-                ],
+                'formData.anonymousContact': [{ required: true, message: '请填写联系方式', trigger: 'blur' }],
               }),
         }),
     ...dynamicFields.value.reduce((rules, field) => {
@@ -245,8 +216,8 @@ function buildRules() {
         rules[`formData.${field.key}`] = [
           {
             required: true,
-            message: `请填写${field.label || field.key}`,
-            trigger: 'blur',
+            message: `${field.type === 'select' ? '请选择' : '请填写'}${field.label || field.key}`,
+            trigger: field.type === 'select' ? 'change' : 'blur',
           },
         ]
       }
@@ -256,13 +227,13 @@ function buildRules() {
 }
 
 function parseSchema(value: any) {
-  if (Array.isArray(value)) return value.filter((item) => item && item.key)
-  if (!value) return []
+  if (Array.isArray(value)) return ensureCollegeFormField(value).filter((item) => item && item.key)
+  if (!value) return ensureCollegeFormField([])
   try {
     const parsed = JSON.parse(value)
-    return Array.isArray(parsed) ? parsed.filter((item) => item && item.key) : []
+    return ensureCollegeFormField(parsed).filter((item) => item && item.key)
   } catch {
-    return []
+    return ensureCollegeFormField([])
   }
 }
 
@@ -293,8 +264,9 @@ function submitForm() {
 
 function resetForm() {
   const formData = {}
+  const currentUser = getCurrentUser()
   dynamicFields.value.forEach((field) => {
-    formData[field.key] = ''
+    formData[field.key] = field.key === COLLEGE_FIELD_KEY ? resolveCollegeValue(currentUser?.college) : ''
   })
   if (!hasApplicantNameField.value) {
     formData.anonymousName = ''

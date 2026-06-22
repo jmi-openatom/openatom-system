@@ -3,6 +3,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.common.FormSchemaFields;
 import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
 import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateRecruitmentCampaignDTO;
@@ -34,7 +35,10 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
   public Result<List<RecruitmentCampaign>> listByClub(Integer clubId) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
     if (clubMapper.selectById(clubId) == null) return Result.error(404, "社团不存在");
-    return Result.success(recruitmentCampaignMapper.selectByClubIdOrdered(clubId));
+    return Result.success(
+        recruitmentCampaignMapper.selectByClubIdOrdered(clubId).stream()
+            .map(this::withCollegeField)
+            .toList());
   }
 
   @Override
@@ -50,7 +54,8 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
         .interviewStartAt(Times.parseTimestamp(request.getInterviewStartAt())).interviewEndAt(Times.parseTimestamp(request.getInterviewEndAt()))
         .resultPublishAt(Times.parseTimestamp(request.getResultPublishAt())).targetGrades(Jsons.stringify(request.getTargetGrades()))
         .maxApplicants(request.getMaxApplicants()).loginRequired(Boolean.TRUE.equals(request.getLoginRequired()))
-        .formSchema(Jsons.stringify(request.getFormSchema())).status(status).build();
+        .formSchema(Jsons.stringify(FormSchemaFields.ensureCollegeField(request.getFormSchema())))
+        .status(status).build();
     int row = recruitmentCampaignMapper.insert(campaign);
     return row > 0 ? Result.success("招新计划创建成功") : Result.error("招新计划创建失败");
   }
@@ -59,7 +64,9 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
   @RedisCached(cacheName = "site", key = "'admin-recruitment-detail:' + #p0", ttlSeconds = 300)
   public Result<RecruitmentCampaign> detail(Integer campaignId) {
     RecruitmentCampaign campaign = findCampaign(campaignId);
-    return campaign == null ? Result.error(404, "招新计划不存在") : Result.success(campaign);
+    return campaign == null
+        ? Result.error(404, "招新计划不存在")
+        : Result.success(withCollegeField(campaign));
   }
 
   @Override
@@ -76,7 +83,9 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
     if (request.getTargetGrades() != null) campaign.setTargetGrades(Jsons.stringify(request.getTargetGrades()));
     if (request.getMaxApplicants() != null) campaign.setMaxApplicants(request.getMaxApplicants());
     if (request.getLoginRequired() != null) campaign.setLoginRequired(request.getLoginRequired());
-    if (request.getFormSchema() != null) campaign.setFormSchema(Jsons.stringify(request.getFormSchema()));
+    if (request.getFormSchema() != null)
+      campaign.setFormSchema(
+          Jsons.stringify(FormSchemaFields.ensureCollegeField(request.getFormSchema())));
     if (request.getStatus() != null) {
       if (!STATUSES.contains(request.getStatus())) return Result.error(400, "招新计划状态不合法");
       campaign.setStatus(request.getStatus());
@@ -102,4 +111,10 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
   }
 
   private RecruitmentCampaign findCampaign(Integer campaignId) { return campaignId == null ? null : recruitmentCampaignMapper.selectById(campaignId); }
+
+  private RecruitmentCampaign withCollegeField(RecruitmentCampaign campaign) {
+    if (campaign != null)
+      campaign.setFormSchema(FormSchemaFields.ensureCollegeFieldJson(campaign.getFormSchema()));
+    return campaign;
+  }
 }
