@@ -415,7 +415,10 @@ async function toggleStatus(row: any) {
 }
 
 async function resetPassword(row: any) {
-  await ElMessageBox.confirm(`确认重置 ${row.realName || row.userName} 的密码？`, '提示')
+  await ElMessageBox.confirm(`确认重置 ${row.realName || row.userName} 的密码？`, '提示', {
+    confirmButtonText: '确认重置',
+    cancelButtonText: '取消',
+  })
   await userApi.resetPassword(row.id, { newPassword: '12345678' })
   ElMessage.success('已重置为 12345678')
 }

@@ -10,9 +10,9 @@
         @click="toggleSidebar"
       />
       <div class="admin-brand">
-        <span class="admin-brand__mark">OA</span>
+<!--        <span class="admin-brand__mark">OA</span>-->
         <div class="admin-brand__copy">
-          <strong>OpenAtom</strong>
+          <strong>JMI-OPENATOM</strong>
           <small>管理员后台</small>
         </div>
       </div>
@@ -121,6 +121,7 @@ import {
   DocumentChecked,
   EditPen,
   Expand,
+  Files,
   Fold,
   HomeFilled,
   List,
@@ -163,6 +164,8 @@ const menus = ref<AdminMenuItem[]>([
   // ==== 2. 日常最高频：用户与核心业务（活动、签到、请假） ====
   { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
   { path: '/admin/memberships', label: '成员管理', icon: UserFilled, permissions: ['membership:list'] },
+  { path: '/admin/alumni-managers', label: '往届管理人员', icon: User, permissions: ['membership:list'] },
+  { path: '/admin/alumni-groups', label: '往届分组管理', icon: Files, permissions: ['membership:list'] },
   { path: '/admin/activities', label: '活动管理', icon: Calendar, permissions: ['activity:list'] },
   { path: '/admin/ai-activities', label: 'AI活动自动化', icon: Calendar, permissions: ['activity:create'] },
   { path: '/admin/check-ins', label: '扫码签到', icon: Tickets, permissions: ['check-in:list'] },

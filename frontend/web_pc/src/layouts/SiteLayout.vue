@@ -26,6 +26,7 @@
           <router-link to="/votes">投票</router-link>
 <!--          <router-link to="/open-platform">开放平台</router-link>-->
           <router-link to="/calendar">校历</router-link>
+          <router-link to="/alumni-managers">往届管理人员</router-link>
           <router-link to="/apply">入会申请</router-link>
           <router-link to="/progress">我的申请</router-link>
           <!--          <router-link to="/check-in/scan">扫码签到</router-link>-->
@@ -84,6 +85,7 @@
         <router-link to="/progress" @click="mobileNavVisible = false">我的申请</router-link>
         <router-link to="/open-platform" @click="mobileNavVisible = false">开放平台</router-link>
         <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
+        <router-link to="/alumni-managers" @click="mobileNavVisible = false">往届管理人员</router-link>
         <!--        <router-link to="/check-in/scan" @click="mobileNavVisible = false">扫码签到</router-link>-->
         <router-link v-if="isLoggedIn" to="/notifications" @click="mobileNavVisible = false">
           通知
@@ -118,15 +120,15 @@
           <img alt="徽标" class="site-footer__logo" src="/logo.png" />
           <div class="brand-text">
             <span class="name">开放原子开源社团</span>
-            <span class="slogan">Open Atom Open Source Club</span>
+            <span class="slogan">JMI - OPENATOM</span>
           </div>
         </div>
         <div class="site-footer__info">
           <p>技术分享 · 项目实践 · 竞赛训练 · 开源协作</p>
           <p class="copyright">
-            © 2026 JMI-OPENATOM. All rights reserved.
-            <span class="version-tag">{{ version }}</span>
+            © 2025-2027 JMI-OPENATOM & <a href="http://www.ariven.cn/">Ariven</a>. All rights reserved.
           </p>
+          <span class="version-tag">{{ version }}</span>
         </div>
       </div>
     </footer>
@@ -350,6 +352,7 @@ onBeforeUnmount(() => {
 }
 
 .brand-text .slogan {
+  letter-spacing:0.15rem;
   font-size: 12px;
   color: var(--oa-muted);
 }

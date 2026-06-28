@@ -27,4 +27,5 @@ public class RequestCreateMembershipDTO {
   private String status;
   private Boolean featured;
   private Integer sortOrder;
+  private String alumniGroup;
 }

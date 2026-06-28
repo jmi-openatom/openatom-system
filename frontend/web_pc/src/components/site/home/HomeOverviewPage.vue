@@ -2,19 +2,19 @@
   <section class="home-overview-page home-interactive-section">
     <HomeInteractiveBackdrop :radius="220" :spacing="66" :strength="20" />
     <div class="container home-overview-page__inner">
-      <div class="hero__actions">
-        <el-button
-          :icon="DataAnalysis"
-          size="large"
-          type="primary"
-          @click="$emit('scrollTo', 'activities')"
-        >
-          查看活动
-        </el-button>
-        <el-button :icon="UserFilled" size="large" @click="$emit('scrollTo', 'people')">
-          了解成员
-        </el-button>
-      </div>
+<!--      <div class="hero__actions">-->
+<!--        <el-button-->
+<!--          :icon="DataAnalysis"-->
+<!--          size="large"-->
+<!--          type="primary"-->
+<!--          @click="$emit('scrollTo', 'activities')"-->
+<!--        >-->
+<!--          查看活动-->
+<!--        </el-button>-->
+<!--        <el-button :icon="UserFilled" size="large" @click="$emit('scrollTo', 'people')">-->
+<!--          了解成员-->
+<!--        </el-button>-->
+<!--      </div>-->
 
       <div class="command-panel">
         <div v-if="metrics.length" aria-label="社团关键指标" class="metric-console">
@@ -51,9 +51,9 @@
 
         <el-empty v-else :image-size="72" description="暂无社团统计数据" />
 
-        <div v-if="techStack.length" class="terminal-strip">
-          <span v-for="item in techStack" :key="item">{{ item }}</span>
-        </div>
+<!--        <div v-if="techStack.length" class="terminal-strip">-->
+<!--          <span v-for="item in techStack" :key="item">{{ item }}</span>-->
+<!--        </div>-->
       </div>
     </div>
   </section>

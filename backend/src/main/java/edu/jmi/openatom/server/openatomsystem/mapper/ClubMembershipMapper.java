@@ -57,21 +57,26 @@ public interface ClubMembershipMapper extends BaseMapper<ClubMembership> {
 
   /** 查 userId+clubId 的活跃成员关系（未退社） */
   default ClubMembership selectActiveMembership(Integer userId, Integer clubId) {
-    return selectOne(
+    List<ClubMembership> list = selectList(
         new LambdaQueryWrapper<ClubMembership>()
             .eq(ClubMembership::getUserId, userId)
             .eq(ClubMembership::getClubId, clubId)
             .isNull(ClubMembership::getLeftAt)
+            .orderByDesc(ClubMembership::getId)
             .last("LIMIT 1"));
+    return list.isEmpty() ? null : list.get(0);
   }
 
   /** 查不是 left 状态的成员关系 */
   default ClubMembership selectActiveNotLeft(Integer userId, Integer clubId) {
-    return selectOne(
+    List<ClubMembership> list = selectList(
         new LambdaQueryWrapper<ClubMembership>()
             .eq(ClubMembership::getUserId, userId)
             .eq(ClubMembership::getClubId, clubId)
-            .ne(ClubMembership::getStatus, "left"));
+            .ne(ClubMembership::getStatus, "left")
+            .orderByDesc(ClubMembership::getId)
+            .last("LIMIT 1"));
+    return list.isEmpty() ? null : list.get(0);
   }
 
   /** 统计不是 left 状态的成员关系数 */
@@ -87,6 +92,17 @@ public interface ClubMembershipMapper extends BaseMapper<ClubMembership> {
   default int deleteByUserId(Integer userId) {
     return delete(
         new LambdaQueryWrapper<ClubMembership>().eq(ClubMembership::getUserId, userId));
+  }
+
+  /** 按 clubId 查询往届管理人员（已离社或已毕业且曾担任职务） */
+  default List<ClubMembership> selectFormerManagersByClubId(Integer clubId) {
+    return selectList(
+        new LambdaQueryWrapper<ClubMembership>()
+            .eq(ClubMembership::getClubId, clubId)
+            .in(ClubMembership::getStatus, "left", "graduated")
+            .isNotNull(ClubMembership::getPositionId)
+            .isNotNull(ClubMembership::getLeftAt)
+            .orderByDesc(ClubMembership::getLeftAt));
   }
 
   /** 按条件查询成员列表 */

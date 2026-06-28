@@ -31,4 +31,5 @@ public class ResponseMembershipVO {
   private Integer sortOrder;
   private Timestamp joinedAt;
   private Timestamp leftAt;
+  private String alumniGroup;
 }

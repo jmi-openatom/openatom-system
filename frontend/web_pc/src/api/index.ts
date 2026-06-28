@@ -849,6 +849,21 @@ export const membershipApi = {
   },
 }
 
+export const alumniGroupApi = {
+  list(clubId: string | number): Promise<any> {
+    return request.get(`/clubs/${clubId}/alumni-groups`)
+  },
+  create(clubId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/clubs/${clubId}/alumni-groups`, data)
+  },
+  update(groupId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/alumni-groups/${groupId}`, data)
+  },
+  delete(groupId: string | number): Promise<any> {
+    return request.delete(`/alumni-groups/${groupId}`)
+  },
+}
+
 export const rbacApi = {
   roles(params?: Record<string, unknown>): Promise<any> {
     return request.get('/roles', { params })

@@ -658,8 +658,14 @@ html .el-button--primary.is-plain:not(.is-disabled):focus {
 .el-message-box,
 .el-popover,
 .el-popper {
-  background: var(--oa-elevated-bg);
+  background: var(--oa-elevated-bg) !important;
   backdrop-filter: none;
+}
+
+.el-message-box {
+  color: var(--oa-text) !important;
+  border: 1px solid var(--oa-border-strong) !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.24) !important;
 }
 
 .el-dialog,
@@ -921,6 +927,33 @@ a:hover {
   margin: 0;
   padding: 18px 22px;
   border-bottom: 1px solid var(--oa-divider);
+}
+
+.el-message-box__title {
+  color: var(--oa-text) !important;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.el-message-box__content {
+  padding: 18px 22px;
+  color: var(--oa-text-soft) !important;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.el-message-box__message,
+.el-message-box__message p {
+  color: var(--oa-text-soft) !important;
+}
+
+.el-message-box__headerbtn .el-message-box__close {
+  color: var(--oa-muted-strong) !important;
+}
+
+.el-message-box__headerbtn:hover .el-message-box__close {
+  color: var(--oa-text) !important;
 }
 
 .el-dialog__footer,

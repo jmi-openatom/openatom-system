@@ -21,6 +21,7 @@ public class ResponseClubHomeVO {
   private List<FocusArea> focusAreas;
   private List<Activity> activities;
   private List<Person> people;
+  private List<Person> alumniManagers;
   private List<Award> awards;
   private List<String> techStack;
 
@@ -84,6 +85,7 @@ public class ResponseClubHomeVO {
     private String focus;
     private String avatar;
     private String qqAvatar;
+    private String alumniGroup;
   }
 
   @Data

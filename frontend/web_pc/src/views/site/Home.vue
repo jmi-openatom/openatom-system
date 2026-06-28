@@ -1050,6 +1050,7 @@ onBeforeUnmount(() => {
   align-items: end;
   gap: 0;
   min-height: 126px;
+
 }
 
 .metric-node {

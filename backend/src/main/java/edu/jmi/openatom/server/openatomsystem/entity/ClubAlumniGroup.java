@@ -11,44 +11,31 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 社团成员关系
+ * 往届管理人员分组
  *
- * <p>对应数据库表 club_membership, 记录用户与社团的成员关系, 包括所属部门, 职位和状态
+ * <p>对应数据库表 club_alumni_group, 存储往届管理人员的分组信息
  */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName("club_membership")
-public class ClubMembership {
+@TableName("club_alumni_group")
+public class ClubAlumniGroup {
   @TableId(value = "id", type = IdType.AUTO)
   private Integer id;
-
-  @TableField("user_id")
-  private Integer userId;
 
   @TableField("club_id")
   private Integer clubId;
 
-  @TableField("department_id")
-  private Integer departmentId;
-
-  @TableField("position_id")
-  private Integer positionId;
-
-  private String status;
-
-  private Boolean featured;
+  private String name;
+  private String description;
 
   @TableField("sort_order")
   private Integer sortOrder;
 
-  @TableField("joined_at")
-  private Timestamp joinedAt;
+  @TableField("created_at")
+  private Timestamp createdAt;
 
-  @TableField("left_at")
-  private Timestamp leftAt;
-
-  @TableField("alumni_group")
-  private String alumniGroup;
+  @TableField("updated_at")
+  private Timestamp updatedAt;
 }

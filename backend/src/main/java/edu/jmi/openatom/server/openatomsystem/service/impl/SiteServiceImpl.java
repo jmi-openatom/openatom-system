@@ -60,6 +60,7 @@ public class SiteServiceImpl implements SiteService {
       return Result.error(404, "默认社团不存在");
     }
     List<ClubMembership> memberships = clubMembershipMapper.selectByClubIdOrdered(club.getId());
+    List<ClubMembership> formerManagers = clubMembershipMapper.selectFormerManagersByClubId(club.getId());
     List<RecruitmentCampaign> campaigns =
         recruitmentCampaignMapper.selectByClubIdOrderedByApplyStart(club.getId());
     List<ClubDepartment> departments = clubDepartmentMapper.selectByClubIdOrdered(club.getId());
@@ -72,6 +73,7 @@ public class SiteServiceImpl implements SiteService {
             .focusAreas(buildFocusAreas(departments))
             .activities(activities.stream().map(this::toActivity).toList())
             .people(buildPeople(memberships))
+            .alumniManagers(buildAlumniManagers(formerManagers))
             .awards(awards.stream().map(this::toAward).toList())
             .techStack(departments.stream().map(ClubDepartment::getName).limit(10).toList())
             .build());
@@ -359,6 +361,38 @@ public class SiteServiceImpl implements SiteService {
         .toList();
   }
 
+  private List<ResponseClubHomeVO.Person> buildAlumniManagers(List<ClubMembership> formerManagers) {
+    if (formerManagers == null || formerManagers.isEmpty()) return List.of();
+    List<ClubMembership> limited =
+        formerManagers.stream()
+            .filter(m -> m.getUserId() != null)
+            .sorted(
+                Comparator.comparing(
+                    ClubMembership::getLeftAt,
+                    Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
+    if (limited.isEmpty()) return List.of();
+    Map<Integer, User> users =
+        userMapper
+            .selectBatchIds(
+                limited.stream()
+                    .map(ClubMembership::getUserId)
+                    .filter(Objects::nonNull)
+                    .toList())
+            .stream()
+            .collect(Collectors.toMap(User::getId, Function.identity()));
+    Map<Integer, ClubDepartment> depts =
+        selectDepartments(limited).stream()
+            .collect(Collectors.toMap(ClubDepartment::getId, Function.identity()));
+    Map<Integer, ClubPosition> positions =
+        selectPositions(limited).stream()
+            .collect(Collectors.toMap(ClubPosition::getId, Function.identity()));
+    return limited.stream()
+        .map(m -> toPerson(m, users, depts, positions))
+        .filter(Objects::nonNull)
+        .toList();
+  }
+
   private List<ClubDepartment> selectDepartments(List<ClubMembership> memberships) {
     List<Integer> ids =
         memberships.stream()
@@ -398,6 +432,7 @@ public class SiteServiceImpl implements SiteService {
         .focus(isBlank(department) ? user.getMajor() : department)
         .avatar(user.getAvatar())
         .qqAvatar(qqAvatarUrl(user.getQqOpenid()))
+        .alumniGroup(membership.getAlumniGroup())
         .build();
   }
 

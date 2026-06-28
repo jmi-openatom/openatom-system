@@ -20,4 +20,5 @@ public class RequestUpdateMembershipDTO {
   private String status;
   private Boolean featured;
   private Integer sortOrder;
+  private String alumniGroup;
 }

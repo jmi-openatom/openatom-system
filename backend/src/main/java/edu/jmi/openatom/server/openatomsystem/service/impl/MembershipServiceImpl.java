@@ -78,7 +78,7 @@ public class MembershipServiceImpl implements MembershipService {
       }
       Result<String> v = validateMembershipRefs(userId, application.getClubId(), request.getDepartmentId(), request.getPositionId());
       if (v != null) return v;
-      ensureMembership(userId, application.getClubId(), request.getDepartmentId(), request.getPositionId(), "probation", null, null);
+      ensureMembership(userId, application.getClubId(), request.getDepartmentId(), request.getPositionId(), "probation", null, null, null);
       application.setStatus("final_approved");
     } else if ("waitlisted".equals(request.getDecision())) { application.setStatus("waitlisted"); }
     else { application.setStatus("rejected"); }
@@ -110,8 +110,7 @@ public class MembershipServiceImpl implements MembershipService {
   public Result<String> create(RequestCreateMembershipDTO request) {
     Result<String> v = validateMembershipRefs(request.getUserId(), request.getClubId(), request.getDepartmentId(), request.getPositionId());
     if (v != null) return v;
-    if (membershipMapper.countActiveNotLeft(request.getUserId(), request.getClubId()) > 0) return Result.error(409, "用户已是该社团成员");
-    ensureMembership(request.getUserId(), request.getClubId(), request.getDepartmentId(), request.getPositionId(), request.getStatus() == null ? "probation" : request.getStatus(), request.getFeatured(), request.getSortOrder());
+    ensureMembership(request.getUserId(), request.getClubId(), request.getDepartmentId(), request.getPositionId(), request.getStatus() == null ? "probation" : request.getStatus(), request.getFeatured(), request.getSortOrder(), request.getAlumniGroup());
     return Result.success("成员新增成功");
   }
 
@@ -133,6 +132,7 @@ public class MembershipServiceImpl implements MembershipService {
     if (request.getStatus() != null) { if (!STATUSES.contains(request.getStatus())) return Result.error(400, "成员状态不合法"); m.setStatus(request.getStatus()); }
     if (request.getFeatured() != null) m.setFeatured(request.getFeatured());
     if (request.getSortOrder() != null) m.setSortOrder(request.getSortOrder());
+    if (request.getAlumniGroup() != null) m.setAlumniGroup(request.getAlumniGroup());
     membershipMapper.updateById(m);
     syncUserRole(m.getUserId(), m.getStatus());
     return Result.success("成员更新成功");
@@ -191,7 +191,7 @@ public class MembershipServiceImpl implements MembershipService {
       if (v != null) continue;
       if (membershipMapper.countActiveNotLeft(item.getUserId(), item.getClubId()) > 0) continue;
       ensureMembership(item.getUserId(), item.getClubId(), item.getDepartmentId(), item.getPositionId(),
-          item.getStatus() == null ? "probation" : item.getStatus(), item.getFeatured(), item.getSortOrder());
+          item.getStatus() == null ? "probation" : item.getStatus(), item.getFeatured(), item.getSortOrder(), null);
       count++;
     }
     return Result.success("已批量创建 " + count + " 条成员关系");
@@ -208,19 +208,22 @@ public class MembershipServiceImpl implements MembershipService {
     return Result.success("强制退社成功");
   }
 
-  private void ensureMembership(Integer userId, Integer clubId, Integer departmentId, Integer positionId, String status, Boolean featured, Integer sortOrder) {
+  private void ensureMembership(Integer userId, Integer clubId, Integer departmentId, Integer positionId, String status, Boolean featured, Integer sortOrder, String alumniGroup) {
+    boolean needsLeftAt = "left".equals(status) || "graduated".equals(status);
     ClubMembership exists = membershipMapper.selectActiveNotLeft(userId, clubId);
     if (exists != null) { 
       exists.setDepartmentId(departmentId); 
       exists.setPositionId(positionId); 
       exists.setStatus(status); 
+      if (needsLeftAt && exists.getLeftAt() == null) exists.setLeftAt(Times.now());
       if (featured != null) exists.setFeatured(featured); 
       if (sortOrder != null) exists.setSortOrder(sortOrder); 
+      if (alumniGroup != null) exists.setAlumniGroup(alumniGroup);
       membershipMapper.updateById(exists); 
       syncUserRole(userId, status);
       return; 
     }
-    membershipMapper.insert(ClubMembership.builder().userId(userId).clubId(clubId).departmentId(departmentId).positionId(positionId).status(status).featured(Boolean.TRUE.equals(featured)).sortOrder(sortOrder == null ? 0 : sortOrder).build());
+    membershipMapper.insert(ClubMembership.builder().userId(userId).clubId(clubId).departmentId(departmentId).positionId(positionId).status(status).leftAt(needsLeftAt ? Times.now() : null).featured(Boolean.TRUE.equals(featured)).sortOrder(sortOrder == null ? 0 : sortOrder).alumniGroup(alumniGroup).build());
     syncUserRole(userId, status);
   }
 
@@ -273,7 +276,7 @@ public class MembershipServiceImpl implements MembershipService {
     ClubDepartment d = m.getDepartmentId() == null ? null : depts.get(m.getDepartmentId()); ClubPosition p = m.getPositionId() == null ? null : positions.get(m.getPositionId());
     return ResponseMembershipVO.builder().id(m.getId()).userId(m.getUserId()).userName(u == null ? null : u.getUserName()).realName(u == null ? null : u.getRealName())
         .clubId(m.getClubId()).clubName(c == null ? null : c.getName()).departmentId(m.getDepartmentId()).departmentName(d == null ? null : d.getName())
-        .positionId(m.getPositionId()).positionName(p == null ? null : p.getName()).status(m.getStatus()).featured(m.getFeatured()).sortOrder(m.getSortOrder()).joinedAt(m.getJoinedAt()).leftAt(m.getLeftAt()).build();
+        .positionId(m.getPositionId()).positionName(p == null ? null : p.getName()).status(m.getStatus()).featured(m.getFeatured()).sortOrder(m.getSortOrder()).joinedAt(m.getJoinedAt()).leftAt(m.getLeftAt()).alumniGroup(m.getAlumniGroup()).build();
   }
 
   private String generateUniqueUsername(String applicantName) {
