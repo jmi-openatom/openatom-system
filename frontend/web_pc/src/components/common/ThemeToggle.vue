@@ -1,18 +1,14 @@
 <template>
-    <el-tooltip :content="tooltip" placement="bottom">
-
-
-        <el-button
-            :aria-label="tooltip"
-            class="theme-toggle"
-            @click="toggleTheme"
-            style="border-radius: 50%;"
-        >
-            <el-icon :size="10">
-                <component :is="themeIcon" />
-            </el-icon>
-        </el-button>
-    </el-tooltip>
+  <el-button
+      :aria-label="tooltip"
+      class="theme-toggle"
+      @click="toggleTheme"
+      style="border-radius: 50%;"
+  >
+    <el-icon :size="10">
+      <component :is="themeIcon" />
+    </el-icon>
+  </el-button>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'

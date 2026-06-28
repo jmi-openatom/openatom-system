@@ -23,9 +23,11 @@ type MapboxMarker = any
 const props = withDefaults(
   defineProps<{
     background?: boolean
+    static?: boolean
   }>(),
   {
     background: false,
+    static: false,
   },
 )
 
@@ -464,7 +466,7 @@ async function initMap() {
     mapError.value = ''
     restoreStyleOverlays()
     addCampusMarker(mapboxgl)
-    scheduleEarthReturn()
+    if (!props.static) scheduleEarthReturn()
   })
 
   map.on('error', (event) => {

@@ -367,9 +367,16 @@ public class SiteServiceImpl implements SiteService {
         formerManagers.stream()
             .filter(m -> m.getUserId() != null)
             .sorted(
-                Comparator.comparing(
-                    ClubMembership::getLeftAt,
-                    Comparator.nullsLast(Comparator.reverseOrder())))
+                Comparator
+                    .comparing(
+                        ClubMembership::getAlumniGroup,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(
+                        ClubMembership::getSortOrder,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(
+                        ClubMembership::getLeftAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
             .toList();
     if (limited.isEmpty()) return List.of();
     Map<Integer, User> users =

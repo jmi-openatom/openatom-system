@@ -102,6 +102,8 @@ public interface ClubMembershipMapper extends BaseMapper<ClubMembership> {
             .in(ClubMembership::getStatus, "left", "graduated")
             .isNotNull(ClubMembership::getPositionId)
             .isNotNull(ClubMembership::getLeftAt)
+            .orderByAsc(ClubMembership::getAlumniGroup)
+            .orderByAsc(ClubMembership::getSortOrder)
             .orderByDesc(ClubMembership::getLeftAt));
   }
 
