@@ -114,49 +114,47 @@ jobs:
             $COMPOSE_CMD pull astrbot napcat || true
             
             # 从 GitHub Secrets 读取敏感环境变量并写入 .env 文件
-            cat > .env << EOF
-# Redis 配置
-REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
-REDIS_HOST=${{ secrets.REDIS_HOST || '127.0.0.1' }}
-REDIS_PORT=${{ secrets.REDIS_PORT || '6379' }}
-REDIS_DATABASE=${{ secrets.REDIS_DATABASE || '0' }}
-
-# JWT / Sa-Token 配置
-SA_TOKEN_JWT_SECRET_KEY=${{ secrets.SA_TOKEN_JWT_SECRET_KEY }}
-SA_TOKEN_TIMEOUT=${{ secrets.SA_TOKEN_TIMEOUT || '2592000' }}
-
-# 数据库配置（生产环境）
-SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
-SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}
-SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
-
-# AI 配置
-DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}
-DEEPSEEK_BASE_URL=${{ secrets.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
-DEEPSEEK_MODEL=${{ secrets.DEEPSEEK_MODEL || 'deepseek-chat' }}
-
-# 机器人配置
-APP_BOT_CALLBACK_TOKEN=${{ secrets.APP_BOT_CALLBACK_TOKEN }}
-APP_NAPCAT_ACCESS_TOKEN=${{ secrets.APP_NAPCAT_ACCESS_TOKEN }}
-APP_NAPCAT_BASE_URL=${{ secrets.APP_NAPCAT_BASE_URL || 'http://127.0.0.1:3000' }}
-APP_BOT_LEAVE_REVIEW_CALLBACK_URL=${{ secrets.APP_BOT_LEAVE_REVIEW_CALLBACK_URL || 'http://127.0.0.1:6198/openatom/leave-review' }}
-
-# OIDC 配置
-VITE_OIDC_AUTHORITY=${{ secrets.VITE_OIDC_AUTHORITY || 'https://oauth.jmi-openatom.cn/api/v1' }}
-VITE_OIDC_CLIENT_ID=${{ secrets.VITE_OIDC_CLIENT_ID || 'openatom-web' }}
-APP_OIDC_ISSUER=${{ secrets.APP_OIDC_ISSUER || 'https://oauth.jmi-openatom.cn/api/v1' }}
-
-# 微信小程序配置
-APP_MINIAPP_APP_ID=${{ secrets.APP_MINIAPP_APP_ID }}
-APP_MINIAPP_APP_SECRET=${{ secrets.APP_MINIAPP_APP_SECRET }}
-
-# 文件存储路径（可选，默认使用容器内路径）
-APP_AVATAR_STORAGE_DIR=${{ secrets.APP_AVATAR_STORAGE_DIR || '/app/uploads/avatars' }}
-APP_IMAGE_HOSTING_STORAGE_DIR=${{ secrets.APP_IMAGE_HOSTING_STORAGE_DIR || '/app/uploads/images' }}
-APP_LEAVE_ATTACHMENT_STORAGE_DIR=${{ secrets.APP_LEAVE_ATTACHMENT_STORAGE_DIR || '/app/uploads/leave-attachments' }}
-APP_DOCUMENT_TEMPLATE_STORAGE_DIR=${{ secrets.APP_DOCUMENT_TEMPLATE_STORAGE_DIR || '/app/uploads/document-templates' }}
-APP_GENERATED_DOCUMENT_STORAGE_DIR=${{ secrets.APP_GENERATED_DOCUMENT_STORAGE_DIR || '/app/uploads/generated-documents' }}
-EOF
+            echo "# Redis 配置" > .env
+            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+            echo "REDIS_HOST=${{ secrets.REDIS_HOST || '127.0.0.1' }}" >> .env
+            echo "REDIS_PORT=${{ secrets.REDIS_PORT || '6379' }}" >> .env
+            echo "REDIS_DATABASE=${{ secrets.REDIS_DATABASE || '0' }}" >> .env
+            echo "" >> .env
+            echo "# JWT / Sa-Token 配置" >> .env
+            echo "SA_TOKEN_JWT_SECRET_KEY=${{ secrets.SA_TOKEN_JWT_SECRET_KEY }}" >> .env
+            echo "SA_TOKEN_TIMEOUT=${{ secrets.SA_TOKEN_TIMEOUT || '2592000' }}" >> .env
+            echo "" >> .env
+            echo "# 数据库配置（生产环境）" >> .env
+            echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env
+            echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env
+            echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env
+            echo "" >> .env
+            echo "# AI 配置" >> .env
+            echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
+            echo "DEEPSEEK_BASE_URL=${{ secrets.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}" >> .env
+            echo "DEEPSEEK_MODEL=${{ secrets.DEEPSEEK_MODEL || 'deepseek-chat' }}" >> .env
+            echo "" >> .env
+            echo "# 机器人配置" >> .env
+            echo "APP_BOT_CALLBACK_TOKEN=${{ secrets.APP_BOT_CALLBACK_TOKEN }}" >> .env
+            echo "APP_NAPCAT_ACCESS_TOKEN=${{ secrets.APP_NAPCAT_ACCESS_TOKEN }}" >> .env
+            echo "APP_NAPCAT_BASE_URL=${{ secrets.APP_NAPCAT_BASE_URL || 'http://127.0.0.1:3000' }}" >> .env
+            echo "APP_BOT_LEAVE_REVIEW_CALLBACK_URL=${{ secrets.APP_BOT_LEAVE_REVIEW_CALLBACK_URL || 'http://127.0.0.1:6198/openatom/leave-review' }}" >> .env
+            echo "" >> .env
+            echo "# OIDC 配置" >> .env
+            echo "VITE_OIDC_AUTHORITY=${{ secrets.VITE_OIDC_AUTHORITY || 'https://oauth.jmi-openatom.cn/api/v1' }}" >> .env
+            echo "VITE_OIDC_CLIENT_ID=${{ secrets.VITE_OIDC_CLIENT_ID || 'openatom-web' }}" >> .env
+            echo "APP_OIDC_ISSUER=${{ secrets.APP_OIDC_ISSUER || 'https://oauth.jmi-openatom.cn/api/v1' }}" >> .env
+            echo "" >> .env
+            echo "# 微信小程序配置" >> .env
+            echo "APP_MINIAPP_APP_ID=${{ secrets.APP_MINIAPP_APP_ID }}" >> .env
+            echo "APP_MINIAPP_APP_SECRET=${{ secrets.APP_MINIAPP_APP_SECRET }}" >> .env
+            echo "" >> .env
+            echo "# 文件存储路径（可选，默认使用容器内路径）" >> .env
+            echo "APP_AVATAR_STORAGE_DIR=${{ secrets.APP_AVATAR_STORAGE_DIR || '/app/uploads/avatars' }}" >> .env
+            echo "APP_IMAGE_HOSTING_STORAGE_DIR=${{ secrets.APP_IMAGE_HOSTING_STORAGE_DIR || '/app/uploads/images' }}" >> .env
+            echo "APP_LEAVE_ATTACHMENT_STORAGE_DIR=${{ secrets.APP_LEAVE_ATTACHMENT_STORAGE_DIR || '/app/uploads/leave-attachments' }}" >> .env
+            echo "APP_DOCUMENT_TEMPLATE_STORAGE_DIR=${{ secrets.APP_DOCUMENT_TEMPLATE_STORAGE_DIR || '/app/uploads/document-templates' }}" >> .env
+            echo "APP_GENERATED_DOCUMENT_STORAGE_DIR=${{ secrets.APP_GENERATED_DOCUMENT_STORAGE_DIR || '/app/uploads/generated-documents' }}" >> .env
             
             VITE_APP_VERSION=$APP_VER \
               VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1 \
