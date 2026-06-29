@@ -100,18 +100,8 @@ jobs:
               COMPOSE_CMD="docker compose"
             fi
 
-            # --- 关键修改：彻底停止旧容器，释放 6379 等端口 ---
-            echo "Step 1: Stopping and cleaning up existing containers..."
-            $COMPOSE_CMD down --remove-orphans
-
-            # 计算版本号
-            BUILD_NUMBER="${{ github.run_number }}"
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            PKG_VER=$(grep -oP '"version"\s*:\s*"\K[^"]+' frontend/web_pc/package.json || echo "1.0.0")
-            APP_VER="v$PKG_VER.$BUILD_NUMBER-$SHORT_SHA"
-
-            echo "Step 2: Starting deployment with version: $APP_VER"
-            $COMPOSE_CMD pull astrbot napcat || true
+            # --- 关键修改：先创建 .env 文件，再执行 docker-compose 命令 ---
+            echo "Step 1: Creating .env file from GitHub Secrets..."
             
             # 从 GitHub Secrets 读取敏感环境变量并写入 .env 文件
             echo "# Redis 配置" > .env
@@ -155,6 +145,22 @@ jobs:
             echo "APP_LEAVE_ATTACHMENT_STORAGE_DIR=${{ secrets.APP_LEAVE_ATTACHMENT_STORAGE_DIR || '/app/uploads/leave-attachments' }}" >> .env
             echo "APP_DOCUMENT_TEMPLATE_STORAGE_DIR=${{ secrets.APP_DOCUMENT_TEMPLATE_STORAGE_DIR || '/app/uploads/document-templates' }}" >> .env
             echo "APP_GENERATED_DOCUMENT_STORAGE_DIR=${{ secrets.APP_GENERATED_DOCUMENT_STORAGE_DIR || '/app/uploads/generated-documents' }}" >> .env
+            
+            echo ".env file created successfully:"
+            cat .env
+            
+            # 停止旧容器
+            echo "Step 2: Stopping and cleaning up existing containers..."
+            $COMPOSE_CMD down --remove-orphans
+
+            # 计算版本号
+            BUILD_NUMBER="${{ github.run_number }}"
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            PKG_VER=$(grep -oP '"version"\s*:\s*"\K[^"]+' frontend/web_pc/package.json || echo "1.0.0")
+            APP_VER="v$PKG_VER.$BUILD_NUMBER-$SHORT_SHA"
+
+            echo "Step 3: Starting deployment with version: $APP_VER"
+            $COMPOSE_CMD pull astrbot napcat || true
             
             VITE_APP_VERSION=$APP_VER \
               VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1 \
