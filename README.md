@@ -2,6 +2,8 @@
 
 OpenAtom System 是一个基于 Spring Boot 3 + Vue 3 组合式 的社团/组织管理系统，旨在提供高效的成员管理、招新流程、活动组织及文书审批功能。
 
+📖 **开发文档**: [https://docs.jmi-openatom.cn](https://docs.jmi-openatom.cn)
+
 ## 🚀 技术栈
 
 ### 后端
