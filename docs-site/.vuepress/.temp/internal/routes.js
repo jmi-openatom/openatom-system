@@ -3,13 +3,13 @@ export const redirects = JSON.parse("{}")
 export const routes = Object.fromEntries([
   ["/", { loader: () => import(/* webpackChunkName: "index.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/README.md"), meta: {"title":"开发文档"} }],
   ["/api/permissions.html", { loader: () => import(/* webpackChunkName: "api_permissions.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/api/permissions.md"), meta: {"title":"API 权限清单"} }],
+  ["/bot/overview.html", { loader: () => import(/* webpackChunkName: "bot_overview.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/bot/overview.md"), meta: {"title":"QQ 机器人系统"} }],
   ["/backend/architecture.html", { loader: () => import(/* webpackChunkName: "backend_architecture.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/backend/architecture.md"), meta: {"title":"后端架构概览"} }],
   ["/backend/auth.html", { loader: () => import(/* webpackChunkName: "backend_auth.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/backend/auth.md"), meta: {"title":"认证与权限"} }],
   ["/backend/config.html", { loader: () => import(/* webpackChunkName: "backend_config.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/backend/config.md"), meta: {"title":"配置说明"} }],
   ["/backend/conventions.html", { loader: () => import(/* webpackChunkName: "backend_conventions.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/backend/conventions.md"), meta: {"title":"后端开发规范"} }],
   ["/backend/flyway.html", { loader: () => import(/* webpackChunkName: "backend_flyway.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/backend/flyway.md"), meta: {"title":"数据库迁移（Flyway）"} }],
   ["/backend/structure.html", { loader: () => import(/* webpackChunkName: "backend_structure.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/backend/structure.md"), meta: {"title":"后端项目结构"} }],
-  ["/bot/overview.html", { loader: () => import(/* webpackChunkName: "bot_overview.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/bot/overview.md"), meta: {"title":"QQ 机器人系统"} }],
   ["/frontend/api.html", { loader: () => import(/* webpackChunkName: "frontend_api.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/frontend/api.md"), meta: {"title":"API 请求层"} }],
   ["/frontend/architecture.html", { loader: () => import(/* webpackChunkName: "frontend_architecture.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/frontend/architecture.md"), meta: {"title":"前端架构概览"} }],
   ["/frontend/components.html", { loader: () => import(/* webpackChunkName: "frontend_components.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/frontend/components.md"), meta: {"title":"组件库"} }],
@@ -28,3 +28,16 @@ export const routes = Object.fromEntries([
   ["/deploy/nginx.html", { loader: () => import(/* webpackChunkName: "deploy_nginx.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/deploy/nginx.md"), meta: {"title":"Nginx 反向代理"} }],
   ["/404.html", { loader: () => import(/* webpackChunkName: "404.html" */"/Users/ariven/1-jmiopenatom/openatom-system/docs-site/.vuepress/.temp/pages/404.html.vue"), meta: {"title":""} }],
 ]);
+
+if (import.meta.webpackHot) {
+  import.meta.webpackHot.accept()
+  __VUE_HMR_RUNTIME__.updateRoutes?.(routes)
+  __VUE_HMR_RUNTIME__.updateRedirects?.(redirects)
+}
+
+if (import.meta.hot) {
+  import.meta.hot.accept((m) => {
+    __VUE_HMR_RUNTIME__.updateRoutes?.(m.routes)
+    __VUE_HMR_RUNTIME__.updateRedirects?.(m.redirects)
+  })
+}
