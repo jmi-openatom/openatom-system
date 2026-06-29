@@ -1,0 +1,198 @@
+import { defineUserConfig } from 'vuepress'
+import { viteBundler } from '@vuepress/bundler-vite'
+import { defaultTheme } from '@vuepress/theme-default'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+
+const themeClientDir = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'node_modules',
+  '@vuepress',
+  'theme-default',
+  'dist',
+  'client',
+)
+
+export default defineUserConfig({
+  base: '/',
+  lang: 'zh-CN',
+  title: 'JMI-OPENATOM',
+  description: '开放原子开源社团管理系统 - 开发文档',
+
+  bundler: viteBundler({
+    viteOptions: {
+      // 防止 Vite 预构建 theme-default 中使用 @theme 别名的文件
+      optimizeDeps: {
+        exclude: ['@vuepress/theme-default'],
+      },
+      ssr: {
+        noExternal: ['@vuepress/theme-default'],
+      },
+      // 显式注入 @theme 别名，确保 dev 模式下 Vite 能正确解析
+      resolve: {
+        alias: {
+          '@theme/useDarkMode': resolve(themeClientDir, 'composables', 'useDarkMode.js'),
+          '@theme/useHeaders': resolve(themeClientDir, 'composables', 'useHeaders.js'),
+          '@theme/useScrollPromise': resolve(themeClientDir, 'composables', 'useScrollPromise.js'),
+          '@theme/useSidebarItems': resolve(themeClientDir, 'composables', 'useSidebarItems.js'),
+          '@theme/useData': resolve(themeClientDir, 'composables', 'useData.js'),
+          '@theme/useEditLink': resolve(themeClientDir, 'composables', 'useEditLink.js'),
+          '@theme/useNavbarConfig': resolve(themeClientDir, 'composables', 'useNavbarConfig.js'),
+          '@theme/useNavbarRepo': resolve(themeClientDir, 'composables', 'useNavbarRepo.js'),
+          '@theme/useNavbarSelectLanguage': resolve(themeClientDir, 'composables', 'useNavbarSelectLanguage.js'),
+          '@theme/useNavigate': resolve(themeClientDir, 'composables', 'useNavigate.js'),
+          '@theme/useRelatedLinks': resolve(themeClientDir, 'composables', 'useRelatedLinks.js'),
+          '@theme/useUpdateDeviceStatus': resolve(themeClientDir, 'composables', 'useUpdateDeviceStatus.js'),
+        },
+      },
+    },
+  }),
+
+  theme: defaultTheme({
+    logo: '../public/logo.png',
+    navbar: [
+      { text: '首页', link: '/' },
+      { text: '快速开始', link: '/guide/getting-started' },
+      {
+        text: '后端开发',
+        children: [
+          { text: '架构概览', link: '/backend/architecture' },
+          { text: '项目结构', link: '/backend/structure' },
+          { text: '认证与权限', link: '/backend/auth' },
+          { text: '数据库迁移', link: '/backend/flyway' },
+          { text: '配置说明', link: '/backend/config' },
+          { text: '开发规范', link: '/backend/conventions' },
+        ],
+      },
+      {
+        text: '前端开发',
+        children: [
+          { text: '架构概览', link: '/frontend/architecture' },
+          { text: '项目结构', link: '/frontend/structure' },
+          { text: '路由与权限', link: '/frontend/router' },
+          { text: 'API 请求', link: '/frontend/api' },
+          { text: '组件库', link: '/frontend/components' },
+          { text: 'UniApp 小程序', link: '/frontend/uniapp' },
+        ],
+      },
+      {
+        text: '部署运维',
+        children: [
+          { text: 'Docker 部署', link: '/deploy/docker' },
+          { text: 'CI/CD', link: '/deploy/cicd' },
+          { text: 'Nginx 反向代理', link: '/deploy/nginx' },
+          { text: '环境变量', link: '/deploy/env' },
+        ],
+      },
+      {
+        text: '子系统',
+        children: [
+          { text: 'QQ 机器人', link: '/bot/overview' },
+          { text: '实验室管理系统', link: '/lms/overview' },
+        ],
+      },
+      {
+        text: '参考',
+        children: [
+          { text: 'API 权限清单', link: '/api/permissions' },
+          { text: '数据库表结构', link: '/database/tables' },
+          { text: '常见问题', link: '/guide/faq' },
+        ],
+      },
+    ],
+
+    sidebar: {
+      '/guide/': [
+        {
+          text: '开始',
+          children: [
+            '/guide/introduction.md',
+            '/guide/getting-started.md',
+            '/guide/project-structure.md',
+            '/guide/faq.md',
+          ],
+        },
+      ],
+      '/backend/': [
+        {
+          text: '后端开发',
+          children: [
+            '/backend/architecture.md',
+            '/backend/structure.md',
+            '/backend/auth.md',
+            '/backend/flyway.md',
+            '/backend/config.md',
+            '/backend/conventions.md',
+          ],
+        },
+      ],
+      '/frontend/': [
+        {
+          text: '前端开发',
+          children: [
+            '/frontend/architecture.md',
+            '/frontend/structure.md',
+            '/frontend/router.md',
+            '/frontend/api.md',
+            '/frontend/components.md',
+            '/frontend/uniapp.md',
+          ],
+        },
+      ],
+      '/deploy/': [
+        {
+          text: '部署运维',
+          children: [
+            '/deploy/docker.md',
+            '/deploy/cicd.md',
+            '/deploy/nginx.md',
+            '/deploy/env.md',
+          ],
+        },
+      ],
+      '/bot/': [
+        {
+          text: 'QQ 机器人',
+          children: ['/bot/overview.md'],
+        },
+      ],
+      '/lms/': [
+        {
+          text: '实验室管理系统',
+          children: ['/lms/overview.md'],
+        },
+      ],
+      '/api/': [
+        {
+          text: 'API 参考',
+          children: ['/api/permissions.md'],
+        },
+      ],
+      '/database/': [
+        {
+          text: '数据库',
+          children: ['/database/tables.md'],
+        },
+      ],
+    },
+
+    sidebarDepth: 2,
+    editLink: {
+      text: '在 GitHub 上编辑此页',
+      link: 'https://github.com/jmi-openatom/openatom-system/edit/main/docs-site',
+    },
+    lastUpdated: {
+      text: '最后更新于',
+    },
+    contributors: false,
+    backToTop: true,
+  }),
+
+  head: [
+    ['link', { rel: 'icon', href: '../public/logo.svg' }],
+    ['meta', { name: 'theme-color', content: '#2b5aed' }],
+    ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
+    ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }],
+  ],
+})

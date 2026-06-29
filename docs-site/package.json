@@ -1,0 +1,17 @@
+{
+  "name": "openatom-docs",
+  "version": "1.0.0",
+  "description": "OpenAtom System 开发文档",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vuepress dev",
+    "build": "vuepress build",
+    "clean": "vuepress build --clean-cache --clean-temp"
+  },
+  "devDependencies": {
+    "@vuepress/bundler-vite": "^2.0.0-rc.19",
+    "@vuepress/theme-default": "^2.0.0-rc.60",
+    "vue": "^3.5.0",
+    "vuepress": "^2.0.0-rc.19"
+  }
+}

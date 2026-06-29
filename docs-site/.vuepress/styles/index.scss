@@ -1,0 +1,492 @@
+// =============================================================
+// OpenAtom System 文档站 — 全局自定义样式
+// =============================================================
+
+// ---------- 首页 Hero 区域 ----------
+
+// 首页 hero 背景渐变 + 装饰光斑
+.vp-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 6rem 1.5rem 4rem !important;
+  text-align: center;
+
+  // 渐变背景层
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 20% 30%, rgba(43, 90, 237, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  // 装饰性网格线
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(43, 90, 237, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(43, 90, 237, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .vp-hero-text {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+// Hero 主标题 — 渐变文字
+.vp-hero-text .heading {
+  font-size: 3.2rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  background: linear-gradient(135deg, #2b5aed 0%, #6366f1 40%, #8b5cf6 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.15 !important;
+  margin-bottom: 1rem !important;
+}
+
+// Hero 副标题
+.vp-hero-text .tagline {
+  font-size: 1.35rem !important;
+  font-weight: 400 !important;
+  color: #6b6b8d !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 2.5rem !important;
+  max-width: 720px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+// Hero 按钮
+.vp-hero-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.vp-hero-action-button {
+  font-weight: 600 !important;
+  font-size: 1.05rem !important;
+  border-radius: 12px !important;
+  padding: 0.7rem 2rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+  &.primary {
+    background: linear-gradient(135deg, #2b5aed 0%, #6366f1 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(43, 90, 237, 0.3) !important;
+
+    &:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 28px rgba(43, 90, 237, 0.4) !important;
+    }
+  }
+
+  &.secondary {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 1.5px solid rgba(43, 90, 237, 0.2) !important;
+    color: #2b5aed !important;
+    backdrop-filter: blur(8px);
+
+    &:hover {
+      border-color: rgba(43, 90, 237, 0.4) !important;
+      background: rgba(43, 90, 237, 0.05) !important;
+      transform: translateY(-2px) !important;
+    }
+  }
+}
+
+// ---------- Feature 卡片 ----------
+
+.vp-features {
+  padding: 3rem 1.5rem !important;
+
+  .vp-feature-item {
+    border-radius: 16px !important;
+    border: 1px solid rgba(43, 90, 237, 0.08) !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 252, 0.9) 100%) !important;
+    box-shadow: 0 1px 3px rgba(30, 45, 138, 0.04), 0 4px 12px rgba(30, 45, 138, 0.03) !important;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    overflow: hidden;
+    position: relative;
+
+    // 顶部装饰线
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #2b5aed, #6366f1, #8b5cf6);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    &:hover {
+      transform: translateY(-6px) !important;
+      box-shadow: 0 4px 12px rgba(30, 45, 138, 0.08), 0 16px 40px rgba(30, 45, 138, 0.12) !important;
+      border-color: rgba(43, 90, 237, 0.15) !important;
+
+      &::before {
+        opacity: 1;
+      }
+    }
+
+    .vp-feature-icon {
+      font-size: 1.8rem !important;
+      margin-bottom: 0.8rem !important;
+    }
+
+    .vp-feature-title {
+      font-size: 1.15rem !important;
+      font-weight: 700 !important;
+      color: #1a1a2e !important;
+      margin-bottom: 0.5rem !important;
+    }
+
+    .vp-feature-details {
+      font-size: 0.92rem !important;
+      line-height: 1.7 !important;
+      color: #6b6b8d !important;
+    }
+  }
+}
+
+// ---------- 首页底部区域（正文 HTML） ----------
+
+// 统计数据
+.homepage-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2.5rem;
+  margin: 3rem auto 2rem;
+  max-width: 800px;
+  padding: 0 1.5rem;
+
+  .stat-item {
+    text-align: center;
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #2b5aed, #8b5cf6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      font-size: 0.82rem;
+      color: #9a9ab5;
+      margin-top: 0.3rem;
+      font-weight: 500;
+    }
+  }
+}
+
+// 技术栈徽标行
+.homepage-tech-stack {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 0 auto 3rem;
+  max-width: 800px;
+  padding: 0 1.5rem;
+
+  .tech-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    background: rgba(43, 90, 237, 0.06);
+    color: #2b5aed;
+    border: 1px solid rgba(43, 90, 237, 0.1);
+    transition: all 0.25s ease;
+
+    &:hover {
+      background: rgba(43, 90, 237, 0.1);
+      border-color: rgba(43, 90, 237, 0.2);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// footer 版权区域
+.vp-footer {
+  border-top: 1px solid rgba(43, 90, 237, 0.06) !important;
+  padding-top: 2rem !important;
+}
+
+// ---------- 全局通用美化 ----------
+
+// 导航栏
+.vp-navbar {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-bottom: 1px solid rgba(43, 90, 237, 0.06) !important;
+  box-shadow: 0 1px 4px rgba(30, 45, 138, 0.03) !important;
+}
+
+// 侧边栏 — 精致美化
+.vp-sidebar {
+  border-right: 1px solid rgba(43, 90, 237, 0.06) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 249, 252, 0.95) 100%) !important;
+  backdrop-filter: blur(8px);
+
+  // 侧边栏分组标题（如"后端开发"、"前端开发"）
+  .vp-sidebar-group-title {
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9a9ab5 !important;
+    padding: 1.5rem 1.2rem 0.5rem !important;
+    margin-top: 0.5rem;
+    position: relative;
+
+    // 顶部装饰线
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 1.2rem;
+      right: 1.2rem;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(43, 90, 237, 0.1), transparent);
+    }
+  }
+
+  // 侧边栏链接项
+  .vp-sidebar-link {
+    font-size: 0.92rem !important;
+    font-weight: 500 !important;
+    color: #3a3a5c !important;
+    padding: 0.55rem 1.2rem !important;
+    margin: 0.15rem 0.6rem !important;
+    border-radius: 10px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+
+    // 左侧指示条
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 0;
+      background: linear-gradient(180deg, #2b5aed, #6366f1);
+      border-radius: 0 2px 2px 0;
+      transition: height 0.25s ease;
+    }
+
+    &:hover {
+      background: rgba(43, 90, 237, 0.04) !important;
+      color: #2b5aed !important;
+      transform: translateX(2px) !important;
+
+      &::before {
+        height: 60%;
+      }
+    }
+
+    // 当前激活的页面
+    &.active {
+      background: linear-gradient(90deg, rgba(43, 90, 237, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%) !important;
+      color: #2b5aed !important;
+      font-weight: 600 !important;
+      box-shadow: 0 2px 8px rgba(43, 90, 237, 0.08) !important;
+
+      &::before {
+        height: 80%;
+      }
+    }
+  }
+
+  // 子级菜单项（缩进层级）
+  .vp-sidebar-sub-item {
+    padding-left: 2.4rem !important;
+    font-size: 0.88rem !important;
+    color: #6b6b8d !important;
+
+    &:hover {
+      color: #2b5aed !important;
+    }
+
+    &.active {
+      color: #2b5aed !important;
+      font-weight: 600 !important;
+    }
+  }
+
+  // 折叠箭头图标
+  .vp-sidebar-arrow {
+    transition: transform 0.3s ease;
+    color: #9a9ab5 !important;
+
+    &.expanded {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+// 代码块
+div[class*='language-'] {
+  border-radius: 12px !important;
+  border: 1px solid rgba(43, 90, 237, 0.06) !important;
+  box-shadow: 0 2px 8px rgba(30, 45, 138, 0.04) !important;
+}
+
+// 自定义容器
+.custom-container {
+  border-radius: 12px !important;
+  border-width: 1px !important;
+
+  &.tip {
+    background: rgba(43, 90, 237, 0.03) !important;
+    border-color: rgba(43, 90, 237, 0.15) !important;
+  }
+
+  &.warning {
+    background: rgba(245, 158, 11, 0.04) !important;
+    border-color: rgba(245, 158, 11, 0.2) !important;
+  }
+
+  &.danger {
+    background: rgba(239, 68, 68, 0.03) !important;
+    border-color: rgba(239, 68, 68, 0.15) !important;
+  }
+}
+
+// 页面内容区域 — 首页外的页面
+.theme-container:not(.home) {
+  .vp-page {
+    max-width: 880px;
+  }
+}
+
+// ---------- 深色模式适配 ----------
+
+[data-theme='dark'] {
+  .vp-hero-text .heading {
+    background: linear-gradient(135deg, #6e93f5 0%, #a78bfa 50%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .vp-hero-text .tagline {
+    color: #9a9ab5 !important;
+  }
+
+  .vp-hero-action-button.secondary {
+    background: rgba(30, 30, 46, 0.8) !important;
+    border-color: rgba(110, 147, 245, 0.2) !important;
+    color: #6e93f5 !important;
+
+    &:hover {
+      background: rgba(110, 147, 245, 0.08) !important;
+      border-color: rgba(110, 147, 245, 0.3) !important;
+    }
+  }
+
+  .vp-features .vp-feature-item {
+    background: linear-gradient(135deg, rgba(30, 30, 46, 0.6) 0%, rgba(40, 40, 60, 0.4) 100%) !important;
+    border-color: rgba(110, 147, 245, 0.08) !important;
+
+    &:hover {
+      border-color: rgba(110, 147, 245, 0.15) !important;
+    }
+
+    .vp-feature-title {
+      color: #e0e0f0 !important;
+    }
+
+    .vp-feature-details {
+      color: #9a9ab5 !important;
+    }
+  }
+
+  .homepage-tech-stack .tech-badge {
+    background: rgba(110, 147, 245, 0.08);
+    color: #6e93f5;
+    border-color: rgba(110, 147, 245, 0.12);
+
+    &:hover {
+      background: rgba(110, 147, 245, 0.12);
+      border-color: rgba(110, 147, 245, 0.2);
+    }
+  }
+
+  .homepage-stats .stat-item .stat-label {
+    color: #6b6b8d;
+  }
+
+  .vp-navbar {
+    background: rgba(27, 27, 31, 0.85) !important;
+    border-bottom-color: rgba(110, 147, 245, 0.06) !important;
+  }
+
+  // 深色模式侧边栏
+  .vp-sidebar {
+    background: linear-gradient(180deg, rgba(27, 27, 31, 0.98) 0%, rgba(30, 30, 46, 0.95) 100%) !important;
+    border-right-color: rgba(110, 147, 245, 0.06) !important;
+
+    .vp-sidebar-group-title {
+      color: #6b6b8d !important;
+
+      &::before {
+        background: linear-gradient(90deg, transparent, rgba(110, 147, 245, 0.1), transparent);
+      }
+    }
+
+    .vp-sidebar-link {
+      color: #b0b0c8 !important;
+
+      &:hover {
+        background: rgba(110, 147, 245, 0.06) !important;
+        color: #6e93f5 !important;
+      }
+
+      &.active {
+        background: linear-gradient(90deg, rgba(110, 147, 245, 0.1) 0%, rgba(139, 92, 246, 0.06) 100%) !important;
+        color: #6e93f5 !important;
+        box-shadow: 0 2px 8px rgba(110, 147, 245, 0.1) !important;
+      }
+    }
+
+    .vp-sidebar-sub-item {
+      color: #8a8aa5 !important;
+
+      &:hover,
+      &.active {
+        color: #6e93f5 !important;
+      }
+    }
+
+    .vp-sidebar-arrow {
+      color: #6b6b8d !important;
+    }
+  }
+}

@@ -115,6 +115,23 @@ services:
       - openatom-network
     restart: always
 
+  docs:
+    build:
+      context: ./docs-site
+      dockerfile: Dockerfile
+    container_name: openatom-docs
+    ports:
+      - "${DOCS_PORT:-16000}:80"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/ || exit 1" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - openatom-network
+    restart: always
+
 networks:
   openatom-network:
     driver: bridge
