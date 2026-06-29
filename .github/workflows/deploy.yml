@@ -112,6 +112,50 @@ jobs:
 
             echo "Step 2: Starting deployment with version: $APP_VER"
             $COMPOSE_CMD pull astrbot napcat || true
+            
+            # 从 GitHub Secrets 读取敏感环境变量并传递给 Docker Compose
+            # Redis 配置
+            export REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}"
+            export REDIS_HOST="${{ secrets.REDIS_HOST || '127.0.0.1' }}"
+            export REDIS_PORT="${{ secrets.REDIS_PORT || '6379' }}"
+            export REDIS_DATABASE="${{ secrets.REDIS_DATABASE || '0' }}"
+            
+            # JWT / Sa-Token 配置
+            export SA_TOKEN_JWT_SECRET_KEY="${{ secrets.SA_TOKEN_JWT_SECRET_KEY }}"
+            export SA_TOKEN_TIMEOUT="${{ secrets.SA_TOKEN_TIMEOUT || '2592000' }}"
+            
+            # 数据库配置（生产环境）
+            export SPRING_DATASOURCE_URL="${{ secrets.SPRING_DATASOURCE_URL }}"
+            export SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}"
+            export SPRING_DATASOURCE_PASSWORD="${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+            
+            # AI 配置
+            export DEEPSEEK_API_KEY="${{ secrets.DEEPSEEK_API_KEY }}"
+            export DEEPSEEK_BASE_URL="${{ secrets.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}"
+            export DEEPSEEK_MODEL="${{ secrets.DEEPSEEK_MODEL || 'deepseek-chat' }}"
+            
+            # 机器人配置
+            export APP_BOT_CALLBACK_TOKEN="${{ secrets.APP_BOT_CALLBACK_TOKEN }}"
+            export APP_NAPCAT_ACCESS_TOKEN="${{ secrets.APP_NAPCAT_ACCESS_TOKEN }}"
+            export APP_NAPCAT_BASE_URL="${{ secrets.APP_NAPCAT_BASE_URL || 'http://127.0.0.1:3000' }}"
+            export APP_BOT_LEAVE_REVIEW_CALLBACK_URL="${{ secrets.APP_BOT_LEAVE_REVIEW_CALLBACK_URL || 'http://127.0.0.1:6198/openatom/leave-review' }}"
+            
+            # OIDC 配置
+            export VITE_OIDC_AUTHORITY="${{ secrets.VITE_OIDC_AUTHORITY || 'https://oauth.jmi-openatom.cn/api/v1' }}"
+            export VITE_OIDC_CLIENT_ID="${{ secrets.VITE_OIDC_CLIENT_ID || 'openatom-web' }}"
+            export APP_OIDC_ISSUER="${{ secrets.APP_OIDC_ISSUER || 'https://oauth.jmi-openatom.cn/api/v1' }}"
+            
+            # 微信小程序配置
+            export APP_MINIAPP_APP_ID="${{ secrets.APP_MINIAPP_APP_ID }}"
+            export APP_MINIAPP_APP_SECRET="${{ secrets.APP_MINIAPP_APP_SECRET }}"
+            
+            # 文件存储路径（可选，默认使用容器内路径）
+            export APP_AVATAR_STORAGE_DIR="${{ secrets.APP_AVATAR_STORAGE_DIR || '/app/uploads/avatars' }}"
+            export APP_IMAGE_HOSTING_STORAGE_DIR="${{ secrets.APP_IMAGE_HOSTING_STORAGE_DIR || '/app/uploads/images' }}"
+            export APP_LEAVE_ATTACHMENT_STORAGE_DIR="${{ secrets.APP_LEAVE_ATTACHMENT_STORAGE_DIR || '/app/uploads/leave-attachments' }}"
+            export APP_DOCUMENT_TEMPLATE_STORAGE_DIR="${{ secrets.APP_DOCUMENT_TEMPLATE_STORAGE_DIR || '/app/uploads/document-templates' }}"
+            export APP_GENERATED_DOCUMENT_STORAGE_DIR="${{ secrets.APP_GENERATED_DOCUMENT_STORAGE_DIR || '/app/uploads/generated-documents' }}"
+            
             VITE_APP_VERSION=$APP_VER \
               VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1 \
               $COMPOSE_CMD up -d --build

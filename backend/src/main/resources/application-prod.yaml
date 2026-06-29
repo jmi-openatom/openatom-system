@@ -3,9 +3,10 @@ spring:
     name: openatom-system
   datasource:
     # 生产 Backend 使用 host 网络，直接连接服务器本机的宝塔 MySQL
-    url: jdbc:mysql://127.0.0.1:3306/openatom-db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-    username: openatom-db
-    password: 7jcAS4e8eBSbBFBt
+    # 支持从环境变量读取数据库配置（推荐通过 GitHub Secrets 配置）
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/openatom-db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${SPRING_DATASOURCE_USERNAME:openatom-db}
+    password: ${SPRING_DATASOURCE_PASSWORD:flksjdflksjdfjk}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: ${DB_POOL_NAME:openatom-prod-hikari}
@@ -60,7 +61,7 @@ server:
 
 sa-token:
   token-name: jmiopenatom
-  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY:d6f8a3c1e9b247a0f5d3e2b10a9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b10}
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET_KEY}
   timeout: ${SA_TOKEN_TIMEOUT:2592000}
   active-timeout: -1
   is-concurrent: true
@@ -70,8 +71,8 @@ sa-token:
 
 app:
   miniapp:
-    app-id: ${APP_MINIAPP_APP_ID:wx8c6b52ab95da0938}
-    app-secret: ${APP_MINIAPP_APP_SECRET:d15542dcaa23b92191962235dacef7b9}
+    app-id: ${APP_MINIAPP_APP_ID}
+    app-secret: ${APP_MINIAPP_APP_SECRET}
   cors:
     allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGIN_PATTERNS:*}
   rate-limit:
@@ -90,15 +91,15 @@ app:
   ai:
     deepseek:
       base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
-      api-key: ${DEEPSEEK_API_KEY:}
+      api-key: ${DEEPSEEK_API_KEY}
       model: ${DEEPSEEK_MODEL:deepseek-chat}
       timeout-seconds: ${DEEPSEEK_TIMEOUT_SECONDS:30}
   bot:
-    callback-token: ${APP_BOT_CALLBACK_TOKEN:}
+    callback-token: ${APP_BOT_CALLBACK_TOKEN}
     leave-review-callback-url: ${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:http://astrbot:6198/openatom/leave-review}
   napcat:
     base-url: ${APP_NAPCAT_BASE_URL:http://napcat:3000}
-    access-token: ${APP_NAPCAT_ACCESS_TOKEN:sRtnBQJy-lqPTWjj}
+    access-token: ${APP_NAPCAT_ACCESS_TOKEN}
 
 logging:
   level:

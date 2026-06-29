@@ -148,6 +148,7 @@ export default defineUserConfig({
             '/deploy/cicd.md',
             '/deploy/nginx.md',
             '/deploy/env.md',
+            '/deploy/github-secrets.md',
           ],
         },
       ],
@@ -166,7 +167,10 @@ export default defineUserConfig({
       '/api/': [
         {
           text: 'API 参考',
-          children: ['/api/permissions.md'],
+          children: [
+            '/api/oauth.md',
+            '/api/permissions.md',
+          ],
         },
       ],
       '/database/': [
