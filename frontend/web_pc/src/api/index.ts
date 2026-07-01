@@ -1050,3 +1050,15 @@ export const botManagementApi = {
     return request.get('/bot-management/statistics/active-groups', { params })
   },
 }
+
+export const nextPageApi = {
+  getStats(): Promise<any> {
+    return request.get('/next-page/stats')
+  },
+  like(): Promise<any> {
+    return request.post('/next-page/like')
+  },
+  join(data: { name: string; contact: string; direction: string; skills?: string; message?: string }): Promise<any> {
+    return request.post('/next-page/join', data)
+  },
+}

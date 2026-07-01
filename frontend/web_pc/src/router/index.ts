@@ -262,6 +262,11 @@ const routes = [
     ],
   },
   {
+    path: '/next',
+    name: 'site-next',
+    component: resilientView(() => import('../views/site/NextPage.vue')),
+  },
+  {
     path: '/check-in/scan',
     name: 'site-check-in-scan',
     component: resilientView(() => import('../views/site/CheckInScan.vue')),
