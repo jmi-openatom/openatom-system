@@ -1070,6 +1070,24 @@ export const fileMigrationApi = {
   exportUrl(): string {
     return `${request.defaults.baseURL || '/api/v1'}/file-migration/export`
   },
+  // 异步导出 - 启动导出任务
+  startExport(): Promise<any> {
+    return request.post('/file-migration/export/start', {}, {
+      timeout: 30000 // 30秒超时启动任务
+    })
+  },
+  // 查询导出任务状态
+  getExportStatus(taskId: string): Promise<any> {
+    return request.get(`/file-migration/export/status/${taskId}`)
+  },
+  // 下载已完成的导出文件
+  downloadExport(taskId: string): Promise<any> {
+    return request.get(`/file-migration/export/download/${taskId}`, { 
+      responseType: 'blob',
+      timeout: 300000 // 5分钟超时下载
+    })
+  },
+  // 保留旧的同步导出方法（向后兼容）
   export(): Promise<any> {
     // 导出文件可能较大，设置较长超时时间（5分钟）
     return request.get('/file-migration/export', { 
@@ -1083,5 +1101,19 @@ export const fileMigrationApi = {
     return request.post('/file-migration/import', formData, {
       params: { overwrite },
     })
+  },
+  // 手动触发备份
+  runBackup(): Promise<any> {
+    return request.post('/file-migration/backup/run', {}, {
+      timeout: 60000 // 1分钟超时
+    })
+  },
+  // 获取备份文件列表
+  listBackups(): Promise<any> {
+    return request.get('/file-migration/backup/list')
+  },
+  // 删除备份文件
+  deleteBackup(fileName: string): Promise<any> {
+    return request.delete(`/file-migration/backup/${fileName}`)
   },
 }

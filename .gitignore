@@ -4,6 +4,9 @@ target/
 dist/
 log/
 uploads/
+# 保留备份目录结构但忽略内容
+!uploads/export-backups/
+uploads/export-backups/*
 
 # AstrBot runtime data. Keep the OpenAtom plugin source deployable, but do not
 # commit local runtime databases, logs, generated dashboard assets, QQ cache, etc.

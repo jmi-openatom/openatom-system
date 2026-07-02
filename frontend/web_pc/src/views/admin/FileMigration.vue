@@ -2,8 +2,22 @@
   <ViewPage class="admin-page file-migration-page">
     <ViewToolbar>
       <div class="toolbar__filters">
-        <el-button type="primary" :icon="Download" :loading="exporting" @click="handleExport">
-          导出全部文件
+        <el-button 
+          type="primary" 
+          :icon="Download" 
+          :loading="exporting || (exportTask?.status === 'processing')" 
+          :disabled="exportTask?.status === 'processing'"
+          @click="handleExport"
+        >
+          {{ exportTask?.status === 'processing' ? '导出中...' : exportTask?.status === 'completed' ? '重新导出' : '导出全部文件' }}
+        </el-button>
+        <el-button 
+          v-if="exportTask?.status === 'completed'" 
+          type="success" 
+          :icon="Download" 
+          @click="downloadExportedFile"
+        >
+          下载 ZIP 文件
         </el-button>
         <el-button :icon="Refresh" @click="fetchStats">刷新统计</el-button>
       </div>
@@ -17,6 +31,10 @@
     >
       <template #title>文件资源迁移</template>
       <p>导出会将头像、图床图片、请假附件、文档模板、生成文档等所有上传文件打包为 ZIP，用于服务器迁移。导入时请选择此前导出的 ZIP 文件。</p>
+      <p v-if="exportTask" style="margin-top: 8px;">
+        <strong>当前任务：</strong>{{ exportTask.status === 'processing' ? '正在后台生成 ZIP 文件...' : exportTask.status === 'completed' ? '导出完成，点击下载' : exportTask.message }}
+        <span v-if="exportTask.progress">（{{ exportTask.progress }}%）</span>
+      </p>
     </el-alert>
 
     <el-table v-loading="loading" :data="stats" class="admin-table" border>
@@ -59,6 +77,44 @@
 
     <div class="summary-bar" v-if="totalFiles > 0">
       <span>合计：<strong>{{ totalFiles }}</strong> 个文件，总大小 <strong>{{ formatFileSize(totalSize) }}</strong></span>
+    </div>
+
+    <el-divider content-position="left">自动化备份</el-divider>
+
+    <div class="backup-section">
+      <div class="backup-toolbar">
+        <el-button type="warning" :icon="FolderOpened" :loading="backupRunning" @click="handleRunBackup">
+          手动触发备份
+        </el-button>
+        <el-button :icon="Refresh" @click="fetchBackups">刷新备份列表</el-button>
+        <span class="backup-hint">系统每天凌晨 3:00 自动备份当天完成的导出文件</span>
+      </div>
+
+      <el-table v-loading="backupsLoading" :data="backups" border style="width: 100%" empty-text="暂无备份文件">
+        <el-table-column label="文件名" min-width="280">
+          <template #default="{ row }">
+            <el-icon class="backup-icon"><Document /></el-icon>
+            <span>{{ row.fileName }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="文件大小" width="140" align="center">
+          <template #default="{ row }">
+            {{ formatFileSize(row.fileSize) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="备份时间" width="180" align="center">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" align="center">
+          <template #default="{ row }">
+            <el-button type="danger" size="small" :icon="Delete" @click="handleDeleteBackup(row.fileName)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
     <el-divider content-position="left">导入文件资源</el-divider>
@@ -112,9 +168,9 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { fileMigrationApi } from '@/api'
-import { ElMessage } from 'element-plus/es/components/message/index'
-import { Download, Folder, Refresh, Upload, UploadFilled } from '@element-plus/icons-vue'
-import { computed, onMounted, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Delete, Document, Download, Folder, FolderOpened, Refresh, Upload, UploadFilled } from '@element-plus/icons-vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import type { UploadFile, UploadFiles, UploadInstance } from 'element-plus'
 
 interface DirectoryStats {
@@ -129,6 +185,22 @@ interface ImportResult {
   importedFiles: number
   skippedFiles: number
   importedSize: number
+}
+
+interface ExportTask {
+  taskId: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  progress?: number
+  message?: string
+  fileName?: string
+  fileSize?: number
+  error?: string
+}
+
+interface BackupFileInfo {
+  fileName: string
+  fileSize: number
+  createTime: string
 }
 
 const dirNameMap: Record<string, string> = {
@@ -147,6 +219,13 @@ const selectedFile = ref<File | null>(null)
 const overwrite = ref(false)
 const importResult = ref<ImportResult | null>(null)
 const uploadRef = ref<UploadInstance>()
+const exportTask = ref<ExportTask | null>(null)
+let pollTimer: number | null = null
+
+// 备份相关
+const backups = ref<BackupFileInfo[]>([])
+const backupsLoading = ref(false)
+const backupRunning = ref(false)
 
 const totalFiles = computed(() =>
   stats.value.reduce((sum, item) => sum + (item.exists ? item.fileCount : 0), 0),
@@ -167,32 +246,124 @@ async function fetchStats() {
   }
 }
 
-async function handleExport() {
-  exporting.value = true
-  const loadingMsg = ElMessage({
-    message: '正在导出文件资源，请稍候...',
-    type: 'info',
-    duration: 0, // 不自动关闭
-  })
+async function fetchBackups() {
+  backupsLoading.value = true
   try {
-    const blob = await fileMigrationApi.export()
-    loadingMsg.close()
+    const data = await fileMigrationApi.listBackups()
+    backups.value = data || []
+  } catch (error) {
+    ElMessage.error('获取备份列表失败')
+  } finally {
+    backupsLoading.value = false
+  }
+}
+
+async function handleRunBackup() {
+  try {
+    await ElMessageBox.confirm('确定要手动触发备份吗？将备份当天完成的导出文件。', '确认备份', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    backupRunning.value = true
+    await fileMigrationApi.runBackup()
+    ElMessage.success('备份任务已执行，请查看日志获取详细信息')
+    fetchBackups()
+  } catch (error: any) {
+    if (error !== 'cancel' && error?.message !== 'cancel') {
+      ElMessage.error('备份失败：' + (error?.message || '未知错误'))
+    }
+  } finally {
+    backupRunning.value = false
+  }
+}
+
+async function handleDeleteBackup(fileName: string) {
+  try {
+    await ElMessageBox.confirm(`确定要删除备份文件 "${fileName}" 吗？`, '确认删除', {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await fileMigrationApi.deleteBackup(fileName)
+    ElMessage.success('备份文件已删除')
+    fetchBackups()
+  } catch (error: any) {
+    if (error !== 'cancel' && error?.message !== 'cancel') {
+      ElMessage.error('删除失败：' + (error?.message || '未知错误'))
+    }
+  }
+}
+
+async function handleExport() {
+  if (exportTask.value?.status === 'processing') {
+    ElMessage.warning('已有导出任务正在进行中，请稍后')
+    return
+  }
+  
+  try {
+    const result = await fileMigrationApi.startExport()
+    exportTask.value = result
+    ElMessage.success('导出任务已启动，正在后台处理...')
+    startPolling(result.taskId)
+  } catch (error) {
+    console.error('启动导出失败:', error)
+    ElMessage.error('启动导出任务失败，请稍后重试')
+  }
+}
+
+function startPolling(taskId: string) {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+  }
+  
+  pollTimer = window.setInterval(async () => {
+    try {
+      const task = await fileMigrationApi.getExportStatus(taskId)
+      exportTask.value = task
+      
+      if (task.status === 'completed') {
+        stopPolling()
+        ElMessage.success('文件资源导出成功，点击下载按钮获取 ZIP 文件')
+        fetchStats()
+      } else if (task.status === 'failed') {
+        stopPolling()
+        ElMessage.error(`导出失败：${task.error || '未知错误'}`)
+      }
+    } catch (error) {
+      console.error('查询导出状态失败:', error)
+      stopPolling()
+    }
+  }, 2000)
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+async function downloadExportedFile() {
+  if (!exportTask.value || exportTask.value.status !== 'completed') {
+    ElMessage.warning('没有可下载的文件')
+    return
+  }
+  
+  try {
+    const blob = await fileMigrationApi.downloadExport(exportTask.value.taskId)
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `openatom-files-${formatTimestamp(new Date())}.zip`
+    link.download = exportTask.value.fileName || `openatom-files-${formatTimestamp(new Date())}.zip`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
-    ElMessage.success('文件资源导出成功')
-    fetchStats()
+    ElMessage.success('文件下载成功')
   } catch (error) {
-    loadingMsg.close()
-    console.error('导出失败:', error)
-    ElMessage.error('导出失败，请稍后重试。如果文件较多，请耐心等待或尝试分批导出。')
-  } finally {
-    exporting.value = false
+    console.error('下载失败:', error)
+    ElMessage.error('下载失败，请稍后重试')
   }
 }
 
@@ -245,8 +416,20 @@ function formatTimestamp(date: Date) {
   return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`
 }
 
+function formatDateTime(dateStr: string) {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 onMounted(() => {
   fetchStats()
+  fetchBackups()
+})
+
+onUnmounted(() => {
+  stopPolling()
 })
 </script>
 
@@ -302,6 +485,28 @@ onMounted(() => {
   color: var(--oa-active-text);
 }
 
+.backup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.backup-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backup-hint {
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.backup-icon {
+  margin-right: 6px;
+  color: var(--oa-muted);
+}
+
 .import-section {
   display: flex;
   flex-direction: column;
@@ -329,5 +534,27 @@ onMounted(() => {
 
 .import-result-alert strong {
   color: var(--oa-active-text);
+}
+
+.backup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.backup-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backup-hint {
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.backup-icon {
+  margin-right: 6px;
+  color: var(--oa-muted);
 }
 </style>

@@ -54,6 +54,8 @@ services:
     network_mode: host
     volumes:
       - avatar_data:/app/uploads
+      # 挂载备份目录到宿主机，确保持久化存储
+      - ./uploads/export-backups:/app/uploads/export-backups
     healthcheck:
       test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8921'" ]
       interval: 10s
