@@ -54,7 +54,11 @@ public class FileMigrationServiceImpl {
     Map<String, Path> directories = collectDirectories();
     long totalFiles = 0;
     long totalSize = 0;
-    try (ZipOutputStream zos = new ZipOutputStream(out)) {
+    // 使用 BufferedOutputStream 提高写入效率
+    try (java.io.BufferedOutputStream bos = new java.io.BufferedOutputStream(out, 8192);
+         ZipOutputStream zos = new ZipOutputStream(bos)) {
+      // 设置压缩级别（0-9），6 是平衡速度和压缩率的选择
+      zos.setLevel(6);
       for (Map.Entry<String, Path> entry : directories.entrySet()) {
         String prefix = entry.getKey();
         Path dir = entry.getValue();
@@ -68,6 +72,7 @@ public class FileMigrationServiceImpl {
       }
       // 写入清单文件
       writeManifest(zos, directories, totalFiles, totalSize);
+      zos.finish(); // 确保 ZIP 结构完整
     }
     log.info("文件资源导出完成: {} 个文件, 总大小 {} 字节", totalFiles, totalSize);
     return new ExportResult(totalFiles, totalSize);
@@ -200,8 +205,13 @@ public class FileMigrationServiceImpl {
             ZipEntry zipEntry = new ZipEntry(zipEntryName);
             zipEntry.setSize(attrs.size());
             zos.putNextEntry(zipEntry);
-            try (InputStream is = Files.newInputStream(file)) {
-              is.transferTo(zos);
+            // 使用缓冲流读取文件，提高 I/O 效率
+            try (java.io.BufferedInputStream bis = new java.io.BufferedInputStream(Files.newInputStream(file), 8192)) {
+              byte[] buffer = new byte[8192];
+              int bytesRead;
+              while ((bytesRead = bis.read(buffer)) != -1) {
+                zos.write(buffer, 0, bytesRead);
+              }
             }
             zos.closeEntry();
             counter.count++;

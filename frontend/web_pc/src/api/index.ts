@@ -1071,7 +1071,11 @@ export const fileMigrationApi = {
     return `${request.defaults.baseURL || '/api/v1'}/file-migration/export`
   },
   export(): Promise<any> {
-    return request.get('/file-migration/export', { responseType: 'blob' })
+    // 导出文件可能较大，设置较长超时时间（5分钟）
+    return request.get('/file-migration/export', { 
+      responseType: 'blob',
+      timeout: 300000 // 5分钟
+    })
   },
   importZip(file: File, overwrite: boolean = false): Promise<any> {
     const formData = new FormData()

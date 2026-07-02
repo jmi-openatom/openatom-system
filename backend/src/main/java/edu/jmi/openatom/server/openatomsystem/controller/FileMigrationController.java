@@ -51,8 +51,14 @@ public class FileMigrationController {
   @SaCheckPermission("file:migration:export")
   public ResponseEntity<byte[]> export() {
     try {
-      java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+      long startTime = System.currentTimeMillis();
+      log.info("开始导出文件资源...");
+      java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(1024 * 1024); // 初始容量 1MB
       ExportResult result = fileMigrationService.exportAll(baos);
+      byte[] zipData = baos.toByteArray();
+      long elapsed = System.currentTimeMillis() - startTime;
+      log.info("文件资源导出完成: {} 个文件, 总大小 {} MB, 耗时 {} ms",
+          result.getTotalFiles(), zipData.length / (1024 * 1024), elapsed);
       String fileName =
           "openatom-files-"
               + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
@@ -64,7 +70,8 @@ public class FileMigrationController {
           .contentType(MediaType.APPLICATION_OCTET_STREAM)
           .header("X-Export-Total-Files", String.valueOf(result.getTotalFiles()))
           .header("X-Export-Total-Size", String.valueOf(result.getTotalSize()))
-          .body(baos.toByteArray());
+          .header("X-Export-Elapsed-Ms", String.valueOf(elapsed))
+          .body(zipData);
     } catch (IOException e) {
       log.error("文件资源导出失败", e);
       return ResponseEntity.internalServerError().build();

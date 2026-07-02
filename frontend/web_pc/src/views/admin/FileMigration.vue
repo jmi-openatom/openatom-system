@@ -169,8 +169,14 @@ async function fetchStats() {
 
 async function handleExport() {
   exporting.value = true
+  const loadingMsg = ElMessage({
+    message: '正在导出文件资源，请稍候...',
+    type: 'info',
+    duration: 0, // 不自动关闭
+  })
   try {
     const blob = await fileMigrationApi.export()
+    loadingMsg.close()
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -182,7 +188,9 @@ async function handleExport() {
     ElMessage.success('文件资源导出成功')
     fetchStats()
   } catch (error) {
-    ElMessage.error('导出失败，请稍后重试')
+    loadingMsg.close()
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请稍后重试。如果文件较多，请耐心等待或尝试分批导出。')
   } finally {
     exporting.value = false
   }
