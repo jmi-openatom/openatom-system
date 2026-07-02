@@ -122,6 +122,7 @@ import {
   EditPen,
   Expand,
   Files,
+  FolderOpened,
   Fold,
   HomeFilled,
   List,
@@ -221,6 +222,7 @@ const menus = ref<AdminMenuItem[]>([
   { path: '/admin/data-open', label: '开放平台', icon: Connection, permissions: ['data-open:list'] },
   { path: '/admin/bot-groups', label: 'QQ机器人', icon: ChatDotRound, permissions: ['bot-management:list'] },
   { path: '/admin/logs', label: '系统日志', icon: List, permissions: ['log:operation:list', 'log:login:list'] },
+  { path: '/admin/file-migration', label: '文件迁移', icon: FolderOpened, permissions: ['file:migration:stats'] },
 
   // ==== 9. 出口 ====
   { path: '/', label: '返回官网', icon: Connection, permissions: [], pinned: true },

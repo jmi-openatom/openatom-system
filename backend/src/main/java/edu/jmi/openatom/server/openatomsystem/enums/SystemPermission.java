@@ -338,7 +338,10 @@ public enum SystemPermission {
       "/bot-management/statistics/**",
       "GET"),
   LOG_OPERATION_LIST("查询操作日志", "log:operation:list", "api", "/operation-logs", "GET"),
-  LOG_LOGIN_LIST("查询登录日志", "log:login:list", "api", "/login-logs", "GET");
+  LOG_LOGIN_LIST("查询登录日志", "log:login:list", "api", "/login-logs", "GET"),
+  FILE_MIGRATION_EXPORT("导出文件资源", "file:migration:export", "api", "/file-migration/export", "GET"),
+  FILE_MIGRATION_IMPORT("导入文件资源", "file:migration:import", "api", "/file-migration/import", "POST"),
+  FILE_MIGRATION_STATS("查看文件资源统计", "file:migration:stats", "api", "/file-migration/stats", "GET");
 
   private final String displayName;
   private final String code;

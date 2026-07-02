@@ -1062,3 +1062,22 @@ export const nextPageApi = {
     return request.post('/next-page/join', data)
   },
 }
+
+export const fileMigrationApi = {
+  stats(): Promise<any> {
+    return request.get('/file-migration/stats')
+  },
+  exportUrl(): string {
+    return `${request.defaults.baseURL || '/api/v1'}/file-migration/export`
+  },
+  export(): Promise<any> {
+    return request.get('/file-migration/export', { responseType: 'blob' })
+  },
+  importZip(file: File, overwrite: boolean = false): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/file-migration/import', formData, {
+      params: { overwrite },
+    })
+  },
+}

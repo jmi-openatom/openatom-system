@@ -92,6 +92,7 @@ const adminFallbackRoutes = [
   '/admin/roles',
   '/admin/logs',
   '/admin/notifications',
+  '/admin/file-migration',
 ]
 
 function canAccessAdminPath(to: RouteLocationNormalized): boolean {
@@ -498,6 +499,12 @@ const routes = [
         name: 'admin-notifications',
         meta: { permissions: ['notification:list'] },
         component: resilientView(() => import('../views/admin/Notifications.vue')),
+      },
+      {
+        path: 'file-migration',
+        name: 'admin-file-migration',
+        meta: { permissions: ['file:migration:stats', 'file:migration:export', 'file:migration:import'] },
+        component: resilientView(() => import('../views/admin/FileMigration.vue')),
       },
     ],
   },
