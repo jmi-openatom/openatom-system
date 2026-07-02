@@ -1,6 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,11 +11,14 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -32,7 +37,18 @@ public class ExportTaskService {
   @Autowired
   private StringRedisTemplate redisTemplate;
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  @Autowired
+  @Qualifier("exportTaskExecutor")
+  private Executor taskExecutor;
+
+  // 使用 Spring 自动配置的 ObjectMapper（已注册 JavaTimeModule 等所有必要模块）
+  @Autowired
+  private ObjectMapper springObjectMapper;
+
+  // 用于序列化的 ObjectMapper（备用，确保有 JavaTimeModule）
+  private ObjectMapper objectMapper() {
+    return springObjectMapper;
+  }
 
   // Redis Key 前缀
   private static final String TASK_KEY_PREFIX = "export:task:";
@@ -64,14 +80,15 @@ public class ExportTaskService {
       redisTemplate.opsForSet().add(TASK_INDEX_KEY, taskId);
       
       // 设置过期时间
-      redisTemplate.expire(TASK_KEY_PREFIX + taskId, TASK_EXPIRE_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
+      redisTemplate.expire(TASK_KEY_PREFIX + taskId, TASK_EXPIRE_SECONDS, TimeUnit.SECONDS);
     } catch (Exception e) {
-      log.error("保存任务到 Redis 失败", e);
-      throw new RuntimeException("启动导出任务失败", e);
+      log.error("保存任务到 Redis 失败: {}", e.getMessage(), e);
+      throw new RuntimeException("启动导出任务失败: " + e.getMessage(), e);
     }
 
-    // 异步执行导出
-    executeExportAsync(taskId);
+    // 通过线程池异步执行导出（避免 @Async 自调用不生效问题）
+    String finalTaskId = taskId;
+    taskExecutor.execute(() -> executeExportAsync(finalTaskId));
 
     log.info("启动导出任务: {}", taskId);
     return task;
@@ -100,7 +117,7 @@ public class ExportTaskService {
     try {
       saveTaskToRedis(task);
       // 刷新过期时间
-      redisTemplate.expire(TASK_KEY_PREFIX + task.getTaskId(), TASK_EXPIRE_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
+      redisTemplate.expire(TASK_KEY_PREFIX + task.getTaskId(), TASK_EXPIRE_SECONDS, TimeUnit.SECONDS);
     } catch (Exception e) {
       log.error("更新任务状态失败: {}", task.getTaskId(), e);
     }
@@ -248,11 +265,14 @@ public class ExportTaskService {
     }
   }
 
-  @Async("exportTaskExecutor")
-  protected void executeExportAsync(String taskId) {
+  /**
+   * 异步执行导出任务（通过线程池调用，不需要 @Async 注解）
+   */
+  void executeExportAsync(String taskId) {
+    log.info("开始执行异步导出任务: {}", taskId);
     ExportTask task = loadTaskFromRedis(taskId);
     if (task == null) {
-      log.error("任务不存在: {}", taskId);
+      log.error("异步导出: 任务不存在于 Redis: {}", taskId);
       return;
     }
 
@@ -328,8 +348,9 @@ public class ExportTaskService {
 
   private void saveTaskToRedis(ExportTask task) throws Exception {
     String key = TASK_KEY_PREFIX + task.getTaskId();
-    String json = objectMapper.writeValueAsString(task);
+    String json = objectMapper().writeValueAsString(task);
     redisTemplate.opsForValue().set(key, json);
+    log.debug("保存任务到 Redis: key={}, json={}", key, json);
   }
 
   private ExportTask loadTaskFromRedis(String taskId) {
@@ -337,16 +358,20 @@ public class ExportTaskService {
       String key = TASK_KEY_PREFIX + taskId;
       String json = redisTemplate.opsForValue().get(key);
       if (json == null) {
+        log.warn("Redis 中找不到任务: {}", taskId);
         return null;
       }
-      return objectMapper.readValue(json, ExportTask.class);
+      ExportTask task = objectMapper().readValue(json, ExportTask.class);
+      log.debug("从 Redis 加载任务成功: {}, status={}", taskId, task.getStatus());
+      return task;
     } catch (Exception e) {
-      log.error("从 Redis 加载任务失败: {}", taskId, e);
+      log.error("从 Redis 加载任务失败: {}, 错误: {}", taskId, e.getMessage(), e);
       return null;
     }
   }
 
   @Data
+  @NoArgsConstructor
   public static class ExportTask {
     private String taskId;
     private String status; // pending, processing, completed, failed

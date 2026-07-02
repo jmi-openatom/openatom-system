@@ -92,7 +92,8 @@ public class FileMigrationController {
       return Result.success(task, "导出任务已启动");
     } catch (Exception e) {
       log.error("启动导出任务失败", e);
-      return Result.error(500, "启动导出任务失败: " + e.getMessage());
+      String reason = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+      return Result.error(500, "启动导出任务失败: " + reason);
     }
   }
 
