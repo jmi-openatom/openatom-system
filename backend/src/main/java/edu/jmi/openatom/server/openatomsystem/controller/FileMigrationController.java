@@ -109,22 +109,35 @@ public class FileMigrationController {
     }
   }
 
-  /** 下载已完成的导出文件。 */
+  /** 下载已完成的导出文件（流式传输，支持前端进度条）。 */
   @GetMapping("/export/download/{taskId}")
   @SaCheckPermission("file:migration:export")
-  public ResponseEntity<byte[]> downloadExport(@PathVariable String taskId) {
+  public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody> downloadExport(@PathVariable String taskId) {
     try {
       Path filePath = exportTaskService.getExportFilePath(taskId);
-      byte[] data = Files.readAllBytes(filePath);
       ExportTask task = exportTaskService.getTaskStatus(taskId);
+      long fileSize = Files.size(filePath);
+      
+      // 流式传输：边读边写，不将整个文件加载到内存
+      org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody body = outputStream -> {
+        try (java.io.InputStream is = Files.newInputStream(filePath)) {
+          byte[] buffer = new byte[16384]; // 16KB 缓冲区
+          int bytesRead;
+          while ((bytesRead = is.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, bytesRead);
+            outputStream.flush();
+          }
+        }
+      };
       
       return ResponseEntity.ok()
           .header(
               HttpHeaders.CONTENT_DISPOSITION,
               ContentDisposition.attachment().filename(task.getFileName(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
           .contentType(MediaType.APPLICATION_OCTET_STREAM)
+          .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileSize))
           .header("X-File-Size", String.valueOf(task.getFileSize()))
-          .body(data);
+          .body(body);
     } catch (IllegalArgumentException e) {
       return ResponseEntity.notFound().build();
     } catch (IllegalStateException e) {

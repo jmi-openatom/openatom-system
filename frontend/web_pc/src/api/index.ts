@@ -1080,11 +1080,16 @@ export const fileMigrationApi = {
   getExportStatus(taskId: string): Promise<any> {
     return request.get(`/file-migration/export/status/${taskId}`)
   },
-  // 下载已完成的导出文件
-  downloadExport(taskId: string): Promise<any> {
+  // 下载已完成的导出文件（支持进度回调）
+  downloadExport(taskId: string, onProgress?: (loaded: number, total: number) => void): Promise<any> {
     return request.get(`/file-migration/export/download/${taskId}`, { 
       responseType: 'blob',
-      timeout: 300000 // 5分钟超时下载
+      timeout: 600000, // 10分钟超时下载
+      onDownloadProgress: (progressEvent: any) => {
+        if (onProgress) {
+          onProgress(progressEvent.loaded, progressEvent.total || 0)
+        }
+      }
     })
   },
   // 保留旧的同步导出方法（向后兼容）

@@ -15,9 +15,11 @@
           v-if="exportTask?.status === 'completed'" 
           type="success" 
           :icon="Download" 
+          :loading="downloading"
+          :disabled="downloading"
           @click="downloadExportedFile"
         >
-          下载 ZIP 文件
+          {{ downloading ? `下载中... ${downloadProgress}%` : '下载 ZIP 文件' }}
         </el-button>
         <el-button :icon="Refresh" @click="fetchStats">刷新统计</el-button>
       </div>
@@ -36,6 +38,14 @@
         <span v-if="exportTask.progress">（{{ exportTask.progress }}%）</span>
       </p>
     </el-alert>
+
+    <div v-if="downloading" class="download-progress-bar">
+      <div class="download-progress-info">
+        <span>正在下载...</span>
+        <span>{{ formatFileSize(downloadLoaded) }} / {{ formatFileSize(downloadTotal) }}</span>
+      </div>
+      <el-progress :percentage="downloadProgress" :stroke-width="10" status="success" />
+    </div>
 
     <el-table v-loading="loading" :data="stats" class="admin-table" border>
       <el-table-column label="存储目录" min-width="180">
@@ -222,6 +232,12 @@ const uploadRef = ref<UploadInstance>()
 const exportTask = ref<ExportTask | null>(null)
 let pollTimer: number | null = null
 
+// 下载相关
+const downloading = ref(false)
+const downloadProgress = ref(0)
+const downloadLoaded = ref(0)
+const downloadTotal = ref(0)
+
 // 备份相关
 const backups = ref<BackupFileInfo[]>([])
 const backupsLoading = ref(false)
@@ -350,8 +366,23 @@ async function downloadExportedFile() {
     return
   }
   
+  downloading.value = true
+  downloadProgress.value = 0
+  downloadLoaded.value = 0
+  downloadTotal.value = exportTask.value.fileSize || 0
+  
   try {
-    const blob = await fileMigrationApi.downloadExport(exportTask.value.taskId)
+    const blob = await fileMigrationApi.downloadExport(exportTask.value.taskId, (loaded, total) => {
+      downloadLoaded.value = loaded
+      if (total > 0) {
+        downloadTotal.value = total
+        downloadProgress.value = Math.min(100, Math.round((loaded / total) * 100))
+      } else if (downloadTotal.value > 0) {
+        downloadProgress.value = Math.min(100, Math.round((loaded / downloadTotal.value) * 100))
+      }
+    })
+    
+    downloadProgress.value = 100
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -364,6 +395,8 @@ async function downloadExportedFile() {
   } catch (error) {
     console.error('下载失败:', error)
     ElMessage.error('下载失败，请稍后重试')
+  } finally {
+    downloading.value = false
   }
 }
 
@@ -536,25 +569,20 @@ onUnmounted(() => {
   color: var(--oa-active-text);
 }
 
-.backup-section {
+.download-progress-bar {
+  padding: 12px 16px;
+  background: var(--oa-elevated-bg);
+  border: 1px solid var(--oa-border);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
-.backup-toolbar {
+.download-progress-info {
   display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.backup-hint {
-  color: var(--oa-muted);
+  justify-content: space-between;
   font-size: 13px;
-}
-
-.backup-icon {
-  margin-right: 6px;
   color: var(--oa-muted);
 }
 </style>
