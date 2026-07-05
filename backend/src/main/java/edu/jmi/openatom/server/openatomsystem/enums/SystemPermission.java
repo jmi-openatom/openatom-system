@@ -249,6 +249,7 @@ public enum SystemPermission {
       "api",
       "/exit-applications/{exitApplicationId}/reject",
       "POST"),
+  MEMBERSHIP_DELETE("删除成员", "membership:delete", "api", "/memberships/{membershipId}", "DELETE"),
   MEMBERSHIP_FORCE_EXIT(
       "强制退社", "membership:force-exit", "api", "/memberships/{membershipId}/force-exit", "POST"),
   NOTIFICATION_LIST("查询通知", "notification:list", "api", "/notifications", "GET"),

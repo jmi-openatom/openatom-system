@@ -334,8 +334,8 @@ async function removeAlumni(row: any) {
     '提示',
     { type: 'warning' },
   )
-  await membershipApi.forceExit(row.id, { reason: '从往届管理人员中移除' })
-  ElMessage.success('已移除')
+  await membershipApi.remove(row.id)
+  ElMessage.success('已删除')
   fetchList()
 }
 

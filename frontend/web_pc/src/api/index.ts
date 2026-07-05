@@ -844,6 +844,9 @@ export const membershipApi = {
   forceExit(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
     return request.post(`/memberships/${id}/force-exit`, data)
   },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/memberships/${id}`)
+  },
   finalDecision(applicationId: string | number, data: Record<string, unknown>): Promise<any> {
     return request.post(`/applications/${applicationId}/final-decisions`, data)
   },

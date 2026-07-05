@@ -38,4 +38,6 @@ public interface MembershipService {
   Result<String> batchCreate(RequestBatchCreateMembershipDTO request);
 
   Result<String> forceExit(Integer membershipId, String reason);
+
+  Result<String> delete(Integer membershipId);
 }

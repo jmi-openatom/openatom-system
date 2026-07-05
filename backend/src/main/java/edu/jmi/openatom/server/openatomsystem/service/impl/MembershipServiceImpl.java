@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
@@ -202,10 +203,24 @@ public class MembershipServiceImpl implements MembershipService {
   public Result<String> forceExit(Integer membershipId, String reason) {
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");
-    m.setStatus("left"); m.setLeftAt(Times.now());
-    membershipMapper.updateById(m);
-    syncUserRole(m.getUserId(), m.getStatus());
+    membershipMapper.update(null,
+        new LambdaUpdateWrapper<ClubMembership>()
+            .eq(ClubMembership::getId, m.getId())
+            .set(ClubMembership::getStatus, "left")
+            .set(ClubMembership::getLeftAt, Times.now())
+            .set(ClubMembership::getPositionId, null)
+            .set(ClubMembership::getDepartmentId, null));
+    syncUserRole(m.getUserId(), "left");
     return Result.success("强制退社成功");
+  }
+
+  @Override
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
+  public Result<String> delete(Integer membershipId) {
+    ClubMembership m = findMembership(membershipId);
+    if (m == null) return Result.error(404, "成员不存在");
+    membershipMapper.deleteById(m.getId());
+    return Result.success("删除成功");
   }
 
   private void ensureMembership(Integer userId, Integer clubId, Integer departmentId, Integer positionId, String status, Boolean featured, Integer sortOrder, String alumniGroup) {

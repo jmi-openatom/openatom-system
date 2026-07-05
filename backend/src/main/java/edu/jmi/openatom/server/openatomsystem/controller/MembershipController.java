@@ -15,6 +15,7 @@ import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -159,5 +160,17 @@ public class MembershipController {
       @PathVariable Integer membershipId,
       @Valid @RequestBody RequestChangeMembershipStatusDTO request) {
     return membershipService.changeStatus(membershipId, request);
+  }
+
+  /**
+   * 删除成员记录
+   *
+   * @param membershipId 成员ID
+   * @return 删除结果
+   */
+  @DeleteMapping("/memberships/{membershipId}")
+  @SaCheckPermission("membership:delete")
+  public Result<String> delete(@PathVariable Integer membershipId) {
+    return membershipService.delete(membershipId);
   }
 }
