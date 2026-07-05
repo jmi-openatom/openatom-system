@@ -27,7 +27,7 @@
 <!--          <router-link to="/open-platform">开放平台</router-link>-->
           <router-link to="/calendar">校历</router-link>
           <router-link to="/alumni-managers">往届管理人员</router-link>
-          <router-link to="/next" class="nav-next-link">Next</router-link>
+<!--          <router-link to="/next" class="nav-next-link">Next</router-link>-->
           <router-link to="/apply">入会申请</router-link>
           <router-link to="/progress">我的申请</router-link>
           <!--          <router-link to="/check-in/scan">扫码签到</router-link>-->
@@ -87,7 +87,7 @@
         <router-link to="/open-platform" @click="mobileNavVisible = false">开放平台</router-link>
         <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
         <router-link to="/alumni-managers" @click="mobileNavVisible = false">往届管理人员</router-link>
-        <router-link to="/next" class="nav-next-link" @click="mobileNavVisible = false">Next</router-link>
+<!--        <router-link to="/next" class="nav-next-link" @click="mobileNavVisible = false">Next</router-link>-->
         <!--        <router-link to="/check-in/scan" @click="mobileNavVisible = false">扫码签到</router-link>-->
         <router-link v-if="isLoggedIn" to="/notifications" @click="mobileNavVisible = false">
           通知
