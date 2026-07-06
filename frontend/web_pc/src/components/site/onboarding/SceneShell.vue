@@ -1,6 +1,6 @@
 <template>
   <div class="scene" :class="[`scene--${tone}`, `scene--${align}`]">
-    <span v-if="chapter" class="scene__chapter" data-parallax="-0.25">{{ chapter }}</span>
+    <span v-if="chapter" class="scene__chapter">{{ chapter }}</span>
     <div class="scene__body">
       <p v-if="eyebrow" class="scene__eyebrow">{{ eyebrow }}</p>
       <slot />

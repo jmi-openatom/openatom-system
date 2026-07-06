@@ -40,6 +40,7 @@ const route = useRoute()
 const rootRef = ref<HTMLElement>()
 const scrollRoot = ref<HTMLElement>()
 const sectionRefs = shallowRef<HTMLElement[]>([])
+const sceneVisible = ref(true)
 
 function setSectionRef(el: HTMLElement | null, index: number) {
   if (!el) return
@@ -58,10 +59,7 @@ const scenes = [
 
 const activeIndex = ref(0)
 const progress = ref(0)
-const sceneVisible = ref(true)
-
-let animationContext: { revert: () => void } | undefined
-let isUnmounted = false
+const fadeTargets = ref<HTMLElement[]>([])
 
 const redirectTarget = computed(() => {
   const raw = Array.isArray(route.query.redirect) ? route.query.redirect[0] : route.query.redirect
@@ -69,7 +67,6 @@ const redirectTarget = computed(() => {
 })
 
 async function finish() {
-  // 先销毁 3D 场景释放 GPU 资源，再发请求
   sceneVisible.value = false
   try {
     const updated = await authApi.completeOnboarding()
@@ -91,6 +88,7 @@ function onScroll() {
   if (!root) return
   const max = Math.max(1, root.scrollHeight - root.clientHeight)
   progress.value = Math.min(1, root.scrollTop / max)
+
   const mid = root.scrollTop + root.clientHeight / 2
   let nearest = 0
   let nearestDelta = Number.POSITIVE_INFINITY
@@ -103,98 +101,56 @@ function onScroll() {
     }
   })
   activeIndex.value = nearest
+
+  updateFades(root)
 }
 
-async function createAnimations() {
-  const root = rootRef.value
-  const scrollEl = scrollRoot.value
-  if (!root || !scrollEl) return
-  const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
-    import('gsap'),
-    import('gsap/ScrollTrigger'),
-  ])
-  gsap.registerPlugin(ScrollTrigger)
-  if (isUnmounted) return
+function updateFades(root: HTMLElement) {
+  const viewH = root.clientHeight
+  const scrollTop = root.scrollTop
+  fadeTargets.value.forEach((el) => {
+    if (el.dataset.noFade !== undefined) return
+    const rect = el.getBoundingClientRect()
+    const rootRect = root.getBoundingClientRect()
+    const elTop = rect.top - rootRect.top
+    const elBottom = rect.bottom - rootRect.top
+    let opacity = 1
+    if (elBottom < viewH * 0.15) {
+      opacity = Math.max(0.08, elBottom / (viewH * 0.15))
+    } else if (elTop > viewH * 0.85) {
+      opacity = Math.max(0.08, (viewH - elTop) / (viewH * 0.15))
+    }
+    el.style.opacity = String(opacity)
+  })
+}
 
-  animationContext = gsap.context(() => {
-    ScrollTrigger.defaults({ scroller: scrollEl })
+let resizeObs: ResizeObserver | undefined
+let scrollRaf = 0
 
-    // 章节大数字轻微视差位移
-    gsap.utils.toArray<HTMLElement>('[data-parallax]').forEach((el) => {
-      const speed = Number(el.dataset.parallax || '0')
-      if (!speed) return
-      const section = el.closest('.onboarding__section') || el
-      gsap.fromTo(
-        el,
-        { yPercent: -speed * 100 },
-        {
-          yPercent: speed * 100,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: section,
-            start: 'top bottom',
-            end: 'bottom top',
-            scrub: 1,
-          },
-        },
-      )
-    })
-
-    // 正文：整个 .scene__body 作为一个整体做透明度淡入淡出
-    // 用单一 ScrollTrigger + tween 配 keyframes 覆盖"进→中→出"全周期
-    // 避免给每个子元素创建 2 个 ScrollTrigger 导致实例爆炸
-    gsap.utils.toArray<HTMLElement>('.scene__body').forEach((body) => {
-      const children = Array.from(body.children).filter(
-        (child) => (child as HTMLElement).dataset.noFade === undefined,
-      ) as HTMLElement[]
-      if (!children.length) return
-
-      // 按滚动进度分三段：淡入 → 完全清晰 → 淡出
-      gsap.fromTo(
-        children,
-        { opacity: 0.1 },
-        {
-          opacity: 1,
-          ease: 'none',
-          stagger: 0.08,
-          scrollTrigger: {
-            trigger: body,
-            scroller: scrollEl,
-            start: 'top 85%',
-            end: 'top 45%',
-            scrub: 1,
-          },
-        },
-      )
-      gsap.to(children, {
-        opacity: 0.1,
-        ease: 'none',
-        stagger: 0.06,
-        scrollTrigger: {
-          trigger: body,
-          scroller: scrollEl,
-          start: 'bottom 55%',
-          end: 'bottom 15%',
-          scrub: 1,
-        },
-      })
-    })
-
-    ScrollTrigger.refresh()
-  }, root)
+function rafUpdate() {
+  scrollRaf = 0
+  const root = scrollRoot.value
+  if (root) updateFades(root)
 }
 
 onMounted(async () => {
   await nextTick()
+  const root = scrollRoot.value
+  if (!root) return
+  fadeTargets.value = Array.from(root.querySelectorAll<HTMLElement>('.scene__body > *'))
   onScroll()
-  void createAnimations()
+  // 监听容器尺寸变化（字体加载完等）
+  resizeObs = new ResizeObserver(() => {
+    if (scrollRaf) return
+    scrollRaf = requestAnimationFrame(rafUpdate)
+  })
+  resizeObs.observe(root)
 })
 
 onBeforeUnmount(() => {
-  isUnmounted = true
   sceneVisible.value = false
-  animationContext?.revert()
-  animationContext = undefined
+  if (scrollRaf) cancelAnimationFrame(scrollRaf)
+  resizeObs?.disconnect()
 })
 </script>
 
@@ -218,7 +174,6 @@ onBeforeUnmount(() => {
   isolation: isolate;
 }
 
-/* 浅色版本 */
 html:not(.dark) .onboarding {
   --ob-bg: #f5f5f7;
   --ob-fg: #1d1d1f;
@@ -234,7 +189,6 @@ html:not(.dark) .onboarding {
   z-index: 0;
 }
 
-/* 文字可读性遮罩：暗角 + 上下渐隐 */
 .onboarding__scrim {
   position: absolute;
   inset: 0;
