@@ -36,9 +36,9 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { authApi } from '@/api'
-import { getCurrentUser, setSession, getToken } from '@/utils/auth.ts'
+import { setSession, getToken } from '@/utils/auth.ts'
 import OnboardingScene from '@/components/site/onboarding/OnboardingScene.vue'
 import SceneAct1 from '@/components/site/onboarding/SceneAct1.vue'
 import SceneAct2 from '@/components/site/onboarding/SceneAct2.vue'
@@ -46,13 +46,13 @@ import SceneAct3 from '@/components/site/onboarding/SceneAct3.vue'
 import SceneAct4 from '@/components/site/onboarding/SceneAct4.vue'
 import SceneAct5 from '@/components/site/onboarding/SceneAct5.vue'
 
-const router = useRouter()
 const route = useRoute()
 
 const rootRef = ref<HTMLElement>()
 const scrollRoot = ref<HTMLElement>()
 const sectionRefs = shallowRef<HTMLElement[]>([])
 const sceneVisible = ref(true)
+const killed = ref(false)
 
 function setSectionRef(el: HTMLElement | null, index: number) {
   if (!el) return
@@ -97,19 +97,9 @@ async function finish() {
   } catch (error) {
     sceneVisible.value = true
     ElMessage.error((error as { message?: string })?.message || '激活失败，请重试')
-    throw error
+    return
   }
-  try {
-    await router.replace(redirectTarget.value)
-  } catch (error) {
-    sceneVisible.value = true
-    const currentUser = getCurrentUser()
-    if (!currentUser.onboardingCompletedAt) {
-      ElMessage.error('跳转失败，请重新进入后台')
-    }
-    window.location.assign(redirectTarget.value)
-    throw error
-  }
+  window.location.assign(redirectTarget.value)
 }
 
 provide('onboarding', { finish })
@@ -159,6 +149,7 @@ let resizeObs: ResizeObserver | undefined
 let scrollRaf = 0
 
 function rafUpdate() {
+  if (killed.value) return
   scrollRaf = 0
   const root = scrollRoot.value
   if (root) updateFades(root)
@@ -179,6 +170,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  killed.value = true
   sceneVisible.value = false
   if (scrollRaf) cancelAnimationFrame(scrollRaf)
   resizeObs?.disconnect()

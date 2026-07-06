@@ -396,11 +396,13 @@ function drawNebula(ctx: CanvasRenderingContext2D, isDark: boolean, s: number) {
 }
 
 let animTime = 0
+let killed = false
 
 function render() {
+  if (killed) return
   const canvas = canvasRef.value
   const ctx = canvasCtx
-  if (!canvas || !ctx || !canvas.isConnected) return
+  if (!canvas || !ctx) return
 
   animTime += 0.012
 
@@ -642,19 +644,16 @@ onMounted(() => {
   }
 
   gsapCtx = gsap.context(() => {
-    // Initial camera coordinates
     camera.x = 0
     camera.y = 0
     camera.z = 70
     camera.rz = 0
 
-    // Set smooth interpolators
     camXTo = gsap.quickTo(camera, 'x', { duration: 0.8, ease: 'power2.out' })
     camYTo = gsap.quickTo(camera, 'y', { duration: 0.8, ease: 'power2.out' })
     camZTo = gsap.quickTo(camera, 'z', { duration: 0.8, ease: 'power2.out' })
     camRzTo = gsap.quickTo(camera, 'rz', { duration: 0.8, ease: 'power2.out' })
 
-    // Link render loop to the GSAP Ticker
     gsap.ticker.add(render)
   })
 
@@ -664,8 +663,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  gsapCtx?.revert()
+  killed = true
   gsap.ticker.remove(render)
+  gsapCtx?.revert()
 
   resizeObserver?.disconnect()
   const scrollTarget = props.scrollEl || window
