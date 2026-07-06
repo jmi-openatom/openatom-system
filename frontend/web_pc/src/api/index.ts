@@ -113,6 +113,12 @@ export const authApi = {
   removeAvatar(): Promise<any> {
     return request.delete('/auth/avatar')
   },
+  updateProfile(data: Record<string, unknown>): Promise<any> {
+    return request.patch('/auth/profile', data)
+  },
+  completeOnboarding(): Promise<any> {
+    return request.post('/auth/onboarding/complete')
+  },
 	}
 
 export const oauthClientApi = {

@@ -15,6 +15,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestConfirmQqBindDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateProfileDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
@@ -397,20 +398,71 @@ public class AuthServiceImpl implements AuthService {
 		}
 	}
 
-	@Override
-	@RedisCacheEvict(cacheNames = {"site"})
-	public Result<User> removeAvatar() {
-		if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
-		int id = StpUtil.getLoginIdAsInt();
-		User user = userMapper.selectById(id);
-		if (user == null) return Result.error(404, "用户不存在");
-		String oldAvatar = user.getAvatar();
-		user.setAvatar(null);
-		int row = userMapper.updateById(user);
-		if (row <= 0) return Result.error("头像移除失败");
-		avatarStorageService.deleteByAvatarUrl(oldAvatar);
-		return Result.success(buildSafeUser(user), "已恢复默认头像");
-	}
+  @Override
+  @RedisCacheEvict(cacheNames = {"site"})
+  public Result<User> removeAvatar() {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+    int id = StpUtil.getLoginIdAsInt();
+    User user = userMapper.selectById(id);
+    if (user == null) return Result.error(404, "用户不存在");
+    String oldAvatar = user.getAvatar();
+    user.setAvatar(null);
+    int row = userMapper.updateById(user);
+    if (row <= 0) return Result.error("头像移除失败");
+    avatarStorageService.deleteByAvatarUrl(oldAvatar);
+    return Result.success(buildSafeUser(user), "已恢复默认头像");
+  }
+
+  @Override
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
+  public Result<User> updateProfile(RequestUpdateProfileDTO requestUpdateProfileDTO) {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+    if (requestUpdateProfileDTO == null) return Result.error(400, "资料不能为空");
+    int id = StpUtil.getLoginIdAsInt();
+    User user = userMapper.selectById(id);
+    if (user == null) return Result.error(404, "用户不存在");
+    if (requestUpdateProfileDTO.getRealName() != null) {
+      user.setRealName(requestUpdateProfileDTO.getRealName());
+    }
+    if (requestUpdateProfileDTO.getGender() != null) {
+      user.setGender(requestUpdateProfileDTO.getGender());
+    }
+    if (requestUpdateProfileDTO.getPhone() != null) {
+      user.setPhone(requestUpdateProfileDTO.getPhone());
+    }
+    if (requestUpdateProfileDTO.getEmail() != null) {
+      user.setEmail(requestUpdateProfileDTO.getEmail());
+    }
+    if (requestUpdateProfileDTO.getCollege() != null) {
+      user.setCollege(requestUpdateProfileDTO.getCollege());
+    }
+    if (requestUpdateProfileDTO.getMajor() != null) {
+      user.setMajor(requestUpdateProfileDTO.getMajor());
+    }
+    if (requestUpdateProfileDTO.getGrade() != null) {
+      user.setGrade(requestUpdateProfileDTO.getGrade());
+    }
+    if (requestUpdateProfileDTO.getClassName() != null) {
+      user.setClassName(requestUpdateProfileDTO.getClassName());
+    }
+    int row = userMapper.updateById(user);
+    if (row <= 0) return Result.error("资料更新失败");
+    return Result.success(buildSafeUser(user), "资料更新成功");
+  }
+
+  @Override
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
+  public Result<User> completeOnboarding() {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+    int id = StpUtil.getLoginIdAsInt();
+    User user = userMapper.selectById(id);
+    if (user == null) return Result.error(404, "用户不存在");
+    if (user.getOnboardingCompletedAt() == null) {
+      user.setOnboardingCompletedAt(new Timestamp(System.currentTimeMillis()));
+      userMapper.updateById(user);
+    }
+    return Result.success(buildSafeUser(user), "入社介绍已完成");
+  }
 
 	private ResponseLoginVO createLoginResponse(User user) {
 		StpUtil.login(user.getId(), new SaLoginModel());
@@ -570,7 +622,8 @@ public class AuthServiceImpl implements AuthService {
 				.userStatus(user.getUserStatus())
 				.miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
 				.qqOpenid(isBlank(user.getQqOpenid()) ? null : user.getQqOpenid())
-				.createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt()).build();
+				.createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt())
+				.onboardingCompletedAt(user.getOnboardingCompletedAt()).build();
 	}
 
 	private String normalizeQqOpenid(String qqOpenid) {

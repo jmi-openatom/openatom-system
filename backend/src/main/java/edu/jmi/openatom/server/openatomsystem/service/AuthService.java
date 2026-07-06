@@ -6,6 +6,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestConfirmQqBindDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateProfileDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
@@ -47,4 +48,8 @@ public interface AuthService {
   Result<User> updateAvatar(MultipartFile file, String avatarBaseUrl);
 
   Result<User> removeAvatar();
+
+  Result<User> updateProfile(RequestUpdateProfileDTO requestUpdateProfileDTO);
+
+  Result<User> completeOnboarding();
 }

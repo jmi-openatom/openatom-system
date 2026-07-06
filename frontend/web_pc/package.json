@@ -28,6 +28,7 @@
     "motion-v": "^2.2.1",
     "tailwind-merge": "^3.6.0",
     "theme-colors": "^0.1.0",
+    "three": "^0.185.1",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
     "vue-use-spring": "^0.3.3"
@@ -36,6 +37,7 @@
     "@tsconfig/node24": "^24.0.4",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^25.6.0",
+    "@types/three": "^0.185.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/tsconfig": "^0.9.1",
     "autoprefixer": "^10.5.0",

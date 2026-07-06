@@ -179,4 +179,18 @@ public class AuthController {
   public Result<User> removeAvatar() {
     return authService.removeAvatar();
   }
+
+  /** Updates the current user's own profile (real name, contact, college info). */
+  @PatchMapping("/profile")
+  @SaCheckPermission("auth:me")
+  public Result<User> updateProfile(@Valid @RequestBody RequestUpdateProfileDTO requestUpdateProfileDTO) {
+    return authService.updateProfile(requestUpdateProfileDTO);
+  }
+
+  /** Marks the current user's onboarding (club introduction) as completed. */
+  @PostMapping("/onboarding/complete")
+  @SaCheckPermission("auth:me")
+  public Result<User> completeOnboarding() {
+    return authService.completeOnboarding();
+  }
 }

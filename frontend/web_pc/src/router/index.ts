@@ -12,6 +12,7 @@ import {
   getToken,
   shouldUseFullPageAuthRedirect,
 } from '@/utils/auth.ts'
+import { hasSeenOnboarding } from '@/utils/onboarding.ts'
 import { buildOidcAuthorizeUrl } from '@/utils/oidc.ts'
 
 const ROUTE_LOAD_RETRIES = 2
@@ -286,6 +287,11 @@ const routes = [
     path: '/login',
     name: 'login',
     component: resilientView(() => import('../views/admin/Login.vue')),
+  },
+  {
+    path: '/onboarding',
+    name: 'site-onboarding',
+    component: resilientView(() => import('../views/site/Onboarding.vue')),
   },
   {
     path: '/admin/login',
@@ -566,6 +572,15 @@ router.beforeEach(async (to) => {
   }
 
   return true
+})
+
+const ONBOARDING_BYPASS_PATHS = new Set(['/onboarding', '/login', '/auth/callback'])
+
+router.beforeEach((to) => {
+  if (ONBOARDING_BYPASS_PATHS.has(to.path)) return true
+  if (!getToken()) return true
+  if (hasSeenOnboarding()) return true
+  return { path: '/onboarding', query: { redirect: to.fullPath } }
 })
 
 router.afterEach((to) => {

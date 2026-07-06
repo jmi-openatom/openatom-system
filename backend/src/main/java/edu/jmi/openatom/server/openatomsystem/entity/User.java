@@ -66,4 +66,7 @@ public class User {
 
   @TableField("last_login_at")
   private Timestamp lastLoginAt;
+
+  @TableField("onboarding_completed_at")
+  private Timestamp onboardingCompletedAt;
 }
