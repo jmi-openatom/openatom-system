@@ -38,7 +38,7 @@ import { ElMessage } from 'element-plus'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authApi } from '@/api'
-import { setSession, getToken } from '@/utils/auth.ts'
+import { getCurrentUser, setSession, getToken } from '@/utils/auth.ts'
 import OnboardingScene from '@/components/site/onboarding/OnboardingScene.vue'
 import SceneAct1 from '@/components/site/onboarding/SceneAct1.vue'
 import SceneAct2 from '@/components/site/onboarding/SceneAct2.vue'
@@ -78,19 +78,38 @@ const redirectTarget = computed(() => {
   return typeof raw === 'string' && raw.startsWith('/') ? raw : '/'
 })
 
+function isUserRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
 async function finish() {
   sceneVisible.value = false
   try {
     const updated = await authApi.completeOnboarding()
-    if (updated) {
-      setSession({ accessToken: getToken() || undefined, user: updated })
+    let nextUser = isUserRecord(updated) ? updated : null
+    if (!nextUser) {
+      const me = await authApi.me().catch(() => null)
+      nextUser = isUserRecord(me) ? me : null
+    }
+    if (nextUser) {
+      setSession({ accessToken: getToken() || undefined, user: nextUser })
     }
   } catch (error) {
     sceneVisible.value = true
     ElMessage.error((error as { message?: string })?.message || '激活失败，请重试')
     throw error
   }
-  router.replace(redirectTarget.value)
+  try {
+    await router.replace(redirectTarget.value)
+  } catch (error) {
+    sceneVisible.value = true
+    const currentUser = getCurrentUser()
+    if (!currentUser.onboardingCompletedAt) {
+      ElMessage.error('跳转失败，请重新进入后台')
+    }
+    window.location.assign(redirectTarget.value)
+    throw error
+  }
 }
 
 provide('onboarding', { finish })

@@ -21,6 +21,16 @@ interface LoginPayload {
   remember?: boolean
 }
 
+function normalizeObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return value as Record<string, unknown>
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.map((item) => String(item))
+}
+
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
 }
@@ -90,11 +100,17 @@ export function setSession(payload?: SessionPayload): void {
     REFRESH_TOKEN_KEY,
     hasRefreshToken ? data.refreshToken || '' : localStorage.getItem(REFRESH_TOKEN_KEY) || '',
   )
-  localStorage.setItem(USER_KEY, JSON.stringify(hasUser ? data.user || {} : getCurrentUser()))
-  localStorage.setItem(ROLE_KEY, JSON.stringify(hasRoles ? data.roles || [] : getCurrentRoles()))
+  localStorage.setItem(
+    USER_KEY,
+    JSON.stringify(normalizeObject(hasUser ? data.user : getCurrentUser())),
+  )
+  localStorage.setItem(
+    ROLE_KEY,
+    JSON.stringify(normalizeStringArray(hasRoles ? data.roles : getCurrentRoles())),
+  )
   localStorage.setItem(
     PERMISSION_KEY,
-    JSON.stringify(hasPermissions ? data.permissions || [] : getCurrentPermissions()),
+    JSON.stringify(normalizeStringArray(hasPermissions ? data.permissions : getCurrentPermissions())),
   )
 }
 
@@ -108,7 +124,7 @@ export function clearSession(): void {
 
 export function getCurrentUser(): Record<string, unknown> {
   try {
-    return JSON.parse(localStorage.getItem(USER_KEY) || '{}')
+    return normalizeObject(JSON.parse(localStorage.getItem(USER_KEY) || '{}'))
   } catch (_error) {
     return {}
   }
@@ -116,7 +132,7 @@ export function getCurrentUser(): Record<string, unknown> {
 
 export function getCurrentRoles(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(ROLE_KEY) || '[]')
+    return normalizeStringArray(JSON.parse(localStorage.getItem(ROLE_KEY) || '[]'))
   } catch (_error) {
     return []
   }
@@ -124,7 +140,7 @@ export function getCurrentRoles(): string[] {
 
 export function getCurrentPermissions(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(PERMISSION_KEY) || '[]')
+    return normalizeStringArray(JSON.parse(localStorage.getItem(PERMISSION_KEY) || '[]'))
   } catch (_error) {
     return []
   }

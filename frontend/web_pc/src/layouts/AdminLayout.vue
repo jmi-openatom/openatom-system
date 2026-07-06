@@ -57,7 +57,7 @@
           <el-button :icon="HomeFilled" @click="$router.push('/')">官网</el-button>
           <el-dropdown @command="handleCommand">
             <el-button type="primary">
-              {{ user.realName || user.username || '管理员' }}
+              {{ displayUserName }}
               <el-icon class="el-icon--right">
                 <ArrowDown />
               </el-icon>
@@ -146,9 +146,13 @@ import { useRouteTransition } from '@/composables/useRouteTransition'
 
 const mobileMenuVisible = ref(false)
 
-const user = ref(getCurrentUser())
+const user = ref<Record<string, unknown>>(getCurrentUser())
 
 const version = ref(__APP_VERSION__)
+
+const displayUserName = computed(() => {
+  return String(user.value.realName || user.value.username || '管理员')
+})
 
 interface AdminMenuItem {
   path: string
