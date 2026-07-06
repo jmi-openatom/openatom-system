@@ -31,6 +31,24 @@ function normalizeStringArray(value: unknown): string[] {
   return value.map((item) => String(item))
 }
 
+function normalizeUser(value: unknown): Record<string, unknown> {
+  const user = normalizeObject(value)
+  const userName = user.userName ?? user.username ?? user.preferred_username
+  const realName = user.realName ?? user.name ?? user.nickname
+  const studentId = user.studentId ?? user.student_id
+  const qqOpenid = user.qqOpenid ?? user.qq_openid
+  const onboardingCompletedAt = user.onboardingCompletedAt ?? user.onboarding_completed_at
+
+  return {
+    ...user,
+    ...(userName !== undefined ? { userName, username: userName } : {}),
+    ...(realName !== undefined ? { realName } : {}),
+    ...(studentId !== undefined ? { studentId } : {}),
+    ...(qqOpenid !== undefined ? { qqOpenid } : {}),
+    ...(onboardingCompletedAt !== undefined ? { onboardingCompletedAt } : {}),
+  }
+}
+
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
 }
@@ -102,7 +120,7 @@ export function setSession(payload?: SessionPayload): void {
   )
   localStorage.setItem(
     USER_KEY,
-    JSON.stringify(normalizeObject(hasUser ? data.user : getCurrentUser())),
+    JSON.stringify(normalizeUser(hasUser ? data.user : getCurrentUser())),
   )
   localStorage.setItem(
     ROLE_KEY,
@@ -124,7 +142,7 @@ export function clearSession(): void {
 
 export function getCurrentUser(): Record<string, unknown> {
   try {
-    return normalizeObject(JSON.parse(localStorage.getItem(USER_KEY) || '{}'))
+    return normalizeUser(JSON.parse(localStorage.getItem(USER_KEY) || '{}'))
   } catch (_error) {
     return {}
   }
