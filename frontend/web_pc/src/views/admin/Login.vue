@@ -230,7 +230,7 @@
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { authApi, siteApi } from '@/api'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HomeMapSection from '@/components/site/home/HomeMapSection.vue'
 import { Eye, EyeOff, LockKeyhole, LogIn, Mail, Phone, UserPlus, UserRound } from 'lucide-vue-next'
@@ -287,7 +287,7 @@ async function fetchRegisterEnabled() {
   }
 }
 
-function handleLogin() {
+async function handleLogin() {
   if (!loginForm.value.username) {
     ElMessage.warning('请输入用户名')
     usernameInputRef.value?.focus()
@@ -298,28 +298,30 @@ function handleLogin() {
     return
   }
   loading.value = true
-  authApi
-    .login(loginForm.value)
-    .then((result) => {
-      if (rememberPassword.value) {
-        setRememberedLogin({
-          username: loginForm.value.username,
-          password: loginForm.value.password,
-          remember: true,
-        })
-      } else {
-        clearRememberedLogin()
-      }
-      setSession(result)
-      ElMessage.success('登录成功')
-      finishLoginRedirect()
-    })
-    .finally(() => {
-      loading.value = false
-    })
+  try {
+    const result = await authApi.login(loginForm.value)
+    if (rememberPassword.value) {
+      setRememberedLogin({
+        username: loginForm.value.username,
+        password: loginForm.value.password,
+        remember: true,
+      })
+    } else {
+      clearRememberedLogin()
+    }
+    setSession(result)
+    await nextTick()
+    ElMessage.success('登录成功')
+    await nextTick()
+    finishLoginRedirect()
+  } catch {
+    // 错误已由请求拦截器统一处理
+  } finally {
+    loading.value = false
+  }
 }
 
-function handleRegister() {
+async function handleRegister() {
   if (!registerEnabled.value) {
     ElMessage.warning('当前已关闭注册，请联系管理员开通')
     activeTab.value = 'login'
@@ -329,26 +331,28 @@ function handleRegister() {
   if (!registerForm.value.realName) return ElMessage.warning('请输入姓名')
   if (!registerForm.value.password) return ElMessage.warning('请输入密码')
   loading.value = true
-  authApi
-    .register(registerForm.value)
-    .then(() => authApi.login({ username: registerForm.value.username, password: registerForm.value.password }))
-    .then((result) => {
-      if (rememberPassword.value) {
-        setRememberedLogin({
-          username: registerForm.value.username,
-          password: registerForm.value.password,
-          remember: true,
-        })
-      } else {
-        clearRememberedLogin()
-      }
-      setSession(result)
-      ElMessage.success('注册成功')
-      finishLoginRedirect()
-    })
-    .finally(() => {
-      loading.value = false
-    })
+  try {
+    await authApi.register(registerForm.value)
+    const result = await authApi.login({ username: registerForm.value.username, password: registerForm.value.password })
+    if (rememberPassword.value) {
+      setRememberedLogin({
+        username: registerForm.value.username,
+        password: registerForm.value.password,
+        remember: true,
+      })
+    } else {
+      clearRememberedLogin()
+    }
+    setSession(result)
+    await nextTick()
+    ElMessage.success('注册成功')
+    await nextTick()
+    finishLoginRedirect()
+  } catch {
+    // 错误已由请求拦截器统一处理
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(async () => {
