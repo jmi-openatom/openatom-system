@@ -85,6 +85,7 @@ function isUserRecord(value: unknown): value is Record<string, unknown> {
 async function finish() {
   sceneVisible.value = false
   await nextTick()
+  await new Promise((resolve) => setTimeout(resolve, 300))
   try {
     const updated = await authApi.completeOnboarding()
     let nextUser = isUserRecord(updated) ? updated : null

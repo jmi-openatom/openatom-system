@@ -149,7 +149,7 @@ const nucleusParticles = [
 
 // Stars setup
 const stars: { x: number; y: number; z: number; size: number }[] = []
-const starCount = 200
+const starCount = 80
 for (let i = 0; i < starCount; i++) {
   stars.push({
     x: (Math.random() - 0.5) * 400,
@@ -161,7 +161,7 @@ for (let i = 0; i < starCount; i++) {
 
 // Dust setup
 const dust: { x: number; y: number; z: number; size: number; speed: number }[] = []
-const dustCount = 80
+const dustCount = 40
 for (let i = 0; i < dustCount; i++) {
   dust.push({
     x: (Math.random() - 0.5) * 260,
@@ -173,7 +173,7 @@ for (let i = 0; i < dustCount; i++) {
 }
 
 // Flow streams setup
-const flowCount = 25
+const flowCount = 12
 const flowParam = new Float32Array(flowCount)
 const flowPoints: { x: number; z: number }[] = []
 for (let i = 0; i < flowCount; i++) {
@@ -182,6 +182,20 @@ for (let i = 0; i < flowCount; i++) {
     x: (Math.random() - 0.5) * 160,
     z: (Math.random() - 0.5) * 160
   })
+}
+
+function gridAlpha(gx: number, gz: number, depth: number) {
+  const halfSize = 130
+  const distFromCenter = Math.sqrt(gx * gx + gz * gz) / halfSize
+  const radialFade = Math.max(0, 1 - distFromCenter * distFromCenter)
+  const depthFade = Math.max(0, Math.min(1, (180 - depth) / 140))
+  return radialFade * depthFade * 0.35
+}
+
+function waveHeight(gx: number, gz: number, t: number) {
+  return Math.sin(gx * 0.1 + t * 0.7) * 2.8 +
+         Math.cos(gz * 0.12 + t * 0.55) * 2.2 +
+         Math.sin((gx + gz) * 0.07 + t * 0.42) * 1.8
 }
 
 function getPalette() {
@@ -485,28 +499,14 @@ function render() {
 
   // 4. Draw Premium Holographic Wave Grid
   const gridHalfSize = 130
-  const gridStep = 16          // wider spacing = cleaner look
-  const curveResolution = 6    // points per segment for smooth quadratic curves
-
-  // Radial distance fade helper (center of grid brighter, edges fade)
-  function gridAlpha(gx: number, gz: number, depth: number) {
-    const distFromCenter = Math.sqrt(gx * gx + gz * gz) / gridHalfSize
-    const radialFade = Math.max(0, 1 - distFromCenter * distFromCenter)
-    const depthFade = Math.max(0, Math.min(1, (180 - depth) / 140))
-    return radialFade * depthFade * 0.35
-  }
-
-  function waveHeight(gx: number, gz: number) {
-    return Math.sin(gx * 0.1 + animTime * 0.7) * 2.8 +
-           Math.cos(gz * 0.12 + animTime * 0.55) * 2.2 +
-           Math.sin((gx + gz) * 0.07 + animTime * 0.42) * 1.8
-  }
+  const gridStep = 32
+  const curveResolution = 6
 
   // Draw smooth flowing curves along X direction
   for (let gz = -gridHalfSize; gz <= gridHalfSize; gz += gridStep) {
     const points: { x: number; y: number; depth: number; gx: number; gz: number }[] = []
     for (let gx = -gridHalfSize; gx <= gridHalfSize; gx += curveResolution) {
-      const h = waveHeight(gx, gz)
+      const h = waveHeight(gx, gz, animTime)
       const gy = -18 + h * (1.6 + s * 4.0)
       const transformedPt = transformWorld([gx, gy, gz], s)
       const proj = project(transformedPt[0], transformedPt[1], transformedPt[2], width, height)
@@ -516,7 +516,6 @@ function render() {
     }
     if (points.length < 3) continue
 
-    // Draw smooth quadratic Bézier curve through points
     ctx.beginPath()
     ctx.moveTo(points[0].x, points[0].y)
     for (let i = 1; i < points.length - 1; i++) {
@@ -540,7 +539,7 @@ function render() {
   for (let gx = -gridHalfSize; gx <= gridHalfSize; gx += gridStep) {
     const points: { x: number; y: number; depth: number; gx: number; gz: number }[] = []
     for (let gz = -gridHalfSize; gz <= gridHalfSize; gz += curveResolution) {
-      const h = waveHeight(gx, gz)
+      const h = waveHeight(gx, gz, animTime)
       const gy = -18 + h * (1.6 + s * 4.0)
       const transformedPt = transformWorld([gx, gy, gz], s)
       const proj = project(transformedPt[0], transformedPt[1], transformedPt[2], width, height)
@@ -572,7 +571,7 @@ function render() {
   // Draw small glowing intersection dots at grid vertices
   for (let gz = -gridHalfSize; gz <= gridHalfSize; gz += gridStep) {
     for (let gx = -gridHalfSize; gx <= gridHalfSize; gx += gridStep) {
-      const h = waveHeight(gx, gz)
+      const h = waveHeight(gx, gz, animTime)
       const gy = -18 + h * (1.6 + s * 4.0)
       const transformedPt = transformWorld([gx, gy, gz], s)
       const proj = project(transformedPt[0], transformedPt[1], transformedPt[2], width, height)
@@ -669,6 +668,12 @@ onBeforeUnmount(() => {
     gsapCtx?.revert()
   } catch {
     // gsapCtx may be in an invalid state during mid-frame teardown
+  }
+
+  if (canvasCtx && canvasRef.value) {
+    canvasRef.value.width = 0
+    canvasRef.value.height = 0
+    canvasCtx = null
   }
 
   resizeObserver?.disconnect()
