@@ -231,7 +231,7 @@ import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { authApi, siteApi } from '@/api'
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import HomeMapSection from '@/components/site/home/HomeMapSection.vue'
 import { Eye, EyeOff, LockKeyhole, LogIn, Mail, Phone, UserPlus, UserRound } from 'lucide-vue-next'
 import {
@@ -254,7 +254,6 @@ const usernameInputRef = ref<HTMLInputElement>()
 const loginForm = ref({ username: '', password: '' })
 const registerForm = ref({ username: '', password: '', realName: '', phone: '', email: '' })
 
-const router = useRouter()
 const route = useRoute()
 
 const indicatorStyle = computed(() => {
@@ -277,7 +276,7 @@ function finishLoginRedirect() {
     window.location.assign(appendTokenQuery(target))
     return
   }
-  router.replace(target)
+  window.location.assign(target)
 }
 
 async function fetchRegisterEnabled() {

@@ -400,7 +400,7 @@ let animTime = 0
 function render() {
   const canvas = canvasRef.value
   const ctx = canvasCtx
-  if (!canvas || !ctx) return
+  if (!canvas || !ctx || !canvas.isConnected) return
 
   animTime += 0.012
 
