@@ -10,6 +10,7 @@ import {
   appendTokenQuery,
   clearSession,
   getToken,
+  isActivated,
   shouldUseFullPageAuthRedirect,
 } from '@/utils/auth.ts'
 import { buildOidcAuthorizeUrl } from '@/utils/oidc.ts'
@@ -64,6 +65,7 @@ const adminFallbackRoutes = [
   '/admin/users',
   '/admin/clubs',
   '/admin/positions',
+  '/admin/activation-settings',
   '/admin/recruitment-campaigns',
   '/admin/site-forms',
   '/admin/qr-center',
@@ -107,6 +109,13 @@ function requiresAdminAuth(to: RouteLocationNormalized): boolean {
 function requiresSiteLogin(to: RouteLocationNormalized): boolean {
   return to.matched.some((record) => record.meta?.requiresSiteLogin)
 }
+
+const ACTIVATION_BYPASS_PATHS = new Set([
+  '/activation',
+  '/login',
+  '/admin/login',
+  '/auth/callback',
+])
 
 function firstAccessibleAdminPath(): string {
   return (
@@ -288,6 +297,11 @@ const routes = [
     component: resilientView(() => import('../views/admin/Login.vue')),
   },
   {
+    path: '/activation',
+    name: 'site-activation',
+    component: resilientView(() => import('../views/site/Activation.vue')),
+  },
+  {
     path: '/admin/login',
     redirect: (to) => ({ path: '/login', query: to.query }),
   },
@@ -331,6 +345,12 @@ const routes = [
         name: 'admin-positions',
         meta: { permissions: ['position:list'] },
         component: resilientView(() => import('../views/admin/Positions.vue')),
+      },
+      {
+        path: 'activation-settings',
+        name: 'admin-activation-settings',
+        meta: { permissions: ['club:update', 'department:update'] },
+        component: resilientView(() => import('../views/admin/ActivationSettings.vue')),
       },
       {
         path: 'recruitment-campaigns',
@@ -527,6 +547,15 @@ router.beforeEach(async (to) => {
   if ((requiresAdminAuth(to) || requiresSiteLogin(to)) && !getToken()) {
     window.location.assign(buildOidcAuthorizeUrl(to.fullPath))
     return false
+  }
+
+  // 未激活账号拦截：除激活页/登录页/auth 回调外，所有页面都强制跳转到激活页
+  if (!ACTIVATION_BYPASS_PATHS.has(to.path) && getToken() && !isActivated()) {
+    return { path: '/activation', query: { redirect: to.fullPath } }
+  }
+  // 已激活用户访问激活页则回到首页
+  if (to.path === '/activation' && getToken() && isActivated()) {
+    return '/'
   }
 
   // 管理后台路径权限检查

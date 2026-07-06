@@ -43,4 +43,13 @@ public interface ClubDepartmentMapper extends BaseMapper<ClubDepartment> {
             .eq(ClubDepartment::getManagerUserId, userId)
             .set(ClubDepartment::getManagerUserId, null));
   }
+
+  /** 清空副部长 (用户被删除时) */
+  default void nullifyViceManagerUserId(Integer userId) {
+    update(
+        null,
+        new LambdaUpdateWrapper<ClubDepartment>()
+            .eq(ClubDepartment::getViceManagerUserId, userId)
+            .set(ClubDepartment::getViceManagerUserId, null));
+  }
 }

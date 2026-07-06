@@ -50,6 +50,24 @@ public interface ClubMapper extends BaseMapper<Club> {
             .eq(Club::getPresidentUserId, userId)
             .set(Club::getPresidentUserId, null));
   }
+
+  /** 清空副社长 (用户被删除时) */
+  default void nullifyVicePresidentUserId(Integer userId) {
+    update(
+        null,
+        new LambdaUpdateWrapper<Club>()
+            .eq(Club::getVicePresidentUserId, userId)
+            .set(Club::getVicePresidentUserId, null));
+  }
+
+  /** 清空团支书 (用户被删除时) */
+  default void nullifyLeagueSecretaryUserId(Integer userId) {
+    update(
+        null,
+        new LambdaUpdateWrapper<Club>()
+            .eq(Club::getLeagueSecretaryUserId, userId)
+            .set(Club::getLeagueSecretaryUserId, null));
+  }
   /** 查所有 active 状态的社团 */
   default List<Club> selectActiveClubs() {
     return selectList(new LambdaQueryWrapper<Club>().eq(Club::getStatus, "active"));

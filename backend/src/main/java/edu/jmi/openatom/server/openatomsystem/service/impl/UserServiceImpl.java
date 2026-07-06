@@ -15,7 +15,16 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseAvatarHealthVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
-import edu.jmi.openatom.server.openatomsystem.mapper.*;
+import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.ClubDepartmentMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.ClubVicePresidentMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.ActivityRegistrationMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.FormSubmissionMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.RoleMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.UserRoleMapper;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import edu.jmi.openatom.server.openatomsystem.service.UserService;
 
@@ -51,6 +60,7 @@ public class UserServiceImpl implements UserService {
 	private final ClubMapper clubMapper;
 	private final ClubDepartmentMapper clubDepartmentMapper;
 	private final ClubMembershipMapper clubMembershipMapper;
+	private final ClubVicePresidentMapper clubVicePresidentMapper;
 	private final MembershipApplicationMapper membershipApplicationMapper;
 	private final ActivityRegistrationMapper activityRegistrationMapper;
 	private final FormSubmissionMapper formSubmissionMapper;
@@ -355,7 +365,11 @@ public class UserServiceImpl implements UserService {
 		membershipApplicationMapper.nullifyUserId(userId);
 		formSubmissionMapper.nullifyUserId(userId);
 		clubMapper.nullifyPresidentUserId(userId);
+		clubMapper.nullifyVicePresidentUserId(userId);
+		clubMapper.nullifyLeagueSecretaryUserId(userId);
+		clubVicePresidentMapper.deleteByUserId(userId);
 		clubDepartmentMapper.nullifyManagerUserId(userId);
+		clubDepartmentMapper.nullifyViceManagerUserId(userId);
 		int rows = userMapper.deleteById(userId);
 		return rows > 0 ? Result.success("用户已删除") : Result.error("用户删除失败");
 	}
@@ -391,8 +405,10 @@ public class UserServiceImpl implements UserService {
 				.grade(user.getGrade()).className(user.getClassName()).avatar(user.getAvatar())
 				.miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
 				.qqOpenid(isBlank(user.getQqOpenid()) ? null : "BOUND")
-				.userStatus(user.getUserStatus()).createTime(user.getCreateTime())
-				.lastLoginAt(user.getLastLoginAt()).build();
+			.userStatus(user.getUserStatus()).createTime(user.getCreateTime())
+			.lastLoginAt(user.getLastLoginAt())
+			.onboardingCompletedAt(user.getOnboardingCompletedAt())
+			.activatedAt(user.getActivatedAt()).build();
 	}
 
 	private ResponseMembershipVO buildMembershipResponse(ClubMembership membership) {
@@ -400,6 +416,19 @@ public class UserServiceImpl implements UserService {
 				.clubId(membership.getClubId()).departmentId(membership.getDepartmentId())
 				.positionId(membership.getPositionId()).status(membership.getStatus())
 				.joinedAt(membership.getJoinedAt()).leftAt(membership.getLeftAt()).build();
+	}
+
+	@Override
+	@RedisCacheEvict(cacheNames = {"site", "auth"})
+	public Result<String> setActivation(Integer userId, boolean activated) {
+		if (userId == null) return Result.error(400, "userId不能为空");
+		User user = userMapper.selectById(userId);
+		if (user == null) return Result.error(404, "用户不存在");
+		if (activated && user.getActivatedAt() != null) return Result.success("该用户已激活");
+		if (!activated && user.getActivatedAt() == null) return Result.success("该用户未激活");
+		user.setActivatedAt(activated ? new java.sql.Timestamp(System.currentTimeMillis()) : null);
+		userMapper.updateById(user);
+		return Result.success(activated ? "用户已激活" : "已取消激活");
 	}
 
 	private boolean isBlank(String value) {

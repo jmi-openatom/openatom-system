@@ -10,38 +10,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * 社团部门
- *
- * <p>对应数据库表 club_department, 存储社团内部的部门信息, 包括部门名称, 描述及负责人
- */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName("club_department")
-public class ClubDepartment {
+@TableName("club_vice_president")
+public class ClubVicePresident {
   @TableId(value = "id", type = IdType.AUTO)
   private Integer id;
 
   @TableField("club_id")
   private Integer clubId;
 
-  private String name;
-  private String description;
-
-  @TableField("manager_user_id")
-  private Integer managerUserId;
-
-  @TableField("vice_manager_user_id")
-  private Integer viceManagerUserId;
-
-  @TableField("wechat_group_qrcode")
-  private String wechatGroupQrcode;
+  @TableField("user_id")
+  private Integer userId;
 
   @TableField("created_at")
   private Timestamp createdAt;
-
-  @TableField("updated_at")
-  private Timestamp updatedAt;
 }

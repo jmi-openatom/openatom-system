@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseActivationVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseClubHomeVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentDetailVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteProgressVO;
@@ -34,6 +35,8 @@ public interface SiteService {
   Result<ResponseSiteFormDetailVO> getFormDetail(Integer campaignId);
 
   Result<ResponseSiteProgressVO> getMyProgress();
+
+  Result<ResponseActivationVO> getMyActivationInfo();
 
   Result<Boolean> getRegisterEnabled();
 }

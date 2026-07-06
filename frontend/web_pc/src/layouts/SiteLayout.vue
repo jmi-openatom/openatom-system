@@ -128,7 +128,7 @@
         <div class="site-footer__info">
           <p>技术分享 · 项目实践 · 竞赛训练 · 开源协作</p>
           <p class="copyright">
-            © 2025-2027 JMI-OPENATOM & <a href="http://www.ariven.cn/">Ariven</a>. All rights reserved.
+            © 2025-2027 JMI-OPENATOM & <a href="http://www.ariven.cn/">Ariven(软件技术252301 何治皓).</a> All rights reserved.
           </p>
           <span class="version-tag">{{ version }}</span>
         </div>

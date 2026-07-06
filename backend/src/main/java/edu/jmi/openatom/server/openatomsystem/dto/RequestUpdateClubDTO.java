@@ -27,4 +27,8 @@ public class RequestUpdateClubDTO {
 
   private String logoUrl;
   private Integer presidentUserId;
+  private Integer vicePresidentUserId;
+  private Integer leagueSecretaryUserId;
+  private String wechatGroupQrcode;
+  private String qqGroupNumber;
 }

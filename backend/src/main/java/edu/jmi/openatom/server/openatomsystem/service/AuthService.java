@@ -52,4 +52,6 @@ public interface AuthService {
   Result<User> updateProfile(RequestUpdateProfileDTO requestUpdateProfileDTO);
 
   Result<User> completeOnboarding();
+
+  Result<User> activate();
 }

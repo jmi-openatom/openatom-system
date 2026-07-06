@@ -22,6 +22,9 @@ export const siteApi = {
   progress(): Promise<any> {
     return request.get('/site/progress')
   },
+  activation(): Promise<any> {
+    return request.get('/site/activation')
+  },
   registerEnabled(): Promise<any> {
     return request.get('/site/register-enabled')
   },
@@ -119,6 +122,9 @@ export const authApi = {
   completeOnboarding(): Promise<any> {
     return request.post('/auth/onboarding/complete')
   },
+  activate(): Promise<any> {
+    return request.post('/auth/activate')
+  },
 	}
 
 export const oauthClientApi = {
@@ -158,6 +164,9 @@ export const userApi = {
   list(params?: Record<string, unknown>): Promise<any> {
     return request.get('/users', { params })
   },
+  info(id: string | number): Promise<any> {
+    return request.get(`/users/${id}`)
+  },
   create(data: Record<string, unknown>): Promise<any> {
     return request.post('/users', data)
   },
@@ -184,6 +193,9 @@ export const userApi = {
   },
   cleanupInvalidAvatars(): Promise<any> {
     return request.post('/users/avatars/cleanup')
+  },
+  setActivation(id: string | number, activated: boolean): Promise<any> {
+    return request.patch(`/users/${id}/activation`, null, { params: { activated } })
   },
 }
 
@@ -215,6 +227,15 @@ export const clubApi = {
   siteForms(clubId: string | number): Promise<any> {
     return request.get(`/clubs/${clubId}/site-forms`)
   },
+  vicePresidents(clubId: string | number): Promise<any> {
+    return request.get(`/clubs/${clubId}/vice-presidents`)
+  },
+  addVicePresident(clubId: string | number, userId: string | number): Promise<any> {
+    return request.post(`/clubs/${clubId}/vice-presidents?userId=${userId}`)
+  },
+  removeVicePresident(clubId: string | number, userId: string | number): Promise<any> {
+    return request.delete(`/clubs/${clubId}/vice-presidents/${userId}`)
+  },
 }
 
 export const positionApi = {
@@ -226,6 +247,15 @@ export const positionApi = {
   },
   remove(id: string | number): Promise<any> {
     return request.delete(`/positions/${id}`)
+  },
+}
+
+export const departmentApi = {
+  list(clubId: string | number): Promise<any> {
+    return request.get(`/clubs/${clubId}/departments`)
+  },
+  update(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/departments/${id}`, data)
   },
 }
 

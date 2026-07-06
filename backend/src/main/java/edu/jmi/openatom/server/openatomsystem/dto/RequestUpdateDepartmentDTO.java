@@ -23,4 +23,6 @@ public class RequestUpdateDepartmentDTO {
   private String description;
 
   private Integer managerUserId;
+  private Integer viceManagerUserId;
+  private String wechatGroupQrcode;
 }

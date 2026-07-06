@@ -7,10 +7,12 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateClubDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateClubStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRecruitmentStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
+import edu.jmi.openatom.server.openatomsystem.entity.ClubVicePresident;
 import edu.jmi.openatom.server.openatomsystem.service.ClubService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -115,5 +117,27 @@ public class ClubController {
       @PathVariable Integer clubId,
       @Valid @RequestBody RequestUpdateRecruitmentStatusDTO requestUpdateRecruitmentStatusDTO) {
     return clubService.updateRecruitmentStatus(clubId, requestUpdateRecruitmentStatusDTO);
+  }
+
+  @GetMapping("/clubs/{clubId}/vice-presidents")
+  @SaCheckPermission("club:update")
+  public Result<List<ClubVicePresident>> getVicePresidents(@PathVariable Integer clubId) {
+    return clubService.getVicePresidents(clubId);
+  }
+
+  @PostMapping("/clubs/{clubId}/vice-presidents")
+  @SaCheckPermission("club:update")
+  public Result<String> addVicePresident(
+      @PathVariable Integer clubId,
+      @RequestParam Integer userId) {
+    return clubService.addVicePresident(clubId, userId);
+  }
+
+  @DeleteMapping("/clubs/{clubId}/vice-presidents/{userId}")
+  @SaCheckPermission("club:update")
+  public Result<String> removeVicePresident(
+      @PathVariable Integer clubId,
+      @PathVariable Integer userId) {
+    return clubService.removeVicePresident(clubId, userId);
   }
 }

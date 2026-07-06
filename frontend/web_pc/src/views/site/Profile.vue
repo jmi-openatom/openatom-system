@@ -56,6 +56,23 @@
             <el-descriptions-item label="邮箱">{{ user.email || '-' }}</el-descriptions-item>
             <el-descriptions-item label="手机号">{{ user.phone || '-' }}</el-descriptions-item>
           </el-descriptions>
+
+          <div v-if="membership" class="membership-card">
+            <div class="membership-card__head">
+              <span class="workspace-chip">社团成员</span>
+              <span v-if="membership.status" class="workspace-chip">{{ membershipStatusText(membership.status) }}</span>
+            </div>
+            <div class="membership-card__body">
+              <div class="membership-field">
+                <span class="membership-field__label">所属部门</span>
+                <strong>{{ membership.departmentName || '未分配' }}</strong>
+              </div>
+              <div class="membership-field">
+                <span class="membership-field__label">当前职位</span>
+                <strong>{{ membership.positionName || '暂无' }}</strong>
+              </div>
+            </div>
+          </div>
         </WorkspacePanel>
 
         <div class="profile-stack">
@@ -196,6 +213,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 const user = ref(getCurrentUser() || {})
 
+const membership = ref<any>(null)
 const applications = ref<any[]>([])
 
 const submitting = ref(false)
@@ -293,6 +311,20 @@ async function fetchProfile() {
 async function fetchApplications() {
   const result = await siteApi.progress()
   applications.value = result?.applications || []
+}
+
+async function fetchMembership() {
+  try {
+    const result = await siteApi.activation()
+    membership.value = result?.membership || null
+  } catch {
+    membership.value = null
+  }
+}
+
+function membershipStatusText(status: string) {
+  const map: Record<string, string> = { active: '正式成员', probation: '非正式', left: '已退出' }
+  return map[status] || status
 }
 
 async function logout() {
@@ -417,6 +449,7 @@ onMounted(() => {
   if (isLogin.value) {
     fetchProfile()
     fetchApplications()
+    fetchMembership()
   }
 })
 </script>
@@ -548,5 +581,40 @@ onMounted(() => {
     align-items: stretch;
     flex-direction: column;
   }
+}
+
+.membership-card {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background: var(--el-fill-color-lighter);
+}
+
+.membership-card__head {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.membership-card__body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.membership-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.membership-field__label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.membership-field strong {
+  font-size: 15px;
 }
 </style>

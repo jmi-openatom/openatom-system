@@ -132,6 +132,7 @@ import {
   Monitor,
   OfficeBuilding,
   Picture,
+  Setting,
   Tickets,
   Trophy,
   User,
@@ -183,6 +184,12 @@ const menus = ref<AdminMenuItem[]>([
   // ==== 4. 社团基础与招新链路 ====
   { path: '/admin/clubs', label: '社团管理', icon: OfficeBuilding, permissions: ['club:list'] },
   { path: '/admin/positions', label: '岗位管理', icon: List, permissions: ['position:list'] },
+  {
+    path: '/admin/activation-settings',
+    label: '激活页设置',
+    icon: Setting,
+    permissions: ['club:update', 'department:update'],
+  },
   {
     path: '/admin/recruitment-campaigns',
     label: '招新计划',

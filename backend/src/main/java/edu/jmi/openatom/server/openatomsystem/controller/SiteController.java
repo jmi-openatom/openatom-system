@@ -4,6 +4,7 @@ import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubActivity;
 import edu.jmi.openatom.server.openatomsystem.service.SiteService;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseActivationVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseClubHomeVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentDetailVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentVO;
@@ -109,6 +110,18 @@ public class SiteController {
   @GetMapping("/site/progress")
   public Result<ResponseSiteProgressVO> getMyProgress() {
     return siteService.getMyProgress();
+  }
+
+  /**
+   * 获取当前用户的账号激活页数据
+   *
+   * <p>返回用户成员身份、所属部门、部门部长、社长副社长及社团介绍，供激活页展示
+   *
+   * @return 激活页数据
+   */
+  @GetMapping("/site/activation")
+  public Result<ResponseActivationVO> getMyActivationInfo() {
+    return siteService.getMyActivationInfo();
   }
 
   /**

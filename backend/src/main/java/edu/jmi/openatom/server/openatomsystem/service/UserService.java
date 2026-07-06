@@ -39,6 +39,8 @@ public interface UserService {
   Result<String> updateUserStatus(
       Integer userId, RequestUpdateUserStatusDTO requestUpdateUserStatusDTO);
 
+  Result<String> setActivation(Integer userId, boolean activated);
+
   Result<String> resetPassword(
       Integer userId, RequestResetPasswordDTO requestResetPasswordDTO);
 

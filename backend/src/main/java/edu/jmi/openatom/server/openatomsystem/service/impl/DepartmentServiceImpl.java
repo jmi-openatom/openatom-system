@@ -43,10 +43,13 @@ public class DepartmentServiceImpl implements DepartmentService {
     if (isBlank(dto.getName())) return Result.error(400, "部门名称不能为空");
     if (!clubExists(clubId)) return Result.error(404, "社团不存在");
     if (!userExists(dto.getManagerUserId())) return Result.error(400, "负责人用户不存在");
+    if (dto.getViceManagerUserId() != null && dto.getViceManagerUserId() != 0
+        && !userExists(dto.getViceManagerUserId())) return Result.error(400, "副部长用户不存在");
     if (clubDepartmentMapper.countByClubIdAndName(clubId, dto.getName(), null) > 0)
       return Result.error(400, "部门名称已存在");
     ClubDepartment department = ClubDepartment.builder().clubId(clubId).name(dto.getName())
-        .description(dto.getDescription()).managerUserId(dto.getManagerUserId()).build();
+        .description(dto.getDescription()).managerUserId(dto.getManagerUserId())
+        .viceManagerUserId(dto.getViceManagerUserId()).build();
     int row = clubDepartmentMapper.insert(department);
     return row > 0 ? Result.success("部门创建成功") : Result.error("部门创建失败");
   }
@@ -75,8 +78,15 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
     if (dto.getDescription() != null) department.setDescription(dto.getDescription());
     if (dto.getManagerUserId() != null) {
-      if (!userExists(dto.getManagerUserId())) return Result.error(400, "负责人用户不存在");
-      department.setManagerUserId(dto.getManagerUserId());
+      if (dto.getManagerUserId() != 0 && !userExists(dto.getManagerUserId())) return Result.error(400, "负责人用户不存在");
+      department.setManagerUserId(dto.getManagerUserId() == 0 ? null : dto.getManagerUserId());
+    }
+    if (dto.getViceManagerUserId() != null) {
+      if (dto.getViceManagerUserId() != 0 && !userExists(dto.getViceManagerUserId())) return Result.error(400, "副部长用户不存在");
+      department.setViceManagerUserId(dto.getViceManagerUserId() == 0 ? null : dto.getViceManagerUserId());
+    }
+    if (dto.getWechatGroupQrcode() != null) {
+      department.setWechatGroupQrcode(dto.getWechatGroupQrcode());
     }
     int row = clubDepartmentMapper.updateById(department);
     return row > 0 ? Result.success("部门更新成功") : Result.error("部门更新失败");

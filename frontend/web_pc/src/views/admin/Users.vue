@@ -80,7 +80,14 @@
           <el-tag :type="statusType(row.userStatus)">{{ statusText(row.userStatus) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="360" fixed="right">
+      <el-table-column label="激活" width="100">
+        <template #default="{ row }">
+          <el-tag :type="row.activatedAt ? 'success' : 'warning'" size="small">
+            {{ row.activatedAt ? '已激活' : '未激活' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="440" fixed="right">
         <template #default="{ row }">
           <el-button v-if="canUpdateUser" link type="primary" @click="openDialog(row)"
             >编辑</el-button
@@ -90,6 +97,9 @@
           >
           <el-button v-if="canUpdateUserStatus" link type="warning" @click="toggleStatus(row)">
             {{ row.userStatus === 'disabled' ? '启用' : '禁用' }}
+          </el-button>
+          <el-button v-if="canSetActivation" link :type="row.activatedAt ? 'warning' : 'success'" @click="toggleActivation(row)">
+            {{ row.activatedAt ? '取消激活' : '激活' }}
           </el-button>
           <el-button v-if="canResetUserPassword" link type="danger" @click="resetPassword(row)"
             >重置密码</el-button
@@ -333,6 +343,10 @@ const canCleanupAvatars = computed(() => {
   return hasPermission('user:update')
 })
 
+const canSetActivation = computed(() => {
+  return hasPermission('user:update')
+})
+
 function statusText(status: any) {
   return { active: '启用', disabled: '禁用', locked: '锁定' }[status] || status || '-'
 }
@@ -412,6 +426,17 @@ async function toggleStatus(row: any) {
   await userApi.updateStatus(row.id, nextStatus)
   ElMessage.success('状态已更新')
   fetchList()
+}
+
+async function toggleActivation(row: any) {
+  const action = row.activatedAt ? '取消激活' : '激活'
+  try {
+    await userApi.setActivation(row.id, !row.activatedAt)
+    ElMessage.success(`${action}成功`)
+    fetchList()
+  } catch {
+    ElMessage.error(`${action}失败`)
+  }
 }
 
 async function resetPassword(row: any) {

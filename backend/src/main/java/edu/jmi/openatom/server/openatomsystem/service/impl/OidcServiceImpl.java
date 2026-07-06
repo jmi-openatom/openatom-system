@@ -261,6 +261,7 @@ public class OidcServiceImpl implements OidcService {
         "is_lab_member", labMember,
         "lab_role", roles.contains("super_admin") || roles.contains("club_admin") ? 2 : 0,
         "onboarding_completed_at", user.getOnboardingCompletedAt(),
+        "activated_at", user.getActivatedAt(),
         "roles", roles,
         "permissions", permissions);
   }

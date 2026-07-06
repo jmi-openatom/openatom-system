@@ -196,6 +196,21 @@ public class UserController {
   }
 
   /**
+   * 设置用户激活状态
+   *
+   * @param userId 用户ID
+   * @param activated 是否激活
+   * @return 设置结果
+   */
+  @PatchMapping("/{userId}/activation")
+  @SaCheckPermission("user:update")
+  public Result<String> setActivation(
+      @PathVariable Integer userId,
+      @RequestParam boolean activated) {
+    return userService.setActivation(userId, activated);
+  }
+
+  /**
    * 重置用户密码
    *
    * @param userId 用户ID

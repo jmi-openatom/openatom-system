@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.FormSchemaFields;
 import edu.jmi.openatom.server.openatomsystem.cache.RedisCached;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseActivationVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseClubHomeVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseRecruitmentDetailVO;
@@ -40,6 +41,7 @@ public class SiteServiceImpl implements SiteService {
   private final ClubMembershipMapper clubMembershipMapper;
   private final ClubDepartmentMapper clubDepartmentMapper;
   private final ClubPositionMapper clubPositionMapper;
+  private final ClubVicePresidentMapper clubVicePresidentMapper;
   private final UserMapper userMapper;
   private final RecruitmentCampaignMapper recruitmentCampaignMapper;
   private final MembershipApplicationMapper applicationMapper;
@@ -182,6 +184,134 @@ public class SiteServiceImpl implements SiteService {
                                 a, users, clubs, campaigns, departments, interviewsByApplication))
                     .toList())
             .build());
+  }
+
+  @Override
+  public Result<ResponseActivationVO> getMyActivationInfo() {
+    if (!StpUtil.isLogin()) {
+      return Result.error(401, "请先登录后查看激活信息");
+    }
+    Integer userId = StpUtil.getLoginIdAsInt();
+    User user = userMapper.selectById(userId);
+    if (user == null) return Result.error(404, "用户不存在");
+
+    Club club = findClub(null);
+    if (club == null) return Result.error(404, "默认社团不存在");
+
+    ClubMembership membership = clubMembershipMapper.selectActiveNotLeft(userId, club.getId());
+    ClubDepartment department = null;
+    ClubPosition position = null;
+    if (membership != null) {
+      if (membership.getDepartmentId() != null) {
+        department = clubDepartmentMapper.selectById(membership.getDepartmentId());
+      }
+      if (membership.getPositionId() != null) {
+        position = clubPositionMapper.selectById(membership.getPositionId());
+      }
+    }
+
+    List<ClubDepartment> departments = clubDepartmentMapper.selectByClubIdOrdered(club.getId());
+    ResponseActivationVO.ClubInfo clubInfo = ResponseActivationVO.ClubInfo.builder()
+        .id(club.getId())
+        .name(club.getName())
+        .code(club.getCode())
+        .category(club.getCategory())
+        .description(club.getDescription())
+        .logoUrl(club.getLogoUrl())
+        .wechatGroupQrcode(club.getWechatGroupQrcode())
+        .qqGroupNumber(club.getQqGroupNumber())
+        .focusAreas(departments.stream()
+            .map(d -> ResponseActivationVO.FocusArea.builder()
+                .title(d.getName())
+                .description(d.getDescription())
+                .build())
+            .toList())
+        .build();
+
+    ResponseActivationVO.MembershipInfo membershipInfo = null;
+    if (membership != null) {
+      membershipInfo = ResponseActivationVO.MembershipInfo.builder()
+          .clubId(membership.getClubId())
+          .departmentId(membership.getDepartmentId())
+          .departmentName(department == null ? null : department.getName())
+          .departmentDescription(department == null ? null : department.getDescription())
+          .departmentWechatQrcode(department == null ? null : department.getWechatGroupQrcode())
+          .positionId(membership.getPositionId())
+          .positionName(position == null ? null : position.getName())
+          .status(membership.getStatus())
+          .joinedAt(membership.getJoinedAt())
+          .build();
+    }
+
+    java.util.Set<Integer> leaderIds = new java.util.LinkedHashSet<>();
+    if (department != null && department.getManagerUserId() != null) {
+      leaderIds.add(department.getManagerUserId());
+    }
+    if (department != null && department.getViceManagerUserId() != null) {
+      leaderIds.add(department.getViceManagerUserId());
+    }
+    if (club.getPresidentUserId() != null) {
+      leaderIds.add(club.getPresidentUserId());
+    }
+    if (club.getVicePresidentUserId() != null) {
+      leaderIds.add(club.getVicePresidentUserId());
+    }
+    if (club.getLeagueSecretaryUserId() != null) {
+      leaderIds.add(club.getLeagueSecretaryUserId());
+    }
+    List<ClubVicePresident> vicePresidentRecords = clubVicePresidentMapper.selectByClubId(club.getId());
+    for (ClubVicePresident vp : vicePresidentRecords) {
+      leaderIds.add(vp.getUserId());
+    }
+    Map<Integer, User> leaders = leaderIds.isEmpty() ? Map.of()
+        : userMapper.selectBatchIds(leaderIds).stream()
+            .collect(Collectors.toMap(User::getId, Function.identity()));
+
+    ResponseActivationVO.Leader departmentHead =
+        department == null ? null : toLeader(leaders, department.getManagerUserId(), "部长");
+    ResponseActivationVO.Leader viceDepartmentHead =
+        department == null ? null : toLeader(leaders, department.getViceManagerUserId(), "副部长");
+    ResponseActivationVO.Leader president =
+        toLeader(leaders, club.getPresidentUserId(), "社长");
+    ResponseActivationVO.Leader leagueSecretary =
+        toLeader(leaders, club.getLeagueSecretaryUserId(), "团支书");
+    List<ResponseActivationVO.Leader> vicePresidents = vicePresidentRecords.stream()
+        .map(vp -> toLeader(leaders, vp.getUserId(), "副社长"))
+        .filter(Objects::nonNull)
+        .toList();
+
+    String displayName = isBlank(user.getRealName()) ? user.getUserName() : user.getRealName();
+    return Result.success(ResponseActivationVO.builder()
+        .userId(user.getId())
+        .userName(user.getUserName())
+        .realName(displayName)
+        .avatar(user.getAvatar())
+        .qqOpenid(isBlank(user.getQqOpenid()) ? null : user.getQqOpenid())
+        .activated(user.getActivatedAt() != null)
+        .activatedAt(user.getActivatedAt())
+        .membership(membershipInfo)
+        .departmentHead(departmentHead)
+        .viceDepartmentHead(viceDepartmentHead)
+        .president(president)
+        .leagueSecretary(leagueSecretary)
+        .vicePresidents(vicePresidents)
+        .club(clubInfo)
+        .build());
+  }
+
+  private ResponseActivationVO.Leader toLeader(Map<Integer, User> users, Integer userId, String role) {
+    if (userId == null) return null;
+    User u = users.get(userId);
+    if (u == null) return null;
+    String name = isBlank(u.getRealName()) ? u.getUserName() : u.getRealName();
+    return ResponseActivationVO.Leader.builder()
+        .userId(u.getId())
+        .name(name)
+        .initial(initialOf(name))
+        .role(role)
+        .avatar(u.getAvatar())
+        .qqAvatar(qqAvatarUrl(u.getQqOpenid()))
+        .build();
   }
 
   @Override

@@ -25,4 +25,5 @@ public class RequestCreateDepartmentDTO {
   private String description;
 
   private Integer managerUserId;
+  private Integer viceManagerUserId;
 }

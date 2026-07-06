@@ -464,6 +464,20 @@ public class AuthServiceImpl implements AuthService {
     return Result.success(buildSafeUser(user), "入社介绍已完成");
   }
 
+  @Override
+  @RedisCacheEvict(cacheNames = {"site", "auth"})
+  public Result<User> activate() {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+    int id = StpUtil.getLoginIdAsInt();
+    User user = userMapper.selectById(id);
+    if (user == null) return Result.error(404, "用户不存在");
+    if (user.getActivatedAt() == null) {
+      user.setActivatedAt(new Timestamp(System.currentTimeMillis()));
+      userMapper.updateById(user);
+    }
+    return Result.success(buildSafeUser(user), "账号已激活");
+  }
+
 	private ResponseLoginVO createLoginResponse(User user) {
 		StpUtil.login(user.getId(), new SaLoginModel());
 		user.setLastLoginAt(new Timestamp(System.currentTimeMillis()));
@@ -622,8 +636,9 @@ public class AuthServiceImpl implements AuthService {
 				.userStatus(user.getUserStatus())
 				.miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
 				.qqOpenid(isBlank(user.getQqOpenid()) ? null : user.getQqOpenid())
-				.createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt())
-				.onboardingCompletedAt(user.getOnboardingCompletedAt()).build();
+			.createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt())
+			.onboardingCompletedAt(user.getOnboardingCompletedAt())
+			.activatedAt(user.getActivatedAt()).build();
 	}
 
 	private String normalizeQqOpenid(String qqOpenid) {

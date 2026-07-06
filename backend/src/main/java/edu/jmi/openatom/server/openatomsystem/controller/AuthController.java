@@ -193,4 +193,11 @@ public class AuthController {
   public Result<User> completeOnboarding() {
     return authService.completeOnboarding();
   }
+
+  /** Activates the current user's account after they acknowledge club membership. */
+  @PostMapping("/activate")
+  @SaCheckPermission("auth:me")
+  public Result<User> activate() {
+    return authService.activate();
+  }
 }

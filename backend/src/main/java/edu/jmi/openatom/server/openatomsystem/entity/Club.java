@@ -35,6 +35,18 @@ public class Club {
   @TableField("president_user_id")
   private Integer presidentUserId;
 
+  @TableField("vice_president_user_id")
+  private Integer vicePresidentUserId;
+
+  @TableField("league_secretary_user_id")
+  private Integer leagueSecretaryUserId;
+
+  @TableField("wechat_group_qrcode")
+  private String wechatGroupQrcode;
+
+  @TableField("qq_group_number")
+  private String qqGroupNumber;
+
   private String status;
 
   @TableField("recruitment_status")

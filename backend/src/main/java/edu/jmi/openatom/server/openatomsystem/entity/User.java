@@ -69,4 +69,7 @@ public class User {
 
   @TableField("onboarding_completed_at")
   private Timestamp onboardingCompletedAt;
+
+  @TableField("activated_at")
+  private Timestamp activatedAt;
 }

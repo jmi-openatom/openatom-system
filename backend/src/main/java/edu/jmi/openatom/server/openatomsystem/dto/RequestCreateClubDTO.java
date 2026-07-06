@@ -34,4 +34,6 @@ public class RequestCreateClubDTO {
 
   private String logoUrl;
   private Integer presidentUserId;
+  private Integer vicePresidentUserId;
+  private Integer leagueSecretaryUserId;
 }

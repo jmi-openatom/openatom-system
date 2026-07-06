@@ -103,10 +103,12 @@ public class PublicServiceImpl implements PublicService {
 				.miniappOpenid(user.getMiniappOpenid())
 				.wechatUnionid(user.getWechatUnionid())
 				.qqOpenid(user.getQqOpenid())
-				.userStatus(user.getUserStatus())
-				.createTime(user.getCreateTime())
-				.lastLoginAt(user.getLastLoginAt())
-				.build();
+			.userStatus(user.getUserStatus())
+			.createTime(user.getCreateTime())
+			.lastLoginAt(user.getLastLoginAt())
+			.onboardingCompletedAt(user.getOnboardingCompletedAt())
+			.activatedAt(user.getActivatedAt())
+			.build();
 		safe.setPassword(null);
 		return safe;
 	}

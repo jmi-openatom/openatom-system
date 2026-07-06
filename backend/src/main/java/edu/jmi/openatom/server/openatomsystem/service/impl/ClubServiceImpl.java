@@ -7,11 +7,14 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateClubDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateClubDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateClubStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateRecruitmentStatusDTO;
+import edu.jmi.openatom.server.openatomsystem.entity.ClubVicePresident;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.ClubVicePresidentMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.service.ClubService;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +30,7 @@ public class ClubServiceImpl implements ClubService {
   private static final List<String> RECRUITMENT_STATUSES = List.of("open", "closed");
 
   private final ClubMapper clubMapper;
+  private final ClubVicePresidentMapper clubVicePresidentMapper;
   private final UserMapper userMapper;
 
   @Override
@@ -52,6 +56,10 @@ public class ClubServiceImpl implements ClubService {
     if (!userExists(requestCreateClubDTO.getPresidentUserId())) {
       return Result.error(400, "负责人用户不存在");
     }
+    if (requestCreateClubDTO.getVicePresidentUserId() != null
+        && !userExists(requestCreateClubDTO.getVicePresidentUserId())) {
+      return Result.error(400, "副社长用户不存在");
+    }
     if (clubMapper.countByCode(requestCreateClubDTO.getCode()) > 0) {
       return Result.error(400, "社团编码已存在");
     }
@@ -64,6 +72,7 @@ public class ClubServiceImpl implements ClubService {
             .description(requestCreateClubDTO.getDescription())
             .logoUrl(requestCreateClubDTO.getLogoUrl())
             .presidentUserId(requestCreateClubDTO.getPresidentUserId())
+            .vicePresidentUserId(requestCreateClubDTO.getVicePresidentUserId())
             .status("active")
             .recruitmentStatus("closed")
             .build();
@@ -104,8 +113,15 @@ public class ClubServiceImpl implements ClubService {
       }
       club.setName(requestUpdateClubDTO.getName());
     }
-    if (!userExists(requestUpdateClubDTO.getPresidentUserId())) {
+    if (requestUpdateClubDTO.getPresidentUserId() != null
+        && requestUpdateClubDTO.getPresidentUserId() != 0
+        && !userExists(requestUpdateClubDTO.getPresidentUserId())) {
       return Result.error(400, "负责人用户不存在");
+    }
+    if (requestUpdateClubDTO.getVicePresidentUserId() != null
+        && requestUpdateClubDTO.getVicePresidentUserId() != 0
+        && !userExists(requestUpdateClubDTO.getVicePresidentUserId())) {
+      return Result.error(400, "副社长用户不存在");
     }
     if (requestUpdateClubDTO.getCategory() != null) {
       club.setCategory(requestUpdateClubDTO.getCategory());
@@ -117,7 +133,26 @@ public class ClubServiceImpl implements ClubService {
       club.setLogoUrl(requestUpdateClubDTO.getLogoUrl());
     }
     if (requestUpdateClubDTO.getPresidentUserId() != null) {
-      club.setPresidentUserId(requestUpdateClubDTO.getPresidentUserId());
+      club.setPresidentUserId(
+          requestUpdateClubDTO.getPresidentUserId() == 0 ? null : requestUpdateClubDTO.getPresidentUserId());
+    }
+    if (requestUpdateClubDTO.getVicePresidentUserId() != null) {
+      club.setVicePresidentUserId(
+          requestUpdateClubDTO.getVicePresidentUserId() == 0 ? null : requestUpdateClubDTO.getVicePresidentUserId());
+    }
+    if (requestUpdateClubDTO.getLeagueSecretaryUserId() != null) {
+      if (requestUpdateClubDTO.getLeagueSecretaryUserId() != 0
+          && !userExists(requestUpdateClubDTO.getLeagueSecretaryUserId())) {
+        return Result.error(400, "团支书用户不存在");
+      }
+      club.setLeagueSecretaryUserId(
+          requestUpdateClubDTO.getLeagueSecretaryUserId() == 0 ? null : requestUpdateClubDTO.getLeagueSecretaryUserId());
+    }
+    if (requestUpdateClubDTO.getWechatGroupQrcode() != null) {
+      club.setWechatGroupQrcode(requestUpdateClubDTO.getWechatGroupQrcode());
+    }
+    if (requestUpdateClubDTO.getQqGroupNumber() != null) {
+      club.setQqGroupNumber(requestUpdateClubDTO.getQqGroupNumber());
     }
 
     int row = clubMapper.updateById(club);
@@ -176,5 +211,33 @@ public class ClubServiceImpl implements ClubService {
 
   private boolean isBlank(String value) {
     return value == null || value.isBlank();
+  }
+
+  @Override
+  public Result<List<ClubVicePresident>> getVicePresidents(Integer clubId) {
+    if (clubId == null) return Result.error(400, "clubId不能为空");
+    return Result.success(clubVicePresidentMapper.selectByClubId(clubId));
+  }
+
+  @Override
+  @RedisCacheEvict(cacheNames = {"lookup:club", "site"})
+  public Result<String> addVicePresident(Integer clubId, Integer userId) {
+    if (clubId == null) return Result.error(400, "clubId不能为空");
+    if (userId == null) return Result.error(400, "userId不能为空");
+    if (!userExists(userId)) return Result.error(400, "用户不存在");
+    Club club = clubMapper.selectById(clubId);
+    if (club == null) return Result.error(404, "社团不存在");
+    clubVicePresidentMapper.insert(
+        ClubVicePresident.builder().clubId(clubId).userId(userId).build());
+    return Result.success("副社长添加成功");
+  }
+
+  @Override
+  @RedisCacheEvict(cacheNames = {"lookup:club", "site"})
+  public Result<String> removeVicePresident(Integer clubId, Integer userId) {
+    if (clubId == null) return Result.error(400, "clubId不能为空");
+    if (userId == null) return Result.error(400, "userId不能为空");
+    clubVicePresidentMapper.deleteByClubIdAndUserId(clubId, userId);
+    return Result.success("副社长已移除");
   }
 }

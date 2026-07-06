@@ -38,6 +38,7 @@ function normalizeUser(value: unknown): Record<string, unknown> {
   const studentId = user.studentId ?? user.student_id
   const qqOpenid = user.qqOpenid ?? user.qq_openid
   const onboardingCompletedAt = user.onboardingCompletedAt ?? user.onboarding_completed_at
+  const activatedAt = user.activatedAt ?? user.activated_at
 
   return {
     ...user,
@@ -46,6 +47,7 @@ function normalizeUser(value: unknown): Record<string, unknown> {
     ...(studentId !== undefined ? { studentId } : {}),
     ...(qqOpenid !== undefined ? { qqOpenid } : {}),
     ...(onboardingCompletedAt !== undefined ? { onboardingCompletedAt } : {}),
+    ...(activatedAt !== undefined ? { activatedAt } : {}),
   }
 }
 
@@ -187,4 +189,10 @@ export function setRememberedLogin(payload?: LoginPayload): void {
 
 export function clearRememberedLogin(): void {
   localStorage.removeItem(REMEMBER_LOGIN_KEY)
+}
+
+export function isActivated(): boolean {
+  const user = getCurrentUser() as { activatedAt?: unknown }
+  const value = user?.activatedAt
+  return value !== null && value !== undefined && value !== ''
 }

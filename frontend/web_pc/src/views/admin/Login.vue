@@ -39,7 +39,7 @@
         </div>
 
         <div class="login-aside__footer">
-          <span>© 2025-2027 JMI-OPENATOM & <a href="http://www.ariven.cn/">Ariven</a>. All rights reserved.</span>
+          <span>© 2025-2027 JMI-OPENATOM & <a href="http://www.ariven.cn/">Ariven(软件技术252301 何治皓).</a> All rights reserved.</span>
         </div>
       </div>
     </aside>
