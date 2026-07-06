@@ -1,6 +1,6 @@
 <template>
   <div ref="rootRef" class="onboarding">
-    <OnboardingScene :scroll-el="scrollRoot" class="onboarding__scene" />
+    <OnboardingScene v-if="sceneVisible" :scroll-el="scrollRoot" class="onboarding__scene" />
     <div aria-hidden="true" class="onboarding__scrim"></div>
 
     <div class="onboarding__progress" aria-hidden="true">
@@ -58,6 +58,7 @@ const scenes = [
 
 const activeIndex = ref(0)
 const progress = ref(0)
+const sceneVisible = ref(true)
 
 let animationContext: { revert: () => void } | undefined
 let isUnmounted = false
@@ -68,12 +69,15 @@ const redirectTarget = computed(() => {
 })
 
 async function finish() {
+  // 先销毁 3D 场景释放 GPU 资源，再发请求
+  sceneVisible.value = false
   try {
     const updated = await authApi.completeOnboarding()
     if (updated) {
       setSession({ accessToken: getToken() || undefined, user: updated })
     }
   } catch (error) {
+    sceneVisible.value = true
     ElMessage.error((error as { message?: string })?.message || '激活失败，请重试')
     throw error
   }
@@ -115,7 +119,7 @@ async function createAnimations() {
   animationContext = gsap.context(() => {
     ScrollTrigger.defaults({ scroller: scrollEl })
 
-    // 章节大数字仍保留轻微视差位移（背景层装饰，非正文）
+    // 章节大数字轻微视差位移
     gsap.utils.toArray<HTMLElement>('[data-parallax]').forEach((el) => {
       const speed = Number(el.dataset.parallax || '0')
       if (!speed) return
@@ -136,45 +140,43 @@ async function createAnimations() {
       )
     })
 
-    // 正文不位移、不模糊，只做纯透明度"变淡变深"
-    // 用 opacity 而非 autoAlpha，避免 visibility 切换造成的跳变
+    // 正文：整个 .scene__body 作为一个整体做透明度淡入淡出
+    // 用单一 ScrollTrigger + tween 配 keyframes 覆盖"进→中→出"全周期
+    // 避免给每个子元素创建 2 个 ScrollTrigger 导致实例爆炸
     gsap.utils.toArray<HTMLElement>('.scene__body').forEach((body) => {
-      // 标记了 data-no-fade 的元素（如激活按钮）保持原样不参与淡入淡出
-      Array.from(body.children).forEach((child) => {
-        const el = child as HTMLElement
-        if (el.dataset.noFade !== undefined) return
-        // 进入视口：由淡变深
-        gsap.fromTo(
-          el,
-          { opacity: 0.08 },
-          {
-            opacity: 1,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: el,
-              scroller: scrollEl,
-              start: 'top 90%',
-              end: 'top 56%',
-              scrub: 1.2,
-            },
+      const children = Array.from(body.children).filter(
+        (child) => (child as HTMLElement).dataset.noFade === undefined,
+      ) as HTMLElement[]
+      if (!children.length) return
+
+      // 按滚动进度分三段：淡入 → 完全清晰 → 淡出
+      gsap.fromTo(
+        children,
+        { opacity: 0.1 },
+        {
+          opacity: 1,
+          ease: 'none',
+          stagger: 0.08,
+          scrollTrigger: {
+            trigger: body,
+            scroller: scrollEl,
+            start: 'top 85%',
+            end: 'top 45%',
+            scrub: 1,
           },
-        )
-        // 离开视口：由深变淡
-        gsap.fromTo(
-          el,
-          { opacity: 1 },
-          {
-            opacity: 0.08,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: el,
-              scroller: scrollEl,
-              start: 'bottom 44%',
-              end: 'bottom 10%',
-              scrub: 1.2,
-            },
-          },
-        )
+        },
+      )
+      gsap.to(children, {
+        opacity: 0.1,
+        ease: 'none',
+        stagger: 0.06,
+        scrollTrigger: {
+          trigger: body,
+          scroller: scrollEl,
+          start: 'bottom 55%',
+          end: 'bottom 15%',
+          scrub: 1,
+        },
       })
     })
 
@@ -190,7 +192,9 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   isUnmounted = true
+  sceneVisible.value = false
   animationContext?.revert()
+  animationContext = undefined
 })
 </script>
 
