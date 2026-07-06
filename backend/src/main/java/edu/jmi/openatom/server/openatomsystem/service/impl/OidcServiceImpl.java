@@ -260,6 +260,7 @@ public class OidcServiceImpl implements OidcService {
         "avatar", user.getAvatar(),
         "is_lab_member", labMember,
         "lab_role", roles.contains("super_admin") || roles.contains("club_admin") ? 2 : 0,
+        "onboarding_completed_at", user.getOnboardingCompletedAt(),
         "roles", roles,
         "permissions", permissions);
   }
