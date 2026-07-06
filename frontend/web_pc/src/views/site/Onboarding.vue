@@ -4,7 +4,19 @@
     <div aria-hidden="true" class="onboarding__scrim"></div>
 
     <div class="onboarding__progress" aria-hidden="true">
-      <span :style="{ transform: `scaleX(${progress})` }"></span>
+      <div class="progress-pill">
+        <div class="progress-line-bg"></div>
+        <div class="progress-line-fill" :style="{ transform: `scaleX(${progress})` }"></div>
+        <div class="progress-dots">
+          <span
+            v-for="(scene, index) in scenes"
+            :key="scene.id"
+            :class="{ 'is-active': index <= activeIndex, 'is-current': index === activeIndex }"
+            class="progress-dot"
+          ></span>
+        </div>
+      </div>
+      <span class="progress-step-text">{{ String(activeIndex + 1).padStart(2, '0') }} / {{ String(scenes.length).padStart(2, '0') }}</span>
     </div>
 
     <div ref="scrollRoot" class="onboarding__scroll" @scroll.passive="onScroll">
@@ -221,27 +233,101 @@ html:not(.dark) .onboarding {
   padding: clamp(80px, 12vh, 140px) clamp(20px, 6vw, 96px);
 }
 
-/* 顶部进度线 */
+/* 顶部进度胶囊指示器 */
 .onboarding__progress {
   position: fixed;
-  top: clamp(22px, 7vh, 70px);
+  top: clamp(18px, 4.5vh, 40px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
-  width: clamp(120px, 18vw, 240px);
-  height: 2px;
-  background: var(--ob-progress-track);
+  padding: 8px 16px;
   border-radius: 999px;
-  overflow: hidden;
+  background: rgba(10, 10, 15, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: none;
 }
 
-.onboarding__progress span {
-  display: block;
-  height: 100%;
-  width: 100%;
-  background: var(--ob-fg);
+html:not(.dark) .onboarding__progress {
+  background: rgba(245, 245, 247, 0.65);
+  border: 1px solid rgba(29, 29, 31, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.progress-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: clamp(140px, 18vw, 240px);
+  height: 12px;
+}
+
+.progress-line-bg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ob-progress-track);
+  z-index: 0;
+  border-radius: 999px;
+}
+
+.progress-line-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #0066cc;
+  box-shadow: 0 0 8px rgba(0, 102, 204, 0.6);
   transform: scaleX(0);
   transform-origin: left center;
-  transition: transform 0.12s linear;
+  transition: transform 0.16s ease-out;
+  z-index: 1;
+  border-radius: 999px;
+}
+
+.progress-dots {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ob-bg);
+  border: 2px solid var(--ob-fg-faint);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-dot.is-active {
+  border-color: #0066cc;
+  background: #0066cc;
+  box-shadow: 0 0 8px rgba(0, 102, 204, 0.8);
+}
+
+.progress-dot.is-current {
+  border-color: #0066cc;
+  background: var(--ob-fg);
+  transform: scale(1.3);
+  box-shadow: 0 0 10px #0066cc;
+}
+
+.progress-step-text {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--ob-fg-muted);
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  user-select: none;
 }
 </style>
