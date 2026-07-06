@@ -665,7 +665,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   killed = true
   gsap.ticker.remove(render)
-  gsapCtx?.revert()
+  try {
+    gsapCtx?.revert()
+  } catch {
+    // gsapCtx may be in an invalid state during mid-frame teardown
+  }
 
   resizeObserver?.disconnect()
   const scrollTarget = props.scrollEl || window
