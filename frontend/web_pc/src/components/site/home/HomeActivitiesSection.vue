@@ -447,5 +447,7 @@ onBeforeUnmount(() => {
   animationContext?.revert()
   tiltXTo?.tween.kill()
   tiltYTo?.tween.kill()
+  tiltXTo = undefined
+  tiltYTo = undefined
 })
 </script>

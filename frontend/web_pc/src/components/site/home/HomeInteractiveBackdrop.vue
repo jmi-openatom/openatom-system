@@ -42,18 +42,10 @@ const pointer = {
   active: 0,
 }
 
-const mouseXTo = gsap.quickTo(pointer, 'x', {
-  duration: 0.42,
-  ease: 'power3.out',
-})
-const mouseYTo = gsap.quickTo(pointer, 'y', {
-  duration: 0.42,
-  ease: 'power3.out',
-})
-const activeTo = gsap.quickTo(pointer, 'active', {
-  duration: 0.26,
-  ease: 'power2.out',
-})
+let mouseXTo: gsap.QuickToFunc | undefined
+let mouseYTo: gsap.QuickToFunc | undefined
+let activeTo: gsap.QuickToFunc | undefined
+let gsapCtx: gsap.Context | null = null
 
 function prefersReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -185,19 +177,34 @@ function stopDrawing() {
 function handlePointerMove(event: PointerEvent) {
   if (!host) return
   const rect = host.getBoundingClientRect()
-  mouseXTo(event.clientX - rect.left)
-  mouseYTo(event.clientY - rect.top)
-  activeTo(1)
+  mouseXTo?.(event.clientX - rect.left)
+  mouseYTo?.(event.clientY - rect.top)
+  activeTo?.(1)
 }
 
 function handlePointerLeave() {
-  activeTo(0)
+  activeTo?.(0)
 }
 
 onMounted(() => {
   const canvas = canvasRef.value
   host = canvas?.parentElement || null
   if (!canvas || !host) return
+
+  gsapCtx = gsap.context(() => {
+    mouseXTo = gsap.quickTo(pointer, 'x', {
+      duration: 0.42,
+      ease: 'power3.out',
+    })
+    mouseYTo = gsap.quickTo(pointer, 'y', {
+      duration: 0.42,
+      ease: 'power3.out',
+    })
+    activeTo = gsap.quickTo(pointer, 'active', {
+      duration: 0.26,
+      ease: 'power2.out',
+    })
+  })
 
   resizeCanvas()
   if ('ResizeObserver' in window) {
@@ -256,5 +263,6 @@ onBeforeUnmount(() => {
     host?.removeEventListener('pointermove', handlePointerMove)
     host?.removeEventListener('pointerleave', handlePointerLeave)
   }
+  gsapCtx?.revert()
 })
 </script>

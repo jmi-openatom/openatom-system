@@ -19,8 +19,9 @@ let height = 0
 let dpr = 1
 
 const pointer = { x: 0, y: 0, tx: 0, ty: 0 }
-const xTo = gsap.quickTo(pointer, 'tx', { duration: 0.5, ease: 'power3.out' })
-const yTo = gsap.quickTo(pointer, 'ty', { duration: 0.5, ease: 'power3.out' })
+let xTo: gsap.QuickToFunc | undefined
+let yTo: gsap.QuickToFunc | undefined
+let gsapCtx: gsap.Context | null = null
 
 const routes = [
   [0.08, 0.74, 0.22, 0.56, 0.34, 0.62, 0.48, 0.38, 0.62, 0.44, 0.78, 0.22],
@@ -175,13 +176,19 @@ function render() {
 function handlePointerMove(event: PointerEvent) {
   if (!host) return
   const rect = host.getBoundingClientRect()
-  xTo(event.clientX - rect.left)
-  yTo(event.clientY - rect.top)
+  xTo?.(event.clientX - rect.left)
+  yTo?.(event.clientY - rect.top)
 }
 
 onMounted(() => {
   host = canvasRef.value?.parentElement || null
   if (!host) return
+
+  gsapCtx = gsap.context(() => {
+    xTo = gsap.quickTo(pointer, 'tx', { duration: 0.5, ease: 'power3.out' })
+    yTo = gsap.quickTo(pointer, 'ty', { duration: 0.5, ease: 'power3.out' })
+  })
+
   resize()
   resizeObserver = new ResizeObserver(resize)
   resizeObserver.observe(host)
@@ -195,6 +202,7 @@ onBeforeUnmount(() => {
   if (frame) window.cancelAnimationFrame(frame)
   resizeObserver?.disconnect()
   host?.removeEventListener('pointermove', handlePointerMove)
+  gsapCtx?.revert()
 })
 </script>
 
