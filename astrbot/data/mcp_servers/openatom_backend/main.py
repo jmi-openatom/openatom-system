@@ -43,9 +43,10 @@ async def _api_get(path: str, params: dict[str, str] | None = None) -> str:
                 try:
                     data = json.loads(text)
                     # 解包标准 Result 信封 {code, message, data}
+                    # 后端 Result.SUCCESS_CODE = 0（不是200），code 为 None 或 0 表示成功
                     if isinstance(data, dict) and "data" in data and "code" in data:
                         code = data.get("code")
-                        if code != 200:
+                        if code not in (None, 0):
                             return json.dumps({"error": data.get("message", "unknown error"), "code": code}, ensure_ascii=False)
                         data = data["data"]
                     return json.dumps(data, ensure_ascii=False)
