@@ -64,9 +64,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: AstrBot Plugin Syntax Check
+      - name: AstrBot Plugin & MCP Server Syntax Check
         run: |
           python -m py_compile astrbot/data/plugins/astrbot_plugin_openatom_api/main.py
+          python -m py_compile astrbot/data/mcp_servers/openatom_backend/main.py
+          python -c "import json; json.load(open('astrbot/data/mcp_server.json')); print('mcp_server.json: valid')"
 
   deploy:
     needs: [ frontend-check, backend-check, bot-check ]

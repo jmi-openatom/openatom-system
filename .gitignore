@@ -18,6 +18,10 @@ astrbot/data/*
 astrbot/data/plugins/*
 !astrbot/data/plugins/astrbot_plugin_openatom_api/
 !astrbot/data/plugins/astrbot_plugin_openatom_api/**
+# MCP Server: 把后端 API 暴露为 MCP 工具供 LLM 调用
+!astrbot/data/mcp_server.json
+!astrbot/data/mcp_servers/
+!astrbot/data/mcp_servers/**
 astrbot/napcat/config/*
 !astrbot/napcat/config/.gitkeep
 astrbot/ntqq/*

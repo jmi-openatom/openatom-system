@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "openatom-backend": {
+            "command": "python3",
+            "args": ["/AstrBot/data/mcp_servers/openatom_backend/main.py"],
+            "env": {
+                "OPENATOM_BACKEND_URL": "http://backend:8921/api/v1"
+            }
+        }
+    }
+}

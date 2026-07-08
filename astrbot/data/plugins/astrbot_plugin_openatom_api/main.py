@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.5.0"
+PLUGIN_VERSION = "1.6.0"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -342,151 +342,21 @@ class OpenAtomApiPlugin(Star):
             return
 
     # ==================================================================
-    # 细粒度 LLM 工具：让 AI 根据语义自行选择调用哪个接口
-    # 每个工具对应一个明确的数据查询能力，LLM 理解用户意图后自行选择
+    # LLM 工具：who_am_i —— 需要当前用户 QQ 上下文，MCP 无法获取，所以保留在插件
+    # 其他数据查询工具由 MCP Server 提供（astrbot/data/mcp_servers/openatom_backend/）
     # ==================================================================
 
     @filter.llm_tool(name="openatom_who_am_i")
     async def llm_who_am_i(self, event: AstrMessageEvent):
         '''查询当前发起对话的用户在社团系统中的身份信息。
 
-        当用户问“我是谁”“我叫什么”“我的信息”“查一下我”“你知道我是谁吗”等关于自身身份的问题时，使用此工具。
-        通过当前 QQ 号查找用户信息，无需用户提供任何参数。
-
-        Args: 无参数
+        当用户问"我是谁""我叫什么""我的信息""你知道我是谁吗"等关于自身身份的问题时使用。
+        此工具通过当前 QQ 号自动查询，用户不需要提供任何参数。
         '''
-        yield self._plain_result(event, await self._answer_who_am_i(event) or "暂时无法确定你的身份。")
-
-    @filter.llm_tool(name="openatom_lookup_user")
-    async def llm_lookup_user(self, event: AstrMessageEvent, keyword: str, lookup_type: str = "name"):
-        '''按姓名或QQ号查询社团系统中的其他用户。
-
-        当用户想查别人的信息时使用，例如“查人 张三”“查一下QQ号123456”“张三是谁”“帮我找一下李四”。
-
-        Args:
-            keyword(string): 姓名或QQ号
-            lookup_type(string): 查询类型，"name"表示按姓名查询，"qq"表示按QQ号查询。默认"name"。
-        '''
-        yield self._plain_result(event, await self._answer_user_lookup(keyword, lookup_type))
-
-    @filter.llm_tool(name="openatom_get_club_overview")
-    async def llm_get_club_overview(self, event: AstrMessageEvent):
-        '''获取社团概况，包括社团名称、简介、统计指标（在册成员数、年度活动数、竞赛获奖数等）。
-
-        当用户问“社团怎么样”“社团概况”“社团规模”“统计指标”“社团数据”等关于社团整体信息时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_club_home())
-
-    @filter.llm_tool(name="openatom_get_member_count")
-    async def llm_get_member_count(self, event: AstrMessageEvent):
-        '''获取社团当前在册成员人数。
-
-        当用户问“社团有多少人”“成员数”“在册成员”“社员数”“几个人”等关于人数的问题时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_member_count())
-
-    @filter.llm_tool(name="openatom_get_activities")
-    async def llm_get_activities(self, event: AstrMessageEvent):
-        '''获取社团活动列表。
-
-        当用户问“有什么活动”“最近活动”“活动安排”“有哪些活动”等关于活动列表的问题时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_activities())
-
-    @filter.llm_tool(name="openatom_get_activity_detail")
-    async def llm_get_activity_detail(self, event: AstrMessageEvent, activity_id: str):
-        '''获取指定活动的详细信息。
-
-        当用户问“看一下1号活动”“活动ID为3的详情”“第一个活动是什么”“3号活动”等关于特定活动详情时使用此工具。
-
-        Args:
-            activity_id(string): 活动编号（数字），例如"1""3"
-        '''
-        ordinal = None
-        try:
-            ordinal = int(activity_id)
-        except (ValueError, TypeError):
-            pass
-        if ordinal is not None and ordinal <= 20:
-            yield self._plain_result(event, await self._answer_activity_by_ordinal(ordinal))
-        else:
-            yield self._plain_result(event, await self._answer_activity_detail(activity_id))
-
-    @filter.llm_tool(name="openatom_get_people")
-    async def llm_get_people(self, event: AstrMessageEvent):
-        '''获取社团主要人员、骨干、负责人信息。
-
-        当用户问“主要人员”“负责人”“社长”“部长”“核心成员”“有哪些人”“骨干”等关于人员的问题时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_people())
-
-    @filter.llm_tool(name="openatom_get_departments")
-    async def llm_get_departments(self, event: AstrMessageEvent):
-        '''获取社团部门/组织架构信息。
-
-        当用户问“有哪些部门”“组织架构”“分组”“项目部”“宣传组”“岗位”等关于部门的问题时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_departments())
-
-    @filter.llm_tool(name="openatom_get_recruitment")
-    async def llm_get_recruitment(self, event: AstrMessageEvent):
-        '''获取社团招新/纳新信息。
-
-        当用户问“招新”“纳新”“怎么报名”“怎么加入”“招新开了吗”“报名”等关于招新的问题时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_recruitment())
-
-    @filter.llm_tool(name="openatom_get_awards")
-    async def llm_get_awards(self, event: AstrMessageEvent):
-        '''获取社团竞赛获奖信息。
-
-        当用户问“获奖”“奖项”“比赛成绩”“竞赛”“荣誉”等关于荣誉的问题时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_awards())
-
-    @filter.llm_tool(name="openatom_get_focus_and_tech")
-    async def llm_get_focus_and_tech(self, event: AstrMessageEvent):
-        '''获取社团主要方向和技术栈信息。
-
-        当用户问“技术栈”“技术方向”“社团做什么”“研究什么”“项目方向”“学习方向”等关于方向的问题时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_focus_or_tech())
-
-    @filter.llm_tool(name="openatom_get_evening_study")
-    async def llm_get_evening_study(self, event: AstrMessageEvent):
-        '''获取今天晚自习签到概览。
-
-        当用户问“晚自习”“自习签到”“今晚签到”“实验室签到”等关于晚自习的问题时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_evening_study())
-
-    @filter.llm_tool(name="openatom_get_register_status")
-    async def llm_get_register_status(self, event: AstrMessageEvent):
-        '''查询社团当前是否开放注册。
-
-        当用户问“能注册吗”“开放注册了吗”“注册开关”“可以注册吗”等关于注册的问题时使用此工具。
-
-        Args: 无参数
-        '''
-        yield self._plain_result(event, await self._answer_register_enabled())
+        result = await self._answer_who_am_i(event)
+        if result is not None:
+            return result
+        return "无法获取当前用户的 QQ 信息，可能消息平台未提供发送者 ID。"
 
     async def _answer_question(self, question: str, event: AstrMessageEvent | None = None) -> str:
         text = (question or "").strip().lower()
