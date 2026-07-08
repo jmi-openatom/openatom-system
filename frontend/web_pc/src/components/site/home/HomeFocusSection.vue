@@ -37,6 +37,12 @@ const data = [
     src: "/external.png",
     description: "对接企业、兄弟社团和开源社区，争取赞助与合作机会，拓宽成员视野。",
   },
+  {
+    category: "社区部 - 社区运营",
+    title: "共建开源社区生态",
+    src: "/community.png",
+    description: "负责开源社区运营、内容输出与社群维护，搭建校园与开源生态的桥梁，让成员融入更大的技术共同体。",
+  },
 ]
 </script>
 

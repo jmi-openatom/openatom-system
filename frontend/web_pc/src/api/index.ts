@@ -254,8 +254,17 @@ export const departmentApi = {
   list(clubId: string | number): Promise<any> {
     return request.get(`/clubs/${clubId}/departments`)
   },
+  create(clubId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/clubs/${clubId}/departments`, data)
+  },
+  detail(id: string | number): Promise<any> {
+    return request.get(`/departments/${id}`)
+  },
   update(id: string | number, data: Record<string, unknown>): Promise<any> {
     return request.patch(`/departments/${id}`, data)
+  },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/departments/${id}`)
   },
 }
 

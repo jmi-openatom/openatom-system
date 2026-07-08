@@ -64,6 +64,7 @@ const adminFallbackRoutes = [
   '/admin/oauth-clients',
   '/admin/users',
   '/admin/clubs',
+  '/admin/departments',
   '/admin/positions',
   '/admin/activation-settings',
   '/admin/recruitment-campaigns',
@@ -345,6 +346,12 @@ const routes = [
         name: 'admin-positions',
         meta: { permissions: ['position:list'] },
         component: resilientView(() => import('../views/admin/Positions.vue')),
+      },
+      {
+        path: 'departments',
+        name: 'admin-departments',
+        meta: { permissions: ['department:list'] },
+        component: resilientView(() => import('../views/admin/Departments.vue')),
       },
       {
         path: 'activation-settings',

@@ -124,6 +124,7 @@ import {
   Files,
   FolderOpened,
   Fold,
+  Grid,
   HomeFilled,
   List,
   Lock,
@@ -184,6 +185,7 @@ const menus = ref<AdminMenuItem[]>([
   // ==== 4. 社团基础与招新链路 ====
   { path: '/admin/clubs', label: '社团管理', icon: OfficeBuilding, permissions: ['club:list'] },
   { path: '/admin/positions', label: '岗位管理', icon: List, permissions: ['position:list'] },
+  { path: '/admin/departments', label: '部门管理', icon: Grid, permissions: ['department:list'] },
   {
     path: '/admin/activation-settings',
     label: '激活页设置',

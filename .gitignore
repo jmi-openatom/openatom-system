@@ -4,6 +4,9 @@ target/
 dist/
 log/
 uploads/
+# 编译产物兜底：防止 IDE 异常把 class 输出到非 target 目录
+*.class
+${project.build.directory}/
 # 保留备份目录结构但忽略内容
 !uploads/export-backups/
 uploads/export-backups/*
