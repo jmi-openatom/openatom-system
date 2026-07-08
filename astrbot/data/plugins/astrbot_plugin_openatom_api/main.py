@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.4.4"
+PLUGIN_VERSION = "1.5.0"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -74,19 +74,31 @@ class OpenAtomApiPlugin(Star):
             event,
             "\n".join(
                 [
-                    "OpenAtom API 指令：",
-                    "/oa ping",
-                    "/oa me",
-                    "/oa bind-qq 绑定码",
-                    "/oa 查人 qq 123456",
-                    "/oa 查人 张三",
-                    "/oa 晚自习",
+                    "OpenAtom 机器人指南：",
+                    "",
+                    "【直接跟我聊天】",
+                    "你可以直接问我问题，我会理解你的意思并查询数据：",
+                    "- 社团有多少人 / 社团概况",
+                    "- 有什么活动 / 看一下1号活动",
+                    "- 有哪些部门 / 主要人员",
+                    "- 招新开了吗 / 怎么加入",
+                    "- 晚自习签到",
+                    "- 我是谁（通过QQ查你在系统里的信息）",
+                    "- 查人 张三 / 查人 qq 123456",
+                    "- 获奖 / 荣誉",
+                    "",
+                    "【指令模式】",
+                    "/oa ping - 测试后端连接",
+                    "/oa me - 查看当前登录用户",
+                    "/oa bind-qq 绑定码 - 绑定 QQ",
+                    "/oa 查人 qq 123456 / /oa 查人 张三",
+                    "/oa 晚自习 - 晚自习签到概览",
+                    "/oa ask 社团有多少人 - 自然语言查询",
+                    "/oa get /site/club-home - 直接调用 API",
+                    "/oa config - 查看配置",
+                    "",
+                    "【请假】",
                     "群里艾特我发送“我要请假 / 请个假 / 今天去不了”，我会私聊你继续办理",
-                    "/oa ask 社团有多少人",
-                    "/oa ask 主要人员有哪些",
-                    "/oa ask 看一下1号活动",
-                    "/oa get /site/club-home",
-                    "/oa config",
                     "",
                     f"插件版本：{PLUGIN_VERSION}",
                     "普通查询只允许 GET；查人走独立 public 接口；QQ 绑定命令只会消费网页登录生成的一次性绑定码。",
@@ -171,7 +183,7 @@ class OpenAtomApiPlugin(Star):
     async def ask(self, event: AstrMessageEvent, *question_parts: str):
         """按自然语言问题查询公开数据"""
         question = " ".join(question_parts).strip()
-        yield self._plain_result(event, await self._answer_question(question))
+        yield self._plain_result(event, await self._answer_question(question, event=event))
 
     @oa.command("get")
     async def get(self, event: AstrMessageEvent, path: str, *params: str):
@@ -329,24 +341,173 @@ class OpenAtomApiPlugin(Star):
             event.stop_event()
             return
 
-    @filter.llm_tool(name="openatom_query")
-    async def openatom_query(self, event: AstrMessageEvent, question: str):
-        '''根据用户原话查询社团系统后端数据并直接生成简短回答。
+    # ==================================================================
+    # 细粒度 LLM 工具：让 AI 根据语义自行选择调用哪个接口
+    # 每个工具对应一个明确的数据查询能力，LLM 理解用户意图后自行选择
+    # ==================================================================
 
-        这是唯一应该给 AI 使用的 OpenAtom 社团系统工具。
-        直接把用户原始问题传入 question，例如“当前有什么活动”“社团有多少人”“主要人员有哪些”“看一下1号活动”“有哪些部门”“招新开了吗”“查人 张三”“通过QQ号123456查人”。
-        工具内部会判断要查哪个后端 GET 接口，并返回最终可发送给用户的中文答案。
-        不要再自行选择接口，不要展示 JSON、字段名、URL、ID、状态码或工具原始数据。
+    @filter.llm_tool(name="openatom_who_am_i")
+    async def llm_who_am_i(self, event: AstrMessageEvent):
+        '''查询当前发起对话的用户在社团系统中的身份信息。
+
+        当用户问“我是谁”“我叫什么”“我的信息”“查一下我”“你知道我是谁吗”等关于自身身份的问题时，使用此工具。
+        通过当前 QQ 号查找用户信息，无需用户提供任何参数。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_who_am_i(event) or "暂时无法确定你的身份。")
+
+    @filter.llm_tool(name="openatom_lookup_user")
+    async def llm_lookup_user(self, event: AstrMessageEvent, keyword: str, lookup_type: str = "name"):
+        '''按姓名或QQ号查询社团系统中的其他用户。
+
+        当用户想查别人的信息时使用，例如“查人 张三”“查一下QQ号123456”“张三是谁”“帮我找一下李四”。
 
         Args:
-            question(string): 用户原始问题
+            keyword(string): 姓名或QQ号
+            lookup_type(string): 查询类型，"name"表示按姓名查询，"qq"表示按QQ号查询。默认"name"。
         '''
-        yield self._plain_result(event, await self._answer_question(question))
+        yield self._plain_result(event, await self._answer_user_lookup(keyword, lookup_type))
 
-    async def _answer_question(self, question: str) -> str:
+    @filter.llm_tool(name="openatom_get_club_overview")
+    async def llm_get_club_overview(self, event: AstrMessageEvent):
+        '''获取社团概况，包括社团名称、简介、统计指标（在册成员数、年度活动数、竞赛获奖数等）。
+
+        当用户问“社团怎么样”“社团概况”“社团规模”“统计指标”“社团数据”等关于社团整体信息时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_club_home())
+
+    @filter.llm_tool(name="openatom_get_member_count")
+    async def llm_get_member_count(self, event: AstrMessageEvent):
+        '''获取社团当前在册成员人数。
+
+        当用户问“社团有多少人”“成员数”“在册成员”“社员数”“几个人”等关于人数的问题时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_member_count())
+
+    @filter.llm_tool(name="openatom_get_activities")
+    async def llm_get_activities(self, event: AstrMessageEvent):
+        '''获取社团活动列表。
+
+        当用户问“有什么活动”“最近活动”“活动安排”“有哪些活动”等关于活动列表的问题时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_activities())
+
+    @filter.llm_tool(name="openatom_get_activity_detail")
+    async def llm_get_activity_detail(self, event: AstrMessageEvent, activity_id: str):
+        '''获取指定活动的详细信息。
+
+        当用户问“看一下1号活动”“活动ID为3的详情”“第一个活动是什么”“3号活动”等关于特定活动详情时使用此工具。
+
+        Args:
+            activity_id(string): 活动编号（数字），例如"1""3"
+        '''
+        ordinal = None
+        try:
+            ordinal = int(activity_id)
+        except (ValueError, TypeError):
+            pass
+        if ordinal is not None and ordinal <= 20:
+            yield self._plain_result(event, await self._answer_activity_by_ordinal(ordinal))
+        else:
+            yield self._plain_result(event, await self._answer_activity_detail(activity_id))
+
+    @filter.llm_tool(name="openatom_get_people")
+    async def llm_get_people(self, event: AstrMessageEvent):
+        '''获取社团主要人员、骨干、负责人信息。
+
+        当用户问“主要人员”“负责人”“社长”“部长”“核心成员”“有哪些人”“骨干”等关于人员的问题时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_people())
+
+    @filter.llm_tool(name="openatom_get_departments")
+    async def llm_get_departments(self, event: AstrMessageEvent):
+        '''获取社团部门/组织架构信息。
+
+        当用户问“有哪些部门”“组织架构”“分组”“项目部”“宣传组”“岗位”等关于部门的问题时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_departments())
+
+    @filter.llm_tool(name="openatom_get_recruitment")
+    async def llm_get_recruitment(self, event: AstrMessageEvent):
+        '''获取社团招新/纳新信息。
+
+        当用户问“招新”“纳新”“怎么报名”“怎么加入”“招新开了吗”“报名”等关于招新的问题时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_recruitment())
+
+    @filter.llm_tool(name="openatom_get_awards")
+    async def llm_get_awards(self, event: AstrMessageEvent):
+        '''获取社团竞赛获奖信息。
+
+        当用户问“获奖”“奖项”“比赛成绩”“竞赛”“荣誉”等关于荣誉的问题时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_awards())
+
+    @filter.llm_tool(name="openatom_get_focus_and_tech")
+    async def llm_get_focus_and_tech(self, event: AstrMessageEvent):
+        '''获取社团主要方向和技术栈信息。
+
+        当用户问“技术栈”“技术方向”“社团做什么”“研究什么”“项目方向”“学习方向”等关于方向的问题时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_focus_or_tech())
+
+    @filter.llm_tool(name="openatom_get_evening_study")
+    async def llm_get_evening_study(self, event: AstrMessageEvent):
+        '''获取今天晚自习签到概览。
+
+        当用户问“晚自习”“自习签到”“今晚签到”“实验室签到”等关于晚自习的问题时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_evening_study())
+
+    @filter.llm_tool(name="openatom_get_register_status")
+    async def llm_get_register_status(self, event: AstrMessageEvent):
+        '''查询社团当前是否开放注册。
+
+        当用户问“能注册吗”“开放注册了吗”“注册开关”“可以注册吗”等关于注册的问题时使用此工具。
+
+        Args: 无参数
+        '''
+        yield self._plain_result(event, await self._answer_register_enabled())
+
+    async def _answer_question(self, question: str, event: AstrMessageEvent | None = None) -> str:
         text = (question or "").strip().lower()
         if not text:
-            return "你想查询社团系统的哪类信息？可以问活动、招新、部门、人数、主要人员或校历。"
+            return "你想查询社团系统的哪类信息？可以问活动、招新、部门、人数、主要人员或校历，也可以问“我是谁”。"
+
+        # —— 寒暄 / 问候 ——
+        if self._is_greeting(text):
+            return self._answer_greeting(text)
+
+        # —— 机器人自我介绍 ——
+        if self._has_any(text, ("你是谁", "你叫什么", "你叫啥", "你是啥", "你是什么", "自我介绍", "你能做什么", "你会什么", "你能干啥", "你有什么功能", "你能帮我")):
+            return self._answer_bot_intro()
+
+        # —— 查询当前用户身份（我是谁）——
+        if self._is_who_am_i_question(text):
+            if event is not None:
+                result = await self._answer_who_am_i(event)
+                if result is not None:
+                    return result
+            return "我可以通过你的 QQ 查到你在社团系统里的信息，不过需要你先绑定系统账号。请登录网页个人中心生成绑定码，再发送 /oa bind-qq 绑定码。"
 
         lookup_type, lookup_keyword = self._extract_user_lookup_from_question(question)
         if lookup_keyword:
@@ -411,7 +572,125 @@ class OpenAtomApiPlugin(Star):
                 ]
             )
 
-        return await self._answer_club_home()
+        # 兜底：不再无脑返回社团首页，而是给出引导提示
+        return (
+            "这个问题我暂时没有直接对应的数据。\n"
+            "你可以试试问我：\n"
+            "- 社团有多少人 / 社团概况\n"
+            "- 有什么活动 / 看一下1号活动\n"
+            "- 有哪些部门 / 主要人员\n"
+            "- 招新开了吗 / 怎么加入\n"
+            "- 晚自习签到\n"
+            "- 我是谁\n"
+            "- 查人 张三 / 查人 qq 123456\n"
+            "或者直接跟我聊天，我会尽力帮你。"
+        )
+
+    # ==================================================================
+    # 智能问答辅助方法：身份查询 / 寒暄 / 自我介绍
+    # ==================================================================
+
+    def _is_who_am_i_question(self, text: str) -> bool:
+        """判断是否在问“我是谁 / 我叫什么”类身份问题。"""
+        patterns = (
+            "我是谁", "我叫什么", "我叫什么名字", "我叫啥", "我是哪个",
+            "我的信息", "我的资料", "我的个人信息", "查一下我", "查查我",
+            "who am i", "whoami", "tell me who i am",
+        )
+        return self._has_any(text, patterns)
+
+    def _is_greeting(self, text: str) -> bool:
+        """判断是否为寒暄问候 / 感谢。"""
+        greetings = (
+            "你好", "您好", "hi", "hello", "嗨", "哈喽", "在吗", "在不在",
+            "早上好", "下午好", "晚上好", "晚安", "早安", "早啊", "中午好",
+            "谢谢", "感谢", "thanks", "thank you", "辛苦了", "多谢",
+            "牛逼", "厉害", "干得漂亮", "不错", "点赞", "棒",
+        )
+        stripped = text.strip()
+        # 纯寒暄或短句（≤ 6 字）才匹配，避免“你好我想问活动”被误拦
+        if len(stripped) <= 6 and self._has_any(stripped, greetings):
+            return True
+        # “你好!”“谢谢！”等带标点的短句
+        for word in greetings:
+            for suffix in ("", "了", "啊", "!", "！", "呀", "呢"):
+                if stripped == word + suffix:
+                    return True
+        return False
+
+    def _answer_greeting(self, text: str) -> str:
+        """处理寒暄问候，返回自然回复。"""
+        if self._has_any(text, ("谢谢", "感谢", "thanks", "thank you", "辛苦了", "多谢")):
+            return "不客气～有其他问题随时问我。"
+        if self._has_any(text, ("牛逼", "厉害", "干得漂亮", "不错", "点赞", "棒")):
+            return "谢谢夸奖～有什么想查的随时说。"
+        if self._has_any(text, ("晚安", "早安", "早啊", "早上好", "中午好", "晚上好")):
+            hour = datetime.now(ZoneInfo("Asia/Shanghai")).hour
+            if 5 <= hour < 11:
+                return "早上好～有什么可以帮你的？可以问活动、招新、人数，也可以问“我是谁”。"
+            if 11 <= hour < 14:
+                return "中午好～有什么可以帮你的？可以问活动、招新、人数，也可以问“我是谁”。"
+            if 18 <= hour < 23:
+                return "晚上好～有什么可以帮你的？可以问活动、招新、人数，也可以问“我是谁”。"
+            return "夜深了～有什么可以帮你的？可以问活动、招新、人数，也可以问“我是谁”。"
+        if self._has_any(text, ("在吗", "在不在")):
+            return "在的～有什么可以帮你？可以问社团活动、招新、人数、部门，也可以问“我是谁”。"
+        return "你好～我是开放原子开源社团的机器人助手，可以帮你查社团信息。你可以问“社团有多少人”“有什么活动”“我是谁”等。"
+
+    def _answer_bot_intro(self) -> str:
+        """机器人自我介绍。"""
+        return (
+            "我是开放原子开源社团的机器人助手，可以帮你查询社团系统的各类信息：\n"
+            "- 社团概况 / 多少人 / 统计数据\n"
+            "- 活动列表 / 活动详情\n"
+            "- 主要人员 / 部门架构\n"
+            "- 招新信息 / 获奖荣誉\n"
+            "- 晚自习签到\n"
+            "- 查人（按姓名或QQ号）\n"
+            "- 你是谁（通过QQ查你在系统里的信息）\n"
+            "- 请假（群里艾特我说“我要请假”即可开始）\n"
+            "你也可以用 /oa 帮助 查看完整指令列表。"
+        )
+
+    async def _answer_who_am_i(self, event: AstrMessageEvent) -> str | None:
+        """通过当前用户的 QQ openid 查询其在社团系统中的身份信息。"""
+        sender_id = self._event_sender_id(event)
+        if not sender_id:
+            return None
+        params = {"qqOpenid": sender_id, "limit": "1"}
+        data, error = await self._get_data("/bot/users/lookup", params)
+        if error:
+            return error
+        records = data.get("list") if isinstance(data, dict) else data
+        if not isinstance(records, list) or not records:
+            return (
+                f"我在系统里还没有查到你的信息。\n"
+                f"你的 QQ（{sender_id}）尚未绑定系统账号。\n"
+                "请登录网页个人中心生成绑定码，再发送 /oa bind-qq 绑定码 绑定。"
+            )
+        item = records[0]
+        if not isinstance(item, dict):
+            return str(item)
+        name = item.get("realName") or item.get("userName") or "未命名用户"
+        parts = [f"你是 {name}。"]
+        user_name = item.get("userName")
+        if user_name and user_name != name:
+            parts.append(f"用户名：{user_name}")
+        student_id = item.get("studentId")
+        if student_id:
+            parts.append(f"学号：{student_id}")
+        org = " / ".join(
+            str(v) for v in (item.get("college"), item.get("major"), item.get("className")) if v
+        )
+        if org:
+            parts.append(org)
+        grade = item.get("grade")
+        if grade:
+            parts.append(f"年级：{grade}")
+        status = self._format_user_status(item.get("userStatus"))
+        if status:
+            parts.append(f"状态：{status}")
+        return "；".join(parts) + "。"
 
     async def _answer_user_lookup(self, keyword: str | None, lookup_type: str | None = None) -> str:
         value = self._normalize_user_lookup_keyword(keyword)

@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 默认部门初始化器
  *
- * <p>应用启动时为每个社团初始化默认部门(项目部, 宣传组, 活动部, 外联部)
+ * <p>应用启动时为每个社团初始化默认部门(项目部, 宣传组, 活动部, 外联部, 社区部)
  */
 @Slf4j
 @Component
@@ -29,7 +29,8 @@ public class DefaultDepartmentInitializer implements ApplicationRunner {
           new DefaultDepartmentSeed("项目部", "负责项目研发、技术实践与项目交付"),
           new DefaultDepartmentSeed("宣传组", "负责宣传物料、内容运营与对外传播"),
           new DefaultDepartmentSeed("活动部", "负责活动策划、组织执行与现场协调"),
-          new DefaultDepartmentSeed("外联部", "负责校内外联络、资源合作与关系维护"));
+          new DefaultDepartmentSeed("外联部", "负责校内外联络、资源合作与关系维护"),
+          new DefaultDepartmentSeed("社区部", "负责开源社区运营、内容输出与社群维护，搭建校园与开源生态的桥梁"));
 
   private final ClubMapper clubMapper;
   private final ClubDepartmentMapper clubDepartmentMapper;
