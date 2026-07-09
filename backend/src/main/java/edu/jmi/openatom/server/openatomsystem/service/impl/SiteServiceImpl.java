@@ -289,6 +289,7 @@ public class SiteServiceImpl implements SiteService {
         .qqOpenid(isBlank(user.getQqOpenid()) ? null : user.getQqOpenid())
         .activated(user.getActivatedAt() != null)
         .activatedAt(user.getActivatedAt())
+        .qqGroupJoined(user.getQqGroupJoinedAt() != null)
         .membership(membershipInfo)
         .departmentHead(departmentHead)
         .viceDepartmentHead(viceDepartmentHead)

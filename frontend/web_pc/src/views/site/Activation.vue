@@ -363,7 +363,7 @@
       </div>
     </section>
 
-    <!-- ============ 5. CTA ============ -->
+   <!-- ============ 5. CTA ============ -->
     <section class="act-cta">
       <div aria-hidden="true" class="act-cta__grid"></div>
       <div aria-hidden="true" class="act-cta__orb"></div>
@@ -376,21 +376,34 @@
           {{
             info?.activated
               ? '你的账号已经激活，可以正常使用所有功能。'
-              : '点击下方按钮激活账号，开启你在社团的所有权限与功能。'
+              : !info?.qqGroupJoined
+                ? '请先加入QQ群，再激活账号。'
+                : '点击下方按钮激活账号，开启你在社团的所有权限与功能。'
           }}
         </p>
+        <div v-if="!info?.activated && !info?.qqGroupJoined" class="act-cta__warn" data-stagger style="--si:3">
+          <el-alert
+            title="尚未加入QQ群"
+            type="warning"
+            :closable="false"
+            show-icon
+          >
+            请向上滚动至"加入群聊"区域，生成入群验证码并申请加入QQ群，待机器人审批通过后即可激活账号。
+          </el-alert>
+        </div>
         <el-button
           :loading="submitting"
           class="act-cta__btn"
           size="large"
           type="primary"
           data-stagger
-          style="--si:3"
+          style="--si:4"
+          :disabled="!info?.activated && !info?.qqGroupJoined"
           @click="handleActivate"
         >
           {{ info?.activated ? '进入主页' : '激活账号' }}
         </el-button>
-        <small class="act-cta__hint" data-stagger style="--si:4">
+        <small class="act-cta__hint" data-stagger style="--si:5">
           点击激活后即代表你已了解社团信息，账号将完成激活并可正常使用所有功能。
         </small>
       </div>
@@ -484,6 +497,7 @@ interface ActivationInfo {
   qqOpenid?: string
   activated: boolean
   activatedAt?: string
+  qqGroupJoined?: boolean
   membership?: MembershipInfo | null
   departmentHead?: Leader | null
   viceDepartmentHead?: Leader | null
@@ -654,6 +668,10 @@ function onScroll() {
 async function handleActivate() {
   if (info.value?.activated) {
     router.replace('/')
+    return
+  }
+  if (!info.value?.qqGroupJoined) {
+    ElMessage.warning('请先加入QQ群后再激活账号')
     return
   }
   passwordForm.value = { oldPassword: '', newPassword: '' }
@@ -1701,6 +1719,12 @@ onBeforeUnmount(() => {
   color: var(--oa-muted);
   font-size: 12px;
   line-height: 1.6;
+}
+
+.act-cta__warn {
+  margin-top: 20px;
+  margin-bottom: 8px;
+  max-width: 460px;
 }
 
 .dept-qrcode {

@@ -60,4 +60,6 @@ public interface AuthService {
   Result<ResponseGroupJoinTokenVO> createGroupJoinToken();
 
   Result<ResponseGroupJoinVerifyVO> verifyGroupJoinToken(String token);
+
+  Result<String> confirmGroupJoin(String token);
 }

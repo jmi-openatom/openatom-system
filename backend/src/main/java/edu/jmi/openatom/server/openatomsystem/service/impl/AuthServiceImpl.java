@@ -360,6 +360,31 @@ public class AuthServiceImpl implements AuthService {
 				"验证码有效");
 	}
 
+	@Override
+	@RedisCacheEvict(cacheNames = {"site", "auth"})
+	public Result<String> confirmGroupJoin(String token) {
+	  if (token == null || token.isBlank()) return Result.error(400, "验证码不能为空");
+	  String normalized = token.trim().toUpperCase();
+	  if (!normalized.matches("[A-Z0-9]{8}")) return Result.error(400, "验证码格式不正确");
+	  SaTokenDao tokenDao = SaManager.getSaTokenDao();
+	  String userIdValue = tokenDao.get(getGroupJoinTokenKey(normalized));
+	  if (userIdValue == null) return Result.error(401, "验证码无效或已过期");
+	  Integer userId;
+	  try {
+	    userId = Integer.valueOf(userIdValue);
+	  } catch (NumberFormatException e) {
+	    tokenDao.delete(getGroupJoinTokenKey(normalized));
+	    return Result.error(401, "验证码无效，请在网页重新生成");
+	  }
+	  User user = userMapper.selectById(userId);
+	  if (user == null) return Result.error(404, "用户不存在");
+	  if (user.getQqGroupJoinedAt() == null) {
+	    user.setQqGroupJoinedAt(new Timestamp(System.currentTimeMillis()));
+	    userMapper.updateById(user);
+	  }
+	  return Result.success("已确认加入QQ群");
+	}
+	
 	private String buildGroupCardName(String departmentName, String realName, String studentId) {
 		StringBuilder sb = new StringBuilder();
 		if (departmentName != null && !departmentName.isBlank()) sb.append(departmentName);
@@ -548,10 +573,12 @@ public class AuthServiceImpl implements AuthService {
     int id = StpUtil.getLoginIdAsInt();
     User user = userMapper.selectById(id);
     if (user == null) return Result.error(404, "用户不存在");
-    if (user.getActivatedAt() == null) {
-      user.setActivatedAt(new Timestamp(System.currentTimeMillis()));
-      userMapper.updateById(user);
+    if (user.getActivatedAt() != null) return Result.success(buildSafeUser(user), "账号已激活");
+    if (user.getQqGroupJoinedAt() == null) {
+      return Result.error(403, "请先加入QQ群后再激活账号");
     }
+    user.setActivatedAt(new Timestamp(System.currentTimeMillis()));
+    userMapper.updateById(user);
     return Result.success(buildSafeUser(user), "账号已激活");
   }
 
@@ -715,7 +742,8 @@ public class AuthServiceImpl implements AuthService {
 				.qqOpenid(isBlank(user.getQqOpenid()) ? null : user.getQqOpenid())
 			.createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt())
 			.onboardingCompletedAt(user.getOnboardingCompletedAt())
-			.activatedAt(user.getActivatedAt()).build();
+			.activatedAt(user.getActivatedAt())
+			.qqGroupJoinedAt(user.getQqGroupJoinedAt()).build();
 	}
 
 	private String normalizeQqOpenid(String qqOpenid) {

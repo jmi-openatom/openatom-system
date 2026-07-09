@@ -19,6 +19,7 @@ public class ResponseActivationVO {
   private String qqOpenid;
   private Boolean activated;
   private Timestamp activatedAt;
+  private Boolean qqGroupJoined;
 
   private MembershipInfo membership;
   private Leader departmentHead;

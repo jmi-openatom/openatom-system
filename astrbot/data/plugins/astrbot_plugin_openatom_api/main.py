@@ -269,6 +269,10 @@ class OpenAtomApiPlugin(Star):
         except Exception as exc:
             logger.warning(f"OpenAtom group join approve failed: groupId={group_id}, userId={user_id}, error={exc}")
             return
+        # 通知后端用户已加入QQ群，以便激活账号时校验
+        _, confirm_error = await self._get_data("/auth/group-join/confirm", {"token": token})
+        if confirm_error:
+            logger.warning(f"OpenAtom group join confirm failed: token={token}, error={confirm_error}")
         if card_name:
             await asyncio.sleep(1)
             try:

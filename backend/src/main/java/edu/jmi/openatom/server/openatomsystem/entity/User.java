@@ -72,4 +72,7 @@ public class User {
 
   @TableField("activated_at")
   private Timestamp activatedAt;
+
+  @TableField("qq_group_joined_at")
+  private Timestamp qqGroupJoinedAt;
 }

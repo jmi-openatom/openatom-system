@@ -408,7 +408,8 @@ public class UserServiceImpl implements UserService {
 			.userStatus(user.getUserStatus()).createTime(user.getCreateTime())
 			.lastLoginAt(user.getLastLoginAt())
 			.onboardingCompletedAt(user.getOnboardingCompletedAt())
-			.activatedAt(user.getActivatedAt()).build();
+			.activatedAt(user.getActivatedAt())
+			.qqGroupJoinedAt(user.getQqGroupJoinedAt()).build();
 	}
 
 	private ResponseMembershipVO buildMembershipResponse(ClubMembership membership) {

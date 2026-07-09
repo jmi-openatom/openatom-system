@@ -209,6 +209,15 @@ public class AuthController {
     return authService.verifyGroupJoinToken(token);
   }
 
+  /**
+   * 机器人审批通过后调用，标记用户已加入QQ群。
+   * 公开端点，token 本身即为凭据。
+   */
+  @GetMapping("/group-join/confirm")
+  public Result<String> confirmGroupJoin(@RequestParam String token) {
+    return authService.confirmGroupJoin(token);
+  }
+
   /** Generates a one-time token for QQ group join verification. */
   @PostMapping("/group-join-token")
   @SaCheckPermission("auth:me")
