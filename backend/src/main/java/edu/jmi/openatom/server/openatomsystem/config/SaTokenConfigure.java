@@ -84,6 +84,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				"/auth/qq-bind",
 				"/auth/qq-bind/confirm",
 				"/auth/qq-bind/status",
+				"/auth/group-join/verify",
 				"/.well-known/openid-configuration",
 				"/oauth/authorize",
 				"/oauth/token",
