@@ -560,10 +560,8 @@ router.beforeEach(async (to) => {
   if (!ACTIVATION_BYPASS_PATHS.has(to.path) && getToken() && !isActivated()) {
     return { path: '/activation', query: { redirect: to.fullPath } }
   }
-  // 已激活用户访问激活页则回到首页
-  if (to.path === '/activation' && getToken() && isActivated()) {
-    return '/'
-  }
+  // 已激活用户访问激活页：不在路由守卫层拦截，交给 Activation.vue 组件
+  // 根据服务器返回的真实状态自行决定是否重定向，避免 localStorage 缓存过期导致无法进入页面
 
   // 管理后台路径权限检查
   if (requiresAdminAuth(to)) {

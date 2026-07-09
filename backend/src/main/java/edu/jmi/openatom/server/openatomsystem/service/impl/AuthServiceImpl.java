@@ -17,6 +17,8 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateProfileDTO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinTokenVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinVerifyVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
@@ -69,6 +71,8 @@ public class AuthServiceImpl implements AuthService {
 	private static final String REFRESH_USER_KEY_PREFIX = "openatom:refresh:user:";
 	private static final String QQ_BIND_TOKEN_KEY_PREFIX = "openatom:qq-bind:token:";
 	private static final long QQ_BIND_TOKEN_TIMEOUT_SECONDS = 10 * 60L;
+	private static final String GROUP_JOIN_TOKEN_KEY_PREFIX = "openatom:group-join:token:";
+	private static final long GROUP_JOIN_TOKEN_TIMEOUT_SECONDS = 30 * 60L;
 	private static final String MINIAPP_SESSION_URL = "https://api.weixin.qq.com/sns/jscode2session";
 
 	private final UserMapper userMapper;
@@ -78,6 +82,7 @@ public class AuthServiceImpl implements AuthService {
 	private final PermissionMapper permissionMapper;
 	private final ClubMapper clubMapper;
 	private final ClubMembershipMapper clubMembershipMapper;
+	private final ClubDepartmentMapper clubDepartmentMapper;
 	private final LoginLogMapper loginLogMapper;
 	private final PasswordService passwordService;
 	private final AvatarStorageServiceImpl avatarStorageService;
@@ -295,6 +300,78 @@ public class AuthServiceImpl implements AuthService {
 		currentUser.setQqOpenid(null);
 		userMapper.updateById(currentUser);
 		return Result.success("QQ解绑成功");
+	}
+
+	@Override
+	public Result<ResponseGroupJoinTokenVO> createGroupJoinToken() {
+		if (!StpUtil.isLogin()) return Result.error(401, "请先登录后生成入群验证码");
+		Integer currentUserId = StpUtil.getLoginIdAsInt();
+		User currentUser = userMapper.selectById(currentUserId);
+		if (currentUser == null) return Result.error(404, "用户不存在");
+		String token = generateQqBindToken();
+		SaManager.getSaTokenDao()
+				.set(getGroupJoinTokenKey(token), String.valueOf(currentUserId), GROUP_JOIN_TOKEN_TIMEOUT_SECONDS);
+		return Result.success(
+				ResponseGroupJoinTokenVO.builder()
+						.token(token)
+						.expiresIn((int) GROUP_JOIN_TOKEN_TIMEOUT_SECONDS)
+						.build(),
+				"入群验证码已生成");
+	}
+
+	@Override
+	public Result<ResponseGroupJoinVerifyVO> verifyGroupJoinToken(String token) {
+		if (token == null || token.isBlank()) return Result.error(400, "验证码不能为空");
+		String normalized = token.trim().toUpperCase();
+		if (!normalized.matches("[A-Z0-9]{8}")) return Result.error(400, "验证码格式不正确");
+		SaTokenDao tokenDao = SaManager.getSaTokenDao();
+		String userIdValue = tokenDao.get(getGroupJoinTokenKey(normalized));
+		if (userIdValue == null) return Result.error(401, "验证码无效或已过期");
+		Integer userId;
+		try {
+			userId = Integer.valueOf(userIdValue);
+		} catch (NumberFormatException e) {
+			tokenDao.delete(getGroupJoinTokenKey(normalized));
+			return Result.error(401, "验证码无效，请在网页重新生成");
+		}
+		User user = userMapper.selectById(userId);
+		if (user == null) return Result.error(404, "用户不存在");
+		Club club = clubMapper.selectDefaultClub(DEFAULT_CLUB_CODE);
+		String departmentName = null;
+		if (club != null) {
+			ClubMembership membership = clubMembershipMapper.selectActiveMembership(userId, club.getId());
+			if (membership != null && membership.getDepartmentId() != null) {
+				ClubDepartment department = clubDepartmentMapper.selectById(membership.getDepartmentId());
+				if (department != null) departmentName = department.getName();
+			}
+		}
+		String realName = isBlank(user.getRealName()) ? user.getUserName() : user.getRealName();
+		String studentId = user.getStudentId();
+		String cardName = buildGroupCardName(departmentName, realName, studentId);
+		return Result.success(
+				ResponseGroupJoinVerifyVO.builder()
+						.userId(userId)
+						.realName(realName)
+						.studentId(studentId)
+						.departmentName(departmentName)
+						.cardName(cardName)
+						.qqOpenid(user.getQqOpenid())
+						.build(),
+				"验证码有效");
+	}
+
+	private String buildGroupCardName(String departmentName, String realName, String studentId) {
+		StringBuilder sb = new StringBuilder();
+		if (departmentName != null && !departmentName.isBlank()) sb.append(departmentName);
+		sb.append("-");
+		if (realName != null && !realName.isBlank()) sb.append(realName);
+		sb.append("-");
+		if (studentId != null && !studentId.isBlank()) sb.append(studentId);
+		return sb.toString();
+	}
+
+	private String getGroupJoinTokenKey(String token) {
+		return GROUP_JOIN_TOKEN_KEY_PREFIX + token;
 	}
 
 	@Override

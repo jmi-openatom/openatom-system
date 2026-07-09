@@ -10,6 +10,8 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateProfileDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinTokenVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinVerifyVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,4 +56,8 @@ public interface AuthService {
   Result<User> completeOnboarding();
 
   Result<User> activate();
+
+  Result<ResponseGroupJoinTokenVO> createGroupJoinToken();
+
+  Result<ResponseGroupJoinVerifyVO> verifyGroupJoinToken(String token);
 }

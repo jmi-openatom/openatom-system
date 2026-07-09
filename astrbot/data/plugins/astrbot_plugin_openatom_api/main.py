@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.6.0"
+PLUGIN_VERSION = "1.7.0"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -57,6 +57,7 @@ class OpenAtomApiPlugin(Star):
         self.callback_port = int(self.config.get("callback_port", 6198) or 6198)
         self.callback_token = str(self.config.get("callback_token", "") or "").strip()
         self.auto_approve_friend_requests = bool(self.config.get("auto_approve_friend_requests", True))
+        self.auto_approve_group_join = bool(self.config.get("auto_approve_group_join", True))
         self.leave_sessions: dict[str, dict[str, Any]] = {}
         self.callback_runner: web.AppRunner | None = None
         self.callback_site: web.TCPSite | None = None
@@ -100,6 +101,10 @@ class OpenAtomApiPlugin(Star):
                     "【请假】",
                     "群里艾特我发送“我要请假 / 请个假 / 今天去不了”，我会私聊你继续办理",
                     "",
+                    "【入群自动审批】",
+                    "社团成员在官网激活页生成入群验证码后，将验证码填写在入群申请理由中",
+                    "机器人会自动校验并通过，同时将群名片设为“部门-姓名-学号”",
+                    "",
                     f"插件版本：{PLUGIN_VERSION}",
                     "普通查询只允许 GET；查人走独立 public 接口；QQ 绑定命令只会消费网页登录生成的一次性绑定码。",
                 ]
@@ -118,6 +123,7 @@ class OpenAtomApiPlugin(Star):
             f"timeout: {self.timeout}s\n"
             f"max_reply_chars: {self.max_reply_chars}\n"
             f"auto_approve_friend_requests: {self.auto_approve_friend_requests}\n"
+            f"auto_approve_group_join: {self.auto_approve_group_join}\n"
             f"callback: http://{self.callback_host}:{self.callback_port}/openatom/leave-review"
         )
 
@@ -217,6 +223,63 @@ class OpenAtomApiPlugin(Star):
             logger.info(f"OpenAtom friend request auto approved: userId={user_id or 'unknown'}")
         except Exception as exc:
             logger.warning(f"OpenAtom friend request auto approve failed: userId={user_id or 'unknown'}, error={exc}")
+
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
+    async def auto_approve_group_join_request(self, event: AstrMessageEvent):
+        """自动审核 QQ 群入群申请：验证 token 后自动通过并设置群名片。"""
+        if not self.auto_approve_group_join:
+            return
+        raw = self._onebot_raw_event(event)
+        if self._raw_event_value(raw, "post_type") != "request":
+            return
+        request_type = self._raw_event_value(raw, "request_type")
+        if request_type != "group":
+            return
+        sub_type = self._raw_event_value(raw, "sub_type")
+        if sub_type is not None and sub_type != "add":
+            return
+        flag = str(self._raw_event_value(raw, "flag") or "").strip()
+        group_id = str(self._raw_event_value(raw, "group_id") or "").strip()
+        user_id = str(self._raw_event_value(raw, "user_id") or "").strip()
+        comment = str(self._raw_event_value(raw, "comment") or self._raw_event_value(raw, "message") or "").strip()
+        if not flag or not group_id:
+            logger.warning(f"OpenAtom group join skipped: missing flag/groupId, userId={user_id}")
+            return
+        token = self._extract_join_token(comment)
+        if not token:
+            logger.info(f"OpenAtom group join no token in comment: groupId={group_id}, userId={user_id}")
+            return
+        bot = getattr(event, "bot", None)
+        if bot is None:
+            logger.warning(f"OpenAtom group join skipped: missing aiocqhttp bot, userId={user_id}")
+            return
+        verify_data, error = await self._get_data("/auth/group-join/verify", {"token": token})
+        if error or not isinstance(verify_data, dict):
+            logger.warning(f"OpenAtom group join token verify failed: token={token}, error={error}")
+            try:
+                await bot.call_action("set_group_add_request", flag=flag, sub_type="add", approve=False, reason="验证码无效或已过期")
+            except Exception:
+                pass
+            return
+        card_name = str(verify_data.get("cardName") or "").strip()
+        real_name = str(verify_data.get("realName") or "").strip()
+        try:
+            await bot.call_action("set_group_add_request", flag=flag, sub_type="add", approve=True)
+            logger.info(f"OpenAtom group join approved: groupId={group_id}, userId={user_id}, name={real_name}")
+        except Exception as exc:
+            logger.warning(f"OpenAtom group join approve failed: groupId={group_id}, userId={user_id}, error={exc}")
+            return
+        if card_name:
+            await asyncio.sleep(1)
+            try:
+                await bot.call_action("set_group_card", group_id=int(group_id), user_id=int(user_id), card=card_name)
+                logger.info(f"OpenAtom group card set: groupId={group_id}, userId={user_id}, card={card_name}")
+            except Exception as exc:
+                logger.warning(f"OpenAtom group card set failed: groupId={group_id}, userId={user_id}, card={card_name}, error={exc}")
+            try:
+                await bot.call_action("send_group_msg", group_id=int(group_id), message=f"欢迎 {real_name} 加入社团！已为你设置群名片：{card_name}")
+            except Exception:
+                pass
 
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_leave_conversation(self, event: AstrMessageEvent):
@@ -1247,6 +1310,13 @@ class OpenAtomApiPlugin(Star):
         if callable(getter):
             return getter(key)
         return getattr(raw, key, None)
+
+    def _extract_join_token(self, comment: str) -> str | None:
+        """从入群申请理由中提取 8 位验证码。"""
+        if not comment:
+            return None
+        match = re.search(r"\b([A-Z0-9]{8})\b", comment.upper())
+        return match.group(1) if match else None
 
     def _leave_session_key(self, event: AstrMessageEvent, sender_id: str) -> str:
         message_obj = getattr(event, "message_obj", None)

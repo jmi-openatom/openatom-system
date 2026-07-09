@@ -99,6 +99,9 @@ export const authApi = {
   createQqBindToken(): Promise<any> {
     return request.post('/auth/qq-bind-token')
   },
+  createGroupJoinToken(): Promise<any> {
+    return request.post('/auth/group-join-token')
+  },
   unbindQq(): Promise<any> {
     return request.delete('/auth/qq-bind')
   },

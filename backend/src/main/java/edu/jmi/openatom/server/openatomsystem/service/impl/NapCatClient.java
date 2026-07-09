@@ -91,6 +91,14 @@ public class NapCatClient {
     return post("set_group_add_request", body);
   }
 
+  public NapCatResponse setGroupCard(String groupId, String userId, String card) {
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("group_id", groupId);
+    body.put("user_id", userId);
+    body.put("card", card == null ? "" : card);
+    return post("set_group_card", body);
+  }
+
   public NapCatResponse handleFriendRequest(String flag, boolean approve, String remark) {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("flag", flag);

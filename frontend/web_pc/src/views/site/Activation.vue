@@ -135,6 +135,17 @@
               <span class="group-cell__qq-num">{{ info.club.qqGroupNumber }}</span>
             </div>
             <p>搜索群号或保存二维码后扫码加入</p>
+            <div class="group-cell__verify">
+              <span class="act-mono-label">入群验证码</span>
+              <div v-if="groupJoinToken" class="group-cell__token">
+                <code>{{ groupJoinToken }}</code>
+                <el-button size="small" @click="copyToken">复制</el-button>
+              </div>
+              <el-button v-else type="primary" size="small" :loading="tokenLoading" @click="generateJoinToken">
+                生成入群验证码
+              </el-button>
+              <p v-if="groupJoinToken" class="group-cell__tip">将以上验证码填写在入群申请理由中，机器人将自动审核通过并设置群名片</p>
+            </div>
           </div>
         </div>
       </div>
@@ -433,7 +444,7 @@ import { useRouter } from 'vue-router'
 import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { authApi, siteApi } from '@/api'
-import { setSession, getToken } from '@/utils/auth.ts'
+import { setSession, getToken, getCurrentUser } from '@/utils/auth.ts'
 
 interface Leader {
   userId: number
@@ -492,6 +503,8 @@ const passwordVisible = ref(false)
 const passwordLoading = ref(false)
 const passwordFormRef = ref<any>()
 const passwordForm = ref({ oldPassword: '', newPassword: '' })
+const groupJoinToken = ref('')
+const tokenLoading = ref(false)
 const passwordRules = {
   oldPassword: [{ required: true, message: '请输入当前密码', trigger: 'blur' }],
   newPassword: [
@@ -530,6 +543,11 @@ async function fetchActivationInfo() {
   try {
     const result = await siteApi.activation()
     info.value = result as ActivationInfo
+    // 同步服务器返回的激活状态到 localStorage，避免缓存过期导致路由守卫误判
+    // 场景：管理员后台取消激活后，用户浏览器 localStorage 仍保留旧的 activatedAt
+    setSession({
+      user: { ...getCurrentUser(), activatedAt: info.value?.activatedAt || null },
+    })
   } catch (error) {
     console.error('加载激活信息失败', error)
     ElMessage.error('激活信息加载失败，请刷新重试')
@@ -542,6 +560,29 @@ function scrollToNext() {
   const sections = document.querySelectorAll('.act-section')
   const first = sections[0] as HTMLElement | undefined
   first?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+async function generateJoinToken() {
+  tokenLoading.value = true
+  try {
+    const result = await authApi.createGroupJoinToken()
+    groupJoinToken.value = result.token || ''
+    ElMessage.success(`入群验证码已生成，有效期为 ${Math.floor((result.expiresIn || 1800) / 60)} 分钟`)
+  } catch {
+    ElMessage.error('生成验证码失败，请重试')
+  } finally {
+    tokenLoading.value = false
+  }
+}
+
+async function copyToken() {
+  if (!groupJoinToken.value) return
+  try {
+    await navigator.clipboard.writeText(groupJoinToken.value)
+    ElMessage.success('验证码已复制')
+  } catch {
+    ElMessage.warning('复制失败，请手动复制')
+  }
 }
 
 function animateCount(el: HTMLElement) {
@@ -1743,5 +1784,38 @@ onBeforeUnmount(() => {
 .group-cell p {
   font-size: 14px;
   color: var(--oa-muted);
+}
+
+.group-cell__verify {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--oa-border);
+  border-radius: 12px;
+  background: var(--oa-bg);
+}
+
+.group-cell__token {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 16px 0 8px;
+}
+
+.group-cell__token code {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-family: monospace;
+}
+
+.group-cell__tip {
+  font-size: 13px;
+  color: var(--oa-muted);
+  margin-top: 8px;
 }
 </style>

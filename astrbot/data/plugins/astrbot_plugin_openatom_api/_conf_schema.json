@@ -28,6 +28,12 @@
     "default": true,
     "hint": "开启后，NapCat/AstrBot 收到好友申请事件时会立即自动同意。"
   },
+  "auto_approve_group_join": {
+    "description": "自动审核 QQ 群入群申请",
+    "type": "bool",
+    "default": true,
+    "hint": "开启后，机器人会从入群申请理由中提取验证码，向后端校验后自动通过，并将群名片设为“部门-姓名-学号”。"
+  },
   "callback_host": {
     "description": "后端审批回调监听地址",
     "type": "string",

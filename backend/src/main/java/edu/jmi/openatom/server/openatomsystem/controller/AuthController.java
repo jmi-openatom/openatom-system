@@ -6,6 +6,8 @@ import edu.jmi.openatom.server.openatomsystem.dto.*;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinTokenVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinVerifyVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseTokenIntrospectionVO;
 import edu.jmi.openatom.server.openatomsystem.service.AuthCenterService;
@@ -199,5 +201,18 @@ public class AuthController {
   @SaCheckPermission("auth:me")
   public Result<User> activate() {
     return authService.activate();
+  }
+
+  /** Verifies a group join token and returns user info for the bot to set group card. */
+  @GetMapping("/group-join/verify")
+  public Result<ResponseGroupJoinVerifyVO> verifyGroupJoinToken(@RequestParam String token) {
+    return authService.verifyGroupJoinToken(token);
+  }
+
+  /** Generates a one-time token for QQ group join verification. */
+  @PostMapping("/group-join-token")
+  @SaCheckPermission("auth:me")
+  public Result<ResponseGroupJoinTokenVO> createGroupJoinToken() {
+    return authService.createGroupJoinToken();
   }
 }
