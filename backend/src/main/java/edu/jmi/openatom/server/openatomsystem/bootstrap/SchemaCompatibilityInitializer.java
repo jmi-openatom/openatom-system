@@ -26,6 +26,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
   public void run(ApplicationArguments args) {
     ensureSystemSettingTable();
     ensureRegisterSettingSeed();
+    insertSettingIfAbsent("activation_enabled", "true", "是否启用激活页面引导流程");
     ensureUserColumns();
     fixAdminPassword();
     ensureRecruitmentCampaignColumns();

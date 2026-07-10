@@ -153,6 +153,17 @@ public class AuthController {
   }
 
   /**
+   * 更新激活页开关
+   *
+   * @param enabled 是否启用激活页引导流程
+   * @return 更新后的激活页开关状态
+   */
+  @PatchMapping("/activation-enabled")
+  public Result<Boolean> updateActivationEnabled(@RequestParam Boolean enabled) {
+    return authService.updateActivationEnabled(enabled);
+  }
+
+  /**
    * 修改密码
    *
    * @param requestChangePassword 修改密码请求

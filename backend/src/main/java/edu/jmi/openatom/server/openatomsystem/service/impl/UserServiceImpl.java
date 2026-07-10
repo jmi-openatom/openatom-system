@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,7 @@ import org.springframework.web.multipart.MultipartFile;
  *
  * <p>负责用户的创建, 更新, 删除, 分页查询, Excel导入导出, 密码重置以及用户社团信息查询等业务逻辑
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -121,6 +123,12 @@ public class UserServiceImpl implements UserService {
 		if (row <= 0) return Result.error("用户创建失败");
 		bindDefaultRole(user.getId());
 		bindDefaultClubMembership(user.getId());
+		int bound = membershipApplicationMapper.bindAnonymousApplicationsByStudentId(
+				user.getId(), studentId);
+		if (bound > 0) {
+			log.info("创建用户时自动绑定 {} 条匿名申请: userId={}, studentId={}",
+					bound, user.getId(), studentId);
+		}
 		return Result.success("用户创建成功");
 	}
 
@@ -175,11 +183,21 @@ public class UserServiceImpl implements UserService {
 				existingLoginIds.add(userName);
 				existingLoginIds.add(studentId);
 			}
+			int totalBoundApplications = 0;
 			if (!userList.isEmpty()) {
 				for (User user : userList) {
 					userMapper.insert(user);
 					bindDefaultRole(user.getId());
 					bindDefaultClubMembership(user.getId());
+					if (!isBlank(user.getStudentId())) {
+						int bound = membershipApplicationMapper.bindAnonymousApplicationsByStudentId(
+								user.getId(), user.getStudentId());
+						if (bound > 0) {
+							totalBoundApplications += bound;
+							log.info("已绑定 {} 条匿名申请到用户: userId={}, studentId={}",
+									bound, user.getId(), user.getStudentId());
+						}
+					}
 				}
 			}
 			String message = "成功导入 " + userList.size() + " 条用户数据";
@@ -188,6 +206,9 @@ public class UserServiceImpl implements UserService {
 				message += "，跳过 " + skippedCount + " 条";
 				if (skippedDuplicateCount > 0) message += "，其中重复 " + skippedDuplicateCount + " 条";
 				if (skippedInvalidCount > 0) message += "，必填缺失 " + skippedInvalidCount + " 条";
+			}
+			if (totalBoundApplications > 0) {
+				message += "，自动绑定 " + totalBoundApplications + " 条匿名申请";
 			}
 			return Result.success(message);
 		} catch (Exception e) {

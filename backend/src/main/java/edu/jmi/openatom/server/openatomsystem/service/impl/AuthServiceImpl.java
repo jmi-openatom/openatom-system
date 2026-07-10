@@ -83,6 +83,7 @@ public class AuthServiceImpl implements AuthService {
 	private final ClubMapper clubMapper;
 	private final ClubMembershipMapper clubMembershipMapper;
 	private final ClubDepartmentMapper clubDepartmentMapper;
+	private final MembershipApplicationMapper membershipApplicationMapper;
 	private final LoginLogMapper loginLogMapper;
 	private final PasswordService passwordService;
 	private final AvatarStorageServiceImpl avatarStorageService;
@@ -136,6 +137,11 @@ public class AuthServiceImpl implements AuthService {
 		Result<String> membershipResult = bindDefaultClubMembership(newUser.getId());
 		if (membershipResult.getCode() != Result.SUCCESS_CODE) {
 			return membershipResult;
+		}
+		int bound = membershipApplicationMapper.bindAnonymousApplicationsByStudentId(
+				newUser.getId(), studentId);
+		if (bound > 0) {
+			log.info("注册时自动绑定 {} 条匿名申请: userId={}, studentId={}", bound, newUser.getId(), studentId);
 		}
 		return Result.success("注册成功");
 	}
@@ -459,6 +465,14 @@ public class AuthServiceImpl implements AuthService {
 		if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
 		if (!StpUtil.hasRole("super_admin")) return Result.error(403, "仅系统管理员可修改注册开关");
 		return Result.success(registrationSettingService.updateRegisterEnabled(enabled), "注册开关更新成功");
+	}
+
+	@Override
+	public Result<Boolean> updateActivationEnabled(Boolean enabled) {
+		if (enabled == null) return Result.error(400, "激活页开关不能为空");
+		if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+		if (!StpUtil.hasRole("super_admin")) return Result.error(403, "仅系统管理员可修改激活页开关");
+		return Result.success(registrationSettingService.updateActivationEnabled(enabled), "激活页开关更新成功");
 	}
 
 	@Override

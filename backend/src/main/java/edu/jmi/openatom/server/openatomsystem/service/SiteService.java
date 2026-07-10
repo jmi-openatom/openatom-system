@@ -39,4 +39,6 @@ public interface SiteService {
   Result<ResponseActivationVO> getMyActivationInfo();
 
   Result<Boolean> getRegisterEnabled();
+
+  Result<Boolean> getActivationEnabled();
 }

@@ -28,6 +28,9 @@ export const siteApi = {
   registerEnabled(): Promise<any> {
     return request.get('/site/register-enabled')
   },
+  activationEnabled(): Promise<any> {
+    return request.get('/site/activation-enabled')
+  },
   formDetail(id: string | number): Promise<any> {
     return request.get(`/site/forms/${id}`)
   },
@@ -107,6 +110,9 @@ export const authApi = {
   },
   updateRegisterEnabled(enabled: boolean): Promise<any> {
     return request.patch('/auth/register-enabled', null, { params: { enabled } })
+  },
+  updateActivationEnabled(enabled: boolean): Promise<any> {
+    return request.patch('/auth/activation-enabled', null, { params: { enabled } })
   },
   updatePassword(data: Record<string, unknown>): Promise<any> {
     return request.patch('/auth/password', data)

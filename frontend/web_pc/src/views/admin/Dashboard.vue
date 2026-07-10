@@ -61,6 +61,24 @@
           />
         </div>
       </el-card>
+
+      <el-card v-if="canManageRegistration" shadow="never" style="grid-column: span 2">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div>
+            <span>激活页引导流程</span>
+            <p style="margin: 4px 0 0; color: var(--oa-muted); font-size: 12px">
+              关闭后，未激活用户将不再被强制跳转到激活页
+            </p>
+          </div>
+          <el-switch
+            v-model="activationEnabled"
+            :loading="activationSwitchLoading"
+            active-text="已启用"
+            inactive-text="已关闭"
+            @change="handleActivationSwitch"
+          />
+        </div>
+      </el-card>
     </div>
 
     <el-empty v-if="showEmptyState" description="当前账号没有可展示的概览数据权限" />
@@ -100,6 +118,7 @@ type DashboardStat = {
 }
 
 const switchLoading = ref(false)
+const activationSwitchLoading = ref(false)
 
 const applications = ref<any[]>([])
 
@@ -137,6 +156,7 @@ const stats = ref<DashboardStat[]>([
 ])
 
 const registerEnabled = ref(false)
+const activationEnabled = ref(true)
 
 const visibleStats = computed(() => {
   return stats.value.filter((item) => hasAnyPermission(item.permissions))
@@ -244,10 +264,32 @@ async function handleRegisterSwitch(value: any) {
   }
 }
 
+async function fetchActivationEnabled() {
+  try {
+    activationEnabled.value = Boolean(await siteApi.activationEnabled())
+  } catch (e) {
+    console.error('获取激活页状态失败', e)
+  }
+}
+
+async function handleActivationSwitch(value: any) {
+  activationSwitchLoading.value = true
+  try {
+    await authApi.updateActivationEnabled(value)
+    ElMessage.success(value ? '已启用激活页' : '已关闭激活页')
+  } catch (error) {
+    activationEnabled.value = !value
+    ElMessage.error('操作失败')
+  } finally {
+    activationSwitchLoading.value = false
+  }
+}
+
 onMounted(() => {
   loadDashboard()
   if (canManageRegistration.value) {
     fetchRegisterEnabled()
+    fetchActivationEnabled()
   }
 })
 </script>

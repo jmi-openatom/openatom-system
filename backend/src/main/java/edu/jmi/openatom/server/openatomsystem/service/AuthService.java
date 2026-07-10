@@ -45,6 +45,8 @@ public interface AuthService {
 
   Result<Boolean> updateRegisterEnabled(Boolean enabled);
 
+  Result<Boolean> updateActivationEnabled(Boolean enabled);
+
   Result<String> changePassword(RequestChangePasswordDTO requestChangePassword);
 
   Result<User> updateAvatar(MultipartFile file, String avatarBaseUrl);

@@ -322,6 +322,12 @@ public class SiteServiceImpl implements SiteService {
   }
 
   @Override
+  @RedisCached(cacheName = "site", key = "'activation-enabled'", ttlSeconds = 600)
+  public Result<Boolean> getActivationEnabled() {
+    return Result.success(registrationSettingService.isActivationEnabled());
+  }
+
+  @Override
   @RedisCached(
       cacheName = "site",
       key = "'recruitment:' + (#p0 == null ? 'default' : #p0)",

@@ -81,6 +81,13 @@ public class ApplicationServiceImpl implements ApplicationService {
 		if (userId != null) {
 			Long activeCount = applicationMapper.countActiveByCampaignAndUser(request.getCampaignId(), userId);
 			if (activeCount > 0) return Result.error(409, "同一招新批次只能提交一次有效申请");
+		} else {
+			Map<String, Object> profileMap = request.getProfile() == null ? Map.of() : request.getProfile();
+			String studentId = readProfileValue(profileMap, "studentId");
+			if (studentId != null && !studentId.isBlank()) {
+				Long anonCount = applicationMapper.countActiveByCampaignAndStudentId(request.getCampaignId(), studentId);
+				if (anonCount > 0) return Result.error(409, "该学号已提交过申请");
+			}
 		}
 		MembershipApplication application = MembershipApplication.builder()
 				.campaignId(request.getCampaignId()).clubId(request.getClubId()).userId(userId)

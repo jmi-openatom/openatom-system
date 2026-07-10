@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class RegistrationSettingServiceImpl extends ServiceImpl<SystemSettingMapper, SystemSetting>
     implements RegistrationSettingService {
   private static final String REGISTER_ENABLED_KEY = "register_enabled";
+  private static final String ACTIVATION_ENABLED_KEY = "activation_enabled";
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -67,5 +68,36 @@ public class RegistrationSettingServiceImpl extends ServiceImpl<SystemSettingMap
               .build();
       save(defaultSetting);
     }
+
+    if (getById(ACTIVATION_ENABLED_KEY) == null) {
+      SystemSetting defaultSetting =
+          SystemSetting.builder()
+              .settingKey(ACTIVATION_ENABLED_KEY)
+              .settingValue("true")
+              .description("是否启用激活页面引导流程")
+              .build();
+      save(defaultSetting);
+    }
+  }
+
+  @Override
+  @RedisCached(cacheName = "registration", key = "'activation-enabled'", ttlSeconds = 3600)
+  public boolean isActivationEnabled() {
+    ensureSettingRow();
+    SystemSetting setting = getById(ACTIVATION_ENABLED_KEY);
+    return setting == null || Boolean.parseBoolean(setting.getSettingValue());
+  }
+
+  @Override
+  @RedisCacheEvict(cacheNames = {"registration", "site"})
+  public boolean updateActivationEnabled(boolean enabled) {
+    ensureSettingRow();
+    SystemSetting setting =
+        SystemSetting.builder()
+            .settingKey(ACTIVATION_ENABLED_KEY)
+            .settingValue(String.valueOf(enabled))
+            .build();
+    saveOrUpdate(setting);
+    return enabled;
   }
 }

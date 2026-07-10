@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
-import { authApi } from '@/api'
+import { authApi, siteApi } from '@/api'
 import {
   failNavigation,
   finishNavigation,
@@ -550,6 +550,20 @@ router.beforeEach((to, from) => {
   return true
 })
 
+// 缓存激活页是否启用，避免每次路由跳转都请求后端
+let _activationEnabledCache: { value: boolean; fetched: boolean } = { value: true, fetched: false }
+
+async function isActivationPageEnabled(): Promise<boolean> {
+  if (_activationEnabledCache.fetched) return _activationEnabledCache.value
+  try {
+    const enabled = Boolean(await siteApi.activationEnabled())
+    _activationEnabledCache = { value: enabled, fetched: true }
+    return enabled
+  } catch {
+    return true // 请求失败时默认启用激活页
+  }
+}
+
 router.beforeEach(async (to) => {
   if ((requiresAdminAuth(to) || requiresSiteLogin(to)) && !getToken()) {
     window.location.assign(buildOidcAuthorizeUrl(to.fullPath))
@@ -557,8 +571,12 @@ router.beforeEach(async (to) => {
   }
 
   // 未激活账号拦截：除激活页/登录页/auth 回调外，所有页面都强制跳转到激活页
+  // 仅当激活页引导流程启用时才拦截
   if (!ACTIVATION_BYPASS_PATHS.has(to.path) && getToken() && !isActivated()) {
-    return { path: '/activation', query: { redirect: to.fullPath } }
+    const activationEnabled = await isActivationPageEnabled()
+    if (activationEnabled) {
+      return { path: '/activation', query: { redirect: to.fullPath } }
+    }
   }
   // 已激活用户访问激活页：不在路由守卫层拦截，交给 Activation.vue 组件
   // 根据服务器返回的真实状态自行决定是否重定向，避免 localStorage 缓存过期导致无法进入页面

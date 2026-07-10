@@ -12,4 +12,8 @@ public interface RegistrationSettingService extends IService<SystemSetting> {
   boolean isRegisterEnabled();
 
   boolean updateRegisterEnabled(boolean enabled);
+
+  boolean isActivationEnabled();
+
+  boolean updateActivationEnabled(boolean enabled);
 }

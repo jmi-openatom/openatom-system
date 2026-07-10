@@ -133,4 +133,14 @@ public class SiteController {
   public Result<Boolean> getRegisterEnabled() {
     return siteService.getRegisterEnabled();
   }
+
+  /**
+   * 查询激活页引导流程是否启用
+   *
+   * @return 激活页是否启用
+   */
+  @GetMapping("/site/activation-enabled")
+  public Result<Boolean> getActivationEnabled() {
+    return siteService.getActivationEnabled();
+  }
 }
