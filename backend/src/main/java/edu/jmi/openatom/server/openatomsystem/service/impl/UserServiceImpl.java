@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.bootstrap.RoleSeedTemplate;
 import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
@@ -427,8 +428,12 @@ public class UserServiceImpl implements UserService {
 		if (user == null) return Result.error(404, "用户不存在");
 		if (activated && user.getActivatedAt() != null) return Result.success("该用户已激活");
 		if (!activated && user.getActivatedAt() == null) return Result.success("该用户未激活");
-		user.setActivatedAt(activated ? new java.sql.Timestamp(System.currentTimeMillis()) : null);
-		userMapper.updateById(user);
+		// 使用 LambdaUpdateWrapper 显式 SET activated_at = NULL，
+		// 避免 MyBatis-Plus updateById 默认 NOT_NULL 策略跳过 null 字段
+		LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
+		wrapper.eq(User::getId, userId)
+				.set(User::getActivatedAt, activated ? new java.sql.Timestamp(System.currentTimeMillis()) : null);
+		userMapper.update(null, wrapper);
 		return Result.success(activated ? "用户已激活" : "已取消激活");
 	}
 

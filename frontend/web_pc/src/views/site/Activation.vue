@@ -1,461 +1,460 @@
 <template>
-  <ViewPage class="activation-page" :loading="loading">
-    <!-- ============ 1. Hero ============ -->
-    <section ref="heroRef" class="act-hero">
-      <div aria-hidden="true" class="act-hero__grid"></div>
-      <div aria-hidden="true" class="act-hero__orb act-hero__orb--a"></div>
-      <div aria-hidden="true" class="act-hero__orb act-hero__orb--b"></div>
-      <div class="container act-hero__inner">
-        <div class="act-hero__copy">
-          <span class="act-mono-label act-hero__label" data-reveal>
-            <i class="act-dot"></i>欢迎加入 · WELCOME
-          </span>
-          <h1 class="act-hero__title">
-            <span class="act-hero__word" data-reveal-word style="--dw:0">恭喜你</span>
-            <span class="act-hero__word act-hero__word--italic" data-reveal-word style="--dw:1">成为</span>
-            <span class="act-hero__word" data-reveal-word style="--dw:2">正式成员</span>
-          </h1>
-          <p class="act-hero__desc" data-reveal style="--d:3">
-            你已成为<strong>{{ info?.club?.name || '开放原子开源社团' }}</strong>的正式成员。
-            向下滚动了解你的部门、社团核心负责人以及我们的使命与方向，浏览完成后激活账号。
-          </p>
-          <div class="act-hero__chip" data-reveal style="--d:4">
-            <UserAvatar
-              :name="displayName"
-              :qq-openid="String(info?.qqOpenid || '')"
-              :size="52"
-              :src="String(info?.avatar || '')"
-            />
-            <div class="act-hero__chip-meta">
-              <strong>{{ displayName }}</strong>
-              <span>{{ info?.membership?.positionName || '正式成员' }}</span>
+  <div class="onboard" :class="{ 'onboard--loaded': loaded }">
+    <!-- ============ Background Layers ============ -->
+    <div class="onboard__bg" aria-hidden="true">
+      <div class="onboard__bg-gradient"></div>
+      <div class="onboard__bg-orb onboard__bg-orb--1" ref="orb1Ref"></div>
+      <div class="onboard__bg-orb onboard__bg-orb--2" ref="orb2Ref"></div>
+      <div class="onboard__bg-orb onboard__bg-orb--3" ref="orb3Ref"></div>
+      <div class="onboard__bg-grid"></div>
+      <div class="onboard__bg-particles">
+        <span v-for="n in 18" :key="n" class="onboard__particle" :style="particleStyle(n)"></span>
+      </div>
+    </div>
+
+   <!-- ============ Open-Source Floating Decoration ============ -->
+    <div class="ob-os-deco" aria-hidden="true">
+      <span class="ob-os-deco__symbol ob-os-deco__symbol--1">&lt;/&gt;</span>
+      <span class="ob-os-deco__symbol ob-os-deco__symbol--2">{ }</span>
+      <span class="ob-os-deco__symbol ob-os-deco__symbol--3">git push</span>
+      <span class="ob-os-deco__symbol ob-os-deco__symbol--4">open source</span>
+      <span class="ob-os-deco__symbol ob-os-deco__symbol--5">PR #{{ String(step).padStart(2, '0') }}</span>
+    </div>
+
+    <!-- ============ Progress Indicator ============ -->
+    <div class="onboard__progress" aria-hidden="true">
+      <div class="onboard__progress-track">
+        <div class="onboard__progress-fill" :style="{ width: `${(step / TOTAL_STEPS) * 100}%` }"></div>
+      </div>
+      <div class="onboard__progress-info">
+        <span class="onboard__progress-current">{{ String(step).padStart(2, '0') }}</span>
+        <span class="onboard__progress-sep">/</span>
+        <span class="onboard__progress-total">{{ String(TOTAL_STEPS).padStart(2, '0') }}</span>
+      </div>
+    </div>
+
+    <!-- ============ Step Container ============ -->
+    <Transition :name="transitionName" mode="out-in" @after-enter="onStepEntered">
+      <component :is="'div'" :key="step" class="onboard__step">
+       <!-- ====== Step 1: Welcome ====== -->
+        <section v-if="step === 1" class="ob-step ob-step--welcome">
+          <div class="ob-step__inner">
+            <div class="ob-logo" :class="{ 'ob-logo--in': stepInAnim }">
+              <img src="../../../public/logo.png" width="100" alt="">
             </div>
-            <i class="act-hero__chip-pulse"></i>
-          </div>
-        </div>
-        <button class="act-scroll-cue" data-reveal style="--d:5" @click="scrollToNext">
-          <span>SCROLL</span>
-          <i></i>
-        </button>
-      </div>
-      <div class="act-ticker" aria-hidden="true">
-        <div class="act-ticker__track">
-          <span v-for="n in 2" :key="n" class="act-ticker__group">
-            <i v-for="word in tickerWords" :key="word">{{ word }}</i>
-          </span>
-        </div>
-      </div>
-    </section>
+            <p class="ob-eyebrow" :style="{ '--delay': '0.1s' }">开放原子开源社团 · JMI-OPENATOM</p>
+            <h1 class="ob-title" :style="{ '--delay': '0.25s' }">
+              欢迎加入
+            </h1>
 
-    <!-- ============ 2. Department ============ -->
-    <section ref="sectionRefs" class="act-section act-section--department">
-      <div class="container act-section__inner">
-        <header class="act-head">
-          <span class="act-mono-label act-head__label" data-stagger style="--si:0">Department / 01</span>
-          <h2 class="act-head__title" data-stagger style="--si:1">我的部门</h2>
-          <p class="act-head__desc" data-stagger style="--si:2">了解你所在的部门与负责人，从这里开始融入团队。</p>
-        </header>
-        <div class="act-divider" data-line></div>
+            <div class="ob-welcome-name" :style="{ '--delay': '0.4s' }">
+              <h1 style="font-style: italic;font-weight: bold;">{{ displayName }} · {{ info?.membership?.departmentName || '尚未分配部门' }}</h1>
+            </div>
 
-        <div v-if="info?.membership" class="dept-layout">
-          <div class="dept-layout__index" data-stagger style="--si:3">
-            <span class="dept-layout__index-num">{{ membershipIndex }}</span>
-            <span class="act-mono-label">YOUR DEPT</span>
-          </div>
-          <div class="dept-layout__main">
-            <h3 class="dept-layout__name" data-stagger style="--si:4">
-              {{ info.membership.departmentName || '尚未分配部门' }}
-              <span v-if="info.membership.positionName" class="dept-layout__position">{{ info.membership.positionName }}</span>
-            </h3>
-            <p class="dept-layout__desc" data-stagger style="--si:5">
-              {{ info.membership.departmentDescription || '部门介绍即将上线。' }}
+            <p class="ob-subtitle" :style="{ '--delay': '0.55s' }">
+              这里不只是一个社团，而是你技术旅程的全新起点。<br>让开源，在校园里真正发生。
             </p>
-            <div v-if="info?.departmentHead" class="dept-head" data-stagger style="--si:6">
-              <UserAvatar
-                :name="info.departmentHead.name"
-                :size="56"
-                :src="String(info.departmentHead.avatar || '')"
-                :fallback-src="info.departmentHead.qqAvatar || ''"
-              />
-              <div class="dept-head__meta">
-                <span class="act-mono-label">DEPT LEAD · 部长</span>
-                <strong>{{ info.departmentHead.name }}</strong>
+
+            <div class="ob-os-badge" :style="{ '--delay': '0.65s' }">
+              <svg class="ob-os-badge__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 8l-3 4 3 4m0-8l3 4-3 4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>Open Source · Open Mind · Open Future</span>
+            </div>
+
+            <button class="ob-btn ob-btn--primary ob-btn--glow" :style="{ '--delay': '0.8s' }" @click="nextStep">
+              <svg class="ob-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 12h5M12 16v5M8 12H3M12 8V3"/></svg>
+              Fork 未来
+              <span class="ob-btn__arrow">→</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ====== Step 2: Manifesto ====== -->
+        <section v-else-if="step === 2" class="ob-step ob-step--manifesto">
+          <div class="ob-step__inner ob-step__inner--narrow">
+            <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">我们的使命 · MANIFESTO</p>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">
+              让开源在校园里真正发生
+            </h2>
+            <p class="ob-desc" :style="{ '--delay': '0.3s' }">
+              我们相信开源不仅是一种协作方式，更是一种学习姿态。<br>每一行代码都被认真审视，每一次提交都值得被讨论。<br>我们不追求一蹴而就的成果，而是在持续的实践中，把「<span style="font-style: italic">做出有用的东西</span>」变成日常。
+            </p>
+            <div class="ob-pillars" :style="{ '--delay': '0.45s' }">
+            <div v-for="(p, i) in manifestoPillars" :key="p.title" class="ob-pillar">
+                <div class="ob-pillar__icon">
+                  <svg v-if="i === 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-linecap="round"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke-linecap="round"/></svg>
+                  <svg v-else-if="i === 1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20V10M18 20V4M6 20v-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <strong class="ob-pillar__title">{{ p.title }}</strong>
+                <p class="ob-pillar__desc">{{ p.desc }}</p>
               </div>
             </div>
-            <div v-else class="dept-head dept-head--empty" data-stagger style="--si:6">
-              <span class="act-mono-label">DEPT LEAD</span>
-              <p>暂未设置部门部长，如有疑问请联系社长或管理员。</p>
-            </div>
-            <div v-if="info?.viceDepartmentHead" class="dept-head dept-head--vice" data-stagger style="--si:7">
-              <UserAvatar
-                :name="info.viceDepartmentHead.name"
-                :size="56"
-                :src="String(info.viceDepartmentHead.avatar || '')"
-                :fallback-src="info.viceDepartmentHead.qqAvatar || ''"
-              />
-              <div class="dept-head__meta">
-                <span class="act-mono-label">VICE LEAD · 副部长</span>
-                <strong>{{ info.viceDepartmentHead.name }}</strong>
+            <button class="ob-btn ob-btn--primary" :style="{ '--delay': '0.6s' }" @click="nextStep">
+              Git Init 使命
+              <span class="ob-btn__arrow">→</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ====== Step 3: What We Do ====== -->
+        <section v-else-if="step === 3" class="ob-step ob-step--what">
+          <div class="ob-step__inner ob-step__inner--narrow">
+            <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">日常方向 · WHAT WE DO</p>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">
+              我们做什么
+            </h2>
+            <p class="ob-desc" :style="{ '--delay': '0.3s' }">
+              四个方向，构成社团日常的全部内容。每一个方向，都从真实需求出发，而非纸上谈兵。
+            </p>
+            <div class="ob-pillars" :style="{ '--delay': '0.45s' }">
+              <div v-for="(item, idx) in whatWeDo" :key="item.title" class="ob-pillar">
+                <div class="ob-pillar__icon">
+                  <svg v-if="idx === 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg v-else-if="idx === 1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4" stroke-linecap="round"/></svg>
+                  <svg v-else-if="idx === 2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6-6 6 6M6 15l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" stroke-linecap="round"/></svg>
+                </div>
+                <strong class="ob-pillar__title">{{ item.title }}</strong>
+                <p class="ob-pillar__desc">{{ item.desc }}</p>
               </div>
+            </div>
+            <button class="ob-btn ob-btn--primary" :style="{ '--delay': '0.6s' }" @click="nextStep">
+              Explore 方向
+              <span class="ob-btn__arrow">→</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ====== Step 4: Department ====== -->
+        <section v-else-if="step === 4" class="ob-step ob-step--department">
+          <div class="ob-step__inner ob-step__inner--narrow">
+            <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">你的位置 · YOUR DEPARTMENT</p>
+
+            <!-- Department Hero -->
+            <div class="ob-dept-hero" :style="{ '--delay': '0.15s' }">
+              <div class="ob-dept-hero__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M3 7v1a3 3 0 006 0V7m0 1a3 3 0 006 0V7m0 1a3 3 0 006 0V7H3l2-4h14l2 4M5 21V10.87M19 21V10.87" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <h2 class="ob-dept-hero__name">
+                {{ info?.membership?.departmentName || '尚未分配部门' }}
+              </h2>
+              <div v-if="info?.membership?.positionName" class="ob-dept-hero__position">
+                <svg class="ob-dept-hero__position-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-4V3H8v4H4c-1.1 0-2 .9-2 2v2h20V9c0-1.1-.9-2-2-2zM4 13v6c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-6H4z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                {{ info.membership.positionName }}
+              </div>
+            </div>
+
+            <p class="ob-desc" :style="{ '--delay': '0.3s' }">
+              {{ info?.membership?.departmentDescription || '部门介绍即将上线，如有疑问请联系社长或管理员。' }}
+            </p>
+
+            <!-- Department Heads -->
+            <div class="ob-dept-heads" :style="{ '--delay': '0.4s' }">
+              <div v-if="info?.departmentHead" class="ob-dept-head ob-dept-head--primary">
+                <div class="ob-dept-head__badge">部长</div>
+                <div class="ob-dept-head__avatar">
+                  <img v-if="info.departmentHead.avatar || info.departmentHead.qqAvatar" :src="info.departmentHead.avatar || info.departmentHead.qqAvatar" alt="" />
+                  <span v-else>{{ info.departmentHead.initial || info.departmentHead.name?.charAt(0) }}</span>
+                </div>
+                <strong class="ob-dept-head__name">{{ info.departmentHead.name }}</strong>
+              </div>
+              <div v-if="info?.viceDepartmentHead" class="ob-dept-head">
+                <div class="ob-dept-head__badge ob-dept-head__badge--vice">副部长</div>
+                <div class="ob-dept-head__avatar">
+                  <img v-if="info.viceDepartmentHead.qqAvatar || info.viceDepartmentHead.avatar" :src="info.viceDepartmentHead.qqAvatar || info.viceDepartmentHead.avatar" alt="" />
+                  <span v-else>{{ info.viceDepartmentHead.initial || info.viceDepartmentHead.name?.charAt(0) }}</span>
+                </div>
+                <strong class="ob-dept-head__name">{{ info.viceDepartmentHead.name }}</strong>
+              </div>
+            </div>
+
+            <div v-if="info?.membership?.departmentWechatQrcode" class="ob-qrcode" :style="{ '--delay': '0.5s' }">
+              <span class="ob-mono-label">部门微信群</span>
+              <img :src="info.membership.departmentWechatQrcode" alt="部门微信群二维码" class="ob-qrcode__img" />
+              <p>扫码加入部门微信群</p>
+            </div>
+
+            <div class="ob-step__actions" :style="{ '--delay': '0.6s' }">
+              <button class="ob-btn ob-btn--ghost" @click="prevStep">返回</button>
+              <button class="ob-btn ob-btn--primary" @click="nextStep">
+                Merge 入列
+                <span class="ob-btn__arrow">→</span>
+              </button>
             </div>
           </div>
-        </div>
-        <div v-else class="dept-empty" data-stagger style="--si:3">
-          <span class="act-mono-label">NOT ASSIGNED</span>
-          <p>你尚未被分配到任何部门，请联系社长或管理员为你分配。</p>
-        </div>
+        </section>
 
-        <div v-if="info?.membership?.departmentWechatQrcode" class="dept-qrcode" data-stagger style="--si:8">
-          <span class="act-mono-label">部门微信群</span>
-          <img :src="info.membership.departmentWechatQrcode" alt="部门微信群二维码" class="dept-qrcode__img" />
-          <p>扫码加入你所在部门的微信群</p>
-        </div>
-      </div>
-    </section>
+        <!-- ====== Step 5: Leadership ====== -->
+        <section v-else-if="step === 5" class="ob-step ob-step--leaders">
+          <div class="ob-step__inner ob-step__inner--narrow">
+            <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">核心团队 · LEADERSHIP</p>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">
+              与你同行的人
+            </h2>
+            <p class="ob-desc" :style="{ '--delay': '0.3s' }">
+              社团的核心管理团队，将带你一起探索开源世界。
+            </p>
 
-    <!-- ============ 3. Group Chat ============ -->
-    <section v-if="info?.club?.wechatGroupQrcode || info?.club?.qqGroupNumber" class="act-section act-section--groups">
-      <div class="container act-section__inner">
-        <header class="act-head">
-          <span class="act-mono-label act-head__label" data-stagger style="--si:0">Join Us / 03</span>
-          <h2 class="act-head__title" data-stagger style="--si:1">加入群聊</h2>
-          <p class="act-head__desc" data-stagger style="--si:2">扫码或搜索加入社团群，和大家一起交流。</p>
-        </header>
-        <div class="act-divider" data-line></div>
-
-        <div class="group-grid">
-          <div v-if="info?.club?.wechatGroupQrcode" class="group-cell" data-stagger style="--si:3">
-            <span class="act-mono-label group-cell__label">社团总群 · 微信</span>
-            <img :src="info.club.wechatGroupQrcode" alt="社团微信群二维码" class="group-cell__qrcode" />
-            <p>打开微信扫码加入社团总群</p>
-          </div>
-          <div v-if="info?.club?.qqGroupNumber" class="group-cell" data-stagger style="--si:4">
-            <span class="act-mono-label group-cell__label">社团总群 · QQ</span>
-            <div class="group-cell__qq">
-              <span class="group-cell__qq-num">{{ info.club.qqGroupNumber }}</span>
-            </div>
-            <p>搜索群号或保存二维码后扫码加入</p>
-            <div class="group-cell__verify">
-              <span class="act-mono-label">入群验证码</span>
-              <div v-if="groupJoinToken" class="group-cell__token">
-                <code>{{ groupJoinToken }}</code>
-                <el-button size="small" @click="copyToken">复制</el-button>
+            <!-- Leaders Grid (all equal) -->
+            <div class="ob-leaders-grid" :style="{ '--delay': '0.4s' }">
+              <div v-if="info?.president" class="ob-leader-card">
+                <div class="ob-leader-card__avatar">
+                  <img v-if="info.president.qqAvatar || info.president.avatar" :src="info.president.qqAvatar || info.president.avatar" alt="" />
+                  <span v-else>{{ info.president.initial || info.president.name?.charAt(0) }}</span>
+                </div>
+                <div class="ob-leader-card__info">
+                  <span class="ob-leader-card__name">{{ info.president.name }}</span>
+                  <span class="ob-leader-card__tag">社长</span>
+                </div>
               </div>
-              <el-button v-else type="primary" size="small" :loading="tokenLoading" @click="generateJoinToken">
+              <div v-if="info?.leagueSecretary" class="ob-leader-card">
+                <div class="ob-leader-card__avatar">
+                  <img v-if="info.leagueSecretary.qqAvatar || info.leagueSecretary.avatar" :src="info.leagueSecretary.qqAvatar || info.leagueSecretary.avatar" alt="" />
+                  <span v-else>{{ info.leagueSecretary.initial || info.leagueSecretary.name?.charAt(0) }}</span>
+                </div>
+                <div class="ob-leader-card__info">
+                  <span class="ob-leader-card__name">{{ info.leagueSecretary.name }}</span>
+                  <span class="ob-leader-card__tag">团支书</span>
+                </div>
+              </div>
+              <div
+                v-for="vp in info?.vicePresidents || []"
+                :key="vp.userId"
+                class="ob-leader-card"
+              >
+                <div class="ob-leader-card__avatar">
+                  <img v-if="vp.qqAvatar || vp.avatar" :src="vp.qqAvatar || vp.avatar" alt="" />
+                  <span v-else>{{ vp.initial || vp.name?.charAt(0) }}</span>
+                </div>
+                <div class="ob-leader-card__info">
+                  <span class="ob-leader-card__name">{{ vp.name }}</span>
+                  <span class="ob-leader-card__tag">副社长</span>
+                </div>
+              </div>
+              <div
+                v-if="!info?.president && !info?.leagueSecretary && (!info?.vicePresidents || !info.vicePresidents.length)"
+                class="ob-leader--empty"
+              >
+                <span class="ob-mono-label">NOT SET</span>
+                <p>暂未设置管理团队信息，请联系管理员完善。</p>
+              </div>
+            </div>
+
+            <div class="ob-step__actions" :style="{ '--delay': '0.65s' }">
+              <button class="ob-btn ob-btn--ghost" @click="prevStep">返回</button>
+              <button class="ob-btn ob-btn--primary" @click="nextStep">
+                Connect 团队
+                <span class="ob-btn__arrow">→</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== Step 6: Join Groups ====== -->
+        <section v-else-if="step === 6" class="ob-step ob-step--groups">
+          <div class="ob-step__inner ob-step__inner--narrow">
+            <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">加入群聊 · JOIN US</p>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">
+              加入社团群聊
+            </h2>
+            <p class="ob-desc" :style="{ '--delay': '0.3s' }">
+              扫码加入微信群，获取社团最新动态。加入QQ群是激活账号的前置条件，请生成验证码后申请入群。
+            </p>
+
+            <div v-if="info?.club?.wechatGroupQrcode" class="ob-qrcode" :style="{ '--delay': '0.4s' }">
+              <span class="ob-mono-label">社团微信群</span>
+              <img :src="info.club.wechatGroupQrcode" alt="社团微信群二维码" class="ob-qrcode__img" />
+              <p>打开微信扫码加入社团总群</p>
+            </div>
+
+            <div v-if="info?.club?.qqGroupNumber" class="ob-group-card" :style="{ '--delay': '0.45s' }">
+              <div class="ob-group-card__label">社团QQ群号</div>
+              <div class="ob-group-card__number">{{ info.club.qqGroupNumber }}</div>
+            </div>
+
+            <div class="ob-token-area" :style="{ '--delay': '0.5s' }">
+              <template v-if="groupJoinToken">
+                <div class="ob-token-card">
+                  <span class="ob-token-card__label">入群验证码</span>
+                  <code class="ob-token-card__code">{{ groupJoinToken }}</code>
+                </div>
+                <button class="ob-btn ob-btn--glass" @click="copyToken">
+                  复制验证码
+                </button>
+              </template>
+              <button v-else class="ob-btn ob-btn--glass" :loading="tokenLoading" @click="generateJoinToken">
                 生成入群验证码
-              </el-button>
-              <p v-if="groupJoinToken" class="group-cell__tip">将以上验证码填写在入群申请理由中，机器人将自动审核通过并设置群名片</p>
+              </button>
+            </div>
+
+            <div v-if="info?.qqGroupJoined" class="ob-joined-badge" :style="{ '--delay': '0.55s' }">
+              <span class="ob-check-icon">✓</span> 已加入QQ群
+            </div>
+
+            <div v-else-if="groupJoinToken" class="ob-polling-hint" :style="{ '--delay': '0.55s' }">
+              <span class="ob-polling-hint__dot" :class="{ 'ob-polling-hint__dot--checking': checkingStatus }"></span>
+              {{ checkingStatus ? '正在检测入群状态…' : '已复制验证码，请在QQ群中提交入群申请，系统将自动检测' }}
+            </div>
+
+            <div class="ob-step__actions" :style="{ '--delay': '0.65s' }">
+              <button class="ob-btn ob-btn--ghost" @click="prevStep">返回</button>
+              <button
+                class="ob-btn ob-btn--primary"
+                :disabled="!info?.qqGroupJoined"
+                @click="nextStep"
+              >
+                {{ info?.qqGroupJoined ? 'Link 社群' : '请先加入QQ群' }}
+                <span v-if="info?.qqGroupJoined" class="ob-btn__arrow">→</span>
+              </button>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
 
-    <!-- ============ 4. Leadership ============ -->
-    <section class="act-section act-section--leaders">
-      <div aria-hidden="true" class="act-section__orb"></div>
-      <div class="container act-section__inner">
-        <header class="act-head">
-          <span class="act-mono-label act-head__label" data-stagger style="--si:0">Leadership / 04</span>
-          <h2 class="act-head__title" data-stagger style="--si:1">核心管理团队</h2>
-          <p class="act-head__desc" data-stagger style="--si:2">社团的核心管理团队，将带你一起探索开源世界。</p>
-        </header>
-        <div class="act-divider" data-line></div>
+        <!-- ====== Step 7: Password ====== -->
+        <section v-else-if="step === 7" class="ob-step ob-step--password">
+          <div class="ob-step__inner ob-step__inner--narrow">
+            <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">安全设置 · SECURITY</p>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">
+              设置你的密码
+            </h2>
+            <p class="ob-desc" :style="{ '--delay': '0.3s' }">
+              这是激活流程的最后一步。设置新密码后，你的账号将正式激活，可使用所有功能。
+            </p>
 
-        <div class="leaders">
-          <article v-if="info?.president" class="leader leader--president" data-stagger style="--si:3">
-            <div class="leader__avatar-wrap">
-              <UserAvatar
-                :name="info.president.name"
-                :size="140"
-                :src="String(info.president.avatar || '')"
-                :fallback-src="info.president.qqAvatar || ''"
-              />
-              <span class="leader__ring"></span>
-              <span class="leader__ring leader__ring--2"></span>
-            </div>
-            <span class="act-mono-label leader__tag">PRESIDENT · 社长</span>
-            <h3 class="leader__name">{{ info.president.name }}</h3>
-            <p class="leader__hint">社团负责人</p>
-          </article>
-
-          <article v-if="info?.leagueSecretary" class="leader leader--secretary" data-stagger style="--si:4">
-            <div class="leader__avatar-wrap">
-              <UserAvatar
-                :name="info.leagueSecretary.name"
-                :size="104"
-                :src="String(info.leagueSecretary.avatar || '')"
-                :fallback-src="info.leagueSecretary.qqAvatar || ''"
-              />
-              <span class="leader__ring"></span>
-            </div>
-            <span class="act-mono-label leader__tag leader__tag--secretary">SECRETARY · 团支书</span>
-            <h3 class="leader__name">{{ info.leagueSecretary.name }}</h3>
-            <p class="leader__hint">社团团务负责人</p>
-          </article>
-
-          <article
-            v-for="(vp, idx) in info?.vicePresidents"
-            :key="vp.userId"
-            class="leader leader--vice"
-            data-stagger
-            :style="{ '--si': 5 + idx }"
-          >
-            <div class="leader__avatar-wrap">
-              <UserAvatar
-                :name="vp.name"
-                :size="104"
-                :src="String(vp.avatar || '')"
-                :fallback-src="vp.qqAvatar || ''"
-              />
-              <span class="leader__ring"></span>
-            </div>
-            <span class="act-mono-label leader__tag leader__tag--vice">VICE · 副社长</span>
-            <h3 class="leader__name">{{ vp.name }}</h3>
-            <p class="leader__hint">社团副负责人</p>
-          </article>
-
-          <div
-            v-if="!info?.president && !info?.leagueSecretary && (!info?.vicePresidents || !info.vicePresidents.length)"
-            class="leader leader--empty"
-            data-stagger
-            style="--si:3"
-          >
-            <span class="act-mono-label">NOT SET</span>
-            <p>暂未设置管理团队信息，请联系管理员完善。</p>
+            <form class="ob-form" :style="{ '--delay': '0.4s' }" @submit.prevent="handleActivate">
+              <div class="ob-input-group">
+                <input
+                  v-model="passwordForm.oldPassword"
+                  type="password"
+                  class="ob-input"
+                  placeholder="当前密码"
+                  autocomplete="current-password"
+                />
+              </div>
+              <div class="ob-input-group">
+                <input
+                  v-model="passwordForm.newPassword"
+                  type="password"
+                  class="ob-input"
+                  placeholder="新密码（至少4位）"
+                  autocomplete="new-password"
+                />
+              </div>
+              <div class="ob-step__actions">
+                <button type="button" class="ob-btn ob-btn--ghost" @click="prevStep">返回</button>
+                <button
+                  type="submit"
+                  class="ob-btn ob-btn--primary"
+                  :disabled="!passwordForm.oldPassword || !passwordForm.newPassword || passwordForm.newPassword.length < 4"
+                >
+                  Deploy 激活
+                  <span class="ob-btn__arrow">→</span>
+                </button>
+              </div>
+            </form>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
 
-    <!-- ============ 4a. About Intro ============ -->
-    <section class="act-section act-section--about">
-      <div class="container act-section__inner">
-        <header class="act-head">
-          <span class="act-mono-label act-head__label" data-stagger style="--si:0">About Us / 05</span>
-          <h2 class="act-head__title" data-stagger style="--si:1">关于我们</h2>
-          <p class="act-head__desc" data-stagger style="--si:2">从一群热爱技术的同学开始，到现在一起把开源做成日常。</p>
-        </header>
-        <div class="act-divider" data-line></div>
+        <!-- ====== Step 8: Activating ====== -->
+        <section v-else-if="step === 8" class="ob-step ob-step--loading">
+          <div class="ob-step__inner">
+            <div class="ob-loader">
+              <svg class="ob-loader__ring" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="2" fill="none" opacity="0.15"/>
+                <circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" class="ob-loader__arc"/>
+              </svg>
+              <p class="ob-loader__text">{{ loadingText }}</p>
+            </div>
+          </div>
+        </section>
 
-        <div class="about-intro">
-          <div class="about-intro__brand" data-stagger style="--si:3">
-            <img v-if="info?.club?.logoUrl" :src="info.club.logoUrl" alt="社团徽标" class="about-intro__logo" />
-            <div>
-              <span class="act-mono-label">CLUB</span>
+        <!-- ====== Step 9: Success ====== -->
+        <section v-else-if="step === 9" class="ob-step ob-step--success">
+          <div class="ob-step__inner">
+
+            <!-- Success Animation -->
+            <div class="ob-success-check" :class="{ 'ob-success-check--in': stepInAnim }">
+              <svg viewBox="0 0 64 64" class="ob-success-check__svg">
+                <circle
+                    cx="32"
+                    cy="32"
+                    r="28"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    fill="none"
+                    class="ob-success-check__circle"
+                />
+                <path
+                    d="M20 33 L28 41 L44 23"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    fill="none"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="ob-success-check__path"
+                />
+              </svg>
+            </div>
+
+            <p class="ob-eyebrow" :style="{ '--delay': '0.15s' }">
+              Welcome to JMI-OPENATOM
+            </p>
+
+            <h1 class="ob-title" :style="{ '--delay': '0.3s' }">
+              欢迎加入
+            </h1>
+
+            <h2 class="ob-name" :style="{ '--delay': '0.45s' }">
+              {{ displayName }}
+            </h2>
+
+            <p class="ob-subtitle" :style="{ '--delay': '0.65s' }">
+              你的身份已完成激活。
+              <br />
+              欢迎成为
               <strong>{{ info?.club?.name || '开放原子开源社团' }}</strong>
-              <small v-if="info?.club?.category">{{ info.club.category }}</small>
+              的正式成员。
+            </p>
+
+            <div class="ob-success-terminal" :style="{ '--delay': '0.8s' }">
+              <div class="ob-success-terminal__bar">
+                <span class="ob-success-terminal__dot ob-success-terminal__dot--red"></span>
+                <span class="ob-success-terminal__dot ob-success-terminal__dot--yellow"></span>
+                <span class="ob-success-terminal__dot ob-success-terminal__dot--green"></span>
+                <span class="ob-success-terminal__title">~/openatom</span>
+              </div>
+              <div class="ob-success-terminal__body">
+                <p><span class="ob-term-prompt">$</span> git status</p>
+                <p class="ob-term-success">✓ Account activated successfully</p>
+                <p><span class="ob-term-prompt">$</span> echo "Code. Share. Inspire."</p>
+                <p class="ob-term-output">Code. Share. Inspire.<span class="ob-term-cursor">█</span></p>
+              </div>
             </div>
+
+            <button
+                class="ob-btn ob-btn--primary ob-btn--glow"
+                :style="{ '--delay': '1s' }"
+                @click="enterHome"
+            >
+              <svg class="ob-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Launch
+              <span class="ob-btn__arrow">→</span>
+            </button>
+
           </div>
-          <p class="about-intro__lead" data-stagger style="--si:4">
-            {{ info?.club?.description || '我们是江苏海事职业技术学院的开放原子开源社团，专注于技术分享、项目实践、竞赛训练与开源协作。' }}
-          </p>
-          <div class="about-intro__sig" data-stagger style="--si:5">
-            <span>JMI · OPENATOM</span><i></i><span>EST. 2025</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 4b. Manifesto ============ -->
-    <section class="act-section act-section--manifesto">
-      <div aria-hidden="true" class="manifesto__bg"></div>
-      <div class="container act-section__inner">
-        <div class="manifesto">
-          <span class="act-mono-label manifesto__label" data-stagger style="--si:0">Manifesto · 使命</span>
-          <h2 class="manifesto__statement">
-            <span class="manifesto__word" data-stagger style="--si:1">让</span>
-            <span class="manifesto__word manifesto__word--accent" data-stagger style="--si:2">开源</span>
-            <span class="manifesto__word" data-stagger style="--si:3">在校园里</span>
-            <span class="manifesto__word manifesto__word--accent" data-stagger style="--si:4">真正发生</span>
-          </h2>
-          <p class="manifesto__detail" data-stagger style="--si:5">
-            我们相信开源不仅是一种协作方式，更是一种学习姿态。在这里，每一行代码都被认真审视，
-            每一次提交都值得被讨论，每一个项目都从真实需求出发。我们不追求一蹴而就的成果，
-            而是在持续的实践与复盘中，把"做出有用的东西"变成日常。
-          </p>
-          <div class="manifesto__pillars">
-            <div class="manifesto__pillar" data-stagger style="--si:6">
-              <span class="manifesto__pillar-num">01</span>
-              <strong>开放协作</strong>
-              <p>代码、文档、思路全部公开，让每个人都能参与和讨论。</p>
-            </div>
-            <div class="manifesto__pillar" data-stagger style="--si:7">
-              <span class="manifesto__pillar-num">02</span>
-              <strong>工程实践</strong>
-              <p>用真实项目训练工程能力，从需求到上线全流程参与。</p>
-            </div>
-            <div class="manifesto__pillar" data-stagger style="--si:8">
-              <span class="manifesto__pillar-num">03</span>
-              <strong>持续成长</strong>
-              <p>不与他人比较，只与昨天的自己比较，保持长期主义。</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 4c. What We Do ============ -->
-    <section class="act-section act-section--what">
-      <div class="container act-section__inner">
-        <header class="act-head">
-          <span class="act-mono-label act-head__label" data-stagger style="--si:0">What We Do / 04</span>
-          <h2 class="act-head__title" data-stagger style="--si:1">我们做什么</h2>
-          <p class="act-head__desc" data-stagger style="--si:2">四个方向，构成社团日常的全部内容。</p>
-        </header>
-        <div class="act-divider" data-line></div>
-
-        <ol class="what">
-          <li v-for="(item, idx) in whatWeDo" :key="item.title" class="what__row" data-stagger :style="{ '--si': idx + 3 }">
-            <span class="what__num">{{ String(idx + 1).padStart(2, '0') }}</span>
-            <div class="what__body">
-              <h3>{{ item.title }}</h3>
-              <p>{{ item.desc }}</p>
-            </div>
-            <span class="what__tag act-mono-label">{{ item.tag }}</span>
-            <span class="what__line" data-line></span>
-          </li>
-        </ol>
-      </div>
-    </section>
-
-    <!-- ============ 4d. Stats ============ -->
-    <section class="act-section act-section--stats">
-      <div aria-hidden="true" class="stats__bg"></div>
-      <div class="container act-section__inner">
-        <header class="act-head">
-          <span class="act-mono-label act-head__label" data-stagger style="--si:0">By Numbers / 05</span>
-          <h2 class="act-head__title" data-stagger style="--si:1">关键数字</h2>
-          <p class="act-head__desc" data-stagger style="--si:2">用数字看社团的现在，也期待你成为下一个数字。</p>
-        </header>
-        <div class="act-divider" data-line></div>
-
-        <div class="stats">
-          <div v-for="(stat, idx) in statsItems" :key="stat.label" class="stats__cell" data-stagger :style="{ '--si': idx + 3 }">
-            <span class="act-mono-label">{{ stat.label }}</span>
-            <strong class="stats__value" :class="{ 'stats__value--accent': stat.accent }" :data-count="stat.count ?? false">{{ stat.display }}</strong>
-            <small>{{ stat.note }}</small>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ 4e. Departments ============ -->
-    <section v-if="info?.club?.focusAreas?.length" class="act-section act-section--focus">
-      <div class="container act-section__inner">
-        <header class="act-head">
-          <span class="act-mono-label act-head__label" data-stagger style="--si:0">Departments / 06</span>
-          <h2 class="act-head__title" data-stagger style="--si:1">各部门方向</h2>
-          <p class="act-head__desc" data-stagger style="--si:2">社团由若干部门组成，找到你感兴趣的方向。</p>
-        </header>
-        <div class="act-divider" data-line></div>
-
-        <ol class="focus">
-          <li v-for="(area, idx) in info.club.focusAreas" :key="area.title" class="focus__row" data-stagger :style="{ '--si': idx + 3 }">
-            <span class="focus__num">{{ String(idx + 1).padStart(2, '0') }}</span>
-            <div class="focus__body">
-              <h3>{{ area.title }}</h3>
-              <p>{{ area.description || '这个部门正在书写自己的故事。' }}</p>
-            </div>
-            <span class="focus__line" data-line></span>
-          </li>
-        </ol>
-      </div>
-    </section>
-
-   <!-- ============ 5. CTA ============ -->
-    <section class="act-cta">
-      <div aria-hidden="true" class="act-cta__grid"></div>
-      <div aria-hidden="true" class="act-cta__orb"></div>
-      <div class="container act-cta__inner">
-        <span class="act-mono-label act-cta__label" data-stagger style="--si:0">Ready / 07</span>
-        <h2 class="act-cta__title" data-stagger style="--si:1">
-          {{ info?.activated ? '账号已激活' : '准备好开始了吗？' }}
-        </h2>
-        <p data-stagger style="--si:2">
-          {{
-            info?.activated
-              ? '你的账号已经激活，可以正常使用所有功能。'
-              : !info?.qqGroupJoined
-                ? '请先加入QQ群，再激活账号。'
-                : '点击下方按钮激活账号，开启你在社团的所有权限与功能。'
-          }}
-        </p>
-        <div v-if="!info?.activated && !info?.qqGroupJoined" class="act-cta__warn" data-stagger style="--si:3">
-          <el-alert
-            title="尚未加入QQ群"
-            type="warning"
-            :closable="false"
-            show-icon
-          >
-            请向上滚动至"加入群聊"区域，生成入群验证码并申请加入QQ群，待机器人审批通过后即可激活账号。
-          </el-alert>
-        </div>
-        <el-button
-          :loading="submitting"
-          class="act-cta__btn"
-          size="large"
-          type="primary"
-          data-stagger
-          style="--si:4"
-          :disabled="!info?.activated && !info?.qqGroupJoined"
-          @click="handleActivate"
-        >
-          {{ info?.activated ? '进入主页' : '激活账号' }}
-        </el-button>
-        <small class="act-cta__hint" data-stagger style="--si:5">
-          点击激活后即代表你已了解社团信息，账号将完成激活并可正常使用所有功能。
-        </small>
-      </div>
-    </section>
-
-    <el-dialog
-      v-model="passwordVisible"
-      title="激活账号 - 修改密码"
-      width="440px"
-      :close-on-click-modal="false"
-      :close-on-press-escape="false"
-    >
-      <el-form
-        ref="passwordFormRef"
-        :model="passwordForm"
-        :rules="passwordRules"
-        label-width="90px"
-        @submit.prevent="submitPassword"
-      >
-        <el-form-item label="原密码" prop="oldPassword">
-          <el-input
-            v-model="passwordForm.oldPassword"
-            type="password"
-            show-password
-            placeholder="请输入当前密码"
-          />
-        </el-form-item>
-        <el-form-item label="新密码" prop="newPassword">
-          <el-input
-            v-model="passwordForm.newPassword"
-            type="password"
-            show-password
-            placeholder="请设置至少4位的新密码"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="passwordVisible = false">稍后再说</el-button>
-        <el-button type="primary" :loading="passwordLoading" @click="submitPassword">
-          确认修改并激活
-        </el-button>
-      </template>
-    </el-dialog>
-  </ViewPage>
+        </section>
+      </component>
+    </Transition>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { ElMessage } from 'element-plus/es/components/message/index'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import ViewPage from '@/components/common/ViewPage.vue'
-import UserAvatar from '@/components/common/UserAvatar.vue'
 import { authApi, siteApi } from '@/api'
 import { setSession, getToken, getCurrentUser } from '@/utils/auth.ts'
 
@@ -477,6 +476,7 @@ interface MembershipInfo {
   positionName: string | null
   status: string
   joinedAt: string
+  departmentWechatQrcode?: string
 }
 
 interface ClubInfo {
@@ -487,6 +487,8 @@ interface ClubInfo {
   description?: string
   logoUrl?: string
   focusAreas: Array<{ title: string; description: string }>
+  qqGroupNumber?: string
+  wechatGroupQrcode?: string
 }
 
 interface ActivationInfo {
@@ -507,74 +509,163 @@ interface ActivationInfo {
   club?: ClubInfo
 }
 
+const TOTAL_STEPS = 9
 const router = useRouter()
-const loading = ref(true)
-const submitting = ref(false)
-const info = ref<ActivationInfo | null>(null)
-const heroRef = ref<HTMLElement>()
 
-const passwordVisible = ref(false)
-const passwordLoading = ref(false)
-const passwordFormRef = ref<any>()
-const passwordForm = ref({ oldPassword: '', newPassword: '' })
+// ============ State ============
+const loaded = ref(false)
+const step = ref(1)
+const stepInAnim = ref(false)
+const transitionName = ref('ob-slide-next')
+const info = ref<ActivationInfo | null>(null)
 const groupJoinToken = ref('')
 const tokenLoading = ref(false)
-const passwordRules = {
-  oldPassword: [{ required: true, message: '请输入当前密码', trigger: 'blur' }],
-  newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 4, message: '密码至少4位', trigger: 'blur' },
-  ],
-}
-let revealObserver: IntersectionObserver | undefined
-let parallaxFrame = 0
+const passwordForm = ref({ oldPassword: '', newPassword: '' })
+const loadingText = ref('正在验证身份…')
+const orb1Ref = ref<HTMLElement>()
+const orb2Ref = ref<HTMLElement>()
+const orb3Ref = ref<HTMLElement>()
+const checkingStatus = ref(false)
 
-const tickerWords = ['OPEN SOURCE', '技术分享', '项目实践', '竞赛训练', '开源协作', 'JMI OPENATOM', 'EST. 2025']
+let parallaxFrame = 0
+let parallaxY = 0
+let groupPollTimer: ReturnType<typeof setInterval> | undefined
+
+const manifestoPillars = [
+  { title: '开放协作', desc: '代码、文档、思路全部公开，让每个人都能参与和讨论。' },
+  { title: '工程实践', desc: '用真实项目训练工程能力，从需求到上线全流程参与。' },
+  { title: '持续成长', desc: '不与他人比较，只与昨天的自己比较，保持长期主义。' },
+]
 
 const whatWeDo = [
-  { title: '技术分享', desc: '定期内部分享会，从基础工具到前沿话题，由成员轮流主讲。每一次分享都是对自己知识的整理，也是对同伴的馈赠。', tag: 'Sharing' },
-  { title: '项目实践', desc: '我们维护若干长期项目，覆盖 Web、Bot、工具链等方向。新成员从一个小 feature 起步，逐步承担更完整的模块。', tag: 'Building' },
-  { title: '竞赛训练', desc: '组队参加各类程序设计、开源相关比赛，把日常积累转化为赛场发挥。赛后的复盘与沉淀，比奖牌本身更重要。', tag: 'Competing' },
-  { title: '开源协作', desc: '鼓励成员向上游开源项目提交 PR、参与社区讨论，把校园里的练习延伸到更广阔的开源世界。', tag: 'Open Source' },
+  { title: '技术分享', desc: '定期内部分享会，从基础工具到前沿话题，由成员轮流主讲。每一次分享都是对自己知识的整理，也是对同伴的馈赠。' },
+  { title: '项目实践', desc: '我们维护若干长期项目，覆盖 Web、Bot、工具链等方向。新成员从一个小 feature 起步，逐步承担更完整的模块。' },
+  { title: '竞赛训练', desc: '组队参加各类程序设计、开源相关比赛，把日常积累转化为赛场发挥。赛后的复盘与沉淀，比奖牌本身更重要。' },
+  { title: '开源协作', desc: '鼓励成员向上游开源项目提交 PR、参与社区讨论，把校园里的练习延伸到更广阔的开源世界。' },
 ]
 
 const displayName = computed(() => info.value?.realName || info.value?.userName || '新成员')
 
-const membershipIndex = computed(() => {
-  const id = info.value?.membership?.departmentId
-  return id ? String(id).padStart(2, '0') : '01'
-})
+// ============ Step Navigation ============
+function nextStep() {
+  transitionName.value = 'ob-slide-next'
+  stepInAnim.value = false
+  step.value = Math.min(step.value + 1, TOTAL_STEPS)
+}
 
-const statsItems = computed(() => [
-  { label: 'EST · 成立', display: '2025', note: '从零开始的故事', accent: false },
-  { label: 'DIRECTIONS · 方向', display: '4', note: '分享 · 项目 · 竞赛 · 开源', accent: false, count: 4 },
-  { label: 'DEPTS · 部门', display: String(info.value?.club?.focusAreas?.length || '—'), note: '各司其职', accent: false, count: info.value?.club?.focusAreas?.length || 0 },
-  { label: 'YOU · 你的位置', display: '+1', note: '正是此刻', accent: true },
-])
+function prevStep() {
+  transitionName.value = 'ob-slide-prev'
+  stepInAnim.value = false
+  step.value = Math.max(step.value - 1, 1)
+}
 
+function goToStep(n: number) {
+  if (n === step.value) return
+  transitionName.value = n > step.value ? 'ob-slide-next' : 'ob-slide-prev'
+  stepInAnim.value = false
+  step.value = n
+}
+
+function onStepEntered() {
+  nextTick(() => {
+    stepInAnim.value = true
+  })
+}
+
+function enterHome() {
+  router.replace('/')
+}
+
+// ============ Particle Background ============
+function particleStyle(n: number) {
+  const seed = n * 37
+  const size = 2 + (seed % 3)
+  const left = (seed * 7) % 100
+  const top = (seed * 11) % 100
+  const duration = 15 + (seed % 10)
+  const delay = -(seed % 8)
+  return {
+    width: `${size}px`,
+    height: `${size}px`,
+    left: `${left}%`,
+    top: `${top}%`,
+    animationDuration: `${duration}s`,
+    animationDelay: `${delay}s`,
+  } as Record<string, string>
+}
+
+// ============ Parallax ============
+function onScroll() {
+  parallaxY = window.scrollY || window.pageYOffset
+  if (parallaxFrame) return
+  parallaxFrame = requestAnimationFrame(() => {
+    parallaxFrame = 0
+    const orbs = [orb1Ref.value, orb2Ref.value, orb3Ref.value].filter(Boolean) as HTMLElement[]
+    orbs.forEach((orb, i) => {
+      orb.style.transform = `translate3d(0, ${parallaxY * (0.02 + i * 0.012)}px, 0)`
+    })
+  })
+}
+
+// ============ Business Logic ============
 async function fetchActivationInfo() {
-  loading.value = true
   try {
     const result = await siteApi.activation()
+    const wasJoined = info.value?.qqGroupJoined
     info.value = result as ActivationInfo
-    // 同步服务器返回的激活状态到 localStorage，避免缓存过期导致路由守卫误判
-    // 场景：管理员后台取消激活后，用户浏览器 localStorage 仍保留旧的 activatedAt
+    // Sync server-side activation status to localStorage
     setSession({
       user: { ...getCurrentUser(), activatedAt: info.value?.activatedAt || null },
     })
+    // If already activated, skip to success step
+    if (info.value?.activated) {
+      step.value = 9
+      stepInAnim.value = true
+    }
+    // If QQ group join status changed to true during polling, notify the user
+    if (!wasJoined && info.value?.qqGroupJoined && step.value === 6) {
+      ElMessage.success('检测到你已加入QQ群，可以继续下一步')
+    }
   } catch (error) {
     console.error('加载激活信息失败', error)
     ElMessage.error('激活信息加载失败，请刷新重试')
-  } finally {
-    loading.value = false
   }
 }
 
-function scrollToNext() {
-  const sections = document.querySelectorAll('.act-section')
-  const first = sections[0] as HTMLElement | undefined
-  first?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+// ============ QQ Group Join Status Polling ============
+function startGroupPolling() {
+  stopGroupPolling()
+  // Only poll if not yet joined
+  if (info.value?.qqGroupJoined) return
+  groupPollTimer = setInterval(async () => {
+    if (info.value?.qqGroupJoined) {
+      stopGroupPolling()
+      return
+    }
+    checkingStatus.value = true
+    try {
+      await fetchActivationInfo()
+    } finally {
+      checkingStatus.value = false
+    }
+  }, 5000)
 }
+
+function stopGroupPolling() {
+  if (groupPollTimer) {
+    clearInterval(groupPollTimer)
+    groupPollTimer = undefined
+  }
+}
+
+// Start/stop polling based on current step (Step 6 = Join Groups)
+watch(step, (newStep) => {
+  if (newStep === 6 && !info.value?.qqGroupJoined) {
+    startGroupPolling()
+  } else {
+    stopGroupPolling()
+  }
+}, { immediate: false })
 
 async function generateJoinToken() {
   tokenLoading.value = true
@@ -599,1247 +690,1665 @@ async function copyToken() {
   }
 }
 
-function animateCount(el: HTMLElement) {
-  const target = Number(el.dataset.count)
-  if (!target || !Number.isFinite(target)) return
-  const counter = { v: 0 }
-  const duration = 1200
-  const start = performance.now()
-  function tick(now: number) {
-    const p = Math.min((now - start) / duration, 1)
-    const eased = 1 - Math.pow(1 - p, 3)
-    el.textContent = String(Math.round(target * eased))
-    if (p < 1) requestAnimationFrame(tick)
-    else el.textContent = String(target)
-  }
-  requestAnimationFrame(tick)
-}
-
-function setupReveal() {
-  if (revealObserver) revealObserver.disconnect()
-  const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
-
-  revealObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return
-        const el = entry.target as HTMLElement
-        el.classList.add('act-in')
-
-        if (el.hasAttribute('data-reveal-word')) {
-          el.classList.add('act-in')
-        }
-        if (el.hasAttribute('data-line')) {
-          el.classList.add('act-line-in')
-        }
-        if (el.hasAttribute('data-count') && el.dataset.count !== 'false') {
-          animateCount(el)
-        }
-        revealObserver?.unobserve(el)
-      })
-    },
-    { rootMargin: '0px 0px -10% 0px', threshold: 0.12 },
-  )
-
-  const targets = document.querySelectorAll<HTMLElement>(
-    '[data-reveal], [data-reveal-word], [data-stagger], [data-line], [data-count]',
-  )
-  targets.forEach((el) => {
-    if (prefersReduced) {
-      el.classList.add('act-in', 'act-line-in')
-      return
-    }
-    revealObserver!.observe(el)
-  })
-}
-
-function onScroll() {
-  if (parallaxFrame) return
-  parallaxFrame = requestAnimationFrame(() => {
-    parallaxFrame = 0
-    const y = window.scrollY
-    const orbs = document.querySelectorAll<HTMLElement>('.act-hero__orb, .act-cta__orb, .act-section__orb')
-    orbs.forEach((orb, i) => {
-      orb.style.transform = `translate3d(0, ${y * (0.04 + i * 0.015)}px, 0)`
-    })
-  })
-}
-
 async function handleActivate() {
-  if (info.value?.activated) {
-    router.replace('/')
+  if (!passwordForm.value.oldPassword || !passwordForm.value.newPassword || passwordForm.value.newPassword.length < 4) {
+    ElMessage.warning('请填写正确的密码信息')
     return
   }
-  if (!info.value?.qqGroupJoined) {
-    ElMessage.warning('请先加入QQ群后再激活账号')
-    return
-  }
-  passwordForm.value = { oldPassword: '', newPassword: '' }
-  passwordVisible.value = true
-}
+  // Move to loading step
+  transitionName.value = 'ob-slide-next'
+  stepInAnim.value = false
+  step.value = 8
+  loadingText.value = '正在验证身份…'
 
-async function submitPassword() {
-  const valid = await passwordFormRef.value?.validate().catch(() => false)
-  if (!valid) return
-
-  passwordLoading.value = true
   try {
+    // Phase 1: Activate
+    loadingText.value = '正在激活账号…'
+    await new Promise(resolve => setTimeout(resolve, 600))
     const result = await authApi.activate()
     if (result) setSession({ accessToken: getToken() || undefined, user: result })
 
+    // Phase 2: Update password
+    loadingText.value = '正在设置密码…'
+    await new Promise(resolve => setTimeout(resolve, 400))
     await authApi.updatePassword({
       oldPassword: passwordForm.value.oldPassword,
       newPassword: passwordForm.value.newPassword,
     })
 
-    ElMessage.success('密码修改成功，账号已激活，请使用新密码重新登录')
-    passwordVisible.value = false
-    window.location.href = '/login'
+    // Phase 3: Success
+    loadingText.value = '即将完成…'
+    await new Promise(resolve => setTimeout(resolve, 600))
+
+    // Sync activation status
+    if (info.value) {
+      info.value.activated = true
+      info.value.activatedAt = new Date().toISOString()
+    }
+
+    // Move to success step
+    transitionName.value = 'ob-slide-next'
+    stepInAnim.value = false
+    step.value = 9
+    ElMessage.success('账号已激活，请使用新密码重新登录')
   } catch (error: any) {
-    const msg = error?.message || error?.msg || '操作失败，请重试'
+    const msg = error?.message || error?.msg || '激活失败，请重试'
     ElMessage.error(msg)
-  } finally {
-    passwordLoading.value = false
+    // Go back to password step
+    transitionName.value = 'ob-slide-prev'
+    stepInAnim.value = false
+    step.value = 7
   }
 }
 
+// ============ Lifecycle ============
 onMounted(async () => {
   await fetchActivationInfo()
   requestAnimationFrame(() => {
-    setupReveal()
+    loaded.value = true
+    stepInAnim.value = true
     window.addEventListener('scroll', onScroll, { passive: true })
   })
 })
 
 onBeforeUnmount(() => {
-  if (revealObserver) revealObserver.disconnect()
   window.removeEventListener('scroll', onScroll)
   if (parallaxFrame) cancelAnimationFrame(parallaxFrame)
+  stopGroupPolling()
 })
 </script>
 
 <style scoped>
 /* ============ Base ============ */
-.activation-page {
+.onboard {
+  position: fixed;
+  inset: 0;
   min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--oa-page-bg);
   color: var(--oa-text);
-  font-family: 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-.act-mono-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  color: var(--oa-muted);
-  text-transform: uppercase;
-}
-
-.act-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #22c55e 20%, transparent);
-  animation: actPulse 2.4s ease-in-out infinite;
-}
-
-@keyframes actPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.3); opacity: 0.6; }
-}
-
-/* ============ Reveal Animations ============ */
-[data-reveal],
-[data-reveal-word],
-[data-stagger] {
+  font-family: 'SF Pro Display', -apple-system, system-ui, BlinkMacSystemFont, sans-serif;
   opacity: 0;
-  transform: translateY(24px);
+  transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  isolation: isolate;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.onboard--loaded {
+  opacity: 1;
+}
+
+/* ============ Background Layers ============ */
+.onboard__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.onboard__bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: var(--oa-hero-gradient);
+}
+
+.onboard__bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+  opacity: 0.6;
+}
+
+.onboard__bg-orb--1 {
+  top: -10%;
+  left: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--oa-active-bg) 12%, transparent), transparent 70%);
+  animation: orbFloat1 24s ease-in-out infinite;
+}
+
+.onboard__bg-orb--2 {
+  bottom: -15%;
+  right: -8%;
+  width: 440px;
+  height: 440px;
+  background: radial-gradient(circle, color-mix(in srgb, #5b8def 14%, transparent), transparent 70%);
+  animation: orbFloat2 30s ease-in-out infinite;
+}
+
+.onboard__bg-orb--3 {
+  top: 40%;
+  left: 50%;
+  width: 360px;
+  height: 360px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--oa-text) 6%, transparent), transparent 70%);
+  animation: orbFloat3 20s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(30px, 40px, 0) scale(1.08); }
+}
+
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-40px, -30px, 0) scale(0.95); }
+}
+
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate3d(-50%, 0, 0) scale(1); }
+  50% { transform: translate3d(-50%, 20px, 0) scale(1.1); }
+}
+
+.onboard__bg-grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(color-mix(in srgb, var(--oa-text) 1.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--oa-text) 1.5%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 35%, rgba(0,0,0,0.35), transparent 68%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 35%, rgba(0,0,0,0.35), transparent 68%);
+}
+
+.onboard__bg-grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 49.5%, color-mix(in srgb, var(--oa-active-bg) 3%, transparent) 49.5%, color-mix(in srgb, var(--oa-active-bg) 3%, transparent) 50.5%, transparent 50.5%);
+  background-size: 200px 200px;
+  mask-image: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0.3), transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0.3), transparent 70%);
+}
+
+/* Particle */
+.onboard__bg-particles {
+  position: absolute;
+  inset: 0;
+}
+
+.onboard__particle {
+  position: absolute;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--oa-text) 20%, transparent);
+  animation: particleDrift 20s linear infinite;
+  opacity: 0.4;
+}
+
+@keyframes particleDrift {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 0.4; }
+  90% { opacity: 0.3; }
+  100% { transform: translateY(-120px) translateX(20px); opacity: 0; }
+}
+
+/* ============ Progress Bar ============ */
+.onboard__progress {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.onboard__progress-track {
+  width: 200px;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--oa-text) 8%, transparent);
+  overflow: hidden;
+  position: relative;
+}
+
+.onboard__progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--oa-active-bg);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.onboard__progress-info {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.onboard__progress-current {
+  font-weight: 600;
+  color: var(--oa-text);
+  font-size: 14px;
+}
+
+.onboard__progress-sep {
+  color: var(--oa-faint);
+  margin: 0 2px;
+}
+
+.onboard__progress-total {
+  color: var(--oa-muted);
+}
+
+/* ============ Step Container ============ */
+.onboard__step {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px 80px;
+}
+
+.ob-step {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ob-step__inner {
+  max-width: 1000px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.ob-step__inner--narrow {
+  max-width: 920px;
+}
+
+/* ============ Step Transition Animations ============ */
+.ob-slide-next-enter-active,
+.ob-slide-next-leave-active,
+.ob-slide-prev-enter-active,
+.ob-slide-prev-leave-active {
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ob-slide-next-enter-from {
+  opacity: 0;
+  transform: translateY(30px) scale(0.97);
+  filter: blur(8px);
+}
+
+.ob-slide-next-leave-to {
+  opacity: 0;
+  transform: translateY(-30px) scale(0.97);
+  filter: blur(8px);
+}
+
+.ob-slide-prev-enter-from {
+  opacity: 0;
+  transform: translateY(-30px) scale(0.97);
+  filter: blur(8px);
+}
+
+.ob-slide-prev-leave-to {
+  opacity: 0;
+  transform: translateY(30px) scale(0.97);
+  filter: blur(8px);
+}
+
+/* ============ Entrance Animation for Elements ============ */
+.ob-eyebrow,
+.ob-title,
+.ob-subtitle,
+.ob-desc,
+.ob-btn,
+.ob-pillars,
+.ob-group-card,
+.ob-token-area,
+.ob-joined-badge,
+.ob-polling-hint,
+.ob-form,
+.ob-logo,
+.ob-position-tag,
+.ob-dept-heads,
+.ob-qrcode,
+.ob-leader-featured,
+.ob-leaders-grid,
+.ob-success-terminal,
+.ob-os-badge,
+.ob-welcome-name {
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(6px);
   transition:
     opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
     filter 0.7s ease;
-  filter: blur(6px);
-  transition-delay: calc(var(--d, 0) * 0.08s + var(--si, 0) * 0.06s);
 }
 
-[data-reveal-word] {
-  display: inline-block;
-  transition-delay: calc(var(--dw, 0) * 0.12s);
+.ob-step--welcome .ob-logo,
+.ob-step--success .ob-success-check {
+  opacity: 0;
+  transform: scale(0.8);
+  filter: blur(10px);
+  transition:
+    opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.9s ease;
 }
 
-.act-in {
+.ob-logo--in,
+.ob-success-check--in {
   opacity: 1 !important;
-  transform: translateY(0) !important;
+  transform: scale(1) !important;
   filter: blur(0) !important;
 }
 
-[data-line] {
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: calc(var(--si, 0) * 0.05s);
+.onboard--loaded .ob-eyebrow,
+.onboard--loaded .ob-title,
+.onboard--loaded .ob-subtitle,
+.onboard--loaded .ob-desc,
+.onboard--loaded .ob-btn,
+.onboard--loaded .ob-pillars,
+.onboard--loaded .ob-group-card,
+.onboard--loaded .ob-token-area,
+.onboard--loaded .ob-joined-badge,
+.onboard--loaded .ob-polling-hint,
+.onboard--loaded .ob-form,
+.onboard--loaded .ob-position-tag,
+.onboard--loaded .ob-dept-heads,
+.onboard--loaded .ob-qrcode,
+.onboard--loaded .ob-leader-featured,
+.onboard--loaded .ob-leaders-grid,
+.onboard--loaded .ob-success-terminal,
+.onboard--loaded .ob-os-badge,
+.onboard--loaded .ob-welcome-name {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition-delay: var(--delay, 0s);
 }
 
-.act-line-in {
-  transform: scaleX(1) !important;
-}
-
-/* ============ 1. Hero ============ */
-.act-hero {
-  position: relative;
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  isolation: isolate;
-}
-
-.act-hero__grid {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    linear-gradient(color-mix(in srgb, var(--oa-text) 4%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--oa-text) 4%, transparent) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at 50% 40%, rgba(0, 0, 0, 0.8), transparent 75%);
-}
-
-.act-hero__orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  z-index: 0;
-  will-change: transform;
-}
-
-.act-hero__orb--a {
-  top: 10%;
-  left: 8%;
-  width: 340px;
-  height: 340px;
-  background: color-mix(in srgb, var(--oa-active-bg) 14%, transparent);
-}
-
-.act-hero__orb--b {
-  bottom: 5%;
-  right: 10%;
-  width: 280px;
-  height: 280px;
-  background: color-mix(in srgb, var(--oa-text) 8%, transparent);
-}
-
-.act-hero__inner {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: clamp(100px, 14vh, 160px) 0 80px;
-}
-
-.act-hero__copy {
-  display: grid;
-  justify-items: center;
-  gap: 24px;
-  text-align: center;
-  max-width: 720px;
-}
-
-.act-hero__label {
-  padding: 6px 14px;
-  border: 1px solid var(--oa-border);
-  border-radius: 999px;
-  background: var(--oa-elevated-bg);
-}
-
-.act-hero__title {
-  margin: 0;
-  font-size: clamp(44px, 8vw, 88px);
+/* ============ Typography ============ */
+.ob-eyebrow {
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1.02;
-  letter-spacing: -0.03em;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0 0.25em;
-}
-
-.act-hero__word {
-  display: inline-block;
-}
-
-.act-hero__word--italic {
-  font-style: italic;
-  font-weight: 400;
+  letter-spacing: 0.22em;
   color: var(--oa-muted);
-}
-
-.act-hero__desc {
-  margin: 0;
-  max-width: 560px;
-  color: var(--oa-text-soft);
-  font-size: clamp(15px, 1.6vw, 17px);
-  line-height: 1.8;
-}
-
-.act-hero__desc strong {
-  color: var(--oa-text);
-  font-weight: 600;
-}
-
-.act-hero__chip {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 20px 10px 10px;
-  border-radius: 999px;
-  background: var(--oa-elevated-bg);
-  box-shadow: 0 12px 40px color-mix(in srgb, var(--oa-text) 10%, transparent);
-  position: relative;
-}
-
-.act-hero__chip-meta {
-  display: grid;
-  text-align: left;
-  gap: 2px;
-}
-
-.act-hero__chip-meta strong {
-  font-size: 15px;
-  color: var(--oa-text);
-}
-
-.act-hero__chip-meta span {
-  font-size: 11px;
-  color: var(--oa-muted);
-  letter-spacing: 0.04em;
-}
-
-.act-hero__chip-pulse {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #22c55e;
-  margin-left: 4px;
-  animation: actPulse 2s ease-in-out infinite;
-}
-
-.act-scroll-cue {
-  margin-top: 40px;
-  display: flex;
-  flex-direction: column;
+  text-transform: uppercase;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--oa-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 10px;
-  letter-spacing: 0.3em;
-  transition: color 0.2s;
 }
 
-.act-scroll-cue:hover {
-  color: var(--oa-text);
-}
-
-.act-scroll-cue i {
-  width: 1px;
-  height: 32px;
-  background: linear-gradient(var(--oa-text), transparent);
-  animation: actScrollLine 2s ease-in-out infinite;
-}
-
-@keyframes actScrollLine {
-  0% { transform: scaleY(0); transform-origin: top; }
-  50% { transform: scaleY(1); transform-origin: top; }
-  51% { transform: scaleY(1); transform-origin: bottom; }
-  100% { transform: scaleY(0); transform-origin: bottom; }
-}
-
-/* Ticker */
-.act-ticker {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 0;
-  overflow: hidden;
-  border-top: 1px solid var(--oa-border);
-  border-bottom: 1px solid var(--oa-border);
-  background: var(--oa-elevated-bg);
-  padding: 10px 0;
-}
-
-.act-ticker__track {
-  display: flex;
-  gap: 32px;
-  white-space: nowrap;
-  animation: actTicker 28s linear infinite;
-}
-
-.act-ticker__group {
-  display: flex;
-  gap: 32px;
+.ob-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--oa-muted));
   flex-shrink: 0;
 }
 
-.act-ticker__group i {
-  font-style: normal;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
-  letter-spacing: 0.2em;
-  color: var(--oa-muted);
-}
-
-.act-ticker__group i::after {
-  content: ' / ';
-  color: var(--oa-border-strong);
-}
-
-@keyframes actTicker {
-  to { transform: translateX(-50%); }
-}
-
-/* ============ Generic Section ============ */
-.act-section {
-  position: relative;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(80px, 12vh, 140px) 0;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.act-section--department { background: var(--oa-page-bg); }
-.act-section--leaders { background: var(--oa-page-soft-bg); }
-.act-section--about { background: var(--oa-page-bg); }
-.act-section--manifesto { background: var(--oa-page-soft-bg); }
-.act-section--what { background: var(--oa-page-bg); }
-.act-section--stats { background: var(--oa-page-soft-bg); }
-.act-section--focus { background: var(--oa-page-bg); }
-
-.act-section__orb {
-  position: absolute;
-  top: 20%;
-  right: -100px;
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--oa-active-bg) 10%, transparent);
-  filter: blur(70px);
-  z-index: 0;
-  will-change: transform;
-}
-
-.act-section__inner {
-  position: relative;
-  z-index: 1;
-}
-
-/* Section heading */
-.act-head {
-  display: grid;
-  gap: 14px;
-  max-width: 720px;
-}
-
-.act-head__label {
-  width: fit-content;
-}
-
-.act-head__title {
-  margin: 0;
-  font-size: clamp(36px, 6vw, 64px);
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.025em;
-  color: var(--oa-text);
-}
-
-.act-head__title em {
-  font-style: italic;
-  font-weight: 400;
-  color: var(--oa-muted);
-}
-
-.act-head__desc {
-  margin: 0;
-  color: var(--oa-text-soft);
-  font-size: clamp(15px, 1.6vw, 17px);
-  line-height: 1.7;
-}
-
-/* Divider */
-.act-divider {
-  height: 1px;
-  background: var(--oa-border);
-  margin: clamp(40px, 5vw, 60px) 0;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.act-divider.act-line-in {
-  transform: scaleX(1);
-}
-
-/* ============ 2. Department ============ */
-.dept-layout {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: clamp(32px, 5vw, 64px);
-  align-items: start;
-}
-
-.dept-layout__index {
-  position: sticky;
-  top: 120px;
-  display: grid;
-  gap: 8px;
-}
-
-.dept-layout__index-num {
-  font-family: 'SF Pro Display', system-ui, sans-serif;
-  font-size: clamp(64px, 8vw, 96px);
-  font-weight: 500;
-  line-height: 0.9;
-  color: var(--oa-text);
-  letter-spacing: -0.04em;
-}
-
-.dept-layout__main {
-  display: grid;
-  gap: 28px;
-}
-
-.dept-layout__name {
-  margin: 0;
-  font-size: clamp(28px, 4vw, 40px);
-  font-weight: 600;
-  line-height: 1.15;
-  color: var(--oa-text);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 16px;
-}
-
-.dept-layout__position {
-  font-size: 13px;
-  font-weight: 500;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--oa-active-bg);
-  color: var(--oa-active-text);
-  letter-spacing: 0.04em;
-}
-
-.dept-layout__desc {
-  margin: 0;
-  max-width: 580px;
-  color: var(--oa-text-soft);
-  font-size: clamp(15px, 1.7vw, 18px);
-  line-height: 1.9;
-}
-
-.dept-head {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding-top: 20px;
-  border-top: 1px solid var(--oa-border);
-}
-
-.dept-head__meta {
-  display: grid;
-  gap: 4px;
-}
-
-.dept-head__meta strong {
-  font-size: 18px;
-  color: var(--oa-text);
-}
-
-.dept-head--empty {
-  display: grid;
-  gap: 8px;
-}
-
-.dept-head--empty p {
-  margin: 0;
-  color: var(--oa-muted);
-  font-size: 14px;
-}
-
-.dept-empty {
-  display: grid;
-  gap: 12px;
-  max-width: 480px;
-}
-
-.dept-empty p {
-  margin: 0;
-  color: var(--oa-text-soft);
-  font-size: 16px;
-  line-height: 1.7;
-}
-
-@media (max-width: 720px) {
-  .dept-layout { grid-template-columns: 1fr; gap: 24px; }
-  .dept-layout__index { position: static; }
-  .dept-layout__index-num { font-size: 56px; }
-}
-
-/* ============ 3. Leadership ============ */
-.leaders {
-  display: flex;
-  flex-wrap: wrap;
-  gap: clamp(40px, 6vw, 80px);
-  align-items: flex-start;
-}
-
-.leader {
-  display: grid;
-  gap: 16px;
-  justify-items: center;
-  text-align: center;
-}
-
-.leader--president { flex: 1.3 1 360px; }
-.leader--vice { flex: 1 1 280px; padding-top: 40px; }
-
-.leader__avatar-wrap {
-  position: relative;
-  display: grid;
-  place-items: center;
-}
-
-.leader__ring {
-  position: absolute;
-  inset: -16px;
-  border: 1px solid var(--oa-border);
-  border-radius: 50%;
-}
-
-.leader__ring--2 {
-  inset: -32px;
-  border-style: dashed;
-  opacity: 0.4;
-  animation: actRingSpin 24s linear infinite;
-}
-
-@keyframes actRingSpin {
-  to { transform: rotate(360deg); }
-}
-
-.leader__tag {
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--oa-active-bg);
-  color: var(--oa-active-text);
-}
-
-.leader__tag--vice {
-  background: color-mix(in srgb, var(--oa-text) 10%, transparent);
-  color: var(--oa-text);
-}
-
-.leader__name {
-  margin: 0;
-  font-size: clamp(22px, 2.8vw, 30px);
-  font-weight: 600;
-  color: var(--oa-text);
-}
-
-.leader__hint {
-  margin: 0;
-  color: var(--oa-muted);
-  font-size: 13px;
-}
-
-.leader--empty {
-  text-align: left;
-  justify-items: start;
-}
-
-.leader--empty p {
-  margin: 0;
-  color: var(--oa-muted);
-}
-
-/* ============ 4a. About ============ */
-.about-intro {
-  display: grid;
-  gap: 40px;
-  max-width: 760px;
-}
-
-.about-intro__brand {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.about-intro__logo {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  object-fit: cover;
-}
-
-.about-intro__brand > div {
-  display: grid;
-  gap: 4px;
-}
-
-.about-intro__brand strong {
-  font-size: clamp(22px, 2.6vw, 28px);
-  font-weight: 600;
-  color: var(--oa-text);
-}
-
-.about-intro__brand small {
-  color: var(--oa-muted);
-  font-size: 13px;
-}
-
-.about-intro__lead {
-  margin: 0;
-  font-size: clamp(18px, 2.4vw, 26px);
-  font-weight: 400;
-  line-height: 1.55;
-  letter-spacing: -0.005em;
-  color: var(--oa-text);
-}
-
-.about-intro__sig {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  color: var(--oa-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.2em;
-}
-
-.about-intro__sig i {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, var(--oa-border), transparent);
-}
-
-/* ============ 4b. Manifesto ============ */
-.manifesto__bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse at 25% 30%, color-mix(in srgb, var(--oa-active-bg) 12%, transparent), transparent 50%),
-    radial-gradient(ellipse at 75% 70%, color-mix(in srgb, var(--oa-text) 8%, transparent), transparent 50%);
-}
-
-.manifesto__bg::before {
-  position: absolute;
-  inset: 0;
+.ob-eyebrow::after {
   content: '';
-  background:
-    linear-gradient(color-mix(in srgb, var(--oa-text) 3%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--oa-text) 3%, transparent) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.5), transparent 75%);
-}
-
-.manifesto {
-  position: relative;
-  z-index: 1;
-  max-width: 880px;
-  display: grid;
-  gap: 32px;
-}
-
-.manifesto__label {
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--oa-border);
-}
-
-.manifesto__statement {
-  margin: 0;
-  font-size: clamp(40px, 7vw, 84px);
-  font-weight: 600;
-  line-height: 1.04;
-  letter-spacing: -0.03em;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.22em;
-}
-
-.manifesto__word {
-  display: inline-block;
-}
-
-.manifesto__word--accent {
-  font-style: italic;
-  font-weight: 500;
-  background: linear-gradient(120deg, var(--oa-text), color-mix(in srgb, var(--oa-text) 35%, var(--oa-active-bg)));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  padding-right: 0.18em;
-  background-origin: padding-box;
-}
-
-.manifesto__detail {
-  margin: 0;
-  max-width: 680px;
-  color: var(--oa-text-soft);
-  font-size: clamp(15px, 1.7vw, 18px);
-  line-height: 1.95;
-}
-
-.manifesto__pillars {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--oa-border);
-  border-bottom: 1px solid var(--oa-border);
-}
-
-.manifesto__pillar {
-  padding: clamp(44px, 6vw, 64px) clamp(28px, 3vw, 40px) clamp(44px, 6vw, 64px) 0;
-  display: grid;
-  gap: 12px;
-  border-right: 1px solid var(--oa-border);
-}
-
-.manifesto__pillar:last-child { border-right: none; }
-
-.manifesto__pillar-num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  color: var(--oa-muted);
-}
-
-.manifesto__pillar strong {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.manifesto__pillar p {
-  margin: 0;
-  color: var(--oa-muted);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-@media (max-width: 720px) {
-  .manifesto__pillars { grid-template-columns: 1fr; }
-  .manifesto__pillar {
-    border-right: none;
-    border-bottom: 1px solid var(--oa-border);
-    padding: clamp(32px, 5vw, 44px) 0;
-  }
-  .manifesto__pillar:last-child { border-bottom: none; }
-}
-
-/* ============ 4c. What We Do ============ */
-.what {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.what__row {
-  display: grid;
-  grid-template-columns: auto 1fr auto 64px;
-  align-items: center;
-  gap: 32px;
-  padding: clamp(28px, 4vw, 44px) 0;
-  border-bottom: 1px solid var(--oa-border);
-  transition: padding-left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.what__row:first-child { border-top: 1px solid var(--oa-border); }
-.what__row:hover { padding-left: 16px; }
-
-.what__num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: clamp(18px, 2.2vw, 24px);
-  font-weight: 500;
-  color: var(--oa-text);
-  letter-spacing: 0.06em;
-}
-
-.what__body { display: grid; gap: 10px; }
-
-.what__body h3 {
-  margin: 0;
-  font-size: clamp(20px, 2.6vw, 26px);
-  font-weight: 600;
-  color: var(--oa-text);
-}
-
-.what__body p {
-  margin: 0;
-  max-width: 560px;
-  color: var(--oa-text-soft);
-  font-size: 14px;
-  line-height: 1.8;
-}
-
-.what__tag {
-  white-space: nowrap;
-}
-
-.what__line {
+  width: 24px;
   height: 1px;
-  background: var(--oa-text);
-  transform-origin: left;
+  background: linear-gradient(90deg, var(--oa-muted), transparent);
+  flex-shrink: 0;
 }
 
-@media (max-width: 640px) {
-  .what__row {
-    grid-template-columns: auto 1fr;
-    gap: 16px 20px;
-  }
-  .what__tag, .what__line { grid-column: 2; }
-  .what__line { display: none; }
-}
-
-/* ============ 4d. Stats ============ */
-.stats__bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(circle at 20% 50%, color-mix(in srgb, var(--oa-active-bg) 10%, transparent), transparent 40%),
-    radial-gradient(circle at 80% 50%, color-mix(in srgb, var(--oa-text) 7%, transparent), transparent 40%);
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid var(--oa-border);
-  border-bottom: 1px solid var(--oa-border);
-}
-
-.stats__cell {
-  display: grid;
-  gap: 12px;
-  padding: clamp(36px, 5vw, 56px) 24px;
-  border-right: 1px solid var(--oa-border);
-}
-
-.stats__cell:last-child { border-right: none; }
-
-.stats__value {
-  font-size: clamp(40px, 6vw, 64px);
+.ob-mono-label {
+  font-size: 11px;
   font-weight: 500;
-  line-height: 1;
+  letter-spacing: 0.2em;
+  color: var(--oa-muted);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.ob-title {
+  margin: 0;
+  font-size: clamp(40px, 6vw, 56px);
+  font-weight: 700;
+  line-height: 1.15;
   letter-spacing: -0.02em;
   color: var(--oa-text);
 }
 
-.stats__value--accent {
-  background: linear-gradient(120deg, var(--oa-text), color-mix(in srgb, var(--oa-text) 40%, var(--oa-active-bg)));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-style: italic;
+.ob-title--md {
+  font-size: clamp(28px, 4vw, 38px);
 }
 
-.stats__cell small {
-  color: var(--oa-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-@media (max-width: 760px) {
-  .stats { grid-template-columns: repeat(2, 1fr); }
-  .stats__cell:nth-child(2n) { border-right: none; }
-  .stats__cell:nth-child(-n+2) { border-bottom: 1px solid var(--oa-border); }
-}
-
-@media (max-width: 440px) {
-  .stats { grid-template-columns: 1fr; }
-  .stats__cell {
-    border-right: none;
-    border-bottom: 1px solid var(--oa-border);
-  }
-  .stats__cell:last-child { border-bottom: none; }
-}
-
-/* ============ 4e. Focus ============ */
-.focus {
-  list-style: none;
+.ob-subtitle {
   margin: 0;
-  padding: 0;
+  max-width: 620px;
+  font-size: clamp(17px, 2vw, 21px);
+  font-weight: 400;
+  line-height: 1.75;
+  color: var(--oa-text-soft);
 }
 
-.focus__row {
-  display: grid;
-  grid-template-columns: auto 1fr 48px;
-  align-items: center;
-  gap: 28px;
-  padding: clamp(24px, 3.5vw, 36px) 0;
-  border-bottom: 1px solid var(--oa-border);
-  transition: padding-left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.focus__row:first-child { border-top: 1px solid var(--oa-border); }
-.focus__row:hover { padding-left: 12px; }
-
-.focus__num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: clamp(16px, 2vw, 20px);
-  font-weight: 500;
-  letter-spacing: 0.06em;
+.ob-subtitle strong {
+  font-weight: 600;
   color: var(--oa-text);
 }
 
-.focus__body { display: grid; gap: 8px; }
-
-.focus__body h3 {
+.ob-desc {
   margin: 0;
-  font-size: clamp(18px, 2.2vw, 22px);
-  font-weight: 600;
-}
-
-.focus__body p {
-  margin: 0;
-  max-width: 520px;
-  color: var(--oa-text-soft);
-  font-size: 14px;
+  max-width: 820px;
+  font-size: clamp(15px, 1.6vw, 18px);
   line-height: 1.8;
+  color: var(--oa-text-soft);
 }
 
-.focus__line {
-  height: 1px;
-  background: var(--oa-text);
-  transform-origin: left;
+/* ============ Logo ============ */
+.ob-logo {
+  margin-bottom: 8px;
 }
 
-@media (max-width: 560px) {
-  .focus__row { grid-template-columns: auto 1fr; gap: 16px 20px; }
-  .focus__line { display: none; }
+.ob-logo__svg {
+  width: 80px;
+  height: 80px;
+  color: var(--oa-text);
 }
 
-/* ============ 5. CTA ============ */
-.act-cta {
-  position: relative;
-  min-height: 100svh;
-  display: flex;
+/* ============ Buttons ============ */
+.ob-btn {
+  display: inline-flex;
   align-items: center;
+  gap: 8px;
+  height: 54px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 999px;
+  font-size: 17px;
+  font-weight: 500;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s;
+  position: relative;
   overflow: hidden;
-  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.act-cta__grid {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    linear-gradient(color-mix(in srgb, var(--oa-text) 4%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--oa-text) 4%, transparent) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.6), transparent 70%);
+.ob-btn:active {
+  transform: scale(0.97);
 }
 
-.act-cta__orb {
+.ob-btn--primary {
+  background: var(--oa-active-bg);
+  color: var(--oa-active-text);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--oa-active-bg) 25%, transparent);
+}
+
+.ob-btn--primary:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--oa-active-bg) 35%, transparent);
+}
+
+.ob-btn--glass {
+  background: color-mix(in srgb, var(--oa-surface) 80%, transparent);
+  color: var(--oa-text);
+  border: 1px solid var(--oa-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.ob-btn--glass:hover {
+  transform: scale(1.02);
+  border-color: var(--oa-border-strong);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--oa-text) 12%, transparent);
+}
+
+.ob-btn--ghost {
+  background: transparent;
+  color: var(--oa-muted);
+}
+
+.ob-btn--ghost:hover {
+  color: var(--oa-text);
+  background: color-mix(in srgb, var(--oa-text) 6%, transparent);
+}
+
+.ob-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ob-btn__arrow {
+  font-size: 20px;
+  transition: transform 0.25s ease;
+}
+
+.ob-btn:hover .ob-btn__arrow {
+  transform: translateX(4px);
+}
+
+/* Ripple effect */
+.ob-btn::after {
+  content: '';
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: 500px;
-  height: 500px;
+  width: 0;
+  height: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--oa-active-bg) 14%, transparent), transparent 65%);
-  filter: blur(40px);
-  z-index: 0;
-  will-change: transform;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
 }
 
-.act-cta__inner {
-  position: relative;
-  z-index: 1;
+.ob-btn:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* ============ Pillars (grid layout) ============ */
+.ob-pillars {
   display: grid;
-  max-width: 580px;
-  margin: 0 auto;
-  gap: 20px;
-  justify-items: center;
-  text-align: center;
-  padding: clamp(100px, 14vh, 160px) 0;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
 }
 
-.act-cta__label {
-  padding: 6px 14px;
-  border: 1px solid var(--oa-border);
-  border-radius: 999px;
-  background: var(--oa-elevated-bg);
-}
-
-.act-cta__title {
-  margin: 6px 0 10px;
-  font-size: clamp(34px, 5vw, 52px);
+.ob-pillar__title {
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  color: var(--oa-text);
 }
 
-.act-cta__inner p {
+.ob-pillar__desc {
   margin: 0;
-  max-width: 460px;
+  font-size: 13px;
+  line-height: 1.65;
   color: var(--oa-text-soft);
-  font-size: 16px;
-  line-height: 1.8;
 }
 
-.act-cta__btn {
-  margin-top: 24px;
-  min-width: 220px;
-  height: 54px;
-  font-size: 16px;
+/* ============ Position Tag (Step 4) ============ */
+.ob-position-tag {
+  display: inline-block;
+  padding: 5px 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--oa-active-bg) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--oa-active-bg) 12%, transparent);
+  color: color-mix(in srgb, var(--oa-active-bg) 70%, var(--oa-text));
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  border-radius: 999px;
 }
 
-.act-cta__hint {
-  margin-top: 12px;
-  max-width: 380px;
+/* ============ Department Hero (Step 4) ============ */
+.ob-dept-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(6px);
+  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.7s ease;
+}
+
+.onboard--loaded .ob-dept-hero {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition-delay: var(--delay, 0s);
+}
+
+.ob-dept-hero__icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oa-active-bg) 12%, transparent), color-mix(in srgb, var(--oa-active-bg) 4%, transparent));
+  border: 1px solid color-mix(in srgb, var(--oa-active-bg) 15%, transparent);
+}
+
+.ob-dept-hero__icon svg {
+  width: 28px;
+  height: 28px;
+  color: color-mix(in srgb, var(--oa-active-bg) 75%, var(--oa-text));
+}
+
+.ob-dept-hero__name {
+  margin: 0;
+  font-size: clamp(30px, 4.5vw, 42px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--oa-text);
+}
+
+.ob-dept-hero__position {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--oa-active-bg) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--oa-active-bg) 14%, transparent);
+  color: color-mix(in srgb, var(--oa-active-bg) 70%, var(--oa-text));
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.ob-dept-hero__position-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ============ Department Heads (Step 4) - vertical cards ============ */
+.ob-dept-heads {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.ob-dept-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 26px 36px 22px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--oa-surface) 35%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), border-color 0.35s ease, box-shadow 0.35s ease;
+  position: relative;
+  min-width: 155px;
+}
+
+.ob-dept-head:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--oa-active-bg) 20%, var(--oa-border));
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--oa-text) 8%, transparent);
+}
+
+.ob-dept-head--primary {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--oa-active-bg) 6%, var(--oa-surface) 40%), color-mix(in srgb, var(--oa-surface) 30%, transparent));
+  border-color: color-mix(in srgb, var(--oa-active-bg) 12%, var(--oa-border));
+}
+
+.ob-dept-head--primary:hover {
+  border-color: color-mix(in srgb, var(--oa-active-bg) 28%, var(--oa-border));
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--oa-active-bg) 12%, transparent);
+}
+
+.ob-dept-head__badge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--oa-active-bg) 70%, var(--oa-text));
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--oa-active-bg) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--oa-active-bg) 10%, transparent);
+}
+
+.ob-dept-head__badge--vice {
   color: var(--oa-muted);
+  background: color-mix(in srgb, var(--oa-text) 4%, transparent);
+  border-color: color-mix(in srgb, var(--oa-border) 50%, transparent);
+}
+
+.ob-dept-head__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid color-mix(in srgb, var(--oa-border) 60%, transparent);
+  background: color-mix(in srgb, var(--oa-text) 4%, transparent);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--oa-muted);
+  flex-shrink: 0;
+  transition: border-color 0.3s ease;
+}
+
+.ob-dept-head--primary .ob-dept-head__avatar {
+  border-color: color-mix(in srgb, var(--oa-active-bg) 35%, var(--oa-border));
+}
+
+.ob-dept-head__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ob-dept-head__name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--oa-text);
+  letter-spacing: -0.01em;
+}
+
+/* ============ QR Code - no card ============ */
+.ob-qrcode {
+  text-align: center;
+  padding: 18px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--oa-surface) 30%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
+}
+
+.ob-qrcode__img {
+  display: block;
+  width: 160px;
+  height: 160px;
+  margin: 8px auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.ob-qrcode p {
   font-size: 12px;
+  color: var(--oa-muted);
+}
+
+/* ============ Leaders (Step 5) - Featured + Grid ============ */
+.ob-leader-featured {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 36px 48px 28px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--oa-active-bg) 8%, var(--oa-surface) 40%), color-mix(in srgb, var(--oa-surface) 30%, transparent));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in srgb, var(--oa-active-bg) 18%, var(--oa-border));
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(6px);
+  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.7s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.onboard--loaded .ob-leader-featured {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition-delay: var(--delay, 0s);
+}
+
+.ob-leader-featured:hover {
+  border-color: color-mix(in srgb, var(--oa-active-bg) 30%, var(--oa-border));
+  box-shadow: 0 20px 60px color-mix(in srgb, var(--oa-active-bg) 14%, transparent);
+}
+
+.ob-leader-featured__glow {
+  position: absolute;
+  top: -40%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--oa-active-bg) 18%, transparent), transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.ob-leader-featured__avatar {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.ob-leader-featured__avatar::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--oa-active-bg) 40%, transparent),
+    color-mix(in srgb, var(--oa-active-bg) 10%, transparent),
+    color-mix(in srgb, var(--oa-active-bg) 40%, transparent)
+  );
+  animation: leaderRingSpin 12s linear infinite;
+  z-index: -1;
+}
+
+.ob-leader-featured__avatar::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--oa-active-bg) 30%, transparent);
+  z-index: 0;
+}
+
+@keyframes leaderRingSpin {
+  to { transform: rotate(360deg); }
+}
+
+.ob-leader-featured__avatar img,
+.ob-leader-featured__avatar span {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--oa-text) 6%, transparent);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--oa-muted);
+  position: relative;
+  z-index: 1;
+}
+
+.ob-leader-featured__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+}
+
+.ob-leader-featured__tag {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--oa-active-bg) 65%, var(--oa-text));
+}
+
+.ob-leader-featured__name {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--oa-text);
+  letter-spacing: -0.02em;
+}
+
+/* Leaders Grid */
+.ob-leaders-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(6px);
+  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.7s ease;
+}
+
+.onboard--loaded .ob-leaders-grid {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition-delay: var(--delay, 0s);
+}
+
+.ob-leader-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 26px 36px 22px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--oa-surface) 35%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), border-color 0.35s ease, box-shadow 0.35s ease;
+  min-width: 155px;
+}
+
+.ob-leader-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--oa-active-bg) 20%, var(--oa-border));
+  box-shadow: 0 14px 44px color-mix(in srgb, var(--oa-text) 8%, transparent);
+}
+
+.ob-leader-card__avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid color-mix(in srgb, var(--oa-border) 50%, transparent);
+  background: color-mix(in srgb, var(--oa-text) 4%, transparent);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--oa-muted);
+  flex-shrink: 0;
+}
+
+.ob-leader-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ob-leader-card__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.ob-leader-card__name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--oa-text);
+  letter-spacing: -0.01em;
+}
+
+.ob-leader-card__tag {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--oa-muted);
+  letter-spacing: 0.05em;
+}
+
+.ob-leader--empty {
+  text-align: center;
+  color: var(--oa-muted);
+}
+
+.ob-leader--empty p {
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+/* ============ Group Info (Step 6) - no card ============ */
+.ob-group-card {
+  text-align: center;
+  padding: 14px 28px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--oa-surface) 30%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
+}
+
+.ob-group-card__label {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--oa-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.ob-group-card__number {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--oa-text);
+  letter-spacing: 0.06em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ============ Token Area - no card ============ */
+.ob-token-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.ob-token-card {
+  text-align: center;
+  padding: 14px 28px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--oa-surface) 30%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
+}
+
+.ob-token-card__label {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--oa-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.ob-token-card__code {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--oa-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ============ Joined Badge & Polling Hint ============ */
+.ob-joined-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+  color: #22c55e;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ob-check-icon {
+  font-size: 16px;
+}
+
+.ob-polling-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--oa-text) 6%, transparent);
+  color: var(--oa-muted);
+  font-size: 13px;
   line-height: 1.6;
 }
 
-.act-cta__warn {
-  margin-top: 20px;
-  margin-bottom: 8px;
-  max-width: 460px;
+.ob-polling-hint__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--oa-muted);
+  flex-shrink: 0;
+  animation: pollingPulse 2s ease-in-out infinite;
 }
 
-.dept-qrcode {
-  margin-top: 32px;
-  padding: 24px;
-  border: 1px solid var(--oa-border);
-  border-radius: 12px;
-  background: var(--oa-surface);
-  text-align: center;
+.ob-polling-hint__dot--checking {
+  background: #3b82f6;
+  animation: pollingChecking 0.8s ease-in-out infinite;
 }
 
-.dept-qrcode__img {
-  display: block;
-  width: 280px;
-  height: 280px;
-  margin: 16px auto;
-  border-radius: 12px;
-  object-fit: contain;
+@keyframes pollingPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
-.dept-qrcode p {
-  font-size: 13px;
-  color: var(--oa-muted);
+@keyframes pollingChecking {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.4); opacity: 1; }
 }
 
-.act-section--groups {
-  padding-top: 60px;
-  padding-bottom: 80px;
-  background: var(--oa-bg);
-}
-
-.group-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 40px;
-  margin-top: 40px;
-}
-
-.group-cell {
-  text-align: center;
-  padding: 40px 32px;
-  border: 1px solid var(--oa-border);
-  border-radius: 16px;
-  background: var(--oa-surface);
-}
-
-.group-cell__label {
-  display: inline-block;
-  margin-bottom: 24px;
-}
-
-.group-cell__qrcode {
-  display: block;
-  width: 280px;
-  height: 280px;
-  margin: 0 auto 20px;
-  border-radius: 12px;
-  object-fit: contain;
-}
-
-.group-cell__qq {
-  width: 280px;
-  height: 140px;
-  margin: 0 auto 20px;
+/* ============ Step Actions ============ */
+.ob-step__actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f0f6ff;
-  border: 2px dashed #a0c4ff;
-  border-radius: 12px;
-}
-
-.group-cell__qq-num {
-  font-size: 36px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #2563eb;
-  font-family: monospace;
-}
-
-.group-cell p {
-  font-size: 14px;
-  color: var(--oa-muted);
-}
-
-.group-cell__verify {
-  margin-top: 24px;
-  padding: 20px;
-  border: 1px solid var(--oa-border);
-  border-radius: 12px;
-  background: var(--oa-bg);
-}
-
-.group-cell__token {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 12px;
-  margin: 16px 0 8px;
+  justify-content: center;
+  margin-top: 8px;
 }
 
-.group-cell__token code {
-  font-size: 24px;
+/* ============ Glass Input (Step 7) ============ */
+.ob-form {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ob-input-group {
+  position: relative;
+}
+
+.ob-input {
+  width: 100%;
+  height: 56px;
+  padding: 0 24px;
+  border: 1px solid var(--oa-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--oa-surface) 50%, transparent);
+  color: var(--oa-text);
+  font-size: 17px;
+  font-family: inherit;
+  outline: none;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  user-select: text;
+  -webkit-user-select: text;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    background 0.3s ease;
+}
+
+.ob-input::placeholder {
+  color: var(--oa-faint);
+}
+
+.ob-input:focus {
+  border-color: color-mix(in srgb, var(--oa-active-bg) 50%, transparent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--oa-active-bg) 10%, transparent),
+    0 4px 20px color-mix(in srgb, var(--oa-text) 8%, transparent);
+  background: color-mix(in srgb, var(--oa-surface) 80%, transparent);
+}
+
+/* ============ Loader (Step 8) ============ */
+.ob-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.ob-loader__ring {
+  width: 80px;
+  height: 80px;
+  color: var(--oa-text);
+}
+
+.ob-loader__arc {
+  stroke-dasharray: 289;
+  stroke-dashoffset: 289;
+  animation: loaderArc 1.5s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes loaderArc {
+  0% { stroke-dashoffset: 289; transform: rotate(0deg); }
+  50% { stroke-dashoffset: 72; transform: rotate(180deg); }
+  100% { stroke-dashoffset: 289; transform: rotate(360deg); }
+}
+
+.ob-loader__text {
+  font-size: 16px;
+  color: var(--oa-muted);
+  letter-spacing: 0.04em;
+  animation: loaderPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loaderPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ============ Success Check (Step 9) ============ */
+.ob-success-check {
+  margin-bottom: 8px;
+}
+
+.ob-success-check__svg {
+  width: 96px;
+  height: 96px;
+  color: var(--oa-text);
+}
+
+.ob-success-check__circle {
+  stroke-dasharray: 176;
+  stroke-dashoffset: 176;
+  animation: checkCircle 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.ob-success-check__path {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: checkPath 0.4s 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.ob-success-check--in .ob-success-check__circle {
+  animation: checkCircle 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.ob-success-check--in .ob-success-check__path {
+  animation: checkPath 0.4s 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes checkCircle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes checkPath {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 640px) {
+  .ob-step__inner {
+    padding: 0 12px;
+  }
+
+  .ob-title {
+    font-size: clamp(36px, 8vw, 48px);
+  }
+
+  .ob-subtitle {
+    font-size: clamp(16px, 4vw, 20px);
+  }
+
+  .ob-group-card {
+    padding: 20px 24px;
+  }
+
+  .ob-group-card__number {
+    font-size: 26px;
+  }
+
+  .ob-pillar {
+    gap: 12px;
+  }
+
+  .ob-leaders {
+    flex-direction: column;
+  }
+
+  .ob-qrcode__img {
+    width: 160px;
+    height: 160px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboard__bg-orb,
+  .onboard__particle {
+    animation: none !important;
+  }
+
+  .ob-slide-next-enter-active,
+  .ob-slide-next-leave-active,
+  .ob-slide-prev-enter-active,
+  .ob-slide-prev-leave-active {
+    transition: opacity 0.3s ease;
+  }
+}
+
+/* ============ Dark Mode Enhancements ============ */
+html.dark .onboard__bg-orb--2 {
+  background: radial-gradient(circle, color-mix(in srgb, #7c6def 18%, transparent), transparent 70%);
+  opacity: 0.5;
+}
+
+html.dark .onboard__bg-orb--1 {
+  background: radial-gradient(circle, color-mix(in srgb, #5b8def 12%, transparent), transparent 70%);
+}
+
+html.dark .ob-token-card {
+  background: color-mix(in srgb, #5b8def 10%, transparent);
+}
+
+html.dark .ob-token-card__code {
+  color: #a0c4ff;
+}
+
+html.dark .ob-success-terminal {
+  background: color-mix(in srgb, #1a1a2e 70%, transparent);
+  border-color: color-mix(in srgb, #5b8def 15%, transparent);
+}
+
+html.dark .ob-welcome-name {
+  background: color-mix(in srgb, #1a1a2e 60%, transparent);
+  border-color: color-mix(in srgb, #5b8def 12%, transparent);
+}
+
+html.dark .ob-pillar {
+  background: color-mix(in srgb, #1a1a2e 40%, transparent);
+  border-color: color-mix(in srgb, #5b8def 8%, transparent);
+}
+
+html.dark .ob-leader {
+  background: color-mix(in srgb, #1a1a2e 45%, transparent);
+  border-color: color-mix(in srgb, #5b8def 10%, transparent);
+}
+
+html.dark .ob-leader-featured {
+  background: linear-gradient(160deg, color-mix(in srgb, #5b8def 8%, #1a1a2e 50%), color-mix(in srgb, #1a1a2e 40%, transparent));
+  border-color: color-mix(in srgb, #5b8def 15%, transparent);
+}
+
+html.dark .ob-leader-featured__glow {
+  background: radial-gradient(circle, color-mix(in srgb, #5b8def 22%, transparent), transparent 70%);
+}
+
+html.dark .ob-leader-card {
+  background: color-mix(in srgb, #1a1a2e 45%, transparent);
+  border-color: color-mix(in srgb, #5b8def 8%, transparent);
+}
+
+html.dark .ob-dept-head {
+  background: color-mix(in srgb, #1a1a2e 45%, transparent);
+  border-color: color-mix(in srgb, #5b8def 8%, transparent);
+}
+
+html.dark .ob-dept-head--primary {
+  background: linear-gradient(160deg, color-mix(in srgb, #5b8def 8%, #1a1a2e 50%), color-mix(in srgb, #1a1a2e 40%, transparent));
+  border-color: color-mix(in srgb, #5b8def 12%, transparent);
+}
+
+.ob-name{
+  margin-top:12px;
+  margin-bottom:20px;
+  font-size:34px;
+  font-weight:700;
+  letter-spacing:-0.02em;
+}
+
+.ob-quote{
+  margin-top:36px;
+  margin-bottom:48px;
+  font-size:15px;
+  opacity:.55;
+  letter-spacing:.25em;
+  text-transform:uppercase;
+}
+
+/* ============ Open-Source Floating Decorations ============ */
+.ob-os-deco {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ob-os-deco__symbol {
+  position: absolute;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--oa-text) 5%, transparent);
+  white-space: nowrap;
+  animation: osSymbolFloat 30s ease-in-out infinite;
+}
+
+.ob-os-deco__symbol--1 { top: 12%; left: 6%; animation-duration: 26s; font-size: 16px; }
+.ob-os-deco__symbol--2 { top: 72%; right: 8%; animation-duration: 32s; animation-delay: -8s; }
+.ob-os-deco__symbol--3 { top: 28%; right: 12%; animation-duration: 28s; animation-delay: -4s; font-size: 11px; }
+.ob-os-deco__symbol--4 { bottom: 18%; left: 10%; animation-duration: 34s; animation-delay: -12s; }
+.ob-os-deco__symbol--5 { top: 55%; left: 80%; animation-duration: 22s; animation-delay: -6s; font-size: 11px; }
+
+@keyframes osSymbolFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
+  25% { transform: translateY(-12px) rotate(1deg); opacity: 0.7; }
+  50% { transform: translateY(-6px) rotate(-0.5deg); opacity: 0.5; }
+  75% { transform: translateY(-15px) rotate(0.5deg); opacity: 0.65; }
+}
+
+html.dark .ob-os-deco__symbol {
+  color: color-mix(in srgb, var(--oa-active-bg) 8%, transparent);
+}
+
+/* ============ Welcome Name (Terminal Style) ============ */
+.ob-welcome-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 28px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--oa-surface) 40%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid color-mix(in srgb, var(--oa-border) 60%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(6px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s ease;
+}
+
+.onboard--loaded .ob-welcome-name {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition-delay: var(--delay, 0s);
+}
+
+.ob-welcome-name__prompt {
+  font-size: 15px;
+  color: var(--oa-active-bg);
+  font-weight: 600;
+}
+
+.ob-welcome-name__text {
+  font-size: 28px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #2563eb;
-  background: #eff6ff;
-  padding: 8px 20px;
-  border-radius: 8px;
-  font-family: monospace;
+  color: var(--oa-text);
+  letter-spacing: -0.01em;
 }
 
-.group-cell__tip {
+.ob-welcome-name__cursor {
+  animation: termCursorBlink 1s step-end infinite;
+  color: var(--oa-active-bg);
+  font-weight: 300;
+}
+
+@keyframes termCursorBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.ob-welcome-name__dept {
   font-size: 13px;
   color: var(--oa-muted);
-  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+/* ============ Open-Source Badge ============ */
+.ob-os-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--oa-active-bg) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--oa-active-bg) 15%, transparent);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--oa-active-bg) 70%, var(--oa-text));
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(6px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s ease;
+}
+
+.onboard--loaded .ob-os-badge {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition-delay: var(--delay, 0s);
+}
+
+.ob-os-badge__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ============ Button Icon ============ */
+.ob-btn__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.ob-btn--glow {
+  animation: btnGlow 3s ease-in-out infinite;
+}
+
+@keyframes btnGlow {
+  0%, 100% { box-shadow: 0 4px 20px color-mix(in srgb, var(--oa-active-bg) 25%, transparent); }
+  50% { box-shadow: 0 8px 40px color-mix(in srgb, var(--oa-active-bg) 40%, transparent), 0 0 60px color-mix(in srgb, var(--oa-active-bg) 15%, transparent); }
+}
+
+/* ============ Pillar Icons ============ */
+.ob-pillar__icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--oa-active-bg) 8%, transparent);
+  flex-shrink: 0;
+}
+
+.ob-pillar__icon svg {
+  width: 20px;
+  height: 20px;
+  color: color-mix(in srgb, var(--oa-active-bg) 80%, var(--oa-text));
+}
+
+/* ============ Success Terminal ============ */
+.ob-success-terminal {
+  width: 100%;
+  max-width: 460px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--oa-surface) 50%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid color-mix(in srgb, var(--oa-border) 50%, transparent);
+  text-align: left;
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(6px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s ease;
+}
+
+.onboard--loaded .ob-success-terminal {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition-delay: var(--delay, 0s);
+}
+
+.ob-success-terminal__bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--oa-text) 4%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
+}
+
+.ob-success-terminal__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.ob-success-terminal__dot--red { background: #ff5f57; }
+.ob-success-terminal__dot--yellow { background: #febc28; }
+.ob-success-terminal__dot--green { background: #28c840; }
+
+.ob-success-terminal__title {
+  margin-left: auto;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--oa-muted);
+  letter-spacing: 0.04em;
+}
+
+.ob-success-terminal__body {
+  padding: 14px 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--oa-text-soft);
+}
+
+.ob-success-terminal__body p {
+  margin: 0;
+}
+
+.ob-term-prompt {
+  color: var(--oa-active-bg);
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.ob-term-success {
+  color: #22c55e;
+}
+
+.ob-term-output {
+  color: var(--oa-text);
+}
+
+.ob-term-cursor {
+  animation: termCursorBlink 1s step-end infinite;
+  color: var(--oa-active-bg);
+  font-size: 12px;
+}
+
+/* ============ Pillars refined (no num/body) ============ */
+.ob-pillar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 20px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--oa-surface) 30%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.ob-pillar:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--oa-active-bg) 20%, var(--oa-border));
+  box-shadow: 0 12px 40px color-mix(in srgb, var(--oa-text) 8%, transparent);
 }
 </style>

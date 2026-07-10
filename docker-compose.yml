@@ -51,6 +51,9 @@ services:
       - APP_BOT_CALLBACK_TOKEN=${APP_BOT_CALLBACK_TOKEN:-}
       - APP_NAPCAT_BASE_URL=${APP_NAPCAT_BASE_URL:-http://127.0.0.1:3000}
       - APP_NAPCAT_ACCESS_TOKEN=${APP_NAPCAT_ACCESS_TOKEN:-sRtnBQJy-lqPTWjj}
+      # 文件上传限制（默认 500MB，支持大体积备份导入）
+      - MULTIPART_MAX_FILE_SIZE=${MULTIPART_MAX_FILE_SIZE:-500MB}
+      - MULTIPART_MAX_REQUEST_SIZE=${MULTIPART_MAX_REQUEST_SIZE:-500MB}
     network_mode: host
     volumes:
       - avatar_data:/app/uploads

@@ -29,8 +29,8 @@ spring:
     validate-on-migrate: true
   servlet:
     multipart:
-      max-file-size: ${MULTIPART_MAX_FILE_SIZE:20MB}
-      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:20MB}
+      max-file-size: ${MULTIPART_MAX_FILE_SIZE:500MB}
+      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:500MB}
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
