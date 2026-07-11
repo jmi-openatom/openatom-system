@@ -7,6 +7,8 @@
       <div class="onboard__bg-orb onboard__bg-orb--2" ref="orb2Ref"></div>
       <div class="onboard__bg-orb onboard__bg-orb--3" ref="orb3Ref"></div>
       <div class="onboard__bg-grid"></div>
+      <div class="onboard__bg-scanline"></div>
+      <div class="onboard__bg-vignette"></div>
       <div class="onboard__bg-particles">
         <span v-for="n in 18" :key="n" class="onboard__particle" :style="particleStyle(n)"></span>
       </div>
@@ -26,10 +28,16 @@
       <div class="onboard__progress-track">
         <div class="onboard__progress-fill" :style="{ width: `${(step / TOTAL_STEPS) * 100}%` }"></div>
       </div>
-      <div class="onboard__progress-info">
-        <span class="onboard__progress-current">{{ String(step).padStart(2, '0') }}</span>
-        <span class="onboard__progress-sep">/</span>
-        <span class="onboard__progress-total">{{ String(TOTAL_STEPS).padStart(2, '0') }}</span>
+      <div class="onboard__progress-dots">
+        <span
+          v-for="n in TOTAL_STEPS"
+          :key="n"
+          class="onboard__progress-dot"
+          :class="{
+            'onboard__progress-dot--active': n <= step,
+            'onboard__progress-dot--current': n === step,
+          }"
+        ></span>
       </div>
     </div>
 
@@ -48,7 +56,7 @@
             </h1>
 
             <div class="ob-welcome-name" :style="{ '--delay': '0.4s' }">
-              <h1 style="font-style: italic;font-weight: bold;">{{ displayName }} · {{ info?.membership?.departmentName || '尚未分配部门' }}</h1>
+              <h1 class="ob-welcome-name__headline">{{ displayName }} <span>·</span> {{ info?.membership?.departmentName || '尚未分配部门' }}</h1>
             </div>
 
             <p class="ob-subtitle" :style="{ '--delay': '0.55s' }">
@@ -178,7 +186,10 @@
             </div>
 
             <div class="ob-step__actions" :style="{ '--delay': '0.6s' }">
-              <button class="ob-btn ob-btn--ghost" @click="prevStep">返回</button>
+              <button class="ob-btn ob-btn--ghost ob-btn--back" @click="prevStep">
+                <span class="ob-btn__back-arrow">←</span>
+                返回上一步
+              </button>
               <button class="ob-btn ob-btn--primary" @click="nextStep">
                 Merge 入列
                 <span class="ob-btn__arrow">→</span>
@@ -195,7 +206,8 @@
               与你同行的人
             </h2>
             <p class="ob-desc" :style="{ '--delay': '0.3s' }">
-              社团的核心管理团队，将带你一起探索开源世界。
+              社团的核心管理团队，将带你一起探索开源世界。<br>
+              从第一次分享、第一次提交，到每一次把想法做成作品，他们都会和你并肩同行。
             </p>
 
             <!-- Leaders Grid (all equal) -->
@@ -244,7 +256,10 @@
             </div>
 
             <div class="ob-step__actions" :style="{ '--delay': '0.65s' }">
-              <button class="ob-btn ob-btn--ghost" @click="prevStep">返回</button>
+              <button class="ob-btn ob-btn--ghost ob-btn--back" @click="prevStep">
+                <span class="ob-btn__back-arrow">←</span>
+                返回上一步
+              </button>
               <button class="ob-btn ob-btn--primary" @click="nextStep">
                 Connect 团队
                 <span class="ob-btn__arrow">→</span>
@@ -264,30 +279,62 @@
               扫码加入微信群，获取社团最新动态。加入QQ群是激活账号的前置条件，请生成验证码后申请入群。
             </p>
 
-            <div v-if="info?.club?.wechatGroupQrcode" class="ob-qrcode" :style="{ '--delay': '0.4s' }">
-              <span class="ob-mono-label">社团微信群</span>
-              <img :src="info.club.wechatGroupQrcode" alt="社团微信群二维码" class="ob-qrcode__img" />
-              <p>打开微信扫码加入社团总群</p>
-            </div>
-
-            <div v-if="info?.club?.qqGroupNumber" class="ob-group-card" :style="{ '--delay': '0.45s' }">
-              <div class="ob-group-card__label">社团QQ群号</div>
-              <div class="ob-group-card__number">{{ info.club.qqGroupNumber }}</div>
-            </div>
-
-            <div class="ob-token-area" :style="{ '--delay': '0.5s' }">
-              <template v-if="groupJoinToken">
-                <div class="ob-token-card">
-                  <span class="ob-token-card__label">入群验证码</span>
-                  <code class="ob-token-card__code">{{ groupJoinToken }}</code>
+            <div class="ob-groups-layout">
+              <div v-if="info?.club?.wechatGroupQrcode" class="ob-qrcode" :style="{ '--delay': '0.4s' }">
+                <div class="ob-channel-card__head">
+                  <span class="ob-channel-card__step">01</span>
+                  <div>
+                    <span class="ob-mono-label">社团微信群</span>
+                    <strong>获取日常通知与活动动态</strong>
+                  </div>
                 </div>
-                <button class="ob-btn ob-btn--glass" @click="copyToken">
-                  复制验证码
-                </button>
-              </template>
-              <button v-else class="ob-btn ob-btn--glass" :loading="tokenLoading" @click="generateJoinToken">
-                生成入群验证码
-              </button>
+                <div class="ob-qrcode__frame">
+                  <img :src="info.club.wechatGroupQrcode" alt="社团微信群二维码" class="ob-qrcode__img" />
+                </div>
+                <p>打开微信扫码加入社团总群</p>
+              </div>
+
+              <div class="ob-qq-panel" :style="{ '--delay': '0.45s' }">
+                <div class="ob-channel-card__head">
+                  <span class="ob-channel-card__step">02</span>
+                  <div>
+                    <span class="ob-mono-label">QQ群身份验证</span>
+                    <strong>完成账号激活前置验证</strong>
+                  </div>
+                </div>
+
+                <div v-if="info?.club?.qqGroupNumber" class="ob-group-card">
+                  <div class="ob-group-card__label">社团QQ群号</div>
+                  <div class="ob-group-card__number">{{ info.club.qqGroupNumber }}</div>
+                </div>
+
+                <div class="ob-token-area" :style="{ '--delay': '0.5s' }">
+                  <template v-if="groupJoinToken">
+                    <div class="ob-token-card">
+                      <span class="ob-token-card__label">入群验证码</span>
+                      <code class="ob-token-card__code">{{ groupJoinToken }}</code>
+                    </div>
+                    <button class="ob-btn ob-btn--glass" @click="copyToken">
+                      复制验证码
+                    </button>
+                  </template>
+                  <button
+                    v-else
+                    class="ob-btn ob-btn--glass ob-btn--token"
+                    :disabled="tokenLoading"
+                    @click="generateJoinToken"
+                  >
+                    {{ tokenLoading ? '正在生成…' : '生成入群验证码' }}
+                    <span class="ob-btn__arrow">→</span>
+                  </button>
+                </div>
+
+                <div class="ob-qq-guide" aria-label="QQ群验证步骤">
+                  <div><span>1</span><p>生成一次性入群验证码</p></div>
+                  <div><span>2</span><p>申请加入QQ群并填写验证码</p></div>
+                  <div><span>3</span><p>系统自动检测入群状态</p></div>
+                </div>
+              </div>
             </div>
 
             <div v-if="info?.qqGroupJoined" class="ob-joined-badge" :style="{ '--delay': '0.55s' }">
@@ -300,7 +347,10 @@
             </div>
 
             <div class="ob-step__actions" :style="{ '--delay': '0.65s' }">
-              <button class="ob-btn ob-btn--ghost" @click="prevStep">返回</button>
+              <button class="ob-btn ob-btn--ghost ob-btn--back" @click="prevStep">
+                <span class="ob-btn__back-arrow">←</span>
+                返回上一步
+              </button>
               <button
                 class="ob-btn ob-btn--primary"
                 :disabled="!info?.qqGroupJoined"
@@ -344,7 +394,10 @@
                 />
               </div>
               <div class="ob-step__actions">
-                <button type="button" class="ob-btn ob-btn--ghost" @click="prevStep">返回</button>
+                <button type="button" class="ob-btn ob-btn--ghost ob-btn--back" @click="prevStep">
+                  <span class="ob-btn__back-arrow">←</span>
+                  返回上一步
+                </button>
                 <button
                   type="submit"
                   class="ob-btn ob-btn--primary"
@@ -743,12 +796,12 @@ async function handleActivate() {
 
 // ============ Lifecycle ============
 onMounted(async () => {
-  await fetchActivationInfo()
   requestAnimationFrame(() => {
     loaded.value = true
     stepInAnim.value = true
     window.addEventListener('scroll', onScroll, { passive: true })
   })
+  await fetchActivationInfo()
 })
 
 onBeforeUnmount(() => {
@@ -780,6 +833,17 @@ onBeforeUnmount(() => {
   -webkit-user-select: none;
 }
 
+.onboard::before {
+  content: '';
+  position: fixed;
+  inset: 14px;
+  z-index: 12;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--oa-text) 7%, transparent);
+  border-radius: 24px;
+  box-shadow: inset 0 0 80px color-mix(in srgb, #000 8%, transparent);
+}
+
 .onboard--loaded {
   opacity: 1;
 }
@@ -796,7 +860,23 @@ onBeforeUnmount(() => {
 .onboard__bg-gradient {
   position: absolute;
   inset: 0;
-  background: var(--oa-hero-gradient);
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--oa-active-bg) 10%, transparent), transparent 32%),
+    var(--oa-hero-gradient);
+}
+
+.onboard__bg-scanline {
+  position: absolute;
+  inset: 0;
+  opacity: 0.2;
+  background: repeating-linear-gradient(0deg, transparent 0, transparent 3px, color-mix(in srgb, var(--oa-text) 2%, transparent) 4px);
+  mix-blend-mode: overlay;
+}
+
+.onboard__bg-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, color-mix(in srgb, #000 12%, transparent) 100%);
 }
 
 .onboard__bg-orb {
@@ -900,7 +980,22 @@ onBeforeUnmount(() => {
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  padding: 9px 14px 9px 16px;
+  border: 1px solid color-mix(in srgb, var(--oa-text) 10%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--oa-surface) 48%, transparent);
+  box-shadow: 0 10px 40px color-mix(in srgb, #000 20%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.onboard__progress-label {
+  color: var(--oa-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
 }
 
 .onboard__progress-track {
@@ -915,7 +1010,8 @@ onBeforeUnmount(() => {
 .onboard__progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--oa-active-bg);
+  background: linear-gradient(90deg, var(--oa-active-bg), color-mix(in srgb, var(--oa-active-bg) 55%, white));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--oa-active-bg) 70%, transparent);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1160,7 +1256,41 @@ onBeforeUnmount(() => {
 
 /* ============ Logo ============ */
 .ob-logo {
+  position: relative;
   margin-bottom: 8px;
+}
+
+.ob-logo::before,
+.ob-logo::after {
+  content: '';
+  position: absolute;
+  inset: -18px;
+  border: 1px solid color-mix(in srgb, var(--oa-active-bg) 18%, transparent);
+  border-radius: 28px;
+  transform: rotate(45deg);
+  animation: logoOrbit 8s linear infinite;
+  pointer-events: none;
+}
+
+.ob-logo::after {
+  inset: -8px;
+  border-radius: 22px;
+  border-color: color-mix(in srgb, var(--oa-text) 12%, transparent);
+  transform: rotate(-45deg);
+  animation-direction: reverse;
+  animation-duration: 11s;
+}
+
+.ob-logo img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  border-radius: 24px;
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--oa-active-bg) 5%, transparent), 0 18px 60px color-mix(in srgb, var(--oa-active-bg) 20%, transparent);
+}
+
+@keyframes logoOrbit {
+  to { transform: rotate(405deg); }
 }
 
 .ob-logo__svg {
@@ -1197,7 +1327,7 @@ onBeforeUnmount(() => {
 }
 
 .ob-btn--primary {
-  background: var(--oa-active-bg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oa-active-bg) 88%, white), var(--oa-active-bg));
   color: var(--oa-active-text);
   box-shadow: 0 4px 20px color-mix(in srgb, var(--oa-active-bg) 25%, transparent);
 }
@@ -1205,6 +1335,16 @@ onBeforeUnmount(() => {
 .ob-btn--primary:hover {
   transform: scale(1.03);
   box-shadow: 0 8px 32px color-mix(in srgb, var(--oa-active-bg) 35%, transparent);
+}
+
+.ob-btn--primary::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: linear-gradient(120deg, rgba(255,255,255,0.28), transparent 42%);
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .ob-btn--glass {
@@ -1954,6 +2094,33 @@ onBeforeUnmount(() => {
 
 /* ============ Responsive ============ */
 @media (max-width: 640px) {
+  .onboard::before {
+    inset: 8px;
+    border-radius: 18px;
+  }
+
+  .onboard__brand {
+    top: 22px;
+    left: 24px;
+    transform: scale(0.88);
+    transform-origin: left top;
+  }
+
+  .onboard__progress {
+    bottom: 18px;
+    max-width: calc(100vw - 32px);
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .onboard__progress-label {
+    display: none;
+  }
+
+  .onboard__progress-track {
+    width: min(42vw, 160px);
+  }
+
   .ob-step__inner {
     padding: 0 12px;
   }
@@ -2064,6 +2231,274 @@ html.dark .ob-dept-head--primary {
   border-color: color-mix(in srgb, #5b8def 12%, transparent);
 }
 
+/* ============ Minimal Editorial Refactor ============ */
+.onboard {
+  background: var(--oa-page-bg);
+  font-family: Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.onboard::before {
+  inset: 20px;
+  border-color: color-mix(in srgb, var(--oa-text) 9%, transparent);
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.onboard__bg-gradient {
+  background:
+    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--oa-active-bg) 4%, transparent), transparent 32%),
+    var(--oa-hero-gradient);
+}
+
+.onboard__bg-grid {
+  opacity: 0.42;
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.28), transparent 72%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.28), transparent 72%);
+}
+
+.onboard__bg-scanline,
+.onboard__bg-vignette,
+.onboard__bg-orb,
+.ob-os-deco__symbol {
+  display: none;
+}
+
+.onboard__brand {
+  top: 38px;
+  left: 48px;
+}
+
+.onboard__brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.onboard__progress {
+  bottom: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.onboard__progress-track {
+  width: 160px;
+  height: 3px;
+  background: color-mix(in srgb, var(--oa-text) 12%, transparent);
+}
+
+.onboard__progress-fill {
+  background: var(--oa-active-bg);
+  box-shadow: none;
+}
+
+.onboard__step {
+  padding: 72px 24px 96px;
+}
+
+.ob-step__inner {
+  max-width: 960px;
+  gap: 28px;
+}
+
+.ob-step__inner--narrow {
+  max-width: 860px;
+}
+
+.ob-eyebrow {
+  color: var(--oa-muted);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+
+.ob-eyebrow::before,
+.ob-eyebrow::after {
+  width: 16px;
+}
+
+.ob-title {
+  font-size: clamp(42px, 6vw, 64px);
+  letter-spacing: -0.055em;
+  line-height: 1.06;
+}
+
+.ob-title--md {
+  font-size: clamp(30px, 4vw, 44px);
+}
+
+.ob-subtitle,
+.ob-desc {
+  color: var(--oa-muted-strong);
+  line-height: 1.75;
+}
+
+.ob-desc {
+  max-width: 680px;
+  font-size: 16px;
+}
+
+.ob-logo {
+  margin-bottom: 10px;
+}
+
+.ob-logo::before,
+.ob-logo::after {
+  display: none;
+}
+
+.ob-logo img {
+  border-radius: 20px;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--oa-active-bg) 5%, transparent), 0 12px 32px color-mix(in srgb, var(--oa-text) 12%, transparent);
+}
+
+.ob-welcome-name,
+.ob-pillar,
+.ob-dept-head,
+.ob-leader-card,
+.ob-group-card,
+.ob-token-card,
+.ob-qrcode,
+.ob-success-terminal,
+.ob-input {
+  background: color-mix(in srgb, var(--oa-surface) 78%, transparent);
+  border-color: color-mix(in srgb, var(--oa-border) 72%, transparent);
+  box-shadow: none;
+}
+
+.ob-welcome-name {
+  padding: 14px 24px;
+  border-radius: 12px;
+}
+
+.ob-welcome-name::before {
+  background: var(--oa-page-bg);
+}
+
+.ob-welcome-name__headline {
+  font-size: clamp(18px, 2.8vw, 26px);
+}
+
+.ob-pillars {
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.ob-pillar {
+  padding: 20px 18px;
+  border-radius: 12px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ob-pillar__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.ob-pillar:hover,
+.ob-dept-head:hover,
+.ob-leader-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--oa-text) 7%, transparent);
+}
+
+.ob-pillar::before,
+.ob-dept-head::before,
+.ob-leader-card::before {
+  opacity: 0;
+}
+
+.ob-btn {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.ob-btn--primary {
+  background: var(--oa-active-bg);
+  box-shadow: none;
+}
+
+.ob-btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--oa-active-bg) 18%, transparent);
+}
+
+.ob-btn--primary::before,
+.ob-btn::after {
+  display: none;
+}
+
+.ob-btn--glow {
+  animation: none;
+}
+
+.ob-dept-hero__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.ob-dept-hero__name {
+  font-size: clamp(30px, 4vw, 40px);
+}
+
+.ob-dept-head,
+.ob-leader-card {
+  padding: 22px 28px 20px;
+  border-radius: 14px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ob-qrcode {
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.ob-qrcode__img {
+  width: 144px;
+  height: 144px;
+}
+
+.ob-form {
+  max-width: 440px;
+  gap: 12px;
+}
+
+.ob-input {
+  height: 52px;
+  border-radius: 10px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ob-success-check__svg {
+  width: 82px;
+  height: 82px;
+}
+
+@media (max-width: 640px) {
+  .onboard::before { inset: 10px; }
+  .onboard__brand { top: 24px; left: 28px; }
+  .onboard__step { padding: 70px 20px 84px; }
+  .ob-step__inner { gap: 22px; }
+  .ob-title { font-size: clamp(36px, 11vw, 52px); }
+  .ob-title--md { font-size: clamp(28px, 8vw, 36px); }
+  .ob-pillars { grid-template-columns: 1fr; }
+  .ob-pillar { text-align: left; }
+  .ob-pillar__icon { margin-bottom: 2px; }
+  .ob-step__actions { width: 100%; }
+  .ob-step__actions .ob-btn { flex: 1; }
+}
+
 .ob-name{
   margin-top:12px;
   margin-bottom:20px;
@@ -2126,7 +2561,8 @@ html.dark .ob-os-deco__symbol {
   gap: 6px;
   padding: 16px 28px;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--oa-surface) 40%, transparent);
+  position: relative;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oa-surface) 55%, transparent), color-mix(in srgb, var(--oa-active-bg) 5%, transparent));
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid color-mix(in srgb, var(--oa-border) 60%, transparent);
@@ -2138,6 +2574,32 @@ html.dark .ob-os-deco__symbol {
     opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
     filter 0.7s ease;
+}
+
+.ob-welcome-name::before {
+  content: 'CURRENT IDENTITY';
+  position: absolute;
+  top: -9px;
+  left: 18px;
+  padding: 0 7px;
+  background: var(--oa-page-bg);
+  color: var(--oa-active-bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+
+.ob-welcome-name__headline {
+  margin: 0;
+  font-size: clamp(18px, 3vw, 28px);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.ob-welcome-name__headline span {
+  color: var(--oa-active-bg);
+  padding: 0 4px;
 }
 
 .onboard--loaded .ob-welcome-name {
@@ -2344,6 +2806,65 @@ html.dark .ob-os-deco__symbol {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.ob-pillar::before,
+.ob-dept-head::before,
+.ob-leader-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--oa-active-bg) 55%, transparent), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ob-pillar:hover::before,
+.ob-dept-head:hover::before,
+.ob-leader-card:hover::before { opacity: 1; }
+
+.onboard__brand {
+  position: fixed;
+  top: 34px;
+  left: 42px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--oa-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.onboard__brand-mark {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--oa-active-bg) 50%, transparent);
+  border-radius: 9px;
+  color: var(--oa-active-bg);
+  font-size: 10px;
+  font-weight: 700;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--oa-active-bg) 18%, transparent);
+}
+
+.onboard__brand-copy {
+  font-size: 11px;
+  line-height: 1.1;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+}
+
+.onboard__brand-copy small {
+  color: var(--oa-muted);
+  font-size: 7px;
+  letter-spacing: 0.18em;
+  font-weight: 500;
 }
 
 .ob-pillar:hover {
@@ -2351,4 +2872,111 @@ html.dark .ob-os-deco__symbol {
   border-color: color-mix(in srgb, var(--oa-active-bg) 20%, var(--oa-border));
   box-shadow: 0 12px 40px color-mix(in srgb, var(--oa-text) 8%, transparent);
 }
+
+/* Final cascade: keep the visual system intentionally quiet. */
+.onboard__bg-scanline,
+.onboard__bg-vignette,
+.onboard__bg-orb,
+.ob-os-deco__symbol,
+.ob-logo::before,
+.ob-logo::after { display: none; }
+
+.onboard::before { inset: 20px; border-radius: 16px; box-shadow: none; }
+.onboard__bg-grid { opacity: 0.42; background-size: 64px 64px; }
+.onboard__progress { bottom: 32px; padding: 0; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+.onboard__progress-track { width: 160px; height: 3px; }
+.onboard__progress-fill { background: var(--oa-active-bg); box-shadow: none; }
+.onboard__step { padding: 72px 24px 96px; }
+.ob-title { letter-spacing: -0.055em; line-height: 1.06; }
+.ob-eyebrow { font-size: 11px; letter-spacing: 0.18em; }
+.ob-desc { max-width: 680px; font-size: 16px; color: var(--oa-muted-strong); }
+.ob-logo img { border-radius: 20px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--oa-active-bg) 5%, transparent), 0 12px 32px color-mix(in srgb, var(--oa-text) 12%, transparent); }
+.ob-welcome-name { padding: 14px 24px; border-radius: 12px; background: color-mix(in srgb, var(--oa-surface) 78%, transparent); border-color: color-mix(in srgb, var(--oa-border) 72%, transparent); box-shadow: none; }
+.ob-pillar { padding: 20px 18px; border-radius: 12px; background: color-mix(in srgb, var(--oa-surface) 78%, transparent); border-color: color-mix(in srgb, var(--oa-border) 72%, transparent); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.ob-dept-head, .ob-leader-card, .ob-group-card, .ob-token-card, .ob-qrcode, .ob-success-terminal { background: color-mix(in srgb, var(--oa-surface) 78%, transparent); border-color: color-mix(in srgb, var(--oa-border) 72%, transparent); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.ob-btn { height: 48px; padding: 0 24px; border-radius: 10px; font-size: 15px; }
+.ob-btn--primary { background: var(--oa-active-bg); box-shadow: none; }
+.ob-btn--primary::before, .ob-btn::after { display: none; }
+.ob-btn--glow { animation: none; }
+.ob-input { height: 52px; border-radius: 10px; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+@media (max-width: 640px) {
+  .onboard::before { inset: 10px; }
+  .onboard__brand { top: 24px; left: 28px; }
+  .onboard__step { padding: 70px 20px 84px; }
+  .ob-pillars { grid-template-columns: 1fr; }
+  .ob-pillar { text-align: left; }
+  .ob-step__actions { width: 100%; }
+  .ob-step__actions .ob-btn { flex: 1; }
+}
+
+.ob-groups-layout {
+  display: grid;
+  grid-template-columns: minmax(190px, 240px) minmax(280px, 360px);
+  grid-template-rows: auto auto;
+  align-items: stretch;
+  justify-content: center;
+  gap: 12px;
+  width: min(100%, 620px);
+}
+
+.ob-groups-layout .ob-qrcode {
+  grid-row: 1 / span 2;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ob-groups-layout .ob-qrcode__img {
+  margin: 12px auto 10px;
+}
+
+.ob-groups-layout .ob-group-card,
+.ob-groups-layout .ob-token-area {
+  width: 100%;
+}
+
+.ob-groups-layout .ob-group-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 92px;
+}
+
+.ob-groups-layout .ob-token-area {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--oa-border) 72%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--oa-surface) 78%, transparent);
+}
+
+.ob-groups-layout .ob-token-card {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+@media (max-width: 640px) {
+  .ob-groups-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    width: min(100%, 360px);
+  }
+
+  .ob-groups-layout .ob-qrcode {
+    grid-row: auto;
+  }
+
+  .ob-groups-layout .ob-token-area {
+    flex-direction: column;
+  }
+}
+</style>
+<style scoped>
+@import './activation-redesign.css';
 </style>
