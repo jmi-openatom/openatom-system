@@ -273,6 +273,11 @@ const routes = [
     ],
   },
   {
+    path: '/about',
+    name: 'about',
+    component: resilientView(() => import('../views/site/About.vue')),
+  },
+  {
     path: '/next',
     name: 'site-next',
     component: resilientView(() => import('../views/site/NextPage.vue')),

@@ -408,7 +408,7 @@ function shouldSkipInteractiveMap() {
   const connection = (navigator as any).connection
   const saveData = Boolean(connection?.saveData)
   const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false
-  const smallViewport = window.matchMedia?.('(max-width: 900px)').matches ?? false
+  const smallViewport = window.matchMedia?.('(max-width: 699px)').matches ?? false
   const lowMemory =
     typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4
   const lowCpu =
@@ -479,6 +479,11 @@ async function initMap() {
 onMounted(() => {
   if (!mapboxToken || !mapContainer.value || shouldSkipInteractiveMap()) return
 
+  if (props.background) {
+    void initMap()
+    return
+  }
+
   visibilityObserver = new IntersectionObserver(
     (entries) => {
       if (!entries.some((entry) => entry.isIntersecting)) return
@@ -527,6 +532,7 @@ onBeforeUnmount(() => {
 
 .map-canvas {
   position: absolute;
+  z-index: 0;
   inset: 0;
   filter: grayscale(1) contrast(1.04);
 }
@@ -571,6 +577,7 @@ onBeforeUnmount(() => {
   z-index: 0;
   height: 100%;
   min-height: 0;
+  isolation: isolate;
   background: var(--oa-map-bg);
 }
 
