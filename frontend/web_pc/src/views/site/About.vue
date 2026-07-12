@@ -54,7 +54,7 @@
           </div>
         </div>
 
-        <button class="scroll-hint" type="button" @click="scrollTo('routes')" style="color: #000000">
+        <button class="scroll-hint" type="button" @click="scrollTo('routes')">
           滚动以探索
           <ChevronDown :size="16"/>
         </button>
@@ -576,14 +576,14 @@ function setupGsapMotion() {
         invalidateOnRefresh: true,
       },
     })
-    heroTimeline.from('.hero__shade', {opacity: 0, immediateRender: false}, 0)
+    heroTimeline.from('.hero__shade', {opacity: .82, immediateRender: false}, 0)
     heroTimeline.from('.hero__content', {y: 0, opacity: 1, immediateRender: false}, 0)
     heroTimeline.from('.hero h1', {scale: 1, y: 0, letterSpacing: '-.045em', immediateRender: false}, 0)
     heroTimeline.from('.hero h1 em', {backgroundPosition: '100% center', immediateRender: false}, 0)
     heroTimeline.from('.scroll-hint', {opacity: 1, y: 0, immediateRender: false}, 0)
     heroTimeline.from('.topo-texture', {xPercent: 0, yPercent: 0, rotation: 0, opacity: .18, immediateRender: false}, 0)
-    heroTimeline.to('.hero__shade', {opacity: .94, ease: 'none'}, 0)
-    heroTimeline.to('.hero__content', {y: -190, opacity: .16, ease: 'none'}, 0)
+    heroTimeline.to('.hero__shade', {opacity: 1, ease: 'none'}, 0)
+    heroTimeline.to('.hero__content', {y: -190, opacity: .72, ease: 'none'}, 0)
     heroTimeline.to('.hero h1', {scale: 1.16, y: -28, letterSpacing: '-.06em', ease: 'none'}, 0)
     heroTimeline.to('.hero h1 em', {backgroundPosition: '0% center', ease: 'none'}, 0)
     heroTimeline.to('.scroll-hint', {opacity: 0, y: 40, ease: 'none'}, 0)
@@ -593,8 +593,8 @@ function setupGsapMotion() {
     gsap.timeline({
       scrollTrigger: {
         trigger: '.philosophy',
-        start: 'top 78%',
-        end: 'top 30%',
+        start: 'top 50%',
+        end: 'top 10%',
         scrub: 1,
         invalidateOnRefresh: true,
       },
@@ -607,8 +607,8 @@ function setupGsapMotion() {
     gsap.timeline({
       scrollTrigger: {
         trigger: '.founding-year',
-        start: 'top 78%',
-        end: 'top 28%',
+        start: 'top 50%',
+        end: 'top 10%',
         scrub: 1,
         invalidateOnRefresh: true,
       },
@@ -621,8 +621,8 @@ function setupGsapMotion() {
     gsap.timeline({
       scrollTrigger: {
         trigger: routes,
-        start: 'top 82%',
-        end: 'top 28%',
+        start: 'top 50%',
+        end: 'top 10%',
         scrub: 1,
       },
     })
@@ -636,8 +636,8 @@ function setupGsapMotion() {
       const scene = gsap.timeline({
         scrollTrigger: {
           trigger: stop,
-          start: 'top 78%',
-          end: 'top 24%',
+          start: 'top 50%',
+          end: 'top 10%',
           scrub: .8,
           invalidateOnRefresh: true,
         },
@@ -653,8 +653,8 @@ function setupGsapMotion() {
 
       ScrollTrigger.create({
         trigger: stop,
-        start: 'top 58%',
-        end: 'bottom 42%',
+        start: 'top 50%',
+        end: 'bottom 50%',
         onEnter: () => activateRoute(index),
         onEnterBack: () => activateRoute(index),
         onLeaveBack: () => index > 0 ? activateRoute(index - 1) : storyOrbLabel && (storyOrbLabel.textContent = '00'),
@@ -664,7 +664,7 @@ function setupGsapMotion() {
     const projectTimeline = gsap.timeline({
       scrollTrigger: {
         trigger: projectScene,
-        start: 'top top',
+        start: 'top 50%',
         end: '+=1050',
         scrub: 1,
         pin: true,
@@ -686,7 +686,7 @@ function setupGsapMotion() {
     gsap.to('.story-orb span', {
       rotation: 360,
       ease: 'none',
-      scrollTrigger: {trigger: '.journey', start: 'top 82%', end: 'top 32%', scrub: 1},
+      scrollTrigger: {trigger: '.journey', start: 'top 50%', end: 'top 10%', scrub: 1},
     })
 
     gsap.fromTo('.journey-line li', {y: 90, opacity: .2}, {
@@ -695,7 +695,7 @@ function setupGsapMotion() {
       stagger: .16,
       ease: 'power2.out',
       scrollTrigger: {
-        trigger: '.journey-line', start: 'top 80%', end: 'top 24%', scrub: 1,
+        trigger: '.journey-line', start: 'top 50%', end: 'top 10%', scrub: 1,
         onEnter: () => storyOrbLabel && (storyOrbLabel.textContent = '30D'),
         onEnterBack: () => storyOrbLabel && (storyOrbLabel.textContent = '30D'),
       },
@@ -706,7 +706,7 @@ function setupGsapMotion() {
       stagger: .12,
       ease: 'power2.out',
       scrollTrigger: {
-        trigger: '.gains', start: 'top 78%', end: 'top 34%', scrub: 1,
+        trigger: '.gains', start: 'top 50%', end: 'top 10%', scrub: 1,
         onEnter: () => storyOrbLabel && (storyOrbLabel.textContent = 'GAIN'),
         onEnterBack: () => storyOrbLabel && (storyOrbLabel.textContent = 'GAIN'),
       },
@@ -714,14 +714,14 @@ function setupGsapMotion() {
     gsap.to('.story-orb span', {
       rotation: 410,
       ease: 'none',
-      scrollTrigger: {trigger: '.gains-scene', start: 'top 82%', end: 'top 34%', scrub: 1},
+      scrollTrigger: {trigger: '.gains-scene', start: 'top 50%', end: 'top 10%', scrub: 1},
     })
     gsap.fromTo('.community-story__image', {scale: 1.14, xPercent: 6}, {
       scale: 1.02,
       xPercent: -4,
       ease: 'none',
       scrollTrigger: {
-        trigger: '.community-story', start: 'top bottom', end: 'bottom top', scrub: 1,
+        trigger: '.community-story', start: 'top 50%', end: 'bottom top', scrub: 1,
         onEnter: () => storyOrbLabel && (storyOrbLabel.textContent = 'TEAM'),
         onEnterBack: () => storyOrbLabel && (storyOrbLabel.textContent = 'TEAM'),
       },
@@ -731,12 +731,12 @@ function setupGsapMotion() {
       y: 0,
       opacity: 1,
       ease: 'back.out(1.35)',
-      scrollTrigger: {trigger: '.community-story', start: 'top 78%', end: 'top 32%', scrub: .8},
+      scrollTrigger: {trigger: '.community-story', start: 'top 50%', end: 'top 10%', scrub: .8},
     })
     gsap.to('.story-orb span', {
       rotation: 470,
       ease: 'none',
-      scrollTrigger: {trigger: '.community-story', start: 'top 80%', end: 'top 30%', scrub: 1},
+      scrollTrigger: {trigger: '.community-story', start: 'top 50%', end: 'top 10%', scrub: 1},
     })
     gsap.fromTo('.final-cta h2', {scale: .78, y: 90, opacity: .2}, {
       scale: 1,
@@ -744,7 +744,7 @@ function setupGsapMotion() {
       opacity: 1,
       ease: 'back.out(1.35)',
       scrollTrigger: {
-        trigger: '.final-cta', start: 'top 82%', end: 'top 34%', scrub: .8,
+        trigger: '.final-cta', start: 'top 50%', end: 'top 10%', scrub: .8,
         onEnter: () => storyOrbLabel && (storyOrbLabel.textContent = 'JOIN'),
         onEnterBack: () => storyOrbLabel && (storyOrbLabel.textContent = 'JOIN'),
       },
@@ -752,7 +752,7 @@ function setupGsapMotion() {
     gsap.to('.story-orb span', {
       rotation: 540,
       ease: 'none',
-      scrollTrigger: {trigger: '.final-cta', start: 'top 80%', end: 'top 28%', scrub: 1},
+      scrollTrigger: {trigger: '.final-cta', start: 'top 50%', end: 'top 10%', scrub: 1},
     })
     ScrollTrigger.refresh()
   }, pageRoot.value)
@@ -784,7 +784,7 @@ onMounted(async () => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) entry.target.classList.add('is-visible')
       })
-    }, {threshold: 0.22, rootMargin: '0px 0px -12% 0px'})
+    }, {threshold: 0, rootMargin: '-49% 0px -49% 0px'})
     routeStoryRefs.value.forEach((item) => routeObserver?.observe(item))
   } else {
     routeStoryRefs.value.forEach((item) => item.classList.add('is-visible'))
@@ -2032,7 +2032,7 @@ footer {
 
 .hero {
   background: var(--oa-hero-gradient);
-  color: var(--text);
+  color: #fff;
 }
 
 .hero__canvas {
@@ -2049,17 +2049,27 @@ footer {
 
 .hero__shade {
   background:
-    linear-gradient(180deg, rgba(4, 18, 38, 0.78) 0%, rgba(4, 18, 38, 0.48) 62%, rgba(4, 18, 38, 0.22) 100%),
-    linear-gradient(90deg, rgba(4, 18, 38, 0.6) 0%, transparent 52%);
+    linear-gradient(180deg, rgba(3, 12, 27, .5) 0%, rgba(3, 12, 27, .32) 68%, rgba(3, 12, 27, .2) 100%),
+    linear-gradient(90deg, rgba(3, 12, 27, .88) 0%, rgba(3, 12, 27, .72) 30%, rgba(3, 12, 27, .18) 64%, transparent 82%);
 }
 
 .topo-texture {
   display: none;
 }
 
-.hero h1 em, .community-story h2 em {
+.community-story h2 em {
   color: transparent;
   background: linear-gradient(105deg, var(--oa-text) 0 28%, var(--oa-faint) 46%, #b8b8bd 54%, var(--oa-text) 72% 100%);
+  background-size: 220% auto;
+  background-position: 100% center;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero h1 em {
+  color: transparent;
+  background: linear-gradient(105deg, #fff 0 28%, #cbd5e1 46%, #94a3b8 54%, #fff 72% 100%);
   background-size: 220% auto;
   background-position: 100% center;
   background-clip: text;
@@ -2077,12 +2087,15 @@ footer {
   -webkit-text-fill-color: transparent;
 }
 
-.hero .eyebrow, .eyebrow {
+.eyebrow {
   color: var(--muted);
 }
 
-.hero__lead, .hero__metrics span, .hero__start small {
-  color: var(--muted);
+.hero .eyebrow,
+.hero__lead,
+.hero__metrics span,
+.hero__start small {
+  color: rgba(255, 255, 255, .82);
 }
 
 .button--primary {
@@ -2097,8 +2110,9 @@ footer {
 
 .button--ghost {
   border-color: var(--oa-button-border);
-  background: rgba(255, 255, 255, .62);
+  background: color-mix(in srgb, var(--oa-button-bg) 72%, transparent);
   color: var(--oa-button-text);
+  backdrop-filter: blur(12px);
 }
 
 .button--ghost:hover {
@@ -2117,12 +2131,17 @@ footer {
 }
 
 .hero__start > svg {
-  background: rgba(255, 255, 255, .76);
-  box-shadow: 0 0 0 12px rgba(29, 29, 31, .05);
+  background: color-mix(in srgb, var(--oa-button-bg) 82%, transparent);
+  box-shadow: 0 0 0 12px color-mix(in srgb, var(--text) 5%, transparent);
 }
 
 .scroll-hint {
   color: var(--oa-faint);
+}
+
+.hero .scroll-hint {
+  color: rgba(255, 255, 255, .72);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, .45);
 }
 
 .chapter-rail {

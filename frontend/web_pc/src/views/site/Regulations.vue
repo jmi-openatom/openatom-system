@@ -8,16 +8,16 @@
       >
         <template #actions>
           <div class="regulation-actions">
-            <el-select
-              v-if="clubs.length > 1"
-              v-model="selectedClubId"
-              filterable
-              placeholder="选择社团"
-              style="width: 240px"
-              @change="reload"
-            >
-              <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
-            </el-select>
+<!--            <el-select-->
+<!--              v-if="clubs.length > 1"-->
+<!--              v-model="selectedClubId"-->
+<!--              filterable-->
+<!--              placeholder="选择社团"-->
+<!--              style="width: 240px"-->
+<!--              @change="reload"-->
+<!--            >-->
+<!--              <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />-->
+<!--            </el-select>-->
             <el-input
               v-model="keyword"
               clearable
