@@ -22,7 +22,13 @@
           @click="openArticle(article)"
         >
           <div class="featured-blog-card__media" :class="{ 'is-empty': !article.coverUrl }">
-            <img v-if="article.coverUrl" :alt="article.title" :src="article.coverUrl" />
+            <img
+              v-if="article.coverUrl"
+              :alt="article.title"
+              :src="article.coverUrl"
+              decoding="async"
+              loading="lazy"
+            />
             <span v-else>{{ coverInitial(article.title) }}</span>
           </div>
 

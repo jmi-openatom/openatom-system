@@ -4,10 +4,13 @@
     :aria-hidden="props.background ? 'true' : undefined"
     :class="['map-section', { 'map-section--hero': props.background }]"
   >
-    <div ref="mapContainer" class="map-canvas"></div>
+    <div ref="mapContainer" :class="['map-canvas', { 'is-loaded': mapLoaded }]"></div>
     <div aria-hidden="true" class="map-atmosphere"></div>
     <div aria-hidden="true" class="map-grain"></div>
-    <div v-if="!mapboxToken || mapError" aria-hidden="true" class="map-fallback"></div>
+    <div
+      aria-hidden="true"
+      :class="['map-fallback', { 'is-hidden': mapLoaded && !mapError }]"
+    ></div>
   </component>
 </template>
 
@@ -57,7 +60,10 @@ let rotationFrame: number | undefined
 let campusMarker: MapboxMarker | null = null
 let visibilityObserver: IntersectionObserver | undefined
 let idleHandle: number | undefined
+let enhancementIdleHandle: number | undefined
+let releaseMapTimer: number | undefined
 let mapInitStarted = false
+let isMapVisible = true
 
 const CAMPUS_CENTER: [number, number] = [118.903, 31.92]
 const EARTH_CENTER: [number, number] = [-40, 26]
@@ -295,8 +301,54 @@ function tuneStyle(theme: ResolvedTheme) {
 function restoreStyleOverlays() {
   if (!map) return
   tuneStyle(resolvedTheme.value)
-  addTerrain()
   add3dBuildings()
+}
+
+function cancelMapEnhancements() {
+  if (!enhancementIdleHandle) return
+  if (window.cancelIdleCallback) {
+    window.cancelIdleCallback(enhancementIdleHandle)
+  } else {
+    window.clearTimeout(enhancementIdleHandle)
+  }
+  enhancementIdleHandle = undefined
+}
+
+function scheduleMapEnhancements() {
+  cancelMapEnhancements()
+
+  const enhance = () => {
+    enhancementIdleHandle = undefined
+    addTerrain()
+  }
+
+  if (window.requestIdleCallback) {
+    enhancementIdleHandle = window.requestIdleCallback(enhance, { timeout: 2600 })
+    return
+  }
+  enhancementIdleHandle = window.setTimeout(enhance, 1200)
+}
+
+function cancelIdleInit() {
+  if (!idleHandle) return
+  if (window.cancelIdleCallback) {
+    window.cancelIdleCallback(idleHandle)
+  } else {
+    window.clearTimeout(idleHandle)
+  }
+  idleHandle = undefined
+}
+
+function releaseMap() {
+  cancelIdleInit()
+  cancelMapEnhancements()
+  clearMapTimers()
+  campusMarker?.remove()
+  campusMarker = null
+  map?.remove()
+  map = null
+  mapLoaded.value = false
+  mapInitStarted = false
 }
 
 function addCampusMarker(mapboxgl: MapboxModule) {
@@ -318,8 +370,16 @@ function switchMapStyle() {
   if (!map) return
 
   mapError.value = ''
+  mapLoaded.value = false
+  cancelMapEnhancements()
   map.setStyle(mapboxStyle.value)
-  map.once('style.load', restoreStyleOverlays)
+  map.once('style.load', () => {
+    restoreStyleOverlays()
+    map?.once('idle', () => {
+      mapLoaded.value = true
+      scheduleMapEnhancements()
+    })
+  })
 }
 
 function clearMapTimers() {
@@ -417,12 +477,17 @@ function shouldSkipInteractiveMap() {
 }
 
 function runWhenIdle(callback: () => void) {
+  cancelIdleInit()
+  const run = () => {
+    idleHandle = undefined
+    callback()
+  }
   const requestIdle = window.requestIdleCallback
   if (requestIdle) {
-    idleHandle = requestIdle(callback, { timeout: 1200 })
+    idleHandle = requestIdle(run, { timeout: 1200 })
     return
   }
-  idleHandle = window.setTimeout(callback, 220)
+  idleHandle = window.setTimeout(run, 220)
 }
 
 async function initMap() {
@@ -442,6 +507,11 @@ async function initMap() {
     return
   }
 
+  if (!isMapVisible || !mapContainer.value) {
+    mapInitStarted = false
+    return
+  }
+
   if (!mapboxgl.supported({ failIfMajorPerformanceCaveat: true })) {
     mapError.value = '当前浏览器不支持 WebGL 地图。'
     return
@@ -456,7 +526,7 @@ async function initMap() {
     pitch: campusCamera.pitch,
     bearing: campusCamera.bearing,
     projection: 'globe',
-    antialias: true,
+    antialias: !props.background,
     attributionControl: false,
     interactive: false,
   })
@@ -466,7 +536,8 @@ async function initMap() {
     mapError.value = ''
     restoreStyleOverlays()
     addCampusMarker(mapboxgl)
-    if (!props.static) scheduleEarthReturn()
+    scheduleMapEnhancements()
+    if (!props.static && isMapVisible) scheduleEarthReturn()
   })
 
   map.on('error', (event) => {
@@ -479,21 +550,37 @@ async function initMap() {
 onMounted(() => {
   if (!mapboxToken || !mapContainer.value || shouldSkipInteractiveMap()) return
 
-  if (props.background) {
-    void initMap()
+  if (!('IntersectionObserver' in window)) {
+    runWhenIdle(() => void initMap())
     return
   }
 
   visibilityObserver = new IntersectionObserver(
     (entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return
-      visibilityObserver?.disconnect()
-      visibilityObserver = undefined
-      runWhenIdle(() => {
-        void initMap()
-      })
+      isMapVisible = entries.some((entry) => entry.isIntersecting)
+
+      if (isMapVisible) {
+        if (releaseMapTimer) window.clearTimeout(releaseMapTimer)
+        releaseMapTimer = undefined
+        if (map) {
+          map.resize()
+          if (!props.static && mapLoaded.value) scheduleEarthReturn()
+          return
+        }
+        runWhenIdle(() => void initMap())
+        return
+      }
+
+      cancelIdleInit()
+      clearMapTimers()
+      map?.stop()
+      if (releaseMapTimer) window.clearTimeout(releaseMapTimer)
+      releaseMapTimer = window.setTimeout(() => {
+        releaseMapTimer = undefined
+        if (!isMapVisible) releaseMap()
+      }, 1800)
     },
-    { rootMargin: '280px 0px', threshold: 0.01 },
+    { rootMargin: '240px 0px', threshold: 0.01 },
   )
   visibilityObserver.observe(mapContainer.value)
 })
@@ -504,18 +591,8 @@ watch(mapboxStyle, () => {
 
 onBeforeUnmount(() => {
   visibilityObserver?.disconnect()
-  if (idleHandle) {
-    if (window.cancelIdleCallback) {
-      window.cancelIdleCallback(idleHandle)
-    } else {
-      window.clearTimeout(idleHandle)
-    }
-  }
-  clearMapTimers()
-  campusMarker?.remove()
-  campusMarker = null
-  map?.remove()
-  map = null
+  if (releaseMapTimer) window.clearTimeout(releaseMapTimer)
+  releaseMap()
 })
 </script>
 
@@ -535,6 +612,12 @@ onBeforeUnmount(() => {
   z-index: 0;
   inset: 0;
   filter: grayscale(1) contrast(1.04);
+  opacity: 0;
+  transition: opacity 420ms ease;
+}
+
+.map-canvas.is-loaded {
+  opacity: 1;
 }
 
 .map-atmosphere,
@@ -585,11 +668,18 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   z-index: 4;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 420ms ease;
   background:
     radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.82), transparent 18%),
     radial-gradient(circle at 50% 48%, rgba(29, 29, 31, 0.12), transparent 54%),
     linear-gradient(135deg, rgba(29, 29, 31, 0.08), transparent 44%), var(--oa-map-fallback);
   background-size: auto, auto, auto, auto;
+}
+
+.map-fallback.is-hidden {
+  opacity: 0;
 }
 
 :deep(.map-campus-marker) {

@@ -1,164 +1,131 @@
 <template>
-  <div ref="pageRoot" class="expedition-page" :class="{ 'is-reduced': reducedMotion }">
-<!--    <aside class="chapter-rail" aria-label="章节进度">-->
-<!--      <span class="chapter-rail__label">EXPEDITION</span>-->
-<!--      <button-->
-<!--          v-for="(chapter, index) in chapters"-->
-<!--          :key="chapter.id"-->
-<!--          type="button"-->
-<!--          :class="{ active: activeChapter === index }"-->
-<!--          :aria-label="`前往${chapter.label}`"-->
-<!--          @click="scrollTo(chapter.id)"-->
-<!--      >-->
-<!--        <i></i><span>0{{ index + 1 }}</span>-->
-<!--      </button>-->
-<!--    </aside>-->
-
-<!--    <div class="story-orb" aria-hidden="true">-->
-<!--      <span></span>-->
-<!--      <b>00</b>-->
-<!--    </div>-->
-
+  <div ref="pageRoot" class="about-page">
     <main>
-      <section id="top" class="hero chapter" data-chapter="0">
-        <img src="/bg.png" alt="" class="hero__bg" />
-        <div class="hero__shade" aria-hidden="true"></div>
-        <div class="topo-texture" aria-hidden="true"></div>
-
-        <div class="hero__content parallax-copy" data-parallax data-speed="-0.12">
-          <p class="eyebrow" >
-            <Compass :size="15"/>
-            关于我们 · 江苏海事职业技术学院 · 开放原子开源社团
+      <section id="top" class="about-hero">
+        <img
+          class="about-hero__image"
+          src="/bg.png"
+          alt="开放原子开源社团成员共同参与校园开源实践"
+          decoding="async"
+          fetchpriority="high"
+        />
+        <div class="about-hero__veil" aria-hidden="true"></div>
+        <div class="about-shell about-hero__content">
+          <p class="apple-kicker">关于我们 · JMI-OPENATOM</p>
+          <h1><span>从校园出发。</span><span>向开源前行。</span></h1>
+          <p class="about-hero__lead">
+            不只是学习技术。我们一起发现问题、完成作品，也把每一次成长留在开放社区里。
           </p>
-          <h1>从校园出发，<br/><em>去更大的开源 <br> 世界</em></h1>
-          <p class="hero__lead"  >
-            在 {{ club.name || 'JMI-OPENATOM' }}，你不只是学习一门技术。你会找到一条路线、完成第一次真实任务，
-            然后和一群伙伴把作品带到更远的地方。
-          </p>
-          <p class="hero__promise" style="color: white">不用先成为高手。会观察、会表达、愿意把一件事做完，就是很好的起点。</p>
-          <div class="hero__actions">
-            <button class="button button--primary" type="button" @click="goback">
-              <ArrowLeft :size="18"/>
-              返回官网
-
+          <div class="about-hero__actions">
+            <button
+              class="apple-button apple-button--light"
+              type="button"
+              @click="scrollTo('routes')"
+            >
+              认识我们的路线
+              <ArrowDown :size="17" />
             </button>
-            <button class="button button--ghost" type="button" @click="scrollTo('routes')">
-              查看远征地图
-              <ChevronDown :size="17"/>
+            <button class="apple-link apple-link--light" type="button" @click="goHome">
+              返回官网
+              <ArrowUpRight :size="17" />
             </button>
           </div>
-          <div class="hero__metrics" aria-label="社团数据">
+          <div class="about-hero__metrics" aria-label="社团关键数据">
             <div v-for="item in heroMetrics" :key="item.label">
-              <strong >{{ item.value }}</strong><span >{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+              <span>{{ item.label }}</span>
             </div>
           </div>
         </div>
-
-        <button class="scroll-hint" type="button" @click="scrollTo('routes')">
-          滚动以探索
-          <ChevronDown :size="16"/>
+        <button class="about-hero__scroll" type="button" @click="scrollTo('story')">
+          继续了解
+          <ChevronDown :size="16" />
         </button>
       </section>
 
-      <section class="philosophy">
-        <div class="philosophy__orb" aria-hidden="true"></div>
-        <div class="philosophy__content parallax-copy" data-parallax data-speed="-0.06">
-          <p class="eyebrow">
-            <Lightbulb :size="15"/>
-            创立理念
-          </p>
-          <h2 style="color: #ffffff">开源筑梦<br/><em style="color: #ffffff">海事启航</em></h2>
-          <p>让每一位成员在真实项目中成长，在开放社区中发光。</p>
-        </div>
-      </section>
-
-      <section class="founding-year" style="height: 100vh">
-        <div class="founding-year__content">
-          <span class="founding-year__label">EST.</span>
-          <strong class="founding-year__number">2025</strong>
-          <p>一群人，一个社区，从零开始。</p>
-        </div>
-      </section>
-
-      <section id="routes" class="routes chapter" data-chapter="1">
-        <div class="section-shell">
-          <div class="chapter-heading parallax-copy" data-parallax data-speed="-0.07">
-            <span class="chapter-number">02</span>
-            <div>
-              <p class="eyebrow">
-                <Route :size="15"/>
-                CHOOSE YOUR ROUTE
-              </p>
-              <h2>五个路标，<br/>总有一个指向你。</h2>
-              <p>继续往下走。每经过一个路标，你都会看到这个方向真实的第一份任务，以及旅程留下的第一个成果。</p>
-            </div>
+      <section id="story" class="about-section about-story">
+        <div class="about-shell">
+          <div class="section-heading section-reveal">
+            <p class="apple-kicker">WHY WE STARTED</p>
+            <h2>开源筑梦，<br /><span>海事启航。</span></h2>
+            <p>让每一位成员在真实项目中成长，在开放协作中找到自己的位置。</p>
           </div>
 
-          <div class="route-story" aria-label="五条成长路线">
-            <section
-                v-for="(path, index) in paths"
-                :key="path.title"
-                :class="['route-story__stop', `route-story__stop--${index + 1}`, 'parallax-copy']"
-                data-parallax
-                :data-speed="index % 2 ? -0.08 : -0.12"
-                :ref="setRouteStoryRef"
-                :id="`department-${index + 1}`"
-            >
-              <div class="route-story__marker">
-                <span>ROUTE 0{{ index + 1 }}</span>
-                <component :is="path.icon" :size="27" stroke-width="1.5"/>
+          <div class="story-grid">
+            <article class="story-card story-card--year reveal-card">
+              <span>EST.</span>
+              <strong>2025</strong>
+              <p>一群人，一个社区，从零开始。</p>
+            </article>
+            <article class="story-card story-card--statement reveal-card">
+              <Lightbulb :size="28" stroke-width="1.5" />
+              <h3>先做出来，再一起做得更好。</h3>
+              <p>我们相信，真正的成长发生在问题被看见、任务被接住、成果被分享的过程里。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="routes" class="about-section routes-section">
+        <div class="about-shell route-story">
+          <div class="route-story__intro">
+            <p class="apple-kicker">FIND YOUR PLACE</p>
+            <h2>五条路线。<br /><span>总有一条适合你。</span></h2>
+            <p>不必先成为某一种人。继续向下，看看哪一段故事更像你。</p>
+
+            <ol class="route-story__rail" aria-label="五条成长路线">
+              <li v-for="(path, index) in paths" :key="path.title" class="route-story__rail-item">
+                <span>0{{ index + 1 }}</span>
+                <strong>{{ path.title }}</strong>
+              </li>
+            </ol>
+          </div>
+
+          <div class="route-story__stage">
+            <div class="route-story__progress" aria-hidden="true"><span></span></div>
+            <article v-for="(path, index) in paths" :key="path.title" class="route-scene">
+              <span class="route-scene__number" aria-hidden="true">0{{ index + 1 }}</span>
+              <div class="route-scene__eyebrow">
+                <component :is="path.icon" :size="24" stroke-width="1.5" />
+                <span>{{ path.hint }}</span>
               </div>
-              <div class="route-story__intro">
-                <small>{{ path.hint }}</small>
-                <h3>{{ path.title }}</h3>
-                <p>{{ path.description }}</p>
-                <dl class="route-story__details">
-                  <div><dt>适合这样的你</dt><dd>{{ path.fit }}</dd></div>
-                  <div><dt>你会逐渐拥有</dt><dd>{{ path.growth }}</dd></div>
-                </dl>
-              </div>
-              <div class="route-story__mission">
-                <span><Flag :size="14"/> 第一次任务</span>
+              <p class="route-scene__opening">{{ path.opening }}</p>
+              <h3>{{ path.title }}</h3>
+              <p class="route-scene__description">{{ path.description }}</p>
+              <div class="route-scene__next">
+                <span>故事从这里开始</span>
                 <p>{{ path.mission }}</p>
-                <ol>
-                  <li v-for="(step, stepIndex) in path.steps" :key="step">
-                    <b>0{{ stepIndex + 1 }}</b>{{ step }}
-                  </li>
-                </ol>
               </div>
-              <div class="route-story__result">
-                <GitPullRequest :size="23"/>
-                <span><small>抵达这一站，你会拥有</small><strong>{{ path.result }}</strong></span>
-              </div>
-              <div class="route-story__nontech">
-                <Sparkles :size="16"/>
-                <span><b>不会写代码也能参与</b>{{ path.nonTechnical }}</span>
-              </div>
-            </section>
+              <p class="route-scene__result"><span>最后，你会留下</span>{{ path.result }}</p>
+            </article>
           </div>
         </div>
       </section>
 
-      <section id="projects" class="project-scene chapter" data-chapter="2">
-        <div class="project-scene__image project-scene__canvas parallax-layer" data-speed="0.18" aria-hidden="true"></div>
-        <div class="project-scene__shade" aria-hidden="true"></div>
-        <div class="section-shell project-scene__content parallax-copy" data-parallax data-speed="-0.08">
-          <div class="chapter-heading chapter-heading--light">
-            <span class="chapter-number">03</span>
-            <div>
-              <p class="eyebrow">
-                <Laptop2 :size="15"/>
-                REAL PROJECT SITE
-              </p>
-              <h2>真实项目现场</h2>
-              <p>从 issue 到上线，每一步都有真实使用者、协作伙伴和可以被验证的结果。</p>
-            </div>
+      <section id="projects" class="projects-section">
+        <img
+          class="projects-section__image"
+          src="/recruitment-expedition-project.png"
+          alt="社团成员围绕真实项目进行协作开发"
+          decoding="async"
+          loading="lazy"
+        />
+        <div class="projects-section__veil" aria-hidden="true"></div>
+        <div class="about-shell projects-section__content">
+          <div class="section-heading section-heading--dark section-reveal">
+            <p class="apple-kicker">REAL WORK. REAL IMPACT.</p>
+            <h2>不止是练习。<br /><span>每次提交，都有回声。</span></h2>
+            <p>从 issue 到上线，每一步都有真实使用者、协作伙伴和可以被验证的结果。</p>
           </div>
 
-          <div class="project-list">
-            <article v-for="(project, index) in featuredProjects" :key="project.title">
+          <div class="projects-grid">
+            <article
+              v-for="(project, index) in featuredProjects"
+              :key="project.title"
+              class="project-card reveal-card"
+            >
               <span>PROJECT / 0{{ index + 1 }}</span>
-              <component :is="project.icon" :size="23" stroke-width="1.6"/>
+              <component :is="project.icon" :size="25" stroke-width="1.5" />
               <h3>{{ project.title }}</h3>
               <p>{{ project.description }}</p>
               <strong>{{ project.impact }}</strong>
@@ -168,254 +135,212 @@
         </div>
       </section>
 
-      <section id="journey" class="journey chapter" data-chapter="3">
-        <div class="section-shell">
-          <div class="chapter-heading parallax-copy" data-parallax data-speed="-0.07">
-            <span class="chapter-number">04</span>
-            <div>
-              <p class="eyebrow">
-                <Footprints :size="15"/>
-                THE FIRST 30 DAYS
-              </p>
-              <h2>不是“加入一个群”，<br/>是完成一次真正的出发。</h2>
-              <p>我们把最容易迷路的第一个月拆成四段。每一站都有人带，也都有看得见的成果。</p>
-            </div>
+      <section id="journey" class="about-section journey-section">
+        <div class="about-shell">
+          <div class="section-heading section-reveal">
+            <p class="apple-kicker">YOUR FIRST 30 DAYS</p>
+            <h2>加入，不是进群。<br /><span>是完成一次出发。</span></h2>
+            <p>第一个月被拆成四个清晰阶段。每一站都有人同行，也都有看得见的成果。</p>
           </div>
 
-          <ol class="journey-line">
-            <li v-for="(item, index) in journey" :key="item.title">
-              <span class="journey-line__day">{{ item.day }}</span>
-              <i aria-hidden="true"></i>
-              <div>
-                <small>CHECKPOINT 0{{ index + 1 }}</small>
-                <h3>{{ item.title }}</h3>
-                <p>{{ item.description }}</p>
-                <b>{{ item.output }}</b>
+          <ol class="journey-list">
+            <li v-for="(item, index) in journey" :key="item.title" class="journey-item reveal-card">
+              <div class="journey-item__marker">
+                <span>0{{ index + 1 }}</span>
+                <i aria-hidden="true"></i>
               </div>
+              <small>{{ item.day }}</small>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.description }}</p>
+              <strong>{{ item.output }}</strong>
             </li>
           </ol>
         </div>
       </section>
 
-      <section class="gains-scene">
-        <div class="section-shell">
-          <div class="gains">
-            <p class="eyebrow">
-              <Trophy :size="15"/>
-              WHAT YOU GAIN
-            </p>
-            <h2>你会带走什么</h2>
-            <div>
-              <article v-for="gain in gains" :key="gain.title">
-                <component :is="gain.icon" :size="24" stroke-width="1.6"/>
-                <strong>{{ gain.title }}</strong>
-                <p>{{ gain.description }}</p>
-              </article>
-            </div>
+      <section class="about-section gains-section">
+        <div class="about-shell">
+          <div class="section-heading section-reveal">
+            <p class="apple-kicker">WHAT STAYS WITH YOU</p>
+            <h2>带走的，<br /><span>远不止一项技能。</span></h2>
           </div>
-        </div>
-      </section>
-
-      <section class="community-story">
-        <div class="community-story__image community-story__canvas parallax-layer" data-speed="0.18" aria-hidden="true"></div>
-        <div class="community-story__shade" aria-hidden="true"></div>
-        <div class="community-story__copy parallax-copy" data-parallax data-speed="-0.1">
-          <p class="eyebrow">
-            <Users :size="15"/>
-            MEET YOUR MENTORS
-          </p>
-          <h2>一个人能走得很快，<br/><em>一群人才能走得更远。</em></h2>
-          <blockquote>
-            “第一次提 PR 时，我连描述都不知道怎么写。学长没有替我完成，而是陪我把问题拆开。那一晚，我第一次觉得自己真的在参与开源。”
-          </blockquote>
-          <span>— 往届成员 · 项目部</span>
-        </div>
-      </section>
-
-      <section id="process" class="process">
-        <div class="section-shell">
-          <p class="eyebrow">
-            <Send :size="15"/>
-            APPLICATION
-          </p>
-          <div class="process__heading">
-            <h2>报名出发</h2>
-            <p>我们不考“你已经会多少”，更关心你为什么想来、愿意怎么投入。</p>
-          </div>
-          <div class="process__values" aria-label="我们看重的品质">
-            <span>保持好奇</span><span>认真回应</span><span>愿意协作</span><span>把事情做完</span>
-          </div>
-          <ol>
-            <li v-for="(item, index) in process" :key="item.title">
-              <span>0{{ index + 1 }}</span>
-              <div><strong>{{ item.title }}</strong><small>{{ item.description }}</small></div>
-              <ArrowRight :size="18"/>
-            </li>
-          </ol>
-          <button class="button button--primary process__cta" type="button" @click="goToApply">
-            填写报名表
-            <ArrowUpRight :size="18"/>
-          </button>
-        </div>
-      </section>
-
-      <section id="faq" class="faq">
-        <div class="section-shell faq__layout">
-          <div>
-            <p class="eyebrow">
-              <CircleHelp :size="15"/>
-              FAQ
-            </p>
-            <h2>出发前，<br/>你可能还想知道</h2>
-          </div>
-          <div class="faq__list">
-            <article v-for="(item, index) in faqs" :key="item.question">
-              <div class="faq__question">
-                <span>0{{ index + 1 }}</span><strong>{{ item.question }}</strong>
-              </div>
-              <p>{{ item.answer }}</p>
+          <div class="gains-grid">
+            <article v-for="gain in gains" :key="gain.title" class="gain-card reveal-card">
+              <component :is="gain.icon" :size="27" stroke-width="1.5" />
+              <h3>{{ gain.title }}</h3>
+              <p>{{ gain.description }}</p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="final-cta">
-       <div class="logo">
-         <img src="../../../public/logo.png" alt="" width="100">
-       </div>
-        <p class="eyebrow">
-          <MapPin :size="15"/>
-          NEXT DEPARTURE
-        </p>
-        <h2>下一段开源路线，<br/><em>等你来命名。</em></h2>
+      <section class="community-section">
+        <img
+          class="community-section__image"
+          src="/recruitment-expedition-community.png"
+          alt="社团伙伴在开放社区中交流、协作与互相支持"
+          decoding="async"
+          loading="lazy"
+        />
+        <div class="community-section__veil" aria-hidden="true"></div>
+        <div class="about-shell community-section__content section-reveal">
+          <p class="apple-kicker">GROW TOGETHER</p>
+          <h2>一个人走得快。<br /><span>一群人，走得更远。</span></h2>
+          <blockquote>
+            “第一次提 PR
+            时，学长没有替我完成，而是陪我把问题拆开。那一晚，我第一次觉得自己真的在参与开源。”
+          </blockquote>
+          <p class="community-section__byline">往届成员 · 项目部</p>
+        </div>
+      </section>
+
+      <section id="process" class="about-section process-section">
+        <div class="about-shell process-layout">
+          <div class="section-heading section-reveal">
+            <p class="apple-kicker">JOIN THE COMMUNITY</p>
+            <h2>带上好奇心。<br /><span>其他的，一起学。</span></h2>
+            <p>我们不考你已经会多少，更在意你为什么想来，以及是否愿意认真完成一件事。</p>
+            <button class="apple-button apple-button--dark" type="button" @click="goToApply">
+              填写报名表
+              <ArrowUpRight :size="17" />
+            </button>
+          </div>
+          <ol class="process-list">
+            <li v-for="(item, index) in process" :key="item.title" class="reveal-card">
+              <span>0{{ index + 1 }}</span>
+              <div>
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.description }}</small>
+              </div>
+              <ArrowRight :size="18" />
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="faq" class="about-section faq-section">
+        <div class="about-shell faq-layout">
+          <div class="section-heading section-reveal">
+            <p class="apple-kicker">FAQ</p>
+            <h2>出发前，<br /><span>你可能还想知道。</span></h2>
+          </div>
+          <div class="faq-list">
+            <details v-for="(item, index) in faqs" :key="item.question" class="reveal-card">
+              <summary>
+                <span>0{{ index + 1 }}</span>
+                <strong>{{ item.question }}</strong>
+                <Plus :size="20" />
+              </summary>
+              <p>{{ item.answer }}</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="final-section">
+        <img src="/logo.png" alt="JMI-OPENATOM 标志" width="72" height="72" loading="lazy" />
+        <p class="apple-kicker">YOUR NEXT CHAPTER</p>
+        <h2>下一段开源故事，<br /><span>等你来写。</span></h2>
         <p>带上好奇心就够了。剩下的，我们在路上一起学。</p>
-        <button class="button button--primary" type="button" @click="goToApply">
-          立即报名，加入远征
-          <ArrowRight :size="18"/>
+        <button class="apple-button apple-button--light" type="button" @click="goToApply">
+          立即加入
+          <ArrowRight :size="18" />
         </button>
       </section>
     </main>
 
-    <footer>
-      <div class="footer-brand">
-        <img src="/logo.png" alt="JMI-OPENATOM Logo" />
+    <footer class="about-footer">
+      <div>
+        <img src="/logo.png" alt="" width="32" height="32" loading="lazy" />
         <span>JMI-OPENATOM · 开放原子开源社团</span>
       </div>
-
-      <div class="footer-info">
-    <span>
-      © 2025-2027 JMI-OPENATOM &
-      <a href="https://www.ariven.cn/" target="_blank">
-        Ariven（软件技术252301 何治皓）
-      </a>
-      . All rights reserved.
-    </span>
-
-        <span class="ai-credit">
-      部分图片素材由
-      <strong>ChatGPT 5.6</strong>
-      AI 辅助完成
-    </span>
-      </div>
+      <span>© 2025–2027 JMI-OPENATOM</span>
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import {computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref} from 'vue'
-import {useRouter} from 'vue-router'
+import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
-  ArrowRight, ArrowUpRight, Boxes, ChevronDown, CircleHelp, Code2, Compass, Flag,
-  Footprints, GitBranch, GitPullRequest, HeartHandshake, Laptop2, Lightbulb, MapPin, Palette,
-  Route, Send, Sparkles, Trophy, Users, Megaphone, CalendarDays,ArrowLeft
+  ArrowDown,
+  ArrowRight,
+  ArrowUpRight,
+  Boxes,
+  CalendarDays,
+  ChevronDown,
+  Code2,
+  Compass,
+  GitBranch,
+  GitPullRequest,
+  HeartHandshake,
+  Lightbulb,
+  Megaphone,
+  Palette,
+  Plus,
+  Sparkles,
+  Trophy,
+  Users,
 } from 'lucide-vue-next'
-import {siteApi} from '@/api'
-import HomeMapSection from '@/components/site/home/HomeMapSection.vue'
+import { siteApi } from '@/api'
 import gsap from 'gsap'
-import {ScrollTrigger} from 'gsap/ScrollTrigger'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
 const router = useRouter()
 const pageRoot = ref<HTMLElement>()
-const club = ref<Record<string, any>>({})
 const metrics = ref<any[]>([])
 const focusAreas = ref<any[]>([])
 const showcaseApps = ref<any[]>([])
-const activeChapter = ref(0)
-const routeStoryRefs = ref<HTMLElement[]>([])
-const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
-let scrollFrame = 0
-let routeObserver: IntersectionObserver | undefined
-let motionContext: gsap.Context | undefined
-
-const chapters = [
-  {id: 'top', label: '从校园出发'},
-  {id: 'routes', label: '选择路线'},
-  {id: 'projects', label: '真实项目'},
-  {id: 'journey', label: '加入旅程'},
-]
+let motionMatchMedia: gsap.MatchMedia | undefined
+let scrollResetFrame: number | undefined
 
 const fallbackPaths = [
   {
     title: '项目部',
-    description: '做产品、写代码，把真实需求交付上线。',
     hint: 'ENGINEERING',
-    mission: '从一个影响真实用户的小问题开始，理解上下文并提交修复。',
-    steps: ['认识项目与协作规范', '认领一个 beginner issue', '提交并讲清第一次改动'],
+    opening: '如果你喜欢把模糊的问题，变成真正能用的答案。',
+    description: '做产品、写代码，把真实需求交付上线。',
+    mission: '认识项目，认领一个边界清晰的问题，并提交第一次改动。',
     result: '一次被合并的 PR',
-    nonTechnical: '做需求访谈、测试体验、写清楚文档，帮项目把正确的事做对。',
-    fit: '喜欢拆解问题，也愿意耐心验证每一个细节。',
-    growth: '产品判断、工程协作与稳定交付能力。',
-    icon: markRaw(Code2)
+    icon: markRaw(Code2),
   },
   {
     title: '宣传组',
-    description: '把复杂技术讲清楚，让作品被更多人看见。',
     hint: 'DESIGN & CONTENT',
-    mission: '为一个正在进行的项目设计内容，让陌生人三分钟看懂它的价值。',
-    steps: ['采访项目成员', '梳理核心故事', '完成一篇发布内容'],
-    result: '一次真实的项目发布',
-    nonTechnical: '写文案、拍照片、做海报、剪短视频，把技术讲成大家听得懂的故事。',
-    fit: '对文字、画面或传播有感觉，愿意理解技术背后的价值。',
-    growth: '内容策划、视觉表达与完整叙事能力。',
-    icon: markRaw(Palette)
+    opening: '如果你擅长发现价值，也愿意把它讲给更多人听。',
+    description: '把复杂技术讲清楚，让好作品被更多人看见。',
+    mission: '采访项目成员，梳理价值，并完成一次真实发布。',
+    result: '一篇完整的项目故事',
+    icon: markRaw(Palette),
   },
   {
     title: '活动部',
-    description: '策划分享与工作坊，把学习变成共同经历。',
     hint: 'EVENTS',
-    mission: '参与一次技术活动的全流程，让每位到场者都能带走一个成果。',
-    steps: ['共创活动议题', '负责一段现场流程', '完成复盘与资料沉淀'],
+    opening: '如果你相信，一次好的相遇能点燃很多次行动。',
+    description: '策划分享与工作坊，把学习变成共同经历。',
+    mission: '参与一次活动全流程，并负责一段清晰的现场体验。',
     result: '一场完整的技术活动',
-    nonTechnical: '做主持、场务、签到、摄影和复盘，让每个人都能舒服地参与进来。',
-    fit: '享受把人聚在一起，面对变化时仍能保持清晰。',
-    growth: '活动策划、现场推进与多人协作能力。',
-    icon: markRaw(CalendarDays)
+    icon: markRaw(CalendarDays),
   },
   {
     title: '外联部',
-    description: '连接校内外资源，让合作产生更大影响。',
     hint: 'OUTREACH',
-    mission: '找到一个值得连接的伙伴，发起一场对双方都有价值的合作。',
-    steps: ['研究合作对象', '准备清晰的合作提案', '推动一次真实对话'],
+    opening: '如果你愿意走出去，为一群人的想法找到更大的舞台。',
+    description: '连接校内外资源，让合作产生更大影响。',
+    mission: '研究一个合作对象，准备提案，并推动一次真实对话。',
     result: '一次有效的合作连接',
-    nonTechnical: '写合作邮件、做关系维护、整理资源，让好项目遇见合适的人。',
-    fit: '愿意主动沟通，擅长发现不同人之间可以合作的部分。',
-    growth: '商务表达、资源判断与长期关系维护能力。',
-    icon: markRaw(Megaphone)
+    icon: markRaw(Megaphone),
   },
   {
     title: '社区部',
-    description: '维护社群体验，让每位成员都能找到连接与归属。',
     hint: 'COMMUNITY',
-    mission: '从一次新人共创开始，设计让陌生成员自然认识、持续参与的社区体验。',
-    steps: ['观察新人的真实需求', '策划一次社区共创', '沉淀可复用的社区机制'],
-    result: '一次有温度的社区行动',
-    nonTechnical: '照顾新人感受、组织轻量活动、维护群内秩序，让社区真正有人情味。',
-    fit: '在意他人的参与感，希望把陌生人变成可靠的同行者。',
-    growth: '社区运营、成员洞察与机制设计能力。',
-    icon: markRaw(HeartHandshake)
+    opening: '如果你在意每个人的感受，也愿意让陌生人变成同行者。',
+    description: '维护社群体验，让每位成员找到连接与归属。',
+    mission: '观察新人需求，策划一次轻量而有温度的社区行动。',
+    result: '一套可复用的社区机制',
+    icon: markRaw(HeartHandshake),
   },
 ]
 
@@ -425,21 +350,21 @@ const fallbackProjects = [
     category: 'PLATFORM · OPEN SOURCE',
     description: '支撑社团成员、活动与内容协作的校园开源平台。',
     impact: '让社团日常协作更清晰、更可靠',
-    icon: markRaw(Boxes)
+    icon: markRaw(Boxes),
   },
   {
     title: '校园网站发布工具',
     category: 'TOOLS · DEVOPS',
     description: '让校园项目从提交代码到上线发布更顺畅。',
     impact: '缩短从想法到真实可用的距离',
-    icon: markRaw(GitBranch)
+    icon: markRaw(GitBranch),
   },
   {
     title: 'AI 实验计划',
     category: 'RESEARCH · AI',
     description: '把前沿技术变成可以理解、复用和验证的实验。',
     impact: '把学习过程沉淀为可复用成果',
-    icon: markRaw(Sparkles)
+    icon: markRaw(Sparkles),
   },
 ]
 
@@ -448,2407 +373,1784 @@ const journey = [
     day: 'DAY 01',
     title: '认识社区',
     description: '见到伙伴、了解项目，也说说你想尝试什么。',
-    output: '找到你的第一张桌子'
+    output: '找到你的第一张桌子',
   },
-  {day: 'WEEK 01', title: '完成热身', description: '在带教伙伴帮助下，跑通工具与协作流程。', output: '完成第一次 commit'},
-  {day: 'WEEK 02', title: '进入现场', description: '认领一个真实但边界清晰的任务，开始共建。', output: '提交第一个成果'},
-  {day: 'DAY 30', title: '讲述你的成果', description: '复盘过程，把经验留给下一位出发的人。', output: '成为可靠的同行者'},
+  {
+    day: 'WEEK 01',
+    title: '完成热身',
+    description: '在带教伙伴帮助下，跑通工具与协作流程。',
+    output: '完成第一次 commit',
+  },
+  {
+    day: 'WEEK 02',
+    title: '进入现场',
+    description: '认领一个真实但边界清晰的任务，开始共建。',
+    output: '提交第一个成果',
+  },
+  {
+    day: 'DAY 30',
+    title: '讲述成果',
+    description: '复盘过程，把经验留给下一位出发的人。',
+    output: '成为可靠的同行者',
+  },
 ]
 
 const gains = [
-  {title: '完成事情的能力', description: '需求、协作、交付、复盘，不只停在“学过”。', icon: markRaw(Trophy)},
-  {title: '看得见的作品', description: '真实项目、公开贡献和能够讲清楚的成长证据。', icon: markRaw(GitPullRequest)},
-  {title: '一起走的人', description: '跨年级、跨方向的伙伴，以及愿意带你的前辈。', icon: markRaw(Users)},
-  {title: '更大的视野', description: '从校园问题出发，认识真正的开源协作方式。', icon: markRaw(Compass)},
+  {
+    title: '完成事情的能力',
+    description: '需求、协作、交付、复盘，不只停在“学过”。',
+    icon: markRaw(Trophy),
+  },
+  {
+    title: '看得见的作品',
+    description: '真实项目、公开贡献和能够讲清楚的成长证据。',
+    icon: markRaw(GitPullRequest),
+  },
+  {
+    title: '一起走的人',
+    description: '跨年级、跨方向的伙伴，以及愿意带你的前辈。',
+    icon: markRaw(Users),
+  },
+  {
+    title: '更大的视野',
+    description: '从校园问题出发，认识真正的开源协作方式。',
+    icon: markRaw(Compass),
+  },
 ]
 
 const process = [
-  {title: '在线报名', description: '告诉我们你是谁、为什么想来'},
-  {title: '开放交流', description: '聊兴趣和期待，不做知识背诵'},
-  {title: '方向匹配', description: '认识部门与未来的带教伙伴'},
-  {title: '正式出发', description: '加入社区，领取第一份路线图'},
+  { title: '在线报名', description: '告诉我们你是谁、为什么想来' },
+  { title: '开放交流', description: '聊兴趣和期待，不做知识背诵' },
+  { title: '方向匹配', description: '认识部门与未来的带教伙伴' },
+  { title: '正式出发', description: '加入社区，领取第一份路线图' },
 ]
 
 const faqs = [
   {
     question: '我没有基础，也可以加入吗？',
-    answer: '可以。我们更看重好奇心、可靠程度和持续投入。每个方向都有适合新人的第一份任务，也会安排带教伙伴。'
+    answer:
+      '可以。我们更看重好奇心、可靠程度和持续投入。每个方向都有适合新人的第一份任务，也会安排带教伙伴。',
   },
   {
     question: '每周大概要投入多少时间？',
-    answer: '建议每周留出 3–5 小时参与项目、例会或活动。考试周可以提前沟通，真实协作也包括尊重彼此的节奏。'
+    answer:
+      '建议每周留出 3–5 小时参与项目、例会或活动。考试周可以提前沟通，真实协作也包括尊重彼此的节奏。',
   },
   {
     question: '只能选择技术方向吗？',
-    answer: '不是。项目、内容设计、活动策划和对外合作同样重要。你也可以先选一个主方向，再在项目中跨方向协作。'
+    answer:
+      '不是。项目、内容设计、活动策划和对外合作同样重要。你也可以先选一个主方向，再在项目中跨方向协作。',
   },
   {
     question: '加入后会有人带吗？',
-    answer: '会。新人阶段有清晰的热身任务、带教伙伴和阶段复盘，但我们不会替你完成——目标是让你真正拥有独立做成事情的能力。'
+    answer:
+      '会。新人阶段有清晰的热身任务、带教伙伴和阶段复盘，目标是让你真正拥有独立做成事情的能力。',
   },
 ]
 
 const heroMetrics = computed(() => {
-  if (metrics.value.length) return metrics.value.slice(0, 3).map((item) => ({
-    value: item.value || '—',
-    label: item.label || item.note || '开放协作'
-  }))
-  return [{value: '68+', label: '在册成员'}, {value: '5', label: '成长方向'}, {value: '∞', label: '开放协作'}]
+  if (metrics.value.length) {
+    return metrics.value.slice(0, 3).map((item) => ({
+      value: item.value || '—',
+      label: item.label || item.note || '开放协作',
+    }))
+  }
+  return [
+    { value: '68+', label: '在册成员' },
+    { value: '5', label: '成长方向' },
+    { value: '∞', label: '开放协作' },
+  ]
 })
 
-const paths = computed(() => {
-  if (!focusAreas.value.length) return fallbackPaths
-  return fallbackPaths.map((item, index) => ({
+const paths = computed(() =>
+  fallbackPaths.map((item, index) => ({
     ...item,
     title: focusAreas.value[index]?.title || item.title,
-    description: focusAreas.value[index]?.description || item.description
-  }))
-})
+    description: focusAreas.value[index]?.description || item.description,
+  })),
+)
 
-const featuredProjects = computed(() => {
-  if (!showcaseApps.value.length) return fallbackProjects
-  return fallbackProjects.map((fallback, index) => ({
+const featuredProjects = computed(() =>
+  fallbackProjects.map((fallback, index) => ({
     ...fallback,
     title: showcaseApps.value[index]?.name || showcaseApps.value[index]?.title || fallback.title,
     description: showcaseApps.value[index]?.description || fallback.description,
     category: showcaseApps.value[index]?.category || fallback.category,
-  }))
-})
+  })),
+)
 
 function scrollTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({behavior: reducedMotion ? 'auto' : 'smooth'})
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' })
+}
+
+function goHome() {
+  router.push('/')
 }
 
 function goToApply() {
   router.push('/apply')
 }
 
-function  goback(){
-  router.push('/')
+function resetPageScroll() {
+  ScrollTrigger.clearScrollMemory('manual')
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
 }
 
-function updateScrollStory() {
-  scrollFrame = 0
-  const viewportMark = window.scrollY + window.innerHeight * 0.45
-  let chapter = 0
-  chapters.forEach((item, index) => {
-    const section = document.getElementById(item.id)
-    if (section && section.offsetTop <= viewportMark) chapter = index
-  })
-  activeChapter.value = chapter
+function setupMotion() {
+  if (!pageRoot.value) return
 
-  const scrollable = Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
-  pageRoot.value?.style.setProperty('--story-progress', String(Math.min(1, window.scrollY / scrollable)))
+  motionMatchMedia = gsap.matchMedia()
+  motionMatchMedia.add(
+    {
+      desktop: '(min-width: 1068px)',
+      mobile: '(max-width: 1067px)',
+      reduceMotion: '(prefers-reduced-motion: reduce)',
+    },
+    (context) => {
+      const { desktop, reduceMotion } = context.conditions as {
+        desktop: boolean
+        mobile: boolean
+        reduceMotion: boolean
+      }
 
-}
+      if (reduceMotion) {
+        gsap.set(['.section-reveal', '.reveal-card'], { clearProps: 'all' })
+        gsap.set('.route-scene', { position: 'relative', autoAlpha: 1, clearProps: 'transform' })
+        gsap.set('.route-story__rail-item', { autoAlpha: 1 })
+        return
+      }
 
-function onScroll() {
-  if (!scrollFrame) scrollFrame = window.requestAnimationFrame(updateScrollStory)
-}
+      const intro = gsap.timeline({ defaults: { ease: 'power3.out' } })
+      intro
+        .from('.about-hero .apple-kicker', { y: 24, autoAlpha: 0, duration: 0.65 }, 0.08)
+        .from('.about-hero h1 > span', { y: 72, autoAlpha: 0, stagger: 0.12, duration: 0.92 }, 0.16)
+        .from('.about-hero__lead', { y: 32, autoAlpha: 0, duration: 0.72 }, 0.48)
+        .from('.about-hero__actions', { y: 24, autoAlpha: 0, duration: 0.62 }, 0.58)
+        .from(
+          '.about-hero__metrics > div',
+          { y: 18, autoAlpha: 0, stagger: 0.08, duration: 0.55 },
+          0.68,
+        )
+        .from('.about-hero__scroll', { y: -10, autoAlpha: 0, duration: 0.5 }, 0.84)
 
-function setRouteStoryRef(element: Element | null) {
-  if (element instanceof HTMLElement && !routeStoryRefs.value.includes(element)) routeStoryRefs.value.push(element)
-}
+      gsap.fromTo(
+        '.about-hero__image',
+        { scale: 1.12, xPercent: 0, yPercent: 0 },
+        {
+          scale: 1.1,
+          xPercent: desktop ? 2 : 0,
+          yPercent: desktop ? 3 : 2,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.about-hero',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 0.8,
+          },
+        },
+      )
 
-function setupGsapMotion() {
-  if (reducedMotion || !pageRoot.value) return
-  const hero = pageRoot.value.querySelector<HTMLElement>('.hero')
-  const routes = pageRoot.value.querySelector<HTMLElement>('.routes')
-  const projectScene = pageRoot.value.querySelector<HTMLElement>('.project-scene')
-  if (!hero || !routes || !projectScene) return
-
-  motionContext = gsap.context(() => {
-    const storyOrbLabel = pageRoot.value?.querySelector<HTMLElement>('.story-orb b')
-    const routeStops = Array.from(pageRoot.value?.querySelectorAll<HTMLElement>('.route-story__stop') || [])
-    const activateRoute = (index: number) => {
-      storyOrbLabel && (storyOrbLabel.textContent = `R0${index + 1}`)
-      routeStops.forEach((item, itemIndex) => item.classList.toggle('is-active', itemIndex === index))
-    }
-
-    const heroTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: hero,
-        start: 'top top',
-        end: '+=1350',
-        scrub: 1,
-        pin: true,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-      },
-    })
-    heroTimeline.from('.hero__shade', {opacity: .82, immediateRender: false}, 0)
-    heroTimeline.from('.hero__content', {y: 0, opacity: 1, immediateRender: false}, 0)
-    heroTimeline.from('.hero h1', {scale: 1, y: 0, letterSpacing: '-.045em', immediateRender: false}, 0)
-    heroTimeline.from('.hero h1 em', {backgroundPosition: '100% center', immediateRender: false}, 0)
-    heroTimeline.from('.scroll-hint', {opacity: 1, y: 0, immediateRender: false}, 0)
-    heroTimeline.from('.topo-texture', {xPercent: 0, yPercent: 0, rotation: 0, opacity: .18, immediateRender: false}, 0)
-    heroTimeline.to('.hero__shade', {opacity: 1, ease: 'none'}, 0)
-    heroTimeline.to('.hero__content', {y: -190, opacity: .72, ease: 'none'}, 0)
-    heroTimeline.to('.hero h1', {scale: 1.16, y: -28, letterSpacing: '-.06em', ease: 'none'}, 0)
-    heroTimeline.to('.hero h1 em', {backgroundPosition: '0% center', ease: 'none'}, 0)
-    heroTimeline.to('.scroll-hint', {opacity: 0, y: 40, ease: 'none'}, 0)
-    heroTimeline.to('.story-orb span', {rotation: 48, ease: 'none'}, 0)
-    heroTimeline.to('.topo-texture', {xPercent: 24, yPercent: -18, rotation: 10, opacity: .42, ease: 'none'}, 0)
-
-    gsap.timeline({
-      scrollTrigger: {
-        trigger: '.philosophy',
-        start: 'top 50%',
-        end: 'top 10%',
-        scrub: 1,
-        invalidateOnRefresh: true,
-      },
-    })
-      .fromTo('.philosophy__content', {y: 90, opacity: .25, immediateRender: false}, {y: 0, opacity: 1, ease: 'none'}, 0)
-      .fromTo('.philosophy h2', {scale: .78, y: 60, transformOrigin: 'left center', immediateRender: false}, {scale: 1, y: 0, ease: 'back.out(1.35)'}, .04)
-      .fromTo('.philosophy__content > p', {y: 40, opacity: .3, immediateRender: false}, {y: 0, opacity: 1, ease: 'power2.out'}, .1)
-      .to('.story-orb span', {rotation: 150, ease: 'none'}, 0)
-
-    gsap.timeline({
-      scrollTrigger: {
-        trigger: '.founding-year',
-        start: 'top 50%',
-        end: 'top 10%',
-        scrub: 1,
-        invalidateOnRefresh: true,
-      },
-    })
-      .fromTo('.founding-year__number', {scale: .5, opacity: .1, immediateRender: false}, {scale: 1, opacity: 1, ease: 'power2.out'}, 0)
-      .fromTo('.founding-year__label', {y: 30, opacity: 0, immediateRender: false}, {y: 0, opacity: 1, ease: 'power2.out'}, .06)
-      .fromTo('.founding-year__content > p', {y: 24, opacity: 0, immediateRender: false}, {y: 0, opacity: 1, ease: 'power2.out'}, .12)
-      .to('.story-orb span', {rotation: 210, ease: 'none'}, 0)
-
-    gsap.timeline({
-      scrollTrigger: {
-        trigger: routes,
-        start: 'top 50%',
-        end: 'top 10%',
-        scrub: 1,
-      },
-    })
-      .fromTo('.routes .chapter-heading', {y: 110, opacity: .65, immediateRender: false}, {y: 0, opacity: 1, ease: 'none'}, 0)
-      .fromTo('.routes .chapter-heading h2', {scale: .82, y: 70, transformOrigin: 'left center', immediateRender: false}, {scale: 1, y: 0, ease: 'back.out(1.35)'}, 0)
-      .to('.story-orb span', {rotation: 90, ease: 'none'}, 0)
-
-    pageRoot.value.querySelectorAll<HTMLElement>('.route-story__stop').forEach((stop, index) => {
-      const introFrom = index === 1 || index === 3 ? {x: 150, opacity: .45, immediateRender: false} : {x: -150, opacity: .45, immediateRender: false}
-      const missionFrom = index === 2 ? {y: 130, opacity: .45, immediateRender: false} : {x: index === 0 ? 180 : -180, opacity: .45, immediateRender: false}
-      const scene = gsap.timeline({
+      gsap.to('.about-hero__content', {
+        y: desktop ? -72 : -34,
+        autoAlpha: 0.45,
+        ease: 'none',
         scrollTrigger: {
-          trigger: stop,
-          start: 'top 50%',
-          end: 'top 10%',
-          scrub: .8,
-          invalidateOnRefresh: true,
+          trigger: '.about-hero',
+          start: '35% top',
+          end: 'bottom top',
+          scrub: 0.7,
         },
       })
-      scene
-        .fromTo(stop.querySelector('.route-story__marker'), {y: index === 2 ? 140 : 70, opacity: .45, scale: index === 4 ? .72 : .62, rotation: index === 2 ? -18 : 0, immediateRender: false}, {y: 0, opacity: 1, scale: 1, rotation: 0, ease: 'power2.out'}, 0)
-        .fromTo(stop.querySelector('.route-story__intro'), introFrom, {x: 0, opacity: 1, ease: 'power2.out'}, .06)
-        .fromTo(stop.querySelector('.route-story__intro h3'), {y: 60, scale: .72, opacity: .3, backgroundPosition: '100% center', transformOrigin: 'left center', immediateRender: false}, {y: 0, scale: 1, opacity: 1, backgroundPosition: '0% center', ease: 'back.out(1.5)'}, .08)
-        .fromTo(stop.querySelector('.route-story__mission'), missionFrom, {x: 0, y: 0, opacity: 1, ease: 'power2.out'}, .12)
-        .fromTo(stop.querySelector('.route-story__nontech'), {y: 80, opacity: .45, immediateRender: false}, {y: 0, opacity: 1, ease: 'power2.out'}, .2)
-        .fromTo(stop.querySelector('.route-story__result'), {scale: .72, opacity: .5, immediateRender: false}, {scale: 1, opacity: 1, ease: 'power2.out'}, .2)
-        .to('.story-orb span', {rotation: 120 + index * 42, ease: 'none'}, 0)
 
-      ScrollTrigger.create({
-        trigger: stop,
-        start: 'top 50%',
-        end: 'bottom 50%',
-        onEnter: () => activateRoute(index),
-        onEnterBack: () => activateRoute(index),
-        onLeaveBack: () => index > 0 ? activateRoute(index - 1) : storyOrbLabel && (storyOrbLabel.textContent = '00'),
+      const routeScenes = gsap.utils.toArray<HTMLElement>('.route-scene')
+      const routeRailItems = gsap.utils.toArray<HTMLElement>('.route-story__rail-item')
+      const routeProgress = pageRoot.value?.querySelector<HTMLElement>(
+        '.route-story__progress span',
+      )
+
+      if (routeScenes.length) {
+        gsap.set(routeScenes, { autoAlpha: 0, y: 70 })
+        gsap.set(routeScenes[0], { autoAlpha: 1, y: 0 })
+        gsap.set(routeRailItems, { opacity: 0.28 })
+        gsap.set(routeRailItems[0], { opacity: 1 })
+
+        const chapterLength = 1.5
+        const routeTimeline = gsap.timeline({
+          defaults: { ease: 'power3.inOut' },
+          scrollTrigger: {
+            trigger: '.routes-section',
+            start: 'top top',
+            end: () => `+=${window.innerHeight * routeScenes.length}`,
+            pin: true,
+            scrub: 0.75,
+            snap: {
+              snapTo: 'labelsDirectional',
+              duration: { min: 0.18, max: 0.45 },
+              delay: 0.06,
+              ease: 'power2.inOut',
+            },
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+          },
+        })
+
+        if (routeProgress) {
+          routeTimeline.fromTo(
+            routeProgress,
+            { scaleY: 0 },
+            {
+              scaleY: 1,
+              duration: routeScenes.length * chapterLength,
+              ease: 'none',
+              transformOrigin: 'top',
+            },
+            0,
+          )
+        }
+
+        routeScenes.forEach((scene, index) => {
+          const label = `route-${index + 1}`
+          const at = index * chapterLength
+          const number = scene.querySelector('.route-scene__number')
+          const eyebrow = scene.querySelector('.route-scene__eyebrow')
+          const opening = scene.querySelector('.route-scene__opening')
+          const title = scene.querySelector('h3')
+          const description = scene.querySelector('.route-scene__description')
+          const next = scene.querySelector('.route-scene__next')
+          const result = scene.querySelector('.route-scene__result')
+
+          routeTimeline.addLabel(label, at)
+          routeTimeline.to(routeRailItems, { opacity: 0.28, duration: 0.18 }, label)
+          routeTimeline.to(routeRailItems[index], { opacity: 1, duration: 0.28 }, label)
+          routeTimeline.fromTo(
+            scene,
+            { autoAlpha: index === 0 ? 1 : 0, y: index === 0 ? 0 : 70 },
+            { autoAlpha: 1, y: 0, duration: 0.38 },
+            label,
+          )
+          routeTimeline.fromTo(
+            number,
+            { x: 80, autoAlpha: 0 },
+            { x: 0, autoAlpha: 0.1, duration: 0.58 },
+            `${label}+=0.04`,
+          )
+          routeTimeline.fromTo(
+            eyebrow,
+            { x: 24, autoAlpha: 0 },
+            { x: 0, autoAlpha: 1, duration: 0.32 },
+            `${label}+=0.08`,
+          )
+          routeTimeline.fromTo(
+            opening,
+            { y: 26, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.42 },
+            `${label}+=0.14`,
+          )
+          routeTimeline.fromTo(
+            title,
+            { y: 46, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.5 },
+            `${label}+=0.2`,
+          )
+          routeTimeline.fromTo(
+            [description, next, result],
+            { y: 24, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.08 },
+            `${label}+=0.3`,
+          )
+
+          if (index < routeScenes.length - 1) {
+            routeTimeline.to(
+              scene,
+              { y: -58, autoAlpha: 0, duration: 0.34, ease: 'power2.in' },
+              `${label}+=1.08`,
+            )
+          }
+        })
+      }
+
+      const animatedSections = gsap.utils.toArray<HTMLElement>(
+        '.about-section:not(.routes-section), .projects-section, .community-section',
+      )
+
+      animatedSections.forEach((section) => {
+        const heading = section.querySelector<HTMLElement>(
+          '.section-heading, .community-section__content',
+        )
+        const kicker = heading?.querySelector('.apple-kicker')
+        const title = heading?.querySelector('h2')
+        const copy = heading?.querySelector('p:last-child, blockquote')
+        const cards = section.querySelectorAll<HTMLElement>('.reveal-card')
+        const sectionTimeline = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: 'top 76%',
+            once: true,
+          },
+        })
+
+        if (kicker) {
+          sectionTimeline.from(kicker, { x: -28, autoAlpha: 0, duration: 0.52 })
+        }
+        if (title) {
+          sectionTimeline.from(
+            title,
+            {
+              y: desktop ? 68 : 38,
+              scale: 0.96,
+              autoAlpha: 0,
+              duration: 0.82,
+              ease: 'power3.out',
+              transformOrigin: 'left bottom',
+            },
+            '<0.08',
+          )
+        }
+        if (copy) {
+          sectionTimeline.from(
+            copy,
+            { y: 28, autoAlpha: 0, duration: 0.62, ease: 'power2.out' },
+            '<0.22',
+          )
+        }
+        if (cards.length) {
+          sectionTimeline.from(
+            cards,
+            {
+              x: (index) => (desktop ? (index % 2 === 0 ? -32 : 32) : 0),
+              y: desktop ? 52 : 30,
+              rotationY: desktop ? 5 : 0,
+              scale: 0.975,
+              autoAlpha: 0,
+              stagger: 0.09,
+              duration: 0.76,
+              ease: 'power3.out',
+              transformPerspective: 900,
+              clearProps: 'transform,opacity,visibility',
+            },
+            '<0.18',
+          )
+        }
       })
-    })
 
-    const projectTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: projectScene,
-        start: 'top 50%',
-        end: '+=1050',
-        scrub: 1,
-        pin: true,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onEnter: () => storyOrbLabel && (storyOrbLabel.textContent = 'PRJ'),
-        onEnterBack: () => storyOrbLabel && (storyOrbLabel.textContent = 'PRJ'),
-        onLeaveBack: () => activateRoute(4),
-      },
-    })
-    projectTimeline
-      .to('.project-scene__image', {scale: 1.3, xPercent: -8, yPercent: -9, ease: 'none'}, 0)
-      .fromTo('.project-scene__content', {y: 160, opacity: .2}, {y: 0, opacity: 1, ease: 'none'}, 0)
-      .fromTo('.project-scene .chapter-heading h2', {scale: .7, y: 90, transformOrigin: 'left center'}, {scale: 1, y: 0, ease: 'back.out(1.35)'}, 0)
-      .fromTo('.project-list article', {y: 90, opacity: .1}, {y: 0, opacity: 1, stagger: .12, ease: 'power2.out'}, .2)
-      .to('.project-scene__shade', {opacity: .42, ease: 'none'}, 0)
-      .to('.story-orb span', {rotation: 320, ease: 'none'}, 0)
+      gsap.fromTo(
+        '.projects-section__image',
+        { scale: 1.14, xPercent: -2, yPercent: -2 },
+        {
+          scale: 1.08,
+          xPercent: 2,
+          yPercent: 2,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.projects-section',
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 0.8,
+          },
+        },
+      )
 
-    gsap.to('.story-orb span', {
-      rotation: 360,
-      ease: 'none',
-      scrollTrigger: {trigger: '.journey', start: 'top 50%', end: 'top 10%', scrub: 1},
-    })
+      gsap.fromTo(
+        '.community-section__image',
+        { scale: 1.12, xPercent: 2 },
+        {
+          scale: 1.08,
+          xPercent: -2,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.community-section',
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 0.8,
+          },
+        },
+      )
 
-    gsap.fromTo('.journey-line li', {y: 90, opacity: .2}, {
-      y: 0,
-      opacity: 1,
-      stagger: .16,
-      ease: 'power2.out',
-      scrollTrigger: {
-        trigger: '.journey-line', start: 'top 50%', end: 'top 10%', scrub: 1,
-        onEnter: () => storyOrbLabel && (storyOrbLabel.textContent = '30D'),
-        onEnterBack: () => storyOrbLabel && (storyOrbLabel.textContent = '30D'),
-      },
-    })
-    gsap.fromTo('.gains article', {y: 70, opacity: .2}, {
-      y: 0,
-      opacity: 1,
-      stagger: .12,
-      ease: 'power2.out',
-      scrollTrigger: {
-        trigger: '.gains', start: 'top 50%', end: 'top 10%', scrub: 1,
-        onEnter: () => storyOrbLabel && (storyOrbLabel.textContent = 'GAIN'),
-        onEnterBack: () => storyOrbLabel && (storyOrbLabel.textContent = 'GAIN'),
-      },
-    })
-    gsap.to('.story-orb span', {
-      rotation: 410,
-      ease: 'none',
-      scrollTrigger: {trigger: '.gains-scene', start: 'top 50%', end: 'top 10%', scrub: 1},
-    })
-    gsap.fromTo('.community-story__image', {scale: 1.14, xPercent: 6}, {
-      scale: 1.02,
-      xPercent: -4,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: '.community-story', start: 'top 50%', end: 'bottom top', scrub: 1,
-        onEnter: () => storyOrbLabel && (storyOrbLabel.textContent = 'TEAM'),
-        onEnterBack: () => storyOrbLabel && (storyOrbLabel.textContent = 'TEAM'),
-      },
-    })
-    gsap.fromTo('.community-story h2', {scale: .76, y: 100, opacity: .2, transformOrigin: 'left center'}, {
-      scale: 1,
-      y: 0,
-      opacity: 1,
-      ease: 'back.out(1.35)',
-      scrollTrigger: {trigger: '.community-story', start: 'top 50%', end: 'top 10%', scrub: .8},
-    })
-    gsap.to('.story-orb span', {
-      rotation: 470,
-      ease: 'none',
-      scrollTrigger: {trigger: '.community-story', start: 'top 50%', end: 'top 10%', scrub: 1},
-    })
-    gsap.fromTo('.final-cta h2', {scale: .78, y: 90, opacity: .2}, {
-      scale: 1,
-      y: 0,
-      opacity: 1,
-      ease: 'back.out(1.35)',
-      scrollTrigger: {
-        trigger: '.final-cta', start: 'top 50%', end: 'top 10%', scrub: .8,
-        onEnter: () => storyOrbLabel && (storyOrbLabel.textContent = 'JOIN'),
-        onEnterBack: () => storyOrbLabel && (storyOrbLabel.textContent = 'JOIN'),
-      },
-    })
-    gsap.to('.story-orb span', {
-      rotation: 540,
-      ease: 'none',
-      scrollTrigger: {trigger: '.final-cta', start: 'top 50%', end: 'top 10%', scrub: 1},
-    })
-    ScrollTrigger.refresh()
-  }, pageRoot.value)
+      gsap.from('.journey-item__marker i', {
+        scale: 0,
+        duration: 0.6,
+        stagger: 0.12,
+        ease: 'back.out(1.7)',
+        transformOrigin: 'center',
+        scrollTrigger: {
+          trigger: '.journey-list',
+          start: 'top 78%',
+          once: true,
+        },
+      })
+
+      gsap
+        .timeline({
+          scrollTrigger: {
+            trigger: '.final-section',
+            start: 'top 76%',
+            once: true,
+          },
+        })
+        .from('.final-section > img', { scale: 0.6, rotation: -12, autoAlpha: 0, duration: 0.7 })
+        .from('.final-section .apple-kicker', { y: 18, autoAlpha: 0, duration: 0.45 }, '<0.18')
+        .from('.final-section h2', { y: 64, scale: 0.95, autoAlpha: 0, duration: 0.85 }, '<0.12')
+        .from(
+          '.final-section > p:not(.apple-kicker)',
+          { y: 24, autoAlpha: 0, duration: 0.55 },
+          '<0.2',
+        )
+        .from('.final-section .apple-button', { y: 20, autoAlpha: 0, duration: 0.5 }, '<0.16')
+    },
+    pageRoot.value,
+  )
+
+  ScrollTrigger.refresh()
 }
 
 onMounted(async () => {
-  window.scrollTo(0, 0)
-  window.addEventListener('scroll', onScroll, {passive: true})
-  updateScrollStory()
-
-  await nextTick()
-  ScrollTrigger.getAll().forEach(st => st.kill(false))
-  setupGsapMotion()
-  ScrollTrigger.refresh()
+  resetPageScroll()
+  document.documentElement.classList.add('about-page-active')
 
   const [homeResult, appsResult] = await Promise.allSettled([
     siteApi.clubHome(),
-    siteApi.showcaseApps({page: 1, pageSize: 3}),
+    siteApi.showcaseApps({ page: 1, pageSize: 3 }),
   ])
   if (homeResult.status === 'fulfilled') {
-    club.value = homeResult.value?.club || {}
     metrics.value = homeResult.value?.metrics || []
     focusAreas.value = homeResult.value?.focusAreas || []
   }
-  if (appsResult.status === 'fulfilled') showcaseApps.value = appsResult.value?.list || appsResult.value || []
-  await nextTick()
-  if (!reducedMotion && 'IntersectionObserver' in window) {
-    routeObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) entry.target.classList.add('is-visible')
-      })
-    }, {threshold: 0, rootMargin: '-49% 0px -49% 0px'})
-    routeStoryRefs.value.forEach((item) => routeObserver?.observe(item))
-  } else {
-    routeStoryRefs.value.forEach((item) => item.classList.add('is-visible'))
+  if (appsResult.status === 'fulfilled') {
+    showcaseApps.value = appsResult.value?.list || appsResult.value || []
   }
-  updateScrollStory()
 
-  setTimeout(() => {
+  await nextTick()
+  resetPageScroll()
+  setupMotion()
+  scrollResetFrame = window.requestAnimationFrame(() => {
+    resetPageScroll()
     ScrollTrigger.refresh()
-  }, 600)
+  })
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', onScroll)
-  if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
-  routeObserver?.disconnect()
-  motionContext?.revert()
+  if (scrollResetFrame !== undefined) window.cancelAnimationFrame(scrollResetFrame)
+  motionMatchMedia?.revert()
+  document.documentElement.classList.remove('about-page-active')
 })
 </script>
 
 <style scoped>
-.expedition-page {
-  --bg: var(--oa-page-bg);
-  --bg-soft: var(--oa-page-soft-bg);
-  --surface: var(--oa-elevated-bg);
-  --surface-strong: var(--oa-dark-tile);
-  --mint: var(--oa-primary);
-  --mint-strong: var(--oa-primary-dark);
-  --cyan: var(--oa-muted-strong);
-  --text: var(--oa-text);
-  --muted: var(--oa-muted);
-  --line: var(--oa-border);
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-  font-family: Inter, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+:global(html.about-page-active) {
+  scrollbar-width: none;
 }
 
-.expedition-page * {
+:global(html.about-page-active::-webkit-scrollbar) {
+  display: none;
+}
+
+.about-page {
+  --apple-bg: #ffffff;
+  --apple-bg-soft: #f5f5f7;
+  --apple-bg-elevated: #fbfbfd;
+  --apple-ink: #1d1d1f;
+  --apple-muted: #6e6e73;
+  --apple-faint: #86868b;
+  --apple-blue: #0066cc;
+  --apple-blue-hover: #0077ed;
+  --apple-line: rgba(29, 29, 31, 0.12);
+  --apple-on-dark-primary: #f5f5f7;
+  --apple-on-dark-secondary: rgba(245, 245, 247, 0.78);
+  --apple-on-dark-tertiary: rgba(245, 245, 247, 0.58);
+  --apple-on-dark-accent: #79bfff;
+  --apple-radius: 24px;
+  --apple-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 18px 50px rgba(0, 0, 0, 0.08);
+  min-height: 100vh;
+  overflow: clip;
+  background: var(--apple-bg);
+  color: var(--apple-ink);
+  font-family: 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+.about-page *,
+.about-page *::before,
+.about-page *::after {
   box-sizing: border-box;
 }
 
-.expedition-page button, .expedition-page a {
+.about-page button,
+.about-page summary {
   font: inherit;
 }
 
-.section-shell {
-  width: min(1180px, calc(100% - 96px));
+.about-shell {
+  width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
 }
 
-.expedition-header {
-  position: fixed;
-  z-index: 100;
-  top: 20px;
-  right: 4vw;
-  left: 4vw;
-  display: flex;
-  align-items: center;
-  min-height: 56px;
-  padding: 0 12px 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 18px;
-  background: rgba(5, 11, 26, 0.88);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text);
-  text-decoration: none;
-}
-
-.brand img {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-}
-
-.brand span {
-  display: grid;
-  gap: 1px;
-}
-
-.brand strong {
-  font-size: 12px;
-  letter-spacing: 0.12em;
-}
-
-.brand small {
-  color: var(--muted);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-}
-
-.expedition-header nav {
-  display: flex;
-  gap: 26px;
-  margin-left: auto;
-}
-
-.expedition-header nav a {
-  color: var(--muted);
-  font-size: 12px;
-  text-decoration: none;
-  transition: color 180ms ease;
-}
-
-.expedition-header nav a:hover {
-  color: var(--mint);
-}
-
-.header-cta, .button {
-  border: 0;
-  cursor: pointer;
-  transition: transform 180ms ease, background 180ms ease, color 180ms ease;
-}
-
-.header-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-left: 28px;
-  min-height: 38px;
-  padding: 0 18px;
-  border-radius: 999px;
-  background: var(--mint);
-  color: #06112c;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.header-cta:hover, .button:hover {
-  transform: translateY(-2px);
-}
-
-.header-cta:focus-visible, .button:focus-visible {
-  outline: 2px solid var(--mint);
-  outline-offset: 4px;
-}
-
-.chapter-rail {
-  position: fixed;
-  z-index: 60;
-  top: 50%;
-  left: 26px;
-  display: grid;
-  gap: 13px;
-  transform: translateY(-50%);
-}
-
-.chapter-rail::before, .chapter-rail::after {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  top: 28px;
-  left: 3px;
-  width: 1px;
-  height: 72px;
-  background: rgba(255, 255, 255, .12);
-}
-
-.chapter-rail::after {
-  height: calc(72px * var(--story-progress, 0));
-  background: var(--mint);
-}
-
-.chapter-rail__label {
-  color: rgba(255, 255, 255, .34);
-  font: 8px/1 ui-monospace, monospace;
-  letter-spacing: .18em;
-  writing-mode: vertical-rl;
-}
-
-.chapter-rail button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: rgba(255, 255, 255, .32);
-  cursor: pointer;
-}
-
-.chapter-rail button i {
-  width: 7px;
-  height: 7px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-}
-
-.chapter-rail button span {
-  font: 9px/1 ui-monospace, monospace;
-  opacity: 0;
-  transition: opacity 180ms ease;
-}
-
-.chapter-rail button.active {
-  color: var(--mint);
-}
-
-.chapter-rail button.active i {
-  background: var(--mint);
-  box-shadow: 0 0 0 5px rgba(114, 184, 255, .14);
-}
-
-.chapter-rail button.active span {
-  opacity: 1;
-}
-
-.hero {
+.about-hero {
   position: relative;
   min-height: 100svh;
   display: flex;
   align-items: center;
   overflow: hidden;
   isolation: isolate;
-  background: var(--surface-strong);
+  background: #050506;
+  color: #fff;
 }
 
-.hero__bg {
+.about-hero__image,
+.projects-section__image,
+.community-section__image {
   position: absolute;
-  inset: -20px;
-
-  width: calc(100% + 40px);
-  height: calc(100% + 40px);
-
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
   object-fit: cover;
-
-  transform: scale(1.05);
-
-  z-index:0;
-  pointer-events:none;
 }
 
-.hero__image, .project-scene__image, .community-story__image {
+.about-hero__veil {
   position: absolute;
-  inset: -8%;
-  width: 116%;
-  height: 116%;
-  object-fit: cover;
-  will-change: transform;
-}
-
-.parallax-layer {
-  transform: translate3d(0, var(--parallax-y, 0px), 0) scale(1.08);
-}
-
-.hero__shade, .project-scene__shade, .community-story__shade {
-  position: absolute;
-  z-index: 5;
+  z-index: 1;
   inset: 0;
   pointer-events: none;
-  background: rgba(4, 22, 52, 0.52);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(5, 5, 6, 0.82) 0%,
+      rgba(5, 5, 6, 0.58) 38%,
+      rgba(5, 5, 6, 0.2) 68%,
+      rgba(5, 5, 6, 0.08) 100%
+    ),
+    linear-gradient(180deg, rgba(5, 5, 6, 0.08) 42%, rgba(5, 5, 6, 0.56) 100%);
 }
 
-.topo-texture {
-  position: absolute;
-  inset: auto -4% -4% auto;
-  width: 52%;
-  height: 46%;
-  opacity: .18;
-  background: url('/recruitment-atlas.png') center/cover no-repeat;
-  filter: invert(1) hue-rotate(70deg);
-  mix-blend-mode: screen;
-}
-
-.hero__content {
+.about-hero__content {
   position: relative;
-  z-index: 999;
-
-  width: min(1200px, 90vw);
-
-  margin-left: 8vw;
-  margin-right: 0;
-
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  z-index: 2;
+  padding: 64px 0 48px;
 }
 
-.eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+.apple-kicker {
   margin: 0 0 22px;
-  color: var(--mint);
-  font: 700 11px/1.3 ui-monospace, SFMono-Regular, monospace;
-  letter-spacing: .12em;
+  color: var(--apple-faint);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.hero h1, .chapter-heading h2, .community-story h2, .process h2, .faq h2, .final-cta h2 {
+.about-hero .apple-kicker {
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.about-hero h1,
+.section-heading h2,
+.route-story__intro h2,
+.community-section h2,
+.final-section h2 {
   margin: 0;
-  letter-spacing: -.045em;
+  font-family: 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
 }
 
-.hero h1 {
-  max-width: 750px;
-  font-size: clamp(60px, 7vw, 108px);
-  line-height: .98;
+.about-hero h1 {
+  max-width: 850px;
+  font-size: clamp(58px, 7.6vw, 112px);
+  line-height: 0.98;
 }
 
-.hero h1 em, .community-story h2 em, .final-cta h2 em {
-  color: var(--mint);
-  font-style: normal;
+.about-hero h1 span {
+  display: block;
 }
 
-.hero__lead {
-  max-width: 640px;
-  margin: 34px 0 0;
-  color: #c1cbca;
-  font-size: 17px;
-  line-height: 1.9;
+.about-hero h1 span:last-child {
+  color: rgba(255, 255, 255, 0.62);
 }
 
-.hero__promise {
+.about-hero__lead {
   max-width: 620px;
-  margin: 18px 0 0;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-  color: var(--oa-muted-strong);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.hero__actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 36px;
-}
-
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-height: 50px;
-  padding: 0 24px;
-  border-radius: 999px;
-  font-weight: 700;
-}
-
-.button--primary {
-  background: var(--mint);
-  color: #06112c;
-  box-shadow: 0 16px 40px rgba(64, 221, 136, .18);
-}
-
-.button--ghost {
-  border: 1px solid rgba(255, 255, 255, .18);
-  background: rgba(5, 11, 26, .58);
-  color: var(--text);
-}
-
-.button--ghost:hover {
-  border-color: var(--mint);
-  color: var(--mint);
-}
-
-.hero__metrics {
-  display: flex;
-  gap: 50px;
-  margin-top: 54px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, .14);
-  width: min(620px, 100%);
-}
-
-.hero__metrics div {
-  display: grid;
-  gap: 5px;
-}
-
-.hero__metrics strong {
-  font-size: 25px;
-}
-
-.hero__metrics span {
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.hero__start {
-  position: absolute;
-  z-index: 3;
-  right: 18%;
-  bottom: 28%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--mint);
-}
-
-.hero__start > svg {
-  padding: 12px;
-  width: 46px;
-  height: 46px;
-  border: 1px solid var(--mint);
-  border-radius: 50%;
-  background: rgba(5, 11, 26, .78);
-  box-shadow: 0 0 0 12px rgba(114, 184, 255, .08);
-}
-
-.hero__start span {
-  display: grid;
-  gap: 3px;
-}
-
-.hero__start b {
-  font: 700 11px/1 ui-monospace, monospace;
-}
-
-.hero__start small {
-  color: #c1cbca;
-  font-size: 10px;
-}
-
-.scroll-hint {
-  position: absolute;
-  z-index: 3;
-  left: 50%;
-  bottom: 28px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transform: translateX(-50%);
-  border: 0;
-  background: transparent;
-  color: rgba(255, 255, 255, .48);
-  font: 10px/1 ui-monospace, monospace;
-  letter-spacing: .12em;
-  cursor: pointer;
-}
-
-.routes, .journey {
-  min-height: 100svh;
-  padding: 150px 0;
-  background: var(--bg);
-}
-
-.routes {
-  padding-bottom: 0;
-}
-
-.journey {
-  display: flex;
-  align-items: center;
-}
-
-.routes > .section-shell {
-  padding-top: 26px;
-}
-
-.chapter-heading {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 760px);
-  align-items: start;
-  gap: 30px;
-  margin-bottom: 72px;
-}
-
-.chapter-number {
-  color: rgba(114, 184, 255, .18);
-  font: 700 118px/.8 ui-monospace, monospace;
-  letter-spacing: -.08em;
-}
-
-.chapter-heading h2 {
-  font-size: clamp(44px, 4.6vw, 68px);
-  line-height: 1.04;
-}
-
-.chapter-heading > div > p:last-child {
-  max-width: 650px;
-  margin: 22px 0 0;
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 1.8;
-}
-
-.parallax-copy {
-  will-change: transform;
-  transform: translate3d(0, var(--parallax-y, 0px), 0);
-}
-
-.route-story {
-  position: relative;
-  border-top: 1px solid var(--line);
-}
-
-.route-story::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 43px;
-  width: 1px;
-  background: var(--line);
-}
-
-.route-story__stop {
-  position: relative;
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) minmax(360px, .9fr);
-  grid-template-areas:
-    'marker intro mission'
-    'marker nontech result';
-  align-items: center;
-  gap: 36px;
-  min-height: 100svh;
-  padding: 120px 28px 100px 0;
-  border-bottom: 1px solid var(--line);
-  scroll-margin-top: 20px;
-  --reveal-y: 0px;
-  opacity: 1;
-  transform: translate3d(0, var(--parallax-y, 0px), 0);
-  transition: opacity 700ms ease, transform 700ms ease;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.route-story__marker { grid-area: marker; }
-.route-story__intro { grid-area: intro; }
-.route-story__mission { grid-area: mission; }
-.route-story__result { grid-area: result; }
-.route-story__nontech { grid-area: nontech; }
-
-.route-story__stop--2 {
-  grid-template-columns: minmax(360px, .9fr) 120px minmax(0, 1fr);
-  grid-template-areas:
-    'mission marker intro'
-    'result marker nontech';
-}
-
-.route-story__stop--3 {
-  grid-template-columns: 180px minmax(0, 1fr) minmax(300px, .7fr);
-  grid-template-areas:
-    'marker intro mission'
-    'marker result nontech';
-}
-
-.route-story__stop--4 {
-  grid-template-columns: minmax(0, 1fr) 120px minmax(360px, .9fr);
-  grid-template-areas:
-    'intro marker mission'
-    'nontech marker result';
-}
-
-.route-story__stop--5 {
-  grid-template-columns: 120px minmax(0, .85fr) minmax(360px, 1.1fr);
-  grid-template-areas:
-    'marker intro mission'
-    'marker result nontech';
-}
-
-.route-story__stop--2 .route-story__mission {
-  border-left-color: var(--cyan);
-  padding-left: 28px;
-}
-
-.route-story__stop--3 .route-story__mission {
-  border-left: 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  padding: 18px 0;
-}
-
-.route-story__stop--4 .route-story__result {
-  justify-self: end;
-  text-align: right;
-}
-
-.route-story__stop--5 .route-story__nontech {
-  background: transparent;
-  border-color: rgba(114, 184, 255, .3);
-}
-
-.route-story__stop::after {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: 8% -10% -18% 34%;
-  background: url('/recruitment-atlas.png') center / cover no-repeat;
-  opacity: .055;
-  filter: invert(1) hue-rotate(140deg);
-  pointer-events: none;
-}
-
-.route-story__stop > * {
-  position: relative;
-  z-index: 1;
-}
-
-.route-story__stop:nth-child(odd) {
-  background: var(--bg);
-}
-
-.route-story__stop:nth-child(even) {
-  background: transparent;
-}
-
-.route-story__stop.is-visible {
-  --reveal-y: 0px;
-  opacity: 1;
-}
-
-.route-story__stop:nth-child(even) {
-  margin-left: 0;
-}
-
-.route-story__marker {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  justify-items: center;
-  gap: 20px;
-  color: var(--mint);
-}
-
-.route-story__marker::before {
-  content: '';
-  position: absolute;
-  top: 23px;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--mint);
-  border-radius: 50%;
-  background: var(--bg);
-  box-shadow: 0 0 0 9px rgba(114, 184, 255, .08);
-}
-
-.route-story__marker svg {
-  position: relative;
-  margin-top: 2px;
-}
-
-.route-story__marker span, .route-story__intro small {
-  color: var(--mint);
-  font: 10px/1 ui-monospace, monospace;
-  letter-spacing: .1em;
-}
-
-.route-story__intro h3 {
-  margin: 13px 0 12px;
-  font-size: clamp(44px, 4.5vw, 68px);
-  line-height: 1;
-  letter-spacing: -.045em;
-}
-
-.route-story__intro p, .route-story__mission > p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.75;
-}
-
-.route-story__details {
-  display: grid;
-  gap: 14px;
-  margin: 30px 0 0;
-}
-
-.route-story__details > div {
-  display: grid;
-  grid-template-columns: 116px 1fr;
-  gap: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-
-.route-story__details dt {
-  color: var(--oa-faint);
-  font: 9px/1.5 ui-monospace, SFMono-Regular, monospace;
-  letter-spacing: .08em;
-}
-
-.route-story__details dd {
-  margin: 0;
-  color: var(--oa-muted-strong);
-  font-size: 12px;
-  line-height: 1.65;
-}
-
-.route-story__mission {
-  padding: 18px 0 18px 24px;
-  border-left: 2px solid var(--mint);
-  background: transparent;
-}
-
-.route-story__mission > span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--mint);
-  font: 700 10px/1 ui-monospace, monospace;
-  letter-spacing: .08em;
-}
-
-.route-story__mission > p {
-  margin-top: 16px;
-  color: #c7d0ce;
-  font-size: 16px;
-}
-
-.route-story__mission ol {
-  display: grid;
-  gap: 9px;
-  margin: 19px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.route-story__mission li {
-  display: flex;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.route-story__mission li b {
-  color: var(--mint);
-  font: 9px/1.5 ui-monospace, monospace;
-}
-
-.route-story__result {
-  display: flex;
-  gap: 13px;
-  color: var(--mint);
-}
-
-.route-story__result span {
-  display: grid;
-  gap: 7px;
-}
-
-.route-story__result small {
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.5;
-}
-
-.route-story__result strong {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.route-story__nontech {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  max-width: 660px;
-  padding: 18px 0 0;
-  border-top: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.route-story__nontech svg {
-  flex: 0 0 auto;
-  color: var(--cyan);
-  margin-top: 2px;
-}
-
-.route-story__nontech span {
-  display: grid;
-  gap: 5px;
-}
-
-.route-story__nontech b {
-  color: var(--cyan);
-  font-size: 11px;
-}
-
-.project-scene {
-  position: relative;
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-}
-
-.project-scene__shade {
-  background: rgba(4, 18, 43, .58);
-}
-
-.project-scene__content {
-  position: relative;
-  z-index: 6;
-}
-
-.chapter-heading--light {
-  margin-bottom: 54px;
-}
-
-.chapter-heading--light > div > p:last-child {
-  color: #c0cac8;
-}
-
-.project-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin-left: 180px;
-  border-top: 1px solid rgba(255, 255, 255, .14);
-  border-bottom: 1px solid rgba(255, 255, 255, .14);
-  background: rgba(5, 11, 26, .82);
-  backdrop-filter: blur(16px);
-}
-
-.project-list article {
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 28px;
-  border-right: 1px solid rgba(255, 255, 255, .12);
-}
-
-.project-list article:last-child {
-  border-right: 0;
-}
-
-.project-list article > span, .project-list article > small {
-  color: var(--mint);
-  font: 9px/1.4 ui-monospace, monospace;
-  letter-spacing: .08em;
-}
-
-.project-list article > svg {
-  margin: 34px 0 18px;
-  color: var(--mint);
-}
-
-.project-list h3 {
-  margin: 0 0 12px;
-  font-size: 21px;
-}
-
-.project-list p {
-  margin: 0;
-  color: #bac5c3;
-  font-size: 13px;
-  line-height: 1.75;
-}
-
-.project-list article > strong {
-  margin: 22px 0 0;
-  padding-top: 18px;
-  border-top: 1px solid rgba(255, 255, 255, .16);
-  color: #f5f5f7;
-  font-size: 12px;
+  margin: 32px 0 0;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1.6;
 }
 
-.project-list article > small {
-  margin-top: auto;
-}
-
-.journey-line {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--line);
-}
-
-.journey-line li {
-  position: relative;
-  padding: 28px 28px 34px 0;
-}
-
-.journey-line li:not(:last-child) {
-  border-right: 1px solid var(--line);
-  margin-right: 28px;
-}
-
-.journey-line__day {
-  color: var(--mint);
-  font: 700 11px/1 ui-monospace, monospace;
-}
-
-.journey-line i {
-  display: block;
-  width: 9px;
-  height: 9px;
-  margin: -34px 0 36px;
-  border-radius: 50%;
-  background: var(--mint);
-  box-shadow: 0 0 0 7px rgba(114, 184, 255, .12);
-}
-
-.journey-line small {
-  color: var(--muted);
-  font: 9px/1 ui-monospace, monospace;
-  letter-spacing: .12em;
-}
-
-.journey-line h3 {
-  margin: 16px 0 12px;
-  font-size: 24px;
-}
-
-.journey-line p {
-  min-height: 72px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.75;
-}
-
-.journey-line b {
-  display: block;
-  margin-top: 20px;
-  color: var(--mint);
-  font-size: 12px;
-}
-
-.gains {
-  width: 100%;
-  margin: 0;
-}
-
-.gains-scene {
-  min-height: 100svh;
+.about-hero__actions {
   display: flex;
   align-items: center;
-  background: var(--surface);
+  gap: 22px;
+  margin-top: 38px;
 }
 
-.gains h2 {
-  margin: 0;
-  font-size: clamp(44px, 4.6vw, 68px);
-  letter-spacing: -.045em;
-}
-
-.gains > div {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin-top: 30px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-
-.gains article {
-  min-height: 220px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 28px;
-  border-right: 1px solid var(--line);
-}
-
-.gains article:last-child {
-  border-right: 0;
-}
-
-.gains svg {
-  color: var(--mint);
-}
-
-.gains strong {
-  margin: 26px 0 10px;
-  font-size: 16px;
-}
-
-.gains article p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.community-story {
-  position: relative;
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-}
-
-.community-story__shade {
-  background: rgba(4, 18, 43, .42);
-}
-
-.community-story__copy {
-  position: relative;
-  z-index: 6;
-  width: min(1180px, calc(100% - 96px));
-  margin: 0 auto;
-}
-
-.community-story h2 {
-  max-width: 700px;
-  font-size: clamp(48px, 5vw, 76px);
-  line-height: 1.05;
-}
-
-.community-story blockquote {
-  max-width: 540px;
-  margin: 44px 0 16px;
-  padding-left: 24px;
-  border-left: 2px solid var(--mint);
-  color: #d3d9d8;
-  font-size: 15px;
-  line-height: 1.9;
-}
-
-.community-story__copy > span {
-  color: var(--mint);
-  font: 10px/1 ui-monospace, monospace;
-}
-
-.process {
-  padding: 140px 0;
-  background: var(--surface);
-}
-
-.process__heading {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
-  align-items: end;
-}
-
-.process h2, .faq h2 {
-  font-size: clamp(48px, 5vw, 76px);
-}
-
-.process__heading p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 1.8;
-}
-
-.process__values {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin-top: 48px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-
-.process__values span {
-  padding: 18px 0;
-  color: var(--oa-muted-strong);
-  font-size: 12px;
-  text-align: center;
-}
-
-.process__values span:not(:last-child) {
-  border-right: 1px solid var(--line);
-}
-
-.process ol {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  padding: 0;
-  margin: 64px 0 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  list-style: none;
-}
-
-.process li {
-  min-height: 150px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 24px;
-  border-right: 1px solid var(--line);
-}
-
-.process li:last-child {
-  border-right: 0;
-}
-
-.process li > span {
-  color: var(--mint);
-  font: 11px/1 ui-monospace, monospace;
-}
-
-.process li div {
-  display: grid;
-  gap: 8px;
-}
-
-.process li small {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.5;
-}
-
-.process li > svg {
-  margin-left: auto;
-  color: rgba(255, 255, 255, .3);
-}
-
-.process__cta {
-  margin-top: 36px;
-}
-
-.faq {
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-  padding: 140px 0;
-}
-
-.faq__layout {
-  display: grid;
-  grid-template-columns: .8fr 1.2fr;
-  gap: 100px;
-}
-
-.faq__list {
-  border-top: 1px solid var(--line);
-}
-
-.faq article {
-  border-bottom: 1px solid var(--line);
-}
-
-.faq article {
-  padding: 18px 0;
-}
-
-.faq__question {
-  display: grid;
-  grid-template-columns: 48px 1fr;
-  align-items: center;
-  gap: 12px;
-  color: var(--text);
-}
-
-.faq__question > span {
-  color: var(--mint);
-  font: 10px/1 ui-monospace, monospace;
-}
-
-.faq__question strong {
-  font-size: 16px;
-}
-
-.faq article p {
-  margin: 10px 0 0;
-  padding-left: 60px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.65;
-}
-
-.final-cta {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+.apple-button,
+.apple-link {
+  display: inline-flex;
+  min-height: 48px;
   align-items: center;
   justify-content: center;
-  padding: 150px 24px;
-  background: var(--surface-strong);
-  text-align: center;
+  gap: 8px;
+  border: 0;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
 }
 
-.final-cta h2 {
-  font-size: clamp(54px, 6vw, 88px);
-  line-height: 1.02;
+.apple-button {
+  padding: 0 23px;
+  border-radius: 999px;
+  transition:
+    transform 180ms ease,
+    background 180ms ease;
 }
 
-.final-cta > p:not(.eyebrow) {
-  margin: 28px 0 34px;
-  color: var(--muted);
+.apple-button:hover {
+  transform: translateY(-2px);
 }
 
-footer {
-  display: flex;
-  justify-content: space-between;
-  padding: 24px 5vw;
-  border-top: 1px solid rgba(255, 255, 255, .08);
-  color: rgba(255, 255, 255, .36);
-  font: 9px/1 ui-monospace, monospace;
-  letter-spacing: .12em;
-}
-
-/* Home visual language: no photo collage and no floating content cards. */
-.story-orb {
-  position: fixed;
-  z-index: 30;
-  top: 50%;
-  right: clamp(22px, 4vw, 64px);
-  width: 112px;
-  aspect-ratio: 1;
-  border: 1px solid color-mix(in srgb, var(--oa-text) 14%, transparent);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--oa-elevated-bg) 82%, transparent);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, .1);
-  backdrop-filter: blur(18px) saturate(1.2);
-  pointer-events: none;
-  transform: translateY(-50%);
-  will-change: transform, opacity;
-}
-
-.story-orb::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: conic-gradient(var(--oa-text) calc(var(--story-progress, 0) * 1turn), transparent 0);
-  -webkit-mask: radial-gradient(circle, transparent 65%, #000 66% 69%, transparent 70%);
-  mask: radial-gradient(circle, transparent 65%, #000 66% 69%, transparent 70%);
-}
-
-.story-orb span {
-  position: absolute;
-  inset: 13px;
-  border: 1px solid color-mix(in srgb, var(--oa-text) 22%, transparent);
-  border-radius: 50%;
-}
-
-.story-orb span::before {
-  content: '';
-  position: absolute;
-  top: -4px;
-  left: 50%;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--oa-text);
-  transform: translateX(-50%);
-}
-
-.story-orb b {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--oa-text);
-  font: 700 12px/1 ui-monospace, SFMono-Regular, monospace;
-  letter-spacing: .14em;
-}
-
-.hero {
-  background: var(--oa-hero-gradient);
-  color: #fff;
-}
-
-.hero__canvas {
-  background: var(--oa-hero-gradient);
-}
-
-.hero__canvas::before {
-  display: none;
-}
-
-.hero__canvas::after {
-  display: none;
-}
-
-.hero__shade {
-  background:
-    linear-gradient(180deg, rgba(3, 12, 27, .5) 0%, rgba(3, 12, 27, .32) 68%, rgba(3, 12, 27, .2) 100%),
-    linear-gradient(90deg, rgba(3, 12, 27, .88) 0%, rgba(3, 12, 27, .72) 30%, rgba(3, 12, 27, .18) 64%, transparent 82%);
-}
-
-.topo-texture {
-  display: none;
-}
-
-.community-story h2 em {
-  color: transparent;
-  background: linear-gradient(105deg, var(--oa-text) 0 28%, var(--oa-faint) 46%, #b8b8bd 54%, var(--oa-text) 72% 100%);
-  background-size: 220% auto;
-  background-position: 100% center;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.hero h1 em {
-  color: transparent;
-  background: linear-gradient(105deg, #fff 0 28%, #cbd5e1 46%, #94a3b8 54%, #fff 72% 100%);
-  background-size: 220% auto;
-  background-position: 100% center;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.route-story__intro h3 {
-  color: transparent;
-  background: linear-gradient(105deg, var(--oa-text) 0 32%, var(--oa-faint) 48%, var(--oa-text) 66% 100%);
-  background-size: 220% auto;
-  background-position: 100% center;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.eyebrow {
-  color: var(--muted);
-}
-
-.hero .eyebrow,
-.hero__lead,
-.hero__metrics span,
-.hero__start small {
-  color: rgba(255, 255, 255, .82);
-}
-
-.button--primary {
-  background: var(--oa-active-bg);
-  color: var(--oa-active-text);
-  box-shadow: none;
-}
-
-.button--primary:hover {
-  background: var(--oa-active-hover-bg);
-}
-
-.button--ghost {
-  border-color: var(--oa-button-border);
-  background: color-mix(in srgb, var(--oa-button-bg) 72%, transparent);
-  color: var(--oa-button-text);
-  backdrop-filter: blur(12px);
-}
-
-.button--ghost:hover {
-  border-color: var(--oa-button-hover-border);
-  background: var(--oa-button-hover-bg);
-  color: var(--oa-button-hover-text);
-}
-
-.hero__metrics {
-  border-top-color: var(--line);
-}
-
-.hero__start, .hero__start > svg {
-  color: var(--text);
-  border-color: var(--oa-border-strong);
-}
-
-.hero__start > svg {
-  background: color-mix(in srgb, var(--oa-button-bg) 82%, transparent);
-  box-shadow: 0 0 0 12px color-mix(in srgb, var(--text) 5%, transparent);
-}
-
-.scroll-hint {
-  color: var(--oa-faint);
-}
-
-.hero .scroll-hint {
-  color: rgba(255, 255, 255, .72);
-  text-shadow: 0 1px 12px rgba(0, 0, 0, .45);
-}
-
-.chapter-rail {
-  color: #fff;
-  mix-blend-mode: difference;
-}
-
-.chapter-number {
-  color: color-mix(in srgb, var(--text) 8%, transparent);
-}
-
-.route-story__stop::after {
-  display: none;
-}
-
-.route-story__marker::before {
-  box-shadow: 0 0 0 9px color-mix(in srgb, var(--text) 5%, transparent);
-}
-
-.route-story__mission > p {
-  color: var(--oa-muted-strong);
-}
-
-.project-scene {
-  background: #1d1d1f;
-  color: #f5f5f7;
-}
-
-.project-scene__canvas {
-  background: #1d1d1f;
-}
-
-.project-scene__shade {
-  background: linear-gradient(90deg, rgba(29, 29, 31, .94), rgba(29, 29, 31, .28));
-}
-
-.project-scene .eyebrow, .project-scene .chapter-number {
-  color: #a1a1a6;
-}
-
-.chapter-heading--light > div > p:last-child {
-  color: #a1a1a6;
-}
-
-.project-list {
-  border-color: rgba(255, 255, 255, .24);
-  background: transparent;
-  backdrop-filter: none;
-}
-
-.project-list article {
-  border-right-color: rgba(255, 255, 255, .18);
-  color: #f5f5f7;
-}
-
-.project-list article > span, .project-list article > small,
-.project-list article > svg, .project-list p {
-  color: #a1a1a6;
-}
-
-.journey-line i {
-  box-shadow: 0 0 0 7px color-mix(in srgb, var(--text) 7%, transparent);
-}
-
-.gains-scene {
-  background: var(--bg-soft);
-}
-
-.community-story {
-  background: var(--oa-elevated-bg);
-  color: var(--text);
-}
-
-.community-story__canvas {
-  background: var(--oa-elevated-bg);
-}
-
-.community-story__shade {
-  background: linear-gradient(90deg, var(--oa-elevated-bg) 0 58%, transparent 82%);
-}
-
-.community-story blockquote {
-  border-left-color: var(--text);
-  color: var(--oa-muted-strong);
-}
-
-.community-story__copy > span {
-  color: var(--muted);
-}
-
-.process li > svg {
-  color: var(--oa-faint);
-}
-
-.final-cta {
-  color: #f5f5f7;
-}
-
-.final-cta h2 em {
-  color: #a1a1a6;
-}
-
-.final-cta > p:not(.eyebrow) {
-  color: rgba(255, 255, 255, .66);
-}
-
-.final-cta .button--primary {
+.apple-button--light {
   background: #fff;
   color: #1d1d1f;
 }
 
-footer {
-  border-top-color: var(--oa-border);
-  background: var(--oa-page-bg);
-  color: var(--oa-faint);
+.apple-button--dark {
+  background: var(--apple-ink);
+  color: #fff;
 }
 
-.philosophy {
+.apple-link {
+  padding: 0;
+  background: transparent;
+  color: var(--apple-blue);
+}
+
+.apple-link--light {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.about-page button:focus-visible,
+.about-page summary:focus-visible {
+  outline: 3px solid #2997ff;
+  outline-offset: 3px;
+}
+
+.about-hero__metrics {
+  display: flex;
+  gap: clamp(28px, 5vw, 68px);
+  width: min(620px, 100%);
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.about-hero__metrics div {
+  display: grid;
+  gap: 4px;
+}
+
+.about-hero__metrics strong {
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+
+.about-hero__metrics span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
+}
+
+.about-hero__scroll {
+  position: absolute;
+  z-index: 2;
+  bottom: 24px;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  transform: translateX(-50%);
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.56);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.about-section {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: 128px 0;
+}
+
+.about-story,
+.journey-section,
+.faq-section {
+  background: var(--apple-bg);
+}
+
+.routes-section,
+.gains-section,
+.process-section {
+  background: var(--apple-bg-soft);
+}
+
+.section-heading {
+  max-width: 780px;
+  margin-bottom: 64px;
+}
+
+.section-heading h2,
+.community-section h2,
+.final-section h2 {
+  font-size: clamp(44px, 5.4vw, 76px);
+  line-height: 1.05;
+}
+
+.section-heading h2 span,
+.community-section h2 span,
+.final-section h2 span {
+  color: var(--apple-faint);
+}
+
+.section-heading > p:last-child {
+  max-width: 650px;
+  margin: 24px 0 0;
+  color: var(--apple-muted);
+  font-size: 19px;
+  line-height: 1.62;
+}
+
+.story-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 20px;
+}
+
+.story-card {
+  min-height: 420px;
+  padding: 40px;
+  border-radius: var(--apple-radius);
+  overflow: hidden;
+}
+
+.story-card--year {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: var(--apple-ink);
+  color: #fff;
+}
+
+.story-card--year span {
+  color: #a1a1a6;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+}
+
+.story-card--year strong {
+  margin: auto 0;
+  font-size: clamp(86px, 12vw, 150px);
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.story-card p {
+  margin: 0;
+  color: inherit;
+  line-height: 1.65;
+}
+
+.story-card--statement {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: linear-gradient(145deg, #e8f2ff, #f6f8ff 62%, #eee7ff);
+}
+
+.story-card--statement svg {
+  margin-bottom: auto;
+  color: #1877d2;
+}
+
+.story-card--statement h3 {
+  max-width: 500px;
+  margin: 0 0 18px;
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.story-card--statement p {
+  max-width: 520px;
+  color: var(--apple-muted);
+}
+
+.route-story {
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.82fr) minmax(520px, 1.18fr);
+  align-items: center;
+  gap: clamp(56px, 8vw, 130px);
+  padding: 52px 0;
+}
+
+.route-story__intro {
+  position: relative;
+  z-index: 2;
+}
+
+.route-story__intro h2 {
+  font-size: clamp(48px, 5vw, 72px);
+  line-height: 1.04;
+}
+
+.route-story__intro h2 span {
+  color: var(--apple-faint);
+}
+
+.route-story__intro > p:last-of-type {
+  max-width: 410px;
+  margin: 24px 0 0;
+  color: var(--apple-muted);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.route-story__rail {
+  display: grid;
+  gap: 10px;
+  margin: 48px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.route-story__rail-item {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  color: var(--apple-ink);
+  will-change: opacity;
+}
+
+.route-story__rail-item span {
+  width: 20px;
+  color: var(--apple-blue);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.route-story__rail-item strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.route-story__stage {
+  position: relative;
+  min-height: min(70svh, 590px);
+  border-left: 1px solid rgba(29, 29, 31, 0.12);
+}
+
+.route-story__progress {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  overflow: hidden;
+}
+
+.route-story__progress span {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform: scaleY(0);
+  transform-origin: top;
+  background: var(--apple-blue);
+  will-change: transform;
+}
+
+.route-scene {
+  position: absolute;
+  inset: 0 0 0 clamp(42px, 5vw, 76px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.route-scene:first-of-type {
+  opacity: 1;
+  visibility: visible;
+}
+
+.route-scene__number {
+  position: absolute;
+  z-index: -1;
+  top: -0.12em;
+  right: 0;
+  color: var(--apple-blue);
+  font-size: clamp(150px, 17vw, 244px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.09em;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.route-scene__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--apple-blue);
+}
+
+.route-scene__eyebrow span,
+.project-card > span,
+.project-card > small {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+}
+
+.route-scene__opening {
+  max-width: 590px;
+  margin: 34px 0 0;
+  color: var(--apple-muted);
+  font-size: clamp(19px, 2vw, 24px);
+  line-height: 1.55;
+}
+
+.route-scene h3,
+.project-card h3,
+.gain-card h3,
+.journey-item h3 {
+  margin: 12px 0 0;
+  font-size: 28px;
+  letter-spacing: -0.035em;
+}
+
+.route-scene h3 {
+  margin-top: 14px;
+  font-size: clamp(58px, 7vw, 92px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.route-scene__description {
+  max-width: 560px;
+  margin: 20px 0 0;
+  color: var(--apple-muted);
+  line-height: 1.65;
+}
+
+.route-scene__next {
+  display: grid;
+  grid-template-columns: 128px 1fr;
+  gap: 22px;
+  max-width: 590px;
+  margin-top: 38px;
+  padding-top: 22px;
+  border-top: 1px solid var(--apple-line);
+}
+
+.route-scene__next span,
+.route-scene__result span {
+  color: var(--apple-faint);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.route-scene__next p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.route-scene__result {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 20px 0 0;
+  color: var(--apple-blue);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.projects-section,
+.community-section,
+.final-section {
   position: relative;
   min-height: 100svh;
   display: flex;
   align-items: center;
   overflow: hidden;
-  background: var(--surface-strong);
   isolation: isolate;
+  color: #f5f5f7;
 }
 
-.philosophy__orb {
+.projects-section__veil,
+.community-section__veil {
   position: absolute;
-  z-index: 0;
-  top: 50%;
-  right: 8%;
-  width: 440px;
-  height: 440px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(114, 184, 255, 0.12), transparent 70%);
-  filter: blur(60px);
-  transform: translateY(-50%);
+  z-index: 1;
+  inset: 0;
   pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.9),
+    rgba(0, 0, 0, 0.52) 62%,
+    rgba(0, 0, 0, 0.24)
+  );
 }
 
-.philosophy__content {
+.projects-section__content {
+  position: relative;
+  z-index: 2;
+  padding: 128px 0;
+}
+
+.projects-section__veil {
+  background:
+    linear-gradient(90deg, rgba(4, 5, 7, 0.82), rgba(4, 5, 7, 0.58) 58%, rgba(4, 5, 7, 0.3)),
+    linear-gradient(180deg, rgba(4, 5, 7, 0.1), rgba(4, 5, 7, 0.5));
+}
+
+.section-heading--dark {
+  color: var(--apple-on-dark-primary);
+}
+
+.section-heading--dark .apple-kicker {
+  color: var(--apple-on-dark-accent);
+}
+
+.section-heading--dark h2 {
+  color: var(--apple-on-dark-primary);
+}
+
+.section-heading--dark h2 span {
+  color: rgba(245, 245, 247, 0.64);
+}
+
+.section-heading--dark > p:last-child,
+.community-section blockquote {
+  color: var(--apple-on-dark-secondary);
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.project-card {
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(20, 22, 27, 0.78), rgba(9, 10, 13, 0.68));
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(20px) saturate(1.15);
+  transition:
+    transform 260ms ease,
+    border-color 260ms ease,
+    background 260ms ease;
+}
+
+.project-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(255, 255, 255, 0.32);
+  background: linear-gradient(145deg, rgba(28, 31, 38, 0.84), rgba(12, 13, 17, 0.78));
+}
+
+.project-card > span,
+.project-card > small {
+  color: var(--apple-on-dark-tertiary);
+}
+
+.project-card > svg {
+  color: var(--apple-on-dark-accent);
+}
+
+.project-card > svg {
+  margin-top: 36px;
+}
+
+.project-card p {
+  margin: 14px 0 0;
+  color: var(--apple-on-dark-secondary);
+  line-height: 1.65;
+}
+
+.project-card h3,
+.project-card strong {
+  color: var(--apple-on-dark-primary);
+}
+
+.project-card strong {
+  margin-top: 22px;
+  font-size: 13px;
+}
+
+.project-card small {
+  margin-top: auto;
+}
+
+.journey-list {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.journey-list::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  right: 10%;
+  left: 10%;
+  height: 1px;
+  background: var(--apple-line);
+}
+
+.journey-item {
+  position: relative;
+  padding: 0 28px 12px 0;
+}
+
+.journey-item__marker {
+  display: flex;
+  height: 50px;
+  align-items: center;
+  gap: 14px;
+  color: var(--apple-faint);
+  font-size: 11px;
+}
+
+.journey-item__marker i {
   position: relative;
   z-index: 1;
-  width: min(1180px, calc(100% - 96px));
-  margin: 0 auto;
+  width: 12px;
+  height: 12px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--apple-blue);
+  box-shadow: 0 0 0 1px var(--apple-blue);
 }
 
-.philosophy h2 {
+.journey-item > small {
+  color: var(--apple-blue);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.journey-item p,
+.gain-card p {
+  margin: 14px 0 0;
+  color: var(--apple-muted);
+  line-height: 1.65;
+}
+
+.journey-item > strong {
+  display: block;
+  margin-top: 24px;
+  font-size: 13px;
+}
+
+.gains-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.gain-card {
+  min-height: 290px;
+  padding: 34px;
+  border-radius: var(--apple-radius);
+  background: var(--apple-bg);
+}
+
+.gain-card svg {
+  color: var(--apple-blue);
+}
+
+.gain-card h3 {
+  margin-top: 76px;
+}
+
+.community-section__veil {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.86),
+    rgba(0, 0, 0, 0.32) 72%,
+    rgba(0, 0, 0, 0.12)
+  );
+}
+
+.community-section__content {
+  position: relative;
+  z-index: 2;
+  padding: 128px 0;
+}
+
+.community-section h2 {
+  max-width: 760px;
+}
+
+.community-section h2 span {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.community-section blockquote {
+  max-width: 600px;
+  margin: 42px 0 0;
+  padding-left: 22px;
+  border-left: 2px solid rgba(255, 255, 255, 0.72);
+  font-size: 18px;
+  line-height: 1.75;
+}
+
+.community-section__byline {
+  margin-top: 18px;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 12px;
+}
+
+.process-layout,
+.faq-layout {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 88px;
+  align-items: start;
+}
+
+.process-layout .section-heading,
+.faq-layout .section-heading {
+  position: sticky;
+  top: 100px;
+  margin-bottom: 0;
+}
+
+.process-layout .apple-button {
+  margin-top: 32px;
+}
+
+.process-list {
+  display: grid;
+  gap: 12px;
   margin: 0;
-  font-size: clamp(48px, 5vw, 76px);
-  line-height: 1.08;
-  letter-spacing: -.045em;
+  padding: 0;
+  list-style: none;
 }
 
-.philosophy h2 em {
-  color: var(--mint);
-  font-style: normal;
-}
-
-.philosophy__content > p {
-  max-width: 580px;
-  margin: 26px 0 0;
-  color: var(--muted);
-  font-size: 17px;
-  line-height: 1.8;
-}
-
-.founding-year {
-  min-height: 80svh;
+.process-list li {
+  min-height: 112px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 120px 24px;
-  background: var(--bg-soft);
+  gap: 22px;
+  padding: 26px;
+  border-radius: 20px;
+  background: #fff;
 }
 
-.founding-year__content {
-  text-align: center;
+.process-list li > span {
+  color: var(--apple-blue);
+  font-size: 12px;
 }
 
-.founding-year__label {
-  color: var(--mint);
-  font: 700 13px/1 ui-monospace, SFMono-Regular, monospace;
-  letter-spacing: .18em;
+.process-list li div {
+  display: grid;
+  gap: 7px;
 }
 
-.founding-year__number {
-  display: block;
-  margin: 16px 0 18px;
-  font-size: clamp(100px, 16vw, 200px);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -.03em;
-  color: transparent;
-  background: linear-gradient(180deg, var(--text) 0%, var(--oa-muted-strong) 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.process-list li strong {
+  font-size: 18px;
 }
 
-.founding-year__content > p {
-  color: var(--muted);
-  font-size: 16px;
+.process-list li small {
+  color: var(--apple-muted);
+}
+
+.process-list li > svg {
+  margin-left: auto;
+  color: var(--apple-faint);
+}
+
+.faq-list {
+  border-top: 1px solid var(--apple-line);
+}
+
+.faq-list details {
+  border-bottom: 1px solid var(--apple-line);
+}
+
+.faq-list summary {
+  display: grid;
+  grid-template-columns: 38px 1fr 24px;
+  align-items: center;
+  gap: 12px;
+  min-height: 82px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq-list summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-list summary > span {
+  color: var(--apple-blue);
+  font-size: 11px;
+}
+
+.faq-list summary strong {
+  font-size: 17px;
+}
+
+.faq-list summary svg {
+  transition: transform 220ms ease;
+}
+
+.faq-list details[open] summary svg {
+  transform: rotate(45deg);
+}
+
+.faq-list details p {
+  margin: -2px 36px 26px 50px;
+  color: var(--apple-muted);
   line-height: 1.7;
 }
 
-@media (max-width: 960px) {
-  .expedition-header nav {
-    display: none;
+.final-section {
+  min-height: 100svh;
+  flex-direction: column;
+  justify-content: center;
+  padding: 120px 24px;
+  background: linear-gradient(180deg, #1d1d1f, #000);
+  text-align: center;
+}
+
+.final-section > img {
+  margin-bottom: 28px;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.final-section h2 span {
+  color: #a1a1a6;
+}
+
+.final-section > p:not(.apple-kicker) {
+  margin: 26px 0 34px;
+  color: #a1a1a6;
+  font-size: 18px;
+}
+
+.about-footer {
+  display: flex;
+  min-height: 88px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px max(24px, calc((100vw - 1180px) / 2));
+  border-top: 1px solid var(--apple-line);
+  background: #fff;
+  color: var(--apple-faint);
+  font-size: 12px;
+}
+
+.about-footer div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--apple-ink);
+  font-weight: 600;
+}
+
+@media (min-width: 1068px) {
+  .about-section,
+  .projects-section__content,
+  .community-section__content {
+    padding-top: 58px;
+    padding-bottom: 58px;
   }
 
-  .chapter-rail {
-    display: none;
+  .section-heading {
+    margin-bottom: 34px;
   }
 
-  .section-shell, .hero__contenthero__content, .community-story__copy {
-    width: min(100% - 40px, 720px);
+  .routes-section {
+    padding: 0;
   }
 
-  .hero {
-    min-height: 840px;
+  .section-heading h2,
+  .route-story__intro h2,
+  .community-section h2,
+  .final-section h2 {
+    font-size: clamp(44px, 4.4vw, 64px);
   }
 
-  .hero__image {
-    inset: -4% -42% -4% -42%;
-    width: 184%;
+  .section-heading > p:last-child {
+    margin-top: 18px;
+    font-size: 17px;
   }
 
-  .hero__start {
-    right: 10%;
-    bottom: 20%;
+  .story-card {
+    min-height: 350px;
   }
 
-  .chapter-heading {
-    grid-template-columns: 80px 1fr;
+  .projects-section__content {
+    padding-top: 58px;
+    padding-bottom: 58px;
   }
 
-  .chapter-number {
-    font-size: 72px;
+  .project-card {
+    min-height: 286px;
+    padding: 24px;
   }
 
-  .journey-line, .gains > div, .process ol {
-    grid-template-columns: repeat(2, 1fr);
+  .project-card > svg {
+    margin-top: 22px;
   }
 
-  .journey-line li:nth-child(2), .gains article:nth-child(2), .process li:nth-child(2) {
-    border-right: 0;
+  .gains-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
   }
 
-  .route-story::before {
-    left: 17px;
+  .gain-card {
+    min-height: 270px;
+    padding: 28px;
   }
 
-  .route-story__stop,
-  .route-story__stop--2,
-  .route-story__stop--3,
-  .route-story__stop--4,
-  .route-story__stop--5 {
-    grid-template-columns: 42px 1fr;
-    grid-template-areas:
-      'marker intro'
-      'marker mission'
-      'marker result'
-      'marker nontech';
-    gap: 20px;
-    padding: 60px 0;
-  }
-
-  .route-story__marker {
-    align-self: start;
-  }
-
-  .route-story__marker span {
-    writing-mode: vertical-rl;
-  }
-
-  .route-story__marker::before {
-    top: 42px;
-    width: 30px;
-    height: 30px;
-  }
-
-  .route-story__marker svg {
-    margin-top: 21px;
-  }
-
-  .route-story__mission, .route-story__result, .route-story__nontech {
-    grid-column: 2;
-  }
-
-  .route-story__mission {
-    padding: 20px 0;
-    border-left: 0;
-    border-top: 1px solid var(--line);
-    border-bottom: 0;
-  }
-
-  .route-story__stop--2 .route-story__mission,
-  .route-story__stop--3 .route-story__mission {
-    border-left-color: transparent;
-    padding-left: 0;
-  }
-
-  .route-story__result {
-    padding-left: 0;
-    justify-self: start;
-    text-align: left;
-  }
-
-  .route-story__nontech {
-    grid-column: 2;
-  }
-
-  .route-story__stop::after {
-    inset: 8% -10% -18% 20%;
-  }
-
-  .route-story__details > div {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .project-list {
-    margin-left: 0;
-    grid-template-columns: 1fr;
-  }
-
-  .project-list article {
-    min-height: auto;
-    border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, .12);
-  }
-
-  .project-list article:last-child {
-    border-bottom: 0;
-  }
-
-  .project-scene {
-    min-height: 1120px;
-  }
-
-  .project-scene__image {
-    inset: -4% -50% -4% -10%;
-    width: 160%;
-  }
-
-  .community-story__image {
-    inset: -4% -65% -4% -10%;
-    width: 175%;
-  }
-
-  .faq__layout {
-    grid-template-columns: 1fr;
-    gap: 56px;
+  .gain-card h3 {
+    margin-top: 54px;
   }
 }
 
-@media (max-width: 620px) {
-  .expedition-header {
-    top: 10px;
-    right: 12px;
-    left: 12px;
+@media (max-width: 1067px) {
+  .about-section,
+  .projects-section__content,
+  .community-section__content {
+    padding-top: 96px;
+    padding-bottom: 96px;
   }
 
-  .brand small {
-    display: none;
+  .routes-section {
+    min-height: 100svh;
+    padding: 0;
   }
 
-  .header-cta {
-    margin-left: auto;
-    padding: 0 13px;
+  .route-story {
+    grid-template-columns: minmax(260px, 0.72fr) minmax(400px, 1.28fr);
+    gap: 44px;
+    padding: 48px 0;
   }
 
-  .hero {
-    min-height: 780px;
-    align-items: flex-end;
-    padding-bottom: 92px;
+  .route-story__intro h2 {
+    font-size: clamp(42px, 6vw, 58px);
   }
 
-  .hero__image {
-    inset: -3% -98% -3% -15%;
-    width: 215%;
-  }
-
-  .hero h1 {
-    font-size: 48px;
-  }
-
-  .hero__lead {
-    font-size: 14px;
-    line-height: 1.75;
-  }
-
-  .hero__actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .hero__metrics {
-    gap: 24px;
+  .route-story__rail {
     margin-top: 34px;
   }
 
-  .hero__start, .scroll-hint {
+  .route-story__stage {
+    min-height: 590px;
+  }
+
+  .route-scene {
+    left: 38px;
+  }
+
+  .route-scene h3 {
+    font-size: clamp(54px, 8vw, 76px);
+  }
+
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .project-card {
+    min-height: 280px;
+  }
+
+  .journey-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 44px 20px;
+  }
+
+  .journey-list::before {
     display: none;
   }
 
-  .routes, .journey, .process, .faq {
-    padding: 90px 0;
-  }
-
-  .chapter-heading {
+  .process-layout,
+  .faq-layout {
     grid-template-columns: 1fr;
-    gap: 16px;
-    margin-bottom: 44px;
+    gap: 52px;
   }
 
-  .chapter-number {
-    font-size: 62px;
-  }
-
-  .chapter-heading h2, .community-story h2, .process h2, .faq h2 {
-    font-size: 42px;
-  }
-
-  .journey-line, .gains > div, .process ol, .project-list {
-    grid-template-columns: 1fr;
-  }
-
-  .project-list article, .journey-line li, .journey-line li:not(:last-child), .gains article, .gains article:nth-child(2), .process li, .process li:nth-child(2) {
-    border-right: 0;
-  }
-
-  .route-story::before {
-    left: 17px;
-  }
-
-  .route-story__stop {
-    grid-template-columns: 42px 1fr;
-    grid-template-areas:
-      'marker intro'
-      'marker mission'
-      'marker result'
-      'marker nontech';
-    gap: 16px;
-    padding: 44px 0;
-  }
-
-  .route-story__marker {
-    align-self: start;
-  }
-
-  .route-story__marker span {
-    writing-mode: vertical-rl;
-  }
-
-  .route-story__marker::before {
-    top: 42px;
-    width: 30px;
-    height: 30px;
-  }
-
-  .route-story__marker svg {
-    margin-top: 21px;
-  }
-
-  .route-story__mission, .route-story__result, .route-story__nontech { grid-column: 2; }
-
-  .route-story__mission {
-    padding: 24px;
-    border-left: 0;
-  }
-
-  .route-story__result {
-    padding-left: 0;
-  }
-
-  .route-story__nontech {
-    grid-column: 2;
-  }
-
-  .project-scene {
-    min-height: 1380px;
-    align-items: flex-start;
-    padding-top: 110px;
-  }
-
-  .project-scene__image {
-    inset: -2% -140% -2% -35%;
-    width: 280%;
-    opacity: .72;
-  }
-
-  .project-list {
-    margin-top: 50px;
-  }
-
-  .project-list article {
-    min-height: 250px;
-    border-bottom: 1px solid rgba(255, 255, 255, .12);
-  }
-
-  .journey-line li {
-    padding: 28px 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .journey-line i {
-    margin: -34px 0 30px;
-  }
-
-  .journey-line p {
-    min-height: 0;
-  }
-
-  .gains {
-    margin-top: 70px;
-  }
-
-  .gains article {
-    min-height: 190px;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .community-story {
-    min-height: 800px;
-    align-items: flex-end;
-    padding-bottom: 72px;
-  }
-
-  .community-story__image {
-    inset: -3% -125% -3% -18%;
-    width: 250%;
-  }
-
-  .process__heading {
-    grid-template-columns: 1fr;
-    gap: 28px;
-  }
-
-  .process li {
-    min-height: 118px;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .faq__question {
-    grid-template-columns: 32px 1fr;
-  }
-
-  .faq article p {
-    padding-left: 44px;
-  }
-
-  .final-cta h2 {
-    font-size: 48px;
-  }
-
-  footer {
-    flex-direction: column;
-    gap: 10px;
+  .process-layout .section-heading,
+  .faq-layout .section-heading {
+    position: static;
   }
 }
 
-@media (max-width: 620px) {
-  .story-orb {
-    top: 50%;
-    right: 14px;
-    width: 76px;
+@media (max-width: 733px) {
+  .about-shell {
+    width: min(100% - 40px, 620px);
   }
 
-  .story-orb span {
-    inset: 9px;
+  .about-hero {
+    min-height: 760px;
+    align-items: flex-end;
   }
 
-  .story-orb b {
-    font-size: 9px;
+  .about-hero__image {
+    object-position: 58% center;
   }
 
-  .hero__canvas, .project-scene__canvas, .community-story__canvas {
-    inset: -3%;
-    width: 106%;
-    height: 106%;
-    opacity: 1;
+  .about-hero__veil {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.9) 68%);
   }
 
-  .hero__canvas::before {
-    top: 10%;
-    right: -18%;
-    width: 260px;
-    opacity: .88;
+  .about-hero__content {
+    padding: 130px 0 86px;
   }
 
-  .hero__canvas::after {
-    right: -8%;
-    bottom: 20%;
-    width: 92vw;
+  .about-hero h1 {
+    font-size: clamp(48px, 14vw, 68px);
   }
 
-  .hero__shade {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--oa-page-soft-bg) 70%, transparent), var(--oa-page-soft-bg) 48% 100%);
+  .about-hero__lead {
+    font-size: 17px;
   }
 
-  .route-story__intro h3 {
-    font-size: 48px;
+  .about-hero__actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .route-story__details > div {
+  .about-hero__metrics {
+    gap: 22px;
+    margin-top: 36px;
+  }
+
+  .about-hero__metrics strong {
+    font-size: 23px;
+  }
+
+  .about-hero__scroll {
+    display: none;
+  }
+
+  .about-section,
+  .projects-section__content,
+  .community-section__content {
+    padding-top: 76px;
+    padding-bottom: 76px;
+  }
+
+  .section-heading {
+    margin-bottom: 42px;
+  }
+
+  .section-heading h2,
+  .route-story__intro h2,
+  .community-section h2,
+  .final-section h2 {
+    font-size: 42px;
+  }
+
+  .section-heading > p:last-child {
+    font-size: 16px;
+  }
+
+  .story-grid,
+  .gains-grid,
+  .journey-list {
     grid-template-columns: 1fr;
-    gap: 6px;
   }
 
-  .route-story__mission {
-    padding: 22px 0 0;
-    border-top: 1px solid var(--line);
+  .story-card {
+    min-height: 340px;
+    padding: 28px;
   }
 
-  .project-scene__shade {
-    background: linear-gradient(180deg, rgba(29, 29, 31, .84), rgba(29, 29, 31, .36));
+  .route-story {
+    min-height: 100svh;
+    display: block;
+    padding: 56px 0 42px;
   }
 
-  .community-story__shade {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--oa-elevated-bg) 45%, transparent), var(--oa-elevated-bg) 56% 100%);
+  .route-story__intro h2 {
+    max-width: 360px;
+    font-size: clamp(40px, 11vw, 54px);
   }
 
-  .process__values {
-    grid-template-columns: repeat(2, 1fr);
+  .route-story__intro > p:last-of-type {
+    max-width: 340px;
+    margin-top: 16px;
+    font-size: 15px;
   }
 
-  .process__values span:nth-child(2) {
-    border-right: 0;
+  .route-story__rail {
+    display: flex;
+    gap: 18px;
+    margin-top: 24px;
+    overflow: hidden;
   }
 
-  .process__values span:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--line);
+  .route-story__rail-item {
+    flex: 0 0 auto;
+  }
+
+  .route-story__rail-item strong {
+    display: none;
+  }
+
+  .route-story__stage {
+    min-height: 490px;
+    margin-top: 24px;
+  }
+
+  .route-scene {
+    inset: 0 0 0 24px;
+    justify-content: flex-start;
+    padding-top: 18px;
+  }
+
+  .route-scene__number {
+    top: 0;
+    font-size: 132px;
+  }
+
+  .route-scene__opening {
+    max-width: 330px;
+    margin-top: 24px;
+    font-size: 17px;
+  }
+
+  .route-scene h3 {
+    font-size: clamp(50px, 16vw, 66px);
+  }
+
+  .route-scene__description {
+    margin-top: 14px;
+    font-size: 14px;
+  }
+
+  .route-scene__next {
+    display: block;
+    margin-top: 24px;
+    padding-top: 16px;
+  }
+
+  .route-scene__next p {
+    margin-top: 8px;
+    font-size: 13px;
+  }
+
+  .route-scene__result {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 14px;
+    font-size: 13px;
+  }
+
+  .projects-section,
+  .community-section {
+    min-height: auto;
+  }
+
+  .projects-section__image,
+  .community-section__image {
+    object-position: center;
+  }
+
+  .projects-section__veil,
+  .community-section__veil {
+    background: rgba(0, 0, 0, 0.72);
+  }
+
+  .journey-list {
+    gap: 32px;
+  }
+
+  .journey-item {
+    padding-right: 0;
+  }
+
+  .gain-card {
+    min-height: 250px;
+  }
+
+  .community-section blockquote {
+    font-size: 16px;
+  }
+
+  .faq-list summary {
+    grid-template-columns: 28px 1fr 22px;
+  }
+
+  .faq-list details p {
+    margin-left: 40px;
+  }
+
+  .about-footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .expedition-page *, .expedition-page *::before, .expedition-page *::after {
+  .about-page *,
+  .about-page *::before,
+  .about-page *::after {
     scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-    animation-duration: .01ms !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 
-  .parallax-layer, .parallax-copy, .route-story__stop {
-    transform: none !important;
+  .routes-section {
+    min-height: auto;
   }
-}
-.logo{
-  width: 60px;
-  height: 60px;
-  border-radius: 20%;
-  background-color: #fff;
-  margin-bottom: 30px;
-}
 
-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 28px 6%;
-  background: rgba(6, 16, 20, .85);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(124,245,172,.15);
-  color: #9eaaa8;
-  font-size: 14px;
-}
+  .route-story {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    padding-top: 96px;
+    padding-bottom: 96px;
+  }
 
-.footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #f3f7f5;
-  font-weight: 600;
-}
+  .route-story__rail,
+  .route-story__progress {
+    display: none;
+  }
 
-.footer-brand img {
-  width: 42px;
-  height: 42px;
-  object-fit: contain;
-}
+  .route-story__stage {
+    min-height: 0;
+    display: grid;
+    gap: 56px;
+    border-left: 0;
+  }
 
-.footer-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-footer a {
-  color: #7cf5ac;
-  text-decoration: none;
-  transition: .3s;
-}
-
-footer a:hover {
-  color: #42db88;
-}
-
-.ai-credit {
-  font-size: 13px;
-  opacity: .8;
-}
-
-.ai-credit strong {
-  color: #4ab8c8;
+  .route-scene {
+    position: relative !important;
+    inset: auto;
+    padding-top: 32px;
+    border-top: 1px solid var(--apple-line);
+    opacity: 1 !important;
+    visibility: visible !important;
+    will-change: auto;
+  }
 }
 </style>

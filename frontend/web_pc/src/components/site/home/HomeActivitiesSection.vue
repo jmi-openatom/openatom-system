@@ -24,7 +24,7 @@
           @click="openActivity(index)"
         >
           <div class="activity-stage__media">
-            <img :alt="activity.title" :src="activity.coverUrl" />
+            <img :alt="activity.title" :src="activity.coverUrl" decoding="async" loading="lazy" />
           </div>
 
           <div class="activity-stage__wipe"></div>
@@ -88,6 +88,8 @@ let animationContext: gsap.Context | undefined
 let tiltXTo: gsap.QuickToFunc | undefined
 let tiltYTo: gsap.QuickToFunc | undefined
 let switching = false
+let stageVisible = false
+let visibilityObserver: IntersectionObserver | undefined
 
 const total = computed(() => props.activities.length)
 
@@ -338,7 +340,7 @@ function formatIndex(index: number) {
 
 function startAutoPlay() {
   window.clearInterval(autoPlayTimer)
-  if (total.value <= 1 || prefersReducedMotion()) return
+  if (!stageVisible || document.hidden || total.value <= 1 || prefersReducedMotion()) return
   autoPlayTimer = window.setInterval(next, 4800)
 }
 
@@ -349,6 +351,33 @@ function pauseAutoPlay() {
 function resumeAutoPlay() {
   resetTilt()
   startAutoPlay()
+}
+
+function setupVisibilityObserver() {
+  visibilityObserver?.disconnect()
+  const stage = stageRef.value
+  if (!stage) return
+
+  if (!('IntersectionObserver' in window)) {
+    stageVisible = true
+    startAutoPlay()
+    return
+  }
+
+  visibilityObserver = new IntersectionObserver(
+    (entries) => {
+      stageVisible = entries.some((entry) => entry.isIntersecting)
+      if (stageVisible) startAutoPlay()
+      else pauseAutoPlay()
+    },
+    { rootMargin: '80px 0px', threshold: 0.01 },
+  )
+  visibilityObserver.observe(stage)
+}
+
+function handleVisibilityChange() {
+  if (document.hidden) pauseAutoPlay()
+  else startAutoPlay()
 }
 
 function handlePointerMove(event: PointerEvent) {
@@ -431,18 +460,21 @@ watch(
     await nextTick()
     setupStageMotion()
     animateStage()
-    startAutoPlay()
+    setupVisibilityObserver()
   },
   { flush: 'post' },
 )
 
 onMounted(() => {
   setupStageMotion()
-  startAutoPlay()
   animateStage()
+  setupVisibilityObserver()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  visibilityObserver?.disconnect()
   window.clearInterval(autoPlayTimer)
   animationContext?.revert()
   tiltXTo?.tween.kill()

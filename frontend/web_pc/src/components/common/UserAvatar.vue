@@ -1,6 +1,13 @@
 <template>
   <span class="user-avatar" :style="avatarStyle">
-    <img v-if="showImage" :alt="altText" :src="imageSrc" @error="handleImageError" />
+    <img
+      v-if="showImage"
+      :alt="altText"
+      :src="imageSrc"
+      decoding="async"
+      loading="lazy"
+      @error="handleImageError"
+    />
     <span v-else>{{ initial }}</span>
   </span>
 </template>

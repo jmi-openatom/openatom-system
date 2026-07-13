@@ -32,6 +32,8 @@ let visibilityObserver: IntersectionObserver | null = null
 let handleWindowResize: (() => void) | null = null
 let animationFrame = 0
 let drawing = false
+let isVisible = false
+let staticBackdrop = false
 let width = 0
 let height = 0
 let dpr = 1
@@ -86,7 +88,9 @@ function resizeCanvas() {
   const rect = host.getBoundingClientRect()
   width = Math.max(rect.width, 1)
   height = Math.max(rect.height, 1)
-  dpr = Math.min(window.devicePixelRatio || 1, 2)
+  // These canvases are decorative and there can be several on the home page.
+  // A lower DPR keeps their backing stores from consuming tens of MB each.
+  dpr = Math.min(window.devicePixelRatio || 1, 1.25)
 
   canvas.width = Math.round(width * dpr)
   canvas.height = Math.round(height * dpr)
@@ -99,6 +103,14 @@ function resizeCanvas() {
     pointer.x = width / 2
     pointer.y = height / 2
   }
+}
+
+function releaseCanvas() {
+  const canvas = canvasRef.value
+  if (!canvas) return
+  ctx = null
+  canvas.width = 1
+  canvas.height = 1
 }
 
 function draw() {
@@ -191,66 +203,84 @@ onMounted(() => {
   host = canvas?.parentElement || null
   if (!canvas || !host) return
 
-  gsapCtx = gsap.context(() => {
-    mouseXTo = gsap.quickTo(pointer, 'x', {
-      duration: 0.42,
-      ease: 'power3.out',
+  staticBackdrop = shouldUseStaticBackdrop()
+  if (!staticBackdrop) {
+    gsapCtx = gsap.context(() => {
+      mouseXTo = gsap.quickTo(pointer, 'x', {
+        duration: 0.42,
+        ease: 'power3.out',
+      })
+      mouseYTo = gsap.quickTo(pointer, 'y', {
+        duration: 0.42,
+        ease: 'power3.out',
+      })
+      activeTo = gsap.quickTo(pointer, 'active', {
+        duration: 0.26,
+        ease: 'power2.out',
+      })
     })
-    mouseYTo = gsap.quickTo(pointer, 'y', {
-      duration: 0.42,
-      ease: 'power3.out',
-    })
-    activeTo = gsap.quickTo(pointer, 'active', {
-      duration: 0.26,
-      ease: 'power2.out',
-    })
-  })
+  }
 
-  resizeCanvas()
   if ('ResizeObserver' in window) {
-    resizeObserver = new ResizeObserver(resizeCanvas)
+    resizeObserver = new ResizeObserver(() => {
+      if (!isVisible) return
+      resizeCanvas()
+      if (staticBackdrop) draw()
+    })
     resizeObserver.observe(host)
   } else {
-    handleWindowResize = resizeCanvas
+    handleWindowResize = () => {
+      if (!isVisible) return
+      resizeCanvas()
+      if (staticBackdrop) draw()
+    }
     window.addEventListener('resize', handleWindowResize)
   }
-  if (shouldUseStaticBackdrop()) {
-    draw()
-    return
-  }
 
-  if (props.trackWindow) {
-    window.addEventListener('pointermove', handlePointerMove, { passive: true })
-    window.addEventListener('pointerleave', handlePointerLeave)
-  } else {
-    host.addEventListener('pointermove', handlePointerMove)
-    host.addEventListener('pointerleave', handlePointerLeave)
+  if (!staticBackdrop) {
+    if (props.trackWindow) {
+      window.addEventListener('pointermove', handlePointerMove, { passive: true })
+      window.addEventListener('pointerleave', handlePointerLeave)
+    } else {
+      host.addEventListener('pointermove', handlePointerMove)
+      host.addEventListener('pointerleave', handlePointerLeave)
+    }
   }
 
   if ('IntersectionObserver' in window) {
     visibilityObserver = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
-          startDrawing()
+          isVisible = true
+          resizeCanvas()
+          if (staticBackdrop) draw()
+          else startDrawing()
         } else {
+          isVisible = false
           stopDrawing()
+          releaseCanvas()
         }
       },
-      { rootMargin: '160px 0px', threshold: 0.01 },
+      { rootMargin: '80px 0px', threshold: 0.01 },
     )
     visibilityObserver.observe(host)
   } else {
-    startDrawing()
+    isVisible = true
+    resizeCanvas()
+    if (staticBackdrop) draw()
+    else startDrawing()
   }
 })
 
 watch(resolvedTheme, () => {
+  if (!isVisible) return
   resizeCanvas()
   if (!drawing) draw()
 })
 
 onBeforeUnmount(() => {
   stopDrawing()
+  releaseCanvas()
   resizeObserver?.disconnect()
   visibilityObserver?.disconnect()
   if (handleWindowResize) {

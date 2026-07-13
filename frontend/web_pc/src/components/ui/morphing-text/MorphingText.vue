@@ -16,15 +16,18 @@ interface Props {
   morphTime?: number
   coolDownTime?: number
 }
-const textIndex = ref(0)
-const morph = ref(0)
-const coolDown = ref(props.coolDownTime)
-const time = ref(new Date())
-
+const rootRef = ref<HTMLElement>()
 const text1Ref = ref<HTMLSpanElement>()
 const text2Ref = ref<HTMLSpanElement>()
 const canAnimateMorph = ref(false)
 const staticText = computed(() => props.texts[0] || '')
+
+let textIndex = 0
+let morph = 0
+let coolDown = props.coolDownTime
+let lastTime = 0
+let visibilityObserver: IntersectionObserver | undefined
+let inViewport = true
 
 function prefersReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -45,30 +48,30 @@ function setStyles(fraction: number) {
   text1Ref.value.style.filter = `blur(${Math.min(4.8 / invertedFraction - 4.8, 40)}px)`
   text1Ref.value.style.opacity = `${invertedFraction ** 0.4 * 100}%`
 
-  text1Ref.value.textContent = props.texts[textIndex.value % props.texts.length]
-  text2Ref.value.textContent = props.texts[(textIndex.value + 1) % props.texts.length]
+  text1Ref.value.textContent = props.texts[textIndex % props.texts.length]
+  text2Ref.value.textContent = props.texts[(textIndex + 1) % props.texts.length]
 }
 
 function doMorph() {
-  morph.value -= coolDown.value
-  coolDown.value = 0
+  morph -= coolDown
+  coolDown = 0
 
-  let fraction = morph.value / props.morphTime
+  let fraction = morph / props.morphTime
 
   if (fraction > 1) {
-    coolDown.value = props.coolDownTime
+    coolDown = props.coolDownTime
     fraction = 1
   }
 
   setStyles(fraction)
 
   if (fraction === 1) {
-    textIndex.value++
+    textIndex++
   }
 }
 
 function doCoolDown() {
-  morph.value = 0
+  morph = 0
 
   if (text1Ref.value && text2Ref.value) {
     text2Ref.value.style.filter = 'none'
@@ -79,20 +82,36 @@ function doCoolDown() {
 }
 
 let animationFrameId: number = 0
-function animate() {
+function animate(now: number) {
   animationFrameId = requestAnimationFrame(animate)
 
-  const newTime = new Date()
-  const dt = (newTime.getTime() - time.value.getTime()) / 1000
-  time.value = newTime
+  const dt = Math.min((now - lastTime) / 1000, 0.1)
+  lastTime = now
 
-  coolDown.value -= dt
+  coolDown -= dt
 
-  if (coolDown.value <= 0) {
+  if (coolDown <= 0) {
     doMorph()
   } else {
     doCoolDown()
   }
+}
+
+function startAnimation() {
+  if (animationFrameId || !canAnimateMorph.value) return
+  lastTime = performance.now()
+  animationFrameId = requestAnimationFrame(animate)
+}
+
+function stopAnimation() {
+  if (!animationFrameId) return
+  cancelAnimationFrame(animationFrameId)
+  animationFrameId = 0
+}
+
+function handleVisibilityChange() {
+  if (!document.hidden && inViewport) startAnimation()
+  else stopAnimation()
 }
 
 onMounted(async () => {
@@ -105,19 +124,30 @@ onMounted(async () => {
   }
 
   if (canAnimateMorph.value) {
-    animate()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    if ('IntersectionObserver' in window && rootRef.value) {
+      visibilityObserver = new IntersectionObserver((entries) => {
+        inViewport = entries.some((entry) => entry.isIntersecting)
+        if (inViewport && !document.hidden) startAnimation()
+        else stopAnimation()
+      })
+      visibilityObserver.observe(rootRef.value)
+    } else {
+      startAnimation()
+    }
   }
 })
 
 onUnmounted(() => {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId)
-  }
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  visibilityObserver?.disconnect()
+  stopAnimation()
 })
 </script>
 
 <template>
   <div
+    ref="rootRef"
     :class="
       cn(
         `relative mx-auto flex h-16 w-full items-center justify-center overflow-visible text-center font-sans text-[40pt] leading-none font-bold whitespace-nowrap md:h-24 lg:text-[6rem]`,

@@ -87,7 +87,7 @@ const uniqueRoles = computed(() => {
 })
 
 const loopedPeople = computed(() =>
-  Array.from({ length: 3 }, (_, copy) =>
+  Array.from({ length: 2 }, (_, copy) =>
     mappedPeople.value.map((person, sourceIndex) => ({
       ...person,
       copy,
@@ -405,6 +405,4 @@ function formatMemberIndex(index: number) {
     animation: none;
   }
 }
-
-
 </style>
