@@ -47,7 +47,7 @@
         <div class="about-shell">
           <div class="section-heading section-reveal">
             <p class="apple-kicker">WHY WE STARTED</p>
-            <h2>开源筑梦，<br /><span>海事启航。</span></h2>
+            <h2>开源筑梦，海事启航。</h2>
             <p>让每一位成员在真实项目中成长，在开放协作中找到自己的位置。</p>
           </div>
 
