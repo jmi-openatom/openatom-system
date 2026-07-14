@@ -526,7 +526,7 @@ onMounted(async () => {
   gap: 8px;
   padding: 6px 18px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
   color: #c084fc;
@@ -811,12 +811,12 @@ onMounted(async () => {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .topo-port {
-  font-size: 10px;
+  font-size: 12px;
   color: #71717a;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .topo-sub {
-  font-size: 10px;
+  font-size: 12px;
   color: #52525b;
 }
 
@@ -852,7 +852,7 @@ onMounted(async () => {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .service-port {
-  font-size: 11px;
+  font-size: 12px;
   color: #52525b;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -866,7 +866,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: #71717a;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -908,7 +908,7 @@ onMounted(async () => {
   line-height: 1.5;
 }
 .comm-card code {
-  font-size: 11px;
+  font-size: 12px;
   color: #c084fc;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   background: rgba(168, 85, 247, 0.08);
@@ -919,7 +919,7 @@ onMounted(async () => {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.05em;
 }
@@ -973,7 +973,7 @@ onMounted(async () => {
   margin-bottom: 4px;
 }
 .auth-step-text p {
-  font-size: 11px;
+  font-size: 12px;
   color: #71717a;
   margin: 0;
   line-height: 1.4;
@@ -1025,7 +1025,7 @@ onMounted(async () => {
   box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.2);
 }
 .roadmap-phase {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   color: #71717a;
   letter-spacing: 0.05em;
@@ -1045,7 +1045,7 @@ onMounted(async () => {
   line-height: 1.5;
 }
 .roadmap-time {
-  font-size: 11px;
+  font-size: 12px;
   color: #52525b;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -1063,7 +1063,7 @@ onMounted(async () => {
   padding: 3px 10px;
   border-radius: 999px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: #a855f7;
   background: rgba(168, 85, 247, 0.1);
   border: 1px solid rgba(168, 85, 247, 0.2);

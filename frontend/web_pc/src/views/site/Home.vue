@@ -278,136 +278,121 @@ async function createHomeAnimations() {
       },
     })
 
-    overviewTimeline
-      .from(
-        '.hero__actions .el-button',
-        {
-          y: 28,
-          autoAlpha: 0,
-          scale: 0.94,
-          duration: 0.66,
-          ease: 'back.out(1.55)',
-          stagger: 0.08,
-        },
-        0,
-      )
-      .from(
-        '.command-panel',
-        {
-          y: 48,
-          autoAlpha: 0,
-          scale: 0.985,
-          ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
-          duration: 0.9,
-        },
-        0.08,
-      )
-      .from(
-        '.metric-console__rail',
-        {
-          scaleX: 0,
-          transformOrigin: 'center center',
-          duration: 0.72,
-        },
-        0.34,
-      )
-      .from(
-        '.metric-console__core',
-        {
-          y: 24,
-          autoAlpha: 0,
-          duration: 0.68,
-        },
-        0.3,
-      )
-      .from(
-        '.metric-node',
-        {
-          y: 40,
-          autoAlpha: 0,
-          scale: 0.92,
-          transformOrigin: '50% 100%',
-          duration: 0.72,
-          ease: 'back.out(1.35)',
-          stagger: {
-            each: 0.07,
-            from: 'center',
+    overviewTimeline.from(
+      '.command-panel',
+      {
+        y: 48,
+        autoAlpha: 0,
+        scale: 0.985,
+        ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
+        duration: 0.9,
+      },
+      0.08,
+    )
+
+    if (document.querySelector('.metric-console__rail')) {
+      overviewTimeline
+        .from(
+          '.metric-console__rail',
+          {
+            scaleX: 0,
+            transformOrigin: 'center center',
+            duration: 0.72,
           },
-        },
-        0.52,
-      )
-      .from(
-        '.terminal-strip span',
-        {
-          y: 16,
-          autoAlpha: 0,
-          duration: 0.38,
-          stagger: 0.035,
-        },
-        0.86,
-      )
+          0.34,
+        )
+        .from(
+          '.metric-console__core',
+          {
+            y: 24,
+            autoAlpha: 0,
+            duration: 0.68,
+          },
+          0.3,
+        )
+        .from(
+          '.metric-node',
+          {
+            y: 40,
+            autoAlpha: 0,
+            scale: 0.92,
+            transformOrigin: '50% 100%',
+            duration: 0.72,
+            ease: 'back.out(1.35)',
+            stagger: {
+              each: 0.07,
+              from: 'center',
+            },
+          },
+          0.52,
+        )
+    }
 
     gsap.utils
       .toArray<HTMLElement>('.metric-console__core strong, .metric-node strong')
       .forEach((element) => animateMetricValue(element, gsap))
 
-    gsap.set('.reveal-block', {
-      y: 58,
-      autoAlpha: 0,
-      ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
-    })
+    if (document.querySelector('.reveal-block')) {
+      gsap.set('.reveal-block', {
+        y: 58,
+        autoAlpha: 0,
+        ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
+      })
 
-    ScrollTrigger.batch('.reveal-block', {
-      start: 'top 82%',
-      once: true,
-      onEnter: (batch) => {
-        gsap.to(batch, {
-          y: 0,
-          autoAlpha: 1,
-          ...(supportsBlur ? { filter: 'blur(0px)' } : {}),
-          duration: 0.86,
-          ease: 'power3.out',
-          stagger: 0.08,
-          overwrite: 'auto',
-          clearProps: supportsBlur
-            ? 'transform,opacity,visibility,filter'
-            : 'transform,opacity,visibility',
-        })
-      },
-    })
+      ScrollTrigger.batch('.reveal-block', {
+        start: 'top 82%',
+        once: true,
+        onEnter: (batch) => {
+          gsap.to(batch, {
+            y: 0,
+            autoAlpha: 1,
+            ...(supportsBlur ? { filter: 'blur(0px)' } : {}),
+            duration: 0.86,
+            ease: 'power3.out',
+            stagger: 0.08,
+            overwrite: 'auto',
+            clearProps: supportsBlur
+              ? 'transform,opacity,visibility,filter'
+              : 'transform,opacity,visibility',
+          })
+        },
+      })
+    }
 
-    gsap.set('.reveal-card', {
-      y: 64,
-      autoAlpha: 0,
-      scale: 0.96,
-      ...(supports3d ? { rotateX: -8, transformPerspective: 900 } : {}),
-      ...(supportsBlur ? { filter: 'blur(10px)' } : {}),
-      transformOrigin: '50% 100%',
-    })
+    if (document.querySelector('.reveal-card')) {
+      gsap.set('.reveal-card', {
+        y: 64,
+        autoAlpha: 0,
+        scale: 0.96,
+        ...(supports3d ? { rotateX: -8, transformPerspective: 900 } : {}),
+        ...(supportsBlur ? { filter: 'blur(10px)' } : {}),
+        transformOrigin: '50% 100%',
+      })
 
-    ScrollTrigger.batch('.reveal-card', {
-      start: 'top 86%',
-      once: true,
-      onEnter: (batch) => {
-        gsap.to(batch, {
-          y: 0,
-          autoAlpha: 1,
-          scale: 1,
-          ...(supports3d ? { rotateX: 0 } : {}),
-          ...(supportsBlur ? { filter: 'blur(0px)' } : {}),
-          duration: 0.78,
-          ease: 'power3.out',
-          stagger: {
-            each: 0.06,
-            from: 'start',
-          },
-          overwrite: 'auto',
-          clearProps: supportsBlur
-            ? 'transform,opacity,visibility,filter'
-            : 'transform,opacity,visibility',
-        })
-      },
-    })
+      ScrollTrigger.batch('.reveal-card', {
+        start: 'top 86%',
+        once: true,
+        onEnter: (batch) => {
+          gsap.to(batch, {
+            y: 0,
+            autoAlpha: 1,
+            scale: 1,
+            ...(supports3d ? { rotateX: 0 } : {}),
+            ...(supportsBlur ? { filter: 'blur(0px)' } : {}),
+            duration: 0.78,
+            ease: 'power3.out',
+            stagger: {
+              each: 0.06,
+              from: 'start',
+            },
+            overwrite: 'auto',
+            clearProps: supportsBlur
+              ? 'transform,opacity,visibility,filter'
+              : 'transform,opacity,visibility',
+          })
+        },
+      })
+    }
 
     ScrollTrigger.refresh()
   }, instance?.proxy?.$el)

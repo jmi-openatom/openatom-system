@@ -98,18 +98,18 @@
   background: var(--ob-ink);
   color: #fff;
   box-shadow: none;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .onboard__brand-copy {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.25;
   letter-spacing: 0.13em;
 }
 
 .onboard__brand-copy small {
   color: var(--ob-muted);
-  font-size: 7px;
+  font-size: 12px;
 }
 
 .onboard__progress {
@@ -131,7 +131,7 @@
 .onboard__progress-label {
   display: block;
   color: var(--ob-muted);
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.15em;
 }
 
@@ -148,7 +148,7 @@
 
 .onboard__progress-info {
   color: var(--ob-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .onboard__progress-current {
@@ -188,7 +188,7 @@
   border-radius: 999px;
   background: rgba(238, 240, 255, 0.8);
   color: var(--ob-accent-strong);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.14em;
 }
@@ -221,7 +221,7 @@
 .ob-mono-label {
   margin: 0 0 3px;
   color: var(--ob-muted);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.16em;
 }
@@ -538,7 +538,7 @@
   background: var(--ob-accent-soft);
   color: var(--ob-accent-strong);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -599,7 +599,7 @@
 .ob-qq-panel .ob-group-card__label {
   margin: 0;
   color: var(--ob-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .ob-qq-panel .ob-group-card__number {
@@ -668,7 +668,7 @@
   border-radius: 8px;
   background: #fff;
   color: var(--ob-accent-strong);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 

@@ -8,7 +8,7 @@
     >
       <div class="container site-header__inner">
         <router-link class="brand" to="/">
-          <img alt="徽标" class="site-footer__logo" src="../../public/logo.png" />
+          <img alt="徽标" class="site-footer__logo" src="/logo.png" />
           <span>
             <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
@@ -345,7 +345,6 @@ onBeforeUnmount(() => {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  //filter: grayscale(1) contrast(1.05);
 }
 
 .brand-text .name {
@@ -385,7 +384,7 @@ onBeforeUnmount(() => {
   padding: 2px 6px;
   border-radius: 999px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 10px;
+  font-size: 12px;
   border: 1px solid var(--oa-border);
 }
 
@@ -418,7 +417,7 @@ onBeforeUnmount(() => {
   display: block;
   margin-top: 2px;
   color: var(--oa-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1;
 }
 

@@ -1,41 +1,62 @@
 <template>
   <div ref="pageRoot" class="about-page">
     <main>
-      <section id="top" class="about-hero">
+      <section
+        id="top"
+        class="about-hero"
+        aria-roledescription="carousel"
+        aria-label="开放原子开源社团活动影集"
+        @keydown.left.prevent="showPreviousHeroImage"
+        @keydown.right.prevent="showNextHeroImage"
+      >
         <img
+          v-for="(image, index) in heroImages"
+          :key="image.src"
           class="about-hero__image"
-          src="/bg.png"
-          alt="开放原子开源社团成员共同参与校园开源实践"
+          :class="{ 'about-hero__image--active': index === currentHeroIndex }"
+          :src="image.src"
+          :alt="index === currentHeroIndex ? image.alt : ''"
+          :aria-hidden="index !== currentHeroIndex"
           decoding="async"
-          fetchpriority="high"
+          :fetchpriority="index === 0 ? 'high' : 'auto'"
+          :loading="index === 0 ? 'eager' : 'lazy'"
         />
         <div class="about-hero__veil" aria-hidden="true"></div>
         <div class="about-shell about-hero__content">
-          <p class="apple-kicker">关于我们 · JMI-OPENATOM</p>
-          <h1><span>从校园出发。</span><span>向开源前行。</span></h1>
-          <p class="about-hero__lead">
-            不只是学习技术。我们一起发现问题、完成作品，也把每一次成长留在开放社区里。
-          </p>
-          <div class="about-hero__actions">
-            <button
-              class="apple-button apple-button--light"
-              type="button"
-              @click="scrollTo('routes')"
+          <div class="about-hero__intro">
+            <p
+              class="about-hero__lead"
+              style="margin-bottom: 15px; font-size: small; font-weight: bold"
             >
-              认识我们的路线
-              <ArrowDown :size="17" />
-            </button>
-            <button class="apple-link apple-link--light" type="button" @click="goHome">
-              返回官网
-              <ArrowUpRight :size="17" />
-            </button>
+              关于我们
+            </p>
           </div>
-          <div class="about-hero__metrics" aria-label="社团关键数据">
-            <div v-for="item in heroMetrics" :key="item.label">
-              <strong>{{ item.value }}</strong>
-              <span>{{ item.label }}</span>
-            </div>
+          <div class="about-hero__title">
+            <h1><span>开放原子</span><span>开源社团</span></h1>
           </div>
+          <div class="about-hero__intro">
+            <p class="about-hero__lead">从校园出发，让开源在这里发生。</p>
+          </div>
+        </div>
+        <div class="about-hero__carousel-controls" aria-label="影集切换">
+          <button type="button" aria-label="上一张图片" @click="showPreviousHeroImage">
+            <ChevronLeft :size="19" />
+          </button>
+          <div class="about-hero__carousel-dots" role="group" aria-label="选择图片">
+            <button
+              v-for="(_, index) in heroImages"
+              :key="index"
+              type="button"
+              :class="{ 'is-active': index === currentHeroIndex }"
+              :aria-label="`显示第 ${index + 1} 张图片`"
+              :aria-current="index === currentHeroIndex ? 'true' : undefined"
+              @click="showHeroImage(index)"
+            ></button>
+          </div>
+          <span aria-live="polite">{{ currentHeroIndex + 1 }} / {{ heroImages.length }}</span>
+          <button type="button" aria-label="下一张图片" @click="showNextHeroImage">
+            <ChevronRight :size="19" />
+          </button>
         </div>
         <button class="about-hero__scroll" type="button" @click="scrollTo('story')">
           继续了解
@@ -131,6 +152,46 @@
               <strong>{{ project.impact }}</strong>
               <small>{{ project.category }}</small>
             </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="awards" class="about-section awards-section">
+        <div class="about-shell">
+          <div class="section-heading section-reveal">
+            <p class="apple-kicker">AWARDS & RECOGNITION</p>
+            <h2>认真做事。<br /><span>成果，自会发声。</span></h2>
+            <p>每一份荣誉，都来自成员在竞赛、项目与开放协作中的共同投入。</p>
+          </div>
+
+          <div v-if="awards.length" class="awards-list">
+            <article
+              v-for="award in awards"
+              :key="award.id || `${award.year}-${award.title}`"
+              class="award-row reveal-card"
+            >
+              <div class="award-row__year">
+                <Trophy :size="21" stroke-width="1.5" />
+                <strong>{{ award.year || '—' }}</strong>
+              </div>
+              <div class="award-row__main">
+                <span>{{ award.competitionName || '社团荣誉' }}</span>
+                <h3>{{ award.title }}</h3>
+                <p v-if="award.description">{{ award.description }}</p>
+              </div>
+              <div class="award-row__meta">
+                <strong>{{ award.awardLevel || '荣誉奖项' }}</strong>
+                <span>{{ award.teamName || 'JMI-OPENATOM' }}</span>
+              </div>
+            </article>
+          </div>
+
+          <div v-else class="awards-empty reveal-card">
+            <Trophy :size="30" stroke-width="1.4" />
+            <div>
+              <strong>荣誉仍在继续</strong>
+              <p>新的竞赛成果与项目荣誉将在这里持续更新。</p>
+            </div>
           </div>
         </div>
       </section>
@@ -263,12 +324,13 @@
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  ArrowDown,
   ArrowRight,
   ArrowUpRight,
   Boxes,
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Code2,
   Compass,
   GitBranch,
@@ -290,11 +352,60 @@ gsap.registerPlugin(ScrollTrigger)
 
 const router = useRouter()
 const pageRoot = ref<HTMLElement>()
-const metrics = ref<any[]>([])
 const focusAreas = ref<any[]>([])
 const showcaseApps = ref<any[]>([])
+const awards = ref<any[]>([])
 let motionMatchMedia: gsap.MatchMedia | undefined
 let scrollResetFrame: number | undefined
+let heroAutoplayTimer: number | undefined
+
+const heroImages = [
+  // '/about/bg.png',
+  '/about/bg1.png',
+  '/about/bg2.png',
+  '/about/bg3.png',
+  '/about/bg4.png',
+  '/about/bg5.png',
+  '/about/bg6.png',
+  '/about/bg8.png',
+  '/about/bg9.png',
+  '/about/bg10.png',
+].map((src, index) => ({
+  src,
+  alt: `开放原子开源社团活动影集，第 ${index + 1} 张`,
+}))
+const currentHeroIndex = ref(0)
+
+function stopHeroAutoplay() {
+  if (heroAutoplayTimer !== undefined) {
+    window.clearInterval(heroAutoplayTimer)
+    heroAutoplayTimer = undefined
+  }
+}
+
+function startHeroAutoplay() {
+  stopHeroAutoplay()
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  if (reduceMotion || document.hidden) return
+  heroAutoplayTimer = window.setInterval(showNextHeroImage, 5000)
+}
+
+function showHeroImage(index: number) {
+  currentHeroIndex.value = (index + heroImages.length) % heroImages.length
+}
+
+function showPreviousHeroImage() {
+  showHeroImage(currentHeroIndex.value - 1)
+}
+
+function showNextHeroImage() {
+  showHeroImage(currentHeroIndex.value + 1)
+}
+
+function handleHeroVisibilityChange() {
+  if (document.hidden) stopHeroAutoplay()
+  else startHeroAutoplay()
+}
 
 const fallbackPaths = [
   {
@@ -448,20 +559,6 @@ const faqs = [
   },
 ]
 
-const heroMetrics = computed(() => {
-  if (metrics.value.length) {
-    return metrics.value.slice(0, 3).map((item) => ({
-      value: item.value || '—',
-      label: item.label || item.note || '开放协作',
-    }))
-  }
-  return [
-    { value: '68+', label: '在册成员' },
-    { value: '5', label: '成长方向' },
-    { value: '∞', label: '开放协作' },
-  ]
-})
-
 const paths = computed(() =>
   fallbackPaths.map((item, index) => ({
     ...item,
@@ -482,10 +579,6 @@ const featuredProjects = computed(() =>
 function scrollTo(id: string) {
   const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' })
-}
-
-function goHome() {
-  router.push('/')
 }
 
 function goToApply() {
@@ -523,15 +616,8 @@ function setupMotion() {
 
       const intro = gsap.timeline({ defaults: { ease: 'power3.out' } })
       intro
-        .from('.about-hero .apple-kicker', { y: 24, autoAlpha: 0, duration: 0.65 }, 0.08)
-        .from('.about-hero h1 > span', { y: 72, autoAlpha: 0, stagger: 0.12, duration: 0.92 }, 0.16)
+        .from('.about-hero h1', { y: 72, autoAlpha: 0, duration: 0.92 }, 0.16)
         .from('.about-hero__lead', { y: 32, autoAlpha: 0, duration: 0.72 }, 0.48)
-        .from('.about-hero__actions', { y: 24, autoAlpha: 0, duration: 0.62 }, 0.58)
-        .from(
-          '.about-hero__metrics > div',
-          { y: 18, autoAlpha: 0, stagger: 0.08, duration: 0.55 },
-          0.68,
-        )
         .from('.about-hero__scroll', { y: -10, autoAlpha: 0, duration: 0.5 }, 0.84)
 
       gsap.fromTo(
@@ -807,14 +893,16 @@ function setupMotion() {
 onMounted(async () => {
   resetPageScroll()
   document.documentElement.classList.add('about-page-active')
+  document.addEventListener('visibilitychange', handleHeroVisibilityChange)
+  startHeroAutoplay()
 
   const [homeResult, appsResult] = await Promise.allSettled([
     siteApi.clubHome(),
     siteApi.showcaseApps({ page: 1, pageSize: 3 }),
   ])
   if (homeResult.status === 'fulfilled') {
-    metrics.value = homeResult.value?.metrics || []
     focusAreas.value = homeResult.value?.focusAreas || []
+    awards.value = homeResult.value?.awards || []
   }
   if (appsResult.status === 'fulfilled') {
     showcaseApps.value = appsResult.value?.list || appsResult.value || []
@@ -831,6 +919,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (scrollResetFrame !== undefined) window.cancelAnimationFrame(scrollResetFrame)
+  stopHeroAutoplay()
+  document.removeEventListener('visibilitychange', handleHeroVisibilityChange)
   motionMatchMedia?.revert()
   document.documentElement.classList.remove('about-page-active')
 })
@@ -907,26 +997,47 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
+.about-hero__image {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 900ms ease;
+  will-change: opacity, transform;
+}
+
+.about-hero__image--active {
+  opacity: 1;
+}
+
 .about-hero__veil {
   position: absolute;
   z-index: 1;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(
-      90deg,
-      rgba(5, 5, 6, 0.82) 0%,
-      rgba(5, 5, 6, 0.58) 38%,
-      rgba(5, 5, 6, 0.2) 68%,
-      rgba(5, 5, 6, 0.08) 100%
-    ),
-    linear-gradient(180deg, rgba(5, 5, 6, 0.08) 42%, rgba(5, 5, 6, 0.56) 100%);
+    linear-gradient(180deg, rgba(5, 5, 6, 0.24), rgba(5, 5, 6, 0.46)),
+    radial-gradient(circle at center, rgba(5, 5, 6, 0.06), rgba(5, 5, 6, 0.28));
 }
 
 .about-hero__content {
   position: relative;
   z-index: 2;
-  padding: 64px 0 48px;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 112px 0;
+  text-align: center;
+}
+
+.about-hero__title {
+  width: 100%;
+}
+
+.about-hero__intro {
+  width: min(620px, 100%);
+  display: flex;
+  justify-content: center;
 }
 
 .apple-kicker {
@@ -954,32 +1065,23 @@ onBeforeUnmount(() => {
 }
 
 .about-hero h1 {
-  max-width: 850px;
-  font-size: clamp(58px, 7.6vw, 112px);
-  line-height: 0.98;
+  max-width: none;
+  color: #fff;
+  font-size: clamp(58px, 6.8vw, 100px);
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.about-hero h1 span {
-  display: block;
-}
-
-.about-hero h1 span:last-child {
-  color: rgba(255, 255, 255, 0.62);
+.about-hero h1 span + span {
+  margin-left: 0.16em;
 }
 
 .about-hero__lead {
-  max-width: 620px;
-  margin: 32px 0 0;
-  color: rgba(255, 255, 255, 0.74);
-  font-size: clamp(18px, 2vw, 22px);
-  line-height: 1.6;
-}
-
-.about-hero__actions {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  margin-top: 38px;
+  max-width: 600px;
+  margin: 24px 0 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: clamp(18px, 1.5vw, 22px);
+  line-height: 1.55;
 }
 
 .apple-button,
@@ -1033,30 +1135,6 @@ onBeforeUnmount(() => {
   outline-offset: 3px;
 }
 
-.about-hero__metrics {
-  display: flex;
-  gap: clamp(28px, 5vw, 68px);
-  width: min(620px, 100%);
-  margin-top: 56px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.about-hero__metrics div {
-  display: grid;
-  gap: 4px;
-}
-
-.about-hero__metrics strong {
-  font-size: 28px;
-  letter-spacing: -0.03em;
-}
-
-.about-hero__metrics span {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 12px;
-}
-
 .about-hero__scroll {
   position: absolute;
   z-index: 2;
@@ -1071,7 +1149,91 @@ onBeforeUnmount(() => {
   background: transparent;
   color: rgba(255, 255, 255, 0.56);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
+}
+
+.about-hero__carousel-controls {
+  position: absolute;
+  z-index: 3;
+  right: max(24px, calc((100vw - 1180px) / 2));
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #fff;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+}
+
+.about-hero__carousel-controls > button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.about-hero__carousel-controls > button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.about-hero__carousel-controls > button:active {
+  transform: scale(0.94);
+}
+
+.about-hero__carousel-controls > span {
+  min-width: 36px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.about-hero__carousel-dots {
+  display: flex;
+  align-items: center;
+}
+
+.about-hero__carousel-dots button {
+  position: relative;
+  width: 22px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.about-hero__carousel-dots button::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  content: '';
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  transition:
+    width 220ms ease,
+    background 220ms ease;
+}
+
+.about-hero__carousel-dots button:hover::before {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.about-hero__carousel-dots button.is-active::before {
+  width: 18px;
+  background: #fff;
 }
 
 .about-section {
@@ -1088,6 +1250,7 @@ onBeforeUnmount(() => {
 }
 
 .routes-section,
+.awards-section,
 .gains-section,
 .process-section {
   background: var(--apple-bg-soft);
@@ -1234,7 +1397,7 @@ onBeforeUnmount(() => {
 .route-story__rail-item span {
   width: 20px;
   color: var(--apple-blue);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
@@ -1309,7 +1472,7 @@ onBeforeUnmount(() => {
 .route-scene__eyebrow span,
 .project-card > span,
 .project-card > small {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.09em;
 }
@@ -1359,7 +1522,7 @@ onBeforeUnmount(() => {
 .route-scene__next span,
 .route-scene__result span {
   color: var(--apple-faint);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -1500,6 +1663,109 @@ onBeforeUnmount(() => {
   margin-top: auto;
 }
 
+.awards-list {
+  border-top: 1px solid var(--apple-line);
+}
+
+.award-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) minmax(190px, 0.34fr);
+  gap: 32px;
+  align-items: center;
+  min-height: 148px;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--apple-line);
+}
+
+.award-row__year {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--apple-blue);
+}
+
+.award-row__year strong {
+  color: var(--apple-ink);
+  font-family: 'SF Pro Display', 'PingFang SC', sans-serif;
+  font-size: clamp(34px, 4vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.award-row__main {
+  display: grid;
+  gap: 8px;
+}
+
+.award-row__main > span {
+  color: var(--apple-faint);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.award-row__main h3 {
+  margin: 0;
+  font-size: clamp(22px, 2.4vw, 32px);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.award-row__main p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--apple-muted);
+  line-height: 1.65;
+}
+
+.award-row__meta {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.award-row__meta strong {
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--apple-ink);
+  color: #fff;
+  font-size: 12px;
+}
+
+.award-row__meta span {
+  color: var(--apple-faint);
+  font-size: 13px;
+}
+
+.awards-empty {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 32px;
+  border-radius: var(--apple-radius);
+  background: var(--apple-bg);
+}
+
+.awards-empty svg {
+  flex: 0 0 auto;
+  color: var(--apple-blue);
+}
+
+.awards-empty div {
+  display: grid;
+  gap: 8px;
+}
+
+.awards-empty strong {
+  font-size: 22px;
+}
+
+.awards-empty p {
+  margin: 0;
+  color: var(--apple-muted);
+}
+
 .journey-list {
   position: relative;
   display: grid;
@@ -1530,7 +1796,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 14px;
   color: var(--apple-faint);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .journey-item__marker i {
@@ -1546,7 +1812,7 @@ onBeforeUnmount(() => {
 
 .journey-item > small {
   color: var(--apple-blue);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -1706,7 +1972,7 @@ onBeforeUnmount(() => {
 
 .faq-list summary > span {
   color: var(--apple-blue);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .faq-list summary strong {
@@ -1835,6 +2101,10 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1067px) {
+  .about-hero h1 {
+    font-size: clamp(58px, 8.2vw, 86px);
+  }
+
   .about-section,
   .projects-section__content,
   .community-section__content {
@@ -1917,38 +2187,68 @@ onBeforeUnmount(() => {
   }
 
   .about-hero__veil {
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.9) 68%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.52));
   }
 
   .about-hero__content {
-    padding: 130px 0 86px;
+    min-height: 760px;
+    display: flex;
+    padding: 120px 0;
   }
 
   .about-hero h1 {
     font-size: clamp(48px, 14vw, 68px);
+    line-height: 0.98;
+    white-space: normal;
+  }
+
+  .about-hero h1 span {
+    display: block;
+  }
+
+  .about-hero h1 span + span {
+    margin: 0;
   }
 
   .about-hero__lead {
+    max-width: 540px;
+    margin-top: 22px;
     font-size: 17px;
-  }
-
-  .about-hero__actions {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .about-hero__metrics {
-    gap: 22px;
-    margin-top: 36px;
-  }
-
-  .about-hero__metrics strong {
-    font-size: 23px;
   }
 
   .about-hero__scroll {
     display: none;
+  }
+
+  .about-hero__carousel-controls {
+    right: 20px;
+    bottom: 20px;
+  }
+
+  .about-hero__carousel-dots {
+    display: none;
+  }
+
+  .award-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 28px 0;
+  }
+
+  .award-row__year strong {
+    font-size: 38px;
+  }
+
+  .award-row__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .awards-empty {
+    align-items: flex-start;
+    padding: 24px;
   }
 
   .about-section,

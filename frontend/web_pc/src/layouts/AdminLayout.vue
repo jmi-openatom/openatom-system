@@ -47,9 +47,12 @@
       <el-header class="admin-header">
         <div class="admin-header__title">
           <el-button class="admin-mobile-menu-btn" circle :icon="Menu" @click="mobileMenuVisible = true" />
-          <div>
+          <div class="admin-header__title-copy">
+            <el-breadcrumb separator="/" class="admin-breadcrumb">
+              <el-breadcrumb-item :to="{ path: '/admin/dashboard' }">管理后台</el-breadcrumb-item>
+              <el-breadcrumb-item>{{ pageTitle }}</el-breadcrumb-item>
+            </el-breadcrumb>
             <h1>{{ pageTitle }}</h1>
-            <p>统一维护社团、用户、审批、面试与权限数据</p>
           </div>
         </div>
         <div class="admin-header__actions">
@@ -531,6 +534,17 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
+.admin-header__title-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.admin-breadcrumb {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
 .admin-mobile-menu-btn {
   display: none;
   flex: 0 0 auto;
@@ -538,8 +552,9 @@ onBeforeUnmount(() => {
 
 .admin-header h1 {
   margin: 0;
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 600;
+  line-height: 1.35;
   letter-spacing: 0;
 }
 
@@ -559,7 +574,7 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  padding: 24px;
+  padding: var(--oa-space-6);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -572,7 +587,7 @@ onBeforeUnmount(() => {
   margin: 2px 0;
   line-height: 42px;
   color: var(--oa-muted);
-  border-radius: 12px;
+  border-radius: var(--oa-radius-sm);
   font-size: 14px;
   letter-spacing: 0;
   transition:
@@ -669,7 +684,7 @@ onBeforeUnmount(() => {
 .admin-drawer-menu :deep(.el-menu-item) {
   height: 48px;
   margin-bottom: 8px;
-  border-radius: 18px;
+  border-radius: var(--oa-radius-sm);
 }
 
 .version-tag {
@@ -679,7 +694,7 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   border: 1px solid var(--oa-border);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
 }
 
@@ -724,6 +739,10 @@ onBeforeUnmount(() => {
 
   .admin-header h1 {
     font-size: 18px;
+  }
+
+  .admin-breadcrumb {
+    display: none;
   }
 
   .admin-header p {

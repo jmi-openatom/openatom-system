@@ -1,12 +1,1 @@
 export const siteData = JSON.parse("{\"base\":\"/\",\"lang\":\"zh-CN\",\"title\":\"JMI-OPENATOM\",\"description\":\"开放原子开源社团管理系统 - 开发文档\",\"head\":[[\"link\",{\"rel\":\"icon\",\"href\":\"https://www.jmi-openatom.cn/logo.svg\"}],[\"meta\",{\"name\":\"theme-color\",\"content\":\"#2b5aed\"}],[\"meta\",{\"name\":\"apple-mobile-web-app-capable\",\"content\":\"yes\"}],[\"meta\",{\"name\":\"apple-mobile-web-app-status-bar-style\",\"content\":\"black-translucent\"}]],\"locales\":{\"/\":{\"lang\":\"zh-CN\",\"title\":\"JMI-OPENATOM\",\"description\":\"开放原子开源社团管理系统 - 开发文档\"}}}")
-
-if (import.meta.webpackHot) {
-  import.meta.webpackHot.accept()
-  __VUE_HMR_RUNTIME__.updateSiteData?.(siteData)
-}
-
-if (import.meta.hot) {
-  import.meta.hot.accept((m) => {
-    __VUE_HMR_RUNTIME__.updateSiteData?.(m.siteData)
-  })
-}

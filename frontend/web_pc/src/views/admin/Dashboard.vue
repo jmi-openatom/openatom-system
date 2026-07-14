@@ -302,7 +302,7 @@ onMounted(() => {
   overflow: hidden;
   margin-bottom: 0;
   border: 1px solid var(--oa-border);
-  border-radius: 18px;
+  border-radius: var(--oa-radius);
   background: var(--oa-border);
 }
 
@@ -337,7 +337,7 @@ onMounted(() => {
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  font-size: 40px;
+  font-size: var(--oa-font-size-display);
   font-weight: 600;
   line-height: 1.1;
 }
@@ -348,7 +348,7 @@ onMounted(() => {
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--oa-border);
-  border-radius: 18px;
+  border-radius: var(--oa-radius);
   background: var(--oa-border);
 }
 

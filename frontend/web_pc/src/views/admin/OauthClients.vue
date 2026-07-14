@@ -1,10 +1,10 @@
 <template>
-  <ViewPage>
+  <ViewPage class="admin-page">
     <ViewToolbar title="认证应用">
       <el-button type="primary" @click="openCreate">新增应用</el-button>
     </ViewToolbar>
 
-    <el-table v-loading="loading" :data="clients" border>
+    <el-table v-loading="loading" :data="clients" class="admin-table">
       <el-table-column prop="clientName" label="应用名称" min-width="150" />
       <el-table-column prop="clientId" label="Client ID" min-width="150" />
       <el-table-column prop="redirectUris" label="回调地址" min-width="260" show-overflow-tooltip />

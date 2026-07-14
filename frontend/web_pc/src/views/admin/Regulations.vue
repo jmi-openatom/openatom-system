@@ -372,7 +372,7 @@ onMounted(async () => {
   max-height: 62vh;
   padding: 24px;
   border: 1px solid var(--oa-border);
-  border-radius: 14px;
+  border-radius: var(--oa-radius);
   background: var(--oa-elevated-bg);
   overflow: auto;
 }

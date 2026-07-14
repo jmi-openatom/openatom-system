@@ -451,7 +451,7 @@ onMounted(() => {
 
 <style scoped>
 .office-documents-page {
-  padding: 24px;
+  padding: 0;
 }
 
 .toolbar__actions {
@@ -465,7 +465,7 @@ onMounted(() => {
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--oa-border);
-  border-radius: 18px;
+  border-radius: var(--oa-radius);
   background: var(--oa-border);
 }
 

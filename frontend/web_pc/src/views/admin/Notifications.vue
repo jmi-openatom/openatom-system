@@ -303,7 +303,7 @@ onMounted(fetchList)
   max-height: 460px;
   padding: 18px;
   border: 1px solid var(--oa-border);
-  border-radius: 12px;
+  border-radius: var(--oa-radius);
   background: var(--oa-elevated-bg);
   overflow: auto;
 }

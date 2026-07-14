@@ -540,6 +540,11 @@ const routes = [
       },
     ],
   },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: resilientView(() => import('../views/NotFound.vue')),
+  },
 ]
 
 const router = createRouter({

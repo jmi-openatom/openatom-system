@@ -261,6 +261,6 @@ function showAll() {
   justify-content: space-between;
   gap: 12px;
   color: var(--oa-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 </style>

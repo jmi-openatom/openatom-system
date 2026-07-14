@@ -1,5 +1,5 @@
 <template>
-  <div v-loading="loading" v-bind="$attrs">
+  <div v-loading="loading" :aria-busy="loading" class="view-page" v-bind="$attrs">
     <slot />
   </div>
 </template>

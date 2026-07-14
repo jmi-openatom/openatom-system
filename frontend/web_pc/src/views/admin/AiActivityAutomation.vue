@@ -1,5 +1,5 @@
 <template>
-  <ViewPage class="ai-activity-page">
+  <ViewPage class="admin-page ai-activity-page">
     <section class="page-head">
       <div>
         <p class="eyebrow">AI 活动自动化</p>

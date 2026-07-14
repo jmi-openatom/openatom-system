@@ -443,7 +443,7 @@ onMounted(() => {
 
 .comments-section__head > div > span {
   color: var(--oa-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;

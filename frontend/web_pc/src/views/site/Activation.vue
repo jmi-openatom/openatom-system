@@ -48,7 +48,7 @@
         <section v-if="step === 1" class="ob-step ob-step--welcome">
           <div class="ob-step__inner">
             <div class="ob-logo" :class="{ 'ob-logo--in': stepInAnim }">
-              <img src="../../../public/logo.png" width="100" alt="">
+              <img src="/logo.png" width="100" alt="">
             </div>
             <p class="ob-eyebrow" :style="{ '--delay': '0.1s' }">开放原子开源社团 · JMI-OPENATOM</p>
             <h1 class="ob-title" :style="{ '--delay': '0.25s' }">
@@ -993,7 +993,7 @@ onBeforeUnmount(() => {
 .onboard__progress-label {
   color: var(--oa-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.14em;
   white-space: nowrap;
 }
@@ -1210,7 +1210,7 @@ onBeforeUnmount(() => {
 }
 
 .ob-mono-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.2em;
   color: var(--oa-muted);
@@ -1548,7 +1548,7 @@ onBeforeUnmount(() => {
 }
 
 .ob-dept-head__badge {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2312,7 +2312,7 @@ html.dark .ob-dept-head--primary {
 
 .ob-eyebrow {
   color: var(--oa-muted);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.18em;
 }
 
@@ -2538,9 +2538,9 @@ html.dark .ob-dept-head--primary {
 
 .ob-os-deco__symbol--1 { top: 12%; left: 6%; animation-duration: 26s; font-size: 16px; }
 .ob-os-deco__symbol--2 { top: 72%; right: 8%; animation-duration: 32s; animation-delay: -8s; }
-.ob-os-deco__symbol--3 { top: 28%; right: 12%; animation-duration: 28s; animation-delay: -4s; font-size: 11px; }
+.ob-os-deco__symbol--3 { top: 28%; right: 12%; animation-duration: 28s; animation-delay: -4s; font-size: 12px; }
 .ob-os-deco__symbol--4 { bottom: 18%; left: 10%; animation-duration: 34s; animation-delay: -12s; }
-.ob-os-deco__symbol--5 { top: 55%; left: 80%; animation-duration: 22s; animation-delay: -6s; font-size: 11px; }
+.ob-os-deco__symbol--5 { top: 55%; left: 80%; animation-duration: 22s; animation-delay: -6s; font-size: 12px; }
 
 @keyframes osSymbolFloat {
   0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
@@ -2585,7 +2585,7 @@ html.dark .ob-os-deco__symbol {
   background: var(--oa-page-bg);
   color: var(--oa-active-bg);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.16em;
 }
 
@@ -2756,7 +2756,7 @@ html.dark .ob-os-deco__symbol {
 
 .ob-success-terminal__title {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--oa-muted);
   letter-spacing: 0.04em;
@@ -2848,13 +2848,13 @@ html.dark .ob-os-deco__symbol {
   border: 1px solid color-mix(in srgb, var(--oa-active-bg) 50%, transparent);
   border-radius: 9px;
   color: var(--oa-active-bg);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   box-shadow: 0 0 20px color-mix(in srgb, var(--oa-active-bg) 18%, transparent);
 }
 
 .onboard__brand-copy {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.1;
   letter-spacing: 0.16em;
   font-weight: 700;
@@ -2862,7 +2862,7 @@ html.dark .ob-os-deco__symbol {
 
 .onboard__brand-copy small {
   color: var(--oa-muted);
-  font-size: 7px;
+  font-size: 12px;
   letter-spacing: 0.18em;
   font-weight: 500;
 }
@@ -2888,7 +2888,7 @@ html.dark .ob-os-deco__symbol {
 .onboard__progress-fill { background: var(--oa-active-bg); box-shadow: none; }
 .onboard__step { padding: 72px 24px 96px; }
 .ob-title { letter-spacing: -0.055em; line-height: 1.06; }
-.ob-eyebrow { font-size: 11px; letter-spacing: 0.18em; }
+.ob-eyebrow { font-size: 12px; letter-spacing: 0.18em; }
 .ob-desc { max-width: 680px; font-size: 16px; color: var(--oa-muted-strong); }
 .ob-logo img { border-radius: 20px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--oa-active-bg) 5%, transparent), 0 12px 32px color-mix(in srgb, var(--oa-text) 12%, transparent); }
 .ob-welcome-name { padding: 14px 24px; border-radius: 12px; background: color-mix(in srgb, var(--oa-surface) 78%, transparent); border-color: color-mix(in srgb, var(--oa-border) 72%, transparent); box-shadow: none; }
