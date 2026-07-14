@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /activation
+Disallow: /login
+Disallow: /profile
+Disallow: /progress
+Disallow: /notifications
+Disallow: /images
+Disallow: /leaves
+Disallow: /evening-study
+Disallow: /forms/
+Disallow: /check-in/
+Disallow: /lottery/
+Disallow: /qr-screen
+Disallow: /blog/my
+Disallow: /blog/write
+
+Sitemap: https://www.jmi-openatom.cn/sitemap.xml

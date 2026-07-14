@@ -14,6 +14,7 @@ import {
   shouldUseFullPageAuthRedirect,
 } from '@/utils/auth.ts'
 import { buildOidcAuthorizeUrl } from '@/utils/oidc.ts'
+import { updateRouteSeo } from '@/utils/seo.ts'
 
 const ROUTE_LOAD_RETRIES = 2
 
@@ -644,6 +645,7 @@ router.beforeEach(async (to) => {
 
 router.afterEach((to) => {
   sessionStorage.removeItem(`openatom_route_recovery:${to.fullPath}`)
+  updateRouteSeo(to)
   finishNavigation()
 })
 

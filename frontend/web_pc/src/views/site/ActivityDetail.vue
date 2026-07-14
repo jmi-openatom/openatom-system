@@ -106,6 +106,7 @@ import { ensureCollegeRegistrationField, resolveCollegeValue } from '@/constants
 import { formatDateTime, monthDayParts } from '@/utils/format.ts'
 import { getCurrentUser, getToken } from '@/utils/auth.ts'
 import { renderMarkdown } from '@/utils/markdown.ts'
+import { SITE_NAME, SITE_URL, updateSeo } from '@/utils/seo.ts'
 import { hasRole } from '@/utils/permission.ts'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -145,6 +146,35 @@ async function fetchDetail() {
   loading.value = true
   try {
     activity.value = await siteApi.activityDetail(route.params.id)
+    updateSeo(
+      {
+        title: `${activity.value.title || '活动详情'}｜${SITE_NAME}`,
+        description: activity.value.summary || '查看 JMI-OPENATOM 技术活动详情与参与方式。',
+        image: activity.value.coverUrl,
+        structuredData: {
+          '@context': 'https://schema.org',
+          '@type': 'Event',
+          name: activity.value.title,
+          description: activity.value.summary,
+          image: activity.value.coverUrl || `${SITE_URL}/logo.png`,
+          startDate: activity.value.activityAt,
+          eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+          eventStatus: 'https://schema.org/EventScheduled',
+          location: {
+            '@type': 'Place',
+            name: activity.value.location || '地点待定',
+          },
+          organizer: {
+            '@type': 'Organization',
+            name: SITE_NAME,
+            url: SITE_URL,
+          },
+          url: `${SITE_URL}${route.path}`,
+          inLanguage: 'zh-CN',
+        },
+      },
+      route.path,
+    )
     initializeForm()
   } finally {
     loading.value = false

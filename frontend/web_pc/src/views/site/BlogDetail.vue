@@ -148,6 +148,7 @@ import { siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { getCurrentUser, getToken } from '@/utils/auth.ts'
 import { renderMarkdown } from '@/utils/markdown.ts'
+import { SITE_NAME, SITE_URL, updateSeo } from '@/utils/seo.ts'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -185,6 +186,35 @@ async function fetchDetail() {
   loading.value = true
   try {
     article.value = await siteApi.blogArticleDetail(route.params.id)
+    updateSeo(
+      {
+        title: `${article.value.title || '文章详情'}｜${SITE_NAME}`,
+        description: article.value.summary || '阅读 JMI-OPENATOM 社团成员分享的技术文章。',
+        image: article.value.coverUrl,
+        type: 'article',
+        structuredData: {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: article.value.title,
+          description: article.value.summary,
+          image: article.value.coverUrl || `${SITE_URL}/logo.png`,
+          datePublished: article.value.publishedAt || article.value.createdAt,
+          dateModified: article.value.updatedAt || article.value.publishedAt,
+          author: {
+            '@type': 'Person',
+            name: article.value.authorName || 'JMI-OPENATOM 成员',
+          },
+          publisher: {
+            '@type': 'Organization',
+            name: SITE_NAME,
+            logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` },
+          },
+          mainEntityOfPage: `${SITE_URL}${route.path}`,
+          inLanguage: 'zh-CN',
+        },
+      },
+      route.path,
+    )
     await refreshComments()
   } finally {
     loading.value = false

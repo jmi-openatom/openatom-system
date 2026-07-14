@@ -120,6 +120,7 @@ import { useRoute } from 'vue-router'
 import { ArrowLeft, Download, Link } from '@element-plus/icons-vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import { siteApi } from '@/api'
+import { SITE_NAME, SITE_URL, updateSeo } from '@/utils/seo'
 
 interface ShowcaseApp {
   id: number
@@ -151,6 +152,31 @@ async function fetchDetail() {
   try {
     const data = await siteApi.showcaseAppDetail(String(id))
     app.value = data && typeof data === 'object' ? data : null
+    if (app.value) {
+      updateSeo(
+        {
+          title: `${app.value.name}｜${SITE_NAME}`,
+          description: app.value.summary || `了解 ${app.value.name} 的功能、开源状态与相关链接。`,
+          image: app.value.coverUrl,
+          structuredData: {
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            name: app.value.name,
+            description: app.value.summary,
+            image: app.value.coverUrl || `${SITE_URL}/logo.png`,
+            applicationCategory: 'DeveloperApplication',
+            softwareVersion: app.value.version,
+            license: app.value.licenseName,
+            url: `${SITE_URL}${route.path}`,
+            author: {
+              '@type': 'Organization',
+              name: app.value.developer || app.value.owner || SITE_NAME,
+            },
+          },
+        },
+        route.path,
+      )
+    }
   } catch (_error) {
     app.value = null
   } finally {
