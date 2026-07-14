@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 仅返回已发布且具有安全官网地址的开源伙伴。 */
+/** 开源伙伴管理与公开展示。 */
 @Service
 @RequiredArgsConstructor
 public class PartnerClubServiceImpl implements PartnerClubService {
@@ -37,7 +37,10 @@ public class PartnerClubServiceImpl implements PartnerClubService {
     }
     List<ResponsePartnerClubVO> clubs =
         partnerClubMapper.selectPublished(featured, limit).stream()
-            .filter(club -> isSafeWebsite(club.getWebsiteUrl()))
+            .filter(
+                club ->
+                    trimToNull(club.getWebsiteUrl()) == null
+                        || isSafeWebsite(club.getWebsiteUrl()))
             .map(this::toResponse)
             .toList();
     return Result.success(clubs);
@@ -103,8 +106,10 @@ public class PartnerClubServiceImpl implements PartnerClubService {
 
   private void applyRequest(PartnerClub club, RequestSavePartnerClubDTO request) {
     if (request == null) throw new IllegalArgumentException("伙伴信息不能为空");
-    String websiteUrl = required(request.getWebsiteUrl(), "官网地址不能为空");
-    if (!isSafeWebsite(websiteUrl)) throw new IllegalArgumentException("官网地址仅支持 http 或 https");
+    String websiteUrl = trimToNull(request.getWebsiteUrl());
+    if (websiteUrl != null && !isSafeWebsite(websiteUrl)) {
+      throw new IllegalArgumentException("官网地址仅支持 http 或 https");
+    }
     String logoUrl = required(request.getLogoUrl(), "Logo 地址不能为空");
     if (!isSafeLogo(logoUrl)) throw new IllegalArgumentException("Logo 地址必须是站内路径或 http/https 地址");
     club.setName(required(request.getName(), "伙伴名称不能为空"));
@@ -129,7 +134,8 @@ public class PartnerClubServiceImpl implements PartnerClubService {
         .name(club.getName())
         .logoUrl(club.getLogoUrl())
         .description(club.getDescription())
-        .websiteUrl(club.getWebsiteUrl())
+        .websiteUrl(
+            isSafeWebsite(club.getWebsiteUrl()) ? club.getWebsiteUrl().trim() : null)
         .organization(club.getOrganization())
         .category(club.getCategory())
         .tags(parseTags(club.getTags()))

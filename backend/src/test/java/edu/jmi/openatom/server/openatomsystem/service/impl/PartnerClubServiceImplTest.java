@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.PartnerClub;
@@ -12,18 +13,20 @@ import org.junit.jupiter.api.Test;
 
 class PartnerClubServiceImplTest {
   @Test
-  void returnsPublishedPartnersWithParsedTagsAndSafeWebsiteOnly() {
+  void returnsPublishedPartnersWithParsedTagsAndOptionalWebsite() {
     PartnerClub safe = partner("https://example.org", "[\"开源\",\"Linux\"]");
+    PartnerClub withoutWebsite = partner(null, "[]");
     PartnerClub unsafe = partner("javascript:alert(1)", "[]");
     AtomicInteger queryCount = new AtomicInteger();
-    PartnerClubMapper mapper = mapperReturning(List.of(safe, unsafe), queryCount);
+    PartnerClubMapper mapper = mapperReturning(List.of(safe, withoutWebsite, unsafe), queryCount);
     PartnerClubServiceImpl partnerClubService = new PartnerClubServiceImpl(mapper, new ObjectMapper());
 
     var result = partnerClubService.publicList(true, 4);
 
     assertEquals(0, result.getCode());
-    assertEquals(1, result.getData().size());
+    assertEquals(2, result.getData().size());
     assertEquals(List.of("开源", "Linux"), result.getData().getFirst().getTags());
+    assertNull(result.getData().get(1).getWebsiteUrl());
     assertEquals(1, queryCount.get());
   }
 

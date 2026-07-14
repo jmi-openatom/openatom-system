@@ -20,7 +20,6 @@ public class RequestSavePartnerClubDTO {
   @Size(max = 300, message = "伙伴简介不能超过 300 个字符")
   private String description;
 
-  @NotBlank(message = "官网地址不能为空")
   @Size(max = 500, message = "官网地址不能超过 500 个字符")
   private String websiteUrl;
 

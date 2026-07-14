@@ -57,7 +57,10 @@
       <el-table-column prop="sortOrder" label="排序" width="80" />
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openWebsite(row.websiteUrl)">官网</el-button>
+          <el-button v-if="row.websiteUrl" link type="primary" @click="openWebsite(row.websiteUrl)">
+            官网
+          </el-button>
+          <span v-else class="no-website">暂无官网</span>
           <el-button v-if="canUpdate" link type="primary" @click="openDialog(row)">编辑</el-button>
           <el-button v-if="canUpdateStatus" link type="primary" @click="togglePublish(row)">
             {{ row.status === 'published' ? '停用' : '发布' }}
@@ -98,8 +101,12 @@
           <el-form-item label="Logo 地址" prop="logoUrl">
             <el-input v-model="form.logoUrl" maxlength="500" placeholder="站内路径或 HTTPS 地址" />
           </el-form-item>
-          <el-form-item label="官网地址" prop="websiteUrl">
-            <el-input v-model="form.websiteUrl" maxlength="500" placeholder="https://example.org" />
+          <el-form-item label="官网地址（可选）" prop="websiteUrl">
+            <el-input
+              v-model="form.websiteUrl"
+              maxlength="500"
+              placeholder="可留空，或填写 https://example.org"
+            />
           </el-form-item>
         </div>
         <el-form-item label="伙伴简介" prop="description">
@@ -210,10 +217,11 @@ const rules: FormRules = {
   logoUrl: [{ required: true, message: '请输入 Logo 地址', trigger: 'blur' }],
   description: [{ required: true, message: '请输入伙伴简介', trigger: 'blur' }],
   websiteUrl: [
-    { required: true, message: '请输入官网地址', trigger: 'blur' },
     {
-      pattern: /^https?:\/\//i,
-      message: '官网地址必须以 http:// 或 https:// 开头',
+      validator: (_rule, value: string, callback) => {
+        if (!value?.trim() || /^https?:\/\//i.test(value.trim())) callback()
+        else callback(new Error('官网地址必须以 http:// 或 https:// 开头'))
+      },
       trigger: 'blur',
     },
   ],
@@ -233,6 +241,7 @@ async function fetchList() {
     const data = await partnerClubApi.list(listParams.value)
     rows.value = (data?.list || []).map((row: PartnerClubRow & { tags?: string | string[] }) => ({
       ...row,
+      websiteUrl: row.websiteUrl || '',
       tags: parseTags(row.tags),
     }))
     total.value = Number(data?.total || 0)
@@ -304,7 +313,8 @@ async function remove(row: PartnerClubRow) {
   await fetchList()
 }
 
-function openWebsite(url: string) {
+function openWebsite(url?: string) {
+  if (!url) return
   if (/^https?:\/\//i.test(url)) window.open(url, '_blank', 'noopener,noreferrer')
 }
 
@@ -393,6 +403,13 @@ onMounted(fetchList)
   margin: 3px 0 0;
   color: var(--oa-muted);
   font-size: 12px;
+}
+
+.no-website {
+  display: inline-block;
+  padding: 0 8px;
+  color: var(--oa-muted);
+  font-size: 13px;
 }
 
 .form-grid {

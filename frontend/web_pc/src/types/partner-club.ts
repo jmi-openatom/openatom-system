@@ -3,7 +3,7 @@ export interface PartnerClub {
   name: string
   logoUrl: string
   description: string
-  websiteUrl: string
+  websiteUrl?: string
   organization?: string
   category?: string
   tags?: string[]

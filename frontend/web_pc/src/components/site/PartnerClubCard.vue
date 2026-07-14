@@ -46,6 +46,7 @@
         <span>访问官网</span>
         <ExternalLink aria-hidden="true" :size="16" :stroke-width="1.8" />
       </a>
+      <span v-else class="partner-club-card__unavailable">暂无官网</span>
     </div>
   </article>
 </template>
@@ -68,6 +69,7 @@ const logoFailed = ref(false)
 
 const initial = computed(() => props.club.name.trim().slice(0, 1).toUpperCase() || '社')
 const safeWebsiteUrl = computed(() => {
+  if (!props.club.websiteUrl) return ''
   try {
     const url = new URL(props.club.websiteUrl)
     return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : ''
@@ -255,6 +257,15 @@ watch(
 .partner-club-card__link:focus-visible {
   outline: 3px solid var(--oa-focus-ring);
   outline-offset: 3px;
+}
+
+.partner-club-card__unavailable {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 2px;
+  color: var(--oa-muted);
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .partner-club-card--compact {
