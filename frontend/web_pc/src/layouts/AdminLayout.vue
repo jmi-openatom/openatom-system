@@ -46,7 +46,14 @@
     <el-container class="admin-content">
       <el-header class="admin-header">
         <div class="admin-header__title">
-          <el-button class="admin-mobile-menu-btn" circle :icon="Menu" @click="mobileMenuVisible = true" />
+          <el-button
+            :icon="Menu"
+            aria-label="打开后台导航"
+            circle
+            class="admin-mobile-menu-btn"
+            title="打开后台导航"
+            @click="mobileMenuVisible = true"
+          />
           <div class="admin-header__title-copy">
             <el-breadcrumb separator="/" class="admin-breadcrumb">
               <el-breadcrumb-item :to="{ path: '/admin/dashboard' }">管理后台</el-breadcrumb-item>
@@ -59,7 +66,12 @@
           <ThemeToggle />
           <el-button :icon="HomeFilled" @click="$router.push('/')">官网</el-button>
           <el-dropdown @command="handleCommand">
-            <el-button type="primary">
+            <el-button
+              :aria-label="`${displayUserName}的账户菜单`"
+              :icon="UserFilled"
+              :title="`${displayUserName}的账户菜单`"
+              type="primary"
+            >
               {{ displayUserName }}
               <el-icon class="el-icon--right">
                 <ArrowDown />
@@ -235,6 +247,7 @@ const menus = ref<AdminMenuItem[]>([
   { path: '/admin/roles', label: '角色权限', icon: Lock, permissions: ['role:list', 'permission:list'] },
   { path: '/admin/oauth-clients', label: '认证应用', icon: Lock, permissions: ['oauth-client:list'] },
   { path: '/admin/showcase-apps', label: '应用展示', icon: Box, permissions: ['showcase-app:list'] },
+  { path: '/admin/partner-clubs', label: '开源伙伴', icon: Connection, permissions: ['partner-club:list'] },
   { path: '/admin/data-open', label: '开放平台', icon: Connection, permissions: ['data-open:list'] },
   { path: '/admin/bot-groups', label: 'QQ机器人', icon: ChatDotRound, permissions: ['bot-management:list'] },
   { path: '/admin/logs', label: '系统日志', icon: List, permissions: ['log:operation:list', 'log:login:list'] },
@@ -735,6 +748,11 @@ onBeforeUnmount(() => {
 
   .admin-mobile-menu-btn {
     display: inline-flex;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    aspect-ratio: 1;
+    padding: 0;
   }
 
   .admin-header h1 {
@@ -776,8 +794,16 @@ onBeforeUnmount(() => {
   }
 
   .admin-header__actions :deep(.el-button) {
-    width: 40px;
-    padding: 8px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    aspect-ratio: 1;
+    padding: 0;
+  }
+
+  .admin-mobile-menu-btn :deep(.el-icon),
+  .admin-header__actions :deep(.el-icon) {
+    font-size: 18px;
   }
 
   .admin-header__actions :deep(.el-button + .el-button) {

@@ -20,6 +20,7 @@
           <router-link to="/blog">博客</router-link>
           <router-link to="/regulations">制度</router-link>
           <router-link to="/apps">应用</router-link>
+          <router-link to="/partners">开源伙伴</router-link>
           <router-link to="/images">图床</router-link>
           <router-link to="/points">积分</router-link>
           <router-link to="/leaves">请假</router-link>
@@ -33,13 +34,22 @@
           <!--          <router-link to="/check-in/scan">扫码签到</router-link>-->
           <router-link to="/about">关于我们</router-link>
         </nav>
-        <el-button :icon="Menu" circle class="mobile-menu-btn" @click="mobileNavVisible = true" />
+        <el-button
+          :icon="Menu"
+          aria-label="打开导航"
+          circle
+          class="mobile-menu-btn"
+          title="打开导航"
+          @click="mobileNavVisible = true"
+        />
         <div class="site-header__actions">
           <ThemeToggle />
           <el-button
             v-if="isLoggedIn"
             circle
-            class="notification-btn"
+            class="notification-btn site-header__action--notification"
+            aria-label="查看通知"
+            title="查看通知"
             @click="$router.push('/notifications')"
           >
             <el-badge :hidden="unreadCount === 0" is-dot>
@@ -48,15 +58,26 @@
               </el-icon>
             </el-badge>
           </el-button>
-          <el-button v-if="isLoggedIn" :icon="UserFilled" plain @click="$router.push('/profile')"
+          <el-button
+            v-if="isLoggedIn"
+            :icon="UserFilled"
+            class="site-header__action--account"
+            plain
+            @click="$router.push('/profile')"
             >个人中心
           </el-button>
-          <el-button v-else :icon="UserFilled" plain @click="$router.push('/login')"
+          <el-button
+            v-else
+            :icon="UserFilled"
+            class="site-header__action--account"
+            plain
+            @click="$router.push('/login')"
             >登录
           </el-button>
           <el-button
             v-if="showAdminEntry"
             :icon="Setting"
+            class="site-header__action--admin"
             type="primary"
             @click="$router.push('/admin')"
           >
@@ -79,6 +100,7 @@
         <router-link to="/blog" @click="mobileNavVisible = false">博客</router-link>
         <router-link to="/regulations" @click="mobileNavVisible = false">规章制度</router-link>
         <router-link to="/apps" @click="mobileNavVisible = false">应用</router-link>
+        <router-link to="/partners" @click="mobileNavVisible = false">开源伙伴</router-link>
         <router-link to="/images" @click="mobileNavVisible = false">图床</router-link>
         <router-link to="/votes" @click="mobileNavVisible = false">投票</router-link>
         <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>
@@ -522,7 +544,14 @@ onBeforeUnmount(() => {
 }
 
 .notification-btn {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  min-height: 40px !important;
+  aspect-ratio: 1;
+  padding: 0 !important;
   border: none !important;
+  border-radius: 50% !important;
   background: var(--oa-button-subtle-bg) !important;
   font-size: 20px;
   color: var(--oa-button-text);
@@ -616,6 +645,16 @@ onBeforeUnmount(() => {
 
   .mobile-menu-btn {
     display: inline-flex;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    aspect-ratio: 1;
+    padding: 0;
+  }
+
+  .mobile-menu-btn :deep(.el-icon),
+  .site-header__actions :deep(.el-icon) {
+    font-size: 18px;
   }
 
   .site-footer__inner {
@@ -640,8 +679,11 @@ onBeforeUnmount(() => {
   }
 
   .site-header__actions :deep(.el-button) {
-    width: 40px;
-    padding: 8px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    aspect-ratio: 1;
+    padding: 0;
   }
 
   .site-header__actions :deep(.el-button + .el-button) {
@@ -650,6 +692,12 @@ onBeforeUnmount(() => {
 
   .brand small {
     display: none;
+  }
+
+  .site-header__action--notification,
+  .site-header__action--account,
+  .site-header__action--admin {
+    display: none !important;
   }
 }
 </style>

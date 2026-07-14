@@ -8,6 +8,7 @@
       <HomeFeaturedBlogsSection :articles="featuredBlogs" />
       <HomePeopleSection :people="people" :loading="loading" />
       <HomeAwardsSection :awards="awards" :loading="loading" />
+      <HomePartnerClubsSection />
     </template>
   </ViewPage>
 </template>
@@ -40,6 +41,9 @@ const HomeFocusSection = defineAsyncComponent(
 )
 const HomePeopleSection = defineAsyncComponent(
   () => import('@/components/site/home/HomePeopleSection.vue'),
+)
+const HomePartnerClubsSection = defineAsyncComponent(
+  () => import('@/components/site/home/HomePartnerClubsSection.vue'),
 )
 
 const loading = ref(false)

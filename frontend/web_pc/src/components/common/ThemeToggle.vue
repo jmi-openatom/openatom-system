@@ -1,14 +1,12 @@
 <template>
   <el-button
-      :aria-label="tooltip"
-      class="theme-toggle"
-      @click="toggleTheme"
-      style="border-radius: 50%;"
-  >
-    <el-icon :size="10">
-      <component :is="themeIcon" />
-    </el-icon>
-  </el-button>
+    :aria-label="tooltip"
+    :icon="themeIcon"
+    :title="tooltip"
+    circle
+    class="theme-toggle"
+    @click="toggleTheme"
+  />
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
@@ -24,5 +22,10 @@ const themeIcon = computed(() => (isDark.value ? Sunny : Moon))
 <style scoped>
 .theme-toggle {
   flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  aspect-ratio: 1;
+  padding: 0;
 }
 </style>

@@ -10,6 +10,9 @@ export const siteApi = {
   clubs(): Promise<any> {
     return request.get('/site/clubs')
   },
+  partnerClubs(params?: { featured?: boolean; limit?: number }): Promise<any> {
+    return request.get('/site/partner-clubs', { params })
+  },
   activityDetail(id: string | number): Promise<any> {
     return request.get(`/site/activities/${id}`)
   },
@@ -166,6 +169,24 @@ export const showcaseAppApi = {
   },
   remove(id: string | number): Promise<any> {
     return request.delete(`/showcase-apps/${id}`)
+  },
+}
+
+export const partnerClubApi = {
+  list(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/partner-clubs', { params })
+  },
+  create(data: Record<string, unknown>): Promise<any> {
+    return request.post('/partner-clubs', data)
+  },
+  update(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/partner-clubs/${id}`, data)
+  },
+  updateStatus(id: string | number, status: string): Promise<any> {
+    return request.patch(`/partner-clubs/${id}/status`, null, { params: { status } })
+  },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/partner-clubs/${id}`)
   },
 }
 

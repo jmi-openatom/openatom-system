@@ -77,6 +77,7 @@ const adminFallbackRoutes = [
   '/admin/office-documents',
   '/admin/images',
   '/admin/showcase-apps',
+  '/admin/partner-clubs',
   '/admin/data-open',
   '/admin/leaves',
   '/admin/school-calendar',
@@ -202,6 +203,11 @@ const routes = [
         path: 'apps',
         name: 'site-apps',
         component: resilientView(() => import('../views/site/Apps.vue')),
+      },
+      {
+        path: 'partners',
+        name: 'site-partners',
+        component: resilientView(() => import('../views/site/Partners.vue')),
       },
       {
         path: 'apps/:id',
@@ -423,6 +429,12 @@ const routes = [
         name: 'admin-showcase-apps',
         meta: { permissions: ['showcase-app:list'] },
         component: resilientView(() => import('../views/admin/ShowcaseApps.vue')),
+      },
+      {
+        path: 'partner-clubs',
+        name: 'admin-partner-clubs',
+        meta: { permissions: ['partner-club:list'] },
+        component: resilientView(() => import('../views/admin/PartnerClubs.vue')),
       },
       {
         path: 'data-open',

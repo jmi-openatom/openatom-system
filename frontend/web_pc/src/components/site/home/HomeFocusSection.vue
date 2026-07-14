@@ -35,7 +35,7 @@ const data = [
     category: "外联部 - 对外合作",
     title: "连接校内外的技术与资源",
     src: "/external.png",
-    description: "对接企业、兄弟社团和开源社区，争取赞助与合作机会，拓宽成员视野。",
+    description: "对接企业、开源伙伴和技术社区，争取赞助与合作机会，拓宽成员视野。",
   },
   {
     category: "社区部 - 社区运营",
