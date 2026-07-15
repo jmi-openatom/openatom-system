@@ -70,6 +70,13 @@ public interface BlogArticleMapper extends BaseMapper<BlogArticle> {
             .last("LIMIT 1"));
   }
 
+  default Long countPublishedByAuthor(Integer authorId) {
+    return selectCount(
+        new LambdaQueryWrapper<BlogArticle>()
+            .eq(BlogArticle::getAuthorId, authorId)
+            .eq(BlogArticle::getStatus, "published"));
+  }
+
   default List<BlogArticle> selectPublishedWithCategory() {
     return selectList(
         new LambdaQueryWrapper<BlogArticle>()

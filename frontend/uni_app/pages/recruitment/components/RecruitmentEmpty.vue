@@ -24,12 +24,12 @@ const emit = defineEmits<{
 .empty__title {
     font-size: 32rpx;
     font-weight: 700;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .empty__desc {
     margin-top: 12rpx;
-    color: #64748b;
+    color: #666668;
     font-size: 26rpx;
 }
 
@@ -38,8 +38,8 @@ const emit = defineEmits<{
     height: 72rpx;
     line-height: 72rpx;
     padding: 0 34rpx;
-    border-radius: 999rpx;
-    background: #1769e8;
+    border-radius: 16rpx;
+    background: #1d1d1f;
     color: #fff;
     font-size: 26rpx;
 }

@@ -60,6 +60,54 @@ public class AuthController {
     return authService.login(requestLoginDTO);
   }
 
+  @PostMapping("/google-login")
+  public Result<ResponseLoginVO> googleLogin(
+      @Valid @RequestBody RequestGoogleLoginDTO requestGoogleLoginDTO) {
+    return authService.googleLogin(requestGoogleLoginDTO);
+  }
+
+  @PostMapping("/google-bind")
+  @SaCheckPermission("auth:me")
+  public Result<String> bindGoogle(
+      @Valid @RequestBody RequestGoogleLoginDTO requestGoogleLoginDTO) {
+    return authService.bindGoogle(requestGoogleLoginDTO);
+  }
+
+  @GetMapping("/github-login-url")
+  public Result<java.util.Map<String, String>> githubLoginUrl(
+      @RequestParam(required = false) String redirect) {
+    return authService.githubLoginUrl(redirect);
+  }
+
+  @GetMapping("/github-bind-url")
+  @SaCheckPermission("auth:me")
+  public Result<java.util.Map<String, String>> githubBindUrl() {
+    return authService.githubBindUrl();
+  }
+
+  @PostMapping("/github-callback")
+  public Result<java.util.Map<String, Object>> githubCallback(
+      @Valid @RequestBody RequestGithubCallbackDTO request) {
+    return authService.githubCallback(request);
+  }
+
+  @GetMapping("/gitee-login-url")
+  public Result<java.util.Map<String, String>> giteeLoginUrl(@RequestParam(required = false) String redirect) {
+    return authService.giteeLoginUrl(redirect);
+  }
+
+  @GetMapping("/gitee-bind-url")
+  @SaCheckPermission("auth:me")
+  public Result<java.util.Map<String, String>> giteeBindUrl() {
+    return authService.giteeBindUrl();
+  }
+
+  @PostMapping("/gitee-callback")
+  public Result<java.util.Map<String, Object>> giteeCallback(
+      @Valid @RequestBody RequestGithubCallbackDTO request) {
+    return authService.giteeCallback(request);
+  }
+
   @PostMapping("/miniapp-login")
   public Result<ResponseLoginVO> miniappLogin(
       @Valid @RequestBody RequestMiniappLoginDTO requestMiniappLoginDTO) {

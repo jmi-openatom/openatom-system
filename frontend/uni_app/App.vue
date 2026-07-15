@@ -1,9 +1,8 @@
 <script setup>
-import {onHide, onLaunch, onShow} from '@dcloudio/uni-app'
+import {onLaunch} from '@dcloudio/uni-app'
 import {routeByDomain} from '@/utils/domainRoute'
 
 onLaunch(() => {
-    console.log('App Launch')
     uni.onNetworkStatusChange((result) => {
         uni.showToast({
             title: result.isConnected ? '网络已恢复' : '网络已断开，已保留当前页面',
@@ -11,14 +10,6 @@ onLaunch(() => {
         })
     })
     routeByDomain()
-})
-
-onShow(() => {
-    console.log('App Show')
-})
-
-onHide(() => {
-    console.log('App Hide')
 })
 </script>
 
@@ -29,9 +20,14 @@ page {
     Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB',
     'Microsoft Yahei', sans-serif;
     font-size: 28rpx;
-    color: #333;
-    background: #f5f5f5;
+    color: #1d1d1f;
+    background: #f5f5f7;
     -webkit-font-smoothing: antialiased;
+}
+
+button,
+[role="button"] {
+    touch-action: manipulation;
 }
 
 /* ---- Common utility classes ---- */

@@ -37,10 +37,12 @@ import {authApi} from '@/api'
 import {getRememberedLogin, setRememberedLogin, setSession} from '@/utils/auth'
 import store from '@/store'
 import {onMounted, reactive, ref} from 'vue'
+import {onLoad} from '@dcloudio/uni-app'
 import type {LoginFormData} from './types'
 
 const accountSubmitting = ref(false)
 const wechatSubmitting = ref(false)
+const redirectUrl = ref('/pages/home/index')
 
 const remembered = reactive({
     username: '',
@@ -52,6 +54,16 @@ onMounted(() => {
     if (saved) {
         remembered.username = saved.username || ''
         remembered.password = saved.password || ''
+    }
+})
+
+onLoad((options?: {redirect?: string}) => {
+    if (!options?.redirect) return
+    try {
+        const decoded = decodeURIComponent(options.redirect)
+        if (decoded.startsWith('/pages/')) redirectUrl.value = decoded
+    } catch {
+        redirectUrl.value = '/pages/home/index'
     }
 })
 
@@ -134,10 +146,10 @@ function finishLogin(res: any) {
             })
             return
         }
-        uni.navigateBack({
-            fail: () => {
-                uni.reLaunch({url: '/pages/home/index'})
-            },
+        const target = redirectUrl.value || '/pages/home/index'
+        uni.redirectTo({
+            url: target,
+            fail: () => uni.reLaunch({url: target}),
         })
     }, 400)
 }
@@ -161,7 +173,7 @@ function needsProfileCompletion(user: Record<string, any> | null) {
     min-height: 100vh;
     padding-bottom: 80rpx;
     gap: 40px;
-    background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 48%, #f8fafc 100%);
+    background: linear-gradient(180deg, #ececef 0%, #f5f5f7 48%, #f5f5f7 100%);
     box-sizing: border-box;
 }
 
@@ -181,7 +193,7 @@ function needsProfileCompletion(user: Record<string, any> | null) {
     margin-bottom: 24rpx;
     border-radius: 34rpx;
     background: rgba(255, 255, 255, 0.78);
-    box-shadow: 0 20rpx 42rpx rgba(35, 61, 91, 0.12);
+    box-shadow: 0 20rpx 42rpx rgba(0, 0, 0, 0.12);
 }
 
 .brand__logo-img {
@@ -192,14 +204,14 @@ function needsProfileCompletion(user: Record<string, any> | null) {
 .brand__title {
     font-size: 38rpx;
     font-weight: 800;
-    color: #0f172a;
+    color: #1d1d1f;
     letter-spacing: 1rpx;
 }
 
 .brand__sub {
     margin-top: 12rpx;
     font-size: 26rpx;
-    color: #64748b;
+    color: #666668;
 }
 
 .footer {
@@ -212,13 +224,13 @@ function needsProfileCompletion(user: Record<string, any> | null) {
 
 .footer__text {
     font-size: 26rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .footer__link {
     font-size: 26rpx;
     font-weight: 600;
-    color: #1769e8;
+    color: #1d1d1f;
 }
 
 .quick-login {
@@ -239,14 +251,14 @@ function needsProfileCompletion(user: Record<string, any> | null) {
 }
 
 .divider__text {
-    color: #94a3b8;
+    color: #8e8e93;
     font-size: 24rpx;
 }
 
 .wechat-button {
     height: 92rpx;
     line-height: 92rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     color: #fff;
     background: #07c160;
     font-size: 30rpx;

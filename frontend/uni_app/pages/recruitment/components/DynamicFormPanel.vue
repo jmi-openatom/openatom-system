@@ -23,24 +23,33 @@
         <view v-for="field in fields" :key="field.key" class="field">
             <text class="label">{{ field.label || field.key }}{{ field.required ? ' *' : '' }}</text>
             <picker
-                v-if="field.type === 'select'"
+                v-if="isOptionField(field)"
                 :range="fieldOptions(field)"
                 @change="(event) => emit('pickField', field, event)"
             >
                 <view class="picker-value">{{ formData[field.key] || field.placeholder || '请选择' }}</view>
             </picker>
             <textarea
-                v-else-if="field.type === 'textarea'"
+                v-else-if="normalizeFieldType(field) === 'textarea'"
                 :value="formData[field.key] || ''"
                 class="textarea"
                 :placeholder="field.placeholder || '请输入'"
                 @input="emit('updateField', field.key, $event.detail.value)"
             />
+            <picker
+                v-else-if="normalizeFieldType(field) === 'date'"
+                mode="date"
+                @change="emit('updateField', field.key, $event.detail.value)"
+            >
+                <view class="picker-value">{{ formData[field.key] || field.placeholder || '请选择日期' }}</view>
+            </picker>
             <input
                 v-else
                 :value="formData[field.key] || ''"
                 class="input"
+                :maxlength="field.maxLength || 140"
                 :placeholder="field.placeholder || '请输入'"
+                :type="fieldInputType(field)"
                 @input="emit('updateField', field.key, $event.detail.value)"
             />
         </view>
@@ -49,7 +58,7 @@
 
 <script setup lang="ts">
 import type {FormField} from '@/utils/formSchema'
-import {optionLabel} from '@/utils/formSchema'
+import {fieldInputType, isOptionField, normalizeFieldType, optionLabel} from '@/utils/formSchema'
 
 defineProps<{
     fields: FormField[]
@@ -74,7 +83,7 @@ function fieldOptions(field: FormField) {
     padding: 30rpx;
     border-radius: 18rpx;
     background: #fff;
-    box-shadow: 0 12rpx 30rpx rgba(31, 55, 88, .08);
+    box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, .08);
 }
 
 .panel-title,
@@ -84,7 +93,7 @@ function fieldOptions(field: FormField) {
 
 .panel-title {
     margin-bottom: 20rpx;
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 30rpx;
     font-weight: 800;
 }
@@ -99,7 +108,7 @@ function fieldOptions(field: FormField) {
 
 .label {
     margin-bottom: 12rpx;
-    color: #334155;
+    color: #333333;
     font-size: 25rpx;
     font-weight: 700;
 }
@@ -110,9 +119,9 @@ function fieldOptions(field: FormField) {
     width: 100%;
     box-sizing: border-box;
     border-radius: 14rpx;
-    background: #f8fafc;
+    background: #f5f5f7;
     border: 1rpx solid #e2e8f0;
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 26rpx;
 }
 

@@ -7,6 +7,12 @@
             scroll-with-animation
             scroll-y
         >
+            <PageState
+                v-if="loadFailed"
+                description="首页内容加载失败，请稍后重试"
+                @action="loadClubHome"
+            />
+            <template v-else>
             <HomeBanner
                 :club="data.club"
                 :loading="loading"
@@ -18,6 +24,7 @@
             <HomeActivityScroller :activities="data.activities || []"/>
             <HomePeopleList :people="data.people || []"/>
             <HomeAwardList :awards="data.awards || []" class="award__list"/>
+            </template>
             <view class="scroll-spacer"/>
             <view class="bottom-pad"/>
         </scroll-view>
@@ -35,8 +42,10 @@ import HomeMetrics from '@/pages/home/components/HomeMetrics.vue'
 import HomePeopleList from '@/pages/home/components/HomePeopleList.vue'
 import {siteApi} from '@/api'
 import {computed, nextTick, onMounted, ref} from 'vue'
+import PageState from '@/components/PageState.vue'
 
 const loading = ref(true)
+const loadFailed = ref(false)
 const scrollIntoView = ref('')
 const data = ref({
     club: {},
@@ -55,6 +64,7 @@ const clubName = computed(() => {
 
 async function loadClubHome() {
     loading.value = true
+    loadFailed.value = false
     try {
         const res = await siteApi.clubHome()
         data.value = res || {
@@ -67,6 +77,7 @@ async function loadClubHome() {
             techStack: [],
         }
     } catch {
+        loadFailed.value = true
         data.value = {
             club: {},
             metrics: [],
@@ -105,7 +116,7 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 32%, #f8fafc 100%);
+    background: linear-gradient(180deg, #ececef 0%, #f5f5f7 32%, #f5f5f7 100%);
     box-sizing: border-box;
 }
 

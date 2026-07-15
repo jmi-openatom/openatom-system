@@ -4,6 +4,8 @@
         <scroll-view class="main-scroll" scroll-y>
             <view v-if="loading" class="loading">加载中...</view>
 
+            <PageState v-else-if="loadFailed" description="申请表加载失败，请稍后重试" @action="load"/>
+
             <template v-else-if="campaign.id">
                 <ApplyHeader
                     :campaign-name="campaign.name"
@@ -55,16 +57,18 @@
 import {applicationApi, clubApi, siteApi} from '@/api'
 import {formatRange} from '@/utils/format'
 import {getToken} from '@/utils/auth'
-import {optionValue, parseFormSchema} from '@/utils/formSchema'
+import {optionValue, parseFormSchema, validateField} from '@/utils/formSchema'
 import type {FormField} from '@/utils/formSchema'
 import ApplyHeader from './components/ApplyHeader.vue'
 import DepartmentPickerPanel from './components/DepartmentPickerPanel.vue'
 import DynamicFormPanel from './components/DynamicFormPanel.vue'
 import {computed, reactive, ref} from 'vue'
 import {onLoad} from '@dcloudio/uni-app'
+import PageState from '@/components/PageState.vue'
 
 const campaignId = ref('')
 const loading = ref(true)
+const loadFailed = ref(false)
 const submitting = ref(false)
 const club = ref<Record<string, any>>({})
 const campaign = ref<Record<string, any>>({})
@@ -102,6 +106,7 @@ function initForm() {
 
 async function load() {
     loading.value = true
+    loadFailed.value = false
     try {
         const res: any = await siteApi.recruitmentDetail(campaignId.value)
         club.value = res?.club || {}
@@ -112,6 +117,8 @@ async function load() {
             departments.value = Array.isArray(deptRes) ? deptRes : deptRes?.list || []
         }
         initForm()
+    } catch {
+        loadFailed.value = true
     } finally {
         loading.value = false
     }
@@ -142,10 +149,11 @@ function validate() {
         uni.showToast({title: '请选择第一志愿部门', icon: 'none'})
         return false
     }
-    const requiredFields = dynamicFields.value.filter((field) => field.required)
-    const missing = requiredFields.find((field) => !(formData[field.key] || '').trim())
-    if (missing) {
-        uni.showToast({title: `请填写${missing.label || missing.key}`, icon: 'none'})
+    const invalid = dynamicFields.value
+        .map((field) => validateField(field, formData[field.key]))
+        .find(Boolean)
+    if (invalid) {
+        uni.showToast({title: invalid, icon: 'none'})
         return false
     }
     if (!(formData.applicantName || '').trim()) {
@@ -213,7 +221,7 @@ onLoad((options?: { id?: string }) => {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background: #f7fafc;
+    background: #f5f5f7;
 }
 
 .main-scroll {
@@ -223,7 +231,7 @@ onLoad((options?: { id?: string }) => {
 
 .tips {
     margin: 0 24rpx;
-    color: #64748b;
+    color: #666668;
     font-size: 23rpx;
     line-height: 1.6;
 }
@@ -249,15 +257,15 @@ onLoad((options?: { id?: string }) => {
 .primary-btn {
     height: 82rpx;
     line-height: 82rpx;
-    border-radius: 999rpx;
-    background: #1769e8;
+    border-radius: 16rpx;
+    background: #1d1d1f;
     color: #fff;
     font-size: 28rpx;
     font-weight: 700;
 }
 
 .submit-btn[disabled] {
-    background: #cbd5e1;
+    background: #d2d2d7;
     color: #fff;
 }
 
@@ -270,13 +278,13 @@ onLoad((options?: { id?: string }) => {
 .empty {
     padding: 120rpx 40rpx;
     text-align: center;
-    color: #64748b;
+    color: #666668;
 }
 
 .empty__title {
     display: block;
     margin-bottom: 24rpx;
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 32rpx;
     font-weight: 800;
 }

@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import {clearSession, getToken, setSession} from '@/utils/auth'
 
 interface UserState {
   token: string
@@ -17,7 +18,7 @@ interface StoreState {
   setTabIndex: (index: number) => void
 }
 
-const initialToken = uni.getStorageSync('token')
+const initialToken = getToken()
 
 const store = reactive<StoreState>({
   user: {
@@ -30,7 +31,7 @@ const store = reactive<StoreState>({
   setToken(token) {
     this.user.token = token
     this.user.isLogin = !!token
-    uni.setStorageSync('token', token)
+    setSession({accessToken: token})
   },
   setUserInfo(info) {
     this.user.info = info
@@ -39,7 +40,7 @@ const store = reactive<StoreState>({
     this.user.token = ''
     this.user.info = null
     this.user.isLogin = false
-    uni.removeStorageSync('token')
+    clearSession()
   },
   setUnreadCount(count) {
     this.unreadCount = count

@@ -55,14 +55,14 @@ const list = computed(() => (props.people || []).filter((p) => p?.name))
     display: block;
     font-size: 30rpx;
     font-weight: 600;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .block__sub {
     display: block;
     margin-top: 6rpx;
     font-size: 22rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .list {
@@ -85,7 +85,7 @@ const list = computed(() => (props.people || []).filter((p) => p?.name))
     width: 80rpx;
     height: 80rpx;
     border-radius: 50%;
-    background: linear-gradient(135deg, #1769e8, #21b6a8);
+    background: linear-gradient(135deg, #1d1d1f, #21b6a8);
     overflow: hidden;
     flex-shrink: 0;
     display: flex;
@@ -113,21 +113,21 @@ const list = computed(() => (props.people || []).filter((p) => p?.name))
     display: block;
     font-size: 28rpx;
     font-weight: 700;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .meta__role {
     display: block;
     margin-top: 6rpx;
     font-size: 24rpx;
-    color: #64748b;
+    color: #666668;
 }
 
 .meta__focus {
     display: block;
     margin-top: 6rpx;
     font-size: 22rpx;
-    color: #94a3b8;
+    color: #8e8e93;
     line-height: 1.45;
 }
 
@@ -135,7 +135,7 @@ const list = computed(() => (props.people || []).filter((p) => p?.name))
     padding: 40rpx;
     text-align: center;
     font-size: 24rpx;
-    color: #94a3b8;
+    color: #8e8e93;
     background: rgba(255, 255, 255, 0.7);
     border-radius: 20rpx;
 }

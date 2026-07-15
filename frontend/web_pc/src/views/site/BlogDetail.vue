@@ -62,7 +62,20 @@
         <aside class="blog-aside">
           <div class="blog-aside__block">
             <span>作者</span>
-            <div class="blog-author">
+            <router-link
+              v-if="article.authorId && isLoggedIn"
+              :to="`/members/member-${article.authorId}`"
+              class="blog-author"
+            >
+              <UserAvatar
+                :name="article.authorName || '匿名作者'"
+                :size="42"
+                :src="article.authorAvatar || ''"
+              />
+              <strong>{{ article.authorName || '匿名作者' }}</strong>
+              <span aria-hidden="true">查看主页 →</span>
+            </router-link>
+            <div v-else class="blog-author">
               <UserAvatar
                 :name="article.authorName || '匿名作者'"
                 :size="42"
@@ -434,6 +447,13 @@ onMounted(() => {
   gap: 10px;
   align-items: center;
   min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.blog-author > span {
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .blog-author strong {

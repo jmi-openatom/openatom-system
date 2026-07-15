@@ -112,13 +112,13 @@ function togglePassword() {
     border-radius: 20rpx;
     background: #fff;
     border: 1rpx solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 4rpx 16rpx rgba(31, 55, 88, 0.04);
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
     transition: border-color 0.2s;
 }
 
 .input-wrap:focus-within {
-    border-color: #1769e8;
-    box-shadow: 0 4rpx 20rpx rgba(23, 105, 232, 0.12);
+    border-color: #1d1d1f;
+    box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.12);
 }
 
 .input-icon {
@@ -131,11 +131,11 @@ function togglePassword() {
     flex: 1;
     height: 100%;
     font-size: 30rpx;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .input-placeholder {
-    color: #94a3b8;
+    color: #8e8e93;
     font-size: 28rpx;
 }
 
@@ -173,8 +173,8 @@ function togglePassword() {
 }
 
 .checkbox--checked {
-    border-color: #1769e8;
-    background: #1769e8;
+    border-color: #1d1d1f;
+    background: #1d1d1f;
 }
 
 .checkbox-mark {
@@ -185,7 +185,7 @@ function togglePassword() {
 
 .remember-label {
     font-size: 26rpx;
-    color: #64748b;
+    color: #666668;
 }
 
 .submit-btn {
@@ -193,9 +193,9 @@ function togglePassword() {
     align-items: center;
     justify-content: center;
     height: 96rpx;
-    border-radius: 999rpx;
-    background: linear-gradient(135deg, #1769e8, #3a84ff);
-    box-shadow: 0 16rpx 32rpx rgba(23, 105, 232, 0.28);
+    border-radius: 16rpx;
+    background: linear-gradient(135deg, #1d1d1f, #4f4f52);
+    box-shadow: 0 16rpx 32rpx rgba(0, 0, 0, 0.18);
     font-size: 32rpx;
     font-weight: 700;
     color: #fff;

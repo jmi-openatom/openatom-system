@@ -17,9 +17,7 @@
                 </view>
             </template>
 
-            <view v-else class="error">
-                <text class="error__text">加载失败，请重试</text>
-            </view>
+            <PageState v-else description="活动信息加载失败，请稍后重试" @action="fetchDetail"/>
 
             <view class="bottom-pad"/>
         </scroll-view>
@@ -27,8 +25,10 @@
         <Apply
             v-if="detail"
             :activity-id="detail.id"
-            :disabled="!detail.registrationRequired"
-            :title="detail.registrationRequired ? '立即报名' : '无需报名'"
+            :disabled="!registrationAction.enabled"
+            :fields="registrationFields"
+            :title="registrationAction.label"
+            @success="handleRegistrationSuccess"
         />
 
     </view>
@@ -38,19 +38,43 @@
 import Banner from './components/Banner.vue'
 import Detail from './components/Detail.vue'
 import {siteApi} from '@/api'
-import {onMounted, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {onLoad} from '@dcloudio/uni-app'
 import type {ActivityDetail} from '../types'
 import Apply from "@/pages/activity/detail/components/Apply.vue";
+import PageState from '@/components/PageState.vue'
+import {parseFormSchema} from '@/utils/formSchema'
 
 const id = ref('')
 const detail = ref<ActivityDetail | null>(null)
 const loading = ref(true)
+const justRegistered = ref(false)
+const registrationFields = computed(() => parseFormSchema(detail.value?.registrationFields))
+
+const registrationAction = computed(() => {
+    const item = detail.value
+    if (!item?.registrationRequired) return {label: '无需报名', enabled: false}
+    if (justRegistered.value || item.registered || item.isRegistered || item.registrationStatus === 'registered') {
+        return {label: '已报名', enabled: false}
+    }
+    if (['cancelled', 'closed', 'ended'].includes(item.status || '')) {
+        return {label: item.status === 'cancelled' ? '活动已取消' : '活动已结束', enabled: false}
+    }
+    const now = Date.now()
+    const start = item.registrationStartAt ? new Date(item.registrationStartAt).getTime() : 0
+    const end = item.registrationEndAt ? new Date(item.registrationEndAt).getTime() : 0
+    if (start && now < start) return {label: '报名未开始', enabled: false}
+    if (end && now > end) return {label: '报名已截止', enabled: false}
+    const count = item.registrationCount ?? item.currentParticipants ?? 0
+    if (item.maxParticipants && count >= item.maxParticipants) return {label: '名额已满', enabled: false}
+    return {label: '立即报名', enabled: true}
+})
 
 
 async function fetchDetail() {
     if (!id.value) {
-        console.warn('[detail] no id, aborting')
+        detail.value = null
+        loading.value = false
         return null
     }
     loading.value = true
@@ -88,12 +112,24 @@ async function fetchDetail() {
             registrationStartAt: src.registrationStartAt,
             registrationEndAt: src.registrationEndAt,
             tags: src.tags,
+            registered: src.registered,
+            isRegistered: src.isRegistered,
+            registrationStatus: src.registrationStatus,
+            registrationCount: src.registrationCount,
+            registrationFields: src.registrationFields,
+            maxParticipants: src.maxParticipants,
+            currentParticipants: src.currentParticipants,
         }
     } catch {
         detail.value = null
     } finally {
         loading.value = false
     }
+}
+
+function handleRegistrationSuccess() {
+    justRegistered.value = true
+    fetchDetail()
 }
 
 onLoad((options?: { id?: string }) => {
@@ -130,7 +166,7 @@ onMounted(() => {
 
 .loading__text {
     font-size: 26rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .error {
@@ -140,7 +176,7 @@ onMounted(() => {
 
 .error__text {
     font-size: 26rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .bottom-pad {

@@ -26,7 +26,7 @@ const emit = defineEmits<{
     padding: 30rpx;
     border-radius: 18rpx;
     background: #fff;
-    box-shadow: 0 12rpx 30rpx rgba(31, 55, 88, .08);
+    box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, .08);
 }
 
 .summary__label,
@@ -36,21 +36,21 @@ const emit = defineEmits<{
 }
 
 .summary__label {
-    color: #1769e8;
+    color: #1d1d1f;
     font-size: 23rpx;
     font-weight: 800;
 }
 
 .summary__title {
     margin-top: 10rpx;
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 40rpx;
     font-weight: 800;
 }
 
 .summary__desc {
     margin-top: 10rpx;
-    color: #64748b;
+    color: #666668;
     font-size: 25rpx;
 }
 
@@ -59,18 +59,18 @@ const emit = defineEmits<{
     margin-top: 24rpx;
     height: 74rpx;
     line-height: 74rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     font-size: 26rpx;
 }
 
 .primary-btn {
     color: #fff;
-    background: #1769e8;
+    background: #1d1d1f;
 }
 
 .ghost-btn {
-    color: #1769e8;
-    background: #eef6ff;
+    color: #1d1d1f;
+    background: #f5f5f7;
 }
 
 .primary-btn::after,

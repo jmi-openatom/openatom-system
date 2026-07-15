@@ -4,6 +4,8 @@
         <scroll-view class="main-scroll" scroll-y>
             <view v-if="loading" class="loading">加载中...</view>
 
+            <PageState v-else-if="loadFailed" description="表单加载失败，请稍后重试" @action="load"/>
+
             <template v-else-if="form.id">
                 <view class="info-panel">
                     <view class="info-row">
@@ -34,24 +36,33 @@
                     <view v-for="field in dynamicFields" :key="field.key" class="field">
                         <text class="label">{{ field.label || field.key }}{{ field.required ? ' *' : '' }}</text>
                         <picker
-                            v-if="field.type === 'select'"
+                            v-if="isOptionField(field)"
                             :range="fieldOptions(field)"
                             @change="(event: any) => onPickField(field, event)"
                         >
                             <view class="picker-value">{{ formData[field.key] || field.placeholder || '请选择' }}</view>
                         </picker>
                         <textarea
-                            v-else-if="field.type === 'textarea'"
+                            v-else-if="normalizeFieldType(field) === 'textarea'"
                             :value="formData[field.key] || ''"
                             class="textarea"
                             :placeholder="field.placeholder || '请输入'"
                             @input="updateField(field.key, $event.detail.value)"
                         />
+                        <picker
+                            v-else-if="normalizeFieldType(field) === 'date'"
+                            mode="date"
+                            @change="updateField(field.key, $event.detail.value)"
+                        >
+                            <view class="picker-value">{{ formData[field.key] || field.placeholder || '请选择日期' }}</view>
+                        </picker>
                         <input
                             v-else
                             :value="formData[field.key] || ''"
                             class="input"
+                            :maxlength="field.maxLength || 140"
                             :placeholder="field.placeholder || '请输入'"
+                            :type="fieldInputType(field)"
                             @input="updateField(field.key, $event.detail.value)"
                         />
                     </view>
@@ -67,8 +78,8 @@
         </scroll-view>
 
         <view v-if="form.id" class="submit-bar">
-            <button class="submit-btn" :disabled="submitting || !canSubmit" @tap="submitForm">
-                {{ submitting ? '提交中...' : canSubmit ? '提交表单' : '当前不可提交' }}
+            <button class="submit-btn" :disabled="submitting || (!canSubmit && !(requiresLogin && !isLogin))" @tap="submitForm">
+                {{ submitting ? '提交中...' : requiresLogin && !isLogin ? '登录后提交' : canSubmit ? '提交表单' : '当前不可提交' }}
             </button>
         </view>
     </view>
@@ -76,14 +87,16 @@
 
 <script setup lang="ts">
 import { siteApi, formSubmissionApi } from '@/api'
-import { getToken } from '@/utils/auth'
-import { parseFormSchema, optionLabel, optionValue } from '@/utils/formSchema'
+import { getToken, loginUrl } from '@/utils/auth'
+import { fieldInputType, isOptionField, normalizeFieldType, parseFormSchema, optionLabel, optionValue, validateField } from '@/utils/formSchema'
 import type { FormField } from '@/utils/formSchema'
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import PageState from '@/components/PageState.vue'
 
 const formId = ref('')
 const loading = ref(true)
+const loadFailed = ref(false)
 const submitting = ref(false)
 const form = ref<Record<string, any>>({})
 const formData = reactive<Record<string, any>>({})
@@ -116,10 +129,13 @@ function initForm() {
 
 async function load() {
     loading.value = true
+    loadFailed.value = false
     try {
         const res: any = await siteApi.formDetail(formId.value)
         form.value = res?.form || {}
         initForm()
+    } catch {
+        loadFailed.value = true
     } finally {
         loading.value = false
     }
@@ -150,16 +166,21 @@ function validate() {
             return false
         }
     }
-    const requiredFields = dynamicFields.value.filter((field) => field.required)
-    const missing = requiredFields.find((field) => !(formData[field.key] || '').trim())
-    if (missing) {
-        uni.showToast({ title: `请填写${missing.label || missing.key}`, icon: 'none' })
+    const invalid = dynamicFields.value
+        .map((field) => validateField(field, formData[field.key]))
+        .find(Boolean)
+    if (invalid) {
+        uni.showToast({ title: invalid, icon: 'none' })
         return false
     }
     return true
 }
 
 async function submitForm() {
+    if (requiresLogin.value && !isLogin.value) {
+        uni.navigateTo({url: loginUrl(`/pages/forms/index?id=${formId.value}`)})
+        return
+    }
     if (!validate()) return
     submitting.value = true
     try {
@@ -209,7 +230,7 @@ onLoad((options?: { id?: string }) => {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background: #f7fafc;
+    background: #f5f5f7;
 }
 
 .main-scroll {
@@ -222,7 +243,7 @@ onLoad((options?: { id?: string }) => {
     padding: 24rpx 30rpx;
     border-radius: 18rpx;
     background: #fff;
-    box-shadow: 0 12rpx 30rpx rgba(31, 55, 88, .08);
+    box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, .08);
 }
 
 .info-row {
@@ -232,12 +253,12 @@ onLoad((options?: { id?: string }) => {
 }
 
 .info-label {
-    color: #64748b;
+    color: #666668;
     font-size: 24rpx;
 }
 
 .info-value {
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 24rpx;
     font-weight: 600;
 }
@@ -245,7 +266,7 @@ onLoad((options?: { id?: string }) => {
 .info-desc {
     display: block;
     margin-top: 12rpx;
-    color: #475569;
+    color: #4f4f52;
     font-size: 25rpx;
     line-height: 1.5;
 }
@@ -255,7 +276,7 @@ onLoad((options?: { id?: string }) => {
     padding: 30rpx;
     border-radius: 18rpx;
     background: #fff;
-    box-shadow: 0 12rpx 30rpx rgba(31, 55, 88, .08);
+    box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, .08);
 }
 
 .field {
@@ -269,7 +290,7 @@ onLoad((options?: { id?: string }) => {
 .label {
     display: block;
     margin-bottom: 12rpx;
-    color: #334155;
+    color: #333333;
     font-size: 25rpx;
     font-weight: 700;
 }
@@ -280,9 +301,9 @@ onLoad((options?: { id?: string }) => {
     width: 100%;
     box-sizing: border-box;
     border-radius: 14rpx;
-    background: #f8fafc;
+    background: #f5f5f7;
     border: 1rpx solid #e2e8f0;
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 26rpx;
 }
 
@@ -313,15 +334,15 @@ onLoad((options?: { id?: string }) => {
 .primary-btn {
     height: 82rpx;
     line-height: 82rpx;
-    border-radius: 999rpx;
-    background: #1769e8;
+    border-radius: 16rpx;
+    background: #1d1d1f;
     color: #fff;
     font-size: 28rpx;
     font-weight: 700;
 }
 
 .submit-btn[disabled] {
-    background: #cbd5e1;
+    background: #d2d2d7;
     color: #fff;
 }
 
@@ -334,13 +355,13 @@ onLoad((options?: { id?: string }) => {
 .empty {
     padding: 120rpx 40rpx;
     text-align: center;
-    color: #64748b;
+    color: #666668;
 }
 
 .empty__title {
     display: block;
     margin-bottom: 24rpx;
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 32rpx;
     font-weight: 800;
 }

@@ -37,7 +37,7 @@ defineProps<{
 .detail__head-title {
     font-size: 30rpx;
     font-weight: 700;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .detail__body {

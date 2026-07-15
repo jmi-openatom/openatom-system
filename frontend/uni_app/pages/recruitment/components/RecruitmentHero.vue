@@ -27,7 +27,7 @@ defineProps<{
     border-radius: 20rpx;
     background: #ffffff;
     border: 1rpx solid #dbeafe;
-    color: #0f172a;
+    color: #1d1d1f;
     box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.06);
 }
 
@@ -39,7 +39,7 @@ defineProps<{
 
 .eyebrow {
     font-size: 22rpx;
-    color: #1769e8;
+    color: #1d1d1f;
     font-weight: 700;
 }
 
@@ -55,7 +55,7 @@ defineProps<{
     margin-top: 16rpx;
     font-size: 25rpx;
     line-height: 1.55;
-    color: #64748b;
+    color: #666668;
 }
 
 .hero-mark {
@@ -67,7 +67,7 @@ defineProps<{
     flex-shrink: 0;
     border-radius: 24rpx;
     background: #eff6ff;
-    color: #1769e8;
+    color: #1d1d1f;
     border: 1rpx solid #bfdbfe;
     font-size: 24rpx;
     font-weight: 800;

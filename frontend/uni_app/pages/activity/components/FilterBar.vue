@@ -49,7 +49,7 @@ function onSelect(value: ActivityStatus) {
     display: flex;
     padding: 6rpx;
     border-radius: 20rpx;
-    background: #f1f5f9;
+    background: #ececef;
     border: 1rpx solid rgba(226, 232, 240, 0.9);
 }
 
@@ -67,16 +67,16 @@ function onSelect(value: ActivityStatus) {
 .filter-segment__label {
     font-size: 28rpx;
     font-weight: 500;
-    color: #64748b;
+    color: #666668;
     transition: color 0.25s;
 }
 
 .filter-segment--active {
     background: #fff;
-    box-shadow: 0 2rpx 8rpx rgba(31, 55, 88, 0.08), 0 1rpx 2rpx rgba(31, 55, 88, 0.06);
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08), 0 1rpx 2rpx rgba(0, 0, 0, 0.06);
 
     .filter-segment__label {
-        color: #1769e8;
+        color: #1d1d1f;
         font-weight: 600;
     }
 }

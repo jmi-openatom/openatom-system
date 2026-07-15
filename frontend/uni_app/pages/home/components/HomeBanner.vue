@@ -106,7 +106,7 @@ function gotoActivityPage() {
     border-radius: 24rpx;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78)),
     linear-gradient(135deg, #e7f6ff 0%, #f5f0ff 48%, #fff4dc 100%);
-    box-shadow: 0 24rpx 54rpx rgba(31, 55, 88, 0.12);
+    box-shadow: 0 24rpx 54rpx rgba(0, 0, 0, 0.12);
     box-sizing: border-box;
 }
 
@@ -146,7 +146,7 @@ function gotoActivityPage() {
     height: 44rpx;
     padding: 0 18rpx;
     border: 1rpx solid rgba(40, 88, 152, 0.14);
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     background: rgba(255, 255, 255, 0.72);
     color: #34506f;
     font-size: 22rpx;
@@ -185,9 +185,9 @@ function gotoActivityPage() {
     display: inline-flex;
     margin-top: 16rpx;
     padding: 8rpx 18rpx;
-    border-radius: 999rpx;
-    background: rgba(23, 105, 232, 0.1);
-    color: #1769e8;
+    border-radius: 16rpx;
+    background: rgba(0, 0, 0, 0.1);
+    color: #1d1d1f;
     font-size: 22rpx;
     font-weight: 600;
 }
@@ -206,7 +206,7 @@ function gotoActivityPage() {
     min-width: 136rpx;
     height: 58rpx;
     padding: 0 22rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     font-size: 24rpx;
     font-weight: 700;
     box-sizing: border-box;
@@ -214,8 +214,8 @@ function gotoActivityPage() {
 
 .banner__button--primary {
     color: #fff;
-    background: #1769e8;
-    box-shadow: 0 12rpx 24rpx rgba(23, 105, 232, 0.22);
+    background: #1d1d1f;
+    box-shadow: 0 12rpx 24rpx rgba(0, 0, 0, 0.22);
 }
 
 .banner__button--ghost {
@@ -243,7 +243,7 @@ function gotoActivityPage() {
     height: 166rpx;
     border-radius: 38rpx;
     background: rgba(255, 255, 255, 0.78);
-    box-shadow: 0 20rpx 42rpx rgba(35, 61, 91, 0.15);
+    box-shadow: 0 20rpx 42rpx rgba(0, 0, 0, 0.15);
     transform: rotate(6deg);
 }
 
@@ -263,7 +263,7 @@ function gotoActivityPage() {
     padding-left: 18rpx;
     border-radius: 18rpx;
     background: rgba(255, 255, 255, 0.76);
-    box-shadow: 0 12rpx 28rpx rgba(35, 61, 91, 0.12);
+    box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.12);
     box-sizing: border-box;
 }
 
@@ -329,7 +329,7 @@ function gotoActivityPage() {
     width: 300rpx;
     height: 58rpx;
     margin-top: 24rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
 }
 
 @media screen and (max-width: 360px) {

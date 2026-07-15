@@ -19,10 +19,10 @@ defineProps<{
     margin: 20rpx 24rpx;
     padding: 30rpx;
     border-radius: 18rpx;
-    color: #0f172a;
+    color: #1d1d1f;
     background: #ffffff;
     border: 1rpx solid #dbeafe;
-    box-shadow: 0 12rpx 30rpx rgba(31, 55, 88, .06);
+    box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, .06);
 }
 
 .form-head__club,
@@ -33,7 +33,7 @@ defineProps<{
 
 .form-head__club {
     font-size: 23rpx;
-    color: #1769e8;
+    color: #1d1d1f;
     font-weight: 700;
 }
 
@@ -46,6 +46,6 @@ defineProps<{
 .form-head__time {
     margin-top: 14rpx;
     font-size: 24rpx;
-    color: #64748b;
+    color: #666668;
 }
 </style>

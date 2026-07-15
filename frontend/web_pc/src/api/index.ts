@@ -88,6 +88,30 @@ export const authApi = {
   login(data: Record<string, unknown>): Promise<any> {
     return request.post('/auth/login', data)
   },
+  googleLogin(data: { credential: string }): Promise<any> {
+    return request.post('/auth/google-login', data)
+  },
+  bindGoogle(data: { credential: string }): Promise<any> {
+    return request.post('/auth/google-bind', data)
+  },
+  githubLoginUrl(redirect?: string): Promise<{ url: string }> {
+    return request.get('/auth/github-login-url', { params: { redirect } })
+  },
+  githubBindUrl(): Promise<{ url: string }> {
+    return request.get('/auth/github-bind-url')
+  },
+  githubCallback(data: { code: string; state: string }): Promise<any> {
+    return request.post('/auth/github-callback', data)
+  },
+  giteeLoginUrl(redirect?: string): Promise<{ url: string }> {
+    return request.get('/auth/gitee-login-url', { params: { redirect } })
+  },
+  giteeBindUrl(): Promise<{ url: string }> {
+    return request.get('/auth/gitee-bind-url')
+  },
+  giteeCallback(data: { code: string; state: string }): Promise<any> {
+    return request.post('/auth/gitee-callback', data)
+  },
   register(data: Record<string, unknown>): Promise<any> {
     return request.post('/auth/register', data)
   },
@@ -137,7 +161,36 @@ export const authApi = {
   activate(): Promise<any> {
     return request.post('/auth/activate')
   },
-	}
+}
+
+export const memberProfileApi = {
+  members(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/members', { params })
+  },
+  filters(): Promise<any> {
+    return request.get('/members/meta/filters')
+  },
+  detail(slug: string): Promise<any> {
+    return request.get(`/members/${encodeURIComponent(slug)}`)
+  },
+  mine(): Promise<any> {
+    return request.get('/me/profile')
+  },
+  save(data: Record<string, unknown>): Promise<any> {
+    return request.put('/me/profile', data)
+  },
+  publish(): Promise<any> {
+    return request.post('/me/profile/publish')
+  },
+  unpublish(): Promise<any> {
+    return request.post('/me/profile/unpublish')
+  },
+  upload(kind: 'avatar' | 'banner' | 'card-background', file: File): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post(`/me/profile/images/${kind}`, formData)
+  },
+}
 
 export const oauthClientApi = {
   list(): Promise<any> {
@@ -1136,7 +1189,13 @@ export const nextPageApi = {
   like(): Promise<any> {
     return request.post('/next-page/like')
   },
-  join(data: { name: string; contact: string; direction: string; skills?: string; message?: string }): Promise<any> {
+  join(data: {
+    name: string
+    contact: string
+    direction: string
+    skills?: string
+    message?: string
+  }): Promise<any> {
     return request.post('/next-page/join', data)
   },
 }
@@ -1150,32 +1209,39 @@ export const fileMigrationApi = {
   },
   // 异步导出 - 启动导出任务
   startExport(): Promise<any> {
-    return request.post('/file-migration/export/start', {}, {
-      timeout: 30000 // 30秒超时启动任务
-    })
+    return request.post(
+      '/file-migration/export/start',
+      {},
+      {
+        timeout: 30000, // 30秒超时启动任务
+      },
+    )
   },
   // 查询导出任务状态
   getExportStatus(taskId: string): Promise<any> {
     return request.get(`/file-migration/export/status/${taskId}`)
   },
   // 下载已完成的导出文件（支持进度回调）
-  downloadExport(taskId: string, onProgress?: (loaded: number, total: number) => void): Promise<any> {
-    return request.get(`/file-migration/export/download/${taskId}`, { 
+  downloadExport(
+    taskId: string,
+    onProgress?: (loaded: number, total: number) => void,
+  ): Promise<any> {
+    return request.get(`/file-migration/export/download/${taskId}`, {
       responseType: 'blob',
       timeout: 600000, // 10分钟超时下载
       onDownloadProgress: (progressEvent: any) => {
         if (onProgress) {
           onProgress(progressEvent.loaded, progressEvent.total || 0)
         }
-      }
+      },
     })
   },
   // 保留旧的同步导出方法（向后兼容）
   export(): Promise<any> {
     // 导出文件可能较大，设置较长超时时间（5分钟）
-    return request.get('/file-migration/export', { 
+    return request.get('/file-migration/export', {
       responseType: 'blob',
-      timeout: 300000 // 5分钟
+      timeout: 300000, // 5分钟
     })
   },
   importZip(file: File, overwrite: boolean = false): Promise<any> {
@@ -1187,9 +1253,13 @@ export const fileMigrationApi = {
   },
   // 手动触发备份
   runBackup(): Promise<any> {
-    return request.post('/file-migration/backup/run', {}, {
-      timeout: 60000 // 1分钟超时
-    })
+    return request.post(
+      '/file-migration/backup/run',
+      {},
+      {
+        timeout: 60000, // 1分钟超时
+      },
+    )
   },
   // 获取备份文件列表
   listBackups(): Promise<any> {

@@ -1,4 +1,4 @@
-import {clearSession, getToken} from '@/utils/auth'
+import {clearSession, currentPageUrl, getToken, loginUrl} from '@/utils/auth'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.jmi-openatom.cn/api/v1'
 
@@ -103,10 +103,11 @@ function request<T = unknown>(config: RequestConfig): Promise<T> {
                     const body = res.data as BackendResponse<T>
 
                     if (statusCode === 401) {
+                        const redirect = currentPageUrl()
                         responseCache.clear()
                         clearSession()
                         showToast('登录已过期，请重新登录')
-                        uni.redirectTo({url: '/pages/login/index'})
+                        uni.redirectTo({url: loginUrl(redirect)})
                         reject(res)
                         return
                     }

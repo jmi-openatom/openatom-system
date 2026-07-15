@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
@@ -13,6 +14,32 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface ClubMembershipMapper extends BaseMapper<ClubMembership> {
+
+  /** 面向成员目录的分页查询，仅返回仍在社团内的试用/正式成员。 */
+  default Page<ClubMembership> selectVisibleMemberPage(
+      Page<ClubMembership> page,
+      Integer clubId,
+      Integer departmentId,
+      List<Integer> userIds) {
+    LambdaQueryWrapper<ClubMembership> wrapper =
+        new LambdaQueryWrapper<ClubMembership>()
+            .eq(ClubMembership::getClubId, clubId)
+            .in(ClubMembership::getStatus, "probation", "active")
+            .isNull(ClubMembership::getLeftAt)
+            .eq(departmentId != null, ClubMembership::getDepartmentId, departmentId)
+            .orderByDesc(ClubMembership::getFeatured)
+            .orderByAsc(ClubMembership::getSortOrder)
+            .orderByDesc(ClubMembership::getJoinedAt)
+            .orderByDesc(ClubMembership::getId);
+    if (userIds != null) {
+      if (userIds.isEmpty()) {
+        wrapper.apply("1 = 0");
+      } else {
+        wrapper.in(ClubMembership::getUserId, userIds);
+      }
+    }
+    return selectPage(page, wrapper);
+  }
 
   /** 按 clubId 查成员列表（含排序：featured desc, sortOrder asc, joinedAt desc） */
   default List<ClubMembership> selectByClubIdOrdered(Integer clubId) {

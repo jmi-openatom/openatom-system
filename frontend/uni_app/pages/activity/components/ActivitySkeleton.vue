@@ -34,7 +34,7 @@ withDefaults(
     overflow: hidden;
     background: #fff;
     border: 1rpx solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 12rpx 28rpx rgba(31, 55, 88, 0.08);
+    box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.08);
 }
 
 .sk {

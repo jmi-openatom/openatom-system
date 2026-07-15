@@ -41,6 +41,11 @@ const ROUTE_SEO: Record<string, SeoConfig> = {
     description: '阅读社团成员的工程实践、竞赛复盘、技术教程与开源笔记。',
   },
   'site-blog-detail': { title: `文章详情｜${SITE_NAME}`, type: 'article' },
+  'site-members': { title: `社团成员｜${SITE_NAME}`, noindex: true },
+  'site-member-profile': { title: `成员主页｜${SITE_NAME}`, noindex: true },
+  'site-profile': { title: `我的主页｜${SITE_NAME}`, noindex: true },
+  'site-profile-edit': { title: `编辑主页｜${SITE_NAME}`, noindex: true },
+  'site-account-settings': { title: `账号与安全｜${SITE_NAME}`, noindex: true },
   'site-regulations': {
     title: `制度与规范｜${SITE_NAME}`,
     description: '查阅 JMI-OPENATOM 社团章程、管理办法与日常协作规范。',

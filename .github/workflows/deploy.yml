@@ -139,6 +139,14 @@ jobs:
             echo "VITE_OIDC_CLIENT_ID=${{ secrets.VITE_OIDC_CLIENT_ID || 'openatom-web' }}" >> .env
             echo "APP_OIDC_ISSUER=${{ secrets.APP_OIDC_ISSUER || 'https://oauth.jmi-openatom.cn/api/v1' }}" >> .env
             echo "" >> .env
+            echo "# 第三方登录配置" >> .env
+            echo "APP_GITHUB_CLIENT_ID=${{ secrets.APP_GITHUB_CLIENT_ID || 'Ov23liQQCxTjyoR8WAW9' }}" >> .env
+            echo "APP_GITHUB_CLIENT_SECRET=${{ secrets.APP_GITHUB_CLIENT_SECRET }}" >> .env
+            echo "APP_GITHUB_CALLBACK_URI=${{ secrets.APP_GITHUB_CALLBACK_URI || 'https://www.jmi-openatom.cn/auth/github/callback' }}" >> .env
+            echo "APP_GITEE_CLIENT_ID=${{ secrets.APP_GITEE_CLIENT_ID || '12ed9f6f4df02c05cdf05045221e650e3bd3481f6301707a1d7ac8dd97211fa8' }}" >> .env
+            echo "APP_GITEE_CLIENT_SECRET=${{ secrets.APP_GITEE_CLIENT_SECRET }}" >> .env
+            echo "APP_GITEE_CALLBACK_URI=${{ secrets.APP_GITEE_CALLBACK_URI || 'https://www.jmi-openatom.cn/auth/gitee/callback' }}" >> .env
+            echo "" >> .env
             echo "# 微信小程序配置" >> .env
             echo "APP_MINIAPP_APP_ID=${{ secrets.APP_MINIAPP_APP_ID }}" >> .env
             echo "APP_MINIAPP_APP_SECRET=${{ secrets.APP_MINIAPP_APP_SECRET }}" >> .env
@@ -150,8 +158,7 @@ jobs:
             echo "APP_DOCUMENT_TEMPLATE_STORAGE_DIR=${{ secrets.APP_DOCUMENT_TEMPLATE_STORAGE_DIR || '/app/uploads/document-templates' }}" >> .env
             echo "APP_GENERATED_DOCUMENT_STORAGE_DIR=${{ secrets.APP_GENERATED_DOCUMENT_STORAGE_DIR || '/app/uploads/generated-documents' }}" >> .env
             
-            echo ".env file created successfully:"
-            cat .env
+            echo ".env file created successfully."
             
             # 停止旧容器
             echo "Step 2: Stopping and cleaning up existing containers..."

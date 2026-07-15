@@ -48,14 +48,14 @@ const list = computed(() => (props.items || []).filter((x) => x?.title || x?.des
     display: block;
     font-size: 30rpx;
     font-weight: 600;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .block__sub {
     display: block;
     margin-top: 6rpx;
     font-size: 22rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .grid {
@@ -69,7 +69,7 @@ const list = computed(() => (props.items || []).filter((x) => x?.title || x?.des
     border-radius: 20rpx;
     background: rgba(255, 255, 255, 0.95);
     border: 1rpx solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 12rpx 32rpx rgba(31, 55, 88, 0.06);
+    box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.06);
 }
 
 .card__icon {
@@ -77,14 +77,14 @@ const list = computed(() => (props.items || []).filter((x) => x?.title || x?.des
     height: 10rpx;
     margin-bottom: 14rpx;
     border-radius: 50%;
-    background: #1769e8;
+    background: #1d1d1f;
 }
 
 .card__title {
     display: block;
     font-size: 28rpx;
     font-weight: 700;
-    color: #0f172a;
+    color: #1d1d1f;
     line-height: 1.3;
 }
 
@@ -92,7 +92,7 @@ const list = computed(() => (props.items || []).filter((x) => x?.title || x?.des
     display: block;
     margin-top: 10rpx;
     font-size: 24rpx;
-    color: #64748b;
+    color: #666668;
     line-height: 1.55;
 }
 
@@ -100,7 +100,7 @@ const list = computed(() => (props.items || []).filter((x) => x?.title || x?.des
     padding: 40rpx;
     text-align: center;
     font-size: 24rpx;
-    color: #94a3b8;
+    color: #8e8e93;
     background: rgba(255, 255, 255, 0.7);
     border-radius: 20rpx;
 }

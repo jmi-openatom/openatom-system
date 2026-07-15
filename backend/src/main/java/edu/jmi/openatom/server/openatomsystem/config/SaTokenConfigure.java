@@ -78,6 +78,11 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 		})).addPathPatterns("/**").excludePathPatterns(
 				"/auth/register",
 				"/auth/login",
+				"/auth/google-login",
+				"/auth/github-login-url",
+				"/auth/github-callback",
+				"/auth/gitee-login-url",
+				"/auth/gitee-callback",
 				"/auth/miniapp-login",
 				"/auth/refresh-token",
 				"/auth/introspect",

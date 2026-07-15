@@ -60,7 +60,7 @@ function tone(label?: string) {
   padding: 28rpx 24rpx 32rpx;
   border-radius: 24rpx;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
-  box-shadow: 0 16rpx 40rpx rgba(31, 55, 88, 0.08);
+  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.08);
   border: 1rpx solid rgba(226, 232, 240, 0.95);
   box-sizing: border-box;
 }
@@ -73,7 +73,7 @@ function tone(label?: string) {
   display: block;
   font-size: 30rpx;
   font-weight: 600;
-  color: #0f172a;
+  color: #1d1d1f;
   letter-spacing: 0.02em;
 }
 
@@ -81,7 +81,7 @@ function tone(label?: string) {
   display: block;
   margin-top: 8rpx;
   font-size: 22rpx;
-  color: #64748b;
+  color: #666668;
   line-height: 1.5;
 }
 
@@ -95,7 +95,7 @@ function tone(label?: string) {
   padding: 22rpx 20rpx;
   border-radius: 20rpx;
   border: 1rpx solid rgba(226, 232, 240, 0.95);
-  background: linear-gradient(165deg, #ffffff, #f8fafc);
+  background: linear-gradient(165deg, #ffffff, #f5f5f7);
   min-height: 140rpx;
   box-sizing: border-box;
 }
@@ -123,7 +123,7 @@ function tone(label?: string) {
 .metrics__label {
   display: block;
   font-size: 24rpx;
-  color: #64748b;
+  color: #666668;
   line-height: 1.35;
 }
 
@@ -132,7 +132,7 @@ function tone(label?: string) {
   margin-top: 12rpx;
   font-size: 44rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: #1d1d1f;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
@@ -141,7 +141,7 @@ function tone(label?: string) {
   display: block;
   margin-top: 10rpx;
   font-size: 20rpx;
-  color: #94a3b8;
+  color: #8e8e93;
   line-height: 1.45;
 }
 
@@ -153,14 +153,14 @@ function tone(label?: string) {
 .metrics__empty-title {
   display: block;
   font-size: 26rpx;
-  color: #64748b;
+  color: #666668;
 }
 
 .metrics__empty-desc {
   display: block;
   margin-top: 10rpx;
   font-size: 22rpx;
-  color: #94a3b8;
+  color: #8e8e93;
   line-height: 1.5;
 }
 </style>

@@ -2,10 +2,15 @@
   <ViewPage class="workspace-page profile-workspace">
     <WorkspaceHero
       :metrics="workspaceMetrics"
-      description="管理头像、账号信息和最近的申请进度。"
-      eyebrow="个人中心"
-      title="我的账号"
-    />
+      description="账号资料、登录密码和第三方账号绑定仅自己可见，不会出现在成员主页。"
+      eyebrow="PRIVATE SETTINGS"
+      title="账号与安全"
+    >
+      <template #actions>
+        <el-button type="primary" @click="$router.push('/profile')">查看我的主页</el-button>
+        <el-button plain @click="$router.push('/profile/edit')">编辑公开主页</el-button>
+      </template>
+    </WorkspaceHero>
 
     <section class="workspace-section">
       <div class="container workspace-grid workspace-grid--split profile-grid">
@@ -60,7 +65,9 @@
           <div v-if="membership" class="membership-card">
             <div class="membership-card__head">
               <span class="workspace-chip">社团成员</span>
-              <span v-if="membership.status" class="workspace-chip">{{ membershipStatusText(membership.status) }}</span>
+              <span v-if="membership.status" class="workspace-chip">{{
+                membershipStatusText(membership.status)
+              }}</span>
             </div>
             <div class="membership-card__body">
               <div class="membership-field">
@@ -118,6 +125,76 @@
                 <span>QQ 绑定</span>
                 <strong>{{ user.qqOpenid ? '已绑定' : '未绑定' }}</strong>
               </div>
+              <div class="workspace-inline-stat">
+                <span>Google 绑定</span>
+                <strong>{{ user.googleSub ? '已绑定' : '未绑定' }}</strong>
+              </div>
+              <div class="workspace-inline-stat">
+                <span>GitHub 绑定</span>
+                <strong>{{ user.githubBound ? '已绑定' : '未绑定' }}</strong>
+              </div>
+              <div class="workspace-inline-stat">
+                <span>Gitee 绑定</span>
+                <strong>{{ user.giteeBound ? '已绑定' : '未绑定' }}</strong>
+              </div>
+            </div>
+
+            <div class="qq-bind-box github-bind-box">
+              <div>
+                <strong>GitHub 账号绑定</strong>
+                <span>{{
+                  user.githubBound
+                    ? '当前账号已绑定 GitHub，可直接在登录页使用 GitHub 登录。'
+                    : '绑定后才能使用 GitHub 登录，系统不会创建新账号。'
+                }}</span>
+              </div>
+              <el-tag v-if="user.githubBound" type="success">已绑定</el-tag>
+              <el-button
+                v-else
+                :loading="githubBindLoading"
+                plain
+                type="primary"
+                @click="startGithubBind"
+                >绑定 GitHub</el-button
+              >
+            </div>
+
+            <div class="qq-bind-box gitee-bind-box">
+              <div>
+                <strong>Gitee 账号绑定</strong>
+                <span>{{
+                  user.giteeBound
+                    ? '当前账号已绑定 Gitee，可直接在登录页使用 Gitee 登录。'
+                    : '绑定后才能使用 Gitee 登录，系统不会创建新账号。'
+                }}</span>
+              </div>
+              <el-tag v-if="user.giteeBound" type="success">已绑定</el-tag>
+              <el-button
+                v-else
+                :loading="giteeBindLoading"
+                plain
+                type="primary"
+                @click="startGiteeBind"
+                >绑定 Gitee</el-button
+              >
+            </div>
+
+            <div class="qq-bind-box google-bind-box">
+              <div>
+                <strong>Google 账号绑定</strong>
+                <span>{{
+                  user.googleSub
+                    ? '当前账号已绑定 Google，可直接在登录页使用 Google 登录。'
+                    : '绑定后才能使用 Google 登录，系统不会因此创建新账号。'
+                }}</span>
+              </div>
+              <el-tag v-if="user.googleSub" type="success">已绑定</el-tag>
+              <div
+                v-else
+                ref="googleBindButtonRef"
+                :class="['google-bind-button', { 'is-loading': googleBindLoading }]"
+                aria-label="绑定 Google 账号"
+              ></div>
             </div>
 
             <div class="qq-bind-box">
@@ -207,8 +284,13 @@ import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
 import { authApi, siteApi } from '@/api'
 import { clearSession, getCurrentUser, getToken, setSession } from '@/utils/auth.ts'
 import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
+import {
+  cancelGoogleIdentityPrompt,
+  renderGoogleButton,
+  type GoogleCredentialResponse,
+} from '@/utils/googleIdentity.ts'
 import { ElMessage } from 'element-plus/es/components/message/index'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const user = ref(getCurrentUser() || {})
@@ -220,9 +302,13 @@ const submitting = ref(false)
 const avatarUploading = ref(false)
 const qqTokenLoading = ref(false)
 const qqUnbindLoading = ref(false)
+const googleBindLoading = ref(false)
+const githubBindLoading = ref(false)
+const giteeBindLoading = ref(false)
 const qqBindToken = ref('')
 const qqBindExpiresIn = ref(0)
 const avatarInputRef = ref<HTMLInputElement>()
+const googleBindButtonRef = ref<HTMLDivElement>()
 
 const passwordForm = ref({
   oldPassword: '',
@@ -361,6 +447,49 @@ async function unbindQq() {
   }
 }
 
+async function handleGoogleBindCredential(response: GoogleCredentialResponse) {
+  if (!response.credential || googleBindLoading.value) return
+  try {
+    googleBindLoading.value = true
+    await authApi.bindGoogle({ credential: response.credential })
+    await fetchProfile()
+    ElMessage.success('Google 账号绑定成功')
+  } finally {
+    googleBindLoading.value = false
+  }
+}
+
+async function initializeGoogleBind() {
+  if (user.value.googleSub) return
+  await nextTick()
+  if (!googleBindButtonRef.value) return
+  try {
+    await renderGoogleButton(googleBindButtonRef.value, handleGoogleBindCredential, 'continue_with')
+  } catch {
+    ElMessage.warning('Google 绑定服务当前不可用')
+  }
+}
+
+async function startGithubBind() {
+  try {
+    githubBindLoading.value = true
+    const result = await authApi.githubBindUrl()
+    window.location.assign(result.url)
+  } finally {
+    githubBindLoading.value = false
+  }
+}
+
+async function startGiteeBind() {
+  try {
+    giteeBindLoading.value = true
+    const result = await authApi.giteeBindUrl()
+    window.location.assign(result.url)
+  } finally {
+    giteeBindLoading.value = false
+  }
+}
+
 async function copyQqBindCommand() {
   const command = `/oa bind-qq ${qqBindToken.value}`
   await navigator.clipboard?.writeText(command)
@@ -445,13 +574,14 @@ function isQqAvatarUrl(src: string) {
   return /qlogo\.cn\/g\?/.test(src) || /qlogo\.cn\/headimg_dl/.test(src)
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (isLogin.value) {
-    fetchProfile()
-    fetchApplications()
-    fetchMembership()
+    await Promise.all([fetchProfile(), fetchApplications(), fetchMembership()])
+    await initializeGoogleBind()
   }
 })
+
+onBeforeUnmount(cancelGoogleIdentityPrompt)
 </script>
 
 <style scoped>
@@ -501,8 +631,21 @@ onMounted(() => {
 
 .security-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.google-bind-button {
+  display: flex;
+  min-width: 240px;
+  min-height: 44px;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.google-bind-button.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .qq-bind-box {

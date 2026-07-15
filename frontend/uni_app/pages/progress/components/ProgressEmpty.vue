@@ -16,7 +16,7 @@ const emit = defineEmits<{
 .empty {
     padding: 100rpx 40rpx;
     text-align: center;
-    color: #64748b;
+    color: #666668;
 }
 
 .empty__title,
@@ -25,14 +25,14 @@ const emit = defineEmits<{
 }
 
 .empty__title {
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 32rpx;
     font-weight: 800;
 }
 
 .empty__desc {
     margin-top: 12rpx;
-    color: #64748b;
+    color: #666668;
     font-size: 25rpx;
 }
 
@@ -40,9 +40,9 @@ const emit = defineEmits<{
     margin-top: 24rpx;
     height: 74rpx;
     line-height: 74rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     color: #fff;
-    background: #1769e8;
+    background: #1d1d1f;
     font-size: 26rpx;
 }
 

@@ -50,7 +50,7 @@ function iconFor(type?: string) {
     margin-bottom: 16rpx;
     background: #fff;
     border-radius: 16rpx;
-    box-shadow: 0 10rpx 26rpx rgba(31, 55, 88, .07);
+    box-shadow: 0 10rpx 26rpx rgba(0, 0, 0, .07);
     position: relative;
 }
 
@@ -64,7 +64,7 @@ function iconFor(type?: string) {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #1769e8;
+    background: #1d1d1f;
     border-radius: 16rpx;
     margin-right: 20rpx;
     flex-shrink: 0;
@@ -89,7 +89,7 @@ function iconFor(type?: string) {
 .msg-name {
     font-size: 30rpx;
     font-weight: 700;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .msg-time {
@@ -100,7 +100,7 @@ function iconFor(type?: string) {
 .msg-preview {
     display: block;
     font-size: 26rpx;
-    color: #64748b;
+    color: #666668;
     margin-top: 6rpx;
     line-height: 1.45;
 }

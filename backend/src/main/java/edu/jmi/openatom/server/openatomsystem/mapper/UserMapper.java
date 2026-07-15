@@ -46,6 +46,12 @@ public interface UserMapper extends BaseMapper<User> {
     return selectOne(new LambdaQueryWrapper<User>().eq(User::getQqOpenid, qqOpenid).last("LIMIT 1"));
   }
 
+  /** 按 Google subject 查询用户 */
+  default User selectByGoogleSub(String googleSub) {
+    if (googleSub == null || googleSub.isBlank()) return null;
+    return selectOne(new LambdaQueryWrapper<User>().eq(User::getGoogleSub, googleSub).last("LIMIT 1"));
+  }
+
   /** 模糊搜索用户（用户名/真实姓名/学号/手机/邮箱） */
   default List<User> searchByKeyword(String keyword) {
     return selectList(

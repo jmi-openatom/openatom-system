@@ -2,6 +2,7 @@
 	"type": "module",
 	"scripts": {
 		"dev:mp-weixin": "node scripts/dev-mp-weixin.js",
+		"build:mp-weixin": "NODE_ENV=production node scripts/dev-mp-weixin.js",
 		"open:mp-weixin": "node scripts/open-mp-weixin.js",
 		"preview:mp-weixin": "node scripts/open-mp-weixin.js && node scripts/dev-mp-weixin.js",
 		"postinstall": "node scripts/patch-vant-use.js && node scripts/sync-vant-weapp.js",

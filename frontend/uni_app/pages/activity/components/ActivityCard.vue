@@ -90,7 +90,7 @@ function statusColor(s?: string) {
     overflow: hidden;
     background: #fff;
     border: 1rpx solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 12rpx 28rpx rgba(31, 55, 88, 0.08);
+    box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.08);
     transition: transform 0.15s;
 }
 
@@ -132,7 +132,7 @@ function statusColor(s?: string) {
     width: 28rpx;
     height: 28rpx;
     border-radius: 50%;
-    background: rgba(23, 105, 232, 0.28);
+    background: rgba(0, 0, 0, 0.28);
 }
 
 .card__badge {
@@ -140,7 +140,7 @@ function statusColor(s?: string) {
     top: 16rpx;
     right: 16rpx;
     padding: 6rpx 18rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     font-size: 22rpx;
     font-weight: 600;
     backdrop-filter: blur(12rpx);
@@ -169,7 +169,7 @@ function statusColor(s?: string) {
     display: block;
     font-size: 32rpx;
     font-weight: 700;
-    color: #0f172a;
+    color: #1d1d1f;
     line-height: 1.4;
 }
 
@@ -184,8 +184,8 @@ function statusColor(s?: string) {
     padding: 4rpx 16rpx;
     border-radius: 8rpx;
     font-size: 22rpx;
-    color: #1769e8;
-    background: rgba(23, 105, 232, 0.08);
+    color: #1d1d1f;
+    background: rgba(0, 0, 0, 0.08);
     font-weight: 500;
 }
 
@@ -206,11 +206,11 @@ function statusColor(s?: string) {
 
 .card__meta-icon {
     font-size: 24rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .card__meta-text {
     font-size: 24rpx;
-    color: #64748b;
+    color: #666668;
 }
 </style>

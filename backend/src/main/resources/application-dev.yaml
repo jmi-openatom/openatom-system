@@ -59,6 +59,16 @@ sa-token:
 
 
 app:
+  google:
+    client-id: ${APP_GOOGLE_CLIENT_ID:456373207373-4md7t52dkhbo7p48e8omhjoct2squ06c.apps.googleusercontent.com}
+  github:
+    client-id: ${APP_GITHUB_CLIENT_ID:Ov23liQQCxTjyoR8WAW9}
+    client-secret: ${APP_GITHUB_CLIENT_SECRET:}
+    callback-uri: ${APP_GITHUB_CALLBACK_URI:https://www.jmi-openatom.cn/auth/github/callback}
+  gitee:
+    client-id: ${APP_GITEE_CLIENT_ID:12ed9f6f4df02c05cdf05045221e650e3bd3481f6301707a1d7ac8dd97211fa8}
+    client-secret: ${APP_GITEE_CLIENT_SECRET:}
+    callback-uri: ${APP_GITEE_CALLBACK_URI:https://www.jmi-openatom.cn/auth/gitee/callback}
   miniapp:
     app-id: ${APP_MINIAPP_APP_ID:wx8c6b52ab95da0938}
     app-secret: ${APP_MINIAPP_APP_SECRET:d15542dcaa23b92191962235dacef7b9}

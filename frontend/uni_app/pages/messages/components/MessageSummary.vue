@@ -21,7 +21,7 @@ const emit = defineEmits<{
     margin: 20rpx 24rpx;
     padding: 32rpx;
     border-radius: 18rpx;
-    color: #0f172a;
+    color: #1d1d1f;
     background: #ffffff;
     border: 1rpx solid #dbeafe;
     box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.06);
@@ -33,7 +33,7 @@ const emit = defineEmits<{
 }
 
 .top-card__label {
-    color: #1769e8;
+    color: #1d1d1f;
     font-size: 23rpx;
     font-weight: 700;
 }
@@ -49,8 +49,8 @@ const emit = defineEmits<{
     width: 180rpx;
     height: 64rpx;
     line-height: 64rpx;
-    border-radius: 999rpx;
-    background: #1769e8;
+    border-radius: 16rpx;
+    background: #1d1d1f;
     color: #fff;
     font-size: 24rpx;
 }

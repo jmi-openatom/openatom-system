@@ -57,12 +57,12 @@ withDefaults(
 .empty__title {
     font-size: 30rpx;
     font-weight: 600;
-    color: #475569;
+    color: #4f4f52;
 }
 
 .empty__sub {
     margin-top: 10rpx;
     font-size: 24rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 </style>

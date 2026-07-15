@@ -3,6 +3,8 @@ package edu.jmi.openatom.server.openatomsystem.service;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestChangePasswordDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestConfirmQqBindDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestGoogleLoginDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestGithubCallbackDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
@@ -14,6 +16,7 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinTokenVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinVerifyVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.Map;
 
 /**
  * 认证鉴权服务接口
@@ -24,6 +27,17 @@ public interface AuthService {
   Result<String> register(RequestRegisterDTO requestRegisterDTO);
 
   Result<ResponseLoginVO> login(RequestLoginDTO requestLoginDTO);
+
+  Result<ResponseLoginVO> googleLogin(RequestGoogleLoginDTO requestGoogleLoginDTO);
+
+  Result<String> bindGoogle(RequestGoogleLoginDTO requestGoogleLoginDTO);
+
+  Result<Map<String, String>> githubLoginUrl(String redirect);
+  Result<Map<String, String>> githubBindUrl();
+  Result<Map<String, Object>> githubCallback(RequestGithubCallbackDTO request);
+  Result<Map<String, String>> giteeLoginUrl(String redirect);
+  Result<Map<String, String>> giteeBindUrl();
+  Result<Map<String, Object>> giteeCallback(RequestGithubCallbackDTO request);
 
   Result<ResponseLoginVO> miniappLogin(RequestMiniappLoginDTO requestMiniappLoginDTO);
 

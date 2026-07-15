@@ -44,16 +44,19 @@ const isLogin = computed(() => Boolean(getToken()))
 const userName = computed(() => user.value.realName || user.value.userName || user.value.username || '游客')
 const avatarText = computed(() => String(userName.value || 'U').slice(0, 1).toUpperCase())
 const menus = computed<ProfileMenuItem[]>(() => [
-    {icon: 'P', label: '我的申请', path: '/pages/progress/index', badge: applicationCount.value || ''},
-    {icon: 'S', label: '扫码签到', path: '/pages/checkin/index'},
-    {icon: 'J', label: '招新报名', path: '/pages/recruitment/index'},
-    {icon: 'M', label: '消息通知', path: '/pages/messages/index', badge: unread.value || ''},
-    {icon: 'A', label: '近期活动', path: '/pages/activity/index'},
+    {icon: 'file-list-3-line', label: '我的申请', path: '/pages/progress/index', badge: applicationCount.value || ''},
+    {icon: 'qr-scan-2-line', label: '扫码签到', path: '/pages/checkin/index'},
+    {icon: 'user-add-line', label: '招新报名', path: '/pages/recruitment/index'},
+    {icon: 'notification-3-line', label: '消息通知', path: '/pages/messages/index', badge: unread.value || ''},
+    {icon: 'calendar-event-line', label: '近期活动', path: '/pages/activity/index'},
     {
-        icon: 'W',
+        icon: 'wechat-line',
         label: user.value.miniappOpenid ? '微信已绑定' : '绑定微信',
         action: user.value.miniappOpenid ? undefined : 'bindWechat',
     },
+    {icon: 'shield-check-line', label: '隐私政策', path: '/pages/legal/index?type=privacy'},
+    {icon: 'file-text-line', label: '用户协议', path: '/pages/legal/index?type=agreement'},
+    {icon: 'information-line', label: '关于 OpenAtom', path: '/pages/legal/index?type=about'},
 ])
 
 async function load() {
@@ -152,7 +155,7 @@ onMounted(load)
     flex-direction: column;
     height: 92vh;
     padding-bottom: 140rpx;
-    background: #f7fafc;
+    background: #f5f5f7;
 }
 
 .logout-wrap {
@@ -164,7 +167,7 @@ onMounted(load)
     line-height: 88rpx;
     color: #fff;
     background: #ee0a24;
-    border-radius: 44rpx;
+    border-radius: 16rpx;
     font-size: 30rpx;
 }
 

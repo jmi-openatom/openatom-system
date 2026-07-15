@@ -82,14 +82,21 @@
                 "navigationStyle": "custom",
                 "navigationBarTitleText": "扫码签到"
             }
+        },
+        {
+            "path": "pages/legal/index",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "协议与说明"
+            }
         }
     ],
     "globalStyle": {
         "navigationStyle": "custom",
         "navigationBarTextStyle": "black",
         "navigationBarTitleText": "OpenAtom",
-        "navigationBarBackgroundColor": "#F8F8F8",
-        "backgroundColor": "#F5F5F5"
+        "navigationBarBackgroundColor": "#F5F5F7",
+        "backgroundColor": "#F5F5F7"
     },
     "uniIdRouter": {}
 }

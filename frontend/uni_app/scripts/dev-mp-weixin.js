@@ -20,8 +20,11 @@ function loadEnv(filepath) {
   return env
 }
 
-const dotenvFile = resolve(projectRoot, '.env')
-const dotenv = loadEnv(dotenvFile)
+const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development'
+const dotenv = {
+  ...loadEnv(resolve(projectRoot, '.env')),
+  ...loadEnv(resolve(projectRoot, `.env.${mode}`)),
+}
 const hbuilderRoot = '/Applications/HBuilderX.app/Contents/HBuilderX'
 const hbuilderNode = resolve(hbuilderRoot, 'plugins/node/node')
 const uniCli = resolve(
@@ -45,7 +48,7 @@ const child = spawn(hbuilderNode, [uniCli, '-p', 'mp-weixin'], {
   env: {
     ...process.env,
     ...dotenv,
-    NODE_ENV: process.env.NODE_ENV || 'development',
+    NODE_ENV: mode,
     UNI_PLATFORM: 'mp-weixin',
     HX_APP_ROOT: hbuilderRoot,
     UNI_INPUT_DIR: projectRoot,

@@ -12,6 +12,8 @@ import edu.jmi.openatom.server.openatomsystem.common.web.ClientIpResolver;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestChangePasswordDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestConfirmQqBindDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestGoogleLoginDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestGithubCallbackDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMiniappLoginDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestRegisterDTO;
@@ -24,6 +26,7 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import edu.jmi.openatom.server.openatomsystem.security.GoogleIdentityService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
 import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
@@ -36,8 +39,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.Timestamp;
+import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -74,8 +80,14 @@ public class AuthServiceImpl implements AuthService {
 	private static final String GROUP_JOIN_TOKEN_KEY_PREFIX = "openatom:group-join:token:";
 	private static final long GROUP_JOIN_TOKEN_TIMEOUT_SECONDS = 30 * 60L;
 	private static final String MINIAPP_SESSION_URL = "https://api.weixin.qq.com/sns/jscode2session";
+	private static final String GITHUB_STATE_KEY_PREFIX = "openatom:github:oauth:state:";
+	private static final long GITHUB_STATE_TIMEOUT_SECONDS = 10 * 60L;
+	private static final String GITHUB_PROVIDER = "github";
+	private static final String GITEE_STATE_KEY_PREFIX = "openatom:gitee:oauth:state:";
+	private static final String GITEE_PROVIDER = "gitee";
 
 	private final UserMapper userMapper;
+	private final UserExternalIdentityMapper userExternalIdentityMapper;
 	private final UserRoleMapper userRoleMapper;
 	private final RoleMapper roleMapper;
 	private final RolePermissionMapper rolePermissionMapper;
@@ -86,6 +98,7 @@ public class AuthServiceImpl implements AuthService {
 	private final MembershipApplicationMapper membershipApplicationMapper;
 	private final LoginLogMapper loginLogMapper;
 	private final PasswordService passwordService;
+	private final GoogleIdentityService googleIdentityService;
 	private final AvatarStorageServiceImpl avatarStorageService;
 	private final ClientIpResolver clientIpResolver;
 	private final RegistrationSettingService registrationSettingService;
@@ -97,6 +110,24 @@ public class AuthServiceImpl implements AuthService {
 
 	@Value("${app.miniapp.app-secret:}")
 	private String miniappAppSecret;
+
+	@Value("${app.github.client-id:}")
+	private String githubClientId;
+
+	@Value("${app.github.client-secret:}")
+	private String githubClientSecret;
+
+	@Value("${app.github.callback-uri:}")
+	private String githubCallbackUri;
+
+	@Value("${app.gitee.client-id:}")
+	private String giteeClientId;
+
+	@Value("${app.gitee.client-secret:}")
+	private String giteeClientSecret;
+
+	@Value("${app.gitee.callback-uri:}")
+	private String giteeCallbackUri;
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
@@ -162,6 +193,246 @@ public class AuthServiceImpl implements AuthService {
 		recordLoginLog(user.getId());
 		grantDailyLoginPoints(user.getId());
 		return Result.success(createLoginResponse(user), "登陆成功");
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Result<ResponseLoginVO> googleLogin(RequestGoogleLoginDTO requestGoogleLoginDTO) {
+		if (requestGoogleLoginDTO == null || requestGoogleLoginDTO.getCredential() == null
+				|| requestGoogleLoginDTO.getCredential().isBlank()) {
+			return Result.error("Google credential不能为空");
+		}
+		final GoogleIdentityService.GoogleIdentity identity;
+		try {
+			identity = googleIdentityService.verify(requestGoogleLoginDTO.getCredential().trim());
+		} catch (IllegalStateException exception) {
+			return Result.error(503, exception.getMessage());
+		} catch (IllegalArgumentException exception) {
+			return Result.error(401, exception.getMessage());
+		}
+
+		User user = userMapper.selectByGoogleSub(identity.subject());
+		if (user == null) {
+			return Result.error(403, "该 Google 账号尚未绑定，请先使用现有账号登录后完成绑定");
+		}
+		recordLoginLog(user.getId());
+		grantDailyLoginPoints(user.getId());
+		return Result.success(createLoginResponse(user), "Google登录成功");
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Result<String> bindGoogle(RequestGoogleLoginDTO requestGoogleLoginDTO) {
+		if (!StpUtil.isLogin()) return Result.error(401, "请先登录后绑定 Google 账号");
+		if (requestGoogleLoginDTO == null || requestGoogleLoginDTO.getCredential() == null
+				|| requestGoogleLoginDTO.getCredential().isBlank()) {
+			return Result.error("Google credential不能为空");
+		}
+		final GoogleIdentityService.GoogleIdentity identity;
+		try {
+			identity = googleIdentityService.verify(requestGoogleLoginDTO.getCredential().trim());
+		} catch (IllegalStateException exception) {
+			return Result.error(503, exception.getMessage());
+		} catch (IllegalArgumentException exception) {
+			return Result.error(401, exception.getMessage());
+		}
+
+		int userId = StpUtil.getLoginIdAsInt();
+		User currentUser = userMapper.selectById(userId);
+		if (currentUser == null) return Result.error(404, "用户不存在");
+		User boundUser = userMapper.selectByGoogleSub(identity.subject());
+		if (boundUser != null && !boundUser.getId().equals(userId)) {
+			return Result.error(409, "该 Google 账号已绑定其他用户");
+		}
+		if (currentUser.getGoogleSub() != null
+				&& !currentUser.getGoogleSub().equals(identity.subject())) {
+			return Result.error(409, "当前账号已绑定其他 Google 账号");
+		}
+		if (identity.subject().equals(currentUser.getGoogleSub())) {
+			return Result.success("Google 账号已绑定");
+		}
+		currentUser.setGoogleSub(identity.subject());
+		userMapper.updateById(currentUser);
+		return Result.success("Google 账号绑定成功");
+	}
+
+	@Override
+	public Result<Map<String, String>> githubLoginUrl(String redirect) {
+		return createGithubAuthorizeUrl("login", null, safeRedirect(redirect, "/progress"));
+	}
+
+	@Override
+	public Result<Map<String, String>> githubBindUrl() {
+		if (!StpUtil.isLogin()) return Result.error(401, "请先登录后绑定 GitHub 账号");
+		return createGithubAuthorizeUrl("bind", StpUtil.getLoginIdAsInt(), "/settings/account");
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Result<Map<String, Object>> githubCallback(RequestGithubCallbackDTO request) {
+		if (request == null || isBlank(request.getCode()) || isBlank(request.getState())) {
+			return Result.error(400, "GitHub 回调参数不完整");
+		}
+		SaTokenDao tokenDao = SaManager.getSaTokenDao();
+		String stateKey = GITHUB_STATE_KEY_PREFIX + request.getState().trim();
+		String stateJson = tokenDao.get(stateKey);
+		tokenDao.delete(stateKey);
+		if (isBlank(stateJson)) return Result.error(401, "GitHub 授权状态无效或已过期");
+		Map<String, Object> state = Jsons.parseObject(stateJson);
+		String purpose = asString(state.get("purpose"));
+		String verifier = asString(state.get("verifier"));
+		String redirect = safeRedirect(asString(state.get("redirect")), "/progress");
+		if (isBlank(verifier) || !("login".equals(purpose) || "bind".equals(purpose))) {
+			return Result.error(401, "GitHub 授权状态无效");
+		}
+		try {
+			Map<String, Object> githubUser = requestGithubUser(request.getCode().trim(), verifier);
+			String subject = asString(githubUser.get("id"));
+			if (isBlank(subject)) return Result.error(401, "无法获取 GitHub 用户身份");
+			UserExternalIdentity identity =
+					userExternalIdentityMapper.selectByProviderSubject(GITHUB_PROVIDER, subject);
+
+			if ("bind".equals(purpose)) {
+				Integer userId = state.get("userId") instanceof Number number ? number.intValue() : null;
+				if (userId == null || userMapper.selectById(userId) == null) {
+					return Result.error(401, "绑定会话无效，请重新登录");
+				}
+				if (identity != null && !userId.equals(identity.getUserId())) {
+					return Result.error(409, "该 GitHub 账号已绑定其他用户");
+				}
+				UserExternalIdentity current =
+						userExternalIdentityMapper.selectByUserProvider(userId, GITHUB_PROVIDER);
+				if (current != null && !subject.equals(current.getSubject())) {
+					return Result.error(409, "当前账号已绑定其他 GitHub 账号");
+				}
+				if (identity == null) {
+					identity = new UserExternalIdentity();
+					identity.setUserId(userId);
+					identity.setProvider(GITHUB_PROVIDER);
+					identity.setSubject(subject);
+					identity.setProviderUsername(asString(githubUser.get("login")));
+					identity.setAvatarUrl(asString(githubUser.get("avatar_url")));
+					userExternalIdentityMapper.insert(identity);
+				}
+				Map<String, Object> response = new HashMap<>();
+				response.put("purpose", "bind");
+				response.put("redirect", "/settings/account");
+				return Result.success(response, "GitHub 账号绑定成功");
+			}
+
+			if (identity == null) {
+				return Result.error(403, "该 GitHub 账号尚未绑定，请先使用现有账号登录后完成绑定");
+			}
+			User user = userMapper.selectById(identity.getUserId());
+			if (user == null) return Result.error(404, "绑定的本地账号不存在");
+			identity.setLastLoginAt(new Timestamp(System.currentTimeMillis()));
+			identity.setProviderUsername(asString(githubUser.get("login")));
+			identity.setAvatarUrl(asString(githubUser.get("avatar_url")));
+			userExternalIdentityMapper.updateById(identity);
+			recordLoginLog(user.getId());
+			grantDailyLoginPoints(user.getId());
+			Map<String, Object> response = new HashMap<>();
+			response.put("purpose", "login");
+			response.put("redirect", redirect);
+			response.put("login", createLoginResponse(user));
+			return Result.success(response, "GitHub 登录成功");
+		} catch (IllegalStateException exception) {
+			log.warn("GitHub OAuth failed: {}", exception.getMessage());
+			return Result.error(502, exception.getMessage());
+		}
+	}
+
+	@Override
+	public Result<Map<String, String>> giteeLoginUrl(String redirect) {
+		return createGiteeAuthorizeUrl("login", null, safeRedirect(redirect, "/progress"));
+	}
+
+	@Override
+	public Result<Map<String, String>> giteeBindUrl() {
+		if (!StpUtil.isLogin()) {
+			return Result.error(401, "请先登录后绑定 Gitee 账号");
+		}
+		return createGiteeAuthorizeUrl("bind", StpUtil.getLoginIdAsInt(), "/settings/account");
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Result<Map<String, Object>> giteeCallback(RequestGithubCallbackDTO request) {
+		if (request == null || isBlank(request.getCode()) || isBlank(request.getState())) {
+			return Result.error(400, "Gitee 回调参数不完整");
+		}
+		SaTokenDao dao = SaManager.getSaTokenDao();
+		String key = GITEE_STATE_KEY_PREFIX + request.getState().trim();
+		String json = dao.get(key);
+		dao.delete(key);
+		if (isBlank(json)) {
+			return Result.error(401, "Gitee 授权状态无效或已过期");
+		}
+		Map<String, Object> state = Jsons.parseObject(json);
+		String purpose = asString(state.get("purpose"));
+		if (!"login".equals(purpose) && !"bind".equals(purpose)) {
+			return Result.error(401, "Gitee 授权状态无效");
+		}
+		String redirect = safeRedirect(asString(state.get("redirect")), "/progress");
+		try {
+			Map<String, Object> remote = requestGiteeUser(request.getCode().trim());
+			String subject = asString(remote.get("id"));
+			if (isBlank(subject)) {
+				return Result.error(401, "无法获取 Gitee 用户身份");
+			}
+			UserExternalIdentity identity = userExternalIdentityMapper.selectByProviderSubject(GITEE_PROVIDER, subject);
+			if ("bind".equals(purpose)) {
+				Integer userId = state.get("userId") instanceof Number n ? n.intValue() : null;
+				if (userId == null || userMapper.selectById(userId) == null) {
+					return Result.error(401, "绑定会话无效");
+				}
+				if (identity != null && !userId.equals(identity.getUserId())) {
+					return Result.error(409, "该 Gitee 账号已绑定其他用户");
+				}
+				UserExternalIdentity current = userExternalIdentityMapper.selectByUserProvider(userId, GITEE_PROVIDER);
+				if (current != null && !subject.equals(current.getSubject())) {
+					return Result.error(409, "当前账号已绑定其他 Gitee 账号");
+				}
+				if (identity == null) {
+					identity = new UserExternalIdentity();
+					identity.setUserId(userId);
+					identity.setProvider(GITEE_PROVIDER);
+					identity.setSubject(subject);
+					identity.setProviderUsername(asString(remote.get("login")));
+					identity.setAvatarUrl(asString(remote.get("avatar_url")));
+					userExternalIdentityMapper.insert(identity);
+				} else {
+					identity.setProviderUsername(asString(remote.get("login")));
+					identity.setAvatarUrl(asString(remote.get("avatar_url")));
+					userExternalIdentityMapper.updateById(identity);
+				}
+				Map<String, Object> response = new HashMap<>();
+				response.put("purpose", "bind");
+				response.put("redirect", "/settings/account");
+				return Result.success(response, "Gitee 账号绑定成功");
+			}
+			if (identity == null) {
+				return Result.error(403, "该 Gitee 账号尚未绑定，请先使用现有账号登录后完成绑定");
+			}
+			User user = userMapper.selectById(identity.getUserId());
+			if (user == null) {
+				return Result.error(404, "绑定的本地账号不存在");
+			}
+			identity.setProviderUsername(asString(remote.get("login")));
+			identity.setAvatarUrl(asString(remote.get("avatar_url")));
+			identity.setLastLoginAt(new Timestamp(System.currentTimeMillis()));
+			userExternalIdentityMapper.updateById(identity);
+			recordLoginLog(user.getId());
+			grantDailyLoginPoints(user.getId());
+			Map<String, Object> response = new HashMap<>();
+			response.put("purpose", "login");
+			response.put("redirect", redirect);
+			response.put("login", createLoginResponse(user));
+			return Result.success(response, "Gitee 登录成功");
+		} catch (IllegalStateException e) {
+			log.warn("Gitee OAuth failed: {}", e.getMessage());
+			return Result.error(502, e.getMessage());
+		}
 	}
 
 	@Override
@@ -454,8 +725,13 @@ public class AuthServiceImpl implements AuthService {
 			return Result.error(404, "用户不存在");
 		}
 		AuthSnapshot snapshot = buildAuthSnapshot(userId);
+		User safeUser = buildSafeUser(user);
+		safeUser.setGithubBound(
+				userExternalIdentityMapper.selectByUserProvider(userId, GITHUB_PROVIDER) != null);
+		safeUser.setGiteeBound(
+				userExternalIdentityMapper.selectByUserProvider(userId, GITEE_PROVIDER) != null);
 		return Result.success(
-				ResponseCurrentUserVO.builder().user(buildSafeUser(user))
+				ResponseCurrentUserVO.builder().user(safeUser)
 						.roles(snapshot.roles()).permissions(snapshot.permissions()).build());
 	}
 
@@ -624,6 +900,120 @@ public class AuthServiceImpl implements AuthService {
 		}
 	}
 
+	private Result<Map<String, String>> createGithubAuthorizeUrl(
+			String purpose, Integer userId, String redirect) {
+		if (isBlank(githubClientId) || isBlank(githubClientSecret) || isBlank(githubCallbackUri)) {
+			return Result.error(503, "GitHub 登录尚未完成服务器配置");
+		}
+		String state = UUID.randomUUID().toString().replace("-", "");
+		String verifier = UUID.randomUUID().toString().replace("-", "")
+				+ UUID.randomUUID().toString().replace("-", "");
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("purpose", purpose);
+		if (userId != null) payload.put("userId", userId);
+		payload.put("verifier", verifier);
+		payload.put("redirect", redirect);
+		SaManager.getSaTokenDao().set(
+				GITHUB_STATE_KEY_PREFIX + state, Jsons.stringify(payload), GITHUB_STATE_TIMEOUT_SECONDS);
+		String url = "https://github.com/login/oauth/authorize"
+				+ "?client_id=" + encode(githubClientId)
+				+ "&redirect_uri=" + encode(githubCallbackUri)
+				+ "&scope=" + encode("read:user")
+				+ "&state=" + encode(state)
+				+ "&code_challenge=" + encode(pkceChallenge(verifier))
+				+ "&code_challenge_method=S256";
+		return Result.success(Map.of("url", url));
+	}
+
+	private Result<Map<String, String>> createGiteeAuthorizeUrl(String purpose, Integer userId, String redirect) {
+		if (isBlank(giteeClientId) || isBlank(giteeClientSecret) || isBlank(giteeCallbackUri)) {
+			return Result.error(503, "Gitee 登录尚未完成服务器配置");
+		}
+		String state = UUID.randomUUID().toString().replace("-", "");
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("purpose", purpose);
+		if (userId != null) payload.put("userId", userId);
+		payload.put("redirect", redirect);
+		SaManager.getSaTokenDao().set(
+				GITEE_STATE_KEY_PREFIX + state, Jsons.stringify(payload), GITHUB_STATE_TIMEOUT_SECONDS);
+		String url = "https://gitee.com/oauth/authorize?client_id=" + encode(giteeClientId)
+				+ "&redirect_uri=" + encode(giteeCallbackUri) + "&response_type=code&scope=user_info&state=" + encode(state);
+		return Result.success(Map.of("url", url));
+	}
+
+	private Map<String, Object> requestGiteeUser(String code) {
+		try {
+			String form = "grant_type=authorization_code&code=" + encode(code)
+					+ "&client_id=" + encode(giteeClientId) + "&redirect_uri=" + encode(giteeCallbackUri)
+					+ "&client_secret=" + encode(giteeClientSecret);
+			HttpRequest tokenReq = HttpRequest.newBuilder(URI.create("https://gitee.com/oauth/token"))
+					.header("Accept", "application/json").header("Content-Type", "application/x-www-form-urlencoded")
+					.POST(HttpRequest.BodyPublishers.ofString(form)).build();
+			HttpResponse<String> tokenRes = httpClient.send(tokenReq, HttpResponse.BodyHandlers.ofString());
+			String accessToken = asString(Jsons.parseObject(tokenRes.body()).get("access_token"));
+			if (tokenRes.statusCode() >= 400 || isBlank(accessToken)) throw new IllegalStateException("Gitee 授权码交换失败");
+			HttpRequest userReq = HttpRequest.newBuilder(URI.create("https://gitee.com/api/v5/user"))
+					.header("Accept", "application/json").header("Authorization", "token " + accessToken).GET().build();
+			HttpResponse<String> userRes = httpClient.send(userReq, HttpResponse.BodyHandlers.ofString());
+			if (userRes.statusCode() >= 400) throw new IllegalStateException("Gitee 用户信息获取失败");
+			return Jsons.parseObject(userRes.body());
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Gitee 授权请求被中断", e);
+		} catch (Exception e) {
+			if (e instanceof IllegalStateException state) throw state;
+			throw new IllegalStateException("Gitee 授权服务不可用", e);
+		}
+	}
+
+	private Map<String, Object> requestGithubUser(String code, String verifier) {
+		try {
+			String form = "client_id=" + encode(githubClientId)
+					+ "&client_secret=" + encode(githubClientSecret)
+					+ "&code=" + encode(code)
+					+ "&redirect_uri=" + encode(githubCallbackUri)
+					+ "&code_verifier=" + encode(verifier);
+			HttpRequest tokenRequest = HttpRequest.newBuilder(URI.create("https://github.com/login/oauth/access_token"))
+					.header("Accept", "application/json")
+					.header("Content-Type", "application/x-www-form-urlencoded")
+					.POST(HttpRequest.BodyPublishers.ofString(form)).build();
+			HttpResponse<String> tokenResponse = httpClient.send(tokenRequest, HttpResponse.BodyHandlers.ofString());
+			Map<String, Object> token = Jsons.parseObject(tokenResponse.body());
+			String accessToken = asString(token.get("access_token"));
+			if (tokenResponse.statusCode() >= 400 || isBlank(accessToken)) {
+				throw new IllegalStateException("GitHub 授权码交换失败");
+			}
+			HttpRequest userRequest = HttpRequest.newBuilder(URI.create("https://api.github.com/user"))
+					.header("Accept", "application/vnd.github+json")
+					.header("Authorization", "Bearer " + accessToken)
+					.header("X-GitHub-Api-Version", "2022-11-28").GET().build();
+			HttpResponse<String> userResponse = httpClient.send(userRequest, HttpResponse.BodyHandlers.ofString());
+			if (userResponse.statusCode() >= 400) throw new IllegalStateException("GitHub 用户信息获取失败");
+			return Jsons.parseObject(userResponse.body());
+		} catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("GitHub 授权请求被中断", exception);
+		} catch (Exception exception) {
+			if (exception instanceof IllegalStateException stateException) throw stateException;
+			throw new IllegalStateException("GitHub 授权服务不可用", exception);
+		}
+	}
+
+	private String pkceChallenge(String verifier) {
+		try {
+			byte[] digest = MessageDigest.getInstance("SHA-256")
+					.digest(verifier.getBytes(StandardCharsets.US_ASCII));
+			return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+		} catch (Exception exception) {
+			throw new IllegalStateException("无法生成 GitHub PKCE 参数", exception);
+		}
+	}
+
+	private String safeRedirect(String redirect, String fallback) {
+		if (redirect == null || !redirect.startsWith("/") || redirect.startsWith("//")) return fallback;
+		return redirect;
+	}
+
 	private User createMiniappUser(String openid, String unionid) {
 		String username = uniqueMiniappUsername(openid);
 		User user = User.builder()
@@ -643,9 +1033,13 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	private String uniqueMiniappUsername(String openid) {
-		String suffix = openid.length() > 18 ? openid.substring(openid.length() - 18) : openid;
-		String base = "wx_" + suffix.replaceAll("[^A-Za-z0-9_]", "");
-		if (base.length() < 4) base = "wx_user";
+		return uniqueExternalUsername("wx", openid);
+	}
+
+	private String uniqueExternalUsername(String provider, String subject) {
+		String suffix = subject.length() > 18 ? subject.substring(subject.length() - 18) : subject;
+		String base = provider + "_" + suffix.replaceAll("[^A-Za-z0-9_]", "");
+		if (base.length() < 4) base = provider + "_user";
 		String candidate = base;
 		int index = 1;
 		while (userMapper.selectByStudentIdOrUserName(candidate) != null) {
@@ -754,6 +1148,7 @@ public class AuthServiceImpl implements AuthService {
 				.userStatus(user.getUserStatus())
 				.miniappOpenid(isBlank(user.getMiniappOpenid()) ? null : "BOUND")
 				.qqOpenid(isBlank(user.getQqOpenid()) ? null : user.getQqOpenid())
+				.googleSub(isBlank(user.getGoogleSub()) ? null : "BOUND")
 			.createTime(user.getCreateTime()).lastLoginAt(user.getLastLoginAt())
 			.onboardingCompletedAt(user.getOnboardingCompletedAt())
 			.activatedAt(user.getActivatedAt())

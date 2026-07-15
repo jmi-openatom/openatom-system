@@ -74,7 +74,7 @@ function activeStep(status?: string) {
     padding: 30rpx;
     border-radius: 18rpx;
     background: #fff;
-    box-shadow: 0 12rpx 30rpx rgba(31, 55, 88, .08);
+    box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, .08);
 }
 
 .progress-card__head,
@@ -92,21 +92,21 @@ function activeStep(status?: string) {
 }
 
 .progress-card__title {
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 31rpx;
     font-weight: 780;
 }
 
 .progress-card__meta {
     margin-top: 8rpx;
-    color: #64748b;
+    color: #666668;
     font-size: 24rpx;
 }
 
 .status-pill {
     flex-shrink: 0;
     padding: 6rpx 16rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     font-size: 22rpx;
     font-weight: 700;
 }
@@ -114,7 +114,7 @@ function activeStep(status?: string) {
 .status-pill--success { color: #047857; background: #d1fae5; }
 .status-pill--warning { color: #a16207; background: #fef3c7; }
 .status-pill--muted,
-.status-pill--default { color: #64748b; background: #f1f5f9; }
+.status-pill--default { color: #666668; background: #ececef; }
 
 .step-row {
     display: grid;
@@ -125,12 +125,12 @@ function activeStep(status?: string) {
 
 .step-dot {
     height: 10rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     background: #e2e8f0;
 }
 
 .step-dot.active {
-    background: #1769e8;
+    background: #1d1d1f;
 }
 
 .info-grid {
@@ -142,25 +142,25 @@ function activeStep(status?: string) {
 .info-item {
     padding: 18rpx;
     border-radius: 14rpx;
-    background: #f8fafc;
+    background: #f5f5f7;
 }
 
 .info-item text {
     display: block;
     margin-bottom: 8rpx;
-    color: #64748b;
+    color: #666668;
     font-size: 22rpx;
 }
 
 .info-item strong {
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 26rpx;
 }
 
 .section-title {
     display: block;
     margin: 26rpx 0 14rpx;
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 27rpx;
     font-weight: 800;
 }
@@ -168,12 +168,12 @@ function activeStep(status?: string) {
 .interview {
     padding: 18rpx;
     border-radius: 14rpx;
-    background: #f8fafc;
+    background: #f5f5f7;
     margin-top: 12rpx;
 }
 
 .interview__top {
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 25rpx;
     font-weight: 700;
 }
@@ -181,13 +181,13 @@ function activeStep(status?: string) {
 .interview__line {
     display: block;
     margin-top: 8rpx;
-    color: #64748b;
+    color: #666668;
     font-size: 23rpx;
 }
 
 .no-interview {
     margin-top: 24rpx;
-    color: #64748b;
+    color: #666668;
     font-size: 24rpx;
 }
 </style>

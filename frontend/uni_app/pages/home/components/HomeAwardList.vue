@@ -53,14 +53,14 @@ const list = computed(() => (props.awards || []).filter((a) => a?.title))
     display: block;
     font-size: 30rpx;
     font-weight: 600;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .block__sub {
     display: block;
     margin-top: 6rpx;
     font-size: 22rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .list {
@@ -88,7 +88,7 @@ const list = computed(() => (props.awards || []).filter((a) => a?.title))
     margin-top: 8rpx;
     font-size: 28rpx;
     font-weight: 700;
-    color: #0f172a;
+    color: #1d1d1f;
     line-height: 1.35;
 }
 
@@ -96,7 +96,7 @@ const list = computed(() => (props.awards || []).filter((a) => a?.title))
     display: block;
     margin-top: 8rpx;
     font-size: 24rpx;
-    color: #64748b;
+    color: #666668;
 }
 
 .card__row {
@@ -109,7 +109,7 @@ const list = computed(() => (props.awards || []).filter((a) => a?.title))
 
 .pill {
     padding: 4rpx 14rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     font-size: 20rpx;
     color: #92400e;
     background: rgba(251, 191, 36, 0.25);
@@ -117,14 +117,14 @@ const list = computed(() => (props.awards || []).filter((a) => a?.title))
 
 .team {
     font-size: 22rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .empty {
     padding: 40rpx;
     text-align: center;
     font-size: 24rpx;
-    color: #94a3b8;
+    color: #8e8e93;
     background: rgba(255, 255, 255, 0.7);
     border-radius: 20rpx;
 }

@@ -242,7 +242,7 @@ const blocks = computed(() => {
 .md-h1 {
   font-size: 40rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: #1d1d1f;
   margin: 32rpx 0 16rpx;
   line-height: 1.3;
 }
@@ -250,7 +250,7 @@ const blocks = computed(() => {
 .md-h2 {
   font-size: 36rpx;
   font-weight: 700;
-  color: #0f172a;
+  color: #1d1d1f;
   margin: 28rpx 0 14rpx;
   line-height: 1.35;
 }
@@ -266,27 +266,27 @@ const blocks = computed(() => {
 .md-h4 {
   font-size: 28rpx;
   font-weight: 600;
-  color: #334155;
+  color: #333333;
   margin: 20rpx 0 10rpx;
 }
 
 .md-h5 {
   font-size: 26rpx;
   font-weight: 600;
-  color: #475569;
+  color: #4f4f52;
   margin: 16rpx 0 8rpx;
 }
 
 .md-h6 {
   font-size: 24rpx;
   font-weight: 600;
-  color: #64748b;
+  color: #666668;
   margin: 12rpx 0 8rpx;
 }
 
 .md-p {
   font-size: 28rpx;
-  color: #334155;
+  color: #333333;
   margin: 8rpx 0;
 }
 
@@ -308,11 +308,11 @@ const blocks = computed(() => {
 .md-blockquote {
   margin: 16rpx 0;
   padding: 12rpx 20rpx;
-  border-left: 6rpx solid #1769e8;
-  background: rgba(23, 105, 232, 0.04);
+  border-left: 6rpx solid #1d1d1f;
+  background: rgba(0, 0, 0, 0.04);
   border-radius: 0 8rpx 8rpx 0;
   font-size: 26rpx;
-  color: #475569;
+  color: #4f4f52;
   font-style: italic;
 }
 
@@ -321,12 +321,12 @@ const blocks = computed(() => {
   margin: 6rpx 0;
   padding-left: 12rpx;
   font-size: 28rpx;
-  color: #334155;
+  color: #333333;
 }
 
 .md-li-dot {
   margin-right: 12rpx;
-  color: #1769e8;
+  color: #1d1d1f;
   font-weight: 700;
 }
 
@@ -353,7 +353,7 @@ const blocks = computed(() => {
 
 .md-empty-text {
   font-size: 26rpx;
-  color: #94a3b8;
+  color: #8e8e93;
 }
 
 .text {
@@ -379,11 +379,11 @@ const blocks = computed(() => {
 
 .strikethrough {
   text-decoration: line-through;
-  color: #94a3b8;
+  color: #8e8e93;
 }
 
 .link {
-  color: #1769e8;
+  color: #1d1d1f;
   text-decoration: underline;
 }
 </style>

@@ -48,19 +48,19 @@ const emit = defineEmits<{
 
 .avatar-icon {
     font-size: 44rpx;
-    color: #1769e8;
+    color: #1d1d1f;
     font-weight: 800;
 }
 
 .nickname {
     font-size: 36rpx;
-    color: #0f172a;
+    color: #1d1d1f;
     font-weight: 600;
 }
 
 .subtitle {
     font-size: 26rpx;
-    color: #64748b;
+    color: #666668;
     margin-top: 8rpx;
 }
 
@@ -69,8 +69,8 @@ const emit = defineEmits<{
     width: 180rpx;
     height: 64rpx;
     line-height: 64rpx;
-    border-radius: 999rpx;
-    background: #1769e8;
+    border-radius: 16rpx;
+    background: #1d1d1f;
     color: #fff;
     font-size: 24rpx;
 }

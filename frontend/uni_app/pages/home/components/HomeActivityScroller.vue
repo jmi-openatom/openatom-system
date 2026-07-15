@@ -81,14 +81,14 @@ function onTap(item: ClubHomeActivity) {
     display: block;
     font-size: 30rpx;
     font-weight: 600;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .block__sub {
     display: block;
     margin-top: 6rpx;
     font-size: 22rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .scroller {
@@ -111,7 +111,7 @@ function onTap(item: ClubHomeActivity) {
     overflow: hidden;
     background: #fff;
     border: 1rpx solid rgba(226, 232, 240, 0.95);
-    box-shadow: 0 12rpx 28rpx rgba(31, 55, 88, 0.08);
+    box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.08);
 }
 
 .card__cover {
@@ -132,7 +132,7 @@ function onTap(item: ClubHomeActivity) {
 .card__date {
     display: block;
     font-size: 22rpx;
-    color: #64748b;
+    color: #666668;
 }
 
 .card__title {
@@ -140,7 +140,7 @@ function onTap(item: ClubHomeActivity) {
     margin-top: 8rpx;
     font-size: 26rpx;
     font-weight: 700;
-    color: #0f172a;
+    color: #1d1d1f;
     line-height: 1.35;
 }
 
@@ -148,10 +148,10 @@ function onTap(item: ClubHomeActivity) {
     display: inline-block;
     margin-top: 12rpx;
     padding: 4rpx 14rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     font-size: 20rpx;
-    color: #1769e8;
-    background: rgba(23, 105, 232, 0.1);
+    color: #1d1d1f;
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .empty {
@@ -159,7 +159,7 @@ function onTap(item: ClubHomeActivity) {
     padding: 40rpx;
     text-align: center;
     font-size: 24rpx;
-    color: #94a3b8;
+    color: #8e8e93;
     background: rgba(255, 255, 255, 0.7);
     border-radius: 20rpx;
 }

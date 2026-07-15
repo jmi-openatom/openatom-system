@@ -1,6 +1,5 @@
 <template>
   <div class="login-page">
-
     <!-- 左侧地图区 -->
     <aside class="login-aside">
       <HomeMapSection background static class="login-aside__map" />
@@ -39,7 +38,11 @@
         </div>
 
         <div class="login-aside__footer">
-          <span>© 2025-2027 JMI-OPENATOM & <a href="http://www.ariven.cn/">Ariven(软件技术252301 何治皓).</a> All rights reserved.</span>
+          <span
+            >© 2025-2027 JMI-OPENATOM &
+            <a href="http://www.ariven.cn/">Ariven(软件技术252301 何治皓).</a> All rights
+            reserved.</span
+          >
         </div>
       </div>
     </aside>
@@ -51,9 +54,14 @@
       </div>
       <div class="login-form-wrapper">
         <div class="login-form-header">
-          <p class="login-form-eyebrow">统一身份认证</p>
           <h2>{{ activeTab === 'register' ? '创建账号' : '欢迎回来' }}</h2>
-          <p>{{ activeTab === 'register' ? '注册后即可继续使用JMI-OPENATOM所属的所有应用' :'一键登录，即刻畅享 JMI-OPENATOM 全系应用'  }}</p>
+          <p>
+            {{
+              activeTab === 'register'
+                ? '加入 JMI-OPENATOM，开启你的开源旅程。'
+                : '一个账号，通行所有应用。'
+            }}
+          </p>
         </div>
 
         <div v-if="registerEnabled" class="login-tab-switch">
@@ -129,6 +137,60 @@
             </template>
             <span v-else class="login-spinner"></span>
           </button>
+          <div class="login-social">
+            <div class="login-social__heading">
+              <span>其他登录方式</span>
+              <small>仅限已绑定账号</small>
+            </div>
+            <div
+              v-if="googleClientId"
+              ref="googleButtonRef"
+              class="login-google-button"
+              aria-label="使用 Google 登录"
+            ></div>
+            <p v-if="googleUnavailable" class="login-social__error">Google 登录服务当前不可用</p>
+            <div class="login-social__providers">
+              <button
+                type="button"
+                class="login-provider-button"
+                :disabled="Boolean(oauthLoading)"
+                @click="handleGithubLogin"
+              >
+                <LoaderCircle
+                  v-if="oauthLoading === 'github'"
+                  :size="19"
+                  aria-hidden="true"
+                  class="login-provider-button__spinner"
+                />
+                <Github v-else :size="19" aria-hidden="true" />
+                <span>GitHub</span>
+              </button>
+              <button
+                type="button"
+                class="login-provider-button login-provider-button--gitee"
+                :disabled="Boolean(oauthLoading)"
+                @click="handleGiteeLogin"
+              >
+                <LoaderCircle
+                  v-if="oauthLoading === 'gitee'"
+                  :size="19"
+                  aria-hidden="true"
+                  class="login-provider-button__spinner"
+                />
+                <svg
+                  v-else
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  class="login-provider-button__gitee"
+                >
+                  <path
+                    d="M5 3h14a2 2 0 0 1 2 2v3H9v8h7v-3h-4V9h9v7a5 5 0 0 1-5 5H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
+                  />
+                </svg>
+                <span>Gitee</span>
+              </button>
+            </div>
+          </div>
         </form>
 
         <!-- 注册表单 -->
@@ -230,10 +292,21 @@
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { authApi, siteApi } from '@/api'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import HomeMapSection from '@/components/site/home/HomeMapSection.vue'
-import { Eye, EyeOff, LockKeyhole, LogIn, Mail, Phone, UserPlus, UserRound } from 'lucide-vue-next'
+import {
+  Eye,
+  EyeOff,
+  Github,
+  LoaderCircle,
+  LockKeyhole,
+  LogIn,
+  Mail,
+  Phone,
+  UserPlus,
+  UserRound,
+} from 'lucide-vue-next'
 import {
   clearRememberedLogin,
   getRememberedLogin,
@@ -243,6 +316,12 @@ import {
   shouldUseFullPageAuthRedirect,
 } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
+import {
+  cancelGoogleIdentityPrompt,
+  googleClientId,
+  renderGoogleButton,
+  type GoogleCredentialResponse,
+} from '@/utils/googleIdentity.ts'
 
 const activeTab = ref<'login' | 'register'>('login')
 const registerEnabled = ref(false)
@@ -250,6 +329,9 @@ const loading = ref(false)
 const rememberPassword = ref(false)
 const showPassword = ref(false)
 const usernameInputRef = ref<HTMLInputElement>()
+const googleButtonRef = ref<HTMLDivElement>()
+const googleUnavailable = ref(false)
+const oauthLoading = ref<'github' | 'gitee' | null>(null)
 
 const loginForm = ref({ username: '', password: '' })
 const registerForm = ref({ username: '', password: '', realName: '', phone: '', email: '' })
@@ -320,6 +402,58 @@ async function handleLogin() {
   }
 }
 
+async function handleGoogleCredential(response: GoogleCredentialResponse) {
+  if (!response.credential || loading.value) return
+  loading.value = true
+  try {
+    const result = await authApi.googleLogin({ credential: response.credential })
+    setSession(result)
+    await nextTick()
+    ElMessage.success('Google 登录成功')
+    finishLoginRedirect()
+  } catch {
+    // 错误已由请求拦截器统一处理
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleGithubLogin() {
+  if (oauthLoading.value) return
+  try {
+    oauthLoading.value = 'github'
+    const result = await authApi.githubLoginUrl(loginRedirectTarget())
+    window.location.assign(result.url)
+  } catch {
+    // 错误已由请求拦截器统一处理
+    oauthLoading.value = null
+  }
+}
+
+async function handleGiteeLogin() {
+  if (oauthLoading.value) return
+  try {
+    oauthLoading.value = 'gitee'
+    const result = await authApi.giteeLoginUrl(loginRedirectTarget())
+    window.location.assign(result.url)
+  } catch {
+    // 错误已由请求拦截器统一处理
+    oauthLoading.value = null
+  }
+}
+
+async function initializeGoogleLogin() {
+  if (!googleClientId) return
+  try {
+    await nextTick()
+    if (!googleButtonRef.value) return
+    await renderGoogleButton(googleButtonRef.value, handleGoogleCredential)
+  } catch (error) {
+    googleUnavailable.value = true
+    console.warn(error)
+  }
+}
+
 async function handleRegister() {
   if (!registerEnabled.value) {
     ElMessage.warning('当前已关闭注册，请联系管理员开通')
@@ -332,7 +466,10 @@ async function handleRegister() {
   loading.value = true
   try {
     await authApi.register(registerForm.value)
-    const result = await authApi.login({ username: registerForm.value.username, password: registerForm.value.password })
+    const result = await authApi.login({
+      username: registerForm.value.username,
+      password: registerForm.value.password,
+    })
     if (rememberPassword.value) {
       setRememberedLogin({
         username: registerForm.value.username,
@@ -360,11 +497,16 @@ onMounted(async () => {
   loginForm.value.password = rememberedLogin.password || ''
   rememberPassword.value = Boolean(rememberedLogin.remember)
   await fetchRegisterEnabled()
+  await initializeGoogleLogin()
 })
+
+onBeforeUnmount(cancelGoogleIdentityPrompt)
 </script>
 
 <style scoped>
 .login-page {
+  --login-control-radius: 14px;
+  --login-pill-radius: 999px;
   position: relative;
   display: flex;
   min-height: 100svh;
@@ -547,9 +689,8 @@ onMounted(async () => {
   width: 48%;
   align-items: center;
   justify-content: center;
-  padding: 64px 56px;
-  background:
-    linear-gradient(180deg, var(--oa-page-bg) 0%, var(--oa-page-soft-bg) 100%);
+  padding: 48px 56px;
+  background: var(--oa-page-bg);
 }
 
 .login-main::before {
@@ -565,24 +706,57 @@ onMounted(async () => {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
   padding: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
-  backdrop-filter: none;
+}
+
+.login-form-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.login-form-brand__logo {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border: 1px solid var(--oa-border);
+  border-radius: 13px;
+  background: var(--oa-elevated-bg);
+  box-shadow: 0 6px 18px rgba(29, 29, 31, 0.08);
+}
+
+.login-form-brand__logo img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+
+.login-form-brand__copy {
+  display: grid;
+  gap: 2px;
+}
+
+.login-form-brand__copy strong {
+  color: var(--oa-text);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.login-form-brand__copy small {
+  color: var(--oa-muted);
+  font-size: 12px;
 }
 
 .login-form-header {
-  margin-bottom: 32px;
-}
-
-.login-form-eyebrow {
-  margin: 0 0 8px;
-  color: var(--oa-faint);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0;
+  margin-bottom: 26px;
 }
 
 .login-form-header h2 {
@@ -593,17 +767,17 @@ onMounted(async () => {
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  font-size: 38px;
-  font-weight: 700;
-  line-height: 1.18;
-  letter-spacing: 0;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: 0.02em;
   color: var(--oa-text);
 }
 
 .login-form-header > p:not(.login-form-eyebrow) {
-  margin: 10px 0 0;
-  font-size: 15px;
-  line-height: 1.65;
+  margin: 9px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--oa-muted);
 }
 
@@ -616,7 +790,7 @@ onMounted(async () => {
   overflow: hidden;
   background: var(--oa-page-soft-bg);
   border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .login-tab-btn {
@@ -648,7 +822,7 @@ onMounted(async () => {
   left: 3px;
   width: 50%;
   background: var(--oa-elevated-bg);
-  border-radius: 6px;
+  border-radius: 9px;
   box-shadow: 0 4px 14px rgba(29, 29, 31, 0.08);
   transition:
     transform 0.22s ease,
@@ -658,7 +832,7 @@ onMounted(async () => {
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .login-field {
@@ -690,13 +864,13 @@ onMounted(async () => {
 
 .login-input {
   width: 100%;
-  min-height: 50px;
+  min-height: 48px;
   padding: 0 16px 0 44px;
   border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  border-radius: var(--login-control-radius);
   background: var(--oa-button-bg);
   font-size: 15px;
-  line-height: 50px;
+  line-height: 48px;
   color: var(--oa-text);
   outline: none;
   transition:
@@ -781,13 +955,13 @@ onMounted(async () => {
 .login-submit {
   display: inline-flex;
   width: 100%;
-  min-height: 50px;
+  min-height: 48px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 0 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--login-pill-radius);
   background: var(--oa-text);
   color: var(--oa-active-text);
   font-size: 15px;
@@ -799,7 +973,7 @@ onMounted(async () => {
     box-shadow 0.18s ease,
     transform 0.18s ease,
     opacity 0.18s ease;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .login-submit:hover:not(:disabled) {
@@ -816,6 +990,110 @@ onMounted(async () => {
 .login-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.login-social {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--oa-divider);
+}
+
+.login-social__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--oa-text-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.login-social__heading small {
+  color: var(--oa-faint);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.login-google-button {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--login-pill-radius);
+}
+
+.login-social__providers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.login-provider-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid var(--oa-border);
+  border-radius: var(--login-pill-radius);
+  background: var(--oa-button-bg);
+  color: var(--oa-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.login-provider-button:hover:not(:disabled) {
+  border-color: var(--oa-border-strong);
+  background: var(--oa-elevated-bg);
+  box-shadow: 0 8px 24px rgba(29, 29, 31, 0.08);
+  transform: translateY(-1px);
+}
+
+.login-provider-button:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+.login-provider-button:focus-visible,
+.login-submit:focus-visible,
+.login-field__toggle:focus-visible,
+.login-tab-btn:focus-visible {
+  outline: 2px solid var(--oa-text);
+  outline-offset: 3px;
+}
+
+.login-provider-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.login-provider-button__gitee {
+  width: 19px;
+  height: 19px;
+  fill: #c71d23;
+}
+
+.login-provider-button__spinner {
+  animation: spin 0.75s linear infinite;
+}
+
+.login-social__error {
+  margin: -6px 0 0;
+  color: var(--oa-muted);
+  font-size: 12px;
+  text-align: center;
 }
 
 .login-spinner {
@@ -866,7 +1144,7 @@ onMounted(async () => {
 
   .login-main {
     width: 52%;
-    padding: 48px 34px;
+    padding: 40px 28px;
   }
 
   .login-aside__content {
@@ -903,55 +1181,13 @@ onMounted(async () => {
   }
 
   .login-aside {
-    width: 100%;
-    min-height: 316px;
-  }
-
-  .login-aside::after {
-    background:
-      linear-gradient(
-        90deg,
-        rgba(8, 8, 10, 0.7) 0%,
-        rgba(8, 8, 10, 0.35) 100%
-      ),
-      linear-gradient(
-        180deg,
-        rgba(8, 8, 10, 0.42) 0%,
-        rgba(8, 8, 10, 0.18) 42%,
-        rgba(8, 8, 10, 0.42) 100%
-      );
-  }
-
-  .login-aside__content {
-    min-height: 316px;
-    padding: 28px 28px 22px;
-  }
-
-  .login-aside__hero {
-    width: 100%;
-    margin-top: 0;
-    padding-bottom: 16px;
-  }
-
-  .login-aside__title {
-    font-size: 34px;
-  }
-
-  .login-aside__name {
-    font-size: 22px;
-  }
-
-  .login-aside__features {
-    margin-bottom: 18px;
-  }
-
-  .login-aside__footer {
     display: none;
   }
 
   .login-main {
     width: 100%;
-    padding: 36px 24px 42px;
+    min-height: 100svh;
+    padding: 40px 24px;
     margin-top: 0;
   }
 
@@ -962,7 +1198,7 @@ onMounted(async () => {
   }
 
   .login-form-wrapper {
-    max-width: 520px;
+    max-width: 400px;
   }
 
   .login-form-header h2 {
@@ -971,52 +1207,8 @@ onMounted(async () => {
 }
 
 @media (max-width: 480px) {
-  .login-aside__content {
-    min-height: 270px;
-    padding: 22px 18px 18px;
-  }
-
-  .login-aside {
-    min-height: 270px;
-  }
-
-  .login-aside__logo {
-    width: 42px;
-    height: 42px;
-  }
-
-  .login-aside__badge {
-    font-size: 12px;
-  }
-
-  .login-aside__eyebrow {
-    display: none;
-  }
-
-  .login-aside__hero {
-    margin-top: 34px;
-  }
-
-  .login-aside__title {
-    font-size: 28px;
-  }
-
-  .login-aside__name {
-    margin-top: 8px;
-    font-size: 18px;
-  }
-
-  .login-aside__tagline {
-    margin-top: 10px;
-    font-size: 14px;
-  }
-
-  .login-aside__features {
-    display: none;
-  }
-
   .login-main {
-    padding: 30px 18px 30px;
+    padding: 20px 14px;
     margin-top: 0;
   }
 
@@ -1025,7 +1217,11 @@ onMounted(async () => {
   }
 
   .login-form-header {
-    margin-bottom: 20px;
+    margin-bottom: 22px;
+  }
+
+  .login-form-brand {
+    margin-bottom: 24px;
   }
 
   .login-tab-btn {
@@ -1036,7 +1232,7 @@ onMounted(async () => {
 }
 
 .login-form-wrapper {
-  animation: fade-up 0.5s ease-out;
+  animation: fade-up 0.32s ease-out;
 }
 
 .login-aside__content {
@@ -1055,11 +1251,15 @@ onMounted(async () => {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.login-theme-toggle{
+.login-theme-toggle {
   position: fixed;
   top: 10px;
   right: 10px;

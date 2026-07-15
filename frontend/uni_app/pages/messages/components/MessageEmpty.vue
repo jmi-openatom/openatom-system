@@ -9,7 +9,7 @@
 .empty {
     padding: 100rpx 40rpx;
     text-align: center;
-    color: #64748b;
+    color: #666668;
 }
 
 .empty__title,
@@ -18,7 +18,7 @@
 }
 
 .empty__title {
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 32rpx;
     font-weight: 800;
 }

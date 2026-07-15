@@ -1,10 +1,6 @@
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 import { authApi, siteApi } from '@/api'
-import {
-  failNavigation,
-  finishNavigation,
-  startNavigation,
-} from '@/composables/useAppStatus'
+import { failNavigation, finishNavigation, startNavigation } from '@/composables/useAppStatus'
 import { hasAdminAccess, hasAnyPermission } from '@/utils/permission.ts'
 import {
   appendTokenQuery,
@@ -118,6 +114,8 @@ const ACTIVATION_BYPASS_PATHS = new Set([
   '/login',
   '/admin/login',
   '/auth/callback',
+  '/auth/github/callback',
+  '/auth/gitee/callback',
 ])
 
 function firstAccessibleAdminPath(): string {
@@ -244,8 +242,32 @@ const routes = [
         component: resilientView(() => import('../views/site/ApplicationProgress.vue')),
       },
       {
+        path: 'members',
+        name: 'site-members',
+        meta: { requiresSiteLogin: true },
+        component: resilientView(() => import('../views/site/Members.vue')),
+      },
+      {
+        path: 'members/:slug',
+        name: 'site-member-profile',
+        meta: { requiresSiteLogin: true },
+        component: resilientView(() => import('../views/site/MemberProfile.vue')),
+      },
+      {
         path: 'profile',
         name: 'site-profile',
+        meta: { requiresSiteLogin: true },
+        component: resilientView(() => import('../views/site/MemberProfile.vue')),
+      },
+      {
+        path: 'profile/edit',
+        name: 'site-profile-edit',
+        meta: { requiresSiteLogin: true },
+        component: resilientView(() => import('../views/site/ProfileEditor.vue')),
+      },
+      {
+        path: 'settings/account',
+        name: 'site-account-settings',
         meta: { requiresSiteLogin: true },
         component: resilientView(() => import('../views/site/Profile.vue')),
       },
@@ -255,20 +277,20 @@ const routes = [
         meta: { requiresSiteLogin: true },
         component: resilientView(() => import('../views/site/Notifications.vue')),
       },
-	      {
-	        path: 'leaves',
-	        name: 'site-leaves',
-	        meta: { requiresSiteLogin: true },
-	        component: resilientView(() => import('../views/site/Leaves.vue')),
-	      },
+      {
+        path: 'leaves',
+        name: 'site-leaves',
+        meta: { requiresSiteLogin: true },
+        component: resilientView(() => import('../views/site/Leaves.vue')),
+      },
       {
         path: 'evening-study',
         name: 'site-evening-study',
         meta: { requiresSiteLogin: true },
         component: resilientView(() => import('../views/site/EveningStudy.vue')),
       },
-	      {
-	        path: 'calendar',
+      {
+        path: 'calendar',
         name: 'site-calendar',
         component: resilientView(() => import('../views/site/SchoolCalendar.vue')),
       },
@@ -324,23 +346,33 @@ const routes = [
     component: resilientView(() => import('../views/AuthCallback.vue')),
   },
   {
+    path: '/auth/github/callback',
+    name: 'github-auth-callback',
+    component: resilientView(() => import('../views/GithubAuthCallback.vue')),
+  },
+  {
+    path: '/auth/gitee/callback',
+    name: 'gitee-auth-callback',
+    component: resilientView(() => import('../views/GiteeAuthCallback.vue')),
+  },
+  {
     path: '/admin',
     component: resilientView(() => import('@/layouts/AdminLayout.vue')),
     meta: { requiresAuth: true },
     children: [
       { path: '', redirect: '/admin/dashboard' },
-	      {
-	        path: 'dashboard',
-	        name: 'admin-dashboard',
-	        meta: { permissions: [] },
-	        component: resilientView(() => import('../views/admin/Dashboard.vue')),
-	      },
-	      {
-	        path: 'oauth-clients',
-	        name: 'admin-oauth-clients',
-	        meta: { permissions: ['oauth-client:list'] },
-	        component: resilientView(() => import('../views/admin/OauthClients.vue')),
-	      },
+      {
+        path: 'dashboard',
+        name: 'admin-dashboard',
+        meta: { permissions: [] },
+        component: resilientView(() => import('../views/admin/Dashboard.vue')),
+      },
+      {
+        path: 'oauth-clients',
+        name: 'admin-oauth-clients',
+        meta: { permissions: ['oauth-client:list'] },
+        component: resilientView(() => import('../views/admin/OauthClients.vue')),
+      },
       {
         path: 'users',
         name: 'admin-users',
@@ -548,7 +580,9 @@ const routes = [
       {
         path: 'file-migration',
         name: 'admin-file-migration',
-        meta: { permissions: ['file:migration:stats', 'file:migration:export', 'file:migration:import'] },
+        meta: {
+          permissions: ['file:migration:stats', 'file:migration:export', 'file:migration:import'],
+        },
         component: resilientView(() => import('../views/admin/FileMigration.vue')),
       },
     ],
@@ -623,7 +657,9 @@ router.beforeEach(async (to) => {
     try {
       await authApi.me()
     } catch (error) {
-      const status = Number((error as { response?: { status?: number }; code?: number })?.response?.status)
+      const status = Number(
+        (error as { response?: { status?: number }; code?: number })?.response?.status,
+      )
       const code = Number((error as { code?: number })?.code)
       if (status === 401 || code === 401 || code === 40100) {
         clearSession()

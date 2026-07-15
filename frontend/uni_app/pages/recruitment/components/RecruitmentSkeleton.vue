@@ -19,7 +19,7 @@ withDefaults(defineProps<{ count?: number }>(), {
     height: 190rpx;
     margin-bottom: 18rpx;
     border-radius: 16rpx;
-    background: linear-gradient(90deg, #eef2f7, #f8fafc, #eef2f7);
+    background: linear-gradient(90deg, #eef2f7, #f5f5f7, #eef2f7);
     background-size: 200% 100%;
     animation: shimmer 1.2s ease-in-out infinite;
 }

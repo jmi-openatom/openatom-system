@@ -1,7 +1,7 @@
 <template>
     <view class="menu-group">
         <view v-for="item in menus" :key="item.label" class="menu-item" @tap="emit('select', item)">
-            <text class="menu-icon">{{ item.icon }}</text>
+            <view class="menu-icon"><tm-icon :name="item.icon" :size="30" color="#1d1d1f"/></view>
             <text class="menu-label">{{ item.label }}</text>
             <text v-if="item.badge" class="menu-badge">{{ item.badge }}</text>
             <text class="menu-arrow">›</text>
@@ -33,7 +33,7 @@ const emit = defineEmits<{
     background: #fff;
     border-radius: 18rpx;
     overflow: hidden;
-    box-shadow: 0 12rpx 30rpx rgba(31, 55, 88, .08);
+    box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, .08);
 }
 
 .menu-item {
@@ -54,8 +54,8 @@ const emit = defineEmits<{
     width: 52rpx;
     height: 52rpx;
     border-radius: 14rpx;
-    background: #eef6ff;
-    color: #1769e8;
+    background: #f5f5f7;
+    color: #1d1d1f;
     font-size: 24rpx;
     font-weight: 800;
     margin-right: 20rpx;
@@ -79,7 +79,7 @@ const emit = defineEmits<{
     line-height: 34rpx;
     margin-right: 14rpx;
     padding: 0 8rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     text-align: center;
     background: #ef4444;
     color: #fff;

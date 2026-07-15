@@ -58,6 +58,15 @@ public class User {
   @TableField("qq_openid")
   private String qqOpenid;
 
+  @TableField("google_sub")
+  private String googleSub;
+
+  @TableField(exist = false)
+  private Boolean githubBound;
+
+  @TableField(exist = false)
+  private Boolean giteeBound;
+
   @TableField("user_status")
   private UserStatus userStatus;
 

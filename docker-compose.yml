@@ -38,6 +38,13 @@ services:
       # JWT / Sa-Token 配置
       - SA_TOKEN_JWT_SECRET_KEY=${SA_TOKEN_JWT_SECRET_KEY}
       - APP_OIDC_ISSUER=${APP_OIDC_ISSUER:-https://oauth.jmi-openatom.cn/api/v1}
+      - APP_GOOGLE_CLIENT_ID=${APP_GOOGLE_CLIENT_ID:-456373207373-4md7t52dkhbo7p48e8omhjoct2squ06c.apps.googleusercontent.com}
+      - APP_GITHUB_CLIENT_ID=${APP_GITHUB_CLIENT_ID:-Ov23liQQCxTjyoR8WAW9}
+      - APP_GITHUB_CLIENT_SECRET=${APP_GITHUB_CLIENT_SECRET:-}
+      - APP_GITHUB_CALLBACK_URI=${APP_GITHUB_CALLBACK_URI:-https://www.jmi-openatom.cn/auth/github/callback}
+      - APP_GITEE_CLIENT_ID=${APP_GITEE_CLIENT_ID:-12ed9f6f4df02c05cdf05045221e650e3bd3481f6301707a1d7ac8dd97211fa8}
+      - APP_GITEE_CLIENT_SECRET=${APP_GITEE_CLIENT_SECRET:-}
+      - APP_GITEE_CALLBACK_URI=${APP_GITEE_CALLBACK_URI:-https://www.jmi-openatom.cn/auth/gitee/callback}
       - APP_APPLICATION_SUBMIT_MAX_PER_SECOND=${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:-5}
       - APP_AVATAR_STORAGE_DIR=/app/uploads/avatars
       - APP_IMAGE_HOSTING_STORAGE_DIR=/app/uploads/images
@@ -79,6 +86,7 @@ services:
         - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://api.jmi-openatom.cn/api/v1}
         - VITE_OIDC_AUTHORITY=${VITE_OIDC_AUTHORITY:-https://oauth.jmi-openatom.cn/api/v1}
         - VITE_OIDC_CLIENT_ID=${VITE_OIDC_CLIENT_ID:-openatom-web}
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-456373207373-4md7t52dkhbo7p48e8omhjoct2squ06c.apps.googleusercontent.com}
     container_name: openatom-frontend
     ports:
       - "${FRONTEND_PORT:-18080}:80"

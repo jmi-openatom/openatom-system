@@ -42,7 +42,7 @@ const emit = defineEmits<{
     padding: 28rpx;
     border-radius: 16rpx;
     background: #fff;
-    box-shadow: 0 12rpx 30rpx rgba(31, 55, 88, .08);
+    box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, .08);
 }
 
 .campaign-card:active {
@@ -67,13 +67,13 @@ const emit = defineEmits<{
     padding-right: 18rpx;
     font-size: 32rpx;
     font-weight: 750;
-    color: #0f172a;
+    color: #1d1d1f;
 }
 
 .campaign-card__range {
     display: block;
     margin-top: 16rpx;
-    color: #64748b;
+    color: #666668;
     font-size: 24rpx;
 }
 
@@ -85,9 +85,9 @@ const emit = defineEmits<{
 
 .campaign-card__meta text {
     padding: 6rpx 14rpx;
-    border-radius: 999rpx;
-    background: #f1f5f9;
-    color: #475569;
+    border-radius: 16rpx;
+    background: #ececef;
+    color: #4f4f52;
     font-size: 22rpx;
 }
 
@@ -95,7 +95,7 @@ const emit = defineEmits<{
     margin-top: 22rpx;
     padding-top: 20rpx;
     border-top: 1rpx solid #eef2f7;
-    color: #1769e8;
+    color: #1d1d1f;
     font-size: 26rpx;
     font-weight: 700;
 }
@@ -108,7 +108,7 @@ const emit = defineEmits<{
 .status-pill {
     flex-shrink: 0;
     padding: 6rpx 16rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     font-size: 22rpx;
     font-weight: 700;
 }
@@ -116,5 +116,5 @@ const emit = defineEmits<{
 .status-pill--success { color: #047857; background: #d1fae5; }
 .status-pill--warning { color: #a16207; background: #fef3c7; }
 .status-pill--muted,
-.status-pill--default { color: #64748b; background: #f1f5f9; }
+.status-pill--default { color: #666668; background: #ececef; }
 </style>

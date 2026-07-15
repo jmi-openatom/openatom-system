@@ -97,7 +97,7 @@ export function setRememberedLogin(payload?: LoginPayload): void {
     REMEMBER_LOGIN_KEY,
     JSON.stringify({
       username: payload?.username || '',
-      password: payload?.password || '',
+      password: '',
       remember: Boolean(payload?.remember),
     }),
   )
@@ -105,4 +105,25 @@ export function setRememberedLogin(payload?: LoginPayload): void {
 
 export function clearRememberedLogin(): void {
   uni.removeStorageSync(REMEMBER_LOGIN_KEY)
+}
+
+export function currentPageUrl(): string {
+  const pages = getCurrentPages()
+  const current = pages[pages.length - 1] as { route?: string; options?: Record<string, unknown> } | undefined
+  if (!current?.route) return '/pages/home/index'
+  const query = Object.entries(current.options || {})
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&')
+  return `/${current.route}${query ? `?${query}` : ''}`
+}
+
+export function loginUrl(redirect = currentPageUrl()): string {
+  return `/pages/login/index?redirect=${encodeURIComponent(redirect)}`
+}
+
+export function requireLogin(redirect = currentPageUrl()): boolean {
+  if (getToken()) return true
+  uni.navigateTo({ url: loginUrl(redirect) })
+  return false
 }

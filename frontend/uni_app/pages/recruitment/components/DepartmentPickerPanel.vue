@@ -36,7 +36,7 @@ const emit = defineEmits<{
     padding: 30rpx;
     border-radius: 18rpx;
     background: #fff;
-    box-shadow: 0 12rpx 30rpx rgba(31, 55, 88, .08);
+    box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, .08);
 }
 
 .panel-title,
@@ -46,7 +46,7 @@ const emit = defineEmits<{
 
 .panel-title {
     margin-bottom: 20rpx;
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 30rpx;
     font-weight: 800;
 }
@@ -61,7 +61,7 @@ const emit = defineEmits<{
 
 .label {
     margin-bottom: 12rpx;
-    color: #334155;
+    color: #333333;
     font-size: 25rpx;
     font-weight: 700;
 }
@@ -73,9 +73,9 @@ const emit = defineEmits<{
     padding: 0 22rpx;
     box-sizing: border-box;
     border-radius: 14rpx;
-    background: #f8fafc;
+    background: #f5f5f7;
     border: 1rpx solid #e2e8f0;
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 26rpx;
 }
 </style>

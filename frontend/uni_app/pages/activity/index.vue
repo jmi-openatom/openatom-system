@@ -20,6 +20,12 @@
 
             <ActivitySkeleton v-if="loading && !list.length"/>
 
+            <PageState
+                v-else-if="loadFailed && !list.length"
+                description="活动列表加载失败，请稍后重试"
+                @action="onRefresh"
+            />
+
             <view v-else-if="list.length" class="card-list">
                 <ActivityCard
                     v-for="(item, i) in list"
@@ -57,18 +63,21 @@ import type {ActivityFilter, ActivityItem, ActivityStatus} from './types'
 import ActivitySkeleton from "@/pages/activity/components/ActivitySkeleton.vue";
 import FilterBar from "@/pages/activity/components/FilterBar.vue";
 import {ensureList, formatDateTime} from '@/utils/format'
+import PageState from '@/components/PageState.vue'
 
 const scrollIntoView = ref('')
 
 const filters: ActivityFilter[] = [
     {label: '全部', value: ''},
-    {label: '进行中', value: 'published'},
-    {label: '已结束', value: 'closed'},
+    {label: '报名中', value: 'registration_open'},
+    {label: '即将开始', value: 'upcoming'},
+    {label: '已结束', value: 'ended'},
 ]
 
 const activeFilter = ref<ActivityStatus>('')
 const list = ref<ActivityItem[]>([])
 const loading = ref(false)
+const loadFailed = ref(false)
 const refreshing = ref(false)
 const page = ref(1)
 const perPage = 10
@@ -85,6 +94,7 @@ function normalizeActivity(item: any): ActivityItem {
 async function fetchActivities(isRefresh = false) {
     if (loading.value) return
     loading.value = true
+    loadFailed.value = false
 
     if (isRefresh) {
         page.value = 1
@@ -97,9 +107,19 @@ async function fetchActivities(isRefresh = false) {
             allActivities.value = ensureList<ActivityItem>(res).map(normalizeActivity)
         }
 
-        const filtered = activeFilter.value
-            ? allActivities.value.filter((item) => item.status === activeFilter.value)
-            : allActivities.value
+        const now = Date.now()
+        const filtered = allActivities.value.filter((item) => {
+            if (!activeFilter.value) return true
+            const startsAt = item.activityAt ? new Date(item.activityAt).getTime() : 0
+            const endsAt = item.endAt ? new Date(item.endAt).getTime() : startsAt
+            const registrationStarts = item.registrationStartAt ? new Date(item.registrationStartAt).getTime() : 0
+            const registrationEnds = item.registrationEndAt ? new Date(item.registrationEndAt).getTime() : 0
+            if (activeFilter.value === 'registration_open') {
+                return Boolean(item.registrationRequired && (!registrationStarts || registrationStarts <= now) && (!registrationEnds || registrationEnds >= now))
+            }
+            if (activeFilter.value === 'upcoming') return Boolean(startsAt && startsAt > now)
+            return ['closed', 'ended', 'cancelled'].includes(item.status || '') || Boolean(endsAt && endsAt < now)
+        })
         const start = (page.value - 1) * perPage
         const items = filtered.slice(start, start + perPage)
 
@@ -113,6 +133,7 @@ async function fetchActivities(isRefresh = false) {
             noMore.value = true
         }
     } catch {
+        loadFailed.value = true
         if (isRefresh) {
             list.value = []
         }
@@ -154,7 +175,7 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    //background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 32%, #f8fafc 100%);
+    //background: linear-gradient(180deg, #ececef 0%, #f5f5f7 32%, #f5f5f7 100%);
     box-sizing: border-box;
 }
 
@@ -175,7 +196,7 @@ onMounted(() => {
 
 .loading-more__text {
     font-size: 24rpx;
-    color: #94a3b8;
+    color: #8e8e93;
 }
 
 .no-more {

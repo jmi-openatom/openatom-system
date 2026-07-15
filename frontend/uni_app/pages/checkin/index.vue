@@ -88,7 +88,7 @@ onShow(() => {
 <style scoped>
 .page {
     min-height: 100vh;
-    background: #f7fafc;
+    background: #f5f5f7;
 }
 
 .content {
@@ -102,17 +102,17 @@ onShow(() => {
     padding: 42rpx 30rpx;
     border-radius: 18rpx;
     background: #fff;
-    box-shadow: 0 14rpx 34rpx rgba(31, 55, 88, .08);
+    box-shadow: 0 14rpx 34rpx rgba(0, 0, 0, .08);
 }
 
 .title {
-    color: #0f172a;
+    color: #1d1d1f;
     font-size: 40rpx;
     font-weight: 800;
 }
 
 .desc {
-    color: #64748b;
+    color: #666668;
     font-size: 26rpx;
     line-height: 1.6;
 }
@@ -121,14 +121,14 @@ onShow(() => {
     margin-top: 18rpx;
     height: 86rpx;
     line-height: 86rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     color: #fff;
-    background: #1769e8;
+    background: #1d1d1f;
     font-size: 29rpx;
     font-weight: 700;
 }
 
 .primary-btn[disabled] {
-    background: #cbd5e1;
+    background: #d2d2d7;
 }
 </style>

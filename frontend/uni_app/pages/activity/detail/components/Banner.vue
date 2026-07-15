@@ -96,7 +96,7 @@ const statusClass = computed(() => {
     top: 20rpx;
     right: 20rpx;
     padding: 8rpx 22rpx;
-    border-radius: 999rpx;
+    border-radius: 16rpx;
     font-size: 24rpx;
     font-weight: 600;
     color: #fff;
@@ -126,7 +126,7 @@ const statusClass = computed(() => {
     display: block;
     font-size: 36rpx;
     font-weight: 700;
-    color: #0f172a;
+    color: #1d1d1f;
     line-height: 1.4;
 }
 
@@ -141,8 +141,8 @@ const statusClass = computed(() => {
     padding: 4rpx 16rpx;
     border-radius: 8rpx;
     font-size: 22rpx;
-    color: #1769e8;
-    background: rgba(23, 105, 232, 0.08);
+    color: #1d1d1f;
+    background: rgba(0, 0, 0, 0.08);
     font-weight: 500;
 }
 
@@ -163,6 +163,6 @@ const statusClass = computed(() => {
 
 .banner__meta-text {
     font-size: 26rpx;
-    color: #64748b;
+    color: #666668;
 }
 </style>
