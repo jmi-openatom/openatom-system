@@ -10,6 +10,8 @@ export interface MemberCard {
   positionName?: string
   skills: string[]
   articleCount: number
+  likeCount: number
+  liked: boolean
   customized: boolean
 }
 
@@ -63,6 +65,9 @@ export interface MemberProfile {
   version: number
   owner: boolean
   customized: boolean
+  likeCount: number
+  liked: boolean
+  commentCount: number
   publishedAt?: string
   updatedAt?: string
   modules: ProfileModule[]

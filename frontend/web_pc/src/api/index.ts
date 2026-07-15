@@ -173,6 +173,15 @@ export const memberProfileApi = {
   detail(slug: string): Promise<any> {
     return request.get(`/members/${encodeURIComponent(slug)}`)
   },
+  toggleLike(slug: string): Promise<any> {
+    return request.post(`/members/${encodeURIComponent(slug)}/like`)
+  },
+  comments(slug: string): Promise<any> {
+    return request.get(`/members/${encodeURIComponent(slug)}/comments`)
+  },
+  createComment(slug: string, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/members/${encodeURIComponent(slug)}/comments`, data)
+  },
   mine(): Promise<any> {
     return request.get('/me/profile')
   },

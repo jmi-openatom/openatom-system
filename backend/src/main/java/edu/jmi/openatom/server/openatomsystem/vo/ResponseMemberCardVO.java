@@ -23,5 +23,7 @@ public class ResponseMemberCardVO {
   private String positionName;
   private List<String> skills;
   private Long articleCount;
+  private Long likeCount;
+  private Boolean liked;
   private Boolean customized;
 }

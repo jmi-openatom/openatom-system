@@ -35,6 +35,9 @@ public class ResponseMemberProfileVO {
   private Integer version;
   private Boolean owner;
   private Boolean customized;
+  private Long likeCount;
+  private Boolean liked;
+  private Long commentCount;
   private Timestamp publishedAt;
   private Timestamp updatedAt;
   private List<ModuleVO> modules;

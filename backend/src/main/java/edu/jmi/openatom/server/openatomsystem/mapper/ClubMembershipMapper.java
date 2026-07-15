@@ -41,6 +41,26 @@ public interface ClubMembershipMapper extends BaseMapper<ClubMembership> {
     return selectPage(page, wrapper);
   }
 
+  /** 成员目录完整候选集，用于跨分页的互动热度排序。 */
+  default List<ClubMembership> selectVisibleMembers(
+      Integer clubId, Integer departmentId, List<Integer> userIds) {
+    LambdaQueryWrapper<ClubMembership> wrapper =
+        new LambdaQueryWrapper<ClubMembership>()
+            .eq(ClubMembership::getClubId, clubId)
+            .in(ClubMembership::getStatus, "probation", "active")
+            .isNull(ClubMembership::getLeftAt)
+            .eq(departmentId != null, ClubMembership::getDepartmentId, departmentId)
+            .orderByDesc(ClubMembership::getFeatured)
+            .orderByAsc(ClubMembership::getSortOrder)
+            .orderByDesc(ClubMembership::getJoinedAt)
+            .orderByDesc(ClubMembership::getId);
+    if (userIds != null) {
+      if (userIds.isEmpty()) wrapper.apply("1 = 0");
+      else wrapper.in(ClubMembership::getUserId, userIds);
+    }
+    return selectList(wrapper);
+  }
+
   /** 按 clubId 查成员列表（含排序：featured desc, sortOrder asc, joinedAt desc） */
   default List<ClubMembership> selectByClubIdOrdered(Integer clubId) {
     return selectList(

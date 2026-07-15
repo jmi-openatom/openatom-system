@@ -6,6 +6,7 @@ import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateMemberProfileCommentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveMemberProfileDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.BlogArticle;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
@@ -13,6 +14,8 @@ import edu.jmi.openatom.server.openatomsystem.entity.ClubDepartment;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubPosition;
 import edu.jmi.openatom.server.openatomsystem.entity.MemberProfile;
+import edu.jmi.openatom.server.openatomsystem.entity.MemberProfileComment;
+import edu.jmi.openatom.server.openatomsystem.entity.MemberProfileLike;
 import edu.jmi.openatom.server.openatomsystem.entity.MemberProfileModule;
 import edu.jmi.openatom.server.openatomsystem.entity.MemberProfileSocialLink;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
@@ -22,6 +25,8 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubPositionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileCommentMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileLikeMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileModuleMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileSocialLinkMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
@@ -30,12 +35,15 @@ import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseImageUploadVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberCardVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberFilterVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberProfileCommentVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberProfileLikeVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberProfileVO;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -84,6 +92,8 @@ public class MemberProfileServiceImpl implements MemberProfileService {
   private static final int MAX_SOCIAL_LINKS = 10;
 
   private final MemberProfileMapper memberProfileMapper;
+  private final MemberProfileLikeMapper memberProfileLikeMapper;
+  private final MemberProfileCommentMapper memberProfileCommentMapper;
   private final MemberProfileModuleMapper memberProfileModuleMapper;
   private final MemberProfileSocialLinkMapper memberProfileSocialLinkMapper;
   private final UserMapper userMapper;
@@ -96,7 +106,12 @@ public class MemberProfileServiceImpl implements MemberProfileService {
 
   @Override
   public Result<PageDataVO<ResponseMemberCardVO>> members(
-      String keyword, Integer departmentId, String skill, Long page, Long pageSize) {
+      String keyword,
+      Integer departmentId,
+      String skill,
+      String sort,
+      Long page,
+      Long pageSize) {
     Result<MemberContext> access = requireMember();
     if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
     List<Integer> userIds = null;
@@ -119,40 +134,59 @@ public class MemberProfileServiceImpl implements MemberProfileService {
       if (userIds == null) userIds = new ArrayList<>(skillUsers);
       else userIds = userIds.stream().filter(skillUsers::contains).toList();
     }
-    Page<ClubMembership> membershipPage =
-        clubMembershipMapper.selectVisibleMemberPage(
-            new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)),
-            access.getData().club().getId(),
-            departmentId,
-            userIds);
-    List<ClubMembership> memberships = membershipPage.getRecords();
+    List<ClubMembership> memberships =
+        clubMembershipMapper.selectVisibleMembers(
+            access.getData().club().getId(), departmentId, userIds);
     Map<Integer, User> users = users(memberships.stream().map(ClubMembership::getUserId).toList());
     Map<Integer, MemberProfile> profiles =
         memberProfileMapper.selectByUserIds(new ArrayList<>(users.keySet())).stream()
             .collect(Collectors.toMap(MemberProfile::getUserId, Function.identity()));
     Map<Integer, ClubDepartment> departments = departments(access.getData().club().getId());
     Map<Integer, ClubPosition> positions = positions(access.getData().club().getId());
+    List<MemberProfileLike> likes =
+        memberProfileLikeMapper.selectByProfileUserIds(new ArrayList<>(users.keySet()));
+    Map<Integer, Long> likeCounts =
+        likes.stream()
+            .collect(Collectors.groupingBy(MemberProfileLike::getProfileUserId, Collectors.counting()));
+    Set<Integer> likedTargets =
+        likes.stream()
+            .filter(like -> Objects.equals(like.getUserId(), access.getData().userId()))
+            .map(MemberProfileLike::getProfileUserId)
+            .collect(Collectors.toSet());
     List<ResponseMemberCardVO> cards =
-        memberships.stream()
-            .map(
-                membership ->
-                    toCard(
-                        users.get(membership.getUserId()),
-                        membership,
-                        profiles.get(membership.getUserId()),
-                        departments,
-                        positions))
-            .filter(Objects::nonNull)
-            .toList();
+        new ArrayList<>(
+            memberships.stream()
+                .map(
+                    membership ->
+                        toCard(
+                            users.get(membership.getUserId()),
+                            membership,
+                            profiles.get(membership.getUserId()),
+                            departments,
+                            positions,
+                            likeCounts.getOrDefault(membership.getUserId(), 0L),
+                            likedTargets.contains(membership.getUserId())))
+                .filter(Objects::nonNull)
+                .toList());
+    if (sort == null || sort.isBlank() || "likes".equals(sort)) {
+      cards.sort(
+          Comparator.comparing(
+                  ResponseMemberCardVO::getLikeCount, Comparator.nullsLast(Long::compareTo))
+              .reversed());
+    }
+    long currentPage = PageRequests.page(page);
+    long size = PageRequests.pageSize(pageSize);
+    int start = (int) Math.min((currentPage - 1) * size, cards.size());
+    int end = (int) Math.min(start + size, cards.size());
+    List<ResponseMemberCardVO> pageCards = new ArrayList<>(cards.subList(start, end));
     return Result.success(
         PageDataVO.<ResponseMemberCardVO>builder()
-            .list(cards)
-            .page(membershipPage.getCurrent())
-            .pageSize(membershipPage.getSize())
-            .total(membershipPage.getTotal())
+            .list(pageCards)
+            .page(currentPage)
+            .pageSize(size)
+            .total((long) cards.size())
             .build());
   }
-
   @Override
   public Result<ResponseMemberFilterVO> filters() {
     Result<MemberContext> access = requireMember();
@@ -182,19 +216,88 @@ public class MemberProfileServiceImpl implements MemberProfileService {
   public Result<ResponseMemberProfileVO> detail(String slug) {
     Result<MemberContext> access = requireMember();
     if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
-    String normalizedSlug = trimToNull(slug);
-    if (normalizedSlug == null) return Result.error(404, "成员主页不存在");
-    MemberProfile profile = memberProfileMapper.selectBySlug(normalizedSlug);
-    Integer targetUserId = profile == null ? parseDefaultSlug(normalizedSlug) : profile.getUserId();
-    User user = targetUserId == null ? null : userMapper.selectById(targetUserId);
-    if (user == null) return Result.error(404, "成员主页不存在");
-    if (profile == null) profile = memberProfileMapper.selectByUserId(user.getId());
-    ClubMembership membership =
-        clubMembershipMapper.selectActiveMembership(user.getId(), access.getData().club().getId());
-    if (!isVisibleMembership(membership)) return Result.error(404, "成员主页不存在");
-    boolean owner = Objects.equals(access.getData().userId(), user.getId());
-    boolean customized = isProfileVisible(profile, owner, true);
-    return Result.success(toProfile(user, membership, customized ? profile : null, owner, customized));
+    MemberTarget target = findVisibleTarget(slug, access.getData());
+    if (target == null) return Result.error(404, "成员主页不存在");
+    return Result.success(
+        toProfile(
+            target.user(),
+            target.membership(),
+            target.customized() ? target.profile() : null,
+            target.owner(),
+            target.customized()));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseMemberProfileLikeVO> toggleLike(String slug) {
+    Result<MemberContext> access = requireMember();
+    if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
+    MemberTarget target = findVisibleTarget(slug, access.getData());
+    if (target == null) return Result.error(404, "成员主页不存在");
+    MemberProfileLike existing =
+        memberProfileLikeMapper.selectByTargetAndUser(
+            target.user().getId(), access.getData().userId());
+    boolean liked;
+    if (existing == null) {
+      memberProfileLikeMapper.insert(
+          MemberProfileLike.builder()
+              .profileUserId(target.user().getId())
+              .userId(access.getData().userId())
+              .build());
+      liked = true;
+    } else {
+      memberProfileLikeMapper.deleteById(existing.getId());
+      liked = false;
+    }
+    return Result.success(
+        ResponseMemberProfileLikeVO.builder()
+            .likeCount(memberProfileLikeMapper.countByProfileUserId(target.user().getId()))
+            .liked(liked)
+            .build(),
+        liked ? "已点赞" : "已取消点赞");
+  }
+
+  @Override
+  public Result<List<ResponseMemberProfileCommentVO>> comments(String slug) {
+    Result<MemberContext> access = requireMember();
+    if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
+    MemberTarget target = findVisibleTarget(slug, access.getData());
+    if (target == null) return Result.error(404, "成员主页不存在");
+    return Result.success(
+        toCommentTree(
+            memberProfileCommentMapper.selectVisibleByProfileUserId(target.user().getId())));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> createComment(
+      String slug, RequestCreateMemberProfileCommentDTO request) {
+    Result<MemberContext> access = requireMember();
+    if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
+    MemberTarget target = findVisibleTarget(slug, access.getData());
+    if (target == null) return Result.error(404, "成员主页不存在");
+    String content = trimToNull(request == null ? null : request.getContent());
+    if (content == null) return Result.error(400, "评论内容不能为空");
+    if (content.length() > 1000) return Result.error(400, "评论内容不能超过1000字");
+    Long parentId = request == null ? null : request.getParentId();
+    if (parentId != null) {
+      MemberProfileComment parent = memberProfileCommentMapper.selectById(parentId);
+      if (parent == null
+          || !Objects.equals(parent.getProfileUserId(), target.user().getId())
+          || !"visible".equals(parent.getStatus())) {
+        return Result.error(404, "要回复的评论不存在或不可见");
+      }
+    }
+    int rows =
+        memberProfileCommentMapper.insert(
+            MemberProfileComment.builder()
+                .profileUserId(target.user().getId())
+                .userId(access.getData().userId())
+                .parentId(parentId)
+                .content(content)
+                .status("visible")
+                .build());
+    return rows > 0 ? Result.success("评论已发布") : Result.error("评论发布失败");
   }
 
   @Override
@@ -311,7 +414,9 @@ public class MemberProfileServiceImpl implements MemberProfileService {
       ClubMembership membership,
       MemberProfile profile,
       Map<Integer, ClubDepartment> departments,
-      Map<Integer, ClubPosition> positions) {
+      Map<Integer, ClubPosition> positions,
+      Long likeCount,
+      boolean liked) {
     if (user == null) return null;
     boolean customized = isProfileVisible(profile, false, false);
     MemberProfile visible = customized ? profile : null;
@@ -333,6 +438,8 @@ public class MemberProfileServiceImpl implements MemberProfileService {
                 : null)
         .skills(visible == null ? List.of() : Jsons.parseStringList(visible.getSkills()))
         .articleCount(blogArticleMapper.countPublishedByAuthor(user.getId()))
+        .likeCount(likeCount)
+        .liked(liked)
         .customized(customized)
         .build();
   }
@@ -372,6 +479,13 @@ public class MemberProfileServiceImpl implements MemberProfileService {
         .version(profile == null ? 0 : profile.getVersion())
         .owner(owner)
         .customized(customized)
+        .likeCount(memberProfileLikeMapper.countByProfileUserId(user.getId()))
+        .liked(
+            StpUtil.isLogin()
+                && memberProfileLikeMapper.selectByTargetAndUser(
+                        user.getId(), StpUtil.getLoginIdAsInt())
+                    != null)
+        .commentCount(memberProfileCommentMapper.countVisibleByProfileUserId(user.getId()))
         .publishedAt(profile == null ? null : profile.getPublishedAt())
         .updatedAt(profile == null ? null : profile.getUpdatedAt())
         .modules(profile == null ? defaultModules(user.getId()) : modules(profile, owner))
@@ -597,6 +711,60 @@ public class MemberProfileServiceImpl implements MemberProfileService {
     return toProfile(user, membership, profile, true, true);
   }
 
+  private MemberTarget findVisibleTarget(String slug, MemberContext context) {
+    String normalizedSlug = trimToNull(slug);
+    if (normalizedSlug == null) return null;
+    MemberProfile profile = memberProfileMapper.selectBySlug(normalizedSlug);
+    Integer targetUserId = profile == null ? parseDefaultSlug(normalizedSlug) : profile.getUserId();
+    User user = targetUserId == null ? null : userMapper.selectById(targetUserId);
+    if (user == null) return null;
+    if (profile == null) profile = memberProfileMapper.selectByUserId(user.getId());
+    ClubMembership membership =
+        clubMembershipMapper.selectActiveMembership(user.getId(), context.club().getId());
+    if (!isVisibleMembership(membership)) return null;
+    boolean owner = Objects.equals(context.userId(), user.getId());
+    boolean customized = isProfileVisible(profile, owner, true);
+    return new MemberTarget(user, membership, profile, owner, customized);
+  }
+
+  private List<ResponseMemberProfileCommentVO> toCommentTree(
+      List<MemberProfileComment> comments) {
+    if (comments == null || comments.isEmpty()) return List.of();
+    Map<Integer, User> commentUsers =
+        users(comments.stream().map(MemberProfileComment::getUserId).distinct().toList());
+    Map<Long, ResponseMemberProfileCommentVO> commentMap = new LinkedHashMap<>();
+    for (MemberProfileComment comment : comments) {
+      User user = commentUsers.get(comment.getUserId());
+      commentMap.put(
+          comment.getId(),
+          ResponseMemberProfileCommentVO.builder()
+              .id(comment.getId())
+              .profileUserId(comment.getProfileUserId())
+              .userId(comment.getUserId())
+              .parentId(comment.getParentId())
+              .userName(displayName(user, null))
+              .userAvatar(user == null ? null : user.getAvatar())
+              .content(comment.getContent())
+              .status(comment.getStatus())
+              .replyCount(0)
+              .replies(new ArrayList<>())
+              .createdAt(comment.getCreatedAt())
+              .updatedAt(comment.getUpdatedAt())
+              .build());
+    }
+    List<ResponseMemberProfileCommentVO> roots = new ArrayList<>();
+    for (ResponseMemberProfileCommentVO comment : commentMap.values()) {
+      ResponseMemberProfileCommentVO parent =
+          comment.getParentId() == null ? null : commentMap.get(comment.getParentId());
+      if (parent == null) roots.add(comment);
+      else parent.getReplies().add(comment);
+    }
+    for (ResponseMemberProfileCommentVO comment : commentMap.values()) {
+      comment.setReplyCount(comment.getReplies().size());
+    }
+    return roots;
+  }
+
   private boolean isProfileVisible(MemberProfile profile, boolean owner, boolean direct) {
     if (profile == null) return false;
     if (owner) return true;
@@ -727,4 +895,11 @@ public class MemberProfileServiceImpl implements MemberProfileService {
   }
 
   private record MemberContext(Integer userId, Club club) {}
+
+  private record MemberTarget(
+      User user,
+      ClubMembership membership,
+      MemberProfile profile,
+      boolean owner,
+      boolean customized) {}
 }

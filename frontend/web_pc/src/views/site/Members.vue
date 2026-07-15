@@ -53,6 +53,10 @@
         >
           <el-option v-for="item in filters.skills" :key="item" :label="item" :value="item" />
         </el-select>
+        <el-select v-model="sort" aria-label="成员排序方式" size="large" @change="search">
+          <el-option label="点赞热度" value="likes" />
+          <el-option label="默认排序" value="default" />
+        </el-select>
         <span>{{ pageData.total }} 位成员</span>
       </div>
 
@@ -72,7 +76,13 @@
         <el-skeleton v-for="item in 6" :key="item" :rows="4" animated class="members-skeleton" />
       </div>
       <div v-else-if="pageData.list.length" class="members-grid">
-        <MemberBannerCard v-for="member in pageData.list" :key="member.slug" :member="member" />
+        <MemberBannerCard
+          v-for="member in pageData.list"
+          :key="member.slug"
+          :loading="likingSlug === member.slug"
+          :member="member"
+          @like="toggleLike"
+        />
       </div>
       <el-empty v-else description="没有找到符合条件的成员" />
 
@@ -93,14 +103,17 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import MemberBannerCard from '@/components/site/member/MemberBannerCard.vue'
 import { memberProfileApi } from '@/api'
-import type { MemberFilters, MemberPage } from '@/types/member-profile'
+import type { MemberCard, MemberFilters, MemberPage } from '@/types/member-profile'
 import { Search } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { onMounted, reactive, ref } from 'vue'
 
 const keyword = ref('')
 const departmentId = ref<number | undefined>()
 const skill = ref('')
+const sort = ref<'likes' | 'default'>('likes')
 const loading = ref(false)
+const likingSlug = ref('')
 const loadFailed = ref(false)
 const pageData = reactive<MemberPage>({ list: [], page: 1, pageSize: 8, total: 0 })
 const filters = reactive<MemberFilters>({ departments: [], skills: [] })
@@ -113,6 +126,7 @@ async function fetchMembers() {
       keyword: keyword.value || undefined,
       departmentId: departmentId.value,
       skill: skill.value || undefined,
+      sort: sort.value,
       page: pageData.page,
       pageSize: pageData.pageSize,
     })
@@ -127,6 +141,18 @@ async function fetchMembers() {
 function search() {
   pageData.page = 1
   fetchMembers()
+}
+
+async function toggleLike(member: MemberCard) {
+  if (likingSlug.value) return
+  likingSlug.value = member.slug
+  try {
+    const result = await memberProfileApi.toggleLike(member.slug)
+    ElMessage.success(result.liked ? '已点赞' : '已取消点赞')
+    await fetchMembers()
+  } finally {
+    likingSlug.value = ''
+  }
 }
 onMounted(async () => {
   try {
@@ -179,7 +205,7 @@ onMounted(async () => {
 }
 .members-toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto 180px 180px auto;
+  grid-template-columns: minmax(220px, 1fr) auto 160px 160px 140px auto;
   align-items: center;
   gap: 12px;
   margin-bottom: 26px;

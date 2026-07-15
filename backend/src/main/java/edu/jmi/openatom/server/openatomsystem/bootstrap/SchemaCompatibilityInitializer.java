@@ -121,6 +121,34 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             KEY `idx_member_profile_social_order` (`profile_id`, `sort_order`, `id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='成员主页公开链接'
         """);
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `member_profile_like` (
+            `id` BIGINT NOT NULL AUTO_INCREMENT,
+            `profile_user_id` INT NOT NULL,
+            `user_id` INT NOT NULL,
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uk_member_profile_like_user` (`profile_user_id`, `user_id`),
+            KEY `idx_member_profile_like_target` (`profile_user_id`, `created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='成员主页点赞'
+        """);
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `member_profile_comment` (
+            `id` BIGINT NOT NULL AUTO_INCREMENT,
+            `profile_user_id` INT NOT NULL,
+            `user_id` INT NOT NULL,
+            `parent_id` BIGINT DEFAULT NULL,
+            `content` VARCHAR(1000) NOT NULL,
+            `status` VARCHAR(16) NOT NULL DEFAULT 'visible',
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_member_profile_comment_target` (`profile_user_id`, `status`, `id`),
+            KEY `idx_member_profile_comment_parent` (`parent_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='成员主页评论'
+        """);
   }
 
   private void ensureClubRegulationTable() {

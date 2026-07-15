@@ -1,13 +1,18 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateMemberProfileCommentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveMemberProfileDTO;
 import edu.jmi.openatom.server.openatomsystem.service.MemberProfileService;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseImageUploadVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberCardVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberFilterVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberProfileCommentVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberProfileLikeVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberProfileVO;
+import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,9 +36,10 @@ public class MemberProfileController {
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) Integer departmentId,
       @RequestParam(required = false) String skill,
+      @RequestParam(required = false) String sort,
       @RequestParam(required = false) Long page,
       @RequestParam(required = false) Long pageSize) {
-    return memberProfileService.members(keyword, departmentId, skill, page, pageSize);
+    return memberProfileService.members(keyword, departmentId, skill, sort, page, pageSize);
   }
 
   @GetMapping("/members/meta/filters")
@@ -44,6 +50,23 @@ public class MemberProfileController {
   @GetMapping("/members/{slug}")
   public Result<ResponseMemberProfileVO> detail(@PathVariable String slug) {
     return memberProfileService.detail(slug);
+  }
+
+  @PostMapping("/members/{slug}/like")
+  public Result<ResponseMemberProfileLikeVO> toggleLike(@PathVariable String slug) {
+    return memberProfileService.toggleLike(slug);
+  }
+
+  @GetMapping("/members/{slug}/comments")
+  public Result<List<ResponseMemberProfileCommentVO>> comments(@PathVariable String slug) {
+    return memberProfileService.comments(slug);
+  }
+
+  @PostMapping("/members/{slug}/comments")
+  public Result<String> createComment(
+      @PathVariable String slug,
+      @Valid @RequestBody RequestCreateMemberProfileCommentDTO request) {
+    return memberProfileService.createComment(slug, request);
   }
 
   @GetMapping("/me/profile")
