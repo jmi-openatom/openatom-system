@@ -7,16 +7,16 @@
     >
       <template #actions>
         <div class="recruitment-actions">
-<!--          <el-select-->
-<!--            v-if="clubs.length > 1"-->
-<!--            v-model="selectedClubId"-->
-<!--            filterable-->
-<!--            placeholder="选择社团"-->
-<!--            style="width: 240px"-->
-<!--            @change="fetchCampaigns"-->
-<!--          >-->
-<!--            <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />-->
-<!--          </el-select>-->
+          <!--          <el-select-->
+          <!--            v-if="clubs.length > 1"-->
+          <!--            v-model="selectedClubId"-->
+          <!--            filterable-->
+          <!--            placeholder="选择社团"-->
+          <!--            style="width: 240px"-->
+          <!--            @change="fetchCampaigns"-->
+          <!--          >-->
+          <!--            <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />-->
+          <!--          </el-select>-->
           <el-button type="primary" :icon="Refresh" @click="loadAll">刷新</el-button>
         </div>
       </template>
@@ -32,16 +32,9 @@
 
         <div class="recruitment-content site-reveal">
           <el-empty
-            v-if="!selectedClubId && !loading"
+            v-if="!campaigns.length && !loading"
             class="site-system-empty"
-            description="请先选择社团"
-          />
-          <el-empty
-            v-else-if="selectedClubId && !campaigns.length && !loading"
-            class="site-system-empty"
-            :description="
-              clubs.length > 1 ? '该社团暂无开放中的招新表单' : '当前暂无开放中的招新表单'
-            "
+            description="当前暂无开放中的招新表单"
           />
           <el-timeline v-else v-loading="loading">
             <el-timeline-item
@@ -75,41 +68,21 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import SitePageHero from '@/components/site/shell/SitePageHero.vue'
 import SiteSectionHeading from '@/components/site/shell/SiteSectionHeading.vue'
 import { Refresh } from '@element-plus/icons-vue'
-import { clubApi } from '@/api'
+import { siteApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
 import { onMounted, ref } from 'vue'
 
 const loading = ref(false)
 
-const clubs = ref<any[]>([])
-
 const campaigns = ref<any[]>([])
-
-const selectedClubId = ref('')
 
 async function loadAll() {
   loading.value = true
   try {
-    const result = await clubApi.list({ status: 'active' })
-    clubs.value = result?.list || result || []
-    if (!selectedClubId.value && clubs.value.length) {
-      selectedClubId.value = clubs.value[0].id
-    }
-    if (selectedClubId.value) {
-      await fetchCampaigns()
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-async function fetchCampaigns() {
-  if (!selectedClubId.value) return
-  loading.value = true
-  try {
-    const result = await clubApi.campaigns(selectedClubId.value)
-    const list = result?.list || result || []
-    campaigns.value = list.filter((item) => ['open', 'published'].includes(item.status))
+    const result = await siteApi.recruitment()
+    campaigns.value = (result?.campaigns || []).filter((item: any) =>
+      ['open', 'published'].includes(item.status),
+    )
   } finally {
     loading.value = false
   }

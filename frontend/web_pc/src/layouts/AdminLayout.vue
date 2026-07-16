@@ -21,20 +21,37 @@
         </div>
       </div>
       <el-menu
+        :key="`desktop-${activeAdminGroupKey}`"
         router
         :default-active="$route.path"
+        :default-openeds="activeAdminGroupKey ? [activeAdminGroupKey] : []"
         :collapse="sidebarCollapsed"
         :collapse-transition="false"
+        unique-opened
         class="admin-menu"
         background-color="transparent"
         text-color="var(--oa-muted)"
         active-text-color="var(--oa-active-text)"
       >
-        <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
+        <el-menu-item v-if="dashboardMenu" :index="dashboardMenu.path">
           <el-icon>
-            <component :is="item.icon" />
+            <component :is="dashboardMenu.icon" />
           </el-icon>
-          <span>{{ item.label }}</span>
+          <span>{{ dashboardMenu.label }}</span>
+        </el-menu-item>
+        <el-sub-menu v-for="group in visibleMenuGroups" :key="group.key" :index="group.key">
+          <template #title>
+            <el-icon><component :is="group.icon" /></el-icon>
+            <span>{{ group.label }}</span>
+          </template>
+          <el-menu-item v-for="item in group.items" :key="item.path" :index="item.path">
+            <el-icon><component :is="item.icon" /></el-icon>
+            <span>{{ item.label }}</span>
+          </el-menu-item>
+        </el-sub-menu>
+        <el-menu-item v-if="websiteMenu" :index="websiteMenu.path">
+          <el-icon><component :is="websiteMenu.icon" /></el-icon>
+          <span>{{ websiteMenu.label }}</span>
         </el-menu-item>
       </el-menu>
       <div class="admin-aside__footer">
@@ -119,16 +136,31 @@
         />
       </div>
       <el-menu
+        :key="`mobile-${activeAdminGroupKey}`"
         router
         :default-active="$route.path"
+        :default-openeds="activeAdminGroupKey ? [activeAdminGroupKey] : []"
+        unique-opened
         class="admin-drawer-menu"
         @select="mobileMenuVisible = false"
       >
-        <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
-          <el-icon>
-            <component :is="item.icon" />
-          </el-icon>
-          <span>{{ item.label }}</span>
+        <el-menu-item v-if="dashboardMenu" :index="dashboardMenu.path">
+          <el-icon><component :is="dashboardMenu.icon" /></el-icon>
+          <span>{{ dashboardMenu.label }}</span>
+        </el-menu-item>
+        <el-sub-menu v-for="group in visibleMenuGroups" :key="group.key" :index="group.key">
+          <template #title>
+            <el-icon><component :is="group.icon" /></el-icon>
+            <span>{{ group.label }}</span>
+          </template>
+          <el-menu-item v-for="item in group.items" :key="item.path" :index="item.path">
+            <el-icon><component :is="item.icon" /></el-icon>
+            <span>{{ item.label }}</span>
+          </el-menu-item>
+        </el-sub-menu>
+        <el-menu-item v-if="websiteMenu" :index="websiteMenu.path">
+          <el-icon><component :is="websiteMenu.icon" /></el-icon>
+          <span>{{ websiteMenu.label }}</span>
         </el-menu-item>
       </el-menu>
       <span class="version-tag">{{ version }}</span>
@@ -271,7 +303,7 @@ const menus = ref<AdminMenuItem[]>([
   },
   {
     path: '/admin/applications',
-    label: '入会申请',
+    label: '申请审核',
     icon: DocumentChecked,
     permissions: ['application:list'],
   },
@@ -384,6 +416,88 @@ const menus = ref<AdminMenuItem[]>([
   { path: '/', label: '返回官网', icon: Connection, permissions: [], pinned: true },
 ])
 
+interface AdminMenuGroupDefinition {
+  key: string
+  label: string
+  icon: unknown
+  paths: string[]
+}
+
+const menuGroups: AdminMenuGroupDefinition[] = [
+  {
+    key: 'members',
+    label: '成员与组织',
+    icon: UserFilled,
+    paths: [
+      '/admin/users',
+      '/admin/memberships',
+      '/admin/alumni-managers',
+      '/admin/alumni-groups',
+      '/admin/clubs',
+      '/admin/positions',
+      '/admin/departments',
+    ],
+  },
+  {
+    key: 'recruitment',
+    label: '招新与审批',
+    icon: DocumentChecked,
+    paths: [
+      '/admin/activation-settings',
+      '/admin/recruitment-campaigns',
+      '/admin/applications',
+      '/admin/interviews',
+      '/admin/leaves',
+    ],
+  },
+  {
+    key: 'operations',
+    label: '活动与运营',
+    icon: Calendar,
+    paths: [
+      '/admin/activities',
+      '/admin/ai-activities',
+      '/admin/check-ins',
+      '/admin/site-forms',
+      '/admin/form-submissions',
+      '/admin/votes',
+      '/admin/lotteries',
+      '/admin/points',
+    ],
+  },
+  {
+    key: 'content',
+    label: '内容与官网',
+    icon: EditPen,
+    paths: [
+      '/admin/awards',
+      '/admin/blogs',
+      '/admin/member-profile-comments',
+      '/admin/regulations',
+      '/admin/office-documents',
+      '/admin/images',
+      '/admin/school-calendar',
+      '/admin/notifications',
+      '/admin/qr-center',
+      '/admin/showcase-apps',
+      '/admin/partner-clubs',
+      '/admin/data-open',
+    ],
+  },
+  {
+    key: 'system',
+    label: '系统与集成',
+    icon: Setting,
+    paths: [
+      '/admin/roles',
+      '/admin/oauth-clients',
+      '/admin/bot-groups',
+      '/admin/logs',
+      '/admin/file-migration',
+    ],
+  },
+]
+
 const router = useRouter()
 
 const route = useRoute()
@@ -458,12 +572,27 @@ const customVisibleMenuPaths = computed({
   },
 })
 
-const visibleMenus = computed(() => {
+const dashboardMenu = computed(() => {
+  return authorizedMenus.value.find((item) => item.path === '/admin/dashboard')
+})
+
+const websiteMenu = computed(() => {
+  return authorizedMenus.value.find((item) => item.path === '/')
+})
+
+const visibleMenuGroups = computed(() => {
   const hiddenPaths = new Set(hiddenMenuPaths.value)
-  const dashboardMenu = authorizedMenus.value.filter((item) => item.path === '/admin/dashboard')
-  const websiteMenu = authorizedMenus.value.filter((item) => item.path === '/')
   const customMenus = orderedCustomizableMenus.value.filter((item) => !hiddenPaths.has(item.path))
-  return [...dashboardMenu, ...customMenus, ...websiteMenu]
+  return menuGroups
+    .map((group) => ({
+      ...group,
+      items: customMenus.filter((item) => group.paths.includes(item.path)),
+    }))
+    .filter((group) => group.items.length)
+})
+
+const activeAdminGroupKey = computed(() => {
+  return menuGroups.find((group) => group.paths.includes(route.path))?.key || ''
 })
 
 const pageTitle = computed(() => {
@@ -747,6 +876,35 @@ onBeforeUnmount(() => {
     transform 0.16s ease;
 }
 
+.admin-menu :deep(.el-sub-menu__title) {
+  height: 42px;
+  padding: 0 12px !important;
+  margin: 2px 0;
+  color: var(--oa-muted);
+  border-radius: var(--oa-radius-sm);
+  font-size: 14px;
+  line-height: 42px;
+}
+
+.admin-menu :deep(.el-sub-menu__title:hover) {
+  color: var(--oa-text);
+  background: var(--oa-nav-hover-bg);
+}
+
+.admin-menu :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
+  color: var(--oa-text);
+  font-weight: 600;
+}
+
+.admin-menu :deep(.el-sub-menu .el-menu) {
+  background: transparent;
+}
+
+.admin-menu :deep(.el-sub-menu .el-menu-item) {
+  min-width: 0;
+  padding-left: 42px !important;
+}
+
 .admin-menu :deep(.el-menu-item .el-icon) {
   width: 20px;
   margin-right: 12px;
@@ -766,6 +924,15 @@ onBeforeUnmount(() => {
 }
 
 .admin-menu.el-menu--collapse :deep(.el-menu-item .el-icon) {
+  margin-right: 0;
+}
+
+.admin-menu.el-menu--collapse :deep(.el-sub-menu__title) {
+  justify-content: center;
+  padding: 0 !important;
+}
+
+.admin-menu.el-menu--collapse :deep(.el-sub-menu__title .el-icon) {
   margin-right: 0;
 }
 
@@ -836,6 +1003,16 @@ onBeforeUnmount(() => {
   height: 48px;
   margin-bottom: 8px;
   border-radius: var(--oa-radius-sm);
+}
+
+.admin-drawer-menu :deep(.el-sub-menu__title) {
+  height: 48px;
+  margin-bottom: 8px;
+  border-radius: var(--oa-radius-sm);
+}
+
+.admin-drawer-menu :deep(.el-sub-menu .el-menu-item) {
+  padding-left: 48px !important;
 }
 
 .version-tag {

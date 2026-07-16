@@ -221,6 +221,12 @@ const routes = [
         component: resilientView(() => import('../views/site/Points.vue')),
       },
       {
+        path: 'workspace',
+        name: 'site-workspace',
+        meta: { requiresSiteLogin: true },
+        component: resilientView(() => import('../views/site/Workspace.vue')),
+      },
+      {
         path: 'blog/my',
         name: 'site-blog-my',
         meta: { requiresSiteLogin: true },

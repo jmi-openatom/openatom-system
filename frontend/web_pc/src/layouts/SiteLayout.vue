@@ -19,16 +19,11 @@
           <router-link exact-active-class="router-link-active" to="/">首页</router-link>
           <router-link to="/activities">活动</router-link>
           <router-link to="/blog">博客</router-link>
-          <router-link v-if="isLoggedIn" to="/members">成员</router-link>
+          <router-link to="/members">成员</router-link>
+          <router-link to="/partners">伙伴</router-link>
           <router-link to="/apps">应用</router-link>
-          <router-link to="/about">关于我们</router-link>
-          <router-link v-if="isLoggedIn" to="/leaves">请假</router-link>
-          <router-link v-if="isLoggedIn" to="/images">图床</router-link>
-          <router-link v-if="showExpandedNav" to="/regulations">制度</router-link>
-          <router-link v-if="showExpandedNav" to="/partners">开源伙伴</router-link>
-          <router-link v-if="showWideNav" to="/calendar">校历</router-link>
-          <router-link v-if="isLoggedIn && showWideNav" to="/points">积分</router-link>
-
+          <router-link to="/leaves">请假</router-link>
+          <router-link to="/apply">加入我们</router-link>
           <el-dropdown
             popper-class="site-header-dropdown"
             trigger="click"
@@ -45,20 +40,12 @@
             </button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item v-if="!showExpandedNav" command="/regulations">
-                  规章制度
-                </el-dropdown-item>
-                <el-dropdown-item v-if="!showExpandedNav" command="/partners">
-                  开源伙伴
-                </el-dropdown-item>
-                <el-dropdown-item v-if="!showWideNav" command="/calendar">校历</el-dropdown-item>
+                <el-dropdown-item command="/about">社团介绍</el-dropdown-item>
+                <el-dropdown-item command="/regulations">规章制度</el-dropdown-item>
+                <el-dropdown-item command="/calendar">校历</el-dropdown-item>
                 <el-dropdown-item command="/alumni-managers">往届管理人员</el-dropdown-item>
-                <el-dropdown-item divided command="/apply">入会申请</el-dropdown-item>
-                <el-dropdown-item v-if="isLoggedIn" command="/progress">我的申请</el-dropdown-item>
-                <el-dropdown-item v-if="isLoggedIn && !showWideNav" command="/points">
-                  积分中心
-                </el-dropdown-item>
-                <el-dropdown-item v-if="isLoggedIn" command="/votes">投票</el-dropdown-item>
+                <el-dropdown-item divided command="/points">积分中心</el-dropdown-item>
+                <el-dropdown-item command="/images">图床</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -87,6 +74,15 @@
               </el-icon>
             </el-badge>
           </el-button>
+          <el-button
+            v-if="isLoggedIn"
+            :icon="Grid"
+            class="site-header__action--workspace"
+            plain
+            @click="$router.push('/workspace')"
+          >
+            工作台
+          </el-button>
           <el-dropdown
             v-if="isLoggedIn"
             class="site-header__account-dropdown"
@@ -100,13 +96,13 @@
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item command="/workspace">个人工作台</el-dropdown-item>
                 <el-dropdown-item command="/profile">我的主页</el-dropdown-item>
-                <el-dropdown-item command="/profile/edit">编辑主页</el-dropdown-item>
                 <el-dropdown-item command="/settings/account">账号与安全</el-dropdown-item>
-                <el-dropdown-item command="/notifications">通知中心</el-dropdown-item>
                 <el-dropdown-item v-if="showAdminEntry" divided command="/admin">
                   管理后台
                 </el-dropdown-item>
+                <el-dropdown-item divided command="__logout__">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -135,54 +131,48 @@
           <div class="mobile-nav__links">
             <router-link to="/" @click="mobileNavVisible = false">首页</router-link>
             <router-link to="/activities" @click="mobileNavVisible = false">活动</router-link>
-            <router-link to="/blog" @click="mobileNavVisible = false">博客</router-link>
-            <router-link v-if="isLoggedIn" to="/members" @click="mobileNavVisible = false">
-              成员
-            </router-link>
+            <router-link to="/members" @click="mobileNavVisible = false">成员</router-link>
+            <router-link to="/partners" @click="mobileNavVisible = false">伙伴</router-link>
             <router-link to="/apps" @click="mobileNavVisible = false">应用</router-link>
+            <router-link to="/blog" @click="mobileNavVisible = false">博客</router-link>
+            <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>
           </div>
         </section>
 
         <section class="mobile-nav__group">
-          <p class="mobile-nav__label">社团服务</p>
+          <p class="mobile-nav__label">加入与了解</p>
           <div class="mobile-nav__links">
+            <router-link to="/apply" @click="mobileNavVisible = false"> 加入我们 </router-link>
+            <router-link to="/about" @click="mobileNavVisible = false">社团介绍</router-link>
             <router-link to="/regulations" @click="mobileNavVisible = false">规章制度</router-link>
-            <router-link to="/partners" @click="mobileNavVisible = false">开源伙伴</router-link>
             <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
             <router-link to="/alumni-managers" @click="mobileNavVisible = false">
               往届管理人员
             </router-link>
-            <router-link to="/about" @click="mobileNavVisible = false">关于我们</router-link>
-            <router-link to="/apply" @click="mobileNavVisible = false">入会申请</router-link>
-            <router-link v-if="isLoggedIn" to="/progress" @click="mobileNavVisible = false">
-              我的申请
-            </router-link>
-            <router-link v-if="isLoggedIn" to="/points" @click="mobileNavVisible = false">
-              积分中心
-            </router-link>
-            <router-link v-if="isLoggedIn" to="/votes" @click="mobileNavVisible = false">
-              投票
-            </router-link>
-            <router-link v-if="isLoggedIn" to="/leaves" @click="mobileNavVisible = false">
-              请假
-            </router-link>
-            <router-link v-if="isLoggedIn" to="/images" @click="mobileNavVisible = false">
-              图床
-            </router-link>
           </div>
         </section>
 
         <section class="mobile-nav__group">
-          <p class="mobile-nav__label">我的</p>
+          <p class="mobile-nav__label">个人工作台</p>
           <div class="mobile-nav__links">
             <template v-if="isLoggedIn">
-              <router-link to="/profile" @click="mobileNavVisible = false">我的主页</router-link>
-              <router-link to="/profile/edit" @click="mobileNavVisible = false"
-                >编辑主页</router-link
+              <router-link
+                class="mobile-nav__primary"
+                to="/workspace"
+                @click="mobileNavVisible = false"
               >
+                工作台首页
+              </router-link>
+              <router-link to="/progress" @click="mobileNavVisible = false">申请进度</router-link>
               <router-link to="/notifications" @click="mobileNavVisible = false"
                 >通知中心</router-link
               >
+              <router-link to="/points" @click="mobileNavVisible = false">积分中心</router-link>
+              <router-link to="/votes" @click="mobileNavVisible = false">投票</router-link>
+              <router-link to="/members" @click="mobileNavVisible = false">成员名录</router-link>
+              <router-link to="/blog/my" @click="mobileNavVisible = false">我的博客</router-link>
+              <router-link to="/images" @click="mobileNavVisible = false">图床</router-link>
+              <router-link to="/profile" @click="mobileNavVisible = false">我的主页</router-link>
               <router-link to="/settings/account" @click="mobileNavVisible = false">
                 账号与安全
               </router-link>
@@ -236,14 +226,15 @@
 import {
   ArrowDown as ArrowDownIcon,
   Bell as BellIcon,
+  Grid as GridIcon,
   Menu as MenuIcon,
   UserFilled as UserFilledIcon,
 } from '@element-plus/icons-vue'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getToken } from '@/utils/auth.ts'
+import { clearSession, getToken } from '@/utils/auth.ts'
 import { hasAdminAccess } from '@/utils/permission.ts'
-import { notificationApi } from '@/api'
+import { authApi, notificationApi } from '@/api'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { useRouteTransition } from '@/composables/useRouteTransition'
 import { useSiteShellMotion } from '@/composables/useSiteMotion'
@@ -254,6 +245,8 @@ const UserFilled = markRaw(UserFilledIcon)
 
 const Bell = markRaw(BellIcon)
 
+const Grid = markRaw(GridIcon)
+
 const Menu = markRaw(MenuIcon)
 
 const mobileNavVisible = ref(false)
@@ -262,7 +255,7 @@ const unreadCount = ref(0)
 
 const unreadTimer = ref(null as any)
 
-const viewportWidth = ref(typeof window === 'undefined' ? 1440 : window.innerWidth)
+const sessionToken = ref(getToken())
 
 const version = ref(__APP_VERSION__)
 
@@ -290,28 +283,24 @@ const headerVisible = computed(() => {
 })
 
 const isLoggedIn = computed(() => {
-  return Boolean(getToken())
+  return Boolean(sessionToken.value)
 })
 
 const showAdminEntry = computed(() => {
   return hasAdminAccess()
 })
 
-const showExpandedNav = computed(() => viewportWidth.value >= 1160)
-
-const showWideNav = computed(() => viewportWidth.value >= 1440)
-
-const secondaryRoutePrefixes = computed(() => [
-  ...(!showExpandedNav.value ? ['/regulations', '/partners'] : []),
-  ...(!showWideNav.value ? ['/calendar', '/points'] : []),
+const moreRoutePrefixes = [
+  '/about',
+  '/regulations',
+  '/calendar',
   '/alumni-managers',
-  '/apply',
-  '/progress',
-  '/votes',
-])
+  '/points',
+  '/images',
+]
 
 const isMoreRouteActive = computed(() => {
-  return secondaryRoutePrefixes.value.some((path) => route.path.startsWith(path))
+  return moreRoutePrefixes.some((path) => route.path.startsWith(path))
 })
 
 useSiteShellMotion(siteShellRef, siteMainRef, isHomeRoute)
@@ -329,19 +318,29 @@ function updateHeaderState() {
   hasScrolledPastHeroTop.value = window.scrollY > 72
 }
 
-function updateViewportWidth() {
-  viewportWidth.value = window.innerWidth
-}
-
-function handleNavCommand(command: string) {
+async function handleNavCommand(command: string) {
   mobileNavVisible.value = false
+  if (command === '__logout__') {
+    try {
+      await authApi.logout()
+    } finally {
+      clearSession()
+      sessionToken.value = null
+      unreadCount.value = 0
+      if (unreadTimer.value) {
+        clearInterval(unreadTimer.value)
+        unreadTimer.value = null
+      }
+      router.replace('/')
+    }
+    return
+  }
   router.push(command)
 }
 
 onMounted(() => {
   updateHeaderState()
   window.addEventListener('scroll', updateHeaderState, { passive: true })
-  window.addEventListener('resize', updateViewportWidth, { passive: true })
   if (isLoggedIn.value) {
     fetchUnreadCount()
     unreadTimer.value = setInterval(fetchUnreadCount, 30000)
@@ -351,6 +350,7 @@ onMounted(() => {
 watch(
   () => route.fullPath,
   async () => {
+    sessionToken.value = getToken()
     await nextTick()
     updateHeaderState()
   },
@@ -358,7 +358,6 @@ watch(
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateHeaderState)
-  window.removeEventListener('resize', updateViewportWidth)
   if (unreadTimer.value) clearInterval(unreadTimer.value)
   routeTransition.kill()
 })
@@ -794,6 +793,13 @@ onBeforeUnmount(() => {
   outline: none;
 }
 
+.mobile-nav a.mobile-nav__primary {
+  border-color: var(--oa-active-bg);
+  background: var(--oa-active-bg);
+  color: var(--oa-active-text);
+  font-weight: 600;
+}
+
 @keyframes navDrop {
   from {
     opacity: 0;
@@ -901,6 +907,7 @@ onBeforeUnmount(() => {
   }
 
   .site-header__action--notification,
+  .site-header__action--workspace,
   .site-header__action--account,
   .site-header__account-dropdown {
     display: none !important;

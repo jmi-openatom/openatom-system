@@ -53,6 +53,10 @@
         <ThemeToggle />
       </div>
       <div class="login-form-wrapper">
+        <router-link class="login-back-link" to="/">
+          <ArrowLeft :size="16" aria-hidden="true" />
+          返回官网
+        </router-link>
         <div class="login-form-header">
           <h2>{{ activeTab === 'register' ? '创建账号' : '欢迎回来' }}</h2>
           <p>
@@ -62,6 +66,10 @@
                 : '一个账号，通行所有应用。'
             }}
           </p>
+        </div>
+
+        <div v-if="redirectHint" class="login-redirect-hint" role="status">
+          登录后继续：<strong>{{ redirectHint }}</strong>
         </div>
 
         <div v-if="registerEnabled" class="login-tab-switch">
@@ -296,6 +304,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import HomeMapSection from '@/components/site/home/HomeMapSection.vue'
 import {
+  ArrowLeft,
   Eye,
   EyeOff,
   Github,
@@ -337,6 +346,18 @@ const loginForm = ref({ username: '', password: '' })
 const registerForm = ref({ username: '', password: '', realName: '', phone: '', email: '' })
 
 const route = useRoute()
+
+const redirectHint = computed(() => {
+  const redirect = route.query.redirect
+  const target = Array.isArray(redirect) ? redirect[0] : redirect
+  if (!target) return ''
+  if (target.startsWith('/apply')) return '入会申请'
+  if (target.startsWith('/activities/')) return '活动报名'
+  if (target.startsWith('/progress')) return '申请进度'
+  if (target.startsWith('/workspace')) return '个人工作台'
+  if (target.startsWith('/admin')) return '管理后台'
+  return '刚才访问的页面'
+})
 
 const indicatorStyle = computed(() => {
   const isLogin = activeTab.value === 'login'
@@ -711,6 +732,35 @@ onBeforeUnmount(cancelGoogleIdentityPrompt)
   border: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.login-back-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 18px;
+  color: var(--oa-muted);
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.login-back-link:hover,
+.login-back-link:focus-visible {
+  color: var(--oa-text);
+  outline: 2px solid var(--oa-border-strong);
+  outline-offset: 4px;
+}
+
+.login-redirect-hint {
+  margin: -4px 0 20px;
+  padding: 11px 13px;
+  color: var(--oa-text-soft);
+  border: 1px solid var(--oa-border);
+  border-radius: 12px;
+  background: var(--oa-elevated-bg);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .login-form-brand {

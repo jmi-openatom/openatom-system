@@ -34,9 +34,10 @@
           <h2>重点活动</h2>
         </div>
 
-        <article
+        <router-link
           class="activities-featured-card"
-          @click="$router.push(`/activities/${featuredActivity.id}`)"
+          :to="`/activities/${featuredActivity.id}`"
+          :aria-label="`查看活动：${featuredActivity.title}`"
         >
           <div
             class="activities-featured-card__media"
@@ -70,10 +71,10 @@
 
             <div class="activities-featured-card__footer">
               <time>{{ formatDateTime(featuredActivity.activityAt) }}</time>
-              <el-button type="primary">查看详情</el-button>
+              <span class="activities-featured-card__link">查看详情</span>
             </div>
           </div>
-        </article>
+        </router-link>
       </div>
     </section>
 
@@ -85,11 +86,12 @@
         </div>
 
         <div v-if="moreActivities.length" class="activity-list-grid">
-          <article
+          <router-link
             v-for="item in moreActivities"
             :key="item.id"
             class="activity-list-card"
-            @click="$router.push(`/activities/${item.id}`)"
+            :to="`/activities/${item.id}`"
+            :aria-label="`查看活动：${item.title}`"
           >
             <div class="activity-list-card__media" :class="{ 'is-fallback': !item.coverUrl }">
               <img v-if="item.coverUrl" :alt="item.title" :src="item.coverUrl" />
@@ -117,7 +119,7 @@
               <time>{{ monthDay(item.activityAt) }}</time>
               <span>查看详情</span>
             </footer>
-          </article>
+          </router-link>
         </div>
 
         <el-empty v-else-if="!loading" description="暂无已发布活动" />
@@ -314,6 +316,30 @@ onMounted(() => {
   border-radius: 32px;
   background: var(--oa-elevated-bg);
   cursor: pointer;
+}
+
+.activities-featured-card,
+.activity-list-card {
+  color: inherit;
+  text-decoration: none;
+}
+
+.activities-featured-card:focus-visible,
+.activity-list-card:focus-visible {
+  outline: 3px solid var(--oa-text);
+  outline-offset: 4px;
+}
+
+.activities-featured-card__link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  padding: 0 16px;
+  color: var(--oa-active-text);
+  border-radius: 999px;
+  background: var(--oa-active-bg);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .activities-featured-card__media {

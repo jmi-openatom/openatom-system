@@ -23,13 +23,23 @@
             <p class="campaign-line">
               <strong>{{ formMeta.name || '信息收集表单' }}</strong>
             </p>
-            <p class="campaign-line">提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}</p>
-            <p class="campaign-line">收集时间：{{ formatRange(formMeta.applyStartAt, formMeta.applyEndAt) }}</p>
+            <p class="campaign-line">
+              提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}
+            </p>
+            <p class="campaign-line">
+              收集时间：{{ formatRange(formMeta.applyStartAt, formMeta.applyEndAt) }}
+            </p>
           </div>
         </div>
         <el-card class="apply-form-card site-reveal" shadow="never">
           <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
-            <el-alert v-if="!formMeta.id" type="warning" show-icon :closable="false" title="表单不存在或暂未开放" />
+            <el-alert
+              v-if="!formMeta.id"
+              type="warning"
+              show-icon
+              :closable="false"
+              title="表单不存在或暂未开放"
+            />
             <el-alert
               v-else-if="requiresLogin && !hasToken"
               type="info"
@@ -60,20 +70,46 @@
             <template v-if="departments.length">
               <el-divider content-position="left">意向选择</el-divider>
               <el-form-item label="第一志愿" prop="firstChoiceDepartmentId">
-                <el-select v-model="form.firstChoiceDepartmentId" filterable placeholder="请选择意向部门">
-                  <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
+                <el-select
+                  v-model="form.firstChoiceDepartmentId"
+                  filterable
+                  placeholder="请选择意向部门"
+                >
+                  <el-option
+                    v-for="dept in departments"
+                    :key="dept.id"
+                    :label="dept.name"
+                    :value="dept.id"
+                  />
                 </el-select>
               </el-form-item>
               <el-form-item label="第二志愿" prop="secondChoiceDepartmentId">
-                <el-select v-model="form.secondChoiceDepartmentId" filterable placeholder="请选择意向部门（可选）">
-                  <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
+                <el-select
+                  v-model="form.secondChoiceDepartmentId"
+                  filterable
+                  placeholder="请选择意向部门（可选）"
+                >
+                  <el-option
+                    v-for="dept in departments"
+                    :key="dept.id"
+                    :label="dept.name"
+                    :value="dept.id"
+                  />
                 </el-select>
               </el-form-item>
             </template>
-            <el-form-item v-if="!requiresLogin && !hasApplicantNameField" label="联系人" prop="formData.applicantName">
+            <el-form-item
+              v-if="!requiresLogin && !hasApplicantNameField"
+              label="联系人"
+              prop="formData.applicantName"
+            >
               <el-input v-model="form.formData.applicantName" placeholder="请输入姓名" />
             </el-form-item>
-            <el-form-item v-if="!requiresLogin && !hasContactField" label="联系方式" prop="formData.contact">
+            <el-form-item
+              v-if="!requiresLogin && !hasContactField"
+              label="联系方式"
+              prop="formData.contact"
+            >
               <el-input v-model="form.formData.contact" placeholder="请填写手机号、邮箱或微信" />
             </el-form-item>
             <el-divider v-if="dynamicFields.length" content-position="left">详细信息</el-divider>
@@ -128,8 +164,12 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import SitePageHero from '@/components/site/shell/SitePageHero.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
-import { applicationApi, clubApi, siteApi } from '@/api'
-import { COLLEGE_FIELD_KEY, ensureCollegeFormField, resolveCollegeValue } from '@/constants/colleges'
+import { applicationApi, siteApi } from '@/api'
+import {
+  COLLEGE_FIELD_KEY,
+  ensureCollegeFormField,
+  resolveCollegeValue,
+} from '@/constants/colleges'
 import { getCurrentUser, getToken } from '@/utils/auth.ts'
 import { formatDateTime } from '@/utils/format.ts'
 import { computed, onMounted, ref } from 'vue'
@@ -168,7 +208,8 @@ const requiresLogin = computed(() => {
 const canSubmit = computed(() => {
   if (!formMeta.value?.id) return false
   if (['closed', 'archived'].includes(formMeta.value.status)) return false
-  if (formMeta.value.applyStartAt && new Date(formMeta.value.applyStartAt).getTime() > Date.now()) return false
+  if (formMeta.value.applyStartAt && new Date(formMeta.value.applyStartAt).getTime() > Date.now())
+    return false
   if (!formMeta.value.applyEndAt) return true
   return new Date(formMeta.value.applyEndAt).getTime() >= Date.now()
 })
@@ -193,10 +234,6 @@ async function loadFormDetail() {
     loginRequired: result?.campaign?.loginRequired !== false,
   }
   departments.value = result?.departments || []
-  if (!departments.value.length && club.value.id) {
-    const deptResult = await clubApi.departments(club.value.id)
-    departments.value = deptResult?.list || deptResult || []
-  }
   resetForm()
 }
 
@@ -204,7 +241,9 @@ function buildRules() {
   return {
     ...(departments.value.length
       ? {
-          firstChoiceDepartmentId: [{ required: true, message: '请选择第一志愿', trigger: 'change' }],
+          firstChoiceDepartmentId: [
+            { required: true, message: '请选择第一志愿', trigger: 'change' },
+          ],
         }
       : {}),
     ...(!hasApplicantNameField.value
@@ -274,7 +313,8 @@ function resetForm() {
   const formData = {}
   const currentUser = getCurrentUser()
   dynamicFields.value.forEach((field) => {
-    formData[field.key] = field.key === COLLEGE_FIELD_KEY ? resolveCollegeValue(currentUser?.college) : ''
+    formData[field.key] =
+      field.key === COLLEGE_FIELD_KEY ? resolveCollegeValue(currentUser?.college) : ''
   })
   if (!hasApplicantNameField.value) {
     formData.applicantName = ''
