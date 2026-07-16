@@ -8,13 +8,20 @@ import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.common.web.PageRequests;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSavePartnerClubDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.PartnerClub;
+import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.PartnerClubMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.PartnerClubService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePartnerClubVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponsePartnerClubUserOptionVO;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import java.net.URI;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +35,7 @@ public class PartnerClubServiceImpl implements PartnerClubService {
   private static final String STATUS_DISABLED = "disabled";
 
   private final PartnerClubMapper partnerClubMapper;
+  private final UserMapper userMapper;
   private final ObjectMapper objectMapper;
 
   @Override
@@ -35,13 +43,17 @@ public class PartnerClubServiceImpl implements PartnerClubService {
     if (limit != null && (limit < 1 || limit > 100)) {
       return Result.error(400, "limit 必须在 1 到 100 之间");
     }
-    List<ResponsePartnerClubVO> clubs =
+    List<PartnerClub> rows =
         partnerClubMapper.selectPublished(featured, limit).stream()
             .filter(
                 club ->
                     trimToNull(club.getWebsiteUrl()) == null
                         || isSafeWebsite(club.getWebsiteUrl()))
-            .map(this::toResponse)
+            .toList();
+    Map<Integer, User> presidents = presidentUsers(rows);
+    List<ResponsePartnerClubVO> clubs =
+        rows.stream()
+            .map(club -> toResponse(club, presidents.get(club.getPresidentUserId())))
             .toList();
     return Result.success(clubs);
   }
@@ -55,6 +67,7 @@ public class PartnerClubServiceImpl implements PartnerClubService {
             trimToNull(keyword),
             normalizeStatus(status),
             featured);
+    enrichPresidents(result.getRecords());
     return Result.success(
         PageDataVO.<PartnerClub>builder()
             .list(result.getRecords())
@@ -62,6 +75,26 @@ public class PartnerClubServiceImpl implements PartnerClubService {
             .pageSize(result.getSize())
             .total(result.getTotal())
             .build());
+  }
+
+  @Override
+  public Result<List<ResponsePartnerClubUserOptionVO>> userOptions(String keyword, Integer limit) {
+    if (limit != null && (limit < 1 || limit > 100)) {
+      return Result.error(400, "limit 必须在 1 到 100 之间");
+    }
+    List<ResponsePartnerClubUserOptionVO> options =
+        userMapper.selectPartnerClubOptions(trimToNull(keyword), limit).stream()
+            .map(
+                user ->
+                    ResponsePartnerClubUserOptionVO.builder()
+                        .id(user.getId())
+                        .userName(user.getUserName())
+                        .realName(user.getRealName())
+                        .studentId(user.getStudentId())
+                        .avatar(user.getAvatar())
+                        .build())
+            .toList();
+    return Result.success(options);
   }
 
   @Override
@@ -112,13 +145,9 @@ public class PartnerClubServiceImpl implements PartnerClubService {
     }
     String logoUrl = required(request.getLogoUrl(), "Logo 地址不能为空");
     if (!isSafeLogo(logoUrl)) throw new IllegalArgumentException("Logo 地址必须是站内路径或 http/https 地址");
-    String presidentName = trimToNull(request.getPresidentName());
-    String presidentAvatarUrl = trimToNull(request.getPresidentAvatarUrl());
-    if ((presidentName == null) != (presidentAvatarUrl == null)) {
-      throw new IllegalArgumentException("社长姓名和头像需要同时填写");
-    }
-    if (presidentAvatarUrl != null && !isSafeLogo(presidentAvatarUrl)) {
-      throw new IllegalArgumentException("社长头像地址必须是站内路径或 http/https 地址");
+    Integer presidentUserId = request.getPresidentUserId();
+    if (presidentUserId != null && userMapper.selectById(presidentUserId) == null) {
+      throw new IllegalArgumentException("绑定的社长用户不存在");
     }
     club.setName(required(request.getName(), "伙伴名称不能为空"));
     club.setLogoUrl(logoUrl);
@@ -126,8 +155,7 @@ public class PartnerClubServiceImpl implements PartnerClubService {
     club.setWebsiteUrl(websiteUrl);
     club.setOrganization(trimToNull(request.getOrganization()));
     club.setCategory(trimToNull(request.getCategory()));
-    club.setPresidentName(presidentName);
-    club.setPresidentAvatarUrl(presidentAvatarUrl);
+    club.setPresidentUserId(presidentUserId);
     try {
       club.setTags(objectMapper.writeValueAsString(request.getTags() == null ? List.of() : request.getTags()));
     } catch (Exception error) {
@@ -138,7 +166,7 @@ public class PartnerClubServiceImpl implements PartnerClubService {
     club.setStatus(requiredStatus(request.getStatus() == null ? STATUS_DRAFT : request.getStatus()));
   }
 
-  private ResponsePartnerClubVO toResponse(PartnerClub club) {
+  private ResponsePartnerClubVO toResponse(PartnerClub club, User president) {
     return ResponsePartnerClubVO.builder()
         .id(club.getId())
         .name(club.getName())
@@ -148,13 +176,37 @@ public class PartnerClubServiceImpl implements PartnerClubService {
             isSafeWebsite(club.getWebsiteUrl()) ? club.getWebsiteUrl().trim() : null)
         .organization(club.getOrganization())
         .category(club.getCategory())
-        .presidentName(trimToNull(club.getPresidentName()))
-        .presidentAvatarUrl(
-            isSafeLogo(club.getPresidentAvatarUrl()) ? club.getPresidentAvatarUrl().trim() : null)
+        .presidentName(president == null ? null : displayName(president))
+        .presidentAvatarUrl(president == null ? null : trimToNull(president.getAvatar()))
         .tags(parseTags(club.getTags()))
         .sortOrder(club.getSortOrder())
         .featured(club.getFeatured())
         .build();
+  }
+
+  private void enrichPresidents(List<PartnerClub> clubs) {
+    Map<Integer, User> presidents = presidentUsers(clubs);
+    for (PartnerClub club : clubs) {
+      User president = presidents.get(club.getPresidentUserId());
+      club.setPresidentName(president == null ? null : displayName(president));
+      club.setPresidentAvatarUrl(president == null ? null : trimToNull(president.getAvatar()));
+    }
+  }
+
+  private Map<Integer, User> presidentUsers(List<PartnerClub> clubs) {
+    LinkedHashSet<Integer> userIds =
+        clubs.stream()
+            .map(PartnerClub::getPresidentUserId)
+            .filter(java.util.Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    if (userIds.isEmpty()) return Map.of();
+    return userMapper.selectBatchIds(userIds).stream()
+        .collect(Collectors.toMap(User::getId, Function.identity()));
+  }
+
+  private String displayName(User user) {
+    String realName = trimToNull(user.getRealName());
+    return realName == null ? user.getUserName() : realName;
   }
 
   private List<String> parseTags(String rawTags) {

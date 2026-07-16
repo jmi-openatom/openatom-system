@@ -37,7 +37,10 @@
             <div>
               <strong>{{ row.name }}</strong>
               <p>{{ row.organization || row.category || '未填写所属组织' }}</p>
-              <p v-if="row.presidentName">社长：{{ row.presidentName }}</p>
+              <div v-if="row.presidentName" class="partner-cell__president">
+                <UserAvatar :name="row.presidentName" :size="22" :src="row.presidentAvatarUrl" />
+                <span>社长：{{ row.presidentName }}</span>
+              </div>
             </div>
           </div>
         </template>
@@ -110,22 +113,24 @@
             />
           </el-form-item>
         </div>
-        <div class="form-grid">
-          <el-form-item label="社长姓名（可选）" prop="presidentName">
-            <el-input
-              v-model="form.presidentName"
-              maxlength="50"
-              placeholder="与社长头像同时填写"
-            />
-          </el-form-item>
-          <el-form-item label="社长头像地址（可选）" prop="presidentAvatarUrl">
-            <el-input
-              v-model="form.presidentAvatarUrl"
-              maxlength="500"
-              placeholder="站内路径或 HTTPS 地址"
-            />
-          </el-form-item>
-        </div>
+        <el-form-item label="绑定站内社长" prop="presidentUserId">
+          <div class="president-binding">
+            <div v-if="form.presidentUserId" class="president-binding__user">
+              <UserAvatar :name="form.presidentName" :size="40" :src="form.presidentAvatarUrl" />
+              <div>
+                <strong>{{ form.presidentName || `用户 ${form.presidentUserId}` }}</strong>
+                <span>站内用户 ID：{{ form.presidentUserId }}</span>
+              </div>
+            </div>
+            <span v-else class="president-binding__empty">尚未绑定站内用户</span>
+            <div class="president-binding__actions">
+              <el-button type="primary" plain @click="openUserPicker">
+                {{ form.presidentUserId ? '更换用户' : '选择用户' }}
+              </el-button>
+              <el-button v-if="form.presidentUserId" @click="clearPresident">清除</el-button>
+            </div>
+          </div>
+        </el-form-item>
         <el-form-item label="伙伴简介" prop="description">
           <el-input
             v-model="form.description"
@@ -170,16 +175,58 @@
         <el-button :loading="saving" type="primary" @click="save">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="userPickerVisible" title="选择站内用户作为社长" width="640px">
+      <div class="user-picker">
+        <el-input
+          v-model="userSearchKeyword"
+          clearable
+          placeholder="搜索姓名、用户名或学号"
+          @clear="searchUsers"
+          @keyup.enter="searchUsers"
+        >
+          <template #append>
+            <el-button :icon="Search" aria-label="搜索用户" @click="searchUsers" />
+          </template>
+        </el-input>
+        <el-table
+          v-loading="userSearchLoading"
+          :data="userSearchRows"
+          highlight-current-row
+          max-height="400"
+          @current-change="selectPresident"
+        >
+          <el-table-column label="用户" min-width="220">
+            <template #default="{ row: user }">
+              <div class="user-option">
+                <UserAvatar :name="user.realName || user.userName" :size="34" :src="user.avatar" />
+                <div>
+                  <strong>{{ user.realName || user.userName }}</strong>
+                  <span>@{{ user.userName }}</span>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="studentId" label="学号" min-width="140">
+            <template #default="{ row: user }">{{ user.studentId || '-' }}</template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <template #footer>
+        <el-button @click="userPickerVisible = false">取消</el-button>
+      </template>
+    </el-dialog>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Plus, Refresh, Search } from '@element-plus/icons-vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { partnerClubApi } from '@/api'
 import { hasPermission } from '@/utils/permission.ts'
 
@@ -191,6 +238,7 @@ interface PartnerClubRow {
   websiteUrl: string
   organization?: string
   category?: string
+  presidentUserId?: number | null
   presidentName?: string
   presidentAvatarUrl?: string
   tags: string[]
@@ -202,6 +250,10 @@ interface PartnerClubRow {
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
+const userPickerVisible = ref(false)
+const userSearchLoading = ref(false)
+const userSearchKeyword = ref('')
+const userSearchRows = ref<PartnerClubUserOption[]>([])
 const rows = ref<PartnerClubRow[]>([])
 const total = ref(0)
 const formRef = ref<FormInstance>()
@@ -209,6 +261,14 @@ const canCreate = computed(() => hasPermission('partner-club:create'))
 const canUpdate = computed(() => hasPermission('partner-club:update'))
 const canUpdateStatus = computed(() => hasPermission('partner-club:status:update'))
 const canDelete = computed(() => hasPermission('partner-club:delete'))
+
+interface PartnerClubUserOption {
+  id: number
+  userName: string
+  realName?: string
+  studentId?: string
+  avatar?: string
+}
 
 const query = reactive({
   keyword: '',
@@ -225,8 +285,7 @@ const form = reactive<PartnerClubRow>({
   websiteUrl: '',
   organization: '',
   category: '',
-  presidentName: '',
-  presidentAvatarUrl: '',
+  presidentUserId: null,
   tags: [],
   sortOrder: 0,
   featured: false,
@@ -246,32 +305,7 @@ const rules: FormRules = {
       trigger: 'blur',
     },
   ],
-  presidentName: [
-    {
-      validator: (_rule, value: string, callback) => {
-        if (!form.presidentAvatarUrl?.trim() || value?.trim()) callback()
-        else callback(new Error('填写社长头像时也需要填写社长姓名'))
-      },
-      trigger: 'blur',
-    },
-  ],
-  presidentAvatarUrl: [
-    {
-      validator: (_rule, value: string, callback) => {
-        const avatarUrl = value?.trim()
-        if (form.presidentName?.trim() && !avatarUrl) {
-          callback(new Error('填写社长姓名时也需要填写社长头像'))
-        } else if (
-          avatarUrl &&
-          !/^https?:\/\//i.test(avatarUrl) &&
-          (!avatarUrl.startsWith('/') || avatarUrl.startsWith('//'))
-        ) {
-          callback(new Error('头像地址必须是站内路径或 http://、https:// 地址'))
-        } else callback()
-      },
-      trigger: 'blur',
-    },
-  ],
+  presidentUserId: [{ required: true, message: '请选择站内用户作为社长', trigger: 'change' }],
 }
 
 const listParams = computed(() => ({
@@ -289,6 +323,7 @@ async function fetchList() {
     rows.value = (data?.list || []).map((row: PartnerClubRow & { tags?: string | string[] }) => ({
       ...row,
       websiteUrl: row.websiteUrl || '',
+      presidentUserId: row.presidentUserId || null,
       tags: parseTags(row.tags),
     }))
     total.value = Number(data?.total || 0)
@@ -316,6 +351,7 @@ function resetForm() {
     websiteUrl: '',
     organization: '',
     category: '',
+    presidentUserId: null,
     presidentName: '',
     presidentAvatarUrl: '',
     tags: [],
@@ -336,8 +372,20 @@ async function save() {
   if (!valid) return
   saving.value = true
   try {
-    const payload = { ...form, tags: [...form.tags] }
-    if (payload.id) await partnerClubApi.update(payload.id, payload)
+    const payload = {
+      name: form.name,
+      logoUrl: form.logoUrl,
+      description: form.description,
+      websiteUrl: form.websiteUrl,
+      organization: form.organization,
+      category: form.category,
+      presidentUserId: form.presidentUserId,
+      tags: [...form.tags],
+      sortOrder: form.sortOrder,
+      featured: form.featured,
+      status: form.status,
+    }
+    if (form.id) await partnerClubApi.update(form.id, payload)
     else await partnerClubApi.create(payload)
     ElMessage.success('保存成功')
     dialogVisible.value = false
@@ -345,6 +393,41 @@ async function save() {
   } finally {
     saving.value = false
   }
+}
+
+function openUserPicker() {
+  userSearchKeyword.value = ''
+  userSearchRows.value = []
+  userPickerVisible.value = true
+  nextTick(searchUsers)
+}
+
+async function searchUsers() {
+  userSearchLoading.value = true
+  try {
+    const data = await partnerClubApi.userOptions({
+      keyword: userSearchKeyword.value || undefined,
+      limit: 50,
+    })
+    userSearchRows.value = Array.isArray(data) ? data : []
+  } finally {
+    userSearchLoading.value = false
+  }
+}
+
+function selectPresident(user?: PartnerClubUserOption) {
+  if (!user) return
+  form.presidentUserId = user.id
+  form.presidentName = user.realName || user.userName
+  form.presidentAvatarUrl = user.avatar || ''
+  userPickerVisible.value = false
+  formRef.value?.validateField('presidentUserId').catch(() => undefined)
+}
+
+function clearPresident() {
+  form.presidentUserId = null
+  form.presidentName = ''
+  form.presidentAvatarUrl = ''
 }
 
 async function togglePublish(row: PartnerClubRow) {
@@ -454,6 +537,65 @@ onMounted(fetchList)
   font-size: 12px;
 }
 
+.partner-cell__president,
+.user-option,
+.president-binding__user {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.partner-cell__president {
+  margin-top: 5px;
+  color: var(--oa-muted);
+  font-size: 12px;
+}
+
+.president-binding {
+  display: flex;
+  width: 100%;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 12px;
+  border: 1px solid var(--oa-border);
+  border-radius: 10px;
+  background: var(--oa-page-soft-bg);
+}
+
+.president-binding__user div,
+.user-option div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.president-binding__user strong,
+.user-option strong {
+  color: var(--oa-text);
+  line-height: 1.4;
+}
+
+.president-binding__user span,
+.user-option span,
+.president-binding__empty {
+  color: var(--oa-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.president-binding__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.user-picker > .el-input {
+  margin-bottom: 16px;
+}
+
 .no-website {
   display: inline-block;
   padding: 0 8px;
@@ -485,6 +627,16 @@ onMounted(fetchList)
   .toolbar__filters .el-input,
   .toolbar__filters .el-select {
     width: 100%;
+  }
+
+  .president-binding {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .president-binding__actions .el-button {
+    min-height: 44px;
+    flex: 1;
   }
 }
 </style>

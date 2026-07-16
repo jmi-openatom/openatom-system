@@ -238,6 +238,9 @@ export const partnerClubApi = {
   list(params?: Record<string, unknown>): Promise<any> {
     return request.get('/partner-clubs', { params })
   },
+  userOptions(params?: { keyword?: string; limit?: number }): Promise<any> {
+    return request.get('/partner-clubs/user-options', { params })
+  },
   create(data: Record<string, unknown>): Promise<any> {
     return request.post('/partner-clubs', data)
   },

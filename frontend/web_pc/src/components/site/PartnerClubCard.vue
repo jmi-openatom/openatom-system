@@ -31,19 +31,11 @@
     <p class="partner-club-card__description">{{ club.description }}</p>
 
     <div v-if="club.presidentName" class="partner-club-card__president">
-      <div class="partner-club-card__president-avatar">
-        <span v-if="presidentAvatarFailed" aria-hidden="true">{{ presidentInitial }}</span>
-        <img
-          v-else-if="club.presidentAvatarUrl"
-          :alt="`${club.name}社长${club.presidentName}的头像`"
-          :src="club.presidentAvatarUrl"
-          height="36"
-          loading="lazy"
-          width="36"
-          @error="presidentAvatarFailed = true"
-        />
-        <span v-else aria-hidden="true">{{ presidentInitial }}</span>
-      </div>
+      <UserAvatar
+        :name="club.presidentName"
+        :size="variant === 'compact' ? 32 : 36"
+        :src="club.presidentAvatarUrl"
+      />
       <p><span>社长</span>{{ club.presidentName }}</p>
     </div>
 
@@ -71,6 +63,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { ExternalLink } from 'lucide-vue-next'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import type { PartnerClub } from '@/types/partner-club'
 
 const props = withDefaults(
@@ -83,12 +76,8 @@ const props = withDefaults(
 
 const logoLoaded = ref(false)
 const logoFailed = ref(false)
-const presidentAvatarFailed = ref(false)
 
 const initial = computed(() => props.club.name.trim().slice(0, 1).toUpperCase() || '社')
-const presidentInitial = computed(
-  () => props.club.presidentName?.trim().slice(0, 1).toUpperCase() || '社',
-)
 const safeWebsiteUrl = computed(() => {
   if (!props.club.websiteUrl) return ''
   try {
@@ -104,13 +93,6 @@ watch(
   () => {
     logoLoaded.value = false
     logoFailed.value = false
-  },
-)
-
-watch(
-  () => props.club.presidentAvatarUrl,
-  () => {
-    presidentAvatarFailed.value = false
   },
 )
 </script>
@@ -239,27 +221,6 @@ watch(
   margin-top: 18px;
 }
 
-.partner-club-card__president-avatar {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid var(--oa-border);
-  border-radius: 50%;
-  background: var(--oa-page-soft-bg);
-  color: var(--oa-muted-strong);
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.partner-club-card__president-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .partner-club-card__president p {
   display: flex;
   min-width: 0;
@@ -374,12 +335,6 @@ watch(
 
 .partner-club-card--compact .partner-club-card__president {
   margin-top: 14px;
-}
-
-.partner-club-card--compact .partner-club-card__president-avatar {
-  width: 32px;
-  height: 32px;
-  flex-basis: 32px;
 }
 
 @keyframes partner-logo-pulse {

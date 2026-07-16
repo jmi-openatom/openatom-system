@@ -21,6 +21,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubDepartmentMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubVicePresidentMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.PartnerClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ActivityRegistrationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.FormSubmissionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RoleMapper;
@@ -64,6 +65,7 @@ public class UserServiceImpl implements UserService {
 	private final ClubDepartmentMapper clubDepartmentMapper;
 	private final ClubMembershipMapper clubMembershipMapper;
 	private final ClubVicePresidentMapper clubVicePresidentMapper;
+	private final PartnerClubMapper partnerClubMapper;
 	private final MembershipApplicationMapper membershipApplicationMapper;
 	private final ActivityRegistrationMapper activityRegistrationMapper;
 	private final FormSubmissionMapper formSubmissionMapper;
@@ -392,6 +394,7 @@ public class UserServiceImpl implements UserService {
 		clubVicePresidentMapper.deleteByUserId(userId);
 		clubDepartmentMapper.nullifyManagerUserId(userId);
 		clubDepartmentMapper.nullifyViceManagerUserId(userId);
+		partnerClubMapper.nullifyPresidentUserId(userId);
 		int rows = userMapper.deleteById(userId);
 		return rows > 0 ? Result.success("用户已删除") : Result.error("用户删除失败");
 	}

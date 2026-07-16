@@ -8,6 +8,7 @@ import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePartnerClubVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponsePartnerClubUserOptionVO;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +42,14 @@ public class PartnerClubController {
       @RequestParam(required = false) Long page,
       @RequestParam(required = false) Long pageSize) {
     return partnerClubService.adminList(keyword, status, featured, page, pageSize);
+  }
+
+  @GetMapping("/partner-clubs/user-options")
+  @SaCheckPermission("partner-club:list")
+  public Result<List<ResponsePartnerClubUserOptionVO>> userOptions(
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) Integer limit) {
+    return partnerClubService.userOptions(keyword, limit);
   }
 
   @PostMapping("/partner-clubs")

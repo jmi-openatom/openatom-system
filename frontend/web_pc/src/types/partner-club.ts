@@ -6,6 +6,7 @@ export interface PartnerClub {
   websiteUrl?: string
   organization?: string
   category?: string
+  presidentUserId?: number
   presidentName?: string
   presidentAvatarUrl?: string
   tags?: string[]

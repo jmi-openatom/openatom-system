@@ -28,10 +28,13 @@ public class PartnerClub {
   private String category;
   private String tags;
 
-  @TableField("president_name")
+  @TableField("president_user_id")
+  private Integer presidentUserId;
+
+  @TableField(exist = false)
   private String presidentName;
 
-  @TableField("president_avatar_url")
+  @TableField(exist = false)
   private String presidentAvatarUrl;
 
   @TableField("sort_order")

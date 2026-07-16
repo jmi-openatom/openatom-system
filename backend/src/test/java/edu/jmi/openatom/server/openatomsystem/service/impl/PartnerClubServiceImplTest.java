@@ -7,9 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSavePartnerClubDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.PartnerClub;
+import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.PartnerClubMapper;
-import java.util.List;
+import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import java.lang.reflect.Proxy;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +24,9 @@ class PartnerClubServiceImplTest {
     PartnerClub unsafe = partner("javascript:alert(1)", "[]");
     AtomicInteger queryCount = new AtomicInteger();
     PartnerClubMapper mapper = mapperReturning(List.of(safe, withoutWebsite, unsafe), queryCount);
-    PartnerClubServiceImpl partnerClubService = new PartnerClubServiceImpl(mapper, new ObjectMapper());
+    User president = president();
+    PartnerClubServiceImpl partnerClubService =
+        new PartnerClubServiceImpl(mapper, userMapperReturning(president), new ObjectMapper());
 
     var result = partnerClubService.publicList(true, 4);
 
@@ -40,7 +45,8 @@ class PartnerClubServiceImplTest {
   void rejectsOutOfRangeLimitBeforeQueryingDatabase() {
     AtomicInteger queryCount = new AtomicInteger();
     PartnerClubMapper mapper = mapperReturning(List.of(), queryCount);
-    PartnerClubServiceImpl partnerClubService = new PartnerClubServiceImpl(mapper, new ObjectMapper());
+    PartnerClubServiceImpl partnerClubService =
+        new PartnerClubServiceImpl(mapper, userMapperReturning(null), new ObjectMapper());
 
     var result = partnerClubService.publicList(true, 101);
 
@@ -49,19 +55,38 @@ class PartnerClubServiceImplTest {
   }
 
   @Test
-  void requiresPresidentNameAndAvatarToBeProvidedTogether() {
+  void rejectsUnknownPresidentUser() {
     PartnerClubMapper mapper = mapperReturning(List.of(), new AtomicInteger());
-    PartnerClubServiceImpl partnerClubService = new PartnerClubServiceImpl(mapper, new ObjectMapper());
+    PartnerClubServiceImpl partnerClubService =
+        new PartnerClubServiceImpl(mapper, userMapperReturning(null), new ObjectMapper());
     RequestSavePartnerClubDTO request = new RequestSavePartnerClubDTO();
     request.setName("示例开源伙伴");
     request.setLogoUrl("/api/v1/files/images/example.png");
     request.setDescription("共同推动校园开源文化建设。");
-    request.setPresidentName("张同学");
+    request.setPresidentUserId(99);
 
     IllegalArgumentException error =
         assertThrows(IllegalArgumentException.class, () -> partnerClubService.create(request));
 
-    assertEquals("社长姓名和头像需要同时填写", error.getMessage());
+    assertEquals("绑定的社长用户不存在", error.getMessage());
+  }
+
+  private UserMapper userMapperReturning(User user) {
+    return (UserMapper)
+        Proxy.newProxyInstance(
+            UserMapper.class.getClassLoader(),
+            new Class<?>[] {UserMapper.class},
+            (proxy, method, args) -> {
+              if (method.getName().equals("selectBatchIds")) {
+                Collection<?> ids = (Collection<?>) args[0];
+                return user != null && ids.contains(user.getId()) ? List.of(user) : List.of();
+              }
+              if (method.getName().equals("selectById")) {
+                return user != null && user.getId().equals(args[0]) ? user : null;
+              }
+              if (method.getName().equals("toString")) return "UserMapperTestDouble";
+              throw new UnsupportedOperationException(method.getName());
+            });
   }
 
   private PartnerClubMapper mapperReturning(
@@ -90,8 +115,16 @@ class PartnerClubServiceImplTest {
     club.setTags(tags);
     club.setSortOrder(10);
     club.setFeatured(true);
-    club.setPresidentName("张同学");
-    club.setPresidentAvatarUrl("/api/v1/files/images/president.png");
+    club.setPresidentUserId(7);
     return club;
+  }
+
+  private User president() {
+    return User.builder()
+        .id(7)
+        .userName("zhang")
+        .realName("张同学")
+        .avatar("/api/v1/files/images/president.png")
+        .build();
   }
 }

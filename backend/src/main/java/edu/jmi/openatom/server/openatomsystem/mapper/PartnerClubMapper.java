@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.mapper;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.entity.PartnerClub;
@@ -41,5 +42,13 @@ public interface PartnerClubMapper extends BaseMapper<PartnerClub> {
       wrapper.last("LIMIT " + Math.max(1, Math.min(limit, 100)));
     }
     return selectList(wrapper);
+  }
+
+  default void nullifyPresidentUserId(Integer userId) {
+    update(
+        null,
+        new LambdaUpdateWrapper<PartnerClub>()
+            .eq(PartnerClub::getPresidentUserId, userId)
+            .set(PartnerClub::getPresidentUserId, null));
   }
 }

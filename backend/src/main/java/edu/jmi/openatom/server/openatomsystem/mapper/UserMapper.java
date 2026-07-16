@@ -78,6 +78,35 @@ public interface UserMapper extends BaseMapper<User> {
             .like(User::getStudentId, keyword));
   }
 
+  /** 开源伙伴社长选择器，只查询可公开展示的低敏字段。 */
+  default List<User> selectPartnerClubOptions(String keyword, Integer limit) {
+    int safeLimit = Math.max(1, Math.min(limit == null ? 50 : limit, 100));
+    LambdaQueryWrapper<User> wrapper =
+        new LambdaQueryWrapper<User>()
+            .select(
+                User::getId,
+                User::getUserName,
+                User::getRealName,
+                User::getStudentId,
+                User::getAvatar)
+            .eq(User::getUserStatus, UserStatus.ACTIVE)
+            .orderByAsc(User::getRealName)
+            .orderByAsc(User::getId)
+            .last("LIMIT " + safeLimit);
+    if (keyword != null && !keyword.isBlank()) {
+      String trimmed = keyword.trim();
+      wrapper.and(
+          query ->
+              query
+                  .like(User::getRealName, trimmed)
+                  .or()
+                  .like(User::getUserName, trimmed)
+                  .or()
+                  .like(User::getStudentId, trimmed));
+    }
+    return selectList(wrapper);
+  }
+
   /** 模糊搜索用户选项（Word导出人员选择） */
   default List<User> selectOptionsByKeyword(String keyword) {
     LambdaQueryWrapper<User> wrapper =

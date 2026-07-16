@@ -5,6 +5,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestSavePartnerClubDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.PartnerClub;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponsePartnerClubVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponsePartnerClubUserOptionVO;
 import java.util.List;
 
 /** 开源伙伴公开展示服务。 */
@@ -13,6 +14,8 @@ public interface PartnerClubService {
 
   Result<PageDataVO<PartnerClub>> adminList(
       String keyword, String status, Boolean featured, Long page, Long pageSize);
+
+  Result<List<ResponsePartnerClubUserOptionVO>> userOptions(String keyword, Integer limit);
 
   Result<PartnerClub> create(RequestSavePartnerClubDTO request);
 
