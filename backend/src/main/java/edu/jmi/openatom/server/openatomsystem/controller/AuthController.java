@@ -268,13 +268,11 @@ public class AuthController {
     return authService.verifyGroupJoinToken(token);
   }
 
-  /**
-   * 机器人审批通过后调用，标记用户已加入QQ群。
-   * 公开端点，token 本身即为凭据。
-   */
+  /** 机器人审批通过后调用，标记用户已入群，并在提供 QQ 时同步完成账号绑定。 */
   @GetMapping("/group-join/confirm")
-  public Result<String> confirmGroupJoin(@RequestParam String token) {
-    return authService.confirmGroupJoin(token);
+  public Result<String> confirmGroupJoin(
+      @RequestParam String token, @RequestParam(required = false) String qqOpenid) {
+    return authService.confirmGroupJoin(token, qqOpenid);
   }
 
   /** Generates a one-time token for QQ group join verification. */

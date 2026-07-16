@@ -77,5 +77,5 @@ public interface AuthService {
 
   Result<ResponseGroupJoinVerifyVO> verifyGroupJoinToken(String token);
 
-  Result<String> confirmGroupJoin(String token);
+  Result<String> confirmGroupJoin(String token, String qqOpenid);
 }

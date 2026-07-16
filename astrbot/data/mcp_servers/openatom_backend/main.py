@@ -392,7 +392,7 @@ async def api_get(path: str, params: str = "") -> str:
     - /site/forms/{id}  表单详情
     - /auth/qq-bind/status  QQ绑定状态（需 params: qqOpenid=xxx）
     - /auth/group-join/verify  入群验证码校验（需 params: token=XXXXXXXX）
-    - /auth/group-join/confirm  入群确认（机器人审批通过后调用，需 params: token=XXXXXXXX）
+    - /auth/group-join/confirm  入群确认并绑定QQ（机器人审批通过后调用，需 params: token=XXXXXXXX&qqOpenid=QQ号）
     # 注意：/site/progress、/site/leave-applications、/site/activation、/site/points/me 需要登录，MCP 无 token 无法调用
 
     Args:

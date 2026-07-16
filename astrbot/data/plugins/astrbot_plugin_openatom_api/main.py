@@ -27,7 +27,7 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.7.0"
+PLUGIN_VERSION = "1.7.1"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -103,7 +103,7 @@ class OpenAtomApiPlugin(Star):
                     "",
                     "【入群自动审批】",
                     "社团成员在官网激活页生成入群验证码后，将验证码填写在入群申请理由中",
-                    "机器人会自动校验并通过，同时将群名片设为“部门-姓名-学号”",
+                    "机器人会自动校验并通过，同时绑定当前QQ，并将群名片设为“部门-姓名-学号”",
                     "",
                     f"插件版本：{PLUGIN_VERSION}",
                     "普通查询只允许 GET；查人走独立 public 接口；QQ 绑定命令只会消费网页登录生成的一次性绑定码。",
@@ -242,7 +242,7 @@ class OpenAtomApiPlugin(Star):
         group_id = str(self._raw_event_value(raw, "group_id") or "").strip()
         user_id = str(self._raw_event_value(raw, "user_id") or "").strip()
         comment = str(self._raw_event_value(raw, "comment") or self._raw_event_value(raw, "message") or "").strip()
-        if not flag or not group_id:
+        if not flag or not group_id or not user_id:
             logger.warning(f"OpenAtom group join skipped: missing flag/groupId, userId={user_id}")
             return
         token = self._extract_join_token(comment)
@@ -261,6 +261,30 @@ class OpenAtomApiPlugin(Star):
             except Exception:
                 pass
             return
+        token_qq = str(verify_data.get("qqOpenid") or "").strip()
+        qq_bound, bind_status_error = await self._get_data(
+            "/auth/qq-bind/status", {"qqOpenid": user_id}
+        )
+        if bind_status_error:
+            logger.warning(
+                f"OpenAtom group join QQ preflight failed: userId={user_id}, error={bind_status_error}"
+            )
+            return
+        if (token_qq and token_qq != user_id) or (qq_bound and token_qq != user_id):
+            logger.warning(
+                f"OpenAtom group join QQ conflict: token={token}, applicantQq={user_id}, boundQq={token_qq}"
+            )
+            try:
+                await bot.call_action(
+                    "set_group_add_request",
+                    flag=flag,
+                    sub_type="add",
+                    approve=False,
+                    reason="该QQ已绑定其他网站账号，请联系管理员",
+                )
+            except Exception:
+                pass
+            return
         card_name = str(verify_data.get("cardName") or "").strip()
         real_name = str(verify_data.get("realName") or "").strip()
         try:
@@ -269,8 +293,10 @@ class OpenAtomApiPlugin(Star):
         except Exception as exc:
             logger.warning(f"OpenAtom group join approve failed: groupId={group_id}, userId={user_id}, error={exc}")
             return
-        # 通知后端用户已加入QQ群，以便激活账号时校验
-        _, confirm_error = await self._get_data("/auth/group-join/confirm", {"token": token})
+        # 通知后端用户已加入QQ群，并将本次申请人的 QQ 绑定到验证码对应账号
+        _, confirm_error = await self._get_data(
+            "/auth/group-join/confirm", {"token": token, "qqOpenid": user_id}
+        )
         if confirm_error:
             logger.warning(f"OpenAtom group join confirm failed: token={token}, error={confirm_error}")
         if card_name:

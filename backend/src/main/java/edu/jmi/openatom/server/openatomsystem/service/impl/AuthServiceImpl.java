@@ -639,10 +639,14 @@ public class AuthServiceImpl implements AuthService {
 
 	@Override
 	@RedisCacheEvict(cacheNames = {"site", "auth"})
-	public Result<String> confirmGroupJoin(String token) {
+	public Result<String> confirmGroupJoin(String token, String qqOpenid) {
 	  if (token == null || token.isBlank()) return Result.error(400, "验证码不能为空");
 	  String normalized = token.trim().toUpperCase();
 	  if (!normalized.matches("[A-Z0-9]{8}")) return Result.error(400, "验证码格式不正确");
+	  String normalizedQqOpenid = normalizeQqOpenid(qqOpenid);
+	  if (qqOpenid != null && normalizedQqOpenid == null) {
+	    return Result.error(400, "QQ号格式不正确");
+	  }
 	  SaTokenDao tokenDao = SaManager.getSaTokenDao();
 	  String userIdValue = tokenDao.get(getGroupJoinTokenKey(normalized));
 	  if (userIdValue == null) return Result.error(401, "验证码无效或已过期");
@@ -655,11 +659,27 @@ public class AuthServiceImpl implements AuthService {
 	  }
 	  User user = userMapper.selectById(userId);
 	  if (user == null) return Result.error(404, "用户不存在");
-	  if (user.getQqGroupJoinedAt() == null) {
-	    user.setQqGroupJoinedAt(new Timestamp(System.currentTimeMillis()));
+	  try {
+	    if (normalizedQqOpenid != null) {
+	      User boundUser = userMapper.selectByQqOpenid(normalizedQqOpenid);
+	      if (boundUser != null && !boundUser.getId().equals(userId)) {
+	        return Result.error(409, "该QQ已绑定其他账号");
+	      }
+	      user.setQqOpenid(normalizedQqOpenid);
+	    }
+	    if (user.getQqGroupJoinedAt() == null) {
+	      user.setQqGroupJoinedAt(new Timestamp(System.currentTimeMillis()));
+	    }
 	    userMapper.updateById(user);
+	    tokenDao.delete(getGroupJoinTokenKey(normalized));
+	  } catch (DuplicateKeyException e) {
+	    return Result.error(409, "该QQ已绑定其他账号");
+	  } catch (DataAccessException e) {
+	    log.error("QQ group join confirmation failed", e);
+	    return Result.error(500, "入群确认失败，请稍后重试");
 	  }
-	  return Result.success("已确认加入QQ群");
+	  return Result.success(
+	      normalizedQqOpenid == null ? "已确认加入QQ群" : "已确认加入QQ群并完成QQ绑定");
 	}
 	
 	private String buildGroupCardName(String departmentName, String realName, String studentId) {
