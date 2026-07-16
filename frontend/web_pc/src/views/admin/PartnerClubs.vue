@@ -37,6 +37,7 @@
             <div>
               <strong>{{ row.name }}</strong>
               <p>{{ row.organization || row.category || '未填写所属组织' }}</p>
+              <p v-if="row.presidentName">社长：{{ row.presidentName }}</p>
             </div>
           </div>
         </template>
@@ -109,6 +110,22 @@
             />
           </el-form-item>
         </div>
+        <div class="form-grid">
+          <el-form-item label="社长姓名（可选）" prop="presidentName">
+            <el-input
+              v-model="form.presidentName"
+              maxlength="50"
+              placeholder="与社长头像同时填写"
+            />
+          </el-form-item>
+          <el-form-item label="社长头像地址（可选）" prop="presidentAvatarUrl">
+            <el-input
+              v-model="form.presidentAvatarUrl"
+              maxlength="500"
+              placeholder="站内路径或 HTTPS 地址"
+            />
+          </el-form-item>
+        </div>
         <el-form-item label="伙伴简介" prop="description">
           <el-input
             v-model="form.description"
@@ -174,6 +191,8 @@ interface PartnerClubRow {
   websiteUrl: string
   organization?: string
   category?: string
+  presidentName?: string
+  presidentAvatarUrl?: string
   tags: string[]
   sortOrder: number
   featured: boolean
@@ -206,6 +225,8 @@ const form = reactive<PartnerClubRow>({
   websiteUrl: '',
   organization: '',
   category: '',
+  presidentName: '',
+  presidentAvatarUrl: '',
   tags: [],
   sortOrder: 0,
   featured: false,
@@ -221,6 +242,32 @@ const rules: FormRules = {
       validator: (_rule, value: string, callback) => {
         if (!value?.trim() || /^https?:\/\//i.test(value.trim())) callback()
         else callback(new Error('官网地址必须以 http:// 或 https:// 开头'))
+      },
+      trigger: 'blur',
+    },
+  ],
+  presidentName: [
+    {
+      validator: (_rule, value: string, callback) => {
+        if (!form.presidentAvatarUrl?.trim() || value?.trim()) callback()
+        else callback(new Error('填写社长头像时也需要填写社长姓名'))
+      },
+      trigger: 'blur',
+    },
+  ],
+  presidentAvatarUrl: [
+    {
+      validator: (_rule, value: string, callback) => {
+        const avatarUrl = value?.trim()
+        if (form.presidentName?.trim() && !avatarUrl) {
+          callback(new Error('填写社长姓名时也需要填写社长头像'))
+        } else if (
+          avatarUrl &&
+          !/^https?:\/\//i.test(avatarUrl) &&
+          (!avatarUrl.startsWith('/') || avatarUrl.startsWith('//'))
+        ) {
+          callback(new Error('头像地址必须是站内路径或 http://、https:// 地址'))
+        } else callback()
       },
       trigger: 'blur',
     },
@@ -269,6 +316,8 @@ function resetForm() {
     websiteUrl: '',
     organization: '',
     category: '',
+    presidentName: '',
+    presidentAvatarUrl: '',
     tags: [],
     sortOrder: 0,
     featured: false,

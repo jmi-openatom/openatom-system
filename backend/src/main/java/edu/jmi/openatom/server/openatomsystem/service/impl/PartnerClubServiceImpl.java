@@ -112,12 +112,22 @@ public class PartnerClubServiceImpl implements PartnerClubService {
     }
     String logoUrl = required(request.getLogoUrl(), "Logo 地址不能为空");
     if (!isSafeLogo(logoUrl)) throw new IllegalArgumentException("Logo 地址必须是站内路径或 http/https 地址");
+    String presidentName = trimToNull(request.getPresidentName());
+    String presidentAvatarUrl = trimToNull(request.getPresidentAvatarUrl());
+    if ((presidentName == null) != (presidentAvatarUrl == null)) {
+      throw new IllegalArgumentException("社长姓名和头像需要同时填写");
+    }
+    if (presidentAvatarUrl != null && !isSafeLogo(presidentAvatarUrl)) {
+      throw new IllegalArgumentException("社长头像地址必须是站内路径或 http/https 地址");
+    }
     club.setName(required(request.getName(), "伙伴名称不能为空"));
     club.setLogoUrl(logoUrl);
     club.setDescription(required(request.getDescription(), "伙伴简介不能为空"));
     club.setWebsiteUrl(websiteUrl);
     club.setOrganization(trimToNull(request.getOrganization()));
     club.setCategory(trimToNull(request.getCategory()));
+    club.setPresidentName(presidentName);
+    club.setPresidentAvatarUrl(presidentAvatarUrl);
     try {
       club.setTags(objectMapper.writeValueAsString(request.getTags() == null ? List.of() : request.getTags()));
     } catch (Exception error) {
@@ -138,6 +148,9 @@ public class PartnerClubServiceImpl implements PartnerClubService {
             isSafeWebsite(club.getWebsiteUrl()) ? club.getWebsiteUrl().trim() : null)
         .organization(club.getOrganization())
         .category(club.getCategory())
+        .presidentName(trimToNull(club.getPresidentName()))
+        .presidentAvatarUrl(
+            isSafeLogo(club.getPresidentAvatarUrl()) ? club.getPresidentAvatarUrl().trim() : null)
         .tags(parseTags(club.getTags()))
         .sortOrder(club.getSortOrder())
         .featured(club.getFeatured())

@@ -15,6 +15,8 @@ public class ResponsePartnerClubVO {
   String websiteUrl;
   String organization;
   String category;
+  String presidentName;
+  String presidentAvatarUrl;
   List<String> tags;
   Integer sortOrder;
   Boolean featured;

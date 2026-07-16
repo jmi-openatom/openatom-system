@@ -6,6 +6,8 @@ export interface PartnerClub {
   websiteUrl?: string
   organization?: string
   category?: string
+  presidentName?: string
+  presidentAvatarUrl?: string
   tags?: string[]
   sortOrder: number
   featured: boolean

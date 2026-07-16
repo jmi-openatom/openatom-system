@@ -29,6 +29,12 @@ public class RequestSavePartnerClubDTO {
   @Size(max = 80, message = "伙伴类型不能超过 80 个字符")
   private String category;
 
+  @Size(max = 50, message = "社长姓名不能超过 50 个字符")
+  private String presidentName;
+
+  @Size(max = 500, message = "社长头像地址不能超过 500 个字符")
+  private String presidentAvatarUrl;
+
   private List<@Size(max = 30, message = "单个标签不能超过 30 个字符") String> tags;
   private Integer sortOrder;
   private Boolean featured;

@@ -30,6 +30,23 @@
 
     <p class="partner-club-card__description">{{ club.description }}</p>
 
+    <div v-if="club.presidentName" class="partner-club-card__president">
+      <div class="partner-club-card__president-avatar">
+        <span v-if="presidentAvatarFailed" aria-hidden="true">{{ presidentInitial }}</span>
+        <img
+          v-else-if="club.presidentAvatarUrl"
+          :alt="`${club.name}社长${club.presidentName}的头像`"
+          :src="club.presidentAvatarUrl"
+          height="36"
+          loading="lazy"
+          width="36"
+          @error="presidentAvatarFailed = true"
+        />
+        <span v-else aria-hidden="true">{{ presidentInitial }}</span>
+      </div>
+      <p><span>社长</span>{{ club.presidentName }}</p>
+    </div>
+
     <ul v-if="variant === 'default' && club.tags?.length" class="partner-club-card__tags">
       <li v-for="tag in club.tags" :key="tag">{{ tag }}</li>
     </ul>
@@ -66,8 +83,12 @@ const props = withDefaults(
 
 const logoLoaded = ref(false)
 const logoFailed = ref(false)
+const presidentAvatarFailed = ref(false)
 
 const initial = computed(() => props.club.name.trim().slice(0, 1).toUpperCase() || '社')
+const presidentInitial = computed(
+  () => props.club.presidentName?.trim().slice(0, 1).toUpperCase() || '社',
+)
 const safeWebsiteUrl = computed(() => {
   if (!props.club.websiteUrl) return ''
   try {
@@ -83,6 +104,13 @@ watch(
   () => {
     logoLoaded.value = false
     logoFailed.value = false
+  },
+)
+
+watch(
+  () => props.club.presidentAvatarUrl,
+  () => {
+    presidentAvatarFailed.value = false
   },
 )
 </script>
@@ -203,6 +231,53 @@ watch(
   -webkit-line-clamp: 4;
 }
 
+.partner-club-card__president {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.partner-club-card__president-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--oa-border);
+  border-radius: 50%;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-muted-strong);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.partner-club-card__president-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.partner-club-card__president p {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--oa-text);
+  font-size: 14px;
+  font-weight: 580;
+  line-height: 1.35;
+}
+
+.partner-club-card__president p span {
+  color: var(--oa-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .partner-club-card__tags {
   display: flex;
   flex-wrap: wrap;
@@ -295,6 +370,16 @@ watch(
 
 .partner-club-card--compact .partner-club-card__footer {
   padding-top: 16px;
+}
+
+.partner-club-card--compact .partner-club-card__president {
+  margin-top: 14px;
+}
+
+.partner-club-card--compact .partner-club-card__president-avatar {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
 }
 
 @keyframes partner-logo-pulse {

@@ -28,6 +28,12 @@ public class PartnerClub {
   private String category;
   private String tags;
 
+  @TableField("president_name")
+  private String presidentName;
+
+  @TableField("president_avatar_url")
+  private String presidentAvatarUrl;
+
   @TableField("sort_order")
   private Integer sortOrder;
 

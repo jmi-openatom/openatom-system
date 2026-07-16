@@ -2,8 +2,10 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestSavePartnerClubDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.PartnerClub;
 import edu.jmi.openatom.server.openatomsystem.mapper.PartnerClubMapper;
 import java.util.List;
@@ -26,6 +28,10 @@ class PartnerClubServiceImplTest {
     assertEquals(0, result.getCode());
     assertEquals(2, result.getData().size());
     assertEquals(List.of("开源", "Linux"), result.getData().getFirst().getTags());
+    assertEquals("张同学", result.getData().getFirst().getPresidentName());
+    assertEquals(
+        "/api/v1/files/images/president.png",
+        result.getData().getFirst().getPresidentAvatarUrl());
     assertNull(result.getData().get(1).getWebsiteUrl());
     assertEquals(1, queryCount.get());
   }
@@ -40,6 +46,22 @@ class PartnerClubServiceImplTest {
 
     assertEquals(400, result.getCode());
     assertEquals(0, queryCount.get());
+  }
+
+  @Test
+  void requiresPresidentNameAndAvatarToBeProvidedTogether() {
+    PartnerClubMapper mapper = mapperReturning(List.of(), new AtomicInteger());
+    PartnerClubServiceImpl partnerClubService = new PartnerClubServiceImpl(mapper, new ObjectMapper());
+    RequestSavePartnerClubDTO request = new RequestSavePartnerClubDTO();
+    request.setName("示例开源伙伴");
+    request.setLogoUrl("/api/v1/files/images/example.png");
+    request.setDescription("共同推动校园开源文化建设。");
+    request.setPresidentName("张同学");
+
+    IllegalArgumentException error =
+        assertThrows(IllegalArgumentException.class, () -> partnerClubService.create(request));
+
+    assertEquals("社长姓名和头像需要同时填写", error.getMessage());
   }
 
   private PartnerClubMapper mapperReturning(
@@ -68,6 +90,8 @@ class PartnerClubServiceImplTest {
     club.setTags(tags);
     club.setSortOrder(10);
     club.setFeatured(true);
+    club.setPresidentName("张同学");
+    club.setPresidentAvatarUrl("/api/v1/files/images/president.png");
     return club;
   }
 }
