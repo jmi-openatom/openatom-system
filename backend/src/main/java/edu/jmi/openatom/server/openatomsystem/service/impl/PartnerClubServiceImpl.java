@@ -53,7 +53,7 @@ public class PartnerClubServiceImpl implements PartnerClubService {
     Map<Integer, User> presidents = presidentUsers(rows);
     List<ResponsePartnerClubVO> clubs =
         rows.stream()
-            .map(club -> toResponse(club, presidents.get(club.getPresidentUserId())))
+            .map(club -> toResponse(club, presidentUser(presidents, club.getPresidentUserId())))
             .toList();
     return Result.success(clubs);
   }
@@ -187,10 +187,14 @@ public class PartnerClubServiceImpl implements PartnerClubService {
   private void enrichPresidents(List<PartnerClub> clubs) {
     Map<Integer, User> presidents = presidentUsers(clubs);
     for (PartnerClub club : clubs) {
-      User president = presidents.get(club.getPresidentUserId());
+      User president = presidentUser(presidents, club.getPresidentUserId());
       club.setPresidentName(president == null ? null : displayName(president));
       club.setPresidentAvatarUrl(president == null ? null : trimToNull(president.getAvatar()));
     }
+  }
+
+  private User presidentUser(Map<Integer, User> presidents, Integer presidentUserId) {
+    return presidentUserId == null ? null : presidents.get(presidentUserId);
   }
 
   private Map<Integer, User> presidentUsers(List<PartnerClub> clubs) {

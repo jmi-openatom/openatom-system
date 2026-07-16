@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSavePartnerClubDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.PartnerClub;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
@@ -21,6 +22,7 @@ class PartnerClubServiceImplTest {
   void returnsPublishedPartnersWithParsedTagsAndOptionalWebsite() {
     PartnerClub safe = partner("https://example.org", "[\"开源\",\"Linux\"]");
     PartnerClub withoutWebsite = partner(null, "[]");
+    withoutWebsite.setPresidentUserId(null);
     PartnerClub unsafe = partner("javascript:alert(1)", "[]");
     AtomicInteger queryCount = new AtomicInteger();
     PartnerClubMapper mapper = mapperReturning(List.of(safe, withoutWebsite, unsafe), queryCount);
@@ -38,7 +40,23 @@ class PartnerClubServiceImplTest {
         "/api/v1/files/images/president.png",
         result.getData().getFirst().getPresidentAvatarUrl());
     assertNull(result.getData().get(1).getWebsiteUrl());
+    assertNull(result.getData().get(1).getPresidentName());
     assertEquals(1, queryCount.get());
+  }
+
+  @Test
+  void adminListAllowsLegacyPartnerWithoutBoundPresident() {
+    PartnerClub unbound = partner(null, "[]");
+    unbound.setPresidentUserId(null);
+    PartnerClubMapper mapper = mapperReturning(List.of(unbound), new AtomicInteger());
+    PartnerClubServiceImpl partnerClubService =
+        new PartnerClubServiceImpl(mapper, userMapperReturning(null), new ObjectMapper());
+
+    var result = partnerClubService.adminList(null, null, null, 1L, 10L);
+
+    assertEquals(0, result.getCode());
+    assertEquals(1, result.getData().getList().size());
+    assertNull(result.getData().getList().getFirst().getPresidentName());
   }
 
   @Test
@@ -89,6 +107,7 @@ class PartnerClubServiceImplTest {
             });
   }
 
+  @SuppressWarnings("unchecked")
   private PartnerClubMapper mapperReturning(
       List<PartnerClub> rows, AtomicInteger queryCount) {
     return (PartnerClubMapper)
@@ -99,6 +118,12 @@ class PartnerClubServiceImplTest {
               if (method.getName().equals("selectPublished")) {
                 queryCount.incrementAndGet();
                 return rows;
+              }
+              if (method.getName().equals("selectPageByConditions")) {
+                Page<PartnerClub> page = (Page<PartnerClub>) args[0];
+                page.setRecords(rows);
+                page.setTotal(rows.size());
+                return page;
               }
               if (method.getName().equals("toString")) return "PartnerClubMapperTestDouble";
               throw new UnsupportedOperationException(method.getName());
