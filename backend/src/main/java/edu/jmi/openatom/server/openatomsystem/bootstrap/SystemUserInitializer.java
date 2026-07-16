@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.bootstrap;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import edu.jmi.openatom.server.openatomsystem.cache.RedisCacheEvict;
 import edu.jmi.openatom.server.openatomsystem.mapper.PermissionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RoleMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RolePermissionMapper;
@@ -40,6 +41,7 @@ public class SystemUserInitializer implements ApplicationRunner {
 
   @Override
   @Transactional(rollbackFor = Exception.class)
+  @RedisCacheEvict(cacheNames = {"auth", "lookup:permission", "lookup:role"})
   public void run(ApplicationArguments args) {
     initRoleTemplate(RoleSeedTemplate.formalMember());
     initRoleTemplate(RoleSeedTemplate.probationaryMember());

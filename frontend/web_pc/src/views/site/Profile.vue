@@ -387,7 +387,12 @@ async function fetchProfile() {
   const result = await authApi.me()
   if (result?.user) {
     user.value = result.user
-    setSession({ accessToken: getToken(), user: user.value })
+    setSession({
+      accessToken: getToken(),
+      user: user.value,
+      roles: result.roles || [],
+      permissions: result.permissions || [],
+    })
   }
 }
 

@@ -35,7 +35,7 @@ public class SaPermissionInterfaceImpl implements StpInterface {
   @Override
   @RedisCached(
       cacheName = "auth",
-      key = "'permissions:v2:' + #p0 + ':' + (#p1 == null ? 'default' : #p1)",
+      key = "'permissions:v3:' + #p0 + ':' + (#p1 == null ? 'default' : #p1)",
       ttlSeconds = 600)
   public List<String> getPermissionList(Object loginId, String loginType) {
     Integer userId = Integer.valueOf(String.valueOf(loginId));

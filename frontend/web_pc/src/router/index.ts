@@ -7,6 +7,7 @@ import {
   clearSession,
   getToken,
   isActivated,
+  setSession,
   shouldUseFullPageAuthRedirect,
 } from '@/utils/auth.ts'
 import { buildOidcAuthorizeUrl } from '@/utils/oidc.ts'
@@ -81,6 +82,7 @@ const adminFallbackRoutes = [
   '/admin/activities',
   '/admin/ai-activities',
   '/admin/blogs',
+  '/admin/member-profile-comments',
   '/admin/regulations',
   '/admin/check-ins',
   '/admin/bot-groups',
@@ -615,6 +617,31 @@ router.beforeEach((to, from) => {
 
 // 缓存激活页是否启用，避免每次路由跳转都请求后端
 let _activationEnabledCache: { value: boolean; fetched: boolean } = { value: true, fetched: false }
+let _authSnapshotPromise: Promise<void> | null = null
+let _authSnapshotFetchedAt = 0
+
+function refreshAuthSnapshot(): Promise<void> {
+  if (_authSnapshotPromise) return _authSnapshotPromise
+  if (Date.now() - _authSnapshotFetchedAt < 30_000) return Promise.resolve()
+  _authSnapshotPromise = authApi
+    .me()
+    .then((result) => {
+      setSession({
+        user: result?.user || {},
+        roles: result?.roles || [],
+        permissions: result?.permissions || [],
+      })
+      _authSnapshotFetchedAt = Date.now()
+    })
+    .catch((error) => {
+      _authSnapshotPromise = null
+      throw error
+    })
+    .finally(() => {
+      _authSnapshotPromise = null
+    })
+  return _authSnapshotPromise
+}
 
 async function isActivationPageEnabled(): Promise<boolean> {
   if (_activationEnabledCache.fetched) return _activationEnabledCache.value
@@ -646,6 +673,11 @@ router.beforeEach(async (to) => {
 
   // 管理后台路径权限检查
   if (requiresAdminAuth(to)) {
+    try {
+      await refreshAuthSnapshot()
+    } catch {
+      return false
+    }
     if (!hasAdminAccess()) {
       return '/progress'
     }
