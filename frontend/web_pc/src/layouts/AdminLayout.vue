@@ -1,6 +1,10 @@
 <template>
   <el-container class="admin-shell">
-    <el-aside :class="{ 'is-collapsed': sidebarCollapsed }" :width="sidebarWidth" class="admin-aside">
+    <el-aside
+      :class="{ 'is-collapsed': sidebarCollapsed }"
+      :width="sidebarWidth"
+      class="admin-aside"
+    >
       <el-button
         :aria-label="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
         :icon="sidebarCollapsed ? Expand : Fold"
@@ -10,7 +14,7 @@
         @click="toggleSidebar"
       />
       <div class="admin-brand">
-<!--        <span class="admin-brand__mark">OA</span>-->
+        <!--        <span class="admin-brand__mark">OA</span>-->
         <div class="admin-brand__copy">
           <strong>JMI-OPENATOM</strong>
           <small>管理员后台</small>
@@ -99,7 +103,13 @@
         </router-view>
       </el-main>
     </el-container>
-    <el-drawer v-model="mobileMenuVisible" class="admin-mobile-drawer" direction="ltr" size="84%" title="管理后台">
+    <el-drawer
+      v-model="mobileMenuVisible"
+      class="admin-mobile-drawer"
+      direction="ltr"
+      size="84%"
+      title="管理后台"
+    >
       <div class="admin-mobile-drawer__tools">
         <AdminMenuPreferences
           v-model="customVisibleMenuPaths"
@@ -108,7 +118,12 @@
           placement="bottom-start"
         />
       </div>
-      <el-menu router :default-active="$route.path" class="admin-drawer-menu" @select="mobileMenuVisible = false">
+      <el-menu
+        router
+        :default-active="$route.path"
+        class="admin-drawer-menu"
+        @select="mobileMenuVisible = false"
+      >
         <el-menu-item v-for="item in visibleMenus" :key="item.path" :index="item.path">
           <el-icon>
             <component :is="item.icon" />
@@ -181,21 +196,62 @@ interface AdminMenuItem {
 
 const menus = ref<AdminMenuItem[]>([
   // ==== 1. 数据概览 ====
-  { path: '/admin/dashboard', label: '数据概览', icon: DataAnalysis, permissions: [], pinned: true },
+  {
+    path: '/admin/dashboard',
+    label: '数据概览',
+    icon: DataAnalysis,
+    permissions: [],
+    pinned: true,
+  },
 
   // ==== 2. 日常最高频：用户与核心业务（活动、签到、请假） ====
   { path: '/admin/users', label: '用户管理', icon: User, permissions: ['user:list'] },
-  { path: '/admin/memberships', label: '成员管理', icon: UserFilled, permissions: ['membership:list'] },
-  { path: '/admin/alumni-managers', label: '往届管理人员', icon: User, permissions: ['membership:list'] },
-  { path: '/admin/alumni-groups', label: '往届分组管理', icon: Files, permissions: ['membership:list'] },
+  {
+    path: '/admin/memberships',
+    label: '成员管理',
+    icon: UserFilled,
+    permissions: ['membership:list'],
+  },
+  {
+    path: '/admin/alumni-managers',
+    label: '往届管理人员',
+    icon: User,
+    permissions: ['membership:list'],
+  },
+  {
+    path: '/admin/alumni-groups',
+    label: '往届分组管理',
+    icon: Files,
+    permissions: ['membership:list'],
+  },
   { path: '/admin/activities', label: '活动管理', icon: Calendar, permissions: ['activity:list'] },
-  { path: '/admin/ai-activities', label: 'AI活动自动化', icon: Calendar, permissions: ['activity:create'] },
+  {
+    path: '/admin/ai-activities',
+    label: 'AI活动自动化',
+    icon: Calendar,
+    permissions: ['activity:create'],
+  },
   { path: '/admin/check-ins', label: '扫码签到', icon: Tickets, permissions: ['check-in:list'] },
-  { path: '/admin/leaves', label: '请假审批', icon: DocumentChecked, permissions: ['leave-application:list'] },
+  {
+    path: '/admin/leaves',
+    label: '请假审批',
+    icon: DocumentChecked,
+    permissions: ['leave-application:list'],
+  },
 
   // ==== 3. 表单与数据收集（高频） ====
-  { path: '/admin/site-forms', label: '表单管理', icon: DocumentChecked, permissions: ['site-form:list'] },
-  { path: '/admin/form-submissions', label: '表单记录', icon: Tickets, permissions: ['site-form:detail'] },
+  {
+    path: '/admin/site-forms',
+    label: '表单管理',
+    icon: DocumentChecked,
+    permissions: ['site-form:list'],
+  },
+  {
+    path: '/admin/form-submissions',
+    label: '表单记录',
+    icon: Tickets,
+    permissions: ['site-form:detail'],
+  },
 
   // ==== 4. 社团基础与招新链路 ====
   { path: '/admin/clubs', label: '社团管理', icon: OfficeBuilding, permissions: ['club:list'] },
@@ -213,8 +269,18 @@ const menus = ref<AdminMenuItem[]>([
     icon: DocumentChecked,
     permissions: ['recruitment-campaign:list'],
   },
-  { path: '/admin/applications', label: '入会申请', icon: DocumentChecked, permissions: ['application:list'] },
-  { path: '/admin/interviews', label: '面试管理', icon: MessageBox, permissions: ['interview:list'] },
+  {
+    path: '/admin/applications',
+    label: '入会申请',
+    icon: DocumentChecked,
+    permissions: ['application:list'],
+  },
+  {
+    path: '/admin/interviews',
+    label: '面试管理',
+    icon: MessageBox,
+    permissions: ['interview:list'],
+  },
 
   // ==== 5. 互动营销与运营工具 ====
   { path: '/admin/votes', label: '投票管理', icon: Tickets, permissions: ['vote:list'] },
@@ -230,28 +296,89 @@ const menus = ref<AdminMenuItem[]>([
   // ==== 6. 内容与媒体中心 ====
   { path: '/admin/blogs', label: '博客管理', icon: EditPen, permissions: ['blog:list'] },
   {
+    path: '/admin/member-profile-comments',
+    label: '主页评论',
+    icon: ChatDotRound,
+    permissions: ['member-profile-comment:list'],
+  },
+  {
     path: '/admin/regulations',
     label: '规章制度',
     icon: DocumentChecked,
     permissions: ['regulation:list'],
   },
-  { path: '/admin/office-documents', label: '文书中心', icon: DocumentChecked, permissions: ['document:list'] },
+  {
+    path: '/admin/office-documents',
+    label: '文书中心',
+    icon: DocumentChecked,
+    permissions: ['document:list'],
+  },
   { path: '/admin/images', label: '图床管理', icon: Picture, permissions: ['image:list'] },
 
   // ==== 7. 公共通知与基础配置 ====
-  { path: '/admin/school-calendar', label: '校历设置', icon: Calendar, permissions: ['school-calendar:manage'] },
-  { path: '/admin/notifications', label: '通知管理', icon: Bell, permissions: ['notification:list'] },
+  {
+    path: '/admin/school-calendar',
+    label: '校历设置',
+    icon: Calendar,
+    permissions: ['school-calendar:manage'],
+  },
+  {
+    path: '/admin/notifications',
+    label: '通知管理',
+    icon: Bell,
+    permissions: ['notification:list'],
+  },
   { path: '/admin/qr-center', label: '二维码中心', icon: Monitor, permissions: [] },
 
   // ==== 8. 后台管理、权限与安全配置（低频操作下沉） ====
-  { path: '/admin/roles', label: '角色权限', icon: Lock, permissions: ['role:list', 'permission:list'] },
-  { path: '/admin/oauth-clients', label: '认证应用', icon: Lock, permissions: ['oauth-client:list'] },
-  { path: '/admin/showcase-apps', label: '应用展示', icon: Box, permissions: ['showcase-app:list'] },
-  { path: '/admin/partner-clubs', label: '开源伙伴', icon: Connection, permissions: ['partner-club:list'] },
-  { path: '/admin/data-open', label: '开放平台', icon: Connection, permissions: ['data-open:list'] },
-  { path: '/admin/bot-groups', label: 'QQ机器人', icon: ChatDotRound, permissions: ['bot-management:list'] },
-  { path: '/admin/logs', label: '系统日志', icon: List, permissions: ['log:operation:list', 'log:login:list'] },
-  { path: '/admin/file-migration', label: '文件迁移', icon: FolderOpened, permissions: ['file:migration:stats'] },
+  {
+    path: '/admin/roles',
+    label: '角色权限',
+    icon: Lock,
+    permissions: ['role:list', 'permission:list'],
+  },
+  {
+    path: '/admin/oauth-clients',
+    label: '认证应用',
+    icon: Lock,
+    permissions: ['oauth-client:list'],
+  },
+  {
+    path: '/admin/showcase-apps',
+    label: '应用展示',
+    icon: Box,
+    permissions: ['showcase-app:list'],
+  },
+  {
+    path: '/admin/partner-clubs',
+    label: '开源伙伴',
+    icon: Connection,
+    permissions: ['partner-club:list'],
+  },
+  {
+    path: '/admin/data-open',
+    label: '开放平台',
+    icon: Connection,
+    permissions: ['data-open:list'],
+  },
+  {
+    path: '/admin/bot-groups',
+    label: 'QQ机器人',
+    icon: ChatDotRound,
+    permissions: ['bot-management:list'],
+  },
+  {
+    path: '/admin/logs',
+    label: '系统日志',
+    icon: List,
+    permissions: ['log:operation:list', 'log:login:list'],
+  },
+  {
+    path: '/admin/file-migration',
+    label: '文件迁移',
+    icon: FolderOpened,
+    permissions: ['file:migration:stats'],
+  },
 
   // ==== 9. 出口 ====
   { path: '/', label: '返回官网', icon: Connection, permissions: [], pinned: true },
@@ -285,9 +412,14 @@ const customizableMenus = computed(() => authorizedMenus.value.filter((item) => 
 
 const orderedCustomizableMenus = computed(() => {
   const itemMap = new Map(customizableMenus.value.map((item) => [item.path, item]))
-  const orderedItems = menuOrderPaths.value.map((path) => itemMap.get(path)).filter(Boolean) as AdminMenuItem[]
+  const orderedItems = menuOrderPaths.value
+    .map((path) => itemMap.get(path))
+    .filter(Boolean) as AdminMenuItem[]
   const orderedPaths = new Set(orderedItems.map((item) => item.path))
-  return [...orderedItems, ...customizableMenus.value.filter((item) => !orderedPaths.has(item.path))]
+  return [
+    ...orderedItems,
+    ...customizableMenus.value.filter((item) => !orderedPaths.has(item.path)),
+  ]
 })
 
 const customMenuOrderPaths = computed({
@@ -296,11 +428,15 @@ const customMenuOrderPaths = computed({
   },
   set(paths: string[]) {
     const allowedPaths = new Set(customizableMenus.value.map((item) => item.path))
-    const normalizedPaths = paths.filter((path, index) => allowedPaths.has(path) && paths.indexOf(path) === index)
+    const normalizedPaths = paths.filter(
+      (path, index) => allowedPaths.has(path) && paths.indexOf(path) === index,
+    )
     const includedPaths = new Set(normalizedPaths)
     menuOrderPaths.value = [
       ...normalizedPaths,
-      ...customizableMenus.value.filter((item) => !includedPaths.has(item.path)).map((item) => item.path),
+      ...customizableMenus.value
+        .filter((item) => !includedPaths.has(item.path))
+        .map((item) => item.path),
     ]
     persistSidebarPreferences()
   },
@@ -309,7 +445,9 @@ const customMenuOrderPaths = computed({
 const customVisibleMenuPaths = computed({
   get() {
     const hiddenPaths = new Set(hiddenMenuPaths.value)
-    return customizableMenus.value.filter((item) => !hiddenPaths.has(item.path)).map((item) => item.path)
+    return customizableMenus.value
+      .filter((item) => !hiddenPaths.has(item.path))
+      .map((item) => item.path)
   },
   set(paths: string[]) {
     const visiblePaths = new Set(paths)

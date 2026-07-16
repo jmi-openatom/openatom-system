@@ -132,9 +132,6 @@ export const authApi = {
   createGroupJoinToken(): Promise<any> {
     return request.post('/auth/group-join-token')
   },
-  unbindQq(): Promise<any> {
-    return request.delete('/auth/qq-bind')
-  },
   updateRegisterEnabled(enabled: boolean): Promise<any> {
     return request.patch('/auth/register-enabled', null, { params: { enabled } })
   },
@@ -548,6 +545,15 @@ export const blogApi = {
   },
   adminInteractions(params?: Record<string, unknown>): Promise<any> {
     return request.get('/blog/admin/interactions', { params })
+  },
+}
+
+export const memberProfileCommentApi = {
+  list(params?: Record<string, unknown>): Promise<any> {
+    return request.get('/member-profile-comments', { params })
+  },
+  updateStatus(id: string | number, status: string): Promise<any> {
+    return request.patch(`/member-profile-comments/${id}/status`, { status })
   },
 }
 

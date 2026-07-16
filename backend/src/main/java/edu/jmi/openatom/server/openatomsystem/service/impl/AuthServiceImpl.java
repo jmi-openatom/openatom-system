@@ -499,6 +499,9 @@ public class AuthServiceImpl implements AuthService {
 		Integer currentUserId = StpUtil.getLoginIdAsInt();
 		User currentUser = userMapper.selectById(currentUserId);
 		if (currentUser == null) return Result.error(404, "用户不存在");
+		if (!isBlank(currentUser.getQqOpenid())) {
+			return Result.error(409, "当前账号已绑定QQ，如需更换请联系管理员");
+		}
 
 		String token = generateQqBindToken();
 		SaManager.getSaTokenDao()
@@ -542,6 +545,10 @@ public class AuthServiceImpl implements AuthService {
 		try {
 			User currentUser = userMapper.selectById(userId);
 			if (currentUser == null) return Result.error(404, "用户不存在");
+			if (!isBlank(currentUser.getQqOpenid())
+					&& !currentUser.getQqOpenid().equals(qqOpenid)) {
+				return Result.error(409, "当前账号已绑定其他QQ，如需更换请联系管理员");
+			}
 			User boundUser = userMapper.selectByQqOpenid(qqOpenid);
 			if (boundUser != null && !boundUser.getId().equals(currentUser.getId())) {
 				return Result.error(409, "该QQ已绑定其他账号");
@@ -564,19 +571,6 @@ public class AuthServiceImpl implements AuthService {
 		String normalized = normalizeQqOpenid(qqOpenid);
 		if (normalized == null) return Result.success(false);
 		return Result.success(userMapper.selectByQqOpenid(normalized) != null);
-	}
-
-	@Override
-	@Transactional(rollbackFor = Exception.class)
-	@RedisCacheEvict(cacheNames = {"site"})
-	public Result<String> unbindQq() {
-		if (!StpUtil.isLogin()) return Result.error(401, "请先登录后解绑QQ");
-		Integer currentUserId = StpUtil.getLoginIdAsInt();
-		User currentUser = userMapper.selectById(currentUserId);
-		if (currentUser == null) return Result.error(404, "用户不存在");
-		currentUser.setQqOpenid(null);
-		userMapper.updateById(currentUser);
-		return Result.success("QQ解绑成功");
 	}
 
 	@Override
@@ -661,6 +655,10 @@ public class AuthServiceImpl implements AuthService {
 	  if (user == null) return Result.error(404, "用户不存在");
 	  try {
 	    if (normalizedQqOpenid != null) {
+	      if (!isBlank(user.getQqOpenid())
+	          && !user.getQqOpenid().equals(normalizedQqOpenid)) {
+	        return Result.error(409, "当前账号已绑定其他QQ，如需更换请联系管理员");
+	      }
 	      User boundUser = userMapper.selectByQqOpenid(normalizedQqOpenid);
 	      if (boundUser != null && !boundUser.getId().equals(userId)) {
 	        return Result.error(409, "该QQ已绑定其他账号");

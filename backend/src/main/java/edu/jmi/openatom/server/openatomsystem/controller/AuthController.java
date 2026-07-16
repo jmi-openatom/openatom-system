@@ -142,11 +142,6 @@ public class AuthController {
     return authService.confirmQqBind(requestConfirmQqBindDTO);
   }
 
-  @DeleteMapping("/qq-bind")
-  public Result<String> unbindQq() {
-    return authService.unbindQq();
-  }
-
   /**
    * 刷新令牌
    *

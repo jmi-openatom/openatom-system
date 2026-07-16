@@ -59,6 +59,21 @@ class AuthServiceImplTest {
     assertEquals("7", SaManager.getSaTokenDao().get(TOKEN_KEY));
   }
 
+  @Test
+  void groupJoinDoesNotReplaceUsersExistingQqBinding() {
+    User user = User.builder().id(7).userName("member").qqOpenid("10001").build();
+    AtomicReference<User> updatedUser = new AtomicReference<>();
+    AuthServiceImpl authService = authService(userMapper(user, null, updatedUser));
+
+    var result = authService.confirmGroupJoin(TOKEN, "10002");
+
+    assertEquals(409, result.getCode());
+    assertEquals("10001", user.getQqOpenid());
+    assertNull(user.getQqGroupJoinedAt());
+    assertNull(updatedUser.get());
+    assertEquals("7", SaManager.getSaTokenDao().get(TOKEN_KEY));
+  }
+
   private AuthServiceImpl authService(UserMapper userMapper) {
     return new AuthServiceImpl(
         userMapper,

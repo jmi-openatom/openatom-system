@@ -49,8 +49,6 @@ public interface AuthService {
 
   Result<Boolean> isQqBound(String qqOpenid);
 
-  Result<String> unbindQq();
-
   Result<ResponseLoginVO> refreshToken(String refreshToken);
 
   Result<String> logout(String refreshToken);

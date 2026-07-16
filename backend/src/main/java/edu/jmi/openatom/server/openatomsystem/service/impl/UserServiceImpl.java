@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
 		Page<User> userPage =
 				userMapper.selectPageByConditions(
 						new Page<>(current, size), keyword, status, userIds);
-		List<User> users = userPage.getRecords().stream().map(this::buildSafeUser).toList();
+		List<User> users = userPage.getRecords().stream().map(this::buildAdminUser).toList();
 		return Result.success(PageDataVO.<User>builder().list(users)
 				.page(userPage.getCurrent()).pageSize(userPage.getSize()).total(userPage.getTotal()).build());
 	}
@@ -435,6 +435,12 @@ public class UserServiceImpl implements UserService {
 			.onboardingCompletedAt(user.getOnboardingCompletedAt())
 			.activatedAt(user.getActivatedAt())
 			.qqGroupJoinedAt(user.getQqGroupJoinedAt()).build();
+	}
+
+	private User buildAdminUser(User user) {
+		User adminUser = buildSafeUser(user);
+		adminUser.setQqOpenid(user.getQqOpenid());
+		return adminUser;
 	}
 
 	private ResponseMembershipVO buildMembershipResponse(ClubMembership membership) {

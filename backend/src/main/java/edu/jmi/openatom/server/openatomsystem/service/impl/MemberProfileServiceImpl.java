@@ -32,6 +32,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileSocialLinkMapp
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.MemberProfileService;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseAdminMemberProfileCommentVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseImageUploadVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberCardVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberFilterVO;
@@ -67,6 +68,7 @@ public class MemberProfileServiceImpl implements MemberProfileService {
   private static final Set<String> COLOR_MODES = Set.of("light", "dark", "system");
   private static final Set<String> VISIBILITIES = Set.of("members", "unlisted", "private");
   private static final Set<String> MODULE_VISIBILITIES = Set.of("members", "private");
+  private static final Set<String> COMMENT_STATUSES = Set.of("visible", "hidden");
   private static final Set<String> MODULE_KEYS =
       Set.of(
           "about",
@@ -298,6 +300,73 @@ public class MemberProfileServiceImpl implements MemberProfileService {
                 .status("visible")
                 .build());
     return rows > 0 ? Result.success("评论已发布") : Result.error("评论发布失败");
+  }
+
+  @Override
+  public Result<PageDataVO<ResponseAdminMemberProfileCommentVO>> adminComments(
+      String keyword, String status, Long page, Long pageSize) {
+    String normalizedStatus = trimToNull(status);
+    if (normalizedStatus != null && !COMMENT_STATUSES.contains(normalizedStatus)) {
+      return Result.error(400, "评论状态不合法");
+    }
+    long current = PageRequests.page(page);
+    long size = PageRequests.pageSize(pageSize);
+    Page<MemberProfileComment> commentPage =
+        memberProfileCommentMapper.selectAdminPage(
+            new Page<>(current, size), trimToNull(keyword), normalizedStatus);
+    List<MemberProfileComment> comments = commentPage.getRecords();
+    Map<Integer, User> commentUsers =
+        users(comments.stream().map(MemberProfileComment::getUserId).distinct().toList());
+    Map<Integer, User> profileUsers =
+        users(comments.stream().map(MemberProfileComment::getProfileUserId).distinct().toList());
+    Map<Integer, MemberProfile> profiles =
+        memberProfileMapper
+            .selectByUserIds(comments.stream().map(MemberProfileComment::getProfileUserId).distinct().toList())
+            .stream()
+            .collect(Collectors.toMap(MemberProfile::getUserId, Function.identity()));
+    List<ResponseAdminMemberProfileCommentVO> rows =
+        comments.stream()
+            .map(
+                comment -> {
+                  User author = commentUsers.get(comment.getUserId());
+                  User profileUser = profileUsers.get(comment.getProfileUserId());
+                  MemberProfile profile = profiles.get(comment.getProfileUserId());
+                  return ResponseAdminMemberProfileCommentVO.builder()
+                      .id(comment.getId())
+                      .profileUserId(comment.getProfileUserId())
+                      .profileName(displayName(profileUser, profile))
+                      .profileSlug(profile == null ? "member-" + comment.getProfileUserId() : profile.getSlug())
+                      .userId(comment.getUserId())
+                      .userName(displayName(author, null))
+                      .userAvatar(author == null ? null : author.getAvatar())
+                      .parentId(comment.getParentId())
+                      .content(comment.getContent())
+                      .status(comment.getStatus())
+                      .createdAt(comment.getCreatedAt())
+                      .updatedAt(comment.getUpdatedAt())
+                      .build();
+                })
+            .toList();
+    return Result.success(
+        PageDataVO.<ResponseAdminMemberProfileCommentVO>builder()
+            .list(rows)
+            .page(commentPage.getCurrent())
+            .pageSize(commentPage.getSize())
+            .total(commentPage.getTotal())
+            .build());
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> adminUpdateCommentStatus(Long commentId, String status) {
+    MemberProfileComment comment =
+        commentId == null ? null : memberProfileCommentMapper.selectById(commentId);
+    if (comment == null) return Result.error(404, "评论不存在");
+    String normalizedStatus = trimToNull(status);
+    if (!COMMENT_STATUSES.contains(normalizedStatus)) return Result.error(400, "评论状态不合法");
+    comment.setStatus(normalizedStatus);
+    int rows = memberProfileCommentMapper.updateById(comment);
+    return rows > 0 ? Result.success("评论状态已更新") : Result.error("评论状态更新失败");
   }
 
   @Override
@@ -756,8 +825,8 @@ public class MemberProfileServiceImpl implements MemberProfileService {
     for (ResponseMemberProfileCommentVO comment : commentMap.values()) {
       ResponseMemberProfileCommentVO parent =
           comment.getParentId() == null ? null : commentMap.get(comment.getParentId());
-      if (parent == null) roots.add(comment);
-      else parent.getReplies().add(comment);
+      if (comment.getParentId() == null) roots.add(comment);
+      else if (parent != null) parent.getReplies().add(comment);
     }
     for (ResponseMemberProfileCommentVO comment : commentMap.values()) {
       comment.setReplyCount(comment.getReplies().size());

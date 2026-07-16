@@ -506,6 +506,12 @@ const routes = [
         component: resilientView(() => import('../views/admin/Blogs.vue')),
       },
       {
+        path: 'member-profile-comments',
+        name: 'admin-member-profile-comments',
+        meta: { permissions: ['member-profile-comment:list'] },
+        component: resilientView(() => import('../views/admin/MemberProfileComments.vue')),
+      },
+      {
         path: 'regulations',
         name: 'admin-regulations',
         meta: { permissions: ['regulation:list'] },

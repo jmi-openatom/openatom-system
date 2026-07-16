@@ -68,10 +68,10 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="QQ" width="100">
+      <el-table-column label="绑定 QQ" min-width="150">
         <template #default="{ row }">
           <el-tag :type="row.qqOpenid ? 'success' : 'info'">
-            {{ row.qqOpenid  }}
+            {{ row.qqOpenid || '未绑定' }}
           </el-tag>
         </template>
       </el-table-column>
@@ -98,7 +98,12 @@
           <el-button v-if="canUpdateUserStatus" link type="warning" @click="toggleStatus(row)">
             {{ row.userStatus === 'disabled' ? '启用' : '禁用' }}
           </el-button>
-          <el-button v-if="canSetActivation" link :type="row.activatedAt ? 'warning' : 'success'" @click="toggleActivation(row)">
+          <el-button
+            v-if="canSetActivation"
+            link
+            :type="row.activatedAt ? 'warning' : 'success'"
+            @click="toggleActivation(row)"
+          >
             {{ row.activatedAt ? '取消激活' : '激活' }}
           </el-button>
           <el-button v-if="canResetUserPassword" link type="danger" @click="resetPassword(row)"
@@ -209,12 +214,7 @@
           description="当前没有失效头像"
         />
 
-        <el-table
-          v-else
-          :data="avatarHealth.invalidUsers || []"
-          border
-          size="small"
-        >
+        <el-table v-else :data="avatarHealth.invalidUsers || []" border size="small">
           <el-table-column prop="id" label="ID" width="72" />
           <el-table-column prop="realName" label="姓名" />
           <el-table-column prop="userName" label="用户名" />

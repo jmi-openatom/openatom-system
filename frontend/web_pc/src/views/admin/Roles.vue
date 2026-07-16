@@ -127,9 +127,18 @@ const adminMenuPermissions = [
   { key: 'interviews', label: '面试管理', permissions: ['interview:list'] },
   { key: 'votes', label: '投票管理', permissions: ['vote:list'] },
   { key: 'lotteries', label: '抽奖系统', permissions: ['lottery:list'] },
-  { key: 'points', label: '积分兑换', permissions: ['point:account:list', 'point:item:list', 'point:redemption:list'] },
+  {
+    key: 'points',
+    label: '积分兑换',
+    permissions: ['point:account:list', 'point:item:list', 'point:redemption:list'],
+  },
   { key: 'awards', label: '获奖经历', permissions: ['award:list'] },
   { key: 'blogs', label: '博客管理', permissions: ['blog:list'] },
+  {
+    key: 'member-profile-comments',
+    label: '主页评论',
+    permissions: ['member-profile-comment:list'],
+  },
   { key: 'office-documents', label: '文书中心', permissions: ['document:list'] },
   { key: 'images', label: '图床管理', permissions: ['image:list'] },
   { key: 'school-calendar', label: '校历设置', permissions: ['school-calendar:manage'] },
@@ -215,7 +224,8 @@ watch(checkedMenuKeys, () => {
 
 function normalizePermissionIds(detail: any) {
   if (Array.isArray(detail?.permissionIds)) return detail.permissionIds
-  if (Array.isArray(detail?.permissions)) return detail.permissions.map((item: any) => item.id).filter(Boolean)
+  if (Array.isArray(detail?.permissions))
+    return detail.permissions.map((item: any) => item.id).filter(Boolean)
   return []
 }
 
@@ -227,14 +237,18 @@ function syncMenusFromPermissions() {
   )
   syncingMenus.value = true
   checkedMenuKeys.value = adminMenuPermissions
-    .filter((item) => item.permissions.length && item.permissions.every((code) => checkedCodes.has(code)))
+    .filter(
+      (item) => item.permissions.length && item.permissions.every((code) => checkedCodes.has(code)),
+    )
     .map((item) => item.key)
   syncingMenus.value = false
 }
 
 function applyMenuPermissionsToChecked() {
   const next = new Set(checkedPermissionIds.value)
-  for (const menu of adminMenuPermissions.filter((item) => checkedMenuKeys.value.includes(item.key))) {
+  for (const menu of adminMenuPermissions.filter((item) =>
+    checkedMenuKeys.value.includes(item.key),
+  )) {
     for (const code of menu.permissions) {
       const id = permissionIdByCode.value.get(code)
       if (id) next.add(id)

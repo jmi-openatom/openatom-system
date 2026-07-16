@@ -1,10 +1,13 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateMemberProfileCommentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveMemberProfileDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateBlogCommentStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.service.MemberProfileService;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseAdminMemberProfileCommentVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseImageUploadVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberCardVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseMemberFilterVO;
@@ -17,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,6 +71,24 @@ public class MemberProfileController {
       @PathVariable String slug,
       @Valid @RequestBody RequestCreateMemberProfileCommentDTO request) {
     return memberProfileService.createComment(slug, request);
+  }
+
+  @GetMapping("/member-profile-comments")
+  @SaCheckPermission("member-profile-comment:list")
+  public Result<PageDataVO<ResponseAdminMemberProfileCommentVO>> adminComments(
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) Long page,
+      @RequestParam(required = false) Long pageSize) {
+    return memberProfileService.adminComments(keyword, status, page, pageSize);
+  }
+
+  @PatchMapping("/member-profile-comments/{commentId}/status")
+  @SaCheckPermission("member-profile-comment:manage")
+  public Result<String> adminUpdateCommentStatus(
+      @PathVariable Long commentId,
+      @Valid @RequestBody RequestUpdateBlogCommentStatusDTO request) {
+    return memberProfileService.adminUpdateCommentStatus(commentId, request.getStatus());
   }
 
   @GetMapping("/me/profile")

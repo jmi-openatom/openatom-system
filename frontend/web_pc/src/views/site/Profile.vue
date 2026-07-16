@@ -202,7 +202,7 @@
                 <strong>QQ 机器人绑定</strong>
                 <span>{{
                   user.qqOpenid
-                    ? '当前账号已绑定 QQ，可在需要时解绑后重新绑定。'
+                    ? '当前账号已绑定 QQ。绑定后不可自行解除，如需更换请联系管理员。'
                     : '生成一次性绑定码后，发给 QQ 机器人完成绑定。'
                 }}</span>
               </div>
@@ -215,9 +215,7 @@
               >
                 生成绑定码
               </el-button>
-              <el-button v-else :loading="qqUnbindLoading" plain type="danger" @click="unbindQq">
-                解除绑定
-              </el-button>
+              <el-tag v-else type="success">已绑定</el-tag>
             </div>
 
             <div v-if="!user.qqOpenid && qqBindToken" class="qq-token-card">
@@ -301,7 +299,6 @@ const applications = ref<any[]>([])
 const submitting = ref(false)
 const avatarUploading = ref(false)
 const qqTokenLoading = ref(false)
-const qqUnbindLoading = ref(false)
 const googleBindLoading = ref(false)
 const githubBindLoading = ref(false)
 const giteeBindLoading = ref(false)
@@ -431,19 +428,6 @@ async function generateQqBindToken() {
     }
   } finally {
     qqTokenLoading.value = false
-  }
-}
-
-async function unbindQq() {
-  try {
-    qqUnbindLoading.value = true
-    await authApi.unbindQq()
-    qqBindToken.value = ''
-    qqBindExpiresIn.value = 0
-    await fetchProfile()
-    ElMessage.success('QQ 绑定已解除')
-  } finally {
-    qqUnbindLoading.value = false
   }
 }
 
