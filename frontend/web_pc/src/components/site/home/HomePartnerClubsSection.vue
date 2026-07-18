@@ -1,5 +1,11 @@
 <template>
-  <section v-if="clubs.length" class="home-partners" aria-labelledby="home-partners-title">
+  <section
+    v-if="clubs.length"
+    class="home-partners home-interactive-section"
+    aria-labelledby="home-partners-title"
+  >
+    <HomeInteractiveBackdrop :radius="220" :spacing="64" :strength="18" />
+
     <div class="container">
       <div class="home-partners__heading">
         <div>
@@ -25,6 +31,7 @@ import { onMounted, ref } from 'vue'
 import { ArrowRight } from 'lucide-vue-next'
 import { siteApi } from '@/api'
 import PartnerClubCard from '@/components/site/PartnerClubCard.vue'
+import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
 import type { PartnerClub } from '@/types/partner-club'
 
 const clubs = ref<PartnerClub[]>([])
@@ -41,6 +48,10 @@ onMounted(async () => {
 
 <style scoped>
 .home-partners {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
   padding: clamp(72px, 8vw, 112px) 0;
   border-top: 1px solid var(--oa-border);
   background: var(--oa-page-soft-bg);
