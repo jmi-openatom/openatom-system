@@ -639,6 +639,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `open_source` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否已开源',
             `github_url` VARCHAR(500) DEFAULT NULL COMMENT 'GitHub仓库地址',
             `gitee_url` VARCHAR(500) DEFAULT NULL COMMENT 'Gitee仓库地址',
+            `atomgit_url` VARCHAR(500) DEFAULT NULL COMMENT 'AtomGit仓库地址',
             `developer` VARCHAR(160) DEFAULT NULL COMMENT '开发者',
             `owner` VARCHAR(160) DEFAULT NULL COMMENT '所有者',
             `license_name` VARCHAR(120) DEFAULT NULL COMMENT '开源协议',
@@ -672,7 +673,11 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
         "gitee_url",
         "VARCHAR(500) DEFAULT NULL COMMENT 'Gitee仓库地址' AFTER `github_url`");
     addColumnIfAbsent(
-        "showcase_app", "developer", "VARCHAR(160) DEFAULT NULL COMMENT '开发者' AFTER `gitee_url`");
+        "showcase_app",
+        "atomgit_url",
+        "VARCHAR(500) DEFAULT NULL COMMENT 'AtomGit仓库地址' AFTER `gitee_url`");
+    addColumnIfAbsent(
+        "showcase_app", "developer", "VARCHAR(160) DEFAULT NULL COMMENT '开发者' AFTER `atomgit_url`");
     addColumnIfAbsent(
         "showcase_app", "owner", "VARCHAR(160) DEFAULT NULL COMMENT '所有者' AFTER `developer`");
     addColumnIfAbsent(

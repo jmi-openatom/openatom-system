@@ -18,6 +18,7 @@ public class RequestSaveShowcaseAppDTO {
   private Boolean openSource;
   private String githubUrl;
   private String giteeUrl;
+  private String atomgitUrl;
   private String developer;
   private String owner;
   private String licenseName;

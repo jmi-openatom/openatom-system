@@ -117,6 +117,7 @@ public class ShowcaseAppServiceImpl implements ShowcaseAppService {
     app.setOpenSource(Boolean.TRUE.equals(request.getOpenSource()));
     app.setGithubUrl(trimToNull(request.getGithubUrl()));
     app.setGiteeUrl(trimToNull(request.getGiteeUrl()));
+    app.setAtomgitUrl(trimToNull(request.getAtomgitUrl()));
     app.setDeveloper(trimToNull(request.getDeveloper()));
     app.setOwner(trimToNull(request.getOwner()));
     app.setLicenseName(trimToNull(request.getLicenseName()));
@@ -127,6 +128,7 @@ public class ShowcaseAppServiceImpl implements ShowcaseAppService {
     if (!Boolean.TRUE.equals(app.getOpenSource())) {
       app.setGithubUrl(null);
       app.setGiteeUrl(null);
+      app.setAtomgitUrl(null);
     }
   }
 

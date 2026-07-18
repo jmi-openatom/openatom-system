@@ -89,11 +89,7 @@
       @current-change="handlePageChange"
     />
 
-    <el-dialog
-      v-model="dialogVisible"
-      :title="form.id ? '编辑应用' : '新增应用'"
-      width="760px"
-    >
+    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑应用' : '新增应用'" width="760px">
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
         <div class="form-grid">
           <el-form-item label="应用名称" prop="name">
@@ -111,7 +107,13 @@
           />
         </el-form-item>
         <el-form-item label="简介">
-          <el-input v-model="form.summary" type="textarea" :rows="4" maxlength="800" show-word-limit />
+          <el-input
+            v-model="form.summary"
+            type="textarea"
+            :rows="4"
+            maxlength="800"
+            show-word-limit
+          />
         </el-form-item>
         <el-form-item label="封面/截图 URL">
           <el-input v-model="form.coverUrl" maxlength="500" />
@@ -129,7 +131,11 @@
             <el-switch v-model="form.openSource" active-text="已开源" inactive-text="未开源" />
           </el-form-item>
           <el-form-item label="开源协议">
-            <el-input v-model="form.licenseName" maxlength="120" placeholder="例如 MIT / Apache-2.0" />
+            <el-input
+              v-model="form.licenseName"
+              maxlength="120"
+              placeholder="例如 MIT / Apache-2.0"
+            />
           </el-form-item>
         </div>
         <div v-if="form.openSource" class="form-grid">
@@ -138,6 +144,9 @@
           </el-form-item>
           <el-form-item label="Gitee 地址">
             <el-input v-model="form.giteeUrl" maxlength="500" />
+          </el-form-item>
+          <el-form-item label="AtomGit 地址">
+            <el-input v-model="form.atomgitUrl" maxlength="500" />
           </el-form-item>
         </div>
         <el-form-item label="下载链接">
@@ -218,6 +227,7 @@ interface ShowcaseAppRow {
   openSource: boolean
   githubUrl?: string
   giteeUrl?: string
+  atomgitUrl?: string
   developer?: string
   owner?: string
   licenseName?: string
@@ -252,6 +262,7 @@ const form = reactive<ShowcaseAppRow>({
   openSource: true,
   githubUrl: '',
   giteeUrl: '',
+  atomgitUrl: '',
   developer: '',
   owner: '',
   licenseName: '',
@@ -304,6 +315,7 @@ function resetForm() {
     openSource: true,
     githubUrl: '',
     giteeUrl: '',
+    atomgitUrl: '',
     developer: '',
     owner: '',
     licenseName: '',
@@ -330,6 +342,7 @@ async function save() {
     if (!payload.openSource) {
       payload.githubUrl = ''
       payload.giteeUrl = ''
+      payload.atomgitUrl = ''
     }
     if (payload.id) await showcaseAppApi.update(payload.id, payload)
     else await showcaseAppApi.create(payload)
@@ -374,7 +387,9 @@ function statusType(status: string) {
 }
 
 function appInitial(name: string) {
-  return String(name || 'A').slice(0, 1).toUpperCase()
+  return String(name || 'A')
+    .slice(0, 1)
+    .toUpperCase()
 }
 
 onMounted(fetchList)

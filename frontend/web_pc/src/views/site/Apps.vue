@@ -89,6 +89,15 @@
                   Gitee
                 </el-button>
                 <el-button
+                  v-if="app.atomgitUrl"
+                  :icon="Link"
+                  plain
+                  size="small"
+                  @click.stop="openExternal(app.atomgitUrl)"
+                >
+                  AtomGit
+                </el-button>
+                <el-button
                   v-if="app.downloadUrl"
                   :icon="Download"
                   plain
@@ -125,6 +134,7 @@ interface ShowcaseApp {
   openSource: boolean
   githubUrl?: string
   giteeUrl?: string
+  atomgitUrl?: string
   developer?: string
   owner?: string
   licenseName?: string

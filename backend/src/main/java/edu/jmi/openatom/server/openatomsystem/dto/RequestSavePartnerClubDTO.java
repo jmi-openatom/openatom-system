@@ -1,7 +1,6 @@
 package edu.jmi.openatom.server.openatomsystem.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Data;
@@ -30,7 +29,6 @@ public class RequestSavePartnerClubDTO {
   @Size(max = 80, message = "伙伴类型不能超过 80 个字符")
   private String category;
 
-  @NotNull(message = "请选择站内用户作为社长")
   private Integer presidentUserId;
 
   private List<@Size(max = 30, message = "单个标签不能超过 30 个字符") String> tags;

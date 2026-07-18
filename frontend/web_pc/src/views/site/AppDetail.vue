@@ -35,6 +35,15 @@
                 Gitee
               </el-button>
               <el-button
+                v-if="app.atomgitUrl"
+                :icon="Link"
+                plain
+                size="large"
+                @click="openExternal(app.atomgitUrl)"
+              >
+                AtomGit
+              </el-button>
+              <el-button
                 v-if="app.downloadUrl"
                 :icon="Download"
                 size="large"
@@ -97,12 +106,16 @@
                 <span>Gitee</span>
                 <strong>{{ app.giteeUrl }}</strong>
               </button>
+              <button v-if="app.atomgitUrl" type="button" @click="openExternal(app.atomgitUrl)">
+                <span>AtomGit</span>
+                <strong>{{ app.atomgitUrl }}</strong>
+              </button>
               <button v-if="app.downloadUrl" type="button" @click="openExternal(app.downloadUrl)">
                 <span>下载链接</span>
                 <strong>{{ app.downloadUrl }}</strong>
               </button>
               <el-empty
-                v-if="!app.githubUrl && !app.giteeUrl && !app.downloadUrl"
+                v-if="!app.githubUrl && !app.giteeUrl && !app.atomgitUrl && !app.downloadUrl"
                 description="暂无相关链接"
               />
             </div>
@@ -130,6 +143,7 @@ interface ShowcaseApp {
   openSource: boolean
   githubUrl?: string
   giteeUrl?: string
+  atomgitUrl?: string
   developer?: string
   owner?: string
   licenseName?: string
@@ -190,7 +204,9 @@ function openExternal(url?: string) {
 }
 
 function appInitial(name: string) {
-  return String(name || 'A').slice(0, 1).toUpperCase()
+  return String(name || 'A')
+    .slice(0, 1)
+    .toUpperCase()
 }
 
 onMounted(fetchDetail)

@@ -113,7 +113,7 @@
             />
           </el-form-item>
         </div>
-        <el-form-item label="绑定站内社长" prop="presidentUserId">
+        <el-form-item label="绑定站内社长（可选）">
           <div class="president-binding">
             <div v-if="form.presidentUserId" class="president-binding__user">
               <UserAvatar :name="form.presidentName" :size="40" :src="form.presidentAvatarUrl" />
@@ -122,7 +122,7 @@
                 <span>站内用户 ID：{{ form.presidentUserId }}</span>
               </div>
             </div>
-            <span v-else class="president-binding__empty">尚未绑定站内用户</span>
+            <span v-else class="president-binding__empty">可不绑定，适用于校外组织等伙伴</span>
             <div class="president-binding__actions">
               <el-button type="primary" plain @click="openUserPicker">
                 {{ form.presidentUserId ? '更换用户' : '选择用户' }}
@@ -305,7 +305,6 @@ const rules: FormRules = {
       trigger: 'blur',
     },
   ],
-  presidentUserId: [{ required: true, message: '请选择站内用户作为社长', trigger: 'change' }],
 }
 
 const listParams = computed(() => ({
@@ -421,7 +420,6 @@ function selectPresident(user?: PartnerClubUserOption) {
   form.presidentName = user.realName || user.userName
   form.presidentAvatarUrl = user.avatar || ''
   userPickerVisible.value = false
-  formRef.value?.validateField('presidentUserId').catch(() => undefined)
 }
 
 function clearPresident() {

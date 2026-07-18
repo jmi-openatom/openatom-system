@@ -39,6 +39,9 @@ public class ShowcaseApp {
   @TableField("gitee_url")
   private String giteeUrl;
 
+  @TableField("atomgit_url")
+  private String atomgitUrl;
+
   private String developer;
   private String owner;
 
