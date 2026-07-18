@@ -797,6 +797,36 @@ export const checkInApi = {
   },
 }
 
+export const unifiedGroupApi = {
+  list(params: { clubId: string | number; type?: string; keyword?: string }): Promise<any> {
+    return request.get('/admin/groups', { params })
+  },
+  create(data: Record<string, unknown>): Promise<any> {
+    return request.post('/admin/groups', data)
+  },
+  update(groupId: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.put(`/admin/groups/${groupId}`, data)
+  },
+  userOptions(params: Record<string, unknown>): Promise<any> {
+    return request.get('/admin/groups/user-options', { params })
+  },
+  userOptionIds(params: Record<string, unknown>): Promise<any> {
+    return request.get('/admin/groups/user-options/ids', { params })
+  },
+  detail(groupId: string | number): Promise<any> {
+    return request.get(`/admin/groups/${groupId}`)
+  },
+  members(groupId: string | number): Promise<any> {
+    return request.get(`/admin/groups/${groupId}/members`)
+  },
+  dependencies(groupId: string | number): Promise<any> {
+    return request.get(`/admin/groups/${groupId}/dependencies`)
+  },
+  synchronize(): Promise<any> {
+    return request.post('/admin/groups/sync')
+  },
+}
+
 export const pointApi = {
   leaderboard(params?: Record<string, unknown>): Promise<any> {
     return request.get('/site/points/leaderboard', { params })

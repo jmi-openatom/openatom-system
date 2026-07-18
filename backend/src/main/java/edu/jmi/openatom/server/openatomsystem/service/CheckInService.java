@@ -25,6 +25,8 @@ public interface CheckInService {
 
   Result<Integer> createGroup(RequestCheckInGroupDTO request);
 
+  Result<Integer> createGroup(Integer clubId, RequestCheckInGroupDTO request);
+
   Result<String> updateGroup(Integer groupId, RequestCheckInGroupDTO request);
 
   Result<String> deleteGroup(Integer groupId);

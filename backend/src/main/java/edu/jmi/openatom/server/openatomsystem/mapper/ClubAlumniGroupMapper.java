@@ -20,4 +20,13 @@ public interface ClubAlumniGroupMapper extends BaseMapper<ClubAlumniGroup> {
             .orderByAsc(ClubAlumniGroup::getSortOrder)
             .orderByAsc(ClubAlumniGroup::getId));
   }
+
+  default ClubAlumniGroup selectByClubIdAndName(Integer clubId, String name) {
+    if (clubId == null || name == null || name.isBlank()) return null;
+    return selectOne(
+        new LambdaQueryWrapper<ClubAlumniGroup>()
+            .eq(ClubAlumniGroup::getClubId, clubId)
+            .eq(ClubAlumniGroup::getName, name)
+            .last("LIMIT 1"));
+  }
 }

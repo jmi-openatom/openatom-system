@@ -10,6 +10,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubDepartment;
 import edu.jmi.openatom.server.openatomsystem.service.DepartmentService;
+import edu.jmi.openatom.server.openatomsystem.service.UnifiedGroupProjectionService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class DepartmentServiceImpl implements DepartmentService {
   private final ClubMapper clubMapper;
   private final ClubDepartmentMapper clubDepartmentMapper;
   private final UserMapper userMapper;
+  private final UnifiedGroupProjectionService unifiedGroupProjectionService;
 
   @Override
   @RedisCached(cacheName = "lookup:department", key = "'club:' + #p0", ttlSeconds = 1800)
@@ -36,6 +38,7 @@ public class DepartmentServiceImpl implements DepartmentService {
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   @RedisCacheEvict(cacheNames = {"lookup:department", "site"})
   public Result<String> createDepartment(Integer clubId, RequestCreateDepartmentDTO dto) {
     if (clubId == null) return Result.error(400, "clubId不能为空");
@@ -51,6 +54,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         .description(dto.getDescription()).managerUserId(dto.getManagerUserId())
         .viceManagerUserId(dto.getViceManagerUserId()).build();
     int row = clubDepartmentMapper.insert(department);
+    if (row > 0) unifiedGroupProjectionService.syncDepartment(department);
     return row > 0 ? Result.success("部门创建成功") : Result.error("部门创建失败");
   }
 
@@ -64,6 +68,7 @@ public class DepartmentServiceImpl implements DepartmentService {
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   @RedisCacheEvict(cacheNames = {"lookup:department", "site"})
   public Result<String> updateDepartment(Integer departmentId, RequestUpdateDepartmentDTO dto) {
     if (departmentId == null) return Result.error(400, "departmentId不能为空");
@@ -89,6 +94,7 @@ public class DepartmentServiceImpl implements DepartmentService {
       department.setWechatGroupQrcode(dto.getWechatGroupQrcode());
     }
     int row = clubDepartmentMapper.updateById(department);
+    if (row > 0) unifiedGroupProjectionService.syncDepartment(department);
     return row > 0 ? Result.success("部门更新成功") : Result.error("部门更新失败");
   }
 
@@ -100,6 +106,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     ClubDepartment department = clubDepartmentMapper.selectById(departmentId);
     if (department == null) return Result.error(404, "部门不存在");
     int row = clubDepartmentMapper.deleteById(departmentId);
+    if (row > 0) unifiedGroupProjectionService.removeSource("department", departmentId);
     return row > 0 ? Result.success("部门删除成功") : Result.error("部门删除失败");
   }
 

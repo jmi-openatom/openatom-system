@@ -32,6 +32,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.EveningStudyScheduleMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.LeaveApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.CheckInService;
+import edu.jmi.openatom.server.openatomsystem.service.UnifiedGroupProjectionService;
 import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInGroupVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCheckInRecordVO;
@@ -99,6 +100,7 @@ public class CheckInServiceImpl implements CheckInService {
   private final EveningStudyScheduleMapper eveningStudyScheduleMapper;
   private final LeaveApplicationMapper leaveApplicationMapper;
   private final PointService pointService;
+  private final UnifiedGroupProjectionService unifiedGroupProjectionService;
 
   @Value("${app.checkin.evening-study-auto-generate-enabled:true}")
   private boolean eveningStudyAutoGenerateEnabled;
@@ -131,6 +133,14 @@ public class CheckInServiceImpl implements CheckInService {
   public Result<Integer> createGroup(RequestCheckInGroupDTO request) {
     Club club = defaultClub();
     if (club == null) return Result.error(404, "默认社团不存在");
+    return createGroup(club.getId(), request);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<Integer> createGroup(Integer clubId, RequestCheckInGroupDTO request) {
+    Club club = clubId == null ? null : clubMapper.selectById(clubId);
+    if (club == null) return Result.error(404, "社团不存在");
     List<Integer> userIds = sanitizeTargetUserIds(request.getUserIds());
     if (userIds.isEmpty()) return Result.error(400, "请选择组内人员");
     Result<String> validResult = validateUsers(userIds);
@@ -142,6 +152,7 @@ public class CheckInServiceImpl implements CheckInService {
         .build();
     groupMapper.insert(group);
     replaceGroupMembers(group.getId(), userIds);
+    unifiedGroupProjectionService.syncCheckInGroup(group);
     return Result.success(group.getId(), "签到分组已创建");
   }
 
@@ -157,6 +168,7 @@ public class CheckInServiceImpl implements CheckInService {
     group.setName(request.getName().trim());
     groupMapper.updateById(group);
     replaceGroupMembers(groupId, userIds);
+    unifiedGroupProjectionService.syncCheckInGroup(group);
     return Result.success("签到分组已更新");
   }
 
@@ -167,15 +179,18 @@ public class CheckInServiceImpl implements CheckInService {
     if (group == null) return Result.error(404, "签到分组不存在");
     groupMemberMapper.deleteByGroupId(groupId);
     groupMapper.deleteById(groupId);
+    unifiedGroupProjectionService.removeSource("checkin", groupId);
     return Result.success("签到分组已删除");
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   public Result<String> removeGroupMember(Integer groupId, Integer userId) {
     CheckInGroup group = findGroup(groupId);
     if (group == null) return Result.error(404, "签到分组不存在");
     if (userId == null || userId <= 0) return Result.error(400, "成员不合法");
     int rows = groupMemberMapper.deleteByGroupIdAndUserId(groupId, userId);
+    if (rows > 0) unifiedGroupProjectionService.syncCheckInGroup(group);
     return rows > 0 ? Result.success("成员已移出分组") : Result.error(404, "成员不在该分组中");
   }
 

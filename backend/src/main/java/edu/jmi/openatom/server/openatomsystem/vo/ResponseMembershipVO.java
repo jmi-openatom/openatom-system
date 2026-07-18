@@ -32,4 +32,5 @@ public class ResponseMembershipVO {
   private Timestamp joinedAt;
   private Timestamp leftAt;
   private String alumniGroup;
+  private Integer alumniGroupId;
 }

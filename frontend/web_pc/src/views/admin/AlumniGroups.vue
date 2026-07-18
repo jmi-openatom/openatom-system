@@ -7,7 +7,11 @@
         </el-button>
       </div>
       <div class="toolbar__actions">
-        <el-button type="primary" :icon="Plus" @click="openDialog">新增分组</el-button>
+        <el-button
+          type="primary"
+          :icon="Plus"
+          @click="$router.push({ path: '/admin/groups/create', query: { clubId: currentClubId, type: 'alumni' } })"
+        >新增分组</el-button>
       </div>
     </ViewToolbar>
 
@@ -22,7 +26,11 @@
       <el-table-column prop="sortOrder" label="排序" width="100" />
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEditDialog(row)">编辑</el-button>
+          <el-button
+            link
+            type="primary"
+            @click="$router.push({ path: '/admin/groups', query: { type: 'alumni', sourceType: 'alumni', sourceId: row.id } })"
+          >统一管理</el-button>
           <el-button link type="danger" @click="removeGroup(row)">删除</el-button>
         </template>
       </el-table-column>
@@ -76,6 +84,10 @@ import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
 import { alumniGroupApi, clubApi } from '@/api'
 import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 const loading = ref(false)
 const rows = ref<any[]>([])
@@ -165,6 +177,14 @@ async function removeGroup(row: any) {
 
 onMounted(async () => {
   await loadClubId()
-  fetchList()
+  await fetchList()
+  const requestedGroupId = Number(route.query.groupId)
+  const requestedGroup = rows.value.find((item) => item.id === requestedGroupId)
+  if (requestedGroup) {
+    await router.replace({
+      path: '/admin/groups',
+      query: { type: 'alumni', sourceType: 'alumni', sourceId: requestedGroup.id },
+    })
+  }
 })
 </script>

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.service.BotManagementService;
+import edu.jmi.openatom.server.openatomsystem.service.UnifiedGroupProjectionService;
 import edu.jmi.openatom.server.openatomsystem.service.impl.NapCatClient.NapCatResponse;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -42,6 +43,7 @@ public class BotManagementServiceImpl implements BotManagementService {
   private final JdbcTemplate jdbcTemplate;
   private final NapCatClient napCatClient;
   private final ObjectMapper objectMapper;
+  private final UnifiedGroupProjectionService unifiedGroupProjectionService;
 
   @Override
   public Result<Map<String, Object>> overview() {
@@ -83,6 +85,7 @@ public class BotManagementServiceImpl implements BotManagementService {
     String groupId = idString(firstPresent(request, "group_id", "groupId"));
     if (groupId != null) {
       ensureMinimalGroup(groupId);
+      unifiedGroupProjectionService.syncBotGroup(groupId);
     }
     if (List.of("message", "message_sent").contains(postType) && groupId != null) {
       String messageType = trimToNull(firstPresent(request, "message_type", "messageType"));
@@ -263,6 +266,7 @@ public class BotManagementServiceImpl implements BotManagementService {
       ensureGroupConfig(groupId);
       changed++;
     }
+    unifiedGroupProjectionService.syncBotGroups();
     logOperation("群列表", "同步群列表", "all", "从 NapCat 同步 QQ 群：" + changed + " 个");
     return Result.success(Map.of("syncedCount", changed), "群列表已同步");
   }
@@ -380,6 +384,7 @@ public class BotManagementServiceImpl implements BotManagementService {
         ownerId,
         ownerNickname,
         groupId);
+    unifiedGroupProjectionService.syncBotGroup(groupId);
     logOperation("群成员", "同步群成员", groupId, "同步群 " + groupId + " 成员：" + members.size() + " 人");
     return Result.success(Map.of("syncedCount", members.size()), "群成员已同步");
   }
@@ -391,6 +396,7 @@ public class BotManagementServiceImpl implements BotManagementService {
     if (error != null) {
       return Result.error(400, error);
     }
+    unifiedGroupProjectionService.syncBotGroup(groupId);
     logOperation("群配置", "更新群配置", groupId, "更新群 " + groupId + " 机器人和插件配置");
     return Result.success("群配置已保存");
   }
@@ -408,6 +414,7 @@ public class BotManagementServiceImpl implements BotManagementService {
       if (error != null) {
         return Result.error(400, "群 " + groupId + " 更新失败：" + error);
       }
+      unifiedGroupProjectionService.syncBotGroup(groupId);
       count++;
     }
     logOperation("批量群配置", "批量更新群配置", "batch", "批量更新 QQ 群配置：" + count + " 个");

@@ -224,6 +224,7 @@ interface AdminMenuItem {
   icon: unknown
   permissions: string[]
   pinned?: boolean
+  hidden?: boolean
 }
 
 const menus = ref<AdminMenuItem[]>([
@@ -255,6 +256,13 @@ const menus = ref<AdminMenuItem[]>([
     label: '往届分组管理',
     icon: Files,
     permissions: ['membership:list'],
+    hidden: true,
+  },
+  {
+    path: '/admin/groups',
+    label: '分组管理',
+    icon: Grid,
+    permissions: ['group:list'],
   },
   { path: '/admin/activities', label: '活动管理', icon: Calendar, permissions: ['activity:list'] },
   {
@@ -288,7 +296,13 @@ const menus = ref<AdminMenuItem[]>([
   // ==== 4. 社团基础与招新链路 ====
   { path: '/admin/clubs', label: '社团管理', icon: OfficeBuilding, permissions: ['club:list'] },
   { path: '/admin/positions', label: '岗位管理', icon: List, permissions: ['position:list'] },
-  { path: '/admin/departments', label: '部门管理', icon: Grid, permissions: ['department:list'] },
+  {
+    path: '/admin/departments',
+    label: '部门管理',
+    icon: Grid,
+    permissions: ['department:list'],
+    hidden: true,
+  },
   {
     path: '/admin/activation-settings',
     label: '激活页设置',
@@ -398,6 +412,7 @@ const menus = ref<AdminMenuItem[]>([
     label: 'QQ机器人',
     icon: ChatDotRound,
     permissions: ['bot-management:list'],
+    hidden: true,
   },
   {
     path: '/admin/logs',
@@ -433,6 +448,7 @@ const menuGroups: AdminMenuGroupDefinition[] = [
       '/admin/memberships',
       '/admin/alumni-managers',
       '/admin/alumni-groups',
+      '/admin/groups',
       '/admin/clubs',
       '/admin/positions',
       '/admin/departments',
@@ -522,7 +538,9 @@ const authorizedMenus = computed(() => {
   return menus.value.filter((item) => item.path === '/' || hasAnyPermission(item.permissions || []))
 })
 
-const customizableMenus = computed(() => authorizedMenus.value.filter((item) => !item.pinned))
+const customizableMenus = computed(() =>
+  authorizedMenus.value.filter((item) => !item.pinned && !item.hidden),
+)
 
 const orderedCustomizableMenus = computed(() => {
   const itemMap = new Map(customizableMenus.value.map((item) => [item.path, item]))
@@ -597,7 +615,7 @@ const activeAdminGroupKey = computed(() => {
 
 const pageTitle = computed(() => {
   const current = menus.value.find((item) => item.path === route.path)
-  return current ? current.label : '管理后台'
+  return current ? current.label : String(route.meta.title || '管理后台')
 })
 
 function readSidebarPreferences() {

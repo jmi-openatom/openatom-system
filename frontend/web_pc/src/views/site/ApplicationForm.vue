@@ -9,30 +9,58 @@
 
     <section class="site-system-section">
       <div class="container apply-grid site-system-grid site-system-grid--split">
-        <div class="apply-copy site-system-surface site-system-copy-card site-reveal">
-          <div class="apply-note">
-            <h3>申请说明</h3>
-            <ol>
-              <li>确认申请仍处于开放时间内</li>
-              <li>按要求填写基础信息和自定义字段</li>
-              <li>提交后请保持手机/邮箱畅通，等待面试通知</li>
-            </ol>
+        <aside class="apply-copy site-system-surface site-reveal" aria-label="申请信息">
+          <div class="apply-copy__eyebrow"><ClipboardCheck :size="18" /> APPLICATION</div>
+          <h2>{{ formMeta.name || '入会申请' }}</h2>
+          <p class="apply-copy__intro">花几分钟介绍自己，我们期待了解你的方向与想法。</p>
+
+          <div v-if="formMeta.id" class="apply-meta">
+            <div>
+              <CalendarDays :size="18" aria-hidden="true" />
+              <span
+                ><small>开放时间</small
+                >{{ formatRange(formMeta.applyStartAt, formMeta.applyEndAt) }}</span
+              >
+            </div>
+            <div>
+              <ShieldCheck :size="18" aria-hidden="true" />
+              <span
+                ><small>提交方式</small
+                >{{ requiresLogin ? '登录账号后提交' : '支持免登录填写' }}</span
+              >
+            </div>
           </div>
-          <div class="apply-note" v-if="formMeta.id">
-            <h3>当前表单</h3>
-            <p class="campaign-line">
-              <strong>{{ formMeta.name || '信息收集表单' }}</strong>
-            </p>
-            <p class="campaign-line">
-              提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}
-            </p>
-            <p class="campaign-line">
-              收集时间：{{ formatRange(formMeta.applyStartAt, formMeta.applyEndAt) }}
-            </p>
-          </div>
-        </div>
+
+          <ol class="apply-steps" aria-label="申请步骤">
+            <li>
+              <span>1</span>
+              <div><strong>填写资料</strong><small>完成基本信息与意向选择</small></div>
+            </li>
+            <li>
+              <span>2</span>
+              <div><strong>提交申请</strong><small>确认内容准确后提交</small></div>
+            </li>
+            <li>
+              <span>3</span>
+              <div><strong>等待联系</strong><small>请保持手机或邮箱畅通</small></div>
+            </li>
+          </ol>
+
+          <p class="privacy-note"><LockKeyhole :size="16" /> 信息仅用于本次招新审核</p>
+        </aside>
         <el-card class="apply-form-card site-reveal" shadow="never">
-          <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
+          <div class="form-heading">
+            <span>APPLICATION FORM</span>
+            <h2>填写申请资料</h2>
+            <p><i>*</i> 为必填项，请确保联系方式准确有效。</p>
+          </div>
+          <el-form
+            ref="formRef"
+            :model="form"
+            :rules="rules"
+            label-position="top"
+            class="application-form"
+          >
             <el-alert
               v-if="!formMeta.id"
               type="warning"
@@ -61,98 +89,153 @@
               :closable="false"
               title="当前表单已结束收集，不能继续提交。"
             />
-            <el-form-item label="所属社团">
-              <el-input :model-value="club.name || '默认社团'" disabled />
-            </el-form-item>
-            <el-form-item label="表单名称">
-              <el-input :model-value="formMeta.name || '-'" disabled />
-            </el-form-item>
+            <div class="form-section form-section--summary">
+              <div class="summary-item">
+                <small>所属社团</small><strong>{{ club.name || '默认社团' }}</strong>
+              </div>
+              <div class="summary-item">
+                <small>申请计划</small><strong>{{ formMeta.name || '-' }}</strong>
+              </div>
+            </div>
             <template v-if="departments.length">
-              <el-divider content-position="left">意向选择</el-divider>
-              <el-form-item label="第一志愿" prop="firstChoiceDepartmentId">
-                <el-select
-                  v-model="form.firstChoiceDepartmentId"
-                  filterable
-                  placeholder="请选择意向部门"
-                >
-                  <el-option
-                    v-for="dept in departments"
-                    :key="dept.id"
-                    :label="dept.name"
-                    :value="dept.id"
-                  />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="第二志愿" prop="secondChoiceDepartmentId">
-                <el-select
-                  v-model="form.secondChoiceDepartmentId"
-                  filterable
-                  placeholder="请选择意向部门（可选）"
-                >
-                  <el-option
-                    v-for="dept in departments"
-                    :key="dept.id"
-                    :label="dept.name"
-                    :value="dept.id"
-                  />
-                </el-select>
-              </el-form-item>
+              <div class="form-section-heading">
+                <span>01</span>
+                <div>
+                  <h3>意向选择</h3>
+                  <p>告诉我们你更希望加入的方向</p>
+                </div>
+              </div>
+              <div class="form-section form-fields-grid">
+                <el-form-item label="第一志愿" prop="firstChoiceDepartmentId" required>
+                  <el-select
+                    v-model="form.firstChoiceDepartmentId"
+                    filterable
+                    placeholder="请选择意向部门"
+                  >
+                    <el-option
+                      v-for="dept in departments"
+                      :key="dept.id"
+                      :label="dept.name"
+                      :value="dept.id"
+                    />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="第二志愿" prop="secondChoiceDepartmentId">
+                  <el-select
+                    v-model="form.secondChoiceDepartmentId"
+                    filterable
+                    placeholder="请选择意向部门（可选）"
+                  >
+                    <el-option
+                      v-for="dept in departments"
+                      :key="dept.id"
+                      :label="dept.name"
+                      :value="dept.id"
+                    />
+                  </el-select>
+                </el-form-item>
+              </div>
             </template>
-            <el-form-item
-              v-if="!requiresLogin && !hasApplicantNameField"
-              label="联系人"
-              prop="formData.applicantName"
+            <div v-if="!hasApplicantNameField || !hasContactField" class="form-section-heading">
+              <span>{{ departments.length ? '02' : '01' }}</span>
+              <div>
+                <h3>个人信息</h3>
+                <p>用于审核申请与后续联系</p>
+              </div>
+            </div>
+            <div
+              v-if="!hasApplicantNameField || !hasContactField"
+              class="form-section form-fields-grid"
             >
-              <el-input v-model="form.formData.applicantName" placeholder="请输入姓名" />
-            </el-form-item>
-            <el-form-item
-              v-if="!requiresLogin && !hasContactField"
-              label="联系方式"
-              prop="formData.contact"
-            >
-              <el-input v-model="form.formData.contact" placeholder="请填写手机号、邮箱或微信" />
-            </el-form-item>
-            <el-divider v-if="dynamicFields.length" content-position="left">详细信息</el-divider>
-            <template v-for="field in dynamicFields" :key="field.key">
-              <el-form-item :label="field.label || field.key" :prop="`formData.${field.key}`">
-                <el-select
-                  v-if="field.type === 'select'"
-                  v-model="form.formData[field.key]"
-                  clearable
-                  :placeholder="field.placeholder || `请选择${field.label || ''}`"
-                >
-                  <el-option
-                    v-for="option in field.options || []"
-                    :key="String(option.value || option)"
-                    :label="option.label || option"
-                    :value="option.value || option"
-                  />
-                </el-select>
-                <el-input
-                  v-else-if="field.type === 'textarea'"
-                  v-model="form.formData[field.key]"
-                  type="textarea"
-                  :rows="4"
-                  :placeholder="field.placeholder || `请输入${field.label || ''}`"
-                />
-                <el-input
-                  v-else
-                  v-model="form.formData[field.key]"
-                  :placeholder="field.placeholder || `请输入${field.label || ''}`"
-                />
-              </el-form-item>
-            </template>
-            <el-form-item>
-              <el-button
-                type="primary"
-                :disabled="!formMeta.id || !canSubmit"
-                :loading="submitting"
-                @click="submitForm"
+              <el-form-item
+                v-if="!requiresLogin && !hasApplicantNameField"
+                label="联系人"
+                prop="formData.applicantName"
               >
-                提交表单
-              </el-button>
-              <el-button @click="resetForm">重置</el-button>
-            </el-form-item>
+                <el-input
+                  v-model="form.formData.applicantName"
+                  placeholder="请输入姓名"
+                  autocomplete="name"
+                />
+              </el-form-item>
+              <el-form-item
+                v-if="!requiresLogin && !hasContactField"
+                label="联系方式"
+                prop="formData.contact"
+              >
+                <el-input
+                  v-model="form.formData.contact"
+                  placeholder="请填写手机号、邮箱或微信"
+                  autocomplete="tel"
+                />
+              </el-form-item>
+            </div>
+            <div v-if="dynamicFields.length" class="form-section-heading">
+              <span>{{
+                departments.length
+                  ? !hasApplicantNameField || !hasContactField
+                    ? '03'
+                    : '02'
+                  : !hasApplicantNameField || !hasContactField
+                    ? '02'
+                    : '01'
+              }}</span>
+              <div>
+                <h3>详细信息</h3>
+                <p>带 * 的项目需要完成填写</p>
+              </div>
+            </div>
+            <div v-if="dynamicFields.length" class="form-section form-fields-grid">
+              <template v-for="field in dynamicFields" :key="field.key">
+                <el-form-item
+                  :label="field.label || field.key"
+                  :prop="`formData.${field.key}`"
+                  :required="field.required"
+                >
+                  <el-select
+                    v-if="field.type === 'select'"
+                    v-model="form.formData[field.key]"
+                    clearable
+                    :placeholder="field.placeholder || `请选择${field.label || ''}`"
+                  >
+                    <el-option
+                      v-for="option in field.options || []"
+                      :key="String(option.value || option)"
+                      :label="option.label || option"
+                      :value="option.value || option"
+                    />
+                  </el-select>
+                  <el-input
+                    v-else-if="field.type === 'textarea'"
+                    v-model="form.formData[field.key]"
+                    type="textarea"
+                    :rows="4"
+                    :placeholder="field.placeholder || `请输入${field.label || ''}`"
+                  />
+                  <el-input
+                    v-else
+                    v-model="form.formData[field.key]"
+                    :placeholder="field.placeholder || `请输入${field.label || ''}`"
+                  />
+                </el-form-item>
+              </template>
+            </div>
+            <div class="form-actions">
+              <p><CheckCircle2 :size="16" /> 提交前请再次检查信息是否准确</p>
+              <div>
+                <el-button class="reset-button" @click="resetForm">重置</el-button>
+                <el-button
+                  class="submit-button"
+                  type="primary"
+                  :disabled="!formMeta.id || !canSubmit"
+                  :loading="submitting"
+                  @click="submitForm"
+                >
+                  提交表单
+                  <ArrowRight :size="18" />
+                </el-button>
+              </div>
+            </div>
           </el-form>
         </el-card>
       </div>
@@ -164,6 +247,14 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import SitePageHero from '@/components/site/shell/SitePageHero.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardCheck,
+  LockKeyhole,
+  ShieldCheck,
+} from 'lucide-vue-next'
 import { applicationApi, siteApi } from '@/api'
 import {
   COLLEGE_FIELD_KEY,
@@ -339,53 +430,6 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.apply-grid {
-  align-items: start;
-}
-
-.apply-copy {
-  display: grid;
-  gap: 18px;
-}
-
-.apply-note {
-  padding: 20px 0;
-  border-top: 1px solid var(--oa-border);
-}
-
-.apply-note:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.apply-note h3 {
-  margin: 0 0 12px;
-}
-
-.campaign-line {
-  margin: 6px 0 0;
-  color: var(--oa-muted);
-}
-
-.apply-note ol {
-  margin: 0;
-  padding-left: 20px;
-  color: var(--oa-muted);
-  line-height: 2;
-}
-
-.apply-form-card {
-  border-radius: 24px !important;
-}
-
-.apply-form-card :deep(.el-card__body) {
-  padding: clamp(22px, 3vw, 32px);
-}
-
-@media (max-width: 900px) {
-  .apply-grid {
-    grid-template-columns: 1fr;
-  }
-}
+<style>
+@import '@/styles/application-form.css';
 </style>

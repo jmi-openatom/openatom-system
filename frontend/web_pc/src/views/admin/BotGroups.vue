@@ -451,6 +451,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { Refresh, RefreshRight, Search, Setting } from '@element-plus/icons-vue'
@@ -460,6 +461,7 @@ import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { formatDateTime, statusType } from '@/utils/format.ts'
 
 type Row = Record<string, any>
+const route = useRoute()
 
 const GROUP_NOTICE_MAX_LENGTH = 600
 const GROUP_NOTICE_TITLE_MAX_LENGTH = 60
@@ -603,7 +605,9 @@ async function fetchGroups() {
     if (query.mode) params.mode = query.mode
     groups.value = await botManagementApi.groups(params)
     if (!activeGroup.value && groups.value.length) {
-      await selectGroup(groups.value[0])
+      const requestedGroupId = String(route.query.groupId || '')
+      const requestedGroup = groups.value.find((item) => String(item.groupId) === requestedGroupId)
+      await selectGroup(requestedGroup || groups.value[0])
     }
   } finally {
     loading.value = false

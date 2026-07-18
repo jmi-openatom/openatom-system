@@ -14,6 +14,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
 import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
+import edu.jmi.openatom.server.openatomsystem.service.UnifiedGroupProjectionService;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,10 +42,12 @@ public class MembershipServiceImpl implements MembershipService {
   private final ClubMapper clubMapper;
   private final ClubDepartmentMapper departmentMapper;
   private final ClubPositionMapper positionMapper;
+  private final ClubAlumniGroupMapper alumniGroupMapper;
   private final NotificationService notificationService;
   private final PasswordService passwordService;
   private final RoleMapper roleMapper;
   private final UserRoleMapper userRoleMapper;
+  private final UnifiedGroupProjectionService unifiedGroupProjectionService;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -107,6 +110,7 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> create(RequestCreateMembershipDTO request) {
     Result<String> v = validateMembershipRefs(request.getUserId(), request.getClubId(), request.getDepartmentId(), request.getPositionId());
@@ -122,6 +126,7 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> update(Integer membershipId, RequestUpdateMembershipDTO request) {
     ClubMembership m = findMembership(membershipId);
@@ -133,13 +138,22 @@ public class MembershipServiceImpl implements MembershipService {
     if (request.getStatus() != null) { if (!STATUSES.contains(request.getStatus())) return Result.error(400, "成员状态不合法"); m.setStatus(request.getStatus()); }
     if (request.getFeatured() != null) m.setFeatured(request.getFeatured());
     if (request.getSortOrder() != null) m.setSortOrder(request.getSortOrder());
-    if (request.getAlumniGroup() != null) m.setAlumniGroup(request.getAlumniGroup());
+    if (request.getAlumniGroup() != null) {
+      ClubAlumniGroup alumniGroup = resolveAlumniGroup(m.getClubId(), request.getAlumniGroup());
+      if (!request.getAlumniGroup().isBlank() && alumniGroup == null) {
+        return Result.error(400, "往届分组不存在，请先在分组管理中创建");
+      }
+      m.setAlumniGroup(alumniGroup == null ? null : alumniGroup.getName());
+      m.setAlumniGroupId(alumniGroup == null ? null : alumniGroup.getId());
+    }
     membershipMapper.updateById(m);
     syncUserRole(m.getUserId(), m.getStatus());
+    unifiedGroupProjectionService.syncClubMemberships(m.getClubId());
     return Result.success("成员更新成功");
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> assignPosition(Integer membershipId, RequestAssignPositionDTO request) {
     ClubMembership m = findMembership(membershipId);
@@ -148,10 +162,12 @@ public class MembershipServiceImpl implements MembershipService {
     if (p == null || !m.getClubId().equals(p.getClubId())) return Result.error(400, "岗位不存在或不属于当前社团");
     m.setPositionId(p.getId()); m.setDepartmentId(p.getDepartmentId());
     membershipMapper.updateById(m);
+    unifiedGroupProjectionService.syncClubMemberships(m.getClubId());
     return Result.success("岗位分配成功");
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> changeStatus(Integer membershipId, RequestChangeMembershipStatusDTO request) {
     if (!STATUSES.contains(request.getStatus())) return Result.error(400, "成员状态不合法");
@@ -161,6 +177,7 @@ public class MembershipServiceImpl implements MembershipService {
     if ("left".equals(request.getStatus())) m.setLeftAt(Times.now());
     membershipMapper.updateById(m);
     syncUserRole(m.getUserId(), m.getStatus());
+    unifiedGroupProjectionService.syncClubMemberships(m.getClubId());
     return Result.success("成员状态更新成功");
   }
 
@@ -177,6 +194,7 @@ public class MembershipServiceImpl implements MembershipService {
       if ("left".equals(request.getStatus())) m.setLeftAt(Times.now());
       membershipMapper.updateById(m);
       syncUserRole(m.getUserId(), m.getStatus());
+      unifiedGroupProjectionService.syncClubMemberships(m.getClubId());
       count++;
     }
     return Result.success("已批量更新 " + count + " 条成员状态");
@@ -199,6 +217,7 @@ public class MembershipServiceImpl implements MembershipService {
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> forceExit(Integer membershipId, String reason) {
     ClubMembership m = findMembership(membershipId);
@@ -211,20 +230,24 @@ public class MembershipServiceImpl implements MembershipService {
             .set(ClubMembership::getPositionId, null)
             .set(ClubMembership::getDepartmentId, null));
     syncUserRole(m.getUserId(), "left");
+    unifiedGroupProjectionService.syncClubMemberships(m.getClubId());
     return Result.success("强制退社成功");
   }
 
   @Override
+  @Transactional(rollbackFor = Exception.class)
   @RedisCacheEvict(cacheNames = {"site", "auth"})
   public Result<String> delete(Integer membershipId) {
     ClubMembership m = findMembership(membershipId);
     if (m == null) return Result.error(404, "成员不存在");
     membershipMapper.deleteById(m.getId());
+    unifiedGroupProjectionService.syncClubMemberships(m.getClubId());
     return Result.success("删除成功");
   }
 
   private void ensureMembership(Integer userId, Integer clubId, Integer departmentId, Integer positionId, String status, Boolean featured, Integer sortOrder, String alumniGroup) {
     boolean needsLeftAt = "left".equals(status) || "graduated".equals(status);
+    ClubAlumniGroup resolvedAlumniGroup = resolveAlumniGroup(clubId, alumniGroup);
     ClubMembership exists = membershipMapper.selectActiveNotLeft(userId, clubId);
     if (exists != null) { 
       exists.setDepartmentId(departmentId); 
@@ -233,13 +256,23 @@ public class MembershipServiceImpl implements MembershipService {
       if (needsLeftAt && exists.getLeftAt() == null) exists.setLeftAt(Times.now());
       if (featured != null) exists.setFeatured(featured); 
       if (sortOrder != null) exists.setSortOrder(sortOrder); 
-      if (alumniGroup != null) exists.setAlumniGroup(alumniGroup);
+      if (alumniGroup != null) {
+        exists.setAlumniGroup(resolvedAlumniGroup == null ? null : resolvedAlumniGroup.getName());
+        exists.setAlumniGroupId(resolvedAlumniGroup == null ? null : resolvedAlumniGroup.getId());
+      }
       membershipMapper.updateById(exists); 
       syncUserRole(userId, status);
+      unifiedGroupProjectionService.syncClubMemberships(clubId);
       return; 
     }
-    membershipMapper.insert(ClubMembership.builder().userId(userId).clubId(clubId).departmentId(departmentId).positionId(positionId).status(status).leftAt(needsLeftAt ? Times.now() : null).featured(Boolean.TRUE.equals(featured)).sortOrder(sortOrder == null ? 0 : sortOrder).alumniGroup(alumniGroup).build());
+    membershipMapper.insert(ClubMembership.builder().userId(userId).clubId(clubId).departmentId(departmentId).positionId(positionId).status(status).leftAt(needsLeftAt ? Times.now() : null).featured(Boolean.TRUE.equals(featured)).sortOrder(sortOrder == null ? 0 : sortOrder).alumniGroup(resolvedAlumniGroup == null ? null : resolvedAlumniGroup.getName()).alumniGroupId(resolvedAlumniGroup == null ? null : resolvedAlumniGroup.getId()).build());
     syncUserRole(userId, status);
+    unifiedGroupProjectionService.syncClubMemberships(clubId);
+  }
+
+  private ClubAlumniGroup resolveAlumniGroup(Integer clubId, String alumniGroupName) {
+    if (alumniGroupName == null || alumniGroupName.isBlank()) return null;
+    return alumniGroupMapper.selectByClubIdAndName(clubId, alumniGroupName.trim());
   }
 
   private void syncUserRole(Integer userId, String status) {
@@ -291,7 +324,7 @@ public class MembershipServiceImpl implements MembershipService {
     ClubDepartment d = m.getDepartmentId() == null ? null : depts.get(m.getDepartmentId()); ClubPosition p = m.getPositionId() == null ? null : positions.get(m.getPositionId());
     return ResponseMembershipVO.builder().id(m.getId()).userId(m.getUserId()).userName(u == null ? null : u.getUserName()).realName(u == null ? null : u.getRealName())
         .clubId(m.getClubId()).clubName(c == null ? null : c.getName()).departmentId(m.getDepartmentId()).departmentName(d == null ? null : d.getName())
-        .positionId(m.getPositionId()).positionName(p == null ? null : p.getName()).status(m.getStatus()).featured(m.getFeatured()).sortOrder(m.getSortOrder()).joinedAt(m.getJoinedAt()).leftAt(m.getLeftAt()).alumniGroup(m.getAlumniGroup()).build();
+        .positionId(m.getPositionId()).positionName(p == null ? null : p.getName()).status(m.getStatus()).featured(m.getFeatured()).sortOrder(m.getSortOrder()).joinedAt(m.getJoinedAt()).leftAt(m.getLeftAt()).alumniGroup(m.getAlumniGroup()).alumniGroupId(m.getAlumniGroupId()).build();
   }
 
   private String generateUniqueUsername(String applicantName) {

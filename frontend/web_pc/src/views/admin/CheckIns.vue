@@ -28,7 +28,7 @@
                     生成晚自习
                 </el-button>
                 <el-button :icon="Setting" @click="openEveningManager">晚自习计划</el-button>
-                <el-button @click="openGroupManager">签到分组</el-button>
+                <el-button @click="$router.push({ path: '/admin/groups', query: { type: 'checkin' } })">签到分组</el-button>
                 <el-button :icon="Plus" type="primary" @click="openDialog">发布签到</el-button>
             </div>
         </ViewToolbar>
@@ -537,8 +537,11 @@ import {activityApi, checkInApi} from '@/api'
 import {formatDateTime, statusType} from '@/utils/format.ts'
 import {qrSvgDataUrl} from '@/utils/qr.ts'
 import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 
 const POINT_AMOUNT_MAX = 9_000_000_000_000_000
+const route = useRoute()
+const router = useRouter()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -1245,9 +1248,15 @@ function stopLiveRefresh() {
     }
 }
 
-onMounted(() => {
+onMounted(async () => {
     fetchList()
-    loadOptions()
+    await loadOptions()
+    if (route.query.groupManager === '1') {
+        await router.replace({
+            path: '/admin/groups',
+            query: { type: 'checkin', sourceType: 'checkin', sourceId: route.query.groupId },
+        })
+    }
 })
 
 watch(filteredMembers, () => {

@@ -3,33 +3,67 @@
     <SitePageHero
       eyebrow="在线表单"
       title="表单填写"
-      description="请认真填写以下信息，提交后可以在“我的申请”中查看后续进度。"
+      description="请按实际情况填写以下信息，提交成功后请留意页面提示。"
       compact
     />
 
     <section class="site-system-section">
       <div class="container apply-grid site-system-grid site-system-grid--split">
-        <div class="apply-copy site-system-surface site-system-copy-card site-reveal">
-          <div class="apply-note">
-            <h3>申请说明</h3>
-            <ol>
-              <li>确认申请仍处于开放时间内</li>
-              <li>按要求填写基础信息和自定义字段</li>
-              <li>提交后请保持手机/邮箱畅通，等待面试通知</li>
-            </ol>
+        <aside class="apply-copy site-system-surface site-reveal" aria-label="表单信息">
+          <div class="apply-copy__eyebrow"><ClipboardCheck :size="18" /> ONLINE FORM</div>
+          <h2>{{ formMeta.name || '信息收集表单' }}</h2>
+          <p class="apply-copy__intro">
+            请按实际情况完成填写，你提供的信息将用于本次申请与后续联系。
+          </p><br>
+          <div v-if="formMeta.id" class="apply-meta">
+            <div>
+              <CalendarDays :size="18" aria-hidden="true" /><span
+                ><small>收集时间</small>{{ formatRange(formMeta.startAt, formMeta.endAt) }}</span
+              >
+            </div>
+            <div>
+              <ShieldCheck :size="18" aria-hidden="true" /><span
+                ><small>提交方式</small
+                >{{ requiresLogin ? '登录账号后提交' : '支持免登录填写' }}</span
+              >
+            </div>
           </div>
-          <div class="apply-note" v-if="formMeta.id">
-            <h3>当前表单</h3>
-            <p class="campaign-line">
-              <strong>{{ formMeta.name || '信息收集表单' }}</strong>
-            </p>
-            <p class="campaign-line">提交方式：{{ requiresLogin ? '需要登录账号' : '支持匿名填写' }}</p>
-            <p class="campaign-line">收集时间：{{ formatRange(formMeta.startAt, formMeta.endAt) }}</p>
-          </div>
-        </div>
+          <ol class="apply-steps" aria-label="填写步骤">
+            <li>
+              <span>1</span>
+              <div><strong>填写信息</strong><small>完成所有标记为必填的项目</small></div>
+            </li>
+            <li>
+              <span>2</span>
+              <div><strong>检查内容</strong><small>确认联系方式等信息准确</small></div>
+            </li>
+            <li>
+              <span>3</span>
+              <div><strong>完成提交</strong><small>留意后续通知与申请进度</small></div>
+            </li>
+          </ol>
+          <p class="privacy-note"><LockKeyhole :size="16" /> 你的信息会得到妥善保护</p>
+        </aside>
         <el-card class="apply-form-card site-reveal" shadow="never">
-          <el-form ref="formRef" :model="form" :rules="rules" label-width="96px">
-            <el-alert v-if="!formMeta.id" type="warning" show-icon :closable="false" title="表单不存在或暂未开放" />
+          <div class="form-heading">
+            <span>FORM DETAILS</span>
+            <h2>填写表单内容</h2>
+            <p><i>*</i> 为必填项，请确保提交内容准确有效。</p>
+          </div>
+          <el-form
+            ref="formRef"
+            :model="form"
+            :rules="rules"
+            label-position="top"
+            class="application-form"
+          >
+            <el-alert
+              v-if="!formMeta.id"
+              type="warning"
+              show-icon
+              :closable="false"
+              title="表单不存在或暂未开放"
+            />
             <el-alert
               v-else-if="requiresLogin && !hasToken"
               type="info"
@@ -51,59 +85,110 @@
               :closable="false"
               title="当前表单已结束收集，不能继续提交。"
             />
-            <el-form-item label="所属社团">
-              <el-input :model-value="club.name || '默认社团'" disabled />
-            </el-form-item>
-            <el-form-item label="表单名称">
-              <el-input :model-value="formMeta.name || '-'" disabled />
-            </el-form-item>
-            <el-form-item v-if="!requiresLogin && !hasApplicantNameField" label="联系人" prop="formData.anonymousName">
-              <el-input v-model="form.formData.anonymousName" placeholder="请输入姓名" />
-            </el-form-item>
-            <el-form-item v-if="!requiresLogin && !hasContactField" label="联系方式" prop="formData.anonymousContact">
-              <el-input v-model="form.formData.anonymousContact" placeholder="请填写手机号、邮箱或微信" />
-            </el-form-item>
-            <el-divider v-if="dynamicFields.length" content-position="left">详细信息</el-divider>
-            <template v-for="field in dynamicFields" :key="field.key">
-              <el-form-item :label="field.label || field.key" :prop="`formData.${field.key}`">
-                <el-select
-                  v-if="field.type === 'select'"
-                  v-model="form.formData[field.key]"
-                  clearable
-                  :placeholder="field.placeholder || `请选择${field.label || ''}`"
-                >
-                  <el-option
-                    v-for="option in field.options || []"
-                    :key="String(option.value || option)"
-                    :label="option.label || option"
-                    :value="option.value || option"
-                  />
-                </el-select>
+            <div class="form-section form-section--summary">
+              <div class="summary-item">
+                <small>所属社团</small><strong>{{ club.name || '默认社团' }}</strong>
+              </div>
+              <div class="summary-item">
+                <small>表单名称</small><strong>{{ formMeta.name || '-' }}</strong>
+              </div>
+            </div>
+            <div
+              v-if="!requiresLogin && (!hasApplicantNameField || !hasContactField)"
+              class="form-section-heading"
+            >
+              <span>01</span>
+              <div>
+                <h3>联系信息</h3>
+                <p>用于确认身份与后续沟通</p>
+              </div>
+            </div>
+            <div
+              v-if="!requiresLogin && (!hasApplicantNameField || !hasContactField)"
+              class="form-section form-fields-grid"
+            >
+              <el-form-item
+                v-if="!requiresLogin && !hasApplicantNameField"
+                label="联系人"
+                prop="formData.anonymousName"
+              >
                 <el-input
-                  v-else-if="field.type === 'textarea'"
-                  v-model="form.formData[field.key]"
-                  type="textarea"
-                  :rows="4"
-                  :placeholder="field.placeholder || `请输入${field.label || ''}`"
-                />
-                <el-input
-                  v-else
-                  v-model="form.formData[field.key]"
-                  :placeholder="field.placeholder || `请输入${field.label || ''}`"
+                  v-model="form.formData.anonymousName"
+                  placeholder="请输入姓名"
+                  autocomplete="name"
                 />
               </el-form-item>
-            </template>
-            <el-form-item>
-              <el-button
-                type="primary"
-                :disabled="!formMeta.id || !canSubmit"
-                :loading="submitting"
-                @click="submitForm"
+              <el-form-item
+                v-if="!requiresLogin && !hasContactField"
+                label="联系方式"
+                prop="formData.anonymousContact"
               >
-                提交表单
-              </el-button>
-              <el-button @click="resetForm">重置</el-button>
-            </el-form-item>
+                <el-input
+                  v-model="form.formData.anonymousContact"
+                  placeholder="请填写手机号、邮箱或微信"
+                  autocomplete="tel"
+                />
+              </el-form-item>
+            </div>
+            <div v-if="dynamicFields.length" class="form-section-heading">
+              <span>{{
+                !requiresLogin && (!hasApplicantNameField || !hasContactField) ? '02' : '01'
+              }}</span>
+              <div>
+                <h3>详细信息</h3>
+                <p>带 * 的项目需要完成填写</p>
+              </div>
+            </div>
+            <div v-if="dynamicFields.length" class="form-section form-fields-grid">
+              <template v-for="field in dynamicFields" :key="field.key">
+                <el-form-item
+                  :label="field.label || field.key"
+                  :prop="`formData.${field.key}`"
+                  :required="field.required"
+                >
+                  <el-select
+                    v-if="field.type === 'select'"
+                    v-model="form.formData[field.key]"
+                    clearable
+                    :placeholder="field.placeholder || `请选择${field.label || ''}`"
+                  >
+                    <el-option
+                      v-for="option in field.options || []"
+                      :key="String(option.value || option)"
+                      :label="option.label || option"
+                      :value="option.value || option"
+                    />
+                  </el-select>
+                  <el-input
+                    v-else-if="field.type === 'textarea'"
+                    v-model="form.formData[field.key]"
+                    type="textarea"
+                    :rows="4"
+                    :placeholder="field.placeholder || `请输入${field.label || ''}`"
+                  />
+                  <el-input
+                    v-else
+                    v-model="form.formData[field.key]"
+                    :placeholder="field.placeholder || `请输入${field.label || ''}`"
+                  />
+                </el-form-item>
+              </template>
+            </div>
+            <div class="form-actions">
+              <p><CheckCircle2 :size="16" /> 提交前请再次检查信息是否准确</p>
+              <div>
+                <el-button class="reset-button" @click="resetForm">重置</el-button>
+                <el-button
+                  class="submit-button"
+                  type="primary"
+                  :disabled="!formMeta.id || !canSubmit"
+                  :loading="submitting"
+                  @click="submitForm"
+                >
+                  提交表单 <ArrowRight :size="18" />
+                </el-button>
+              </div>
+            </div>
           </el-form>
         </el-card>
       </div>
@@ -115,8 +200,20 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import SitePageHero from '@/components/site/shell/SitePageHero.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardCheck,
+  LockKeyhole,
+  ShieldCheck,
+} from 'lucide-vue-next'
 import { formSubmissionApi, clubApi, siteApi } from '@/api'
-import { COLLEGE_FIELD_KEY, ensureCollegeFormField, resolveCollegeValue } from '@/constants/colleges'
+import {
+  COLLEGE_FIELD_KEY,
+  ensureCollegeFormField,
+  resolveCollegeValue,
+} from '@/constants/colleges'
 import { getCurrentUser, getToken } from '@/utils/auth.ts'
 import { formatDateTime } from '@/utils/format.ts'
 import { computed, onMounted, ref } from 'vue'
@@ -153,7 +250,8 @@ const requiresLogin = computed(() => {
 const canSubmit = computed(() => {
   if (!formMeta.value?.id) return false
   if (['closed', 'archived'].includes(formMeta.value.status)) return false
-  if (formMeta.value.startAt && new Date(formMeta.value.startAt).getTime() > Date.now()) return false
+  if (formMeta.value.startAt && new Date(formMeta.value.startAt).getTime() > Date.now())
+    return false
   if (!formMeta.value.endAt) return true
   return new Date(formMeta.value.endAt).getTime() >= Date.now()
 })
@@ -198,17 +296,25 @@ function buildRules() {
       : {
           ...(applicantFieldKey
             ? {
-                [`formData.${applicantFieldKey}`]: [{ required: true, message: '请填写联系人', trigger: 'blur' }],
+                [`formData.${applicantFieldKey}`]: [
+                  { required: true, message: '请填写联系人', trigger: 'blur' },
+                ],
               }
             : {
-                'formData.anonymousName': [{ required: true, message: '请填写联系人', trigger: 'blur' }],
+                'formData.anonymousName': [
+                  { required: true, message: '请填写联系人', trigger: 'blur' },
+                ],
               }),
           ...(contactFieldKey
             ? {
-                [`formData.${contactFieldKey}`]: [{ required: true, message: '请填写联系方式', trigger: 'blur' }],
+                [`formData.${contactFieldKey}`]: [
+                  { required: true, message: '请填写联系方式', trigger: 'blur' },
+                ],
               }
             : {
-                'formData.anonymousContact': [{ required: true, message: '请填写联系方式', trigger: 'blur' }],
+                'formData.anonymousContact': [
+                  { required: true, message: '请填写联系方式', trigger: 'blur' },
+                ],
               }),
         }),
     ...dynamicFields.value.reduce((rules, field) => {
@@ -266,7 +372,8 @@ function resetForm() {
   const formData = {}
   const currentUser = getCurrentUser()
   dynamicFields.value.forEach((field) => {
-    formData[field.key] = field.key === COLLEGE_FIELD_KEY ? resolveCollegeValue(currentUser?.college) : ''
+    formData[field.key] =
+      field.key === COLLEGE_FIELD_KEY ? resolveCollegeValue(currentUser?.college) : ''
   })
   if (!hasApplicantNameField.value) {
     formData.anonymousName = ''
@@ -311,53 +418,6 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.apply-grid {
-  align-items: start;
-}
-
-.apply-copy {
-  display: grid;
-  gap: 18px;
-}
-
-.apply-note {
-  padding: 20px 0;
-  border-top: 1px solid var(--oa-border);
-}
-
-.apply-note:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.apply-note h3 {
-  margin: 0 0 12px;
-}
-
-.campaign-line {
-  margin: 6px 0 0;
-  color: var(--oa-muted);
-}
-
-.apply-note ol {
-  margin: 0;
-  padding-left: 20px;
-  color: var(--oa-muted);
-  line-height: 2;
-}
-
-.apply-form-card {
-  border-radius: 24px !important;
-}
-
-.apply-form-card :deep(.el-card__body) {
-  padding: clamp(22px, 3vw, 32px);
-}
-
-@media (max-width: 900px) {
-  .apply-grid {
-    grid-template-columns: 1fr;
-  }
-}
+<style>
+@import '@/styles/application-form.css';
 </style>

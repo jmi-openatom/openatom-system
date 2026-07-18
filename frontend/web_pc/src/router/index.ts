@@ -85,6 +85,7 @@ const adminFallbackRoutes = [
   '/admin/member-profile-comments',
   '/admin/regulations',
   '/admin/check-ins',
+  '/admin/groups',
   '/admin/bot-groups',
   '/admin/awards',
   '/admin/applications',
@@ -403,6 +404,8 @@ const routes = [
         path: 'departments',
         name: 'admin-departments',
         meta: { permissions: ['department:list'] },
+        beforeEnter: (to: RouteLocationNormalized) =>
+          to.query.groupId ? true : { path: '/admin/groups', query: { type: 'department' } },
         component: resilientView(() => import('../views/admin/Departments.vue')),
       },
       {
@@ -532,9 +535,29 @@ const routes = [
         component: resilientView(() => import('../views/admin/CheckIns.vue')),
       },
       {
+        path: 'groups',
+        name: 'admin-groups',
+        meta: { permissions: ['group:list'] },
+        component: resilientView(() => import('../views/admin/Groups.vue')),
+      },
+      {
+        path: 'groups/create',
+        name: 'admin-group-create',
+        meta: { permissions: ['group:create'], title: '新建分组' },
+        component: resilientView(() => import('../views/admin/GroupEditor.vue')),
+      },
+      {
+        path: 'groups/:groupId',
+        name: 'admin-group-manage',
+        meta: { permissions: ['group:detail'], title: '分组管理' },
+        component: resilientView(() => import('../views/admin/GroupEditor.vue')),
+      },
+      {
         path: 'bot-groups',
         name: 'admin-bot-groups',
         meta: { permissions: ['bot-management:list'] },
+        beforeEnter: (to: RouteLocationNormalized) =>
+          to.query.groupId ? true : { path: '/admin/groups', query: { type: 'external' } },
         component: resilientView(() => import('../views/admin/BotGroups.vue')),
       },
       {
@@ -571,6 +594,8 @@ const routes = [
         path: 'alumni-groups',
         name: 'admin-alumni-groups',
         meta: { permissions: ['membership:list'] },
+        beforeEnter: (to: RouteLocationNormalized) =>
+          to.query.groupId ? true : { path: '/admin/groups', query: { type: 'alumni' } },
         component: resilientView(() => import('../views/admin/AlumniGroups.vue')),
       },
       {

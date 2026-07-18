@@ -51,4 +51,7 @@ public class ClubMembership {
 
   @TableField("alumni_group")
   private String alumniGroup;
+
+  @TableField("alumni_group_id")
+  private Integer alumniGroupId;
 }

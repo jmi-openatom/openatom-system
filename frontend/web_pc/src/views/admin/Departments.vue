@@ -18,7 +18,7 @@
         type="primary"
         :icon="Plus"
         :disabled="!selectedClubId"
-        @click="openDialog()"
+        @click="$router.push({ path: '/admin/groups/create', query: { clubId: selectedClubId, type: 'department' } })"
       >新增部门</el-button>
     </ViewToolbar>
 
@@ -76,7 +76,12 @@
       </el-table-column>
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button v-if="canUpdate" link type="primary" @click="openDialog(row)">编辑</el-button>
+          <el-button
+            v-if="canUpdate"
+            link
+            type="primary"
+            @click="$router.push({ path: '/admin/groups', query: { type: 'department', sourceType: 'department', sourceId: row.id } })"
+          >统一管理</el-button>
           <el-upload
             v-if="canUpdate"
             :action="uploadUrl"
@@ -163,6 +168,10 @@ import { clubApi, departmentApi, userApi } from '@/api'
 import { hasPermission } from '@/utils/permission.ts'
 import { getToken } from '@/utils/auth.ts'
 import { computed, nextTick, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -346,6 +355,14 @@ onMounted(async () => {
   await loadClubs()
   if (selectedClubId.value) {
     await fetchList()
+    const requestedGroupId = Number(route.query.groupId)
+    const requestedGroup = rows.value.find((item) => item.id === requestedGroupId)
+    if (requestedGroup && canUpdate.value) {
+      await router.replace({
+        path: '/admin/groups',
+        query: { type: 'department', sourceType: 'department', sourceId: requestedGroup.id },
+      })
+    }
   }
 })
 </script>

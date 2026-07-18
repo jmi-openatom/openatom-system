@@ -16,7 +16,7 @@
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
       <div class="toolbar__actions">
-        <el-button :icon="Files" @click="$router.push('/admin/alumni-groups')">分组管理</el-button>
+        <el-button :icon="Files" @click="$router.push('/admin/groups?type=alumni')">分组管理</el-button>
         <el-button type="primary" :icon="Plus" @click="openDialog">新增往届管理人员</el-button>
       </div>
     </ViewToolbar>
@@ -104,7 +104,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="分组">
-          <el-select v-model="form.alumniGroup" clearable filterable allow-create default-first-option placeholder="输入或选择分组" style="width: 100%">
+          <el-select v-model="form.alumniGroup" clearable filterable placeholder="选择分组" style="width: 100%">
             <el-option v-for="g in alumniGroups" :key="g" :label="g" :value="g" />
           </el-select>
         </el-form-item>
@@ -160,7 +160,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="分组">
-          <el-select v-model="editForm.alumniGroup" clearable filterable allow-create default-first-option placeholder="输入或选择分组" style="width: 100%">
+          <el-select v-model="editForm.alumniGroup" clearable filterable placeholder="选择分组" style="width: 100%">
             <el-option v-for="g in alumniGroups" :key="g" :label="g" :value="g" />
           </el-select>
         </el-form-item>
