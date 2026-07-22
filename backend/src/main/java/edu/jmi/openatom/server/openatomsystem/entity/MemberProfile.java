@@ -55,6 +55,9 @@ public class MemberProfile {
   private String visibility;
   private String status;
 
+  @TableField("comments_enabled")
+  private Boolean commentsEnabled;
+
   @TableField("show_department")
   private Boolean showDepartment;
 

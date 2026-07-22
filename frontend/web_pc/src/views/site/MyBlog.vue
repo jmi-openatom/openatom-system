@@ -129,6 +129,14 @@
             type="textarea"
           />
         </el-form-item>
+        <el-form-item label="评论区">
+          <el-switch
+            v-model="form.commentsEnabled"
+            active-text="允许评论"
+            inactive-text="关闭评论"
+          />
+          <span class="comment-setting-hint">关闭后保留已有评论，但其他用户不能新增或回复。</span>
+        </el-form-item>
         <el-form-item label="正文" prop="contentMarkdown">
           <div class="editor-field">
             <div class="markdown-toolbar">
@@ -281,13 +289,18 @@ function handlePageChange(page: number) {
 
 function openDialog(row?: any) {
   form.value = row
-    ? { ...row, contentMarkdown: row.contentMarkdown || '' }
+    ? {
+        ...row,
+        contentMarkdown: row.contentMarkdown || '',
+        commentsEnabled: row.commentsEnabled !== false,
+      }
     : {
         title: '',
         summary: '',
         category: '',
         coverUrl: '',
         contentMarkdown: '# 标题\n\n',
+        commentsEnabled: true,
       }
   tagText.value = (row?.tags || []).join(', ')
   dialogVisible.value = true
@@ -383,6 +396,7 @@ function save(status: string) {
         category: form.value.category,
         tags: parseTags(tagText.value),
         status,
+        commentsEnabled: form.value.commentsEnabled !== false,
       }
       if (form.value.id) await blogApi.update(form.value.id, payload)
       else await blogApi.create(payload)
@@ -467,6 +481,12 @@ onMounted(async () => {
 .my-blog-shell {
   position: relative;
   padding: 92px 0 56px;
+}
+
+.comment-setting-hint {
+  margin-left: 12px;
+  color: var(--oa-text-secondary);
+  font-size: 13px;
 }
 
 .my-blog-heading {

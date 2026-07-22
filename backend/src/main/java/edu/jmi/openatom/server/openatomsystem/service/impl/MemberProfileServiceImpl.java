@@ -278,6 +278,9 @@ public class MemberProfileServiceImpl implements MemberProfileService {
     if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
     MemberTarget target = findVisibleTarget(slug, access.getData());
     if (target == null) return Result.error(404, "成员主页不存在");
+    if (target.profile() != null && Boolean.FALSE.equals(target.profile().getCommentsEnabled())) {
+      return Result.error(403, "主页所有者已关闭评论区");
+    }
     String content = trimToNull(request == null ? null : request.getContent());
     if (content == null) return Result.error(400, "评论内容不能为空");
     if (content.length() > 1000) return Result.error(400, "评论内容不能超过1000字");
@@ -408,6 +411,7 @@ public class MemberProfileServiceImpl implements MemberProfileService {
     profile.setThemeKey(normalizeChoice(request.getThemeKey(), THEMES, "minimal"));
     profile.setColorMode(normalizeChoice(request.getColorMode(), COLOR_MODES, "system"));
     profile.setVisibility(normalizeChoice(request.getVisibility(), VISIBILITIES, "members"));
+    profile.setCommentsEnabled(!Boolean.FALSE.equals(request.getCommentsEnabled()));
     profile.setShowDepartment(!Boolean.FALSE.equals(request.getShowDepartment()));
     profile.setShowPosition(!Boolean.FALSE.equals(request.getShowPosition()));
     profile.setSkills(Jsons.stringify(normalizeSkills(request.getSkills())));
@@ -543,6 +547,7 @@ public class MemberProfileServiceImpl implements MemberProfileService {
         .colorMode(profile == null ? "system" : profile.getColorMode())
         .visibility(profile == null ? "members" : profile.getVisibility())
         .status(profile == null ? "default" : profile.getStatus())
+        .commentsEnabled(profile == null || !Boolean.FALSE.equals(profile.getCommentsEnabled()))
         .showDepartment(showDepartment)
         .showPosition(showPosition)
         .version(profile == null ? 0 : profile.getVersion())
@@ -736,6 +741,7 @@ public class MemberProfileServiceImpl implements MemberProfileService {
             .colorMode("system")
             .visibility("members")
             .status("draft")
+            .commentsEnabled(true)
             .showDepartment(true)
             .showPosition(true)
             .skills("[]")

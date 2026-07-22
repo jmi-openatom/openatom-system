@@ -103,7 +103,15 @@
           <strong>{{ totalComments }} 条讨论</strong>
         </div>
 
-        <div v-if="isLoggedIn" class="comment-composer">
+        <el-alert
+          v-if="article.commentsEnabled === false"
+          :closable="false"
+          class="comment-closed-tip"
+          show-icon
+          title="作者已关闭这篇文章的评论区"
+          type="info"
+        />
+        <div v-else-if="isLoggedIn" class="comment-composer">
           <UserAvatar
             :name="currentUserName"
             :qq-openid="currentUserQqOpenid"
@@ -142,6 +150,7 @@
             v-for="comment in comments"
             :key="comment.id"
             :comment="comment"
+            :reply-enabled="article.commentsEnabled !== false"
             @reply="startReply"
           />
           <el-empty v-if="!comments.length" description="还没有评论" />
@@ -284,6 +293,10 @@ async function shareArticle() {
 }
 
 function startReply(comment: Record<string, any>) {
+  if (article.value.commentsEnabled === false) {
+    ElMessage.info('作者已关闭这篇文章的评论区')
+    return
+  }
   if (!ensureLogin()) return
   replyTarget.value = comment
   commentForm.value.parentId = Number(comment.id)

@@ -22,4 +22,5 @@ public class RequestCreateBlogArticleDTO {
   private String category;
   private List<String> tags;
   private String status;
+  private Boolean commentsEnabled;
 }

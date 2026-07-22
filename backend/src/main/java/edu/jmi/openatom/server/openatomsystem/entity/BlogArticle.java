@@ -44,6 +44,9 @@ public class BlogArticle {
   private String status;
   private Boolean featured;
 
+  @TableField("comments_enabled")
+  private Boolean commentsEnabled;
+
   @TableField("view_count")
   private Integer viewCount;
 

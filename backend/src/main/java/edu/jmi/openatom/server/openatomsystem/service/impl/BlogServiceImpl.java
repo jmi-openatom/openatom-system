@@ -112,8 +112,12 @@ public class BlogServiceImpl implements BlogService {
   @Transactional(rollbackFor = Exception.class)
   public Result<String> createComment(Integer articleId, RequestCreateBlogCommentDTO request) {
     if (!StpUtil.isLogin()) return Result.error(401, "请先登录后再评论");
-    if (blogArticleMapper.selectPublishedById(articleId) == null) {
+    BlogArticle article = blogArticleMapper.selectPublishedById(articleId);
+    if (article == null) {
       return Result.error(404, "文章不存在或未发布");
+    }
+    if (Boolean.FALSE.equals(article.getCommentsEnabled())) {
+      return Result.error(403, "作者已关闭这篇文章的评论区");
     }
     String content = trimToNull(request == null ? null : request.getContent());
     if (content == null) return Result.error(400, "评论内容不能为空");
@@ -203,6 +207,7 @@ public class BlogServiceImpl implements BlogService {
             .tags(Jsons.stringify(normalizeTags(request.getTags())))
             .status(status)
             .featured(false)
+            .commentsEnabled(!Boolean.FALSE.equals(request.getCommentsEnabled()))
             .viewCount(0)
             .likeCount(0)
             .favoriteCount(0)
@@ -245,6 +250,9 @@ public class BlogServiceImpl implements BlogService {
     if (request.getCoverUrl() != null) article.setCoverUrl(trimToNull(request.getCoverUrl()));
     if (request.getCategory() != null) article.setCategory(trimToNull(request.getCategory()));
     if (request.getTags() != null) article.setTags(Jsons.stringify(normalizeTags(request.getTags())));
+    if (request.getCommentsEnabled() != null) {
+      article.setCommentsEnabled(request.getCommentsEnabled());
+    }
     boolean submittedForReview = false;
     if (request.getStatus() != null) {
       if ("hidden".equals(article.getStatus())) {
@@ -618,6 +626,7 @@ public class BlogServiceImpl implements BlogService {
         .tags(Jsons.parseStringList(article.getTags()))
         .status(article.getStatus())
         .featured(Boolean.TRUE.equals(article.getFeatured()))
+        .commentsEnabled(!Boolean.FALSE.equals(article.getCommentsEnabled()))
         .viewCount(article.getViewCount() == null ? 0 : article.getViewCount())
         .likeCount(article.getLikeCount() == null ? 0 : article.getLikeCount())
         .favoriteCount(article.getFavoriteCount() == null ? 0 : article.getFavoriteCount())

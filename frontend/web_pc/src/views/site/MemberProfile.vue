@@ -36,7 +36,15 @@
           <strong>{{ totalComments }} 条评论</strong>
         </header>
 
-        <div class="comment-composer">
+        <el-alert
+          v-if="profile.commentsEnabled === false"
+          :closable="false"
+          class="comment-closed-tip"
+          show-icon
+          title="主页所有者已关闭评论区"
+          type="info"
+        />
+        <div v-else class="comment-composer">
           <UserAvatar
             :name="currentUserName"
             :qq-openid="currentUserQqOpenid"
@@ -70,6 +78,7 @@
             v-for="comment in comments"
             :key="comment.id"
             :comment="comment"
+            :reply-enabled="profile.commentsEnabled !== false"
             @reply="startReply"
           />
           <el-empty v-if="!comments.length" description="还没有评论，来留下第一条留言吧" />
@@ -181,6 +190,10 @@ async function submitComment() {
 }
 
 function startReply(comment: Record<string, any>) {
+  if (profile.value?.commentsEnabled === false) {
+    ElMessage.info('主页所有者已关闭评论区')
+    return
+  }
   replyTarget.value = comment
   commentForm.value.parentId = comment.id
 }

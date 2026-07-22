@@ -42,6 +42,7 @@
             <div class="profile-editor__switches">
               <el-checkbox v-model="showDepartment">展示部门</el-checkbox>
               <el-checkbox v-model="showPosition">展示职位</el-checkbox>
+              <el-checkbox v-model="profile.commentsEnabled">开放主页评论区</el-checkbox>
             </div>
           </el-collapse-item>
 

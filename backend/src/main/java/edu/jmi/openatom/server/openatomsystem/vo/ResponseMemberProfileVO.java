@@ -30,6 +30,7 @@ public class ResponseMemberProfileVO {
   private String colorMode;
   private String visibility;
   private String status;
+  private Boolean commentsEnabled;
   private Boolean showDepartment;
   private Boolean showPosition;
   private Integer version;

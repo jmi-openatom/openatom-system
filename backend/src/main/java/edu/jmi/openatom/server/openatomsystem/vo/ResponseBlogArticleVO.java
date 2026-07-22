@@ -30,6 +30,7 @@ public class ResponseBlogArticleVO {
   private List<String> tags;
   private String status;
   private Boolean featured;
+  private Boolean commentsEnabled;
   private Integer viewCount;
   private Integer likeCount;
   private Integer favoriteCount;

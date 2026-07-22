@@ -14,6 +14,7 @@
           <span class="comment-time">{{ formatDateTime(comment.createdAt) }}</span>
         </div>
         <el-button
+          v-if="replyEnabled"
           class="blog-comment-item__reply"
           link
           type="primary"
@@ -31,6 +32,7 @@
           :key="reply.id"
           :comment="reply"
           :depth="depth + 1"
+          :reply-enabled="replyEnabled"
           @reply="handleReply"
         />
       </div>
@@ -51,9 +53,11 @@ const props = withDefaults(
   defineProps<{
     comment: Record<string, any>
     depth?: number
+    replyEnabled?: boolean
   }>(),
   {
     depth: 0,
+    replyEnabled: true,
   },
 )
 

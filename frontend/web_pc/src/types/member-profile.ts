@@ -60,6 +60,7 @@ export interface MemberProfile {
   colorMode: 'light' | 'dark' | 'system'
   visibility: 'members' | 'unlisted' | 'private'
   status: 'default' | 'draft' | 'published'
+  commentsEnabled: boolean
   showDepartment: boolean
   showPosition: boolean
   version: number

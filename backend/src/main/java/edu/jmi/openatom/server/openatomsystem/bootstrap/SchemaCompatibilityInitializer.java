@@ -73,6 +73,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `color_mode` VARCHAR(16) NOT NULL DEFAULT 'system',
             `visibility` VARCHAR(16) NOT NULL DEFAULT 'members',
             `status` VARCHAR(16) NOT NULL DEFAULT 'draft',
+            `comments_enabled` TINYINT(1) NOT NULL DEFAULT 1,
             `show_department` TINYINT(1) NOT NULL DEFAULT 1,
             `show_position` TINYINT(1) NOT NULL DEFAULT 1,
             `skills` JSON DEFAULT NULL,
@@ -149,6 +150,8 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             KEY `idx_member_profile_comment_parent` (`parent_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='成员主页评论'
         """);
+    addColumnIfAbsent(
+        "member_profile", "comments_enabled", "TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否开放评论区' AFTER `status`");
   }
 
   private void ensureClubRegulationTable() {
@@ -540,6 +543,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             `tags` JSON DEFAULT NULL COMMENT '标签列表',
             `status` VARCHAR(30) DEFAULT 'draft' COMMENT '状态: draft/published/hidden/rejected',
             `featured` TINYINT(1) DEFAULT 0 COMMENT '是否推荐',
+            `comments_enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否开放评论区',
             `view_count` INT DEFAULT 0 COMMENT '浏览量',
             `like_count` INT DEFAULT 0 COMMENT '点赞数',
             `favorite_count` INT DEFAULT 0 COMMENT '收藏数',
@@ -597,6 +601,8 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
         "blog_article", "favorite_count", "INT DEFAULT 0 COMMENT '收藏数' AFTER `like_count`");
     addColumnIfAbsent(
         "blog_article", "share_count", "INT DEFAULT 0 COMMENT '分享数' AFTER `favorite_count`");
+    addColumnIfAbsent(
+        "blog_article", "comments_enabled", "TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否开放评论区' AFTER `featured`");
     addColumnIfAbsent(
         "blog_comment", "parent_id", "INT DEFAULT NULL COMMENT '父评论ID' AFTER `user_id`");
     addIndexIfAbsent(

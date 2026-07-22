@@ -19,6 +19,7 @@ public class RequestSaveMemberProfileDTO {
   private String themeKey;
   private String colorMode;
   private String visibility;
+  private Boolean commentsEnabled;
   private Boolean showDepartment;
   private Boolean showPosition;
   private List<String> skills;
