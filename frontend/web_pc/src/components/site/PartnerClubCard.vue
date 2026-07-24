@@ -44,17 +44,20 @@
     </ul>
 
     <div class="partner-club-card__footer">
-      <a
+      <LinkPreview
         v-if="safeWebsiteUrl"
         :aria-label="`访问${club.name}官网（在新标签页打开）`"
         class="partner-club-card__link"
-        :href="safeWebsiteUrl"
+        link-class="partner-club-card__link-trigger"
         rel="noopener noreferrer"
         target="_blank"
+        :url="safeWebsiteUrl"
+        :width="280"
+        :height="175"
       >
         <span>访问官网</span>
         <ExternalLink aria-hidden="true" :size="16" :stroke-width="1.8" />
-      </a>
+      </LinkPreview>
       <span v-else class="partner-club-card__unavailable">暂无官网</span>
     </div>
   </article>
@@ -64,6 +67,7 @@
 import { computed, ref, watch } from 'vue'
 import { ExternalLink } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import { LinkPreview } from '@/components/ui/link-preview'
 import type { PartnerClub } from '@/types/partner-club'
 
 const props = withDefaults(
@@ -284,13 +288,23 @@ watch(
     color var(--oa-duration-fast) ease;
 }
 
+.partner-club-card__link :deep(.partner-club-card__link-trigger) {
+  display: inline-flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: inherit;
+}
+
 .partner-club-card__link:hover {
   border-color: var(--oa-button-hover-border);
   background: var(--oa-button-hover-bg);
   color: var(--oa-button-hover-text);
 }
 
-.partner-club-card__link:focus-visible {
+.partner-club-card__link:has(:focus-visible) {
   outline: 3px solid var(--oa-focus-ring);
   outline-offset: 3px;
 }
