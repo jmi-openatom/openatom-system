@@ -119,7 +119,16 @@ public class UserServiceImpl implements UserService {
 				.college(requestCreateUserDTO.getCollege()).major(requestCreateUserDTO.getMajor())
 				.grade(requestCreateUserDTO.getGrade()).className(requestCreateUserDTO.getClassName())
 				.avatar(requestCreateUserDTO.getAvatar())
+				.miniappOpenid(blankToNull(requestCreateUserDTO.getMiniappOpenid()))
+				.wechatUnionid(blankToNull(requestCreateUserDTO.getWechatUnionid()))
+				.qqOpenid(blankToNull(requestCreateUserDTO.getQqOpenid()))
+				.googleSub(blankToNull(requestCreateUserDTO.getGoogleSub()))
 				.userStatus(requestCreateUserDTO.getStatus() == null ? UserStatus.ACTIVE : requestCreateUserDTO.getStatus())
+				.createTime(requestCreateUserDTO.getCreateTime())
+				.lastLoginAt(requestCreateUserDTO.getLastLoginAt())
+				.onboardingCompletedAt(requestCreateUserDTO.getOnboardingCompletedAt())
+				.activatedAt(requestCreateUserDTO.getActivatedAt())
+				.qqGroupJoinedAt(requestCreateUserDTO.getQqGroupJoinedAt())
 				.build();
 		int row = userMapper.insert(user);
 		if (row <= 0) return Result.error("用户创建失败");
@@ -312,7 +321,7 @@ public class UserServiceImpl implements UserService {
 		Integer targetUserId = userId == null ? StpUtil.getLoginIdAsInt() : userId;
 		User user = userMapper.selectById(targetUserId);
 		if (user == null) return Result.error(404, "用户不存在");
-		return Result.success(buildSafeUser(user));
+		return Result.success(buildAdminUser(user));
 	}
 
 	@Override
@@ -322,17 +331,62 @@ public class UserServiceImpl implements UserService {
 		if (requestUserUpdate == null) return Result.error("请求参数为空");
 		User user = userMapper.selectById(userId);
 		if (user == null) return Result.error(404, "用户不存在");
+		String username = blankToNull(requestUserUpdate.getUsername());
+		String studentId = blankToNull(requestUserUpdate.getStudentNo());
+		if (username == null) return Result.error(400, "用户名不能为空");
+		Long duplicateCount = userMapper.selectCount(
+				new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+						.ne(User::getId, userId)
+						.and(query -> query.eq(User::getUserName, username)
+								.or(studentId != null, nested -> nested.eq(User::getStudentId, studentId))));
+		if (duplicateCount != null && duplicateCount > 0) {
+			return Result.error(400, "用户名或学号已存在");
+		}
+		user.setUserName(username);
 		user.setRealName(requestUserUpdate.getRealName());
 		user.setGender(requestUserUpdate.getGender());
 		user.setPhone(requestUserUpdate.getPhone());
 		user.setEmail(requestUserUpdate.getEmail());
-		user.setStudentId(requestUserUpdate.getStudentNo());
+		user.setStudentId(studentId);
 		user.setCollege(requestUserUpdate.getCollege());
 		user.setMajor(requestUserUpdate.getMajor());
 		user.setGrade(requestUserUpdate.getGrade());
 		user.setClassName(requestUserUpdate.getClassName());
 		user.setAvatar(requestUserUpdate.getAvatar());
-		int row = userMapper.updateById(user);
+		user.setMiniappOpenid(blankToNull(requestUserUpdate.getMiniappOpenid()));
+		user.setWechatUnionid(blankToNull(requestUserUpdate.getWechatUnionid()));
+		user.setQqOpenid(blankToNull(requestUserUpdate.getQqOpenid()));
+		user.setGoogleSub(blankToNull(requestUserUpdate.getGoogleSub()));
+		user.setUserStatus(requestUserUpdate.getStatus() == null ? user.getUserStatus() : requestUserUpdate.getStatus());
+		user.setCreateTime(requestUserUpdate.getCreateTime());
+		user.setLastLoginAt(requestUserUpdate.getLastLoginAt());
+		user.setOnboardingCompletedAt(requestUserUpdate.getOnboardingCompletedAt());
+		user.setActivatedAt(requestUserUpdate.getActivatedAt());
+		user.setQqGroupJoinedAt(requestUserUpdate.getQqGroupJoinedAt());
+		LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
+		wrapper.eq(User::getId, userId)
+				.set(User::getUserName, user.getUserName())
+				.set(User::getRealName, blankToNull(user.getRealName()))
+				.set(User::getGender, blankToNull(user.getGender()))
+				.set(User::getPhone, blankToNull(user.getPhone()))
+				.set(User::getEmail, blankToNull(user.getEmail()))
+				.set(User::getStudentId, user.getStudentId())
+				.set(User::getCollege, blankToNull(user.getCollege()))
+				.set(User::getMajor, blankToNull(user.getMajor()))
+				.set(User::getGrade, blankToNull(user.getGrade()))
+				.set(User::getClassName, blankToNull(user.getClassName()))
+				.set(User::getAvatar, blankToNull(user.getAvatar()))
+				.set(User::getMiniappOpenid, user.getMiniappOpenid())
+				.set(User::getWechatUnionid, user.getWechatUnionid())
+				.set(User::getQqOpenid, user.getQqOpenid())
+				.set(User::getGoogleSub, user.getGoogleSub())
+				.set(User::getUserStatus, user.getUserStatus())
+				.set(User::getCreateTime, user.getCreateTime())
+				.set(User::getLastLoginAt, user.getLastLoginAt())
+				.set(User::getOnboardingCompletedAt, user.getOnboardingCompletedAt())
+				.set(User::getActivatedAt, user.getActivatedAt())
+				.set(User::getQqGroupJoinedAt, user.getQqGroupJoinedAt());
+		int row = userMapper.update(null, wrapper);
 		return row > 0 ? Result.success("用户信息更新成功") : Result.error("用户信息更新失败");
 	}
 
@@ -439,7 +493,10 @@ public class UserServiceImpl implements UserService {
 
 	private User buildAdminUser(User user) {
 		User adminUser = buildSafeUser(user);
+		adminUser.setMiniappOpenid(user.getMiniappOpenid());
+		adminUser.setWechatUnionid(user.getWechatUnionid());
 		adminUser.setQqOpenid(user.getQqOpenid());
+		adminUser.setGoogleSub(user.getGoogleSub());
 		return adminUser;
 	}
 
@@ -469,5 +526,9 @@ public class UserServiceImpl implements UserService {
 
 	private boolean isBlank(String value) {
 		return value == null || value.isBlank();
+	}
+
+	private String blankToNull(String value) {
+		return isBlank(value) ? null : value.trim();
 	}
 }

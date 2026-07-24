@@ -55,10 +55,14 @@
     >
       <el-table-column type="selection" width="48" />
       <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="userName" label="用户名" />
-      <el-table-column prop="realName" label="姓名" />
+      <el-table-column prop="userName" label="用户名" min-width="130" />
+      <el-table-column prop="realName" label="姓名" min-width="110" />
+      <el-table-column prop="gender" label="性别" width="80" />
       <el-table-column prop="studentId" label="学号" />
-      <el-table-column prop="className" label="班级" />
+      <el-table-column prop="college" label="学院" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="major" label="专业" min-width="140" show-overflow-tooltip />
+      <el-table-column prop="grade" label="年级" width="90" />
+      <el-table-column prop="className" label="班级" min-width="120" />
       <el-table-column prop="phone" label="手机号" />
       <el-table-column prop="email" label="邮箱" />
       <el-table-column label="微信" width="100">
@@ -124,29 +128,121 @@
       @change="fetchList"
     />
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑用户' : '新增用户'" width="560px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="86px">
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" />
-        </el-form-item>
-        <el-form-item label="姓名" prop="realName">
-          <el-input v-model="form.realName" />
-        </el-form-item>
-        <el-form-item label="学号">
-          <el-input v-model="form.studentId" />
-        </el-form-item>
-        <el-form-item label="班级">
-          <el-input v-model="form.className" />
-        </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="form.phone" />
-        </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input v-model="form.email" />
-        </el-form-item>
-        <el-form-item v-if="!form.id" label="密码" prop="password">
-          <el-input v-model="form.password" type="password" show-password />
-        </el-form-item>
+    <el-dialog
+      v-model="dialogVisible"
+      :title="form.id ? '编辑用户全部字段' : '新增用户'"
+      width="860px"
+      destroy-on-close
+    >
+      <el-form
+        ref="formRef"
+        v-loading="formLoading"
+        :model="form"
+        :rules="rules"
+        label-width="110px"
+      >
+        <el-divider content-position="left">账号与基本信息</el-divider>
+        <div class="user-form-grid">
+          <el-form-item label="用户名" prop="username">
+            <el-input v-model="form.username" />
+          </el-form-item>
+          <el-form-item label="姓名" prop="realName">
+            <el-input v-model="form.realName" />
+          </el-form-item>
+          <el-form-item v-if="!form.id" label="密码" prop="password">
+            <el-input v-model="form.password" type="password" show-password />
+          </el-form-item>
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="form.status">
+              <el-option label="启用" value="active" />
+              <el-option label="禁用" value="disabled" />
+              <el-option label="锁定" value="locked" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="性别">
+            <el-select v-model="form.gender" clearable allow-create filterable>
+              <el-option label="男" value="男" />
+              <el-option label="女" value="女" />
+              <el-option label="其他" value="其他" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="手机号" prop="phone">
+            <el-input v-model="form.phone" clearable />
+          </el-form-item>
+          <el-form-item label="邮箱" prop="email">
+            <el-input v-model="form.email" clearable />
+          </el-form-item>
+          <el-form-item label="头像 URL">
+            <el-input v-model="form.avatar" clearable />
+          </el-form-item>
+        </div>
+
+        <el-divider content-position="left">学籍信息</el-divider>
+        <div class="user-form-grid">
+          <el-form-item label="学号/工号">
+            <el-input v-model="form.studentNo" clearable />
+          </el-form-item>
+          <el-form-item label="学院">
+            <el-select
+              v-model="form.college"
+              clearable
+              filterable
+              placeholder="请选择学院"
+              no-data-text="未找到匹配的学院"
+            >
+              <el-option
+                v-for="college in collegeOptions"
+                :key="college.value"
+                :label="college.label"
+                :value="college.value"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="专业">
+            <el-input v-model="form.major" clearable />
+          </el-form-item>
+          <el-form-item label="年级">
+            <el-input v-model="form.grade" clearable />
+          </el-form-item>
+          <el-form-item label="班级">
+            <el-input v-model="form.className" clearable />
+          </el-form-item>
+        </div>
+
+        <el-divider content-position="left">第三方账号绑定</el-divider>
+        <div class="user-form-grid">
+          <el-form-item label="小程序 OpenID">
+            <el-input v-model="form.miniappOpenid" clearable />
+          </el-form-item>
+          <el-form-item label="微信 UnionID">
+            <el-input v-model="form.wechatUnionid" clearable />
+          </el-form-item>
+          <el-form-item label="QQ OpenID/QQ号">
+            <el-input v-model="form.qqOpenid" clearable />
+          </el-form-item>
+          <el-form-item label="Google Sub">
+            <el-input v-model="form.googleSub" clearable />
+          </el-form-item>
+        </div>
+
+        <el-divider content-position="left">系统时间</el-divider>
+        <div class="user-form-grid">
+          <el-form-item label="创建时间">
+            <el-date-picker v-model="form.createTime" type="datetime" clearable />
+          </el-form-item>
+          <el-form-item label="最后登录时间">
+            <el-date-picker v-model="form.lastLoginAt" type="datetime" clearable />
+          </el-form-item>
+          <el-form-item label="入社介绍完成">
+            <el-date-picker v-model="form.onboardingCompletedAt" type="datetime" clearable />
+          </el-form-item>
+          <el-form-item label="激活时间">
+            <el-date-picker v-model="form.activatedAt" type="datetime" clearable />
+          </el-form-item>
+          <el-form-item label="加入 QQ 群时间">
+            <el-date-picker v-model="form.qqGroupJoinedAt" type="datetime" clearable />
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -244,6 +340,7 @@ import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { Plus, Search, Upload } from '@element-plus/icons-vue'
 import { clubApi, membershipApi, userApi, rbacApi } from '@/api'
+import { COLLEGE_NAMES } from '@/constants/colleges'
 import { statusType } from '@/utils/format.ts'
 import { getToken } from '@/utils/auth.ts'
 import { hasPermission } from '@/utils/permission.ts'
@@ -252,6 +349,7 @@ import { computed, onMounted, ref } from 'vue'
 const loading = ref(false)
 
 const saving = ref(false)
+const formLoading = ref(false)
 
 const dialogVisible = ref(false)
 
@@ -290,10 +388,24 @@ const avatarHealth = ref<any>({})
 const rules = ref({
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 8, max: 72, message: '密码长度为 8 到 72 个字符', trigger: 'blur' },
+  ],
+  phone: [{ pattern: /^$|^1\d{10}$/, message: '手机号格式不正确', trigger: 'blur' }],
+  email: [{ type: 'email', message: '邮箱格式不正确', trigger: 'blur' }],
 })
 
 const formRef = ref<any>()
+
+const collegeOptions = computed(() => {
+  const options = COLLEGE_NAMES.map((college) => ({ label: college, value: college }))
+  const currentCollege = String(form.value.college || '').trim()
+  if (currentCollege && !COLLEGE_NAMES.includes(currentCollege as (typeof COLLEGE_NAMES)[number])) {
+    return [{ label: `${currentCollege}（历史值）`, value: currentCollege }, ...options]
+  }
+  return options
+})
 
 const uploadHeaders = computed(() => {
   const token = getToken()
@@ -390,19 +502,35 @@ async function fetchClubs() {
   }
 }
 
-function openDialog(row: any) {
+async function openDialog(row?: any) {
   form.value = row
-    ? { ...row, username: row.userName || row.username }
+    ? { id: row.id }
     : {
         username: '',
         realName: '',
-        studentId: '',
+        studentNo: '',
         className: '',
         phone: '',
         email: '',
         password: '',
+        status: 'active',
       }
   dialogVisible.value = true
+  if (row?.id) {
+    formLoading.value = true
+    try {
+      const detail = await userApi.info(row.id)
+      form.value = {
+        ...detail,
+        id: row.id,
+        username: detail.userName || detail.username,
+        studentNo: detail.studentId || '',
+        status: detail.userStatus || 'active',
+      }
+    } finally {
+      formLoading.value = false
+    }
+  }
 }
 
 function saveUser() {
@@ -410,8 +538,15 @@ function saveUser() {
     if (!valid) return
     saving.value = true
     try {
-      if (form.value.id) await userApi.update(form.value.id, form.value)
-      else await userApi.create(form.value)
+      const payload = { ...form.value }
+      delete payload.id
+      delete payload.userName
+      delete payload.studentId
+      delete payload.userStatus
+      delete payload.password
+      if (!form.value.id) payload.password = form.value.password
+      if (form.value.id) await userApi.update(form.value.id, payload)
+      else await userApi.create(payload)
       ElMessage.success('保存成功')
       dialogVisible.value = false
       fetchList()
@@ -440,12 +575,20 @@ async function toggleActivation(row: any) {
 }
 
 async function resetPassword(row: any) {
-  await ElMessageBox.confirm(`确认重置 ${row.realName || row.userName} 的密码？`, '提示', {
-    confirmButtonText: '确认重置',
-    cancelButtonText: '取消',
-  })
-  await userApi.resetPassword(row.id, { newPassword: '12345678' })
-  ElMessage.success('已重置为 12345678')
+  const { value: newPassword } = await ElMessageBox.prompt(
+    `请输入 ${row.realName || row.userName} 的新密码`,
+    '重置密码',
+    {
+      confirmButtonText: '确认重置',
+      cancelButtonText: '取消',
+      inputType: 'password',
+      inputPlaceholder: '8 到 72 个字符',
+      inputValidator: (value) =>
+        (value?.length >= 8 && value?.length <= 72) || '密码长度必须为 8 到 72 个字符',
+    },
+  )
+  await userApi.resetPassword(row.id, { newPassword })
+  ElMessage.success('密码重置成功')
 }
 
 async function removeUser(row: any) {
@@ -579,5 +722,22 @@ onMounted(() => {
 
 .avatar-health__summary strong.danger {
   color: #f56c6c;
+}
+
+.user-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+}
+
+.user-form-grid :deep(.el-select),
+.user-form-grid :deep(.el-date-editor) {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .user-form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

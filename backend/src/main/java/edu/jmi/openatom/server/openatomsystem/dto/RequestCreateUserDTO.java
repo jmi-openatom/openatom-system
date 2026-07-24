@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.sql.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -49,5 +50,14 @@ public class RequestCreateUserDTO {
   private String grade;
   private String className;
   private String avatar;
+  private String miniappOpenid;
+  private String wechatUnionid;
+  private String qqOpenid;
+  private String googleSub;
   private UserStatus status;
+  private Timestamp createTime;
+  private Timestamp lastLoginAt;
+  private Timestamp onboardingCompletedAt;
+  private Timestamp activatedAt;
+  private Timestamp qqGroupJoinedAt;
 }

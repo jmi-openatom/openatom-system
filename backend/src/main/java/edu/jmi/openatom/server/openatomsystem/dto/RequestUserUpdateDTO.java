@@ -1,8 +1,10 @@
 package edu.jmi.openatom.server.openatomsystem.dto;
 
+import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.sql.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +21,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RequestUserUpdateDTO {
+  @Size(max = 64, message = "用户名长度不能超过64个字符")
+  private String username;
+
   @Size(max = 64, message = "真实姓名长度不能超过64个字符")
   private String realName;
 
@@ -39,4 +44,14 @@ public class RequestUserUpdateDTO {
   private String grade;
   private String className;
   private String avatar;
+  private String miniappOpenid;
+  private String wechatUnionid;
+  private String qqOpenid;
+  private String googleSub;
+  private UserStatus status;
+  private Timestamp createTime;
+  private Timestamp lastLoginAt;
+  private Timestamp onboardingCompletedAt;
+  private Timestamp activatedAt;
+  private Timestamp qqGroupJoinedAt;
 }
