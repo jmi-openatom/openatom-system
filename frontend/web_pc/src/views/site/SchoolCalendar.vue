@@ -1,7 +1,9 @@
 <template>
   <ViewPage class="site-system-page calendar-page">
     <SitePageHero
+      dark-image="/calendar-hero-wide-dark.png?v=3"
       eyebrow="校历"
+      light-image="/calendar-hero-wide-light.png?v=3"
       title="学期校历"
       :description="
         calendar.startDate

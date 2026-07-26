@@ -1,5 +1,10 @@
 <template>
-  <section id="people" class="container section people-section home-interactive-section">
+  <section
+    id="people"
+    ref="sectionRef"
+    :class="{ 'is-visible': isVisible }"
+    class="container section people-section home-interactive-section"
+  >
     <HomeInteractiveBackdrop :radius="200" :spacing="60" :strength="16" />
     <div class="section-heading reveal-block">
       <span>成员信息</span>
@@ -61,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
 
@@ -69,6 +74,10 @@ const props = defineProps<{
   people: any[]
   loading: boolean
 }>()
+
+const sectionRef = ref<HTMLElement>()
+const isVisible = ref(false)
+let visibilityObserver: IntersectionObserver | undefined
 
 const mappedPeople = computed(() =>
   props.people.map((person) => ({
@@ -103,6 +112,25 @@ const marqueeStyle = computed(() => ({
 function formatMemberIndex(index: number) {
   return String(index + 1).padStart(2, '0')
 }
+
+onMounted(() => {
+  if (!sectionRef.value || !('IntersectionObserver' in window)) {
+    isVisible.value = true
+    return
+  }
+
+  visibilityObserver = new IntersectionObserver(
+    (entries) => {
+      isVisible.value = entries.some((entry) => entry.isIntersecting)
+    },
+    { rootMargin: '120px 0px', threshold: 0.01 },
+  )
+  visibilityObserver.observe(sectionRef.value)
+})
+
+onBeforeUnmount(() => {
+  visibilityObserver?.disconnect()
+})
 </script>
 
 <style scoped>
@@ -185,7 +213,12 @@ function formatMemberIndex(index: number) {
   gap: 0;
   width: max-content;
   animation: people-wall-flow 42s linear infinite;
+  animation-play-state: paused;
   will-change: transform;
+}
+
+.people-section.is-visible .people-wall__marquee {
+  animation-play-state: running;
 }
 
 .people-wall:hover .people-wall__marquee {

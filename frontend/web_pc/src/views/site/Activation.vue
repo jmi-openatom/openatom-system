@@ -14,19 +14,24 @@
       </div>
     </div>
 
-   <!-- ============ Open-Source Floating Decoration ============ -->
+    <!-- ============ Open-Source Floating Decoration ============ -->
     <div class="ob-os-deco" aria-hidden="true">
       <span class="ob-os-deco__symbol ob-os-deco__symbol--1">&lt;/&gt;</span>
       <span class="ob-os-deco__symbol ob-os-deco__symbol--2">{ }</span>
       <span class="ob-os-deco__symbol ob-os-deco__symbol--3">git push</span>
       <span class="ob-os-deco__symbol ob-os-deco__symbol--4">open source</span>
-      <span class="ob-os-deco__symbol ob-os-deco__symbol--5">PR #{{ String(step).padStart(2, '0') }}</span>
+      <span class="ob-os-deco__symbol ob-os-deco__symbol--5"
+        >PR #{{ String(step).padStart(2, '0') }}</span
+      >
     </div>
 
     <!-- ============ Progress Indicator ============ -->
     <div class="onboard__progress" aria-hidden="true">
       <div class="onboard__progress-track">
-        <div class="onboard__progress-fill" :style="{ width: `${(step / TOTAL_STEPS) * 100}%` }"></div>
+        <div
+          class="onboard__progress-fill"
+          :style="{ width: `${(step / TOTAL_STEPS) * 100}%` }"
+        ></div>
       </div>
       <div class="onboard__progress-dots">
         <span
@@ -44,35 +49,65 @@
     <!-- ============ Step Container ============ -->
     <Transition :name="transitionName" mode="out-in" @after-enter="onStepEntered">
       <component :is="'div'" :key="step" class="onboard__step">
-       <!-- ====== Step 1: Welcome ====== -->
+        <!-- ====== Step 1: Welcome ====== -->
         <section v-if="step === 1" class="ob-step ob-step--welcome">
           <div class="ob-step__inner">
             <div class="ob-logo" :class="{ 'ob-logo--in': stepInAnim }">
-              <img src="/logo.png" width="100" alt="">
+              <img src="/logo.png" width="100" alt="" />
             </div>
             <p class="ob-eyebrow" :style="{ '--delay': '0.1s' }">开放原子开源社团 · JMI-OPENATOM</p>
-            <h1 class="ob-title" :style="{ '--delay': '0.25s' }">
-              欢迎加入
-            </h1>
+            <h1 class="ob-title" :style="{ '--delay': '0.25s' }">欢迎加入</h1>
 
             <div class="ob-welcome-name" :style="{ '--delay': '0.4s' }">
-              <h1 class="ob-welcome-name__headline">{{ displayName }} <span>·</span> {{ info?.membership?.departmentName || '尚未分配部门' }}</h1>
+              <h1 class="ob-welcome-name__headline">
+                {{ displayName }} <span>·</span>
+                {{ info?.membership?.departmentName || '尚未分配部门' }}
+              </h1>
             </div>
 
             <p class="ob-subtitle" :style="{ '--delay': '0.55s' }">
-              这里不只是一个社团，而是你技术旅程的全新起点。<br>让开源，在校园里真正发生。
+              这里不只是一个社团，而是你技术旅程的全新起点。<br />让开源，在校园里真正发生。
             </p>
 
             <div class="ob-os-badge" :style="{ '--delay': '0.65s' }">
-              <svg class="ob-os-badge__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 8l-3 4 3 4m0-8l3 4-3 4" stroke-linecap="round" stroke-linejoin="round"/>
+              <svg
+                class="ob-os-badge__icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M12 8l-3 4 3 4m0-8l3 4-3 4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
               <span>Open Source · Open Mind · Open Future</span>
             </div>
 
-            <button class="ob-btn ob-btn--primary ob-btn--glow" :style="{ '--delay': '0.8s' }" @click="nextStep">
-              <svg class="ob-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 12h5M12 16v5M8 12H3M12 8V3"/></svg>
+            <button
+              class="ob-btn ob-btn--primary ob-btn--glow"
+              :style="{ '--delay': '0.8s' }"
+              @click="nextStep"
+            >
+              <svg
+                class="ob-btn__icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path d="M16 12h5M12 16v5M8 12H3M12 8V3" />
+              </svg>
               Fork 未来
               <span class="ob-btn__arrow">→</span>
             </button>
@@ -87,14 +122,54 @@
               让开源在校园里真正发生
             </h2>
             <p class="ob-desc" :style="{ '--delay': '0.3s' }">
-              我们相信开源不仅是一种协作方式，更是一种学习姿态。<br>每一行代码都被认真审视，每一次提交都值得被讨论。<br>我们不追求一蹴而就的成果，而是在持续的实践中，把「<span style="font-style: italic">做出有用的东西</span>」变成日常。
+              我们相信开源不仅是一种协作方式，更是一种学习姿态。<br />每一行代码都被认真审视，每一次提交都值得被讨论。<br />我们不追求一蹴而就的成果，而是在持续的实践中，把「<span
+                style="font-style: italic"
+                >做出有用的东西</span
+              >」变成日常。
             </p>
             <div class="ob-pillars" :style="{ '--delay': '0.45s' }">
-            <div v-for="(p, i) in manifestoPillars" :key="p.title" class="ob-pillar">
+              <div v-for="(p, i) in manifestoPillars" :key="p.title" class="ob-pillar">
                 <div class="ob-pillar__icon">
-                  <svg v-if="i === 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-linecap="round"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke-linecap="round"/></svg>
-                  <svg v-else-if="i === 1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20V10M18 20V4M6 20v-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg
+                    v-if="i === 0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke-linecap="round" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path
+                      d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  <svg
+                    v-else-if="i === 1"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M16 18l6-6-6-6M8 6l-6 6 6 6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <svg
+                    v-else
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M12 20V10M18 20V4M6 20v-4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
                 </div>
                 <strong class="ob-pillar__title">{{ p.title }}</strong>
                 <p class="ob-pillar__desc">{{ p.desc }}</p>
@@ -111,19 +186,62 @@
         <section v-else-if="step === 3" class="ob-step ob-step--what">
           <div class="ob-step__inner ob-step__inner--narrow">
             <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">日常方向 · WHAT WE DO</p>
-            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">
-              我们做什么
-            </h2>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">我们做什么</h2>
             <p class="ob-desc" :style="{ '--delay': '0.3s' }">
               四个方向，构成社团日常的全部内容。每一个方向，都从真实需求出发，而非纸上谈兵。
             </p>
             <div class="ob-pillars" :style="{ '--delay': '0.45s' }">
               <div v-for="(item, idx) in whatWeDo" :key="item.title" class="ob-pillar">
                 <div class="ob-pillar__icon">
-                  <svg v-if="idx === 0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  <svg v-else-if="idx === 1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4" stroke-linecap="round"/></svg>
-                  <svg v-else-if="idx === 2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6-6 6 6M6 15l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" stroke-linecap="round"/></svg>
+                  <svg
+                    v-if="idx === 0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <svg
+                    v-else-if="idx === 1"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <path d="M8 21h8M12 17v4" stroke-linecap="round" />
+                  </svg>
+                  <svg
+                    v-else-if="idx === 2"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M6 9l6-6 6 6M6 15l6 6 6-6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <svg
+                    v-else
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path
+                      d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"
+                      stroke-linecap="round"
+                    />
+                  </svg>
                 </div>
                 <strong class="ob-pillar__title">{{ item.title }}</strong>
                 <p class="ob-pillar__desc">{{ item.desc }}</p>
@@ -144,19 +262,40 @@
             <!-- Department Hero -->
             <div class="ob-dept-hero" :style="{ '--delay': '0.15s' }">
               <div class="ob-dept-hero__icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M3 7v1a3 3 0 006 0V7m0 1a3 3 0 006 0V7m0 1a3 3 0 006 0V7H3l2-4h14l2 4M5 21V10.87M19 21V10.87" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path
+                    d="M3 21h18M3 7v1a3 3 0 006 0V7m0 1a3 3 0 006 0V7m0 1a3 3 0 006 0V7H3l2-4h14l2 4M5 21V10.87M19 21V10.87"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </div>
               <h2 class="ob-dept-hero__name">
                 {{ info?.membership?.departmentName || '尚未分配部门' }}
               </h2>
               <div v-if="info?.membership?.positionName" class="ob-dept-hero__position">
-                <svg class="ob-dept-hero__position-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-4V3H8v4H4c-1.1 0-2 .9-2 2v2h20V9c0-1.1-.9-2-2-2zM4 13v6c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-6H4z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg
+                  class="ob-dept-hero__position-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M20 7h-4V3H8v4H4c-1.1 0-2 .9-2 2v2h20V9c0-1.1-.9-2-2-2zM4 13v6c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-6H4z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
                 {{ info.membership.positionName }}
               </div>
             </div>
 
             <p class="ob-desc" :style="{ '--delay': '0.3s' }">
-              {{ info?.membership?.departmentDescription || '部门介绍即将上线，如有疑问请联系社长或管理员。' }}
+              {{
+                info?.membership?.departmentDescription ||
+                '部门介绍即将上线，如有疑问请联系社长或管理员。'
+              }}
             </p>
 
             <!-- Department Heads -->
@@ -164,24 +303,44 @@
               <div v-if="info?.departmentHead" class="ob-dept-head ob-dept-head--primary">
                 <div class="ob-dept-head__badge">部长</div>
                 <div class="ob-dept-head__avatar">
-                  <img v-if="info.departmentHead.avatar || info.departmentHead.qqAvatar" :src="info.departmentHead.avatar || info.departmentHead.qqAvatar" alt="" />
-                  <span v-else>{{ info.departmentHead.initial || info.departmentHead.name?.charAt(0) }}</span>
+                  <img
+                    v-if="info.departmentHead.avatar || info.departmentHead.qqAvatar"
+                    :src="info.departmentHead.avatar || info.departmentHead.qqAvatar"
+                    alt=""
+                  />
+                  <span v-else>{{
+                    info.departmentHead.initial || info.departmentHead.name?.charAt(0)
+                  }}</span>
                 </div>
                 <strong class="ob-dept-head__name">{{ info.departmentHead.name }}</strong>
               </div>
               <div v-if="info?.viceDepartmentHead" class="ob-dept-head">
                 <div class="ob-dept-head__badge ob-dept-head__badge--vice">副部长</div>
                 <div class="ob-dept-head__avatar">
-                  <img v-if="info.viceDepartmentHead.qqAvatar || info.viceDepartmentHead.avatar" :src="info.viceDepartmentHead.qqAvatar || info.viceDepartmentHead.avatar" alt="" />
-                  <span v-else>{{ info.viceDepartmentHead.initial || info.viceDepartmentHead.name?.charAt(0) }}</span>
+                  <img
+                    v-if="info.viceDepartmentHead.qqAvatar || info.viceDepartmentHead.avatar"
+                    :src="info.viceDepartmentHead.qqAvatar || info.viceDepartmentHead.avatar"
+                    alt=""
+                  />
+                  <span v-else>{{
+                    info.viceDepartmentHead.initial || info.viceDepartmentHead.name?.charAt(0)
+                  }}</span>
                 </div>
                 <strong class="ob-dept-head__name">{{ info.viceDepartmentHead.name }}</strong>
               </div>
             </div>
 
-            <div v-if="info?.membership?.departmentWechatQrcode" class="ob-qrcode" :style="{ '--delay': '0.5s' }">
+            <div
+              v-if="info?.membership?.departmentWechatQrcode"
+              class="ob-qrcode"
+              :style="{ '--delay': '0.5s' }"
+            >
               <span class="ob-mono-label">部门微信群</span>
-              <img :src="info.membership.departmentWechatQrcode" alt="部门微信群二维码" class="ob-qrcode__img" />
+              <img
+                :src="info.membership.departmentWechatQrcode"
+                alt="部门微信群二维码"
+                class="ob-qrcode__img"
+              />
               <p>扫码加入部门微信群</p>
             </div>
 
@@ -202,11 +361,9 @@
         <section v-else-if="step === 5" class="ob-step ob-step--leaders">
           <div class="ob-step__inner ob-step__inner--narrow">
             <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">核心团队 · LEADERSHIP</p>
-            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">
-              与你同行的人
-            </h2>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">与你同行的人</h2>
             <p class="ob-desc" :style="{ '--delay': '0.3s' }">
-              社团的核心管理团队，将带你一起探索开源世界。<br>
+              社团的核心管理团队，将带你一起探索开源世界。<br />
               从第一次分享、第一次提交，到每一次把想法做成作品，他们都会和你并肩同行。
             </p>
 
@@ -214,7 +371,11 @@
             <div class="ob-leaders-grid" :style="{ '--delay': '0.4s' }">
               <div v-if="info?.president" class="ob-leader-card">
                 <div class="ob-leader-card__avatar">
-                  <img v-if="info.president.qqAvatar || info.president.avatar" :src="info.president.qqAvatar || info.president.avatar" alt="" />
+                  <img
+                    v-if="info.president.qqAvatar || info.president.avatar"
+                    :src="info.president.qqAvatar || info.president.avatar"
+                    alt=""
+                  />
                   <span v-else>{{ info.president.initial || info.president.name?.charAt(0) }}</span>
                 </div>
                 <div class="ob-leader-card__info">
@@ -224,19 +385,21 @@
               </div>
               <div v-if="info?.leagueSecretary" class="ob-leader-card">
                 <div class="ob-leader-card__avatar">
-                  <img v-if="info.leagueSecretary.qqAvatar || info.leagueSecretary.avatar" :src="info.leagueSecretary.qqAvatar || info.leagueSecretary.avatar" alt="" />
-                  <span v-else>{{ info.leagueSecretary.initial || info.leagueSecretary.name?.charAt(0) }}</span>
+                  <img
+                    v-if="info.leagueSecretary.qqAvatar || info.leagueSecretary.avatar"
+                    :src="info.leagueSecretary.qqAvatar || info.leagueSecretary.avatar"
+                    alt=""
+                  />
+                  <span v-else>{{
+                    info.leagueSecretary.initial || info.leagueSecretary.name?.charAt(0)
+                  }}</span>
                 </div>
                 <div class="ob-leader-card__info">
                   <span class="ob-leader-card__name">{{ info.leagueSecretary.name }}</span>
                   <span class="ob-leader-card__tag">团支书</span>
                 </div>
               </div>
-              <div
-                v-for="vp in info?.vicePresidents || []"
-                :key="vp.userId"
-                class="ob-leader-card"
-              >
+              <div v-for="vp in info?.vicePresidents || []" :key="vp.userId" class="ob-leader-card">
                 <div class="ob-leader-card__avatar">
                   <img v-if="vp.qqAvatar || vp.avatar" :src="vp.qqAvatar || vp.avatar" alt="" />
                   <span v-else>{{ vp.initial || vp.name?.charAt(0) }}</span>
@@ -247,7 +410,11 @@
                 </div>
               </div>
               <div
-                v-if="!info?.president && !info?.leagueSecretary && (!info?.vicePresidents || !info.vicePresidents.length)"
+                v-if="
+                  !info?.president &&
+                  !info?.leagueSecretary &&
+                  (!info?.vicePresidents || !info.vicePresidents.length)
+                "
                 class="ob-leader--empty"
               >
                 <span class="ob-mono-label">NOT SET</span>
@@ -272,15 +439,17 @@
         <section v-else-if="step === 6" class="ob-step ob-step--groups">
           <div class="ob-step__inner ob-step__inner--narrow">
             <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">加入群聊 · JOIN US</p>
-            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">
-              加入社团群聊
-            </h2>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">加入社团群聊</h2>
             <p class="ob-desc" :style="{ '--delay': '0.3s' }">
               扫码加入微信群，获取社团最新动态。加入QQ群是激活账号的前置条件，请生成验证码后申请入群。
             </p>
 
             <div class="ob-groups-layout">
-              <div v-if="info?.club?.wechatGroupQrcode" class="ob-qrcode" :style="{ '--delay': '0.4s' }">
+              <div
+                v-if="info?.club?.wechatGroupQrcode"
+                class="ob-qrcode"
+                :style="{ '--delay': '0.4s' }"
+              >
                 <div class="ob-channel-card__head">
                   <span class="ob-channel-card__step">01</span>
                   <div>
@@ -289,7 +458,11 @@
                   </div>
                 </div>
                 <div class="ob-qrcode__frame">
-                  <img :src="info.club.wechatGroupQrcode" alt="社团微信群二维码" class="ob-qrcode__img" />
+                  <img
+                    :src="info.club.wechatGroupQrcode"
+                    alt="社团微信群二维码"
+                    class="ob-qrcode__img"
+                  />
                 </div>
                 <p>打开微信扫码加入社团总群</p>
               </div>
@@ -314,9 +487,7 @@
                       <span class="ob-token-card__label">入群验证码</span>
                       <code class="ob-token-card__code">{{ groupJoinToken }}</code>
                     </div>
-                    <button class="ob-btn ob-btn--glass" @click="copyToken">
-                      复制验证码
-                    </button>
+                    <button class="ob-btn ob-btn--glass" @click="copyToken">复制验证码</button>
                   </template>
                   <button
                     v-else
@@ -330,9 +501,18 @@
                 </div>
 
                 <div class="ob-qq-guide" aria-label="QQ群验证步骤">
-                  <div><span>1</span><p>生成一次性入群验证码</p></div>
-                  <div><span>2</span><p>申请加入QQ群并填写验证码</p></div>
-                  <div><span>3</span><p>系统自动检测入群状态</p></div>
+                  <div>
+                    <span>1</span>
+                    <p>生成一次性入群验证码</p>
+                  </div>
+                  <div>
+                    <span>2</span>
+                    <p>申请加入QQ群并填写验证码</p>
+                  </div>
+                  <div>
+                    <span>3</span>
+                    <p>系统自动检测入群状态</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -342,8 +522,15 @@
             </div>
 
             <div v-else-if="groupJoinToken" class="ob-polling-hint" :style="{ '--delay': '0.55s' }">
-              <span class="ob-polling-hint__dot" :class="{ 'ob-polling-hint__dot--checking': checkingStatus }"></span>
-              {{ checkingStatus ? '正在检测入群状态…' : '已复制验证码，请在QQ群中提交入群申请，系统将自动检测' }}
+              <span
+                class="ob-polling-hint__dot"
+                :class="{ 'ob-polling-hint__dot--checking': checkingStatus }"
+              ></span>
+              {{
+                checkingStatus
+                  ? '正在检测入群状态…'
+                  : '已复制验证码，请在QQ群中提交入群申请，系统将自动检测'
+              }}
             </div>
 
             <div class="ob-step__actions" :style="{ '--delay': '0.65s' }">
@@ -367,9 +554,7 @@
         <section v-else-if="step === 7" class="ob-step ob-step--password">
           <div class="ob-step__inner ob-step__inner--narrow">
             <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">安全设置 · SECURITY</p>
-            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">
-              设置你的密码
-            </h2>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">设置你的密码</h2>
             <p class="ob-desc" :style="{ '--delay': '0.3s' }">
               这是激活流程的最后一步。设置新密码后，你的账号将正式激活，可使用所有功能。
             </p>
@@ -401,7 +586,11 @@
                 <button
                   type="submit"
                   class="ob-btn ob-btn--primary"
-                  :disabled="!passwordForm.oldPassword || !passwordForm.newPassword || passwordForm.newPassword.length < 4"
+                  :disabled="
+                    !passwordForm.oldPassword ||
+                    !passwordForm.newPassword ||
+                    passwordForm.newPassword.length < 4
+                  "
                 >
                   Deploy 激活
                   <span class="ob-btn__arrow">→</span>
@@ -416,8 +605,25 @@
           <div class="ob-step__inner">
             <div class="ob-loader">
               <svg class="ob-loader__ring" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="2" fill="none" opacity="0.15"/>
-                <circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" class="ob-loader__arc"/>
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="46"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  fill="none"
+                  opacity="0.15"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="46"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  fill="none"
+                  stroke-linecap="round"
+                  class="ob-loader__arc"
+                />
               </svg>
               <p class="ob-loader__text">{{ loadingText }}</p>
             </div>
@@ -427,38 +633,33 @@
         <!-- ====== Step 9: Success ====== -->
         <section v-else-if="step === 9" class="ob-step ob-step--success">
           <div class="ob-step__inner">
-
             <!-- Success Animation -->
             <div class="ob-success-check" :class="{ 'ob-success-check--in': stepInAnim }">
               <svg viewBox="0 0 64 64" class="ob-success-check__svg">
                 <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    fill="none"
-                    class="ob-success-check__circle"
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  fill="none"
+                  class="ob-success-check__circle"
                 />
                 <path
-                    d="M20 33 L28 41 L44 23"
-                    stroke="currentColor"
-                    stroke-width="3"
-                    fill="none"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="ob-success-check__path"
+                  d="M20 33 L28 41 L44 23"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="ob-success-check__path"
                 />
               </svg>
             </div>
 
-            <p class="ob-eyebrow" :style="{ '--delay': '0.15s' }">
-              Welcome to JMI-OPENATOM
-            </p>
+            <p class="ob-eyebrow" :style="{ '--delay': '0.15s' }">Welcome to JMI-OPENATOM</p>
 
-            <h1 class="ob-title" :style="{ '--delay': '0.3s' }">
-              欢迎加入
-            </h1>
+            <h1 class="ob-title" :style="{ '--delay': '0.3s' }">欢迎加入</h1>
 
             <h2 class="ob-name" :style="{ '--delay': '0.45s' }">
               {{ displayName }}
@@ -483,20 +684,31 @@
                 <p><span class="ob-term-prompt">$</span> git status</p>
                 <p class="ob-term-success">✓ Account activated successfully</p>
                 <p><span class="ob-term-prompt">$</span> echo "Code. Share. Inspire."</p>
-                <p class="ob-term-output">Code. Share. Inspire.<span class="ob-term-cursor">█</span></p>
+                <p class="ob-term-output">
+                  Code. Share. Inspire.<span class="ob-term-cursor">█</span>
+                </p>
               </div>
             </div>
 
             <button
-                class="ob-btn ob-btn--primary ob-btn--glow"
-                :style="{ '--delay': '1s' }"
-                @click="enterHome"
+              class="ob-btn ob-btn--primary ob-btn--glow"
+              :style="{ '--delay': '1s' }"
+              @click="enterHome"
             >
-              <svg class="ob-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              <svg
+                class="ob-btn__icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
               Launch
               <span class="ob-btn__arrow">→</span>
             </button>
-
           </div>
         </section>
       </component>
@@ -591,10 +803,22 @@ const manifestoPillars = [
 ]
 
 const whatWeDo = [
-  { title: '技术分享', desc: '定期内部分享会，从基础工具到前沿话题，由成员轮流主讲。每一次分享都是对自己知识的整理，也是对同伴的馈赠。' },
-  { title: '项目实践', desc: '我们维护若干长期项目，覆盖 Web、Bot、工具链等方向。新成员从一个小 feature 起步，逐步承担更完整的模块。' },
-  { title: '竞赛训练', desc: '组队参加各类程序设计、开源相关比赛，把日常积累转化为赛场发挥。赛后的复盘与沉淀，比奖牌本身更重要。' },
-  { title: '开源协作', desc: '鼓励成员向上游开源项目提交 PR、参与社区讨论，把校园里的练习延伸到更广阔的开源世界。' },
+  {
+    title: '技术分享',
+    desc: '定期内部分享会，从基础工具到前沿话题，由成员轮流主讲。每一次分享都是对自己知识的整理，也是对同伴的馈赠。',
+  },
+  {
+    title: '项目实践',
+    desc: '我们维护若干长期项目，覆盖 Web、Bot、工具链等方向。新成员从一个小 feature 起步，逐步承担更完整的模块。',
+  },
+  {
+    title: '竞赛训练',
+    desc: '组队参加各类程序设计、开源相关比赛，把日常积累转化为赛场发挥。赛后的复盘与沉淀，比奖牌本身更重要。',
+  },
+  {
+    title: '开源协作',
+    desc: '鼓励成员向上游开源项目提交 PR、参与社区讨论，把校园里的练习延伸到更广阔的开源世界。',
+  },
 ]
 
 const displayName = computed(() => info.value?.realName || info.value?.userName || '新成员')
@@ -712,20 +936,26 @@ function stopGroupPolling() {
 }
 
 // Start/stop polling based on current step (Step 6 = Join Groups)
-watch(step, (newStep) => {
-  if (newStep === 6 && !info.value?.qqGroupJoined) {
-    startGroupPolling()
-  } else {
-    stopGroupPolling()
-  }
-}, { immediate: false })
+watch(
+  step,
+  (newStep) => {
+    if (newStep === 6 && !info.value?.qqGroupJoined) {
+      startGroupPolling()
+    } else {
+      stopGroupPolling()
+    }
+  },
+  { immediate: false },
+)
 
 async function generateJoinToken() {
   tokenLoading.value = true
   try {
     const result = await authApi.createGroupJoinToken()
     groupJoinToken.value = result.token || ''
-    ElMessage.success(`入群验证码已生成，有效期为 ${Math.floor((result.expiresIn || 1800) / 60)} 分钟`)
+    ElMessage.success(
+      `入群验证码已生成，有效期为 ${Math.floor((result.expiresIn || 1800) / 60)} 分钟`,
+    )
   } catch {
     ElMessage.error('生成验证码失败，请重试')
   } finally {
@@ -744,7 +974,11 @@ async function copyToken() {
 }
 
 async function handleActivate() {
-  if (!passwordForm.value.oldPassword || !passwordForm.value.newPassword || passwordForm.value.newPassword.length < 4) {
+  if (
+    !passwordForm.value.oldPassword ||
+    !passwordForm.value.newPassword ||
+    passwordForm.value.newPassword.length < 4
+  ) {
     ElMessage.warning('请填写正确的密码信息')
     return
   }
@@ -757,13 +991,13 @@ async function handleActivate() {
   try {
     // Phase 1: Activate
     loadingText.value = '正在激活账号…'
-    await new Promise(resolve => setTimeout(resolve, 600))
+    await new Promise((resolve) => setTimeout(resolve, 600))
     const result = await authApi.activate()
     if (result) setSession({ accessToken: getToken() || undefined, user: result })
 
     // Phase 2: Update password
     loadingText.value = '正在设置密码…'
-    await new Promise(resolve => setTimeout(resolve, 400))
+    await new Promise((resolve) => setTimeout(resolve, 400))
     await authApi.updatePassword({
       oldPassword: passwordForm.value.oldPassword,
       newPassword: passwordForm.value.newPassword,
@@ -771,7 +1005,7 @@ async function handleActivate() {
 
     // Phase 3: Success
     loadingText.value = '即将完成…'
-    await new Promise(resolve => setTimeout(resolve, 600))
+    await new Promise((resolve) => setTimeout(resolve, 600))
 
     // Sync activation status
     if (info.value) {
@@ -825,7 +1059,12 @@ onBeforeUnmount(() => {
   overflow-x: hidden;
   background: var(--oa-page-bg);
   color: var(--oa-text);
-  font-family: 'SF Pro Display', -apple-system, system-ui, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'SF Pro Display',
+    -apple-system,
+    system-ui,
+    BlinkMacSystemFont,
+    sans-serif;
   opacity: 0;
   transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1);
   isolation: isolate;
@@ -861,7 +1100,11 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--oa-active-bg) 10%, transparent), transparent 32%),
+    radial-gradient(
+      circle at 50% 42%,
+      color-mix(in srgb, var(--oa-active-bg) 10%, transparent),
+      transparent 32%
+    ),
     var(--oa-hero-gradient);
 }
 
@@ -869,14 +1112,23 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   opacity: 0.2;
-  background: repeating-linear-gradient(0deg, transparent 0, transparent 3px, color-mix(in srgb, var(--oa-text) 2%, transparent) 4px);
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 3px,
+    color-mix(in srgb, var(--oa-text) 2%, transparent) 4px
+  );
   mix-blend-mode: overlay;
 }
 
 .onboard__bg-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 35%, color-mix(in srgb, #000 12%, transparent) 100%);
+  background: radial-gradient(
+    ellipse at center,
+    transparent 35%,
+    color-mix(in srgb, #000 12%, transparent) 100%
+  );
 }
 
 .onboard__bg-orb {
@@ -892,7 +1144,11 @@ onBeforeUnmount(() => {
   left: -5%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--oa-active-bg) 12%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--oa-active-bg) 12%, transparent),
+    transparent 70%
+  );
   animation: orbFloat1 24s ease-in-out infinite;
 }
 
@@ -901,7 +1157,11 @@ onBeforeUnmount(() => {
   right: -8%;
   width: 440px;
   height: 440px;
-  background: radial-gradient(circle, color-mix(in srgb, #5b8def 14%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-text-primary) 8%, transparent),
+    transparent 70%
+  );
   animation: orbFloat2 30s ease-in-out infinite;
 }
 
@@ -910,23 +1170,42 @@ onBeforeUnmount(() => {
   left: 50%;
   width: 360px;
   height: 360px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--oa-text) 6%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--oa-text) 6%, transparent),
+    transparent 70%
+  );
   animation: orbFloat3 20s ease-in-out infinite;
 }
 
 @keyframes orbFloat1 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(30px, 40px, 0) scale(1.08); }
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(30px, 40px, 0) scale(1.08);
+  }
 }
 
 @keyframes orbFloat2 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-40px, -30px, 0) scale(0.95); }
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-40px, -30px, 0) scale(0.95);
+  }
 }
 
 @keyframes orbFloat3 {
-  0%, 100% { transform: translate3d(-50%, 0, 0) scale(1); }
-  50% { transform: translate3d(-50%, 20px, 0) scale(1.1); }
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-50%, 20px, 0) scale(1.1);
+  }
 }
 
 .onboard__bg-grid {
@@ -934,20 +1213,30 @@ onBeforeUnmount(() => {
   inset: 0;
   background:
     linear-gradient(color-mix(in srgb, var(--oa-text) 1.5%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--oa-text) 1.5%, transparent) 1px, transparent 1px);
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--oa-text) 1.5%, transparent) 1px,
+      transparent 1px
+    );
   background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at 50% 35%, rgba(0,0,0,0.35), transparent 68%);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 35%, rgba(0,0,0,0.35), transparent 68%);
+  mask-image: radial-gradient(ellipse at 50% 35%, rgba(0, 0, 0, 0.35), transparent 68%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 35%, rgba(0, 0, 0, 0.35), transparent 68%);
 }
 
 .onboard__bg-grid::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 49.5%, color-mix(in srgb, var(--oa-active-bg) 3%, transparent) 49.5%, color-mix(in srgb, var(--oa-active-bg) 3%, transparent) 50.5%, transparent 50.5%);
+  background: linear-gradient(
+    135deg,
+    transparent 49.5%,
+    color-mix(in srgb, var(--oa-active-bg) 3%, transparent) 49.5%,
+    color-mix(in srgb, var(--oa-active-bg) 3%, transparent) 50.5%,
+    transparent 50.5%
+  );
   background-size: 200px 200px;
-  mask-image: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0.3), transparent 70%);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0.3), transparent 70%);
+  mask-image: radial-gradient(ellipse at 50% 40%, rgba(0, 0, 0, 0.3), transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 40%, rgba(0, 0, 0, 0.3), transparent 70%);
 }
 
 /* Particle */
@@ -965,10 +1254,20 @@ onBeforeUnmount(() => {
 }
 
 @keyframes particleDrift {
-  0% { transform: translateY(0) translateX(0); opacity: 0; }
-  10% { opacity: 0.4; }
-  90% { opacity: 0.3; }
-  100% { transform: translateY(-120px) translateX(20px); opacity: 0; }
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.4;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-120px) translateX(20px);
+    opacity: 0;
+  }
 }
 
 /* ============ Progress Bar ============ */
@@ -1010,7 +1309,11 @@ onBeforeUnmount(() => {
 .onboard__progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--oa-active-bg), color-mix(in srgb, var(--oa-active-bg) 55%, white));
+  background: linear-gradient(
+    90deg,
+    var(--oa-active-bg),
+    color-mix(in srgb, var(--oa-active-bg) 55%, white)
+  );
   box-shadow: 0 0 12px color-mix(in srgb, var(--oa-active-bg) 70%, transparent);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1286,11 +1589,15 @@ onBeforeUnmount(() => {
   z-index: 1;
   display: block;
   border-radius: 24px;
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--oa-active-bg) 5%, transparent), 0 18px 60px color-mix(in srgb, var(--oa-active-bg) 20%, transparent);
+  box-shadow:
+    0 0 0 8px color-mix(in srgb, var(--oa-active-bg) 5%, transparent),
+    0 18px 60px color-mix(in srgb, var(--oa-active-bg) 20%, transparent);
 }
 
 @keyframes logoOrbit {
-  to { transform: rotate(405deg); }
+  to {
+    transform: rotate(405deg);
+  }
 }
 
 .ob-logo__svg {
@@ -1327,7 +1634,11 @@ onBeforeUnmount(() => {
 }
 
 .ob-btn--primary {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--oa-active-bg) 88%, white), var(--oa-active-bg));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--oa-active-bg) 88%, white),
+    var(--oa-active-bg)
+  );
   color: var(--oa-active-text);
   box-shadow: 0 4px 20px color-mix(in srgb, var(--oa-active-bg) 25%, transparent);
 }
@@ -1342,7 +1653,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 1px;
   border-radius: inherit;
-  background: linear-gradient(120deg, rgba(255,255,255,0.28), transparent 42%);
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.28), transparent 42%);
   opacity: 0.7;
   pointer-events: none;
 }
@@ -1397,7 +1708,9 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.3);
   transform: translate(-50%, -50%);
-  transition: width 0.4s ease, height 0.4s ease;
+  transition:
+    width 0.4s ease,
+    height 0.4s ease;
 }
 
 .ob-btn:active::after {
@@ -1449,7 +1762,10 @@ onBeforeUnmount(() => {
   opacity: 0;
   transform: translateY(20px);
   filter: blur(6px);
-  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.7s ease;
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s ease;
 }
 
 .onboard--loaded .ob-dept-hero {
@@ -1466,7 +1782,11 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   border-radius: 16px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--oa-active-bg) 12%, transparent), color-mix(in srgb, var(--oa-active-bg) 4%, transparent));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--oa-active-bg) 12%, transparent),
+    color-mix(in srgb, var(--oa-active-bg) 4%, transparent)
+  );
   border: 1px solid color-mix(in srgb, var(--oa-active-bg) 15%, transparent);
 }
 
@@ -1526,7 +1846,10 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
-  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), border-color 0.35s ease, box-shadow 0.35s ease;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
   position: relative;
   min-width: 155px;
 }
@@ -1538,7 +1861,11 @@ onBeforeUnmount(() => {
 }
 
 .ob-dept-head--primary {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--oa-active-bg) 6%, var(--oa-surface) 40%), color-mix(in srgb, var(--oa-surface) 30%, transparent));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--oa-active-bg) 6%, var(--oa-surface) 40%),
+    color-mix(in srgb, var(--oa-surface) 30%, transparent)
+  );
   border-color: color-mix(in srgb, var(--oa-active-bg) 12%, var(--oa-border));
 }
 
@@ -1633,7 +1960,11 @@ onBeforeUnmount(() => {
   gap: 16px;
   padding: 36px 48px 28px;
   border-radius: 24px;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--oa-active-bg) 8%, var(--oa-surface) 40%), color-mix(in srgb, var(--oa-surface) 30%, transparent));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--oa-active-bg) 8%, var(--oa-surface) 40%),
+    color-mix(in srgb, var(--oa-surface) 30%, transparent)
+  );
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid color-mix(in srgb, var(--oa-active-bg) 18%, var(--oa-border));
@@ -1641,7 +1972,12 @@ onBeforeUnmount(() => {
   opacity: 0;
   transform: translateY(20px);
   filter: blur(6px);
-  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.7s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
 }
 
 .onboard--loaded .ob-leader-featured {
@@ -1664,7 +2000,11 @@ onBeforeUnmount(() => {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--oa-active-bg) 18%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--oa-active-bg) 18%, transparent),
+    transparent 70%
+  );
   filter: blur(40px);
   pointer-events: none;
 }
@@ -1707,7 +2047,9 @@ onBeforeUnmount(() => {
 }
 
 @keyframes leaderRingSpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .ob-leader-featured__avatar img,
@@ -1761,7 +2103,10 @@ onBeforeUnmount(() => {
   opacity: 0;
   transform: translateY(20px);
   filter: blur(6px);
-  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1), filter 0.7s ease;
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.7s ease;
 }
 
 .onboard--loaded .ob-leaders-grid {
@@ -1782,7 +2127,10 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
-  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), border-color 0.35s ease, box-shadow 0.35s ease;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
   min-width: 155px;
 }
 
@@ -1946,18 +2294,32 @@ onBeforeUnmount(() => {
 }
 
 .ob-polling-hint__dot--checking {
-  background: #3b82f6;
+  background: var(--color-text-primary);
   animation: pollingChecking 0.8s ease-in-out infinite;
 }
 
 @keyframes pollingPulse {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 @keyframes pollingChecking {
-  0%, 100% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.4); opacity: 1; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
 }
 
 /* ============ Step Actions ============ */
@@ -2036,9 +2398,18 @@ onBeforeUnmount(() => {
 }
 
 @keyframes loaderArc {
-  0% { stroke-dashoffset: 289; transform: rotate(0deg); }
-  50% { stroke-dashoffset: 72; transform: rotate(180deg); }
-  100% { stroke-dashoffset: 289; transform: rotate(360deg); }
+  0% {
+    stroke-dashoffset: 289;
+    transform: rotate(0deg);
+  }
+  50% {
+    stroke-dashoffset: 72;
+    transform: rotate(180deg);
+  }
+  100% {
+    stroke-dashoffset: 289;
+    transform: rotate(360deg);
+  }
 }
 
 .ob-loader__text {
@@ -2049,8 +2420,13 @@ onBeforeUnmount(() => {
 }
 
 @keyframes loaderPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* ============ Success Check (Step 9) ============ */
@@ -2085,11 +2461,15 @@ onBeforeUnmount(() => {
 }
 
 @keyframes checkCircle {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 @keyframes checkPath {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* ============ Responsive ============ */
@@ -2171,70 +2551,96 @@ onBeforeUnmount(() => {
 
 /* ============ Dark Mode Enhancements ============ */
 html.dark .onboard__bg-orb--2 {
-  background: radial-gradient(circle, color-mix(in srgb, #7c6def 18%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-text-primary) 10%, transparent),
+    transparent 70%
+  );
   opacity: 0.5;
 }
 
 html.dark .onboard__bg-orb--1 {
-  background: radial-gradient(circle, color-mix(in srgb, #5b8def 12%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-text-primary) 7%, transparent),
+    transparent 70%
+  );
 }
 
 html.dark .ob-token-card {
-  background: color-mix(in srgb, #5b8def 10%, transparent);
+  background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
 }
 
 html.dark .ob-token-card__code {
-  color: #a0c4ff;
+  color: var(--color-text-secondary);
 }
 
 html.dark .ob-success-terminal {
-  background: color-mix(in srgb, #1a1a2e 70%, transparent);
-  border-color: color-mix(in srgb, #5b8def 15%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
+  border-color: var(--color-border);
 }
 
 html.dark .ob-welcome-name {
-  background: color-mix(in srgb, #1a1a2e 60%, transparent);
-  border-color: color-mix(in srgb, #5b8def 12%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 60%, transparent);
+  border-color: var(--color-border);
 }
 
 html.dark .ob-pillar {
-  background: color-mix(in srgb, #1a1a2e 40%, transparent);
-  border-color: color-mix(in srgb, #5b8def 8%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, transparent);
+  border-color: var(--color-border);
 }
 
 html.dark .ob-leader {
-  background: color-mix(in srgb, #1a1a2e 45%, transparent);
-  border-color: color-mix(in srgb, #5b8def 10%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 74%, transparent);
+  border-color: var(--color-border);
 }
 
 html.dark .ob-leader-featured {
-  background: linear-gradient(160deg, color-mix(in srgb, #5b8def 8%, #1a1a2e 50%), color-mix(in srgb, #1a1a2e 40%, transparent));
-  border-color: color-mix(in srgb, #5b8def 15%, transparent);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-text-primary)),
+    var(--color-bg-secondary)
+  );
+  border-color: var(--color-border);
 }
 
 html.dark .ob-leader-featured__glow {
-  background: radial-gradient(circle, color-mix(in srgb, #5b8def 22%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-text-primary) 12%, transparent),
+    transparent 70%
+  );
 }
 
 html.dark .ob-leader-card {
-  background: color-mix(in srgb, #1a1a2e 45%, transparent);
-  border-color: color-mix(in srgb, #5b8def 8%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 74%, transparent);
+  border-color: var(--color-border);
 }
 
 html.dark .ob-dept-head {
-  background: color-mix(in srgb, #1a1a2e 45%, transparent);
-  border-color: color-mix(in srgb, #5b8def 8%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 74%, transparent);
+  border-color: var(--color-border);
 }
 
 html.dark .ob-dept-head--primary {
-  background: linear-gradient(160deg, color-mix(in srgb, #5b8def 8%, #1a1a2e 50%), color-mix(in srgb, #1a1a2e 40%, transparent));
-  border-color: color-mix(in srgb, #5b8def 12%, transparent);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-text-primary)),
+    var(--color-bg-secondary)
+  );
+  border-color: var(--color-border);
 }
 
 /* ============ Minimal Editorial Refactor ============ */
 .onboard {
   background: var(--oa-page-bg);
-  font-family: Inter, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    Inter,
+    'SF Pro Display',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 }
 
 .onboard::before {
@@ -2246,15 +2652,19 @@ html.dark .ob-dept-head--primary {
 
 .onboard__bg-gradient {
   background:
-    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--oa-active-bg) 4%, transparent), transparent 32%),
+    radial-gradient(
+      circle at 50% 30%,
+      color-mix(in srgb, var(--oa-active-bg) 4%, transparent),
+      transparent 32%
+    ),
     var(--oa-hero-gradient);
 }
 
 .onboard__bg-grid {
   opacity: 0.42;
   background-size: 64px 64px;
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.28), transparent 72%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.28), transparent 72%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), transparent 72%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), transparent 72%);
 }
 
 .onboard__bg-scanline,
@@ -2353,7 +2763,9 @@ html.dark .ob-dept-head--primary {
 
 .ob-logo img {
   border-radius: 20px;
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--oa-active-bg) 5%, transparent), 0 12px 32px color-mix(in srgb, var(--oa-text) 12%, transparent);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--oa-active-bg) 5%, transparent),
+    0 12px 32px color-mix(in srgb, var(--oa-text) 12%, transparent);
 }
 
 .ob-welcome-name,
@@ -2486,34 +2898,57 @@ html.dark .ob-dept-head--primary {
 }
 
 @media (max-width: 640px) {
-  .onboard::before { inset: 10px; }
-  .onboard__brand { top: 24px; left: 28px; }
-  .onboard__step { padding: 70px 20px 84px; }
-  .ob-step__inner { gap: 22px; }
-  .ob-title { font-size: clamp(36px, 11vw, 52px); }
-  .ob-title--md { font-size: clamp(28px, 8vw, 36px); }
-  .ob-pillars { grid-template-columns: 1fr; }
-  .ob-pillar { text-align: left; }
-  .ob-pillar__icon { margin-bottom: 2px; }
-  .ob-step__actions { width: 100%; }
-  .ob-step__actions .ob-btn { flex: 1; }
+  .onboard::before {
+    inset: 10px;
+  }
+  .onboard__brand {
+    top: 24px;
+    left: 28px;
+  }
+  .onboard__step {
+    padding: 70px 20px 84px;
+  }
+  .ob-step__inner {
+    gap: 22px;
+  }
+  .ob-title {
+    font-size: clamp(36px, 11vw, 52px);
+  }
+  .ob-title--md {
+    font-size: clamp(28px, 8vw, 36px);
+  }
+  .ob-pillars {
+    grid-template-columns: 1fr;
+  }
+  .ob-pillar {
+    text-align: left;
+  }
+  .ob-pillar__icon {
+    margin-bottom: 2px;
+  }
+  .ob-step__actions {
+    width: 100%;
+  }
+  .ob-step__actions .ob-btn {
+    flex: 1;
+  }
 }
 
-.ob-name{
-  margin-top:12px;
-  margin-bottom:20px;
-  font-size:34px;
-  font-weight:700;
-  letter-spacing:-0.02em;
+.ob-name {
+  margin-top: 12px;
+  margin-bottom: 20px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-.ob-quote{
-  margin-top:36px;
-  margin-bottom:48px;
-  font-size:15px;
-  opacity:.55;
-  letter-spacing:.25em;
-  text-transform:uppercase;
+.ob-quote {
+  margin-top: 36px;
+  margin-bottom: 48px;
+  font-size: 15px;
+  opacity: 0.55;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
 }
 
 /* ============ Open-Source Floating Decorations ============ */
@@ -2536,17 +2971,57 @@ html.dark .ob-dept-head--primary {
   animation: osSymbolFloat 30s ease-in-out infinite;
 }
 
-.ob-os-deco__symbol--1 { top: 12%; left: 6%; animation-duration: 26s; font-size: 16px; }
-.ob-os-deco__symbol--2 { top: 72%; right: 8%; animation-duration: 32s; animation-delay: -8s; }
-.ob-os-deco__symbol--3 { top: 28%; right: 12%; animation-duration: 28s; animation-delay: -4s; font-size: 12px; }
-.ob-os-deco__symbol--4 { bottom: 18%; left: 10%; animation-duration: 34s; animation-delay: -12s; }
-.ob-os-deco__symbol--5 { top: 55%; left: 80%; animation-duration: 22s; animation-delay: -6s; font-size: 12px; }
+.ob-os-deco__symbol--1 {
+  top: 12%;
+  left: 6%;
+  animation-duration: 26s;
+  font-size: 16px;
+}
+.ob-os-deco__symbol--2 {
+  top: 72%;
+  right: 8%;
+  animation-duration: 32s;
+  animation-delay: -8s;
+}
+.ob-os-deco__symbol--3 {
+  top: 28%;
+  right: 12%;
+  animation-duration: 28s;
+  animation-delay: -4s;
+  font-size: 12px;
+}
+.ob-os-deco__symbol--4 {
+  bottom: 18%;
+  left: 10%;
+  animation-duration: 34s;
+  animation-delay: -12s;
+}
+.ob-os-deco__symbol--5 {
+  top: 55%;
+  left: 80%;
+  animation-duration: 22s;
+  animation-delay: -6s;
+  font-size: 12px;
+}
 
 @keyframes osSymbolFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
-  25% { transform: translateY(-12px) rotate(1deg); opacity: 0.7; }
-  50% { transform: translateY(-6px) rotate(-0.5deg); opacity: 0.5; }
-  75% { transform: translateY(-15px) rotate(0.5deg); opacity: 0.65; }
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.4;
+  }
+  25% {
+    transform: translateY(-12px) rotate(1deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-6px) rotate(-0.5deg);
+    opacity: 0.5;
+  }
+  75% {
+    transform: translateY(-15px) rotate(0.5deg);
+    opacity: 0.65;
+  }
 }
 
 html.dark .ob-os-deco__symbol {
@@ -2562,7 +3037,11 @@ html.dark .ob-os-deco__symbol {
   padding: 16px 28px;
   border-radius: 14px;
   position: relative;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--oa-surface) 55%, transparent), color-mix(in srgb, var(--oa-active-bg) 5%, transparent));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--oa-surface) 55%, transparent),
+    color-mix(in srgb, var(--oa-active-bg) 5%, transparent)
+  );
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid color-mix(in srgb, var(--oa-border) 60%, transparent);
@@ -2629,8 +3108,14 @@ html.dark .ob-os-deco__symbol {
 }
 
 @keyframes termCursorBlink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .ob-welcome-name__dept {
@@ -2686,8 +3171,15 @@ html.dark .ob-os-deco__symbol {
 }
 
 @keyframes btnGlow {
-  0%, 100% { box-shadow: 0 4px 20px color-mix(in srgb, var(--oa-active-bg) 25%, transparent); }
-  50% { box-shadow: 0 8px 40px color-mix(in srgb, var(--oa-active-bg) 40%, transparent), 0 0 60px color-mix(in srgb, var(--oa-active-bg) 15%, transparent); }
+  0%,
+  100% {
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--oa-active-bg) 25%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 8px 40px color-mix(in srgb, var(--oa-active-bg) 40%, transparent),
+      0 0 60px color-mix(in srgb, var(--oa-active-bg) 15%, transparent);
+  }
 }
 
 /* ============ Pillar Icons ============ */
@@ -2750,9 +3242,15 @@ html.dark .ob-os-deco__symbol {
   border-radius: 50%;
 }
 
-.ob-success-terminal__dot--red { background: #ff5f57; }
-.ob-success-terminal__dot--yellow { background: #febc28; }
-.ob-success-terminal__dot--green { background: #28c840; }
+.ob-success-terminal__dot--red {
+  background: var(--color-gray-400);
+}
+.ob-success-terminal__dot--yellow {
+  background: var(--color-gray-500);
+}
+.ob-success-terminal__dot--green {
+  background: var(--color-gray-600);
+}
 
 .ob-success-terminal__title {
   margin-left: auto;
@@ -2805,7 +3303,10 @@ html.dark .ob-os-deco__symbol {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid color-mix(in srgb, var(--oa-border) 40%, transparent);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
   position: relative;
   overflow: hidden;
 }
@@ -2819,14 +3320,21 @@ html.dark .ob-os-deco__symbol {
   left: 18px;
   right: 18px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--oa-active-bg) 55%, transparent), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--oa-active-bg) 55%, transparent),
+    transparent
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .ob-pillar:hover::before,
 .ob-dept-head:hover::before,
-.ob-leader-card:hover::before { opacity: 1; }
+.ob-leader-card:hover::before {
+  opacity: 1;
+}
 
 .onboard__brand {
   position: fixed;
@@ -2879,35 +3387,131 @@ html.dark .ob-os-deco__symbol {
 .onboard__bg-orb,
 .ob-os-deco__symbol,
 .ob-logo::before,
-.ob-logo::after { display: none; }
+.ob-logo::after {
+  display: none;
+}
 
-.onboard::before { inset: 20px; border-radius: 16px; box-shadow: none; }
-.onboard__bg-grid { opacity: 0.42; background-size: 64px 64px; }
-.onboard__progress { bottom: 32px; padding: 0; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
-.onboard__progress-track { width: 160px; height: 3px; }
-.onboard__progress-fill { background: var(--oa-active-bg); box-shadow: none; }
-.onboard__step { padding: 72px 24px 96px; }
-.ob-title { letter-spacing: -0.055em; line-height: 1.06; }
-.ob-eyebrow { font-size: 12px; letter-spacing: 0.18em; }
-.ob-desc { max-width: 680px; font-size: 16px; color: var(--oa-muted-strong); }
-.ob-logo img { border-radius: 20px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--oa-active-bg) 5%, transparent), 0 12px 32px color-mix(in srgb, var(--oa-text) 12%, transparent); }
-.ob-welcome-name { padding: 14px 24px; border-radius: 12px; background: color-mix(in srgb, var(--oa-surface) 78%, transparent); border-color: color-mix(in srgb, var(--oa-border) 72%, transparent); box-shadow: none; }
-.ob-pillar { padding: 20px 18px; border-radius: 12px; background: color-mix(in srgb, var(--oa-surface) 78%, transparent); border-color: color-mix(in srgb, var(--oa-border) 72%, transparent); backdrop-filter: none; -webkit-backdrop-filter: none; }
-.ob-dept-head, .ob-leader-card, .ob-group-card, .ob-token-card, .ob-qrcode, .ob-success-terminal { background: color-mix(in srgb, var(--oa-surface) 78%, transparent); border-color: color-mix(in srgb, var(--oa-border) 72%, transparent); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-.ob-btn { height: 48px; padding: 0 24px; border-radius: 10px; font-size: 15px; }
-.ob-btn--primary { background: var(--oa-active-bg); box-shadow: none; }
-.ob-btn--primary::before, .ob-btn::after { display: none; }
-.ob-btn--glow { animation: none; }
-.ob-input { height: 52px; border-radius: 10px; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.onboard::before {
+  inset: 20px;
+  border-radius: 16px;
+  box-shadow: none;
+}
+.onboard__bg-grid {
+  opacity: 0.42;
+  background-size: 64px 64px;
+}
+.onboard__progress {
+  bottom: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.onboard__progress-track {
+  width: 160px;
+  height: 3px;
+}
+.onboard__progress-fill {
+  background: var(--oa-active-bg);
+  box-shadow: none;
+}
+.onboard__step {
+  padding: 72px 24px 96px;
+}
+.ob-title {
+  letter-spacing: -0.055em;
+  line-height: 1.06;
+}
+.ob-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+}
+.ob-desc {
+  max-width: 680px;
+  font-size: 16px;
+  color: var(--oa-muted-strong);
+}
+.ob-logo img {
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--oa-active-bg) 5%, transparent),
+    0 12px 32px color-mix(in srgb, var(--oa-text) 12%, transparent);
+}
+.ob-welcome-name {
+  padding: 14px 24px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--oa-surface) 78%, transparent);
+  border-color: color-mix(in srgb, var(--oa-border) 72%, transparent);
+  box-shadow: none;
+}
+.ob-pillar {
+  padding: 20px 18px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--oa-surface) 78%, transparent);
+  border-color: color-mix(in srgb, var(--oa-border) 72%, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.ob-dept-head,
+.ob-leader-card,
+.ob-group-card,
+.ob-token-card,
+.ob-qrcode,
+.ob-success-terminal {
+  background: color-mix(in srgb, var(--oa-surface) 78%, transparent);
+  border-color: color-mix(in srgb, var(--oa-border) 72%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.ob-btn {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 10px;
+  font-size: 15px;
+}
+.ob-btn--primary {
+  background: var(--oa-active-bg);
+  box-shadow: none;
+}
+.ob-btn--primary::before,
+.ob-btn::after {
+  display: none;
+}
+.ob-btn--glow {
+  animation: none;
+}
+.ob-input {
+  height: 52px;
+  border-radius: 10px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 
 @media (max-width: 640px) {
-  .onboard::before { inset: 10px; }
-  .onboard__brand { top: 24px; left: 28px; }
-  .onboard__step { padding: 70px 20px 84px; }
-  .ob-pillars { grid-template-columns: 1fr; }
-  .ob-pillar { text-align: left; }
-  .ob-step__actions { width: 100%; }
-  .ob-step__actions .ob-btn { flex: 1; }
+  .onboard::before {
+    inset: 10px;
+  }
+  .onboard__brand {
+    top: 24px;
+    left: 28px;
+  }
+  .onboard__step {
+    padding: 70px 20px 84px;
+  }
+  .ob-pillars {
+    grid-template-columns: 1fr;
+  }
+  .ob-pillar {
+    text-align: left;
+  }
+  .ob-step__actions {
+    width: 100%;
+  }
+  .ob-step__actions .ob-btn {
+    flex: 1;
+  }
 }
 
 .ob-groups-layout {

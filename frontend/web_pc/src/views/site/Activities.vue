@@ -181,33 +181,50 @@ onMounted(() => {
 <style scoped>
 .activities-page {
   min-height: calc(100vh - var(--oa-site-header-height));
-  background: var(--oa-elevated-bg);
+  background: var(--oa-page-soft-bg);
 }
 
 .activities-hero {
-  min-height: min(72vh, 760px);
-  display: flex;
-  align-items: center;
-  background: linear-gradient(180deg, var(--oa-elevated-bg) 0%, var(--oa-page-soft-bg) 100%);
+  position: relative;
+  min-height: clamp(440px, 38vw, 560px);
+  overflow: hidden;
+  background: var(--oa-page-soft-bg);
+  border-bottom: 1px solid var(--oa-border);
+}
+
+.activities-hero::before {
+  position: absolute;
+  inset: 0;
+  background: #faf9f7 url('/activities-hero-wide-light.png?v=3') right center / auto 100% no-repeat;
+  content: '';
+  pointer-events: none;
 }
 
 .activities-hero__inner {
+  position: relative;
+  z-index: 1;
   display: grid;
-  justify-items: center;
-  gap: 38px;
-  padding: clamp(72px, 9vw, 120px) 0;
-  text-align: center;
+  min-height: clamp(440px, 38vw, 560px);
+  align-content: center;
+  gap: 24px;
+  padding-top: clamp(48px, 7vw, 84px);
+  padding-bottom: clamp(48px, 7vw, 84px);
+  text-align: left;
 }
 
 .activities-hero__copy {
-  max-width: 860px;
+  position: relative;
+  z-index: 1;
+  width: min(47%, 520px);
 }
 
 .activities-hero__copy span,
 .section-heading span {
   display: inline-block;
-  color: var(--oa-text);
-  font-size: 14px;
+  color: var(--oa-muted-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 
 .activities-hero h1 {
@@ -218,24 +235,26 @@ onMounted(() => {
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  font-size: clamp(42px, 5vw, 64px);
-  font-weight: 600;
+  font-size: clamp(40px, 4.6vw, 58px);
+  font-weight: 700;
   line-height: 1.05;
   letter-spacing: 0;
 }
 
 .activities-hero p {
-  max-width: 760px;
+  max-width: 500px;
   margin: 0;
   color: var(--oa-muted);
-  font-size: clamp(18px, 2vw, 24px);
-  font-weight: 300;
-  line-height: 1.6;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.72;
 }
 
 .activities-hero__metrics {
+  position: relative;
+  z-index: 1;
   display: grid;
-  width: min(760px, 100%);
+  width: min(47%, 520px);
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
   border-top: 1px solid var(--oa-border);
@@ -244,9 +263,9 @@ onMounted(() => {
 .activities-hero__metrics article {
   display: grid;
   gap: 8px;
-  min-height: 116px;
+  min-height: 72px;
   align-content: center;
-  padding: 20px 18px 0;
+  padding: 16px 14px 0;
   border-left: 1px solid var(--oa-border);
 }
 
@@ -256,14 +275,14 @@ onMounted(() => {
 
 .activities-hero__metrics strong {
   font-family: 'SF Pro Display', system-ui, sans-serif;
-  font-size: clamp(34px, 4vw, 48px);
-  font-weight: 600;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 650;
   line-height: 1;
 }
 
 .activities-hero__metrics span {
   color: var(--oa-muted);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .activities-featured-section {
@@ -272,7 +291,7 @@ onMounted(() => {
 
 .activities-featured,
 .activities-archive {
-  padding: clamp(72px, 8vw, 96px) 0;
+  padding: clamp(40px, 6vw, 72px) 0;
 }
 
 .section-heading {
@@ -283,13 +302,7 @@ onMounted(() => {
 }
 
 .section-heading::before {
-  display: block;
-  width: 68px;
-  height: 1px;
-  margin: 0 auto 18px;
-  content: '';
-  background: linear-gradient(90deg, transparent, var(--oa-text), transparent);
-  opacity: 0.78;
+  display: none;
 }
 
 .section-heading h2 {
@@ -300,8 +313,8 @@ onMounted(() => {
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  font-size: clamp(30px, 3vw, 40px);
-  font-weight: 600;
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -309,11 +322,11 @@ onMounted(() => {
   display: grid;
   width: min(1180px, 100%);
   grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
-  min-height: 480px;
-  margin: 36px auto 0;
+  min-height: 360px;
+  margin: 24px auto 0;
   overflow: hidden;
   border: 1px solid var(--oa-border);
-  border-radius: 32px;
+  border-radius: var(--radius-lg);
   background: var(--oa-elevated-bg);
   cursor: pointer;
 }
@@ -336,7 +349,7 @@ onMounted(() => {
   align-items: center;
   padding: 0 16px;
   color: var(--oa-active-text);
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   background: var(--oa-active-bg);
   font-size: 14px;
   font-weight: 600;
@@ -357,18 +370,16 @@ onMounted(() => {
 .activities-featured-card__media.is-fallback {
   display: grid;
   place-items: center;
-  background:
-    radial-gradient(circle at 25% 25%, rgba(29, 29, 31, 0.14), transparent 38%),
-    linear-gradient(180deg, var(--oa-page-soft-bg) 0%, var(--oa-elevated-bg) 100%);
+  background: var(--oa-page-soft-bg);
 }
 
 .activities-featured-card__placeholder {
   display: grid;
   width: min(260px, calc(100% - 48px));
-  aspect-ratio: 1;
+  aspect-ratio: 1.6;
   place-items: center;
   border: 1px solid var(--oa-border);
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   color: var(--oa-text);
   font-size: clamp(28px, 4vw, 44px);
 }
@@ -399,8 +410,8 @@ onMounted(() => {
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  font-size: clamp(30px, 3.4vw, 44px);
-  font-weight: 600;
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -435,7 +446,7 @@ onMounted(() => {
   width: min(1180px, 100%);
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
-  margin: 36px auto 0;
+  margin: 24px auto 0;
 }
 
 .activity-list-card {
@@ -444,7 +455,7 @@ onMounted(() => {
   grid-template-rows: 200px minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid var(--oa-border);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: var(--oa-elevated-bg);
   cursor: pointer;
 }
@@ -519,7 +530,7 @@ onMounted(() => {
   margin: 36px auto 0;
   padding: 28px 24px;
   border: 1px solid var(--oa-border);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: var(--oa-elevated-bg);
 }
 
@@ -534,6 +545,25 @@ onMounted(() => {
 }
 
 @media (max-width: 720px) {
+  .activities-hero {
+    min-height: 650px;
+  }
+
+  .activities-hero__inner {
+    min-height: 650px;
+    padding: 36px 24px 330px;
+  }
+
+  .activities-hero::before {
+    background-position: 68% bottom;
+    background-size: auto 340px;
+  }
+
+  .activities-hero__copy,
+  .activities-hero__metrics {
+    width: 100%;
+  }
+
   .activities-hero__metrics {
     grid-template-columns: 1fr;
     border-top: 0;
@@ -547,7 +577,7 @@ onMounted(() => {
   }
 
   .activities-featured-card {
-    border-radius: 24px;
+    border-radius: var(--radius-lg);
   }
 
   .activities-featured-card__media {
@@ -558,5 +588,10 @@ onMounted(() => {
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+:global(html.dark .activities-hero::before) {
+  background-color: #0d0d0f;
+  background-image: url('/activities-hero-wide-dark.png?v=3');
 }
 </style>

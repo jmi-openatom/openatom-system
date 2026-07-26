@@ -1,7 +1,9 @@
 <template>
   <ViewPage class="site-system-page">
     <SitePageHero
+      dark-image="/recruitment-hero-wide-dark.png?v=3"
       eyebrow="入会申请"
+      light-image="/recruitment-hero-wide-light.png?v=3"
       title="加入开放原子开源社团"
       description="查看当前开放的招新计划，选择合适的表单开始申请。"
     >

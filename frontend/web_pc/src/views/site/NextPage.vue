@@ -11,7 +11,14 @@
     <!-- 返回官网按钮 -->
     <div class="back-bar">
       <router-link to="/" class="back-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          width="16"
+          height="16"
+        >
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
         返回官网
@@ -47,7 +54,9 @@
           <div class="stat-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-              <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z" />
+              <path
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7Z"
+              />
             </svg>
           </div>
           <div class="stat-value">{{ animatedViews }}</div>
@@ -57,7 +66,9 @@
         <div class="stat-card">
           <div class="stat-icon stat-icon--purple">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
             </svg>
           </div>
           <div class="stat-value">{{ animatedLikes }}</div>
@@ -77,8 +88,15 @@
           </span>
         </button>
         <button class="btn-like" :class="{ 'btn-like--active': liked }" @click="handleLike">
-          <svg viewBox="0 0 24 24" :fill="liked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+          <svg
+            viewBox="0 0 24 24"
+            :fill="liked ? 'currentColor' : 'none'"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            />
           </svg>
           {{ liked ? '已点赞' : '点赞' }}
         </button>
@@ -142,8 +160,17 @@
             </div>
             <p class="service-desc">{{ svc.desc }}</p>
             <div class="service-db" v-if="svc.db">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12">
-                <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                width="12"
+                height="12"
+              >
+                <ellipse cx="12" cy="5" rx="9" ry="3" />
+                <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
+                <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3" />
               </svg>
               {{ svc.db }}
             </div>
@@ -204,9 +231,14 @@
           <h3 class="comm-title">迁移路线</h3>
           <div class="roadmap-timeline">
             <div v-for="(phase, idx) in roadmap" :key="idx" class="roadmap-item">
-              <div class="roadmap-dot" :class="{ 'roadmap-dot--done': phase.done, 'roadmap-dot--active': phase.active }" />
+              <div
+                class="roadmap-dot"
+                :class="{ 'roadmap-dot--done': phase.done, 'roadmap-dot--active': phase.active }"
+              />
               <div class="roadmap-content">
-                <div class="roadmap-phase">Phase {{ idx }}{{ phase.done ? ' ✓' : phase.active ? ' ◉' : '' }}</div>
+                <div class="roadmap-phase">
+                  Phase {{ idx }}{{ phase.done ? ' ✓' : phase.active ? ' ◉' : '' }}
+                </div>
                 <div class="roadmap-name">{{ phase.name }}</div>
                 <div class="roadmap-desc">{{ phase.desc }}</div>
                 <div class="roadmap-time">{{ phase.time }}</div>
@@ -229,46 +261,88 @@
       <transition name="modal">
         <div v-if="showJoinModal" class="modal-overlay" @click.self="showJoinModal = false">
           <div class="modal-box">
-            <button class="modal-close" @click="showJoinModal = false">&times;</button>
+            <button
+              aria-label="关闭加入开发弹窗"
+              class="modal-close"
+              type="button"
+              @click="showJoinModal = false"
+            >
+              <X aria-hidden="true" />
+            </button>
             <h2>加入 openatom-system-next 开发</h2>
             <p class="modal-desc">填写以下信息，我们会尽快与你联系！</p>
 
             <form class="join-form" @submit.prevent="handleSubmitJoin">
               <div class="form-group">
-                <label>姓名 <span class="required">*</span></label>
-                <input v-model="joinForm.name" type="text" placeholder="请输入你的姓名" class="form-input" />
+                <label for="join-name">姓名 <span class="required">*</span></label>
+                <input
+                  id="join-name"
+                  v-model="joinForm.name"
+                  type="text"
+                  placeholder="请输入你的姓名"
+                  class="form-input"
+                  autocomplete="name"
+                />
               </div>
               <div class="form-group">
-                <label>联系方式 <span class="required">*</span></label>
-                <input v-model="joinForm.contact" type="text" placeholder="QQ / 微信 / 邮箱" class="form-input" />
+                <label for="join-contact">联系方式 <span class="required">*</span></label>
+                <input
+                  id="join-contact"
+                  v-model="joinForm.contact"
+                  type="text"
+                  placeholder="QQ / 微信 / 邮箱"
+                  class="form-input"
+                  autocomplete="email"
+                />
               </div>
               <div class="form-group">
                 <label>感兴趣方向 <span class="required">*</span></label>
                 <div class="direction-options">
-                  <label class="direction-option" :class="{ active: joinForm.direction === 'frontend' }">
-                    <input type="radio" v-model="joinForm.direction" value="frontend" />
-                    <span class="direction-icon">🎨</span>
+                  <label
+                    class="direction-option"
+                    :class="{ active: joinForm.direction === 'frontend' }"
+                  >
+                    <input v-model="joinForm.direction" type="radio" value="frontend" />
+                    <Palette aria-hidden="true" class="direction-icon" />
                     <span>前端开发</span>
                   </label>
-                  <label class="direction-option" :class="{ active: joinForm.direction === 'backend' }">
-                    <input type="radio" v-model="joinForm.direction" value="backend" />
-                    <span class="direction-icon">⚙️</span>
+                  <label
+                    class="direction-option"
+                    :class="{ active: joinForm.direction === 'backend' }"
+                  >
+                    <input v-model="joinForm.direction" type="radio" value="backend" />
+                    <ServerCog aria-hidden="true" class="direction-icon" />
                     <span>后端开发</span>
                   </label>
-                  <label class="direction-option" :class="{ active: joinForm.direction === 'devops' }">
-                    <input type="radio" v-model="joinForm.direction" value="devops" />
-                    <span class="direction-icon">🧪</span>
+                  <label
+                    class="direction-option"
+                    :class="{ active: joinForm.direction === 'devops' }"
+                  >
+                    <input v-model="joinForm.direction" type="radio" value="devops" />
+                    <FlaskConical aria-hidden="true" class="direction-icon" />
                     <span>测试 & DevOps</span>
                   </label>
                 </div>
               </div>
               <div class="form-group">
-                <label>技能栈</label>
-                <input v-model="joinForm.skills" type="text" placeholder="如：Vue3, Spring Boot, Docker..." class="form-input" />
+                <label for="join-skills">技能栈</label>
+                <input
+                  id="join-skills"
+                  v-model="joinForm.skills"
+                  type="text"
+                  placeholder="如：Vue3, Spring Boot, Docker..."
+                  class="form-input"
+                />
               </div>
               <div class="form-group">
-                <label>留言</label>
-                <textarea v-model="joinForm.message" placeholder="想说的话..." class="form-textarea" rows="3" />
+                <label for="join-message">留言</label>
+                <textarea
+                  id="join-message"
+                  v-model="joinForm.message"
+                  placeholder="想说的话..."
+                  class="form-textarea"
+                  rows="3"
+                />
               </div>
               <button type="submit" class="form-submit" :disabled="submitting">
                 {{ submitting ? '提交中...' : '提交申请' }}
@@ -276,7 +350,7 @@
             </form>
 
             <div v-if="submitSuccess" class="submit-success">
-              <span class="success-icon">✓</span>
+              <CircleCheck aria-hidden="true" class="success-icon" />
               <p>申请已提交，我们会尽快联系你！</p>
             </div>
           </div>
@@ -288,6 +362,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { CircleCheck, FlaskConical, Palette, ServerCog, X } from 'lucide-vue-next'
 import { nextPageApi } from '@/api'
 
 const views = ref(0)
@@ -308,13 +383,28 @@ const submitting = ref(false)
 const submitSuccess = ref(false)
 
 const services = [
-  { name: 'auth-service', port: 8101, db: 'db_auth', desc: '登录 / 注册 / Sa-Token / RBAC / OAuth' },
+  {
+    name: 'auth-service',
+    port: 8101,
+    db: 'db_auth',
+    desc: '登录 / 注册 / Sa-Token / RBAC / OAuth',
+  },
   { name: 'user-service', port: 8102, db: 'db_user', desc: '用户 CRUD / Excel 导入导出 / 头像' },
   { name: 'club-service', port: 8103, db: 'db_club', desc: '社团 / 部门 / 岗位 / 成员管理' },
-  { name: 'recruitment-service', port: 8104, db: 'db_recruitment', desc: '招新计划 / 申请 / 审批 / 面试' },
+  {
+    name: 'recruitment-service',
+    port: 8104,
+    db: 'db_recruitment',
+    desc: '招新计划 / 申请 / 审批 / 面试',
+  },
   { name: 'activity-service', port: 8105, db: 'db_activity', desc: '活动发布 / 报名 / 签到关联' },
   { name: 'blog-service', port: 8106, db: 'db_blog', desc: '博客文章 / 评论 / 互动' },
-  { name: 'checkin-service', port: 8107, db: 'db_checkin', desc: '签到场次 / 分组 / 高并发独立部署' },
+  {
+    name: 'checkin-service',
+    port: 8107,
+    db: 'db_checkin',
+    desc: '签到场次 / 分组 / 高并发独立部署',
+  },
   { name: 'point-service', port: 8108, db: 'db_point', desc: '积分账户 / 流水 / 兑换' },
   { name: 'notification-service', port: 8109, db: 'db_notification', desc: '站内通知 / 已读管理' },
   { name: 'office-service', port: 8110, db: 'db_office', desc: '办公文书生成与导出' },
@@ -322,11 +412,41 @@ const services = [
 ]
 
 const roadmap = [
-  { name: '基础设施搭建', desc: 'Nacos + openatom-common + Gateway 网关', time: '1-2 周', done: true, active: false },
-  { name: '边缘服务拆分', desc: 'file-service / notification-service / blog-service', time: '2-3 周', done: false, active: true },
-  { name: '核心域拆分', desc: 'auth / user / club / point 四大核心服务', time: '3-4 周', done: false, active: false },
-  { name: '业务域拆分', desc: 'recruitment / activity / checkin / office', time: '2-3 周', done: false, active: false },
-  { name: '全量切换', desc: '下线单体应用，全部流量走网关', time: '1 周', done: false, active: false },
+  {
+    name: '基础设施搭建',
+    desc: 'Nacos + openatom-common + Gateway 网关',
+    time: '1-2 周',
+    done: true,
+    active: false,
+  },
+  {
+    name: '边缘服务拆分',
+    desc: 'file-service / notification-service / blog-service',
+    time: '2-3 周',
+    done: false,
+    active: true,
+  },
+  {
+    name: '核心域拆分',
+    desc: 'auth / user / club / point 四大核心服务',
+    time: '3-4 周',
+    done: false,
+    active: false,
+  },
+  {
+    name: '业务域拆分',
+    desc: 'recruitment / activity / checkin / office',
+    time: '2-3 周',
+    done: false,
+    active: false,
+  },
+  {
+    name: '全量切换',
+    desc: '下线单体应用，全部流量走网关',
+    time: '1 周',
+    done: false,
+    active: false,
+  },
 ]
 
 function particleStyle(i: number) {
@@ -357,16 +477,19 @@ function handleLike() {
   if (liked.value) return
   liked.value = true
   // 调用真实 API 点赞
-  nextPageApi.like().then((res) => {
-    if (res && typeof res.likeCount === 'number') {
-      likes.value = res.likeCount
+  nextPageApi
+    .like()
+    .then((res) => {
+      if (res && typeof res.likeCount === 'number') {
+        likes.value = res.likeCount
+        animateNumber(likes.value, (v) => (animatedLikes.value = v))
+      }
+    })
+    .catch(() => {
+      // 失败时仍然本地递增
+      likes.value++
       animateNumber(likes.value, (v) => (animatedLikes.value = v))
-    }
-  }).catch(() => {
-    // 失败时仍然本地递增
-    likes.value++
-    animateNumber(likes.value, (v) => (animatedLikes.value = v))
-  })
+    })
 }
 
 function handleJoin() {
@@ -426,8 +549,8 @@ onMounted(async () => {
 .next-page {
   position: relative;
   min-height: 100vh;
-  background: #09090b;
-  color: #e4e4e7;
+  background: var(--color-gray-950);
+  color: var(--color-gray-200);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -441,30 +564,30 @@ onMounted(async () => {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: var(--z-sticky);
   padding: 16px 24px;
   background: rgba(9, 9, 11, 0.8);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 .back-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 500;
-  color: #c084fc;
-  background: rgba(168, 85, 247, 0.08);
-  border: 1px solid rgba(168, 85, 247, 0.25);
+  color: var(--color-gray-300);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   text-decoration: none;
   transition: all 0.25s;
 }
 .back-btn:hover {
-  background: rgba(168, 85, 247, 0.15);
-  border-color: rgba(168, 85, 247, 0.4);
-  color: #d8b4fe;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--color-gray-100);
   transform: translateX(-2px);
 }
 .back-btn svg {
@@ -484,14 +607,24 @@ onMounted(async () => {
 .particle {
   position: absolute;
   border-radius: 50%;
-  background: #a855f7;
-  animation: particleFloat linear infinite;
+  background: var(--color-gray-200);
+  opacity: var(--particle-opacity, 0.2);
 }
 @keyframes particleFloat {
-  0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
-  10% { opacity: var(--particle-opacity, 0.3); }
-  90% { opacity: var(--particle-opacity, 0.3); }
-  50% { transform: translateY(-60px) scale(1.4); }
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--particle-opacity, 0.3);
+  }
+  90% {
+    opacity: var(--particle-opacity, 0.3);
+  }
+  50% {
+    transform: translateY(-60px) scale(1.4);
+  }
 }
 
 /* ===== 网格背景 ===== */
@@ -500,8 +633,8 @@ onMounted(async () => {
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(168, 85, 247, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(168, 85, 247, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
   background-size: 60px 60px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 100%);
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 100%);
@@ -529,21 +662,28 @@ onMounted(async () => {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: #c084fc;
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.25);
+  color: var(--color-gray-300);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   text-transform: uppercase;
 }
 .badge-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #a855f7;
-  animation: dotPulse 2s ease-in-out infinite;
+  background: var(--color-gray-200);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
 }
 @keyframes dotPulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.5); }
-  50% { opacity: 0.6; box-shadow: 0 0 0 6px rgba(168, 85, 247, 0); }
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+  }
 }
 
 /* ===== 标题 ===== */
@@ -555,24 +695,29 @@ onMounted(async () => {
   letter-spacing: -0.03em;
 }
 .title-openatom {
-  color: #f4f4f5;
+  color: var(--color-gray-100);
 }
 .title-system {
-  color: #71717a;
+  color: var(--color-gray-500);
 }
 .title-next {
-  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 40%, #c084fc 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-gray-200) 0%,
+    var(--color-gray-500) 40%,
+    var(--color-gray-300) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 32px rgba(168, 85, 247, 0.35));
+  filter: drop-shadow(0 0 32px rgba(255, 255, 255, 0.35));
 }
 
 /* ===== 描述 ===== */
 .hero-desc {
   font-size: 16px;
   line-height: 1.7;
-  color: #a1a1aa;
+  color: var(--color-gray-400);
   margin: 0 auto 40px;
   max-width: 520px;
 }
@@ -591,7 +736,7 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   padding: 20px 32px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(12px);
@@ -600,27 +745,27 @@ onMounted(async () => {
 .stat-icon {
   width: 28px;
   height: 28px;
-  color: #a855f7;
+  color: var(--color-gray-200);
 }
 .stat-icon svg {
   width: 100%;
   height: 100%;
 }
 .stat-icon--purple {
-  color: #c084fc;
+  color: var(--color-gray-300);
 }
 .stat-value {
   font-size: 32px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  background: linear-gradient(180deg, #f4f4f5, #a1a1aa);
+  background: linear-gradient(180deg, var(--color-gray-100), var(--color-gray-400));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .stat-label {
   font-size: 12px;
-  color: #71717a;
+  color: var(--color-gray-500);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -644,19 +789,25 @@ onMounted(async () => {
   align-items: center;
   padding: 14px 36px;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: var(--color-white);
+  background: linear-gradient(135deg, var(--color-gray-500), var(--color-gray-200));
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.3s;
-  box-shadow: 0 0 24px rgba(168, 85, 247, 0.3), 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 0.2s,
+    box-shadow 0.3s;
+  box-shadow:
+    0 0 24px rgba(255, 255, 255, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.4);
 }
 .btn-join:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 40px rgba(168, 85, 247, 0.45), 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 0 40px rgba(255, 255, 255, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.5);
 }
 .btn-join:active {
   transform: translateY(0);
@@ -665,16 +816,27 @@ onMounted(async () => {
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: linear-gradient(135deg, #a855f7, #7c3aed, #c084fc, #7c3aed);
+  background: linear-gradient(
+    135deg,
+    var(--color-gray-200),
+    var(--color-gray-500),
+    var(--color-gray-300),
+    var(--color-gray-500)
+  );
   background-size: 300% 300%;
-  animation: glowShift 4s ease infinite;
+  animation: none;
   z-index: 0;
   filter: blur(8px);
   opacity: 0.5;
 }
 @keyframes glowShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 .btn-join__content {
   position: relative;
@@ -694,10 +856,10 @@ onMounted(async () => {
   gap: 8px;
   padding: 14px 24px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 500;
-  color: #a1a1aa;
+  color: var(--color-gray-400);
   background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
   transition: all 0.25s;
@@ -708,14 +870,14 @@ onMounted(async () => {
   transition: all 0.25s;
 }
 .btn-like:hover {
-  border-color: rgba(168, 85, 247, 0.4);
-  color: #c084fc;
-  background: rgba(168, 85, 247, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--color-gray-300);
+  background: rgba(255, 255, 255, 0.08);
 }
 .btn-like--active {
-  border-color: rgba(168, 85, 247, 0.5);
-  color: #a855f7;
-  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: var(--color-gray-200);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ===== 架构区域 ===== */
@@ -725,13 +887,13 @@ onMounted(async () => {
 .arch-title {
   font-size: 24px;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--color-gray-100);
   margin: 0 0 6px;
   text-align: center;
 }
 .arch-subtitle {
   font-size: 14px;
-  color: #71717a;
+  color: var(--color-gray-500);
   margin: 0 0 24px;
   text-align: center;
 }
@@ -747,9 +909,9 @@ onMounted(async () => {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 500;
-  color: #c084fc;
-  background: rgba(168, 85, 247, 0.08);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  color: var(--color-gray-300);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* ===== 拓扑图 ===== */
@@ -788,12 +950,12 @@ onMounted(async () => {
   transition: all 0.3s;
 }
 .topo-node:hover {
-  border-color: rgba(168, 85, 247, 0.3);
-  background: rgba(168, 85, 247, 0.04);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.04);
 }
 .topo-node--gateway {
-  background: rgba(168, 85, 247, 0.1);
-  border-color: rgba(168, 85, 247, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
   padding: 16px 32px;
 }
 .topo-node--infra {
@@ -807,17 +969,17 @@ onMounted(async () => {
 .topo-label {
   font-size: 13px;
   font-weight: 600;
-  color: #e4e4e7;
+  color: var(--color-gray-200);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .topo-port {
   font-size: 12px;
-  color: #71717a;
+  color: var(--color-gray-500);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .topo-sub {
   font-size: 12px;
-  color: #52525b;
+  color: var(--color-gray-600);
 }
 
 /* ===== 服务列表 ===== */
@@ -835,8 +997,8 @@ onMounted(async () => {
   transition: all 0.3s;
 }
 .service-card:hover {
-  border-color: rgba(168, 85, 247, 0.3);
-  background: rgba(168, 85, 247, 0.04);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.04);
   transform: translateY(-2px);
 }
 .service-header {
@@ -848,17 +1010,17 @@ onMounted(async () => {
 .service-name {
   font-size: 13px;
   font-weight: 600;
-  color: #c084fc;
+  color: var(--color-gray-300);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .service-port {
   font-size: 12px;
-  color: #52525b;
+  color: var(--color-gray-600);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .service-desc {
   font-size: 12px;
-  color: #a1a1aa;
+  color: var(--color-gray-400);
   margin: 0 0 8px;
   line-height: 1.5;
 }
@@ -867,7 +1029,7 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #71717a;
+  color: var(--color-gray-500);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -880,7 +1042,7 @@ onMounted(async () => {
 .comm-title {
   font-size: 18px;
   font-weight: 600;
-  color: #f4f4f5;
+  color: var(--color-gray-100);
   margin: 0 0 20px;
   text-align: center;
 }
@@ -898,20 +1060,20 @@ onMounted(async () => {
 .comm-card h4 {
   font-size: 15px;
   font-weight: 600;
-  color: #f4f4f5;
+  color: var(--color-gray-100);
   margin: 12px 0 8px;
 }
 .comm-card p {
   font-size: 13px;
-  color: #a1a1aa;
+  color: var(--color-gray-400);
   margin: 0 0 12px;
   line-height: 1.5;
 }
 .comm-card code {
   font-size: 12px;
-  color: #c084fc;
+  color: var(--color-gray-300);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: rgba(168, 85, 247, 0.08);
+  background: rgba(255, 255, 255, 0.08);
   padding: 4px 10px;
   border-radius: 6px;
 }
@@ -924,14 +1086,14 @@ onMounted(async () => {
   letter-spacing: 0.05em;
 }
 .comm-tag--sync {
-  color: #22c55e;
+  color: var(--color-success);
   background: rgba(34, 197, 94, 0.1);
   border: 1px solid rgba(34, 197, 94, 0.2);
 }
 .comm-tag--async {
-  color: #a855f7;
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  color: var(--color-gray-200);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* ===== 认证流程 ===== */
@@ -956,8 +1118,8 @@ onMounted(async () => {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(168, 85, 247, 0.15);
-  color: #c084fc;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--color-gray-300);
   font-size: 13px;
   font-weight: 700;
   display: flex;
@@ -969,18 +1131,18 @@ onMounted(async () => {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #f4f4f5;
+  color: var(--color-gray-100);
   margin-bottom: 4px;
 }
 .auth-step-text p {
   font-size: 12px;
-  color: #71717a;
+  color: var(--color-gray-500);
   margin: 0;
   line-height: 1.4;
 }
 .auth-arrow {
   font-size: 20px;
-  color: #52525b;
+  color: var(--color-gray-600);
 }
 
 /* ===== 迁移路线 ===== */
@@ -1012,22 +1174,22 @@ onMounted(async () => {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #27272a;
-  border: 2px solid #52525b;
+  background: var(--color-gray-800);
+  border: 2px solid var(--color-gray-600);
 }
 .roadmap-dot--done {
-  background: #22c55e;
-  border-color: #22c55e;
+  background: var(--color-success);
+  border-color: var(--color-success);
 }
 .roadmap-dot--active {
-  background: #a855f7;
-  border-color: #a855f7;
-  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.2);
+  background: var(--color-gray-200);
+  border-color: var(--color-gray-200);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
 }
 .roadmap-phase {
   font-size: 12px;
   font-weight: 600;
-  color: #71717a;
+  color: var(--color-gray-500);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   margin-bottom: 4px;
@@ -1035,18 +1197,18 @@ onMounted(async () => {
 .roadmap-name {
   font-size: 14px;
   font-weight: 600;
-  color: #f4f4f5;
+  color: var(--color-gray-100);
   margin-bottom: 4px;
 }
 .roadmap-desc {
   font-size: 12px;
-  color: #a1a1aa;
+  color: var(--color-gray-400);
   margin-bottom: 4px;
   line-height: 1.5;
 }
 .roadmap-time {
   font-size: 12px;
-  color: #52525b;
+  color: var(--color-gray-600);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -1057,26 +1219,26 @@ onMounted(async () => {
   justify-content: center;
   gap: 10px;
   font-size: 13px;
-  color: #52525b;
+  color: var(--color-gray-600);
 }
 .version-tag {
   padding: 3px 10px;
   border-radius: 999px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
-  color: #a855f7;
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  color: var(--color-gray-200);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 .version-sep {
-  color: #3f3f46;
+  color: var(--color-gray-700);
 }
 
 /* ===== 弹窗 ===== */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--z-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1089,10 +1251,12 @@ onMounted(async () => {
   max-width: 520px;
   width: 100%;
   padding: 36px;
-  border-radius: 20px;
-  background: #18181b;
-  border: 1px solid rgba(168, 85, 247, 0.2);
-  box-shadow: 0 0 60px rgba(168, 85, 247, 0.12), 0 24px 48px rgba(0, 0, 0, 0.5);
+  border-radius: var(--radius-xl);
+  background: var(--color-gray-900);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 0 60px rgba(255, 255, 255, 0.12),
+    0 24px 48px rgba(0, 0, 0, 0.5);
 }
 .modal-close {
   position: absolute;
@@ -1103,7 +1267,7 @@ onMounted(async () => {
   border: none;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
-  color: #71717a;
+  color: var(--color-gray-500);
   font-size: 20px;
   cursor: pointer;
   display: flex;
@@ -1113,17 +1277,17 @@ onMounted(async () => {
 }
 .modal-close:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: #f4f4f5;
+  color: var(--color-gray-100);
 }
 .modal-box h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #f4f4f5;
+  color: var(--color-gray-100);
   margin: 0 0 8px;
 }
 .modal-desc {
   font-size: 14px;
-  color: #a1a1aa;
+  color: var(--color-gray-400);
   margin: 0 0 24px;
   line-height: 1.6;
 }
@@ -1148,44 +1312,48 @@ onMounted(async () => {
 .form-group label {
   font-size: 13px;
   font-weight: 500;
-  color: #d4d4d8;
+  color: var(--color-gray-300);
 }
 .required {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 .form-input {
   padding: 10px 14px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
-  color: #f4f4f5;
+  color: var(--color-gray-100);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.25s, background 0.25s;
+  transition:
+    border-color 0.25s,
+    background 0.25s;
 }
 .form-input:focus {
-  border-color: rgba(168, 85, 247, 0.5);
-  background: rgba(168, 85, 247, 0.05);
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
 }
 .form-input::placeholder,
 .form-textarea::placeholder {
-  color: #52525b;
+  color: var(--color-gray-600);
 }
 .form-textarea {
   padding: 10px 14px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
-  color: #f4f4f5;
+  color: var(--color-gray-100);
   font-size: 14px;
   outline: none;
   resize: vertical;
   font-family: inherit;
-  transition: border-color 0.25s, background 0.25s;
+  transition:
+    border-color 0.25s,
+    background 0.25s;
 }
 .form-textarea:focus {
-  border-color: rgba(168, 85, 247, 0.5);
-  background: rgba(168, 85, 247, 0.05);
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
 }
 .direction-options {
   display: grid;
@@ -1204,32 +1372,35 @@ onMounted(async () => {
   cursor: pointer;
   transition: all 0.25s;
   font-size: 12px;
-  color: #a1a1aa;
+  color: var(--color-gray-400);
 }
 .direction-option input {
   display: none;
 }
 .direction-option:hover {
-  border-color: rgba(168, 85, 247, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 .direction-option.active {
-  border-color: rgba(168, 85, 247, 0.5);
-  background: rgba(168, 85, 247, 0.1);
-  color: #c084fc;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-gray-300);
 }
 .direction-option .direction-icon {
-  font-size: 24px;
+  width: var(--icon-xl);
+  height: var(--icon-xl);
 }
 .form-submit {
   padding: 12px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-gray-500), var(--color-gray-200));
+  color: var(--color-white);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
   margin-top: 4px;
 }
 .form-submit:hover:not(:disabled) {
@@ -1256,7 +1427,7 @@ onMounted(async () => {
   height: 40px;
   border-radius: 50%;
   background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  color: var(--color-success);
   font-size: 20px;
   font-weight: 700;
   display: flex;
@@ -1265,33 +1436,83 @@ onMounted(async () => {
 }
 .submit-success p {
   font-size: 14px;
-  color: #22c55e;
+  color: var(--color-success);
   margin: 0;
 }
 
 /* ===== 弹窗动画 ===== */
-.modal-enter-active { transition: opacity 0.3s; }
-.modal-enter-active .modal-box { transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s; }
-.modal-leave-active { transition: opacity 0.2s; }
-.modal-leave-active .modal-box { transition: transform 0.2s, opacity 0.2s; }
-.modal-enter-from { opacity: 0; }
-.modal-enter-from .modal-box { transform: scale(0.95) translateY(12px); opacity: 0; }
-.modal-leave-to { opacity: 0; }
-.modal-leave-to .modal-box { transform: scale(0.97); opacity: 0; }
+.modal-enter-active {
+  transition: opacity 0.3s;
+}
+.modal-enter-active .modal-box {
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s;
+}
+.modal-leave-active {
+  transition: opacity 0.2s;
+}
+.modal-leave-active .modal-box {
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
+}
+.modal-enter-from {
+  opacity: 0;
+}
+.modal-enter-from .modal-box {
+  transform: scale(0.95) translateY(12px);
+  opacity: 0;
+}
+.modal-leave-to {
+  opacity: 0;
+}
+.modal-leave-to .modal-box {
+  transform: scale(0.97);
+  opacity: 0;
+}
 
 /* ===== 响应式 ===== */
 @media (max-width: 640px) {
-  .next-page { padding: 60px 16px 40px; }
-  .stats-row { flex-direction: column; gap: 16px; }
-  .stat-divider { width: 48px; height: 1px; }
-  .stat-card { min-width: 200px; }
-  .services-grid { grid-template-columns: 1fr; }
-  .comm-grid { grid-template-columns: 1fr; }
-  .actions-row { flex-direction: column; }
-  .btn-join, .btn-like { width: 100%; justify-content: center; }
-  .modal-directions { grid-template-columns: 1fr; }
-  .direction-options { grid-template-columns: 1fr; }
-  .auth-flow { flex-direction: column; }
-  .auth-arrow { transform: rotate(90deg); }
+  .next-page {
+    padding: 60px 16px 40px;
+  }
+  .stats-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .stat-divider {
+    width: 48px;
+    height: 1px;
+  }
+  .stat-card {
+    min-width: 200px;
+  }
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+  .comm-grid {
+    grid-template-columns: 1fr;
+  }
+  .actions-row {
+    flex-direction: column;
+  }
+  .btn-join,
+  .btn-like {
+    width: 100%;
+    justify-content: center;
+  }
+  .modal-directions {
+    grid-template-columns: 1fr;
+  }
+  .direction-options {
+    grid-template-columns: 1fr;
+  }
+  .auth-flow {
+    flex-direction: column;
+  }
+  .auth-arrow {
+    transform: rotate(90deg);
+  }
 }
 </style>

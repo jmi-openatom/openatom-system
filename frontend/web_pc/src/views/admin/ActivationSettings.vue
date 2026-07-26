@@ -34,7 +34,7 @@
               <template v-if="groupForm.wechatGroupQrcode">
                 <el-image
                   :src="groupForm.wechatGroupQrcode"
-                  style="width:120px;height:120px;border:1px solid #ebeef5;border-radius:4px"
+                  class="group-qrcode"
                   fit="contain"
                   :preview-src-list="[groupForm.wechatGroupQrcode]"
                 />
@@ -551,9 +551,9 @@ onMounted(() => {
 
 <style scoped>
 .toolbar__label {
-  font-size: 14px;
-  color: #606266;
   margin-right: 8px;
+  color: var(--oa-muted);
+  font-size: 14px;
 }
 
 .section-card {
@@ -572,8 +572,15 @@ onMounted(() => {
 }
 
 .section-card__count {
+  color: var(--oa-muted);
   font-size: 13px;
-  color: #909399;
+}
+
+.group-qrcode {
+  width: 120px;
+  height: 120px;
+  border: 1px solid var(--oa-border);
+  border-radius: 4px;
 }
 
 .leaders-grid {
@@ -587,9 +594,9 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--oa-border);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--oa-button-subtle-bg);
 }
 
 .leader-item__label {
@@ -612,22 +619,23 @@ onMounted(() => {
 }
 
 .leader-item__name {
+  overflow: hidden;
+  color: var(--oa-text);
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .leader-item__username {
+  color: var(--oa-muted);
   font-size: 12px;
-  color: #909399;
 }
 
 .leader-item__empty {
-  font-size: 14px;
-  color: #c0c4cc;
   margin-left: 8px;
+  color: var(--oa-faint);
+  font-size: 14px;
 }
 
 .dept-leader {
@@ -637,13 +645,14 @@ onMounted(() => {
 }
 
 .dept-leader__name {
+  color: var(--oa-text);
   font-size: 13px;
   font-weight: 500;
 }
 
 .dept-leader__username {
+  color: var(--oa-muted);
   font-size: 12px;
-  color: #909399;
 }
 
 .user-picker {

@@ -39,7 +39,9 @@
         </template>
       </el-table-column>
       <el-table-column label="参与/中奖" width="130">
-        <template #default="{ row }">{{ row.participantCount || 0 }} / {{ row.winnerCount || 0 }}</template>
+        <template #default="{ row }"
+          >{{ row.participantCount || 0 }} / {{ row.winnerCount || 0 }}</template
+        >
       </el-table-column>
       <el-table-column label="奖品剩余" width="130">
         <template #default="{ row }">
@@ -76,7 +78,12 @@
       <el-form ref="formRef" :model="draft" :rules="rules" label-width="100px">
         <div class="form-grid">
           <el-form-item label="所属社团" prop="clubId">
-            <el-select v-model="draft.clubId" filterable placeholder="请选择社团" @change="loadForms">
+            <el-select
+              v-model="draft.clubId"
+              filterable
+              placeholder="请选择社团"
+              @change="loadForms"
+            >
               <el-option v-for="club in clubs" :key="club.id" :label="club.name" :value="club.id" />
             </el-select>
           </el-form-item>
@@ -123,7 +130,12 @@
           </el-table-column>
           <el-table-column label="数量" width="130">
             <template #default="{ row }">
-              <el-input-number v-model="row.quantity" :min="1" :step="1" controls-position="right" />
+              <el-input-number
+                v-model="row.quantity"
+                :min="1"
+                :step="1"
+                controls-position="right"
+              />
             </template>
           </el-table-column>
           <el-table-column label="排序" width="120">
@@ -197,10 +209,16 @@
 
         <div class="prize-board">
           <div v-for="prize in detail.prizes" :key="prize.id" class="prize-row">
-            <span class="prize-swatch" :style="{ backgroundColor: prize.color || '#1677ff' }" />
+            <span
+              class="prize-swatch"
+              :style="{ backgroundColor: prize.color || 'var(--color-gray-600)' }"
+            />
             <div>
               <strong>{{ prize.level || '奖品' }} · {{ prize.name }}</strong>
-              <p>已抽 {{ prize.wonCount || 0 }} / {{ prize.quantity || 0 }}，剩余 {{ prize.remainingCount || 0 }}</p>
+              <p>
+                已抽 {{ prize.wonCount || 0 }} / {{ prize.quantity || 0 }}，剩余
+                {{ prize.remainingCount || 0 }}
+              </p>
             </div>
             <el-button
               type="primary"
@@ -270,7 +288,7 @@ type LotteryDetail = {
   winners: any[]
 }
 
-const prizeColors = ['#1677ff', '#13c2c2', '#faad14', '#eb2f96', '#52c41a']
+const prizeColors = ['#1d1d1f', '#424245', '#6e6e73', '#86868b', '#a1a1a6']
 
 const loading = ref(false)
 const saving = ref(false)
@@ -344,7 +362,10 @@ async function loadForms(clubId: number | string = draft.value.clubId) {
   }
   const result = await clubApi.siteForms(clubId)
   forms.value = result?.list || result || []
-  if (draft.value.clubId === clubId && !forms.value.some((item) => item.id === draft.value.formId)) {
+  if (
+    draft.value.clubId === clubId &&
+    !forms.value.some((item) => item.id === draft.value.formId)
+  ) {
     draft.value.formId = forms.value[0]?.id || ''
   }
 }
@@ -495,7 +516,10 @@ async function draw(prizeId: number) {
 
 async function resetWinners() {
   if (!detail.value?.lottery?.id) return
-  await ElMessageBox.confirm('会清空当前抽奖活动的所有中奖记录，奖品配置和表单记录不会删除。', '确认清空中奖记录')
+  await ElMessageBox.confirm(
+    '会清空当前抽奖活动的所有中奖记录，奖品配置和表单记录不会删除。',
+    '确认清空中奖记录',
+  )
   await lotteryApi.reset(detail.value.lottery.id)
   latestDraw.value = null
   await refreshDetail()

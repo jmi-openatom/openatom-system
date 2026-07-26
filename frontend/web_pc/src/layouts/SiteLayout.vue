@@ -8,8 +8,8 @@
       v-bind="!headerVisible ? { inert: '' } : {}"
     >
       <div class="container site-header__inner">
-        <router-link class="brand" to="/">
-          <img alt="徽标" class="site-footer__logo" src="/logo.png" />
+        <router-link aria-label="开放原子开源社团首页" class="brand" to="/">
+          <img alt="开放原子开源社团徽标" class="site-footer__logo" src="/logo.png" />
           <span>
             <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
@@ -23,7 +23,9 @@
           <router-link to="/partners">伙伴</router-link>
           <router-link to="/apps">应用</router-link>
           <router-link to="/leaves">请假</router-link>
+          <router-link to="/points">积分中心</router-link>
           <router-link to="/apply">加入我们</router-link>
+          <router-link to="/about">关于我们</router-link>
           <el-dropdown
             popper-class="site-header-dropdown"
             trigger="click"
@@ -40,11 +42,9 @@
             </button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="/about">社团介绍</el-dropdown-item>
                 <el-dropdown-item command="/regulations">规章制度</el-dropdown-item>
                 <el-dropdown-item command="/calendar">校历</el-dropdown-item>
                 <el-dropdown-item command="/alumni-managers">往届管理人员</el-dropdown-item>
-                <el-dropdown-item divided command="/points">积分中心</el-dropdown-item>
                 <el-dropdown-item command="/images">图床</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -62,7 +62,6 @@
           <ThemeToggle />
           <el-button
             v-if="isLoggedIn"
-            circle
             class="notification-btn site-header__action--notification"
             aria-label="查看通知"
             title="查看通知"
@@ -136,6 +135,7 @@
             <router-link to="/apps" @click="mobileNavVisible = false">应用</router-link>
             <router-link to="/blog" @click="mobileNavVisible = false">博客</router-link>
             <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>
+            <router-link to="/about" @click="mobileNavVisible = false">关于我们</router-link>
           </div>
         </section>
 
@@ -143,7 +143,6 @@
           <p class="mobile-nav__label">加入与了解</p>
           <div class="mobile-nav__links">
             <router-link to="/apply" @click="mobileNavVisible = false"> 加入我们 </router-link>
-            <router-link to="/about" @click="mobileNavVisible = false">社团介绍</router-link>
             <router-link to="/regulations" @click="mobileNavVisible = false">规章制度</router-link>
             <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
             <router-link to="/alumni-managers" @click="mobileNavVisible = false">
@@ -203,7 +202,7 @@
     <footer class="site-footer">
       <div class="container site-footer__inner">
         <div class="site-footer__brand">
-          <img alt="徽标" class="site-footer__logo" src="/logo.png" />
+          <img alt="开放原子开源社团徽标" class="site-footer__logo" src="/logo.png" />
           <div class="brand-text">
             <span class="name">开放原子开源社团</span>
             <span class="slogan">JMI - OPENATOM</span>
@@ -253,7 +252,7 @@ const mobileNavVisible = ref(false)
 
 const unreadCount = ref(0)
 
-const unreadTimer = ref(null as any)
+const unreadTimer = ref<number>()
 
 const sessionToken = ref(getToken())
 
@@ -291,11 +290,9 @@ const showAdminEntry = computed(() => {
 })
 
 const moreRoutePrefixes = [
-  '/about',
   '/regulations',
   '/calendar',
   '/alumni-managers',
-  '/points',
   '/images',
 ]
 
@@ -329,7 +326,7 @@ async function handleNavCommand(command: string) {
       unreadCount.value = 0
       if (unreadTimer.value) {
         clearInterval(unreadTimer.value)
-        unreadTimer.value = null
+        unreadTimer.value = undefined
       }
       router.replace('/')
     }
@@ -407,11 +404,12 @@ onBeforeUnmount(() => {
   right: 0;
   z-index: 20;
   overflow: hidden;
-  background: var(--oa-header-bg);
-  border-bottom: 1px solid var(--oa-header-border);
-  box-shadow: var(--oa-header-shadow);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  backdrop-filter: blur(24px) saturate(190%);
+  background: var(--oa-elevated-bg);
+  background: var(--glass-bg-strong);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
   transform: translateY(0);
   opacity: 1;
   transition:
@@ -437,8 +435,9 @@ onBeforeUnmount(() => {
 }
 
 .site-header--home {
-  background: var(--oa-header-home-bg);
-  box-shadow: var(--oa-header-home-shadow);
+  background: var(--oa-elevated-bg);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
 }
 
 .site-header--hidden {
@@ -581,11 +580,14 @@ onBeforeUnmount(() => {
 }
 
 .site-nav a {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
   padding: 9px 11px;
   color: var(--oa-text-soft);
   text-decoration: none;
-  border-radius: 999px;
-  font-size: 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
   line-height: 1.1;
   letter-spacing: 0;
   opacity: 0.86;
@@ -610,16 +612,16 @@ onBeforeUnmount(() => {
 
 .site-nav__more {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 40px;
   align-items: center;
   gap: 4px;
   padding: 9px 11px;
   color: var(--oa-text-soft);
   background: transparent;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.1;
   cursor: pointer;
   opacity: 0.86;
@@ -649,15 +651,14 @@ onBeforeUnmount(() => {
 }
 
 .site-nav .nav-next-link {
-  color: #a855f7;
+  color: var(--oa-text);
   font-weight: 600;
   opacity: 1;
-  text-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
 }
 
 .site-nav .nav-next-link:hover {
-  background: rgba(168, 85, 247, 0.12);
-  color: #c084fc;
+  background: var(--oa-nav-hover-bg);
+  color: var(--oa-text);
 }
 
 .site-header__actions {
@@ -668,12 +669,12 @@ onBeforeUnmount(() => {
 }
 
 .site-header__actions :deep(.el-button) {
-  min-height: 36px;
+  min-height: 40px;
   padding: 8px 13px;
   border-color: var(--oa-button-border);
   background: var(--oa-button-bg);
   color: var(--oa-button-text);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
 }
 
@@ -718,9 +719,9 @@ onBeforeUnmount(() => {
   min-height: 40px !important;
   aspect-ratio: 1;
   padding: 0 !important;
-  border: none !important;
-  border-radius: 50% !important;
-  background: var(--oa-button-subtle-bg) !important;
+  border: 1px solid var(--oa-button-border) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--oa-button-bg) !important;
   font-size: 20px;
   color: var(--oa-button-text);
   transition:
@@ -730,6 +731,7 @@ onBeforeUnmount(() => {
 }
 
 .notification-btn:hover {
+  border-color: var(--oa-button-hover-border) !important;
   color: var(--oa-button-hover-text);
   background: var(--oa-button-hover-bg) !important;
 }
@@ -918,10 +920,13 @@ onBeforeUnmount(() => {
 <style>
 .site-header-dropdown.el-popper {
   min-width: 168px;
-  border-color: var(--oa-border);
-  border-radius: 14px;
+  border-color: var(--glass-border);
+  border-radius: var(--radius-lg);
   background: var(--oa-elevated-bg);
-  box-shadow: var(--oa-card-shadow);
+  background: var(--glass-bg-strong);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
 }
 
 .site-header-dropdown .el-dropdown-menu {

@@ -1,11 +1,5 @@
 <template>
-  <section
-    class="workspace-hero"
-    :class="{
-      'workspace-hero--light': !isDark,
-      'workspace-hero--dark': isDark,
-    }"
-  >
+  <section class="workspace-hero">
     <div class="container workspace-hero__inner">
       <div class="workspace-hero__copy site-reveal">
         <span>{{ eyebrow }}</span>
@@ -17,9 +11,9 @@
         </div>
       </div>
 
-      <div class="workspace-hero__console site-reveal">
+      <div class="workspace-hero__console site-reveal" aria-label="工作台概览">
         <div class="workspace-hero__console-head">
-          <small>Workspace Console</small>
+          <small>WORKSPACE INDEX</small>
           <strong>{{ primaryMetric?.value ?? '--' }}</strong>
           <span>{{ primaryMetric?.label || '暂无数据' }}</span>
         </div>
@@ -38,7 +32,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useTheme } from '@/composables/useTheme'
 
 type WorkspaceMetric = {
   label: string
@@ -54,287 +47,160 @@ const props = defineProps<{
 }>()
 
 const primaryMetric = computed(() => props.metrics[0])
-const { isDark } = useTheme()
 </script>
 
 <style scoped>
 .workspace-hero {
-  --workspace-hero-text: #1d1d1f;
-  --workspace-hero-muted: rgba(29, 29, 31, 0.72);
-  --workspace-hero-soft: rgba(29, 29, 31, 0.58);
-  --workspace-hero-grid: rgba(29, 29, 31, 0.05);
-  --workspace-hero-orb: rgba(29, 29, 31, 0.08);
-  --workspace-hero-chip-border: rgba(29, 29, 31, 0.12);
-  --workspace-hero-chip-bg: rgba(255, 255, 255, 0.72);
-  --workspace-hero-panel-border: rgba(29, 29, 31, 0.1);
-  --workspace-hero-panel-bg: rgba(255, 255, 255, 0.7);
-  --workspace-hero-tile-border: rgba(29, 29, 31, 0.08);
-  --workspace-hero-tile-bg: rgba(255, 255, 255, 0.62);
-  --workspace-hero-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 24px 80px rgba(0, 0, 0, 0.1);
-  --workspace-hero-solid-button-border: #1d1d1f;
-  --workspace-hero-solid-button-bg: #1d1d1f;
-  --workspace-hero-solid-button-text: #ffffff;
-  --workspace-hero-solid-button-hover-border: #000000;
-  --workspace-hero-solid-button-hover-bg: #000000;
-  --workspace-hero-solid-button-hover-text: #ffffff;
-  --workspace-hero-plain-button-border: rgba(29, 29, 31, 0.14);
-  --workspace-hero-plain-button-bg: rgba(255, 255, 255, 0.54);
-  --workspace-hero-plain-button-text: #1d1d1f;
-  --workspace-hero-plain-button-hover-border: rgba(29, 29, 31, 0.26);
-  --workspace-hero-plain-button-hover-bg: rgba(255, 255, 255, 0.86);
-  --workspace-hero-plain-button-hover-text: #000000;
-  position: relative;
-  overflow: hidden;
-  color: var(--workspace-hero-text);
-  background:
-    radial-gradient(circle at 15% 16%, rgba(29, 29, 31, 0.08), transparent 28%),
-    radial-gradient(circle at 84% 8%, rgba(110, 110, 115, 0.06), transparent 26%),
-    linear-gradient(135deg, #fafafa 0%, #f2f2f4 48%, #f8f8f9 100%);
-  transition:
-    color 0.24s ease,
-    background 0.24s ease;
-}
-
-.workspace-hero::before,
-.workspace-hero::after {
-  position: absolute;
-  content: '';
-  pointer-events: none;
-}
-
-.workspace-hero::before {
-  inset: 0;
-  background:
-    linear-gradient(var(--workspace-hero-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--workspace-hero-grid) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.94), transparent);
-}
-
-.workspace-hero::after {
-  right: -120px;
-  bottom: -180px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: var(--workspace-hero-orb);
-  filter: blur(18px);
+  color: var(--oa-text);
+  background: var(--oa-page-soft-bg);
+  border-bottom: 1px solid var(--oa-border);
 }
 
 .workspace-hero__inner {
-  position: relative;
-  z-index: 1;
   display: grid;
-  grid-template-columns: minmax(280px, 0.82fr) minmax(420px, 1.18fr);
-  gap: clamp(28px, 5vw, 72px);
-  align-items: center;
-  min-height: clamp(360px, 42vh, 460px);
-  padding: clamp(42px, 7vw, 76px) 0;
+  min-height: clamp(340px, 38vh, 420px);
+  grid-template-columns: minmax(280px, 0.9fr) minmax(380px, 1.1fr);
+  align-items: stretch;
+  gap: 0;
 }
 
-.workspace-hero__copy span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--workspace-hero-chip-border);
-  border-radius: 999px;
-  color: var(--workspace-hero-muted);
-  background: var(--workspace-hero-chip-bg);
-  font-size: 13px;
-  backdrop-filter: blur(10px);
+.workspace-hero__copy {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  padding: clamp(48px, 7vw, 80px) clamp(36px, 5vw, 64px) clamp(48px, 7vw, 80px) 0;
+}
+
+.workspace-hero__copy > span {
+  color: var(--oa-muted-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 
 .workspace-hero__copy h1 {
-  margin: 18px 0 16px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  font-size: clamp(34px, 4vw, 52px);
-  font-weight: 600;
-  line-height: 1.02;
+  margin: 12px 0 14px;
+  color: var(--oa-text);
+  font-size: clamp(34px, 4vw, 50px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0;
 }
 
 .workspace-hero__copy p {
-  max-width: 460px;
+  max-width: 520px;
   margin: 0;
-  color: var(--workspace-hero-muted);
-  font-size: clamp(16px, 1.8vw, 19px);
-  line-height: 1.8;
+  color: var(--oa-muted);
+  font-size: 16px;
+  line-height: 1.72;
 }
 
 .workspace-hero__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 26px;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.workspace-hero__actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 
 .workspace-hero__console {
-  position: relative;
   display: grid;
-  gap: 18px;
-  padding: clamp(18px, 3vw, 24px);
-  border: 1px solid var(--workspace-hero-panel-border);
-  border-radius: 30px;
-  background: var(--workspace-hero-panel-bg);
-  box-shadow: var(--workspace-hero-shadow);
-  backdrop-filter: blur(18px);
-  transition:
-    border-color 0.24s ease,
-    background-color 0.24s ease,
-    box-shadow 0.24s ease;
+  grid-template-columns: minmax(150px, 0.72fr) minmax(0, 1.28fr);
+  gap: 0;
+  border-left: 1px solid var(--oa-border);
 }
 
 .workspace-hero__console-head {
   display: grid;
-  gap: 6px;
-  padding: 4px 4px 0;
+  align-content: end;
+  gap: 8px;
+  padding: 28px;
+  color: var(--oa-active-text);
+  background: var(--oa-active-bg);
 }
 
 .workspace-hero__console-head small {
-  color: var(--workspace-hero-soft);
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 
 .workspace-hero__console-head strong {
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  font-size: clamp(34px, 4vw, 46px);
-  font-weight: 500;
+  font-size: clamp(38px, 5vw, 58px);
+  font-weight: 650;
   line-height: 1;
 }
 
 .workspace-hero__console-head span {
-  color: var(--workspace-hero-muted);
-  font-size: 14px;
+  font-size: 13px;
+  opacity: 0.72;
 }
 
 .workspace-hero__metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
 }
 
 .workspace-hero__metric-grid article {
   display: grid;
-  gap: 8px;
-  min-height: 106px;
+  min-height: 120px;
   align-content: center;
-  padding: 16px;
-  border: 1px solid var(--workspace-hero-tile-border);
-  border-radius: 18px;
-  background: var(--workspace-hero-tile-bg);
-  transition:
-    border-color 0.24s ease,
-    background-color 0.24s ease,
-    color 0.24s ease;
+  gap: 7px;
+  padding: 20px;
+  border-left: 1px solid var(--oa-border);
+  border-bottom: 1px solid var(--oa-border);
+}
+
+.workspace-hero__metric-grid article:nth-last-child(-n + 2) {
+  border-bottom: 0;
 }
 
 .workspace-hero__metric-grid span,
 .workspace-hero__metric-grid small {
-  color: var(--workspace-hero-soft);
-}
-
-.workspace-hero__metric-grid span {
-  font-size: 13px;
-}
-
-.workspace-hero__metric-grid strong {
-  color: var(--workspace-hero-text);
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  font-size: clamp(22px, 2vw, 28px);
-  font-weight: 500;
-  line-height: 1;
-}
-
-.workspace-hero__metric-grid small {
+  color: var(--oa-muted);
   font-size: 12px;
 }
 
-:global(.workspace-hero .el-button:not(.is-plain)) {
-  border-color: var(--workspace-hero-solid-button-border);
-  color: var(--workspace-hero-solid-button-text);
-  background: var(--workspace-hero-solid-button-bg);
+.workspace-hero__metric-grid strong {
+  color: var(--oa-text);
+  font-size: 24px;
+  font-weight: 650;
 }
 
-:global(.workspace-hero .el-button:not(.is-plain):hover) {
-  border-color: var(--workspace-hero-solid-button-hover-border);
-  color: var(--workspace-hero-solid-button-hover-text);
-  background: var(--workspace-hero-solid-button-hover-bg);
-}
-
-:global(.workspace-hero .el-button.is-plain) {
-  border-color: var(--workspace-hero-plain-button-border);
-  color: var(--workspace-hero-plain-button-text);
-  background: var(--workspace-hero-plain-button-bg);
-}
-
-:global(.workspace-hero .el-button.is-plain:hover) {
-  border-color: var(--workspace-hero-plain-button-hover-border);
-  color: var(--workspace-hero-plain-button-hover-text);
-  background: var(--workspace-hero-plain-button-hover-bg);
-}
-
-.workspace-hero--dark {
-  --workspace-hero-text: #ffffff;
-  --workspace-hero-muted: rgba(255, 255, 255, 0.86);
-  --workspace-hero-soft: rgba(255, 255, 255, 0.74);
-  --workspace-hero-grid: rgba(255, 255, 255, 0.055);
-  --workspace-hero-orb: rgba(255, 255, 255, 0.1);
-  --workspace-hero-chip-border: rgba(255, 255, 255, 0.24);
-  --workspace-hero-chip-bg: rgba(255, 255, 255, 0.08);
-  --workspace-hero-panel-border: rgba(255, 255, 255, 0.24);
-  --workspace-hero-panel-bg: rgba(255, 255, 255, 0.1);
-  --workspace-hero-tile-border: rgba(255, 255, 255, 0.2);
-  --workspace-hero-tile-bg: rgba(255, 255, 255, 0.08);
-  --workspace-hero-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 24px 80px rgba(0, 0, 0, 0.28);
-  --workspace-hero-solid-button-border: #ffffff;
-  --workspace-hero-solid-button-bg: #ffffff;
-  --workspace-hero-solid-button-text: #101012;
-  --workspace-hero-solid-button-hover-border: #ffffff;
-  --workspace-hero-solid-button-hover-bg: rgba(255, 255, 255, 0.92);
-  --workspace-hero-solid-button-hover-text: #05070b;
-  --workspace-hero-plain-button-border: rgba(255, 255, 255, 0.24);
-  --workspace-hero-plain-button-bg: rgba(255, 255, 255, 0.09);
-  --workspace-hero-plain-button-text: #ffffff;
-  --workspace-hero-plain-button-hover-border: rgba(255, 255, 255, 0.4);
-  --workspace-hero-plain-button-hover-bg: rgba(255, 255, 255, 0.12);
-  --workspace-hero-plain-button-hover-text: #ffffff;
-  background:
-    radial-gradient(circle at 15% 16%, rgba(255, 255, 255, 0.08), transparent 28%),
-    radial-gradient(circle at 84% 8%, rgba(161, 161, 170, 0.06), transparent 26%),
-    linear-gradient(135deg, #0c0c0e 0%, #18181b 46%, #101012 100%);
-}
-
-@media (max-width: 980px) {
+@media (max-width: 940px) {
   .workspace-hero__inner {
     grid-template-columns: 1fr;
-    min-height: auto;
+  }
+
+  .workspace-hero__copy {
+    padding-right: 0;
+  }
+
+  .workspace-hero__console {
+    border-top: 1px solid var(--oa-border);
+    border-left: 0;
   }
 }
 
 @media (max-width: 640px) {
-  .workspace-hero__inner {
-    padding: 36px 0 42px;
+  .workspace-hero__console {
+    grid-template-columns: 1fr;
   }
 
-  .workspace-hero__metric-grid {
-    grid-template-columns: 1fr;
+  .workspace-hero__console-head {
+    min-height: 180px;
+  }
+
+  .workspace-hero__metric-grid article:nth-last-child(-n + 2) {
+    border-bottom: 1px solid var(--oa-border);
+  }
+
+  .workspace-hero__metric-grid article:nth-child(even) {
+    border-right: 0;
   }
 }
 </style>

@@ -8,10 +8,10 @@
           <p>
             成员主页只对社团内部开放。浏览大家的方向、项目和技术文章，也把自己的经历整理成一张长期名片。
           </p>
+          <el-button size="large" type="primary" @click="$router.push('/profile/edit')">
+            定制我的主页
+          </el-button>
         </div>
-        <el-button size="large" type="primary" @click="$router.push('/profile/edit')"
-          >定制我的主页</el-button
-        >
       </div>
     </section>
 
@@ -170,27 +170,45 @@ onMounted(async () => {
   background: var(--oa-page-soft-bg);
 }
 .members-hero {
-  padding: 86px 0 58px;
-  background: linear-gradient(150deg, var(--oa-elevated-bg), var(--oa-page-soft-bg));
-  border-bottom: 1px solid var(--oa-divider);
+  position: relative;
+  min-height: clamp(440px, 38vw, 560px);
+  overflow: hidden;
+  background: var(--oa-page-soft-bg);
+  border-bottom: 1px solid var(--oa-border);
+}
+.members-hero::before {
+  position: absolute;
+  inset: 0;
+  background: #faf9f7 url('/members-hero-wide-light.png?v=3') right center / auto 100% no-repeat;
+  content: '';
+  pointer-events: none;
 }
 .members-hero__inner {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 40px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: clamp(440px, 38vw, 560px);
+  align-content: center;
+  padding-top: clamp(48px, 7vw, 84px);
+  padding-bottom: clamp(48px, 7vw, 84px);
+}
+.members-hero__inner > div {
+  position: relative;
+  z-index: 1;
+  width: min(47%, 520px);
 }
 .members-hero span {
-  color: #2563eb;
+  color: var(--oa-muted-strong);
   font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 .members-hero h1 {
   margin: 12px 0 16px;
-  font-size: clamp(38px, 6vw, 74px);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
+  font-size: clamp(40px, 4.6vw, 58px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0;
 }
 .members-hero p {
   max-width: 680px;
@@ -199,8 +217,13 @@ onMounted(async () => {
   font-size: 17px;
   line-height: 1.75;
 }
+.members-hero :deep(.el-button) {
+  min-height: 44px;
+  margin-top: 24px;
+  border-radius: var(--radius-md);
+}
 .members-content {
-  padding-top: 34px;
+  padding-top: 20px;
   padding-bottom: 80px;
 }
 .members-toolbar {
@@ -208,7 +231,13 @@ onMounted(async () => {
   grid-template-columns: minmax(220px, 1fr) auto 160px 160px 140px auto;
   align-items: center;
   gap: 12px;
-  margin-bottom: 26px;
+  margin-bottom: 20px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--oa-elevated-bg) 96%, transparent);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: saturate(150%) blur(22px);
+  -webkit-backdrop-filter: saturate(150%) blur(22px);
 }
 .members-toolbar > span {
   justify-self: end;
@@ -224,7 +253,7 @@ onMounted(async () => {
   padding: 28px;
   background: var(--oa-elevated-bg);
   border: 1px solid var(--oa-border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
 }
 .el-pagination {
   justify-content: center;
@@ -236,9 +265,22 @@ onMounted(async () => {
   }
 }
 @media (max-width: 680px) {
+  .members-hero {
+    min-height: 650px;
+  }
+
   .members-hero__inner {
-    align-items: flex-start;
-    flex-direction: column;
+    min-height: 650px;
+    align-content: start;
+    padding-top: 36px;
+    padding-bottom: 330px;
+  }
+  .members-hero::before {
+    background-position: 68% bottom;
+    background-size: auto 340px;
+  }
+  .members-hero__inner > div {
+    width: 100%;
   }
   .members-toolbar {
     grid-template-columns: 1fr 1fr;
@@ -250,5 +292,10 @@ onMounted(async () => {
     grid-column: 1 / -1;
     justify-self: start;
   }
+}
+
+:global(html.dark .members-hero::before) {
+  background-color: #0d0d0f;
+  background-image: url('/members-hero-wide-dark.png?v=3');
 }
 </style>

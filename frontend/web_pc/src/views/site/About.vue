@@ -1,5 +1,10 @@
 <template>
   <div ref="pageRoot" class="about-page">
+    <router-link class="about-home-link" to="/" aria-label="返回开放原子开源社团官网">
+      <ArrowLeft :size="17" stroke-width="1.8" aria-hidden="true" />
+      <span>返回官网</span>
+    </router-link>
+
     <main>
       <section
         id="top"
@@ -28,14 +33,14 @@
               class="about-hero__lead"
               style="margin-bottom: 15px; font-size: small; font-weight: bold"
             >
-              关于我们
+              关于我们 · 江苏海事职业技术学院 · JMI-OPENATOM
             </p>
           </div>
           <div class="about-hero__title">
             <h1><span>开放原子</span><span>开源社团</span></h1>
           </div>
           <div class="about-hero__intro">
-            <p class="about-hero__lead">从校园出发，让开源在这里发生。</p>
+            <p class="about-hero__lead">开源筑梦，海事启航</p>
           </div>
         </div>
         <div class="about-hero__carousel-controls" aria-label="影集切换">
@@ -126,8 +131,8 @@
       <section id="projects" class="projects-section">
         <img
           class="projects-section__image"
-          src="/recruitment-expedition-project.png"
-          alt="社团成员围绕真实项目进行协作开发"
+          src="/about-project-lineart.png"
+          alt="社团成员围绕电脑协作开发开源项目的黑白插画"
           decoding="async"
           loading="lazy"
         />
@@ -238,8 +243,8 @@
       <section class="community-section">
         <img
           class="community-section__image"
-          src="/recruitment-expedition-community.png"
-          alt="社团伙伴在开放社区中交流、协作与互相支持"
+          src="/about-community-lineart.png"
+          alt="社团伙伴围坐交流、协作与互相支持的黑白插画"
           decoding="async"
           loading="lazy"
         />
@@ -324,6 +329,7 @@
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
+  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   Boxes,
@@ -936,21 +942,30 @@ onBeforeUnmount(() => {
 }
 
 .about-page {
-  --apple-bg: #ffffff;
-  --apple-bg-soft: #f5f5f7;
-  --apple-bg-elevated: #fbfbfd;
-  --apple-ink: #1d1d1f;
-  --apple-muted: #6e6e73;
-  --apple-faint: #86868b;
-  --apple-blue: #0066cc;
-  --apple-blue-hover: #0077ed;
-  --apple-line: rgba(29, 29, 31, 0.12);
+  --apple-bg: var(--color-bg-container);
+  --apple-bg-soft: var(--color-bg-page);
+  --apple-bg-elevated: var(--color-bg-elevated);
+  --apple-ink: var(--color-text-primary);
+  --apple-muted: var(--color-text-secondary);
+  --apple-faint: var(--color-text-tertiary);
+  --apple-blue: var(--color-text-primary);
+  --apple-blue-hover: var(--color-primary-hover);
+  --apple-line: var(--color-border);
+  --apple-inverse-bg: var(--color-text-primary);
+  --apple-inverse-text: var(--color-text-inverse);
+  --apple-dark-tile: var(--oa-dark-tile, #272729);
+  --apple-story-statement-bg: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--apple-bg-elevated) 88%, #dbeafe),
+    var(--apple-bg-elevated) 62%,
+    color-mix(in srgb, var(--apple-bg-elevated) 88%, #ede9fe)
+  );
   --apple-on-dark-primary: #f5f5f7;
   --apple-on-dark-secondary: rgba(245, 245, 247, 0.78);
   --apple-on-dark-tertiary: rgba(245, 245, 247, 0.58);
-  --apple-on-dark-accent: #79bfff;
+  --apple-on-dark-accent: var(--color-gray-300);
   --apple-radius: 24px;
-  --apple-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 18px 50px rgba(0, 0, 0, 0.08);
+  --apple-shadow: var(--shadow-lg);
   min-height: 100vh;
   overflow: clip;
   background: var(--apple-bg);
@@ -972,6 +987,59 @@ onBeforeUnmount(() => {
 .about-shell {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
+}
+
+.about-home-link {
+  position: fixed;
+  z-index: 10;
+  top: calc(env(safe-area-inset-top, 0px) + 20px);
+  left: calc(env(safe-area-inset-left, 0px) + 20px);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(5, 5, 6, 0.68);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  text-decoration: none;
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.about-home-link svg {
+  flex: 0 0 auto;
+  transition: transform 180ms ease;
+}
+
+.about-home-link:hover {
+  transform: translateX(-2px);
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(5, 5, 6, 0.84);
+}
+
+.about-home-link:hover svg {
+  transform: translateX(-2px);
+}
+
+.about-home-link:active {
+  transform: translateX(-2px) scale(0.97);
+}
+
+.about-home-link:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(5, 5, 6, 0.68);
 }
 
 .about-hero {
@@ -1115,8 +1183,8 @@ onBeforeUnmount(() => {
 }
 
 .apple-button--dark {
-  background: var(--apple-ink);
-  color: #fff;
+  background: var(--apple-inverse-bg);
+  color: var(--apple-inverse-text);
 }
 
 .apple-link {
@@ -1131,7 +1199,7 @@ onBeforeUnmount(() => {
 
 .about-page button:focus-visible,
 .about-page summary:focus-visible {
-  outline: 3px solid #2997ff;
+  outline: 3px solid var(--color-text-primary);
   outline-offset: 3px;
 }
 
@@ -1299,8 +1367,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  background: var(--apple-ink);
-  color: #fff;
+  background: var(--apple-dark-tile);
+  color: var(--apple-on-dark-primary);
 }
 
 .story-card--year span {
@@ -1326,12 +1394,12 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  background: linear-gradient(145deg, #e8f2ff, #f6f8ff 62%, #eee7ff);
+  background: var(--apple-story-statement-bg);
 }
 
 .story-card--statement svg {
   margin-bottom: auto;
-  color: #1877d2;
+  color: var(--color-text-primary);
 }
 
 .story-card--statement h3 {
@@ -1727,8 +1795,8 @@ onBeforeUnmount(() => {
 .award-row__meta strong {
   padding: 7px 12px;
   border-radius: 999px;
-  background: var(--apple-ink);
-  color: #fff;
+  background: var(--apple-inverse-bg);
+  color: var(--apple-inverse-text);
   font-size: 12px;
 }
 
@@ -1804,7 +1872,7 @@ onBeforeUnmount(() => {
   z-index: 1;
   width: 12px;
   height: 12px;
-  border: 3px solid #fff;
+  border: 3px solid var(--apple-bg);
   border-radius: 50%;
   background: var(--apple-blue);
   box-shadow: 0 0 0 1px var(--apple-blue);
@@ -1922,7 +1990,7 @@ onBeforeUnmount(() => {
   gap: 22px;
   padding: 26px;
   border-radius: 20px;
-  background: #fff;
+  background: var(--apple-bg-elevated);
 }
 
 .process-list li > span {
@@ -2026,7 +2094,7 @@ onBeforeUnmount(() => {
   gap: 20px;
   padding: 22px max(24px, calc((100vw - 1180px) / 2));
   border-top: 1px solid var(--apple-line);
-  background: #fff;
+  background: var(--apple-bg-elevated);
   color: var(--apple-faint);
   font-size: 12px;
 }
@@ -2175,6 +2243,12 @@ onBeforeUnmount(() => {
 @media (max-width: 733px) {
   .about-shell {
     width: min(100% - 40px, 620px);
+  }
+
+  .about-home-link {
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    left: calc(env(safe-area-inset-left, 0px) + 12px);
+    padding: 0 14px;
   }
 
   .about-hero {

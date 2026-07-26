@@ -27,5 +27,6 @@ const themeIcon = computed(() => (isDark.value ? Sunny : Moon))
   min-height: 40px;
   aspect-ratio: 1;
   padding: 0;
+  border-radius: var(--radius-md);
 }
 </style>

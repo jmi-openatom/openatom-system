@@ -718,14 +718,14 @@ onBeforeUnmount(() => {
 .admin-aside__collapse {
   position: absolute;
   z-index: 2;
-  top: 24px;
-  right: -14px;
-  width: 28px;
-  min-height: 28px;
-  height: 28px;
+  top: 20px;
+  right: -18px;
+  width: 36px;
+  min-height: 36px;
+  height: 36px;
   padding: 0;
   background: var(--oa-elevated-bg);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-sm);
 }
 
 .admin-brand {
@@ -811,17 +811,19 @@ onBeforeUnmount(() => {
 .admin-header {
   display: flex;
   flex-shrink: 0;
-  height: 52px;
+  height: 60px;
   align-items: center;
   justify-content: space-between;
   margin: 0;
-  padding: 0 22px;
-  background: var(--oa-admin-header-bg);
+  padding: 0 var(--space-6);
+  background: var(--oa-elevated-bg);
+  background: var(--glass-bg-strong);
   border: 0;
   border-bottom: 1px solid var(--oa-header-border);
   border-radius: 0;
-  box-shadow: none;
-  backdrop-filter: none;
+  box-shadow: var(--shadow-xs);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
   animation: adminTopIn 0.36s ease both;
 }
 
@@ -872,7 +874,7 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  padding: var(--oa-space-6);
+  padding: var(--page-gutter);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -880,10 +882,10 @@ onBeforeUnmount(() => {
 }
 
 .admin-menu :deep(.el-menu-item) {
-  height: 42px;
+  height: 44px;
   padding: 0 12px !important;
   margin: 2px 0;
-  line-height: 42px;
+  line-height: 44px;
   color: var(--oa-muted);
   border-radius: var(--oa-radius-sm);
   font-size: 14px;
@@ -895,13 +897,13 @@ onBeforeUnmount(() => {
 }
 
 .admin-menu :deep(.el-sub-menu__title) {
-  height: 42px;
+  height: 44px;
   padding: 0 12px !important;
   margin: 2px 0;
   color: var(--oa-muted);
   border-radius: var(--oa-radius-sm);
   font-size: 14px;
-  line-height: 42px;
+  line-height: 44px;
 }
 
 .admin-menu :deep(.el-sub-menu__title:hover) {
@@ -957,7 +959,7 @@ onBeforeUnmount(() => {
 .admin-menu :deep(.el-menu-item:hover) {
   background: var(--oa-nav-hover-bg);
   color: var(--oa-text);
-  transform: translateX(2px);
+  transform: translateX(1px);
 }
 
 .admin-menu :deep(.el-menu-item.is-active) {

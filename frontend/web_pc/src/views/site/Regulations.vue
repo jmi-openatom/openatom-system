@@ -2,7 +2,9 @@
   <ViewPage class="site-system-page regulations-page" :loading="loading">
     <template v-if="!isDetailRoute">
       <SitePageHero
+        dark-image="/regulations-hero-wide-dark.png?v=3"
         eyebrow="社团治理"
+        light-image="/regulations-hero-wide-light.png?v=3"
         title="规章制度"
         description="公开社团章程、管理办法与日常协作规范，让制度清晰、可查、可复用。"
       >
@@ -73,7 +75,9 @@
 
     <template v-else>
       <SitePageHero
+        dark-image="/regulations-hero-wide-dark.png?v=3"
         eyebrow="规章制度"
+        light-image="/regulations-hero-wide-light.png?v=3"
         :title="detail?.title || '制度详情'"
         :description="detail?.summary || '查看制度完整内容。'"
         compact
@@ -355,8 +359,8 @@ onBeforeUnmount(() => {
   height: 64px;
   place-items: center;
   border-radius: 18px;
-  color: #ffffff;
-  background: var(--oa-text);
+  color: var(--oa-active-text);
+  background: var(--oa-active-bg);
   font-size: 20px;
   font-weight: 700;
 }

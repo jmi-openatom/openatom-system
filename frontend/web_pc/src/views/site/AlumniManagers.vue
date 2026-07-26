@@ -1,14 +1,12 @@
 <template>
   <ViewPage :loading="loading" class="alumni-page">
-    <section class="alumni-hero home-interactive-section">
-      <div class="container alumni-hero__inner">
-        <div class="section-heading reveal-block">
-          <span>Alumni</span>
-          <h1>往届管理人员</h1>
-          <p>感谢曾经为社团发展做出贡献的每一位管理人员。</p>
-        </div>
-      </div>
-    </section>
+    <SitePageHero
+      dark-image="/alumni-managers-hero-wide-dark.png?v=3"
+      description="感谢曾经为社团发展做出贡献的每一位管理人员。"
+      eyebrow="ALUMNI ARCHIVE"
+      light-image="/alumni-managers-hero-wide-light.png?v=3"
+      title="往届管理人员"
+    />
 
     <section class="alumni-list-section home-interactive-section">
       <div class="container alumni-list">
@@ -56,6 +54,7 @@ import { computed, onMounted, ref } from 'vue'
 import { siteApi } from '@/api'
 import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import SitePageHero from '@/components/site/shell/SitePageHero.vue'
 
 const loading = ref(false)
 const alumniManagers = ref<any[]>([])
@@ -92,21 +91,6 @@ onMounted(() => {
   animation: none;
   overflow: hidden;
   background: var(--oa-elevated-bg);
-}
-
-.alumni-hero {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  background: var(--oa-page-soft-bg);
-  padding: 100px 0 60px;
-}
-
-.alumni-hero__inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
 }
 
 .alumni-list-section {
@@ -239,10 +223,6 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .alumni-hero {
-    padding: 80px 0 40px;
-  }
-
   .alumni-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 14px;

@@ -85,53 +85,71 @@ onMounted(fetchClubs)
 }
 
 .partners-hero {
-  padding: clamp(88px, 10vw, 144px) 0 clamp(64px, 8vw, 112px);
+  position: relative;
+  min-height: clamp(440px, 38vw, 560px);
+  overflow: hidden;
+  background: var(--oa-page-soft-bg);
   border-bottom: 1px solid var(--oa-border);
-  background: var(--oa-page-bg);
+}
+
+.partners-hero::before {
+  position: absolute;
+  inset: 0;
+  background: #faf9f7 url('/partners-hero-wide-light.png?v=3') right center / auto 100% no-repeat;
+  content: '';
+  pointer-events: none;
 }
 
 .partners-hero__inner {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 48px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: clamp(440px, 38vw, 560px);
+  align-content: center;
+  gap: 24px;
+  padding-top: clamp(48px, 7vw, 84px);
+  padding-bottom: clamp(48px, 7vw, 84px);
 }
 
 .partners-hero__inner > div {
-  max-width: 820px;
+  position: relative;
+  z-index: 1;
+  width: min(47%, 520px);
 }
 
 .partners-eyebrow {
   display: block;
   margin-bottom: 16px;
   color: var(--oa-muted-strong);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 0.12em;
 }
 
 .partners-hero h1 {
   margin: 0;
   color: var(--oa-text);
-  font-size: clamp(48px, 7vw, 88px);
-  font-weight: 650;
+  font-size: clamp(40px, 4.6vw, 58px);
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -0.025em;
 }
 
 .partners-hero__inner > div > p {
-  max-width: 740px;
-  margin: 24px 0 0;
+  max-width: 500px;
+  margin: 16px 0 0;
   color: var(--oa-muted);
-  font-size: clamp(17px, 2vw, 21px);
-  line-height: 1.75;
+  font-size: 17px;
+  line-height: 1.72;
 }
 
 .partners-count {
+  position: relative;
+  z-index: 1;
   display: flex;
   min-width: 120px;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   margin: 0;
   color: var(--oa-muted);
   font-size: 13px;
@@ -139,13 +157,13 @@ onMounted(fetchClubs)
 
 .partners-count strong {
   color: var(--oa-text);
-  font-size: 42px;
-  font-weight: 560;
+  font-size: 30px;
+  font-weight: 650;
   line-height: 1.1;
 }
 
 .partners-directory {
-  padding: clamp(48px, 7vw, 96px) 0 clamp(72px, 9vw, 128px);
+  padding: clamp(36px, 5vw, 64px) 0 clamp(72px, 9vw, 112px);
 }
 
 .partners-grid {
@@ -162,7 +180,7 @@ onMounted(fetchClubs)
   flex-direction: column;
   padding: 48px 24px;
   border: 1px solid var(--oa-border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background: var(--oa-elevated-bg);
   color: var(--oa-muted);
   text-align: center;
@@ -184,7 +202,7 @@ onMounted(fetchClubs)
   margin-top: 24px;
   padding: 0 20px;
   border: 1px solid var(--oa-active-bg);
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   background: var(--oa-active-bg);
   color: var(--oa-active-text);
   cursor: pointer;
@@ -205,7 +223,7 @@ onMounted(fetchClubs)
   min-height: 300px;
   padding: 24px;
   border: 1px solid var(--oa-border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background: var(--oa-elevated-bg);
 }
 
@@ -220,7 +238,7 @@ onMounted(fetchClubs)
 .partner-skeleton__line,
 .partner-skeleton__button {
   display: block;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--oa-border) 64%, var(--oa-page-soft-bg));
   animation: partner-skeleton-pulse 1.4s ease-in-out infinite;
 }
@@ -229,7 +247,7 @@ onMounted(fetchClubs)
   width: 72px;
   height: 72px;
   flex: 0 0 72px;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
 }
 
 .partner-skeleton__title {
@@ -252,7 +270,7 @@ onMounted(fetchClubs)
   width: 112px;
   height: 44px;
   margin-top: 54px;
-  border-radius: 999px;
+  border-radius: var(--radius-md);
 }
 
 @keyframes partner-skeleton-pulse {
@@ -274,13 +292,23 @@ onMounted(fetchClubs)
 
 @media (max-width: 767px) {
   .partners-hero {
-    padding: 72px 0 56px;
+    min-height: 650px;
   }
 
   .partners-hero__inner {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 28px;
+    min-height: 650px;
+    align-content: start;
+    padding-top: 36px;
+    padding-bottom: 330px;
+  }
+
+  .partners-hero::before {
+    background-position: 68% bottom;
+    background-size: auto 340px;
+  }
+
+  .partners-hero__inner > div {
+    width: 100%;
   }
 
   .partners-hero h1 {
@@ -300,6 +328,11 @@ onMounted(fetchClubs)
     min-height: 270px;
     padding: 20px;
   }
+}
+
+:global(html.dark .partners-hero::before) {
+  background-color: #0d0d0f;
+  background-image: url('/partners-hero-wide-dark.png?v=3');
 }
 
 @media (prefers-reduced-motion: reduce) {

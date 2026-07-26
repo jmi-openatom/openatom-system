@@ -320,7 +320,7 @@ function formatUpdatedAt(value: string) {
 
 <style scoped>
 .profile-renderer {
-  --profile-accent: #2563eb;
+  --profile-accent: var(--color-text-primary);
   color: var(--oa-text);
 }
 .profile-renderer--light {
@@ -345,18 +345,18 @@ function formatUpdatedAt(value: string) {
   border-radius: 30px;
 }
 .profile-renderer--tech {
-  --profile-accent: #7c3aed;
+  --profile-accent: var(--color-gray-700);
 }
 .profile-renderer--warm {
-  --profile-accent: #c2410c;
+  --profile-accent: var(--color-gray-600);
 }
 .profile-renderer--warm .profile-hero__banner {
   background:
-    radial-gradient(circle at 78% 20%, rgba(251, 191, 36, 0.5), transparent 30%),
-    linear-gradient(135deg, #7c2d12, #c2410c);
+    radial-gradient(circle at 78% 20%, rgba(255, 255, 255, 0.22), transparent 30%),
+    linear-gradient(135deg, var(--color-gray-900), var(--color-gray-600));
 }
 .profile-renderer--editorial {
-  --profile-accent: #c2410c;
+  --profile-accent: var(--color-gray-700);
   font-family: ui-serif, Georgia, 'Songti SC', serif;
 }
 .profile-hero {
@@ -368,8 +368,8 @@ function formatUpdatedAt(value: string) {
 .profile-hero__banner {
   height: 250px;
   background:
-    radial-gradient(circle at 72% 18%, rgba(96, 165, 250, 0.55), transparent 28%),
-    linear-gradient(135deg, #0f172a, #334155);
+    radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.2), transparent 28%),
+    linear-gradient(135deg, var(--color-gray-900), var(--color-gray-700));
   background-position: center;
   background-size: cover;
 }
@@ -552,7 +552,7 @@ function formatUpdatedAt(value: string) {
   min-height: 540px;
   overflow: hidden;
   color: #fff;
-  background: #08101f;
+  background: var(--color-gray-900);
   border: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0;
@@ -621,7 +621,7 @@ function formatUpdatedAt(value: string) {
   color: rgba(255, 255, 255, 0.72);
 }
 .profile-hero__eyebrow {
-  color: #93c5fd;
+  color: var(--color-gray-300);
 }
 .profile-hero__links a {
   color: #fff;
@@ -832,8 +832,8 @@ function formatUpdatedAt(value: string) {
   color: #fff;
   background: linear-gradient(
     120deg,
-    #0f172a,
-    color-mix(in srgb, var(--profile-accent) 72%, #0f172a)
+    var(--color-gray-900),
+    color-mix(in srgb, var(--profile-accent) 72%, var(--color-gray-900))
   );
 }
 .profile-contact h3 {
@@ -846,7 +846,7 @@ function formatUpdatedAt(value: string) {
 .profile-contact a {
   flex: none;
   padding: 13px 18px;
-  color: #111827;
+  color: var(--color-gray-900);
   background: #fff;
   text-decoration: none;
 }

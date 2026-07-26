@@ -30,19 +30,15 @@ withDefaults(
 }
 
 .site-section-heading::before {
-  display: block;
-  width: 68px;
-  height: 1px;
-  margin: 0 auto 18px;
-  content: '';
-  background: linear-gradient(90deg, transparent, var(--oa-text), transparent);
-  opacity: 0.78;
+  display: none;
 }
 
 .site-section-heading span {
   display: inline-block;
-  color: var(--oa-text);
-  font-size: 14px;
+  color: var(--oa-muted-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 
 .site-section-heading h2 {
@@ -53,8 +49,8 @@ withDefaults(
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  font-size: clamp(28px, 3vw, 40px);
-  font-weight: 600;
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -71,7 +67,7 @@ withDefaults(
 }
 
 .site-section-heading--left::before {
-  margin-left: 0;
+  display: none;
 }
 
 .site-section-heading--left p {

@@ -4,7 +4,7 @@
 
 :root {
   color-scheme: light;
-  --oa-font-family: Inter, "SF Pro Display", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  --oa-font-family: Inter, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
   --oa-font-size-display: 32px;
   --oa-font-size-page-title: 24px;
   --oa-font-size-section-title: 18px;
@@ -56,12 +56,7 @@
   --oa-accent-2: #7a7a7a;
   --oa-warm: #666666;
   --oa-gradient: linear-gradient(135deg, #1d1d1f 0%, #333333 52%, #6e6e73 100%);
-  --oa-hero-gradient: linear-gradient(
-    180deg,
-    #fbfbfd 0%,
-    #f5f5f7 48%,
-    #ffffff 100%
-  );
+  --oa-hero-gradient: linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 48%, #ffffff 100%);
   --oa-primary-on-dark: #ffffff;
   --oa-focus-ring: rgba(29, 29, 31, 0.12);
   --oa-text: #1d1d1f;
@@ -95,21 +90,12 @@
   --oa-header-border: rgba(29, 29, 31, 0.12);
   --oa-header-shadow: 0 16px 46px rgba(0, 0, 0, 0.08);
   --oa-header-home-shadow: 0 18px 48px rgba(0, 0, 0, 0.1);
-  --oa-header-overlay: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.9),
-    rgba(245, 245, 247, 0.58)
-  );
+  --oa-header-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(245, 245, 247, 0.58));
   --oa-admin-header-bg: rgba(245, 245, 247, 0.82);
   --oa-map-bg: #f4f4f5;
   --oa-map-fallback:
     radial-gradient(circle at 50% 45%, rgba(29, 29, 31, 0.1), transparent 38%),
-    radial-gradient(
-      circle at 52% 44%,
-      rgba(110, 110, 115, 0.08),
-      transparent 54%
-    ),
-    #f4f4f5;
+    radial-gradient(circle at 52% 44%, rgba(110, 110, 115, 0.08), transparent 54%), #f4f4f5;
   --oa-radius: 8px;
   --oa-radius-sm: 8px;
   --oa-radius-md: 8px;
@@ -129,14 +115,14 @@
   --el-color-primary-light-7: #d2d2d7;
   --el-color-primary-light-8: #e8e8ed;
   --el-color-primary-light-9: #f5f5f7;
-  --el-color-success: #16803c;
-  --el-color-success-light-9: #edf8f1;
-  --el-color-warning: #b54708;
-  --el-color-warning-light-9: #fff7ed;
-  --el-color-danger: #c62828;
-  --el-color-danger-light-9: #fff1f1;
-  --el-color-info: #2563a9;
-  --el-color-info-light-9: #eff6ff;
+  --el-color-success: var(--color-success);
+  --el-color-success-light-9: var(--color-success-bg);
+  --el-color-warning: var(--color-warning);
+  --el-color-warning-light-9: var(--color-warning-bg);
+  --el-color-danger: var(--color-danger);
+  --el-color-danger-light-9: var(--color-danger-bg);
+  --el-color-info: var(--color-info);
+  --el-color-info-light-9: var(--color-info-bg);
   --el-border-radius-base: 8px;
   --el-border-radius-round: 9999px;
   --el-component-size: var(--oa-control-height);
@@ -184,14 +170,9 @@ html.dark {
   --oa-primary-soft: #202022;
   --oa-accent: #f5f5f7;
   --oa-accent-2: #a1a1aa;
-  --oa-warm: #fbbf24;
+  --oa-warm: #a1a1aa;
   --oa-gradient: linear-gradient(135deg, #f5f5f7 0%, #d4d4d8 48%, #a1a1aa 100%);
-  --oa-hero-gradient: linear-gradient(
-    180deg,
-    #09090b 0%,
-    #111113 52%,
-    #0b0b0d 100%
-  );
+  --oa-hero-gradient: linear-gradient(180deg, #09090b 0%, #111113 52%, #0b0b0d 100%);
   --oa-primary-on-dark: #ffffff;
   --oa-focus-ring: rgba(245, 245, 247, 0.18);
   --oa-text: #f7f7f8;
@@ -225,25 +206,12 @@ html.dark {
   --oa-header-border: rgba(245, 245, 247, 0.2);
   --oa-header-shadow: 0 16px 46px rgba(0, 0, 0, 0.28);
   --oa-header-home-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
-  --oa-header-overlay: linear-gradient(
-    180deg,
-    rgba(28, 28, 31, 0.94),
-    rgba(16, 16, 18, 0.76)
-  );
+  --oa-header-overlay: linear-gradient(180deg, rgba(28, 28, 31, 0.94), rgba(16, 16, 18, 0.76));
   --oa-admin-header-bg: rgba(20, 20, 22, 0.92);
   --oa-map-bg: #101012;
   --oa-map-fallback:
-    radial-gradient(
-      circle at 50% 45%,
-      rgba(245, 245, 247, 0.1),
-      transparent 38%
-    ),
-    radial-gradient(
-      circle at 52% 44%,
-      rgba(161, 161, 170, 0.08),
-      transparent 54%
-    ),
-    #101012;
+    radial-gradient(circle at 50% 45%, rgba(245, 245, 247, 0.1), transparent 38%),
+    radial-gradient(circle at 52% 44%, rgba(161, 161, 170, 0.08), transparent 54%), #101012;
   --oa-product-shadow: 3px 8px 34px rgba(0, 0, 0, 0.5);
   --oa-dark-tile: #171719;
   --oa-dark-tile-2: #111113;
@@ -255,12 +223,12 @@ html.dark {
   --el-color-primary-light-7: #52525b;
   --el-color-primary-light-8: #3f3f46;
   --el-color-primary-light-9: #202022;
-  --el-color-success: #34d399;
-  --el-color-success-light-9: #052e2b;
-  --el-color-warning: #fbbf24;
-  --el-color-warning-light-9: #422006;
-  --el-color-danger: #f87171;
-  --el-color-danger-light-9: #450a0a;
+  --el-color-success: var(--color-success);
+  --el-color-success-light-9: var(--color-success-bg);
+  --el-color-warning: var(--color-warning);
+  --el-color-warning-light-9: var(--color-warning-bg);
+  --el-color-danger: var(--color-danger);
+  --el-color-danger-light-9: var(--color-danger-bg);
   --el-color-info: #b8b8be;
   --el-color-info-light-9: #252529;
   --el-bg-color: #1c1c1f;
@@ -330,7 +298,7 @@ a {
 .page-title {
   margin: 0 0 17px;
   font-family:
-    "SF Pro Display",
+    'SF Pro Display',
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
@@ -344,7 +312,7 @@ a {
 .section-title {
   margin: 0;
   font-family:
-    "SF Pro Display",
+    'SF Pro Display',
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
@@ -387,7 +355,7 @@ a {
   position: absolute;
   inset: 0;
   z-index: 0;
-  content: "";
+  content: '';
   opacity: 0;
   border: 1px solid color-mix(in srgb, var(--oa-text) 16%, transparent);
   transition: opacity 0.24s ease;
@@ -561,10 +529,7 @@ svg {
 
 /* Element Plus 的按需组件样式会在页面样式之后加载。
    提高选择器优先级，保证深色模式的浅色主按钮始终使用深色文字。 */
-html
-  .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(
-    .is-disabled
-  ) {
+html .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled) {
   --el-button-bg-color: var(--oa-active-bg);
   --el-button-border-color: var(--oa-active-bg);
   --el-button-text-color: var(--oa-active-text);
@@ -579,14 +544,8 @@ html
   border-color: var(--oa-active-bg) !important;
 }
 
-html
-  .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(
-    .is-disabled
-  ):hover,
-html
-  .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(
-    .is-disabled
-  ):focus {
+html .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):hover,
+html .el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):focus {
   color: var(--oa-active-text) !important;
   background-color: var(--oa-active-hover-bg) !important;
   border-color: var(--oa-active-hover-bg) !important;
@@ -760,12 +719,33 @@ html .el-button--primary.is-plain:not(.is-disabled):focus {
   border-radius: var(--oa-radius-sm);
 }
 
+html .el-segmented {
+  --el-segmented-item-selected-bg-color: var(--oa-active-bg);
+  --el-segmented-item-selected-color: var(--oa-active-text);
+}
+
+html .el-radio-button {
+  --el-radio-button-checked-bg-color: var(--oa-active-bg);
+  --el-radio-button-checked-border-color: var(--oa-active-bg);
+  --el-radio-button-checked-text-color: var(--oa-active-text);
+}
+
+html .el-switch {
+  --el-switch-off-color: var(--oa-button-border);
+  --el-switch-on-color: var(--oa-active-bg);
+}
+
 .el-checkbox__input.is-checked .el-checkbox__inner,
 .el-checkbox__input.is-indeterminate .el-checkbox__inner,
 .el-radio__input.is-checked .el-radio__inner,
 .el-switch.is-checked .el-switch__core {
   background: var(--oa-active-bg) !important;
   border-color: var(--oa-active-bg) !important;
+}
+
+.el-switch.is-checked .el-switch__core .el-switch__action {
+  color: var(--oa-active-bg);
+  background-color: var(--oa-active-text);
 }
 
 .el-checkbox__input.is-checked + .el-checkbox__label,
@@ -863,11 +843,7 @@ a:hover {
 }
 
 .el-loading-mask {
-  background-color: color-mix(
-    in srgb,
-    var(--oa-page-bg) 72%,
-    transparent
-  ) !important;
+  background-color: color-mix(in srgb, var(--oa-page-bg) 72%, transparent) !important;
   backdrop-filter: blur(8px);
 }
 
@@ -1060,8 +1036,7 @@ a:hover {
 .activity-detail,
 .home-page,
 .login-page,
-.scan-page,
-.calendar-page {
+.scan-page {
   animation: oaPageEnter 0.46s ease both;
 }
 
@@ -1088,8 +1063,7 @@ a:hover {
   width: min(1180px, calc(100% - 48px));
 }
 
-.scan-page,
-.calendar-page {
+.scan-page {
   padding: 64px 0 80px;
 }
 
@@ -1131,7 +1105,7 @@ a:hover {
 .admin-page > .toolbar::before {
   display: block;
   color: var(--oa-muted);
-  content: "管理视图";
+  content: '管理视图';
   font-size: 12px;
   line-height: 1;
   letter-spacing: 0;
@@ -1267,7 +1241,7 @@ a:hover {
 .page-title,
 .section-title {
   font-family:
-    "SF Pro Display",
+    'SF Pro Display',
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
@@ -1325,7 +1299,7 @@ a:hover {
 .site-system-surface {
   background: var(--oa-elevated-bg);
   border: 1px solid var(--oa-border);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
 }
 
 .site-system-empty {
@@ -1333,7 +1307,7 @@ a:hover {
   margin: 28px auto 0;
   padding: 28px 24px;
   border: 1px solid var(--oa-border);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: var(--oa-elevated-bg);
 }
 
@@ -1358,13 +1332,7 @@ a:hover {
 
 .workspace-page {
   min-height: calc(100vh - var(--oa-site-header-height));
-  background:
-    radial-gradient(
-      circle at top center,
-      color-mix(in srgb, var(--oa-text) 7%, transparent),
-      transparent 34%
-    ),
-    var(--oa-page-soft-bg);
+  background: var(--oa-page-soft-bg);
 }
 
 .workspace-section {
@@ -1401,7 +1369,7 @@ a:hover {
   min-height: 30px;
   padding: 0 12px;
   border: 1px solid var(--oa-border);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   color: var(--oa-muted);
   background: var(--oa-button-subtle-bg);
   font-size: 13px;
@@ -1412,7 +1380,7 @@ a:hover {
   gap: 6px;
   padding: 16px;
   border: 1px solid var(--oa-border);
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   background: var(--oa-page-soft-bg);
 }
 
@@ -1721,16 +1689,8 @@ html.dark .hero__glass {
 
 html.dark .map-atmosphere {
   background:
-    radial-gradient(
-      circle at 50% 52%,
-      rgba(245, 245, 247, 0.1),
-      transparent 34%
-    ),
-    radial-gradient(
-      circle at 72% 28%,
-      rgba(161, 161, 170, 0.06),
-      transparent 26%
-    ),
+    radial-gradient(circle at 50% 52%, rgba(245, 245, 247, 0.1), transparent 34%),
+    radial-gradient(circle at 72% 28%, rgba(161, 161, 170, 0.06), transparent 26%),
     radial-gradient(
       circle at 50% 56%,
       transparent 0 46%,
@@ -1957,19 +1917,11 @@ html.dark .people-stat-divider {
 }
 
 html.dark .people-marquee-gradient--left {
-  background: linear-gradient(
-    to right,
-    var(--oa-page-bg),
-    transparent
-  ) !important;
+  background: linear-gradient(to right, var(--oa-page-bg), transparent) !important;
 }
 
 html.dark .people-marquee-gradient--right {
-  background: linear-gradient(
-    to left,
-    var(--oa-page-bg),
-    transparent
-  ) !important;
+  background: linear-gradient(to left, var(--oa-page-bg), transparent) !important;
 }
 
 html.dark .people-person {
@@ -2011,11 +1963,7 @@ html.dark .people-person:hover::before {
 }
 
 html.dark .people-wall__fade--left {
-  background: linear-gradient(
-    to right,
-    #151517 0%,
-    transparent 100%
-  ) !important;
+  background: linear-gradient(to right, #151517 0%, transparent 100%) !important;
 }
 
 html.dark .people-wall__fade--right {
@@ -2031,10 +1979,7 @@ html.dark .profile-avatar span {
 }
 
 html.dark .progress-list,
-html.dark .leave-page,
 html.dark .profile-grid,
-html.dark .apply-grid,
-html.dark .calendar-shell,
 html.dark .club-grid,
 html.dark .signal-grid,
 html.dark .stat-grid,
@@ -2141,7 +2086,6 @@ html.dark .el-descriptions__content {
   color: var(--oa-text) !important;
 }
 
-html.dark .summary-item,
 html.dark .interview-item,
 html.dark .leave-image,
 html.dark .dialog-image,
@@ -2454,7 +2398,9 @@ html.dark .is-reject .record-dot {
 .el-select__wrapper.is-focused,
 .el-textarea__inner:focus,
 .el-date-editor.el-input__wrapper.is-focus {
-  box-shadow: 0 0 0 3px var(--oa-focus-ring), 0 0 0 1px var(--oa-text) inset;
+  box-shadow:
+    0 0 0 3px var(--oa-focus-ring),
+    0 0 0 1px var(--oa-text) inset;
 }
 
 .el-form-item {
@@ -2584,7 +2530,7 @@ html.dark .is-reject .record-dot {
 
 button:focus-visible,
 a:focus-visible,
-[role="button"]:focus-visible {
+[role='button']:focus-visible {
   outline: 3px solid var(--oa-focus-ring);
   outline-offset: 2px;
 }

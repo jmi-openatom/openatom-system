@@ -1,6 +1,9 @@
 <template>
   <section class="workspace-panel" :class="{ 'workspace-panel--compact': compact }">
-    <header v-if="eyebrow || title || description || $slots.actions" class="workspace-panel__header">
+    <header
+      v-if="eyebrow || title || description || $slots.actions"
+      class="workspace-panel__header"
+    >
       <div>
         <span v-if="eyebrow">{{ eyebrow }}</span>
         <h2 v-if="title">{{ title }}</h2>
@@ -41,26 +44,20 @@ withDefaults(
   overflow: hidden;
   min-width: 0;
   border: 1px solid var(--oa-border);
-  border-radius: 28px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--oa-elevated-bg) 94%, transparent), transparent),
-    var(--oa-elevated-bg);
+  border-radius: var(--radius-lg);
+  background: var(--oa-elevated-bg);
 }
 
 .workspace-panel::before {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 1px;
-  content: '';
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--oa-text) 16%, transparent), transparent);
+  display: none;
 }
 
 .workspace-panel__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
-  padding: clamp(20px, 3vw, 28px) clamp(20px, 3vw, 28px) 0;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-6) 0;
 }
 
 .workspace-panel__header span {
@@ -96,11 +93,11 @@ withDefaults(
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .workspace-panel__body {
-  padding: clamp(20px, 3vw, 28px);
+  padding: var(--space-6);
 }
 
 .workspace-panel--compact .workspace-panel__body {

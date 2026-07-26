@@ -4,7 +4,13 @@
     :aria-hidden="props.background ? 'true' : undefined"
     :class="['map-section', { 'map-section--hero': props.background }]"
   >
-    <div ref="mapContainer" :class="['map-canvas', { 'is-loaded': mapLoaded }]"></div>
+    <div
+      ref="mapContainer"
+      :class="[
+        'map-canvas',
+        { 'is-loaded': mapLoaded, 'map-canvas--background': props.background },
+      ]"
+    ></div>
     <div aria-hidden="true" class="map-atmosphere"></div>
     <div aria-hidden="true" class="map-grain"></div>
     <div
@@ -62,16 +68,19 @@ let visibilityObserver: IntersectionObserver | undefined
 let idleHandle: number | undefined
 let enhancementIdleHandle: number | undefined
 let releaseMapTimer: number | undefined
+let scrollResumeTimer: number | undefined
 let mapInitStarted = false
 let isMapVisible = true
+let mapPausedForScroll = false
 
 const CAMPUS_CENTER: [number, number] = [118.903, 31.92]
 const EARTH_CENTER: [number, number] = [-40, 26]
 const CAMPUS_GLOBE_CENTER: [number, number] = [CAMPUS_CENTER[0], 26]
-const CAMPUS_HOLD_MS = 15000
-const FLY_TO_EARTH_MS = 4800
-const ROTATE_TO_CAMPUS_MS = 4200
-const FLY_TO_CAMPUS_MS = 5600
+const CAMPUS_HOLD_MS = 22000
+const FLY_TO_EARTH_MS = 3600
+const ROTATE_TO_CAMPUS_MS = 3400
+const FLY_TO_CAMPUS_MS = 4400
+const ROTATION_FRAME_INTERVAL_MS = 1000 / 30
 
 const earthCamera = {
   center: EARTH_CENTER,
@@ -165,7 +174,10 @@ function addTerrain() {
     maxzoom: 14,
   })
   map.setTerrain({ source: 'oa-terrain', exaggeration: 1.35 })
-  map.setFog(mapFog(resolvedTheme.value))
+}
+
+function applyFog() {
+  map?.setFog(mapFog(resolvedTheme.value))
 }
 
 function add3dBuildings() {
@@ -214,7 +226,7 @@ function add3dBuildings() {
           ['coalesce', ['get', 'min_height'], 0],
         ],
         'fill-extrusion-opacity': colors.opacity,
-        'fill-extrusion-vertical-gradient': true,
+        'fill-extrusion-vertical-gradient': !props.background,
       },
     },
     labelLayerId,
@@ -301,6 +313,7 @@ function tuneStyle(theme: ResolvedTheme) {
 function restoreStyleOverlays() {
   if (!map) return
   tuneStyle(resolvedTheme.value)
+  applyFog()
   add3dBuildings()
 }
 
@@ -316,6 +329,10 @@ function cancelMapEnhancements() {
 
 function scheduleMapEnhancements() {
   cancelMapEnhancements()
+
+  // The hero keeps the globe and 3D buildings, but skips raster terrain. Terrain
+  // adds another tile source and a costly mesh without changing the background much.
+  if (props.background) return
 
   const enhance = () => {
     enhancementIdleHandle = undefined
@@ -343,6 +360,9 @@ function releaseMap() {
   cancelIdleInit()
   cancelMapEnhancements()
   clearMapTimers()
+  if (scrollResumeTimer) window.clearTimeout(scrollResumeTimer)
+  scrollResumeTimer = undefined
+  mapPausedForScroll = false
   campusMarker?.remove()
   campusMarker = null
   map?.remove()
@@ -394,12 +414,24 @@ function clearMapTimers() {
 }
 
 function scheduleEarthReturn(delay = CAMPUS_HOLD_MS) {
+  if (!shouldAnimateMap()) return
   if (campusHoldTimer) window.clearTimeout(campusHoldTimer)
   campusHoldTimer = window.setTimeout(zoomToEarth, delay)
 }
 
+function shouldAnimateMap() {
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  return (
+    !props.static &&
+    isMapVisible &&
+    !document.hidden &&
+    !reducedMotion &&
+    !mapPausedForScroll
+  )
+}
+
 function zoomToEarth() {
-  if (!map) return
+  if (!map || !shouldAnimateMap()) return
 
   map.stop()
   map.flyTo({
@@ -407,14 +439,14 @@ function zoomToEarth() {
     duration: FLY_TO_EARTH_MS,
     curve: 1.12,
     speed: 0.9,
-    essential: true,
+    essential: false,
   })
 
   earthRotationTimer = window.setTimeout(rotateEarthToCampus, FLY_TO_EARTH_MS + 160)
 }
 
 function rotateEarthToCampus() {
-  if (!map) return
+  if (!map || !shouldAnimateMap()) return
 
   const startTime = window.performance.now()
   const startCenter = map.getCenter()
@@ -425,11 +457,17 @@ function rotateEarthToCampus() {
   const shortestDeltaLng = ((targetLng - startLng + 540) % 360) - 180
   const deltaLng = shortestDeltaLng >= 0 ? shortestDeltaLng + 360 : shortestDeltaLng - 360
   const deltaLat = targetLat - startLat
+  let lastRenderedAt = 0
 
   const step = (frameTime: number) => {
-    if (!map) return
+    if (!map || !shouldAnimateMap()) return
 
     const progress = Math.min((frameTime - startTime) / ROTATE_TO_CAMPUS_MS, 1)
+    if (progress < 1 && frameTime - lastRenderedAt < ROTATION_FRAME_INTERVAL_MS) {
+      rotationFrame = window.requestAnimationFrame(step)
+      return
+    }
+    lastRenderedAt = frameTime
     const eased = 1 - (1 - progress) ** 3
     const lng = ((startLng + deltaLng * eased + 540) % 360) - 180
     const lat = startLat + deltaLat * eased
@@ -448,7 +486,7 @@ function rotateEarthToCampus() {
 }
 
 function zoomToCampus() {
-  if (!map) return
+  if (!map || !shouldAnimateMap()) return
 
   map.stop()
   map.flyTo({
@@ -456,12 +494,49 @@ function zoomToCampus() {
     duration: FLY_TO_CAMPUS_MS,
     curve: 1.28,
     speed: 0.82,
-    essential: true,
+    essential: false,
   })
 
   nextCampusHoldTimer = window.setTimeout(() => {
     scheduleEarthReturn()
   }, FLY_TO_CAMPUS_MS)
+}
+
+function resetCameraAndResume() {
+  if (!map || !mapLoaded.value || !shouldAnimateMap()) return
+  clearMapTimers()
+  map.stop()
+  map.jumpTo(campusCamera)
+  scheduleEarthReturn()
+}
+
+function handleDocumentVisibilityChange() {
+  if (document.hidden) {
+    if (scrollResumeTimer) window.clearTimeout(scrollResumeTimer)
+    scrollResumeTimer = undefined
+    mapPausedForScroll = false
+    clearMapTimers()
+    map?.stop()
+    return
+  }
+  resetCameraAndResume()
+}
+
+function handleWindowScroll() {
+  if (!map || !isMapVisible) return
+
+  if (!mapPausedForScroll) {
+    mapPausedForScroll = true
+    clearMapTimers()
+    map.stop()
+  }
+
+  if (scrollResumeTimer) window.clearTimeout(scrollResumeTimer)
+  scrollResumeTimer = window.setTimeout(() => {
+    scrollResumeTimer = undefined
+    mapPausedForScroll = false
+    resetCameraAndResume()
+  }, 180)
 }
 
 function shouldSkipInteractiveMap() {
@@ -528,7 +603,13 @@ async function initMap() {
     projection: 'globe',
     antialias: !props.background,
     attributionControl: false,
+    crossSourceCollisions: false,
+    fadeDuration: props.background ? 0 : 300,
     interactive: false,
+    maxTileCacheSize: props.background ? 48 : undefined,
+    refreshExpiredTiles: !props.background,
+    renderWorldCopies: false,
+    respectPrefersReducedMotion: true,
   })
 
   map.on('load', () => {
@@ -537,7 +618,7 @@ async function initMap() {
     restoreStyleOverlays()
     addCampusMarker(mapboxgl)
     scheduleMapEnhancements()
-    if (!props.static && isMapVisible) scheduleEarthReturn()
+    if (shouldAnimateMap()) scheduleEarthReturn()
   })
 
   map.on('error', (event) => {
@@ -549,6 +630,8 @@ async function initMap() {
 
 onMounted(() => {
   if (!mapboxToken || !mapContainer.value || shouldSkipInteractiveMap()) return
+  document.addEventListener('visibilitychange', handleDocumentVisibilityChange)
+  window.addEventListener('scroll', handleWindowScroll, { passive: true })
 
   if (!('IntersectionObserver' in window)) {
     runWhenIdle(() => void initMap())
@@ -564,7 +647,7 @@ onMounted(() => {
         releaseMapTimer = undefined
         if (map) {
           map.resize()
-          if (!props.static && mapLoaded.value) scheduleEarthReturn()
+          resetCameraAndResume()
           return
         }
         runWhenIdle(() => void initMap())
@@ -578,7 +661,7 @@ onMounted(() => {
       releaseMapTimer = window.setTimeout(() => {
         releaseMapTimer = undefined
         if (!isMapVisible) releaseMap()
-      }, 1800)
+      }, 5000)
     },
     { rootMargin: '240px 0px', threshold: 0.01 },
   )
@@ -590,6 +673,8 @@ watch(mapboxStyle, () => {
 })
 
 onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', handleDocumentVisibilityChange)
+  window.removeEventListener('scroll', handleWindowScroll)
   visibilityObserver?.disconnect()
   if (releaseMapTimer) window.clearTimeout(releaseMapTimer)
   releaseMap()
@@ -611,13 +696,27 @@ onBeforeUnmount(() => {
   position: absolute;
   z-index: 0;
   inset: 0;
-  filter: grayscale(1) contrast(1.04);
   opacity: 0;
   transition: opacity 420ms ease;
 }
 
 .map-canvas.is-loaded {
   opacity: 1;
+}
+
+/*
+ * Mapbox sizes its backing canvas from the container's layout dimensions. The
+ * hero renders at 72% and is composited back to full size, cutting WebGL pixel
+ * work by roughly half on Retina displays while keeping labels and controls out
+ * of the background presentation.
+ */
+.map-canvas--background {
+  right: auto;
+  bottom: auto;
+  width: 72%;
+  height: 72%;
+  transform: scale(1.3889);
+  transform-origin: left top;
 }
 
 .map-atmosphere,
@@ -641,7 +740,7 @@ onBeforeUnmount(() => {
 
 .map-grain {
   z-index: 2;
-  opacity: 0.18;
+  opacity: 0.1;
   background-image:
     radial-gradient(rgba(29, 29, 31, 0.22) 0.7px, transparent 0.7px),
     radial-gradient(rgba(29, 29, 31, 0.14) 0.7px, transparent 0.7px);
@@ -651,7 +750,6 @@ onBeforeUnmount(() => {
   background-size:
     16px 16px,
     16px 16px;
-  mix-blend-mode: soft-light;
 }
 
 .map-section--hero {

@@ -156,6 +156,8 @@ function animateMetricValue(element: HTMLElement, gsap: any) {
   const prefix = rawText.slice(0, startIndex)
   const suffix = rawText.slice(startIndex + match[0].length)
   const counter = { value: 0 }
+  let lastRenderedAt = 0
+  let lastText = ''
 
   gsap.to(counter, {
     value: targetValue,
@@ -167,7 +169,13 @@ function animateMetricValue(element: HTMLElement, gsap: any) {
       once: true,
     },
     onUpdate: () => {
-      element.textContent = `${prefix}${counter.value.toFixed(decimals)}${suffix}`
+      const now = performance.now()
+      if (now - lastRenderedAt < 1000 / 30 && counter.value < targetValue) return
+      lastRenderedAt = now
+      const nextText = `${prefix}${counter.value.toFixed(decimals)}${suffix}`
+      if (nextText === lastText) return
+      lastText = nextText
+      element.textContent = nextText
     },
   })
 }
@@ -186,11 +194,7 @@ async function createHomeAnimations() {
         CSS.supports(property, value)
       )
     }
-    const supportsBlur = supportsCss('filter', 'blur(1px)')
     const supports3d = supportsCss('transform-style', 'preserve-3d')
-    const supportsClipPath =
-      supportsCss('clip-path', 'inset(0 0 20% 0 round 0 0 36px 36px)') ||
-      supportsCss('-webkit-clip-path', 'inset(0 0 20% 0 round 0 0 36px 36px)')
 
     if (prefersReducedMotion) {
       ScrollTrigger.refresh()
@@ -208,9 +212,8 @@ async function createHomeAnimations() {
       .from(
         '.hero',
         {
-          ...(supportsClipPath
-            ? { clipPath: 'inset(0 0 20% 0 round 0 0 36px 36px)' }
-            : { opacity: 0.94, y: 18 }),
+          opacity: 0.94,
+          y: 18,
           duration: 1.12,
           ease: 'expo.out',
         },
@@ -240,7 +243,6 @@ async function createHomeAnimations() {
           y: 54,
           autoAlpha: 0,
           scale: 0.96,
-          ...(supportsBlur ? { filter: 'blur(16px)' } : {}),
           duration: 1.02,
           ease: 'expo.out',
         },
@@ -288,7 +290,6 @@ async function createHomeAnimations() {
         y: 48,
         autoAlpha: 0,
         scale: 0.985,
-        ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
         duration: 0.9,
       },
       0.08,
@@ -340,7 +341,6 @@ async function createHomeAnimations() {
       gsap.set('.reveal-block', {
         y: 58,
         autoAlpha: 0,
-        ...(supportsBlur ? { filter: 'blur(12px)' } : {}),
       })
 
       ScrollTrigger.batch('.reveal-block', {
@@ -350,14 +350,11 @@ async function createHomeAnimations() {
           gsap.to(batch, {
             y: 0,
             autoAlpha: 1,
-            ...(supportsBlur ? { filter: 'blur(0px)' } : {}),
             duration: 0.86,
             ease: 'power3.out',
             stagger: 0.08,
             overwrite: 'auto',
-            clearProps: supportsBlur
-              ? 'transform,opacity,visibility,filter'
-              : 'transform,opacity,visibility',
+            clearProps: 'transform,opacity,visibility',
           })
         },
       })
@@ -369,7 +366,6 @@ async function createHomeAnimations() {
         autoAlpha: 0,
         scale: 0.96,
         ...(supports3d ? { rotateX: -8, transformPerspective: 900 } : {}),
-        ...(supportsBlur ? { filter: 'blur(10px)' } : {}),
         transformOrigin: '50% 100%',
       })
 
@@ -382,7 +378,6 @@ async function createHomeAnimations() {
             autoAlpha: 1,
             scale: 1,
             ...(supports3d ? { rotateX: 0 } : {}),
-            ...(supportsBlur ? { filter: 'blur(0px)' } : {}),
             duration: 0.78,
             ease: 'power3.out',
             stagger: {
@@ -390,9 +385,7 @@ async function createHomeAnimations() {
               from: 'start',
             },
             overwrite: 'auto',
-            clearProps: supportsBlur
-              ? 'transform,opacity,visibility,filter'
-              : 'transform,opacity,visibility',
+            clearProps: 'transform,opacity,visibility',
           })
         },
       })
@@ -636,11 +629,11 @@ onBeforeUnmount(() => {
   padding: 72px 0;
 }
 
-.section-heading {
+.home-page .section-heading {
   max-width: 660px;
 }
 
-.section-heading span {
+.home-page .section-heading span {
   color: var(--oa-primary-dark);
   font-size: 13px;
   font-weight: 600;
@@ -648,7 +641,7 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
 }
 
-.section-heading h2 {
+.home-page .section-heading h2 {
   margin: 10px 0;
   color: var(--oa-text);
   font-size: 32px;
@@ -656,7 +649,7 @@ onBeforeUnmount(() => {
   letter-spacing: 0;
 }
 
-.section-heading p {
+.home-page .section-heading p {
   margin: 0;
   color: var(--oa-muted);
   line-height: 1.8;
@@ -1039,7 +1032,6 @@ onBeforeUnmount(() => {
   align-items: end;
   gap: 0;
   min-height: 126px;
-
 }
 
 .metric-node {
@@ -1196,14 +1188,14 @@ onBeforeUnmount(() => {
   background: var(--oa-elevated-bg);
 }
 
-.section-heading {
+.home-page .section-heading {
   position: relative;
   max-width: 760px;
   margin: 0 auto;
   text-align: center;
 }
 
-.section-heading::before {
+.home-page .section-heading::before {
   display: block;
   width: 68px;
   height: 1px;
@@ -1212,7 +1204,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(90deg, transparent, rgba(29, 29, 31, 0.78), transparent);
 }
 
-.section-heading span {
+.home-page .section-heading span {
   color: var(--oa-text);
   font-size: 14px;
   font-weight: 400;
@@ -1220,7 +1212,7 @@ onBeforeUnmount(() => {
   text-transform: none;
 }
 
-.section-heading h2 {
+.home-page .section-heading h2 {
   margin: 10px 0;
   font-family:
     'SF Pro Display',
@@ -1234,7 +1226,7 @@ onBeforeUnmount(() => {
   letter-spacing: 0;
 }
 
-.section-heading p {
+.home-page .section-heading p {
   color: var(--oa-muted);
   font-size: 17px;
   line-height: 1.47;
@@ -1798,8 +1790,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(1px) saturate(1.08);
+  background: rgba(255, 255, 255, 0.045);
   pointer-events: none;
   will-change: opacity;
 }
@@ -1892,6 +1883,11 @@ onBeforeUnmount(() => {
   position: relative;
   overflow: hidden;
   isolation: isolate;
+}
+
+.home-page .home-interactive-section:not(.home-overview-page) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
 }
 
 .home-section-canvas {
@@ -2039,7 +2035,7 @@ onBeforeUnmount(() => {
     padding: 52px 0;
   }
 
-  .section-heading h2 {
+  .home-page .section-heading h2 {
     font-size: 26px;
   }
 

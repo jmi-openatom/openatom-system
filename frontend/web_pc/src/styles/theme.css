@@ -1,0 +1,54 @@
+html:root {
+  --el-color-primary: var(--color-primary);
+  --el-color-primary-dark-2: var(--color-primary-hover);
+  --el-color-primary-light-3: var(--color-gray-700);
+  --el-color-primary-light-5: var(--color-gray-500);
+  --el-color-primary-light-7: var(--color-gray-300);
+  --el-color-primary-light-8: var(--color-gray-200);
+  --el-color-primary-light-9: var(--color-gray-100);
+  --el-color-success: var(--color-success);
+  --el-color-success-light-9: var(--color-success-bg);
+  --el-color-warning: var(--color-warning);
+  --el-color-warning-light-9: var(--color-warning-bg);
+  --el-color-danger: var(--color-danger);
+  --el-color-danger-light-9: var(--color-danger-bg);
+  --el-color-info: var(--color-info);
+  --el-color-info-light-9: var(--color-info-bg);
+  --el-bg-color: var(--color-bg-container);
+  --el-bg-color-page: var(--color-bg-page);
+  --el-bg-color-overlay: var(--color-bg-elevated);
+  --el-fill-color: var(--color-bg-active);
+  --el-fill-color-light: var(--color-bg-hover);
+  --el-fill-color-lighter: var(--color-bg-subtle);
+  --el-fill-color-blank: var(--color-bg-container);
+  --el-border-color: var(--color-border);
+  --el-border-color-light: var(--color-border-light);
+  --el-border-color-lighter: var(--color-border-light);
+  --el-text-color-primary: var(--color-text-primary);
+  --el-text-color-regular: var(--color-text-regular);
+  --el-text-color-secondary: var(--color-text-secondary);
+  --el-text-color-placeholder: var(--color-text-placeholder);
+  --el-disabled-text-color: var(--color-text-disabled);
+  --el-disabled-bg-color: var(--color-bg-active);
+  --el-border-radius-base: var(--radius-md);
+  --el-border-radius-small: var(--radius-sm);
+  --el-border-radius-round: var(--radius-round);
+  --el-component-size-small: var(--control-height-sm);
+  --el-component-size: var(--control-height);
+  --el-component-size-large: var(--control-height-lg);
+  --el-font-family: var(--font-family-sans);
+  --el-font-size-base: var(--font-size-base);
+  --el-mask-color: rgba(0, 0, 0, 0.52);
+  --el-box-shadow-light: var(--shadow-sm);
+  --el-box-shadow: var(--shadow-md);
+}
+
+[data-theme='dark'],
+html.dark {
+  --el-color-primary-light-3: var(--color-gray-200);
+  --el-color-primary-light-5: var(--color-gray-400);
+  --el-color-primary-light-7: #52525b;
+  --el-color-primary-light-8: #3f3f46;
+  --el-color-primary-light-9: #27272a;
+  --el-mask-color: rgba(0, 0, 0, 0.72);
+}

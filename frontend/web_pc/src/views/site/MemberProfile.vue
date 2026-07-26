@@ -232,9 +232,9 @@ watch(() => route.fullPath, fetchProfile)
 .member-profile-page__notice {
   margin: 18px 0 0;
   padding: 14px 18px;
-  color: #92400e;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 24%, transparent);
   border-radius: 12px;
 }
 .profile-comments {
@@ -252,7 +252,7 @@ watch(() => route.fullPath, fetchProfile)
   margin-bottom: 28px;
 }
 .profile-comments__head span {
-  color: #2563eb;
+  color: var(--color-text-primary);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.14em;

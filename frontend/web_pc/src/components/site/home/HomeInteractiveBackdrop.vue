@@ -31,6 +31,7 @@ let resizeObserver: ResizeObserver | null = null
 let visibilityObserver: IntersectionObserver | null = null
 let handleWindowResize: (() => void) | null = null
 let animationFrame = 0
+let drawStopTimer: number | undefined
 let drawing = false
 let isVisible = false
 let staticBackdrop = false
@@ -186,16 +187,29 @@ function stopDrawing() {
   }
 }
 
+function stopDrawingAfter(delay: number) {
+  if (drawStopTimer) window.clearTimeout(drawStopTimer)
+  drawStopTimer = window.setTimeout(() => {
+    drawStopTimer = undefined
+    stopDrawing()
+    draw()
+  }, delay)
+}
+
 function handlePointerMove(event: PointerEvent) {
   if (!host) return
   const rect = host.getBoundingClientRect()
   mouseXTo?.(event.clientX - rect.left)
   mouseYTo?.(event.clientY - rect.top)
   activeTo?.(1)
+  startDrawing()
+  stopDrawingAfter(560)
 }
 
 function handlePointerLeave() {
   activeTo?.(0)
+  startDrawing()
+  stopDrawingAfter(340)
 }
 
 onMounted(() => {
@@ -225,14 +239,14 @@ onMounted(() => {
     resizeObserver = new ResizeObserver(() => {
       if (!isVisible) return
       resizeCanvas()
-      if (staticBackdrop) draw()
+      if (!drawing) draw()
     })
     resizeObserver.observe(host)
   } else {
     handleWindowResize = () => {
       if (!isVisible) return
       resizeCanvas()
-      if (staticBackdrop) draw()
+      if (!drawing) draw()
     }
     window.addEventListener('resize', handleWindowResize)
   }
@@ -253,8 +267,7 @@ onMounted(() => {
         if (entries.some((entry) => entry.isIntersecting)) {
           isVisible = true
           resizeCanvas()
-          if (staticBackdrop) draw()
-          else startDrawing()
+          draw()
         } else {
           isVisible = false
           stopDrawing()
@@ -267,8 +280,7 @@ onMounted(() => {
   } else {
     isVisible = true
     resizeCanvas()
-    if (staticBackdrop) draw()
-    else startDrawing()
+    draw()
   }
 })
 
@@ -279,6 +291,7 @@ watch(resolvedTheme, () => {
 })
 
 onBeforeUnmount(() => {
+  if (drawStopTimer) window.clearTimeout(drawStopTimer)
   stopDrawing()
   releaseCanvas()
   resizeObserver?.disconnect()

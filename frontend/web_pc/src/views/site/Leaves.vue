@@ -2,8 +2,10 @@
   <ViewPage class="site-system-page">
     <SitePageHero
       compact
+      dark-image="/leaves-hero-wide-dark.png?v=3"
       description="提交请假理由和图片后，可查看审批流程。"
       eyebrow="请假申请"
+      light-image="/leaves-hero-wide-light.png?v=3"
       title="我的请假"
     />
 

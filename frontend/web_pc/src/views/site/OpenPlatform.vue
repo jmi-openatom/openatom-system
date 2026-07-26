@@ -24,13 +24,21 @@
             </div>
             <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
               <el-form-item label="应用名称" prop="appName">
-                <el-input v-model="form.appName" maxlength="120" placeholder="例如：社团积分同步服务" />
+                <el-input
+                  v-model="form.appName"
+                  maxlength="120"
+                  placeholder="例如：社团积分同步服务"
+                />
               </el-form-item>
               <el-form-item label="申请人" prop="applicantName">
                 <el-input v-model="form.applicantName" maxlength="80" placeholder="请输入姓名" />
               </el-form-item>
               <el-form-item label="联系方式" prop="applicantContact">
-                <el-input v-model="form.applicantContact" maxlength="160" placeholder="手机号、邮箱或 QQ" />
+                <el-input
+                  v-model="form.applicantContact"
+                  maxlength="160"
+                  placeholder="手机号、邮箱或 QQ"
+                />
               </el-form-item>
               <el-form-item label="组织/团队">
                 <el-input v-model="form.organization" maxlength="160" placeholder="可选" />
@@ -69,9 +77,19 @@
                 <el-input v-model="lookupForm.id" placeholder="提交后生成的编号" />
               </el-form-item>
               <el-form-item label="联系方式">
-                <el-input v-model="lookupForm.applicantContact" maxlength="160" placeholder="填写申请时的联系方式" />
+                <el-input
+                  v-model="lookupForm.applicantContact"
+                  maxlength="160"
+                  placeholder="填写申请时的联系方式"
+                />
               </el-form-item>
-              <el-button class="query-button" type="primary" :icon="Search" :loading="lookupLoading" @click="lookup">
+              <el-button
+                class="query-button"
+                type="primary"
+                :icon="Search"
+                :loading="lookupLoading"
+                @click="lookup"
+              >
                 查询密钥
               </el-button>
             </el-form>
@@ -83,14 +101,18 @@
               </div>
               <div class="lookup-result__row">
                 <span>状态</span>
-                <el-tag :type="statusType(lookupResult.status)">{{ statusLabel(lookupResult.status) }}</el-tag>
+                <el-tag :type="statusType(lookupResult.status)">{{
+                  statusLabel(lookupResult.status)
+                }}</el-tag>
               </div>
               <div v-if="lookupResult.reviewComment" class="lookup-result__note">
                 {{ lookupResult.reviewComment }}
               </div>
               <div v-if="lookupResult.apiKey" class="token-box">
                 <code>{{ lookupResult.apiKey }}</code>
-                <el-button :icon="DocumentCopy" @click="copyText(lookupResult.apiKey)">复制</el-button>
+                <el-button :icon="DocumentCopy" @click="copyText(lookupResult.apiKey)"
+                  >复制</el-button
+                >
               </div>
               <p v-else class="lookup-hint">{{ tokenHint(lookupResult.status) }}</p>
             </div>
@@ -239,7 +261,7 @@ const codeExamples = [
       '{"username":"20260001","password":"your-password"}',
       '""";',
       '',
-      "var request = java.net.http.HttpRequest.newBuilder()",
+      'var request = java.net.http.HttpRequest.newBuilder()',
       "    .uri(java.net.URI.create('https://api.jmi-openatom.cn/api/v1/public/login'))",
       "    .header('Content-Type', 'application/json')",
       "    .header('X-Openatom-Data-Key', 'oa_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')",
@@ -248,7 +270,9 @@ const codeExamples = [
       '',
       'var response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());',
       'System.out.println(response.body());',
-    ].join('\n').replaceAll("'", '"'),
+    ]
+      .join('\n')
+      .replaceAll("'", '"'),
   },
   {
     key: 'curl',
@@ -274,7 +298,8 @@ async function submit() {
   try {
     submittedApplication.value = await dataOpenApi.apply({ ...form.value })
     lookupForm.value.id = String(submittedApplication.value?.id || '')
-    lookupForm.value.applicantContact = submittedApplication.value?.applicantContact || form.value.applicantContact
+    lookupForm.value.applicantContact =
+      submittedApplication.value?.applicantContact || form.value.applicantContact
     ElMessage.success('申请已提交')
     resetForm(false)
   } finally {
@@ -400,8 +425,8 @@ function tokenHint(status: string) {
 
 .open-platform-endpoint span {
   padding: 5px 9px;
-  color: #0f766e;
-  background: rgba(20, 184, 166, 0.12);
+  color: var(--color-text-primary);
+  background: var(--color-bg-active);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 700;
@@ -463,8 +488,8 @@ function tokenHint(status: string) {
   gap: 6px;
   margin-top: 16px;
   padding: 14px;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.22);
+  background: var(--color-success-bg);
+  border: 1px solid color-mix(in srgb, var(--color-success) 24%, transparent);
   border-radius: 8px;
   color: var(--oa-text);
 }
@@ -545,8 +570,8 @@ function tokenHint(status: string) {
   margin: 0;
   padding: 18px;
   overflow: auto;
-  color: #d7e0ea;
-  background: #101820;
+  color: var(--color-gray-200);
+  background: var(--color-gray-900);
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.7;

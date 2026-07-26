@@ -3,7 +3,7 @@
     <section class="apps-hero">
       <div class="container apps-hero__inner">
         <div class="section-heading reveal-block">
-          <span>OpenAtom Apps</span>
+          <span>OPENATOM APPLICATIONS</span>
           <h1>应用展示</h1>
           <p>集中展示社团自研应用、开源项目和可下载工具，便于成员与合作方快速了解当前成果。</p>
         </div>
@@ -199,71 +199,88 @@ onMounted(fetchList)
 
 .apps-hero {
   position: relative;
-  min-height: min(74vh, 720px);
+  min-height: clamp(440px, 38vw, 560px);
   overflow: hidden;
-  padding: clamp(96px, 11vw, 140px) 0 clamp(48px, 6vw, 78px);
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.48)),
-    url('/project.png') center / cover;
-  color: #fff;
+  color: var(--oa-text);
+  background: var(--oa-page-soft-bg);
+  border-bottom: 1px solid var(--oa-border);
 }
 
 .apps-hero::after {
-  content: '';
+  display: none;
+}
+
+.apps-hero::before {
   position: absolute;
-  inset: auto 0 0;
-  height: 42%;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0), var(--oa-page-soft-bg));
+  inset: 0;
+  background: #faf9f7 url('/apps-hero-wide-light.png?v=3') right center / auto 100% no-repeat;
+  content: '';
+  pointer-events: none;
 }
 
 .apps-hero__inner {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 34px;
+  min-height: clamp(440px, 38vw, 560px);
+  align-content: center;
+  gap: 24px;
+  padding-top: clamp(48px, 7vw, 84px);
+  padding-bottom: clamp(48px, 7vw, 84px);
 }
 
 .apps-hero .section-heading {
-  max-width: 860px;
+  position: relative;
+  z-index: 1;
+  width: min(47%, 520px);
+  margin: 0;
+  text-align: left;
 }
 
 .apps-hero .section-heading span {
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--oa-muted-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 
 .apps-hero .section-heading h1 {
   margin: 12px 0 16px;
-  color: #fff;
-  font-size: clamp(48px, 7vw, 94px);
-  font-weight: 650;
-  line-height: 0.98;
+  color: var(--oa-text);
+  font-size: clamp(40px, 4.6vw, 58px);
+  font-weight: 700;
+  line-height: 1.05;
   letter-spacing: 0;
 }
 
 .apps-hero .section-heading p {
-  max-width: 760px;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: clamp(18px, 2.1vw, 24px);
+  max-width: 500px;
+  color: var(--oa-muted);
+  font-size: 17px;
   line-height: 1.72;
 }
 
 .apps-hero__meta {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
 
 .apps-hero__meta span {
-  padding: 10px 14px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.13);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
+  padding-right: 12px;
+  color: var(--oa-muted);
+  border-right: 1px solid var(--oa-border);
+  font-size: 13px;
+}
+
+.apps-hero__meta span:last-child {
+  border-right: 0;
 }
 
 .apps-content-section {
-  padding: clamp(42px, 6vw, 78px) 0;
+  padding: 0 0 clamp(64px, 8vw, 96px);
 }
 
 .apps-content {
@@ -277,9 +294,11 @@ onMounted(fetchList)
   gap: 12px;
   align-items: center;
   padding: 16px;
-  background: var(--oa-elevated-bg);
+  background: color-mix(in srgb, var(--oa-elevated-bg) 96%, transparent);
   border: 1px solid var(--oa-border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
+  backdrop-filter: saturate(150%) blur(22px);
+  -webkit-backdrop-filter: saturate(150%) blur(22px);
 }
 
 .apps-grid {
@@ -389,6 +408,26 @@ onMounted(fetchList)
 }
 
 @media (max-width: 760px) {
+  .apps-hero {
+    min-height: 650px;
+  }
+
+  .apps-hero__inner {
+    min-height: 650px;
+    align-content: start;
+    padding-top: 36px;
+    padding-bottom: 330px;
+  }
+
+  .apps-hero::before {
+    background-position: 68% bottom;
+    background-size: auto 340px;
+  }
+
+  .apps-hero .section-heading {
+    width: 100%;
+  }
+
   .apps-toolbar {
     grid-template-columns: 1fr;
   }
@@ -405,6 +444,11 @@ onMounted(fetchList)
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+:global(html.dark .apps-hero::before) {
+  background-color: #0d0d0f;
+  background-image: url('/apps-hero-wide-dark.png?v=3');
 }
 
 .app-card__badges {

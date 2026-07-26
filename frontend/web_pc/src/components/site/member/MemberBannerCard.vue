@@ -107,7 +107,7 @@ const backgroundStyle = computed(() =>
 .member-card__visual {
   position: relative;
   padding: 22px;
-  background: linear-gradient(145deg, #111827, #334155);
+  background: linear-gradient(145deg, var(--color-gray-900), var(--color-gray-700));
   background-size: cover;
   color: #fff;
 }
@@ -166,7 +166,7 @@ const backgroundStyle = computed(() =>
   font-size: 12px;
 }
 .member-card__custom {
-  color: #2563eb;
+  color: var(--color-text-primary);
   font-weight: 700;
 }
 .member-card__skills span {
@@ -207,8 +207,8 @@ const backgroundStyle = computed(() =>
 
 .member-card__like.is-liked {
   color: #fff;
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .member-card__like:disabled {
