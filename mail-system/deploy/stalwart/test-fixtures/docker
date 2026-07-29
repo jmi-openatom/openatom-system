@@ -9,6 +9,9 @@ if [ "${1:-}" = compose ]; then
   printf 'compose|%s|mode=%s|admin=%s\n' \
     "$*" "${STALWART_RECOVERY_MODE:-}" "$recovery_admin_state" \
     >> "$FAKE_DOCKER_STATE_DIR/commands.log"
+  if [ "${STALWART_RECOVERY_MODE:-}" = 0 ] && [ "$recovery_admin_state" = set ]; then
+    : > "$FAKE_DOCKER_STATE_DIR/normal-with-recovery"
+  fi
   exit 0
 fi
 
@@ -48,11 +51,15 @@ case "$*" in
     test "$auth_kind" = recovery
     ;;
   *" query Domain "*)
-    test "$auth_kind" != recovery
+    if [ "$auth_kind" = recovery ]; then
+      test -f "$FAKE_DOCKER_STATE_DIR/normal-with-recovery"
+    fi
     printf '"domain-id"\n'
     ;;
   *" query Account "*)
-    test "$auth_kind" != recovery
+    if [ "$auth_kind" = recovery ]; then
+      test -f "$FAKE_DOCKER_STATE_DIR/normal-with-recovery"
+    fi
     printf '"account-id"\n'
     ;;
   *" query ApiKey --json")

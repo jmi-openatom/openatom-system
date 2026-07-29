@@ -6,7 +6,7 @@ test_dir=$(mktemp -d "${TMPDIR:-/tmp}/openatom-bootstrap-test.XXXXXX")
 cleanup() {
   rm -f "$test_dir/bin/curl" "$test_dir/bin/docker" "$test_dir/mail.env"
   rm -f "$test_dir/state/commands.log" "$test_dir/state/api-key-count"
-  rm -f "$test_dir/state/automation.ndjson"
+  rm -f "$test_dir/state/automation.ndjson" "$test_dir/state/normal-with-recovery"
   rmdir "$test_dir/bin" "$test_dir/state" "$test_dir" 2>/dev/null || true
 }
 trap cleanup EXIT HUP INT TERM
@@ -47,20 +47,16 @@ ruby -rjson -e '
   abort "temporary password missing" unless value.dig("credentials", "0", "secret")&.match?(/\A[0-9a-f]{96}\z/)
 ' "$test_dir/state/automation.ndjson"
 
-if grep -q '^recovery|.* query ' "$test_dir/state/commands.log"; then
-  echo "recovery credentials must not query directory objects" >&2
-  exit 1
-fi
-grep -q '^automation|.* query Domain ' "$test_dir/state/commands.log"
-grep -q '^automation|.* query Account ' "$test_dir/state/commands.log"
+grep -q '^recovery|.* query Domain ' "$test_dir/state/commands.log"
+grep -q '^recovery|.* query Account ' "$test_dir/state/commands.log"
 grep -q '^config|.* query Domain ' "$test_dir/state/commands.log"
 grep -q '^api|.* query Account ' "$test_dir/state/commands.log"
 test "$(grep -c '^compose|.* up -d --force-recreate stalwart|mode=0|admin=' "$test_dir/state/commands.log")" = 2
 test "$(grep -c '|mode=0|admin=set$' "$test_dir/state/commands.log")" = 1
 test "$(grep -c '|mode=0|admin=empty$' "$test_dir/state/commands.log")" = 1
 normal_restart_line=$(grep -n '|mode=0|admin=set$' "$test_dir/state/commands.log" | cut -d: -f1)
-automation_query_line=$(grep -n '^automation|.* query Domain ' "$test_dir/state/commands.log" | cut -d: -f1)
-test "$normal_restart_line" -lt "$automation_query_line"
+recovery_query_line=$(grep -n '^recovery|.* query Domain ' "$test_dir/state/commands.log" | cut -d: -f1)
+test "$normal_restart_line" -lt "$recovery_query_line"
 
 env_state_before=$(cksum "$env_file")
 PATH="$test_dir/bin:$PATH" FAKE_DOCKER_STATE_DIR="$test_dir/state" \

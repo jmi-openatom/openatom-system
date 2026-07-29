@@ -191,9 +191,9 @@ wait_for_stalwart
 write_auth_file "$automation_auth" basic "$automation_name@$mail_domain" "$temporary_password"
 
 # ID-only queries avoid the additional Object/get call that `--fields` causes.
-# Once the permanent automation administrator exists, recovery credentials are
-# no longer used for directory or API-key management.
-domain_records=$(run_cli "$automation_auth" query Domain \
+# In normal mode the recovery principal can resolve the server-assigned ids,
+# while the directory administrator remains responsible for API-key lifecycle.
+domain_records=$(run_cli "$recovery_auth" query Domain \
   --where "name=$mail_domain" --json)
 domain_id=$(printf '%s\n' "$domain_records" | sed -n 's/^"\([^"]*\)"$/\1/p')
 case "$domain_id" in
@@ -207,7 +207,7 @@ if [ "$(printf '%s\n' "$domain_records" | sed -n 's/^"\([^"]*\)"$/\1/p' | wc -l 
   exit 65
 fi
 
-account_records=$(run_cli "$automation_auth" query Account \
+account_records=$(run_cli "$recovery_auth" query Account \
   --where "name=$automation_name" --where "domainId=$domain_id" \
   --json)
 automation_account_id=$(printf '%s\n' "$account_records" | sed -n 's/^"\([^"]*\)"$/\1/p')
