@@ -24,6 +24,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -44,6 +45,7 @@ public class OidcSigningKeyProvider {
   private final RSAPrivateKey privateKey;
   private final Map<String, RSAPublicKey> verificationKeys;
 
+  @Autowired
   public OidcSigningKeyProvider(
       @Value("${app.oidc.signing.private-key-base64:}") String privateKeyBase64,
       @Value("${app.oidc.signing.public-key-base64:}") String publicKeyBase64,

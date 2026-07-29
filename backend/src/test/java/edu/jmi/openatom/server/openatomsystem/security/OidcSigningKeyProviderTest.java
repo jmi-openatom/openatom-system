@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 class OidcSigningKeyProviderTest {
 
@@ -80,6 +81,19 @@ class OidcSigningKeyProviderTest {
     assertThrows(
         IllegalStateException.class,
         () -> new OidcSigningKeyProvider("", "", "prod-key", "", "", true));
+  }
+
+  @Test
+  void springSelectsTheConfiguredConstructor() {
+    try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+      context.register(OidcSigningKeyProvider.class);
+      context.refresh();
+
+      OidcSigningKeyProvider provider = context.getBean(OidcSigningKeyProvider.class);
+      assertEquals("openatom-oidc-rs256", provider.jwks().get("keys") instanceof List<?> keys
+          ? ((Map<?, ?>) keys.getFirst()).get("kid")
+          : null);
+    }
   }
 
   private OidcSigningKeyProvider provider(String keyId) {
