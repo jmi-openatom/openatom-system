@@ -13,7 +13,7 @@
 
 1. 复制 `.env.example` 为受权限保护的部署环境文件，生成所有随机密钥；`MAIL_ADDRESS_SALT` 上线后不得修改。
 2. 在身份中心注册机密客户端 `openatom-mail-web`，回调地址设为 `https://mail.jmi-openatom.cn/api/oauth/callback`，Scope 包含 `openid profile email mail offline_access`。
-3. 配置主站 RS256 私钥和 `kid`，部署数据库迁移 `V49__add_mailbox_outbox.sql`；主站 `APP_MAIL_SERVICE_TOKEN` 必须与邮件站 `MAIL_INTERNAL_SERVICE_TOKEN` 相同。
+3. 配置主站 RS256 私钥和 `kid`，部署数据库迁移 `V52__add_mailbox_outbox.sql`；主站 `APP_MAIL_SERVICE_TOKEN` 必须与邮件站 `MAIL_INTERNAL_SERVICE_TOKEN` 相同。
 4. DNS 生效后向 `main` 推送：Actions 自动使用 `deployment_mode=auto`，启动 Compose、创建域、生成两枚最小权限 Stalwart API Key、查询 Domain ID、签发证书并完整部署，不需要进入管理后台复制值。
 5. `tls` 阶段会自动渲染并安装 `deploy/nginx/mail.jmi-openatom.cn.conf`、申请受信任证书并注册续期 Hook；防火墙只开放 Web 入口和邮件协议端口，Stalwart 管理端继续只绑定 `127.0.0.1`。
 6. 发布 `deploy/dns/jmi-openatom.zone.template` 中的 A、MX、SPF、DKIM、DMARC、MTA-STS 与 TLS-RPT 记录，并由公网 IP 提供商配置 PTR。
