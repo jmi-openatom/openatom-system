@@ -157,7 +157,10 @@ if [ -z "$automation_account_id" ]; then
   account_json="$runtime_dir/account.json"
   printf '{"@type":"User","name":"%s","domainId":"%s","description":"OpenAtom deployment automation; no mailbox login","credentials":{"0":{"@type":"Password","secret":"%s"}},"memberGroupIds":{},"roles":{"@type":"Admin"},"permissions":{"@type":"Inherit"},"quotas":{},"aliases":{},"encryptionAtRest":{"@type":"Disabled"}}\n' \
     "$automation_name" "$domain_id" "$temporary_password" > "$account_json"
-  chmod 600 "$account_json"
+  # The parent runtime directory remains 0700, so host users cannot traverse
+  # to this temporary secret. The file itself must be readable by the
+  # non-root UID used by the CLI container's direct bind mount.
+  chmod 644 "$account_json"
   docker run --rm --network "$network_name" --env-file "$recovery_auth" \
     -v "$account_json:/work/account.json:ro" "$cli_image" \
     create Account --file /work/account.json >/dev/null

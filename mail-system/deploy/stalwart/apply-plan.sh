@@ -47,6 +47,10 @@ if [ "$apply_mode" = "--domain-only" ]; then
   test -s "$domain_plan"
   mv "$domain_plan" "$plan_file"
 fi
+# The plan contains no credentials. Docker preserves the runner's numeric file
+# ownership on the bind mount, while the CLI image runs as a different UID, so
+# it needs an explicit read bit inside the container.
+chmod 644 "$plan_file"
 
 cli_image=$(value_for STALWART_CLI_IMAGE)
 cli_image=${cli_image:-ghcr.io/stalwartlabs/cli:latest}
