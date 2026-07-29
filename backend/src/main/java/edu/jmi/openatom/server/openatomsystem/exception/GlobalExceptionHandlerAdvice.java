@@ -66,7 +66,7 @@ public class GlobalExceptionHandlerAdvice {
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public Result<Void> handleHttpMessageNotReadableException(
       HttpMessageNotReadableException e) {
-    log.warn("Invalid request body", e);
+    log.warn("Invalid request body type={}", e.getClass().getSimpleName());
     return Result.error(400, "请求体格式错误，请检查 JSON 格式");
   }
 
@@ -93,7 +93,9 @@ public class GlobalExceptionHandlerAdvice {
 
   @ExceptionHandler(Exception.class)
   public Result<Void> handleException(Exception e) {
-    log.error("Unhandled exception", e);
+    // Exception messages and stack traces can embed request bodies, OAuth codes or credentials.
+    // Keep production logs useful for classification without serializing attacker-controlled data.
+    log.error("Unhandled exception type={}", e.getClass().getName());
     return Result.error(500, "服务器内部错误");
   }
 }

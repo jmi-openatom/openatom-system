@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>OpenAtom 统一登录</title>
+    <link rel="stylesheet" href="../oauth-login.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card" aria-labelledby="login-title">
+        <div class="brand" aria-hidden="true">OA</div>
+        <p class="eyebrow">OPENATOM ID</p>
+        <h1 id="login-title">登录以继续</h1>
+        <p class="description">使用你的 OpenAtom 账号安全访问已授权的应用。</p>
+
+        <form id="login-form" novalidate>
+          <label for="username">用户名或学号</label>
+          <input id="username" name="username" autocomplete="username" required />
+
+          <label for="password">密码</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+
+          <p id="message" class="message" role="alert" aria-live="polite"></p>
+          <button id="submit" type="submit">登录并授权</button>
+        </form>
+
+        <p class="privacy">登录凭据仅提交给 OpenAtom 认证中心。</p>
+      </section>
+    </main>
+    <script src="../oauth-login.js" defer></script>
+  </body>
+</html>

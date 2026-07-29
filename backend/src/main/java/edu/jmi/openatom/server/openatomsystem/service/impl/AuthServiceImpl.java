@@ -24,6 +24,7 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinVerifyVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
+import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import edu.jmi.openatom.server.openatomsystem.security.GoogleIdentityService;
@@ -186,6 +187,9 @@ public class AuthServiceImpl implements AuthService {
 		if (user == null) {
 			return Result.error("登陆失败,请检查用户名/密码");
 		}
+		if (user.getUserStatus() != null && user.getUserStatus() != UserStatus.ACTIVE) {
+			return Result.error(403, "账号已被禁用或锁定");
+		}
 		if (!passwordService.matches(requestLoginDTO.getPassword(), user.getPassword())) {
 			return Result.error("登陆失败,请检查用户名/密码");
 		}
@@ -337,7 +341,7 @@ public class AuthServiceImpl implements AuthService {
 			response.put("login", createLoginResponse(user));
 			return Result.success(response, "GitHub 登录成功");
 		} catch (IllegalStateException exception) {
-			log.warn("GitHub OAuth failed: {}", exception.getMessage());
+			log.warn("GitHub OAuth failed type={}", exception.getClass().getSimpleName());
 			return Result.error(502, exception.getMessage());
 		}
 	}
@@ -430,7 +434,7 @@ public class AuthServiceImpl implements AuthService {
 			response.put("login", createLoginResponse(user));
 			return Result.success(response, "Gitee 登录成功");
 		} catch (IllegalStateException e) {
-			log.warn("Gitee OAuth failed: {}", e.getMessage());
+			log.warn("Gitee OAuth failed type={}", e.getClass().getSimpleName());
 			return Result.error(502, e.getMessage());
 		}
 	}
@@ -537,7 +541,7 @@ public class AuthServiceImpl implements AuthService {
 		try {
 			userId = Integer.valueOf(userIdValue);
 		} catch (NumberFormatException e) {
-			log.warn("Invalid QQ bind token payload: token={}, userIdValue={}", token, userIdValue);
+			log.warn("Invalid QQ bind token payload; cached user id is not numeric");
 			tokenDao.delete(getQqBindTokenKey(token));
 			return Result.error(401, "绑定码无效，请在网页重新生成");
 		}

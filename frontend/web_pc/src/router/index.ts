@@ -687,7 +687,7 @@ async function isActivationPageEnabled(): Promise<boolean> {
 
 router.beforeEach(async (to) => {
   if ((requiresAdminAuth(to) || requiresSiteLogin(to)) && !getToken()) {
-    window.location.assign(buildOidcAuthorizeUrl(to.fullPath))
+    window.location.assign(await buildOidcAuthorizeUrl(to.fullPath))
     return false
   }
 

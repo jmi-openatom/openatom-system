@@ -1,0 +1,14 @@
+; Replace 203.0.113.10 and DKIM_PUBLIC_KEY before publishing.
+; Do not publish AAAA until IPv6 inbound and outbound delivery has been tested.
+@                      3600 IN MX 10 mx1.jmi-openatom.cn.
+mx1                    3600 IN A 203.0.113.10
+mail                    3600 IN A 203.0.113.10
+mta-sts                 3600 IN A 203.0.113.10
+@                      3600 IN TXT "v=spf1 mx -all"
+stalwart._domainkey    3600 IN TXT "v=DKIM1; k=rsa; p=DKIM_PUBLIC_KEY"
+_dmarc                 3600 IN TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@jmi-openatom.cn; adkim=s; aspf=s; pct=100"
+_mta-sts               3600 IN TXT "v=STSv1; id=2026073001"
+_smtp._tls             3600 IN TXT "v=TLSRPTv1; rua=mailto:tlsrpt@jmi-openatom.cn"
+
+; Configure the public IP PTR/rDNS at the hosting provider:
+; 203.0.113.10 -> mx1.jmi-openatom.cn

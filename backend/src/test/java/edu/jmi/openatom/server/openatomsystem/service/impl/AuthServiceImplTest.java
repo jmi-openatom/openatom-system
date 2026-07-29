@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import cn.dev33.satoken.SaManager;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestLoginDTO;
+import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicReference;
@@ -74,6 +76,19 @@ class AuthServiceImplTest {
     assertEquals("7", SaManager.getSaTokenDao().get(TOKEN_KEY));
   }
 
+  @Test
+  void disabledUserCannotLogInEvenWithAnExistingAccount() {
+    User user =
+        User.builder().id(7).userName("disabled").userStatus(UserStatus.DISABLED).build();
+    AuthServiceImpl authService = authService(userMapper(user, null, new AtomicReference<>()));
+
+    var result =
+        authService.login(RequestLoginDTO.builder().username("disabled").password("secret").build());
+
+    assertEquals(403, result.getCode());
+    assertEquals("账号已被禁用或锁定", result.getMessage());
+  }
+
   private AuthServiceImpl authService(UserMapper userMapper) {
     return new AuthServiceImpl(
         userMapper,
@@ -105,6 +120,7 @@ class AuthServiceImplTest {
               if (method.getName().equals("selectById")) {
                 return user.getId().equals(args[0]) ? user : null;
               }
+              if (method.getName().equals("selectByStudentIdOrUserName")) return user;
               if (method.getName().equals("selectByQqOpenid")) return boundUser;
               if (method.getName().equals("updateById")) {
                 updatedUser.set((User) args[0]);

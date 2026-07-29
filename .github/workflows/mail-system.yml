@@ -1,0 +1,352 @@
+name: OpenAtom Mail CI/CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment_mode:
+        description: Deployment phase to run after CI passes
+        required: true
+        default: auto
+        type: choice
+        options:
+          - none
+          - auto
+          - bootstrap
+          - tls
+          - full
+  push:
+    branches:
+      - '**'
+    paths:
+      - backend/pom.xml
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/config/MailOutboxProperties.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/controller/OidcLoginController.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/entity/MailboxOutboxEvent.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/mapper/MailboxOutboxEventMapper.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/security/**
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/service/MailboxProvisioningClient.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/service/impl/AuthServiceImpl.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/service/impl/OidcServiceImpl.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/task/MailboxOutboxScheduler.java
+      - backend/src/main/resources/application-*.yaml
+      - backend/src/main/resources/db/migration/V49__add_mailbox_outbox.sql
+      - backend/src/main/resources/static/**
+      - backend/src/test/**
+      - frontend/web_pc/src/router/index.ts
+      - frontend/web_pc/src/utils/oidc.ts
+      - frontend/web_pc/src/views/AuthCallback.vue
+      - mail-system/**
+      - docker-compose.yml
+      - .github/workflows/mail-system.yml
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - backend/pom.xml
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/config/MailOutboxProperties.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/controller/OidcLoginController.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/entity/MailboxOutboxEvent.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/mapper/MailboxOutboxEventMapper.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/security/**
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/service/MailboxProvisioningClient.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/service/impl/AuthServiceImpl.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/service/impl/OidcServiceImpl.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/task/MailboxOutboxScheduler.java
+      - backend/src/main/resources/application-*.yaml
+      - backend/src/main/resources/db/migration/V49__add_mailbox_outbox.sql
+      - backend/src/main/resources/static/**
+      - backend/src/test/**
+      - frontend/web_pc/src/router/index.ts
+      - frontend/web_pc/src/utils/oidc.ts
+      - frontend/web_pc/src/views/AuthCallback.vue
+      - mail-system/**
+      - docker-compose.yml
+      - .github/workflows/mail-system.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openatom-mail-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  identity-and-outbox-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Test OAuth, disabled users and mailbox Outbox
+        working-directory: backend
+        run: >-
+          ./mvnw -q -DskipTests=false
+          -Dtest=AuthServiceImplTest,OidcServiceImplTest,OidcSigningKeyProviderTest,OAuthSessionCookieServiceTest,MailboxProvisioningClientTest,MailboxOutboxSchedulerTest
+          test
+
+  mail-api-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: mail-system/mail-api/pom.xml
+      - name: Test and package mail-api
+        working-directory: mail-system/mail-api
+        run: ../../backend/mvnw -q verify
+
+  mail-web-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: mail-system/mail-web/pnpm-lock.yaml
+      - name: Install locked dependencies
+        working-directory: mail-system/mail-web
+        run: pnpm install --frozen-lockfile
+      - name: Type-check and build mail-web
+        working-directory: mail-system/mail-web
+        run: pnpm build
+
+  deployment-config-check:
+    runs-on: ubuntu-latest
+    env:
+      MAIL_DB_PASSWORD: ci-mail-db-password-at-least-32-chars
+      MAIL_DB_ROOT_PASSWORD: ci-mail-root-password-at-least-32-chars
+      MAIL_REDIS_PASSWORD: ci-mail-redis-password-at-least-32-chars
+      MAIL_ADDRESS_SALT: ci-address-salt-at-least-32-characters
+      MAIL_INTERNAL_SERVICE_TOKEN: ci-internal-service-token-at-least-32-chars
+      MAIL_OAUTH_CLIENT_SECRET: ci-oauth-client-secret-at-least-32-chars
+      STALWART_RECOVERY_ADMIN: admin:ci-recovery-password-at-least-32-chars
+      STALWART_CONFIG_TOKEN: ci-stalwart-config-token-at-least-32-chars
+      STALWART_API_TOKEN: ci-stalwart-api-token-at-least-32-chars
+      STALWART_DOMAIN_ID: ci-stalwart-domain-id
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose model
+        run: |
+          mkdir -p mail-system/.runtime/stalwart-tls
+          docker compose -f mail-system/docker-compose.mail.yml config --quiet
+      - name: Validate operator scripts
+        run: |
+          shellcheck mail-system/deploy/deploy.sh
+          shellcheck mail-system/deploy/provision-tls.sh
+          shellcheck mail-system/deploy/backup/backup.sh
+          shellcheck mail-system/deploy/backup/restore.sh
+          shellcheck mail-system/deploy/acceptance/open-relay-check.sh
+          shellcheck mail-system/deploy/acceptance/public-preflight.sh
+          shellcheck mail-system/deploy/acceptance/stalwart-account-api-smoke.sh
+          shellcheck mail-system/deploy/stalwart/render-plan.sh
+          shellcheck mail-system/deploy/stalwart/apply-plan.sh
+          shellcheck mail-system/deploy/stalwart/bootstrap-automation.sh
+          shellcheck mail-system/deploy/stalwart/sync-tls-certificate.sh
+          shellcheck mail-system/deploy/stalwart/certbot-deploy-hook.sh
+      - name: Validate rendered Stalwart plan
+        run: |
+          plan_file="$(mktemp)"
+          mail-system/deploy/stalwart/render-plan.sh \
+            "$PWD/mail-system/.env.production.example" "$plan_file"
+          ruby -rjson -e '
+            ARGF.each_line.with_index(1) do |line, number|
+              operation = JSON.parse(line)
+              abort "missing @type on line #{number}" unless operation["@type"]
+              abort "missing object on line #{number}" unless operation["object"]
+            end
+          ' "$plan_file"
+          rm -f "$plan_file"
+      - name: Validate monitoring configuration
+        run: |
+          docker run --rm --entrypoint /bin/promtool \
+            -v "$PWD/mail-system/deploy/monitoring:/etc/prometheus:ro" \
+            prom/prometheus:v3.13.0 \
+            check config /etc/prometheus/prometheus.yml
+          docker run --rm --entrypoint /bin/amtool \
+            -v "$PWD/mail-system/deploy/monitoring:/etc/alertmanager:ro" \
+            prom/alertmanager:v0.32.1 \
+            check-config /etc/alertmanager/alertmanager.yml
+      - name: Dry-run Stalwart declarative configuration
+        run: |
+          ci_env="$(mktemp)"
+          {
+            printf 'STALWART_RECOVERY_ADMIN=%s\n' "$STALWART_RECOVERY_ADMIN"
+            printf 'MAIL_DOMAIN=jmi-openatom.cn\n'
+            printf 'MAIL_HOSTNAME=mx1.jmi-openatom.cn\n'
+            printf 'MAIL_OAUTH_ISSUER=https://oauth.jmi-openatom.cn/api/v1\n'
+            printf 'MAIL_OAUTH_AUDIENCE=stalwart\n'
+            printf 'MAIL_MAX_MESSAGE_BYTES=26214400\n'
+          } > "$ci_env"
+          STALWART_RECOVERY_MODE=1 docker compose \
+            -f mail-system/docker-compose.mail.yml up -d stalwart
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent http://127.0.0.1:18081/healthz/ready >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 36 ]; then
+              docker compose -f mail-system/docker-compose.mail.yml logs stalwart
+              exit 1
+            fi
+            sleep 5
+          done
+          mail-system/deploy/stalwart/apply-plan.sh "$ci_env" --dry-run
+          mail-system/deploy/stalwart/apply-plan.sh "$ci_env" --domain-only
+          mail-system/deploy/stalwart/bootstrap-automation.sh "$ci_env"
+          grep -q '^STALWART_CONFIG_TOKEN=API_' "$ci_env"
+          grep -q '^STALWART_API_TOKEN=API_' "$ci_env"
+          grep -q '^STALWART_DOMAIN_ID=.' "$ci_env"
+          grep -q '^STALWART_RECOVERY_ADMIN=$' "$ci_env"
+          bootstrap_state_before=$(sha256sum "$ci_env" | cut -d ' ' -f 1)
+          mail-system/deploy/stalwart/bootstrap-automation.sh "$ci_env"
+          bootstrap_state_after=$(sha256sum "$ci_env" | cut -d ' ' -f 1)
+          test "$bootstrap_state_before" = "$bootstrap_state_after"
+          mail-system/deploy/stalwart/apply-plan.sh "$ci_env"
+          metrics_file="$(mktemp)"
+          curl --fail --silent http://127.0.0.1:18081/metrics/prometheus > "$metrics_file"
+          grep -q '^stalwart_queue_count' "$metrics_file"
+          rm -f "$metrics_file"
+          mail-system/deploy/acceptance/stalwart-account-api-smoke.sh "$ci_env"
+          rm -f "$ci_env"
+      - name: Reject committed private keys
+        run: |
+          if grep -R -n -E 'BEGIN (RSA |EC )?PRIVATE KEY' \
+              backend mail-system frontend docs; then
+            echo 'A private key was found in tracked source.' >&2
+            exit 1
+          fi
+
+  container-images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: mail-api
+            dockerfile: mail-system/mail-api/Dockerfile
+          - image: mail-web
+            dockerfile: mail-system/mail-web/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.image }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          tags: openatom/${{ matrix.image }}:ci
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  deploy:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deployment_mode != 'none')
+    needs:
+      - identity-and-outbox-tests
+      - mail-api-tests
+      - mail-web-build
+      - deployment-config-check
+      - container-images
+    runs-on: ubuntu-latest
+    environment: MAIL_SERVER
+    steps:
+      - name: Validate SSH password deployment secrets
+        env:
+          DEPLOYMENT_MODE: ${{ github.event_name == 'push' && 'auto' || inputs.deployment_mode }}
+          MAIL_ACME_EMAIL: ${{ vars.MAIL_ACME_EMAIL }}
+          MAIL_SERVER_HOST: ${{ secrets.MAIL_SERVER_HOST }}
+          MAIL_SERVER_USER: ${{ secrets.MAIL_SERVER_USER }}
+          MAIL_SERVER_PASSWORD: ${{ secrets.MAIL_SERVER_PASSWORD }}
+          MAIL_SERVER_FINGERPRINT: ${{ secrets.MAIL_SERVER_FINGERPRINT }}
+          MAIL_DB_PASSWORD: ${{ secrets.MAIL_DB_PASSWORD }}
+          MAIL_DB_ROOT_PASSWORD: ${{ secrets.MAIL_DB_ROOT_PASSWORD }}
+          MAIL_REDIS_PASSWORD: ${{ secrets.MAIL_REDIS_PASSWORD }}
+          MAIL_ADDRESS_SALT: ${{ secrets.MAIL_ADDRESS_SALT }}
+          MAIL_INTERNAL_SERVICE_TOKEN: ${{ secrets.MAIL_INTERNAL_SERVICE_TOKEN }}
+          MAIL_OAUTH_CLIENT_SECRET: ${{ secrets.MAIL_OAUTH_CLIENT_SECRET }}
+        run: |
+          test -n "$MAIL_SERVER_HOST"
+          test -n "$MAIL_SERVER_USER"
+          test -n "$MAIL_SERVER_PASSWORD"
+          test -n "$MAIL_SERVER_FINGERPRINT"
+          test -n "$MAIL_DB_PASSWORD"
+          test -n "$MAIL_DB_ROOT_PASSWORD"
+          test -n "$MAIL_REDIS_PASSWORD"
+          if [ "$DEPLOYMENT_MODE" = auto ] || [ "$DEPLOYMENT_MODE" = tls ]; then
+            test -n "$MAIL_ACME_EMAIL"
+          fi
+          if [ "$DEPLOYMENT_MODE" = auto ] || [ "$DEPLOYMENT_MODE" = full ]; then
+            test -n "$MAIL_ADDRESS_SALT"
+            test -n "$MAIL_INTERNAL_SERVICE_TOKEN"
+            test -n "$MAIL_OAUTH_CLIENT_SECRET"
+          fi
+      - name: Deploy mail stack over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        env:
+          DEPLOYMENT_MODE: ${{ github.event_name == 'push' && 'auto' || inputs.deployment_mode }}
+          MAIL_ACME_EMAIL: ${{ vars.MAIL_ACME_EMAIL }}
+          MAIL_DB_PASSWORD: ${{ secrets.MAIL_DB_PASSWORD }}
+          MAIL_DB_ROOT_PASSWORD: ${{ secrets.MAIL_DB_ROOT_PASSWORD }}
+          MAIL_REDIS_PASSWORD: ${{ secrets.MAIL_REDIS_PASSWORD }}
+          MAIL_ADDRESS_SALT: ${{ secrets.MAIL_ADDRESS_SALT }}
+          MAIL_INTERNAL_SERVICE_TOKEN: ${{ secrets.MAIL_INTERNAL_SERVICE_TOKEN }}
+          MAIL_OAUTH_CLIENT_SECRET: ${{ secrets.MAIL_OAUTH_CLIENT_SECRET }}
+        with:
+          host: ${{ secrets.MAIL_SERVER_HOST }}
+          username: ${{ secrets.MAIL_SERVER_USER }}
+          port: ${{ secrets.MAIL_SERVER_PORT || '22' }}
+          password: ${{ secrets.MAIL_SERVER_PASSWORD }}
+          fingerprint: ${{ secrets.MAIL_SERVER_FINGERPRINT }}
+          timeout: 30s
+          command_timeout: 20m
+          envs: DEPLOYMENT_MODE,MAIL_ACME_EMAIL,MAIL_DB_PASSWORD,MAIL_DB_ROOT_PASSWORD,MAIL_REDIS_PASSWORD,MAIL_ADDRESS_SALT,MAIL_INTERNAL_SERVICE_TOKEN,MAIL_OAUTH_CLIENT_SECRET
+          script: |
+            set -eu
+            deploy_path='${{ vars.MAIL_DEPLOY_PATH || '/www/wwwroot/openatom-system' }}'
+            cd "$deploy_path"
+            git fetch origin main
+            git merge --ff-only origin/main
+            umask 077
+            env_file="$deploy_path/mail-system/.env.production"
+            touch "$env_file"
+            chmod 600 "$env_file"
+            upsert_env() {
+              key=$1
+              value=$2
+              temp_file=$(mktemp)
+              grep -v "^${key}=" "$env_file" > "$temp_file" || true
+              printf '%s=%s\n' "$key" "$value" >> "$temp_file"
+              chmod 600 "$temp_file"
+              mv "$temp_file" "$env_file"
+            }
+            upsert_env MAIL_DB_PASSWORD "$MAIL_DB_PASSWORD"
+            upsert_env MAIL_DB_ROOT_PASSWORD "$MAIL_DB_ROOT_PASSWORD"
+            upsert_env MAIL_REDIS_PASSWORD "$MAIL_REDIS_PASSWORD"
+            if [ -n "$MAIL_ADDRESS_SALT" ]; then
+              upsert_env MAIL_ADDRESS_SALT "$MAIL_ADDRESS_SALT"
+            fi
+            if [ -n "$MAIL_INTERNAL_SERVICE_TOKEN" ]; then
+              upsert_env MAIL_INTERNAL_SERVICE_TOKEN "$MAIL_INTERNAL_SERVICE_TOKEN"
+            fi
+            if [ -n "$MAIL_OAUTH_CLIENT_SECRET" ]; then
+              upsert_env MAIL_OAUTH_CLIENT_SECRET "$MAIL_OAUTH_CLIENT_SECRET"
+            fi
+            if [ -n "$MAIL_ACME_EMAIL" ]; then
+              upsert_env MAIL_ACME_EMAIL "$MAIL_ACME_EMAIL"
+            fi
+            mail-system/deploy/deploy.sh "$env_file" "$DEPLOYMENT_MODE"

@@ -14,7 +14,12 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ViewPage from '@/components/common/ViewPage.vue'
 import { setSession } from '@/utils/auth.ts'
-import { getOidcAuthority, getOidcClientId } from '@/utils/oidc.ts'
+import {
+  consumeOidcCallbackState,
+  getOidcAuthority,
+  getOidcClientId,
+  verifyOidcIdToken,
+} from '@/utils/oidc.ts'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,23 +27,32 @@ const message = ref('请稍候')
 
 onMounted(async () => {
   const code = Array.isArray(route.query.code) ? route.query.code[0] : route.query.code
+  const state = Array.isArray(route.query.state) ? route.query.state[0] : route.query.state
+  const oauthError = Array.isArray(route.query.error) ? route.query.error[0] : route.query.error
+  if (oauthError) {
+    message.value = `登录授权失败：${oauthError}`
+    return
+  }
   if (!code) {
     message.value = '缺少授权码'
     return
   }
-	try {
-	  const redirectUri = `${window.location.origin}/auth/callback`
-	  const response = await axios.post(
-	    `${getOidcAuthority()}/oauth/token`,
-	    new URLSearchParams({
-	      grant_type: 'authorization_code',
-	      client_id: getOidcClientId(),
-	      code,
-	      redirect_uri: redirectUri,
-	    }),
-	    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
-	  )
-	  const result = response.data
+  try {
+    const { codeVerifier, nonce, returnTo } = consumeOidcCallbackState(state)
+    const redirectUri = `${window.location.origin}/auth/callback`
+    const response = await axios.post(
+      `${getOidcAuthority()}/oauth/token`,
+      new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: getOidcClientId(),
+        code,
+        redirect_uri: redirectUri,
+        code_verifier: codeVerifier,
+      }),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+    )
+    const result = response.data
+    await verifyOidcIdToken(result.id_token, nonce)
     setSession({
       accessToken: result.access_token,
       refreshToken: result.refresh_token,
@@ -46,8 +60,7 @@ onMounted(async () => {
       roles: result.user?.roles || [],
       permissions: result.user?.permissions || [],
     })
-    const state = Array.isArray(route.query.state) ? route.query.state[0] : route.query.state
-    router.replace(state && state.startsWith('/') ? state : '/admin/dashboard')
+    router.replace(returnTo.startsWith('/') ? returnTo : '/admin/dashboard')
   } catch (_error) {
     message.value = '登录失败，请重新发起授权'
   }

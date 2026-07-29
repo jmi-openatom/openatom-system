@@ -59,6 +59,26 @@ sa-token:
 
 
 app:
+  mail:
+    outbox:
+      provision-url: ${APP_MAIL_PROVISION_URL:}
+      service-token: ${APP_MAIL_SERVICE_TOKEN:}
+      batch-size: ${APP_MAIL_OUTBOX_BATCH_SIZE:50}
+      max-retries: ${APP_MAIL_OUTBOX_MAX_RETRIES:12}
+      fixed-delay: ${APP_MAIL_OUTBOX_FIXED_DELAY:PT5S}
+      request-timeout: ${APP_MAIL_OUTBOX_REQUEST_TIMEOUT:PT10S}
+      base-backoff: ${APP_MAIL_OUTBOX_BASE_BACKOFF:PT5S}
+      max-backoff: ${APP_MAIL_OUTBOX_MAX_BACKOFF:PT1H}
+      stale-after: ${APP_MAIL_OUTBOX_STALE_AFTER:PT5M}
+  oidc:
+    issuer: ${APP_OIDC_ISSUER:http://localhost:8921/api/v1}
+    resource-audience: ${APP_OIDC_RESOURCE_AUDIENCE:stalwart}
+    signing:
+      key-id: ${APP_OIDC_KEY_ID:openatom-oidc-dev-rs256}
+      private-key-base64: ${APP_OIDC_PRIVATE_KEY_BASE64:}
+      public-key-base64: ${APP_OIDC_PUBLIC_KEY_BASE64:}
+      previous-key-id: ${APP_OIDC_PREVIOUS_KEY_ID:}
+      previous-public-key-base64: ${APP_OIDC_PREVIOUS_PUBLIC_KEY_BASE64:}
   google:
     client-id: ${APP_GOOGLE_CLIENT_ID:456373207373-4md7t52dkhbo7p48e8omhjoct2squ06c.apps.googleusercontent.com}
   github:

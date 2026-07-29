@@ -55,6 +55,9 @@ jobs:
         run: |
           cd backend
           ./mvnw -q -DskipTests compile
+          ./mvnw -q -DskipTests=false \
+            -Dtest=AuthServiceImplTest,OidcServiceImplTest,OidcSigningKeyProviderTest,OAuthSessionCookieServiceTest,MailboxProvisioningClientTest,MailboxOutboxSchedulerTest \
+            test
 
   bot-check:
     runs-on: ubuntu-latest
@@ -138,6 +141,16 @@ jobs:
             echo "VITE_OIDC_AUTHORITY=${{ secrets.VITE_OIDC_AUTHORITY || 'https://oauth.jmi-openatom.cn/api/v1' }}" >> .env
             echo "VITE_OIDC_CLIENT_ID=${{ secrets.VITE_OIDC_CLIENT_ID || 'openatom-web' }}" >> .env
             echo "APP_OIDC_ISSUER=${{ secrets.APP_OIDC_ISSUER || 'https://oauth.jmi-openatom.cn/api/v1' }}" >> .env
+            echo "APP_OIDC_RESOURCE_AUDIENCE=${{ vars.APP_OIDC_RESOURCE_AUDIENCE || 'stalwart' }}" >> .env
+            echo "APP_OIDC_KEY_ID=${{ vars.APP_OIDC_KEY_ID || 'openatom-oidc-rs256' }}" >> .env
+            echo "APP_OIDC_PRIVATE_KEY_BASE64=${{ secrets.APP_OIDC_PRIVATE_KEY_BASE64 }}" >> .env
+            echo "APP_OIDC_PUBLIC_KEY_BASE64=${{ secrets.APP_OIDC_PUBLIC_KEY_BASE64 }}" >> .env
+            echo "APP_OIDC_PREVIOUS_KEY_ID=${{ vars.APP_OIDC_PREVIOUS_KEY_ID }}" >> .env
+            echo "APP_OIDC_PREVIOUS_PUBLIC_KEY_BASE64=${{ secrets.APP_OIDC_PREVIOUS_PUBLIC_KEY_BASE64 }}" >> .env
+            echo "" >> .env
+            echo "# 邮箱开通 Outbox" >> .env
+            echo "APP_MAIL_PROVISION_URL=${{ vars.APP_MAIL_PROVISION_URL || 'http://127.0.0.1:18090/internal/v1/mailboxes/provision' }}" >> .env
+            echo "APP_MAIL_SERVICE_TOKEN=${{ secrets.MAIL_INTERNAL_SERVICE_TOKEN }}" >> .env
             echo "" >> .env
             echo "# 第三方登录配置" >> .env
             echo "APP_GITHUB_CLIENT_ID=${{ secrets.APP_GITHUB_CLIENT_ID || 'Ov23liQQCxTjyoR8WAW9' }}" >> .env

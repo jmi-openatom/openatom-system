@@ -1,0 +1,206 @@
+name: openatom-mail
+
+services:
+  mail-db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: openatom_mail
+      MYSQL_USER: openatom_mail
+      MYSQL_PASSWORD: ${MAIL_DB_PASSWORD:?MAIL_DB_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${MAIL_DB_ROOT_PASSWORD:?MAIL_DB_ROOT_PASSWORD is required}
+      TZ: Asia/Shanghai
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    volumes:
+      - mail_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks: [mail-internal]
+
+  mail-redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${MAIL_REDIS_PASSWORD:?MAIL_REDIS_PASSWORD is required}"]
+    volumes:
+      - mail_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$MAIL_REDIS_PASSWORD ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    environment:
+      MAIL_REDIS_PASSWORD: ${MAIL_REDIS_PASSWORD:?MAIL_REDIS_PASSWORD is required}
+    networks: [mail-internal]
+
+  clamav:
+    image: clamav/clamav:1.5
+    restart: unless-stopped
+    volumes:
+      - clamav_signatures:/var/lib/clamav
+    expose: ["3310"]
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "10"]
+      interval: 15s
+      timeout: 10s
+      retries: 60
+      start_period: 90s
+    security_opt: ["no-new-privileges:true"]
+    networks: [mail-internal]
+
+  stalwart:
+    image: stalwartlabs/stalwart:v0.16
+    restart: unless-stopped
+    environment:
+      STALWART_PUBLIC_URL: ${STALWART_PUBLIC_URL:-https://mail.jmi-openatom.cn}
+      STALWART_RECOVERY_MODE: ${STALWART_RECOVERY_MODE:-0}
+      # Bootstrap/recovery only. Keep empty after a permanent administrator exists.
+      STALWART_RECOVERY_ADMIN: ${STALWART_RECOVERY_ADMIN:-}
+    ports:
+      - "25:25"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+      - "127.0.0.1:${STALWART_SETUP_PORT:-18081}:8080"
+    expose:
+      - "8080"
+    volumes:
+      - stalwart_etc:/etc/stalwart
+      - stalwart_data:/var/lib/stalwart
+      - ./deploy/stalwart/config.json:/etc/stalwart/config.json:ro
+      - ${STALWART_TLS_HOST_DIR:-./.runtime/stalwart-tls}:/run/stalwart-tls:ro
+    healthcheck:
+      test: ["CMD", "stalwart", "--version"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks: [mail-internal]
+
+  mail-api:
+    build:
+      context: ..
+      dockerfile: mail-system/mail-api/Dockerfile
+    restart: unless-stopped
+    environment:
+      MAIL_DB_URL: jdbc:mysql://mail-db:3306/openatom_mail?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      MAIL_DB_USERNAME: openatom_mail
+      MAIL_DB_PASSWORD: ${MAIL_DB_PASSWORD:?MAIL_DB_PASSWORD is required}
+      MAIL_REDIS_HOST: mail-redis
+      MAIL_REDIS_PORT: 6379
+      MAIL_REDIS_PASSWORD: ${MAIL_REDIS_PASSWORD:?MAIL_REDIS_PASSWORD is required}
+      MAIL_CLAMAV_HOST: clamav
+      MAIL_CLAMAV_PORT: 3310
+      MAIL_DOMAIN: ${MAIL_DOMAIN:-jmi-openatom.cn}
+      MAIL_DEFAULT_QUOTA_BYTES: ${MAIL_DEFAULT_QUOTA_BYTES:-2147483648}
+      # Bootstrap starts only infrastructure. deploy.sh refuses these sentinels in full mode.
+      MAIL_ADDRESS_SALT: ${MAIL_ADDRESS_SALT:-bootstrap-not-configured}
+      MAIL_INTERNAL_SERVICE_TOKEN: ${MAIL_INTERNAL_SERVICE_TOKEN:-bootstrap-not-configured}
+      STALWART_API_URL: http://stalwart:8080/api
+      STALWART_JMAP_SESSION_URL: http://stalwart:8080/.well-known/jmap
+      STALWART_JMAP_URL: http://stalwart:8080/jmap
+      STALWART_API_TOKEN: ${STALWART_API_TOKEN:-bootstrap-not-configured}
+      STALWART_DOMAIN_ID: ${STALWART_DOMAIN_ID:-bootstrap-not-configured}
+      MAIL_OAUTH_ISSUER: ${MAIL_OAUTH_ISSUER:-https://oauth.jmi-openatom.cn/api/v1}
+      MAIL_OAUTH_AUTHORIZATION_URL: ${MAIL_OAUTH_AUTHORIZATION_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/authorize}
+      MAIL_OAUTH_TOKEN_URL: ${MAIL_OAUTH_TOKEN_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/token}
+      MAIL_OAUTH_JWKS_URL: ${MAIL_OAUTH_JWKS_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/jwks}
+      MAIL_OAUTH_CLIENT_ID: ${MAIL_OAUTH_CLIENT_ID:-openatom-mail-web}
+      MAIL_OAUTH_CLIENT_SECRET: ${MAIL_OAUTH_CLIENT_SECRET:-bootstrap-not-configured}
+      MAIL_OAUTH_REDIRECT_URI: ${MAIL_OAUTH_REDIRECT_URI:-https://mail.jmi-openatom.cn/api/oauth/callback}
+    ports:
+      - "127.0.0.1:${MAIL_API_INTERNAL_PORT:-18090}:8090"
+    depends_on:
+      mail-db: { condition: service_healthy }
+      mail-redis: { condition: service_healthy }
+      stalwart: { condition: service_healthy }
+      clamav: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8090/actuator/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    networks: [mail-internal]
+
+  mail-web:
+    build:
+      context: ..
+      dockerfile: mail-system/mail-web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAIL_WEB_INTERNAL_PORT:-18082}:80"
+    depends_on:
+      mail-api: { condition: service_healthy }
+    networks: [mail-internal]
+
+  prometheus:
+    image: prom/prometheus:v3.13.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./deploy/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/monitoring/mail-alerts.yml:/etc/prometheus/mail-alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:${MAIL_PROMETHEUS_INTERNAL_PORT:-19090}:9090"
+    depends_on:
+      mail-api: { condition: service_healthy }
+      stalwart: { condition: service_healthy }
+      alertmanager: { condition: service_started }
+      node-exporter: { condition: service_started }
+      blackbox-exporter: { condition: service_started }
+    networks: [mail-internal]
+
+  alertmanager:
+    image: prom/alertmanager:v0.32.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./deploy/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "127.0.0.1:${MAIL_ALERTMANAGER_INTERNAL_PORT:-19093}:9093"
+    networks: [mail-internal]
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.28.0
+    restart: unless-stopped
+    command: ["--config.file=/etc/blackbox_exporter/blackbox.yml"]
+    volumes:
+      - ./deploy/monitoring/blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
+    ports:
+      - "127.0.0.1:${MAIL_BLACKBOX_INTERNAL_PORT:-19115}:9115"
+    networks: [mail-internal]
+
+  node-exporter:
+    image: prom/node-exporter:v1.11.1
+    restart: unless-stopped
+    command: ["--path.rootfs=/host"]
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "127.0.0.1:${MAIL_NODE_EXPORTER_INTERNAL_PORT:-19100}:9100"
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    networks: [mail-internal]
+
+networks:
+  mail-internal:
+    driver: bridge
+
+volumes:
+  mail_db_data:
+  mail_redis_data:
+  stalwart_etc:
+  stalwart_data:
+  prometheus_data:
+  alertmanager_data:
+  clamav_signatures:

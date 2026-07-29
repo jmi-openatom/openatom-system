@@ -1,0 +1,65 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/mail-alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: mail-api
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["mail-api:8090"]
+
+  - job_name: stalwart
+    metrics_path: /metrics/prometheus
+    static_configs:
+      - targets: ["stalwart:8080"]
+
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: alertmanager
+    static_configs:
+      - targets: ["alertmanager:9093"]
+
+  - job_name: blackbox-exporter
+    static_configs:
+      - targets: ["blackbox-exporter:9115"]
+
+  - job_name: mail-tls
+    metrics_path: /probe
+    params:
+      module: [tcp_tls]
+    static_configs:
+      - targets:
+          - mail.jmi-openatom.cn:443
+          - mx1.jmi-openatom.cn:465
+          - mx1.jmi-openatom.cn:993
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  - job_name: mail-malware
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets: ["clamav:3310"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

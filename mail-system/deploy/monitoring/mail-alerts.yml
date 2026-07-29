@@ -1,0 +1,106 @@
+groups:
+  - name: openatom-mail-availability
+    rules:
+      - alert: MailApiDown
+        expr: up{job="mail-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "mail-api 已离线"
+          description: "OAuth 邮箱网站和 JMAP BFF 已连续 2 分钟不可用。"
+
+      - alert: StalwartDown
+        expr: up{job="stalwart"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "Stalwart 已离线"
+          description: "SMTP/JMAP 核心已连续 2 分钟不可用。"
+
+      - alert: MailApiHighServerErrorRate
+        expr: sum(rate(http_server_requests_seconds_count{job="mail-api",status=~"5.."}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{job="mail-api"}[5m])), 0.001) > 0.05
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "mail-api 5xx 比例超过 5%"
+          description: "检查 Stalwart、MySQL、Redis 以及 OAuth 身份中心连通性。"
+
+      - alert: MailApiJvmHeapHigh
+        expr: sum(jvm_memory_used_bytes{job="mail-api",area="heap"}) / sum(jvm_memory_max_bytes{job="mail-api",area="heap"}) > 0.85
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "mail-api JVM 堆使用率过高"
+          description: "堆使用率连续 15 分钟高于 85%。"
+
+      - alert: MailDiskSpaceLow
+        expr: node_filesystem_avail_bytes{job="node",fstype!~"tmpfs|overlay",mountpoint!~"/run.*"} / node_filesystem_size_bytes{job="node",fstype!~"tmpfs|overlay",mountpoint!~"/run.*"} < 0.15
+        for: 10m
+        labels: { severity: critical }
+        annotations:
+          summary: "邮件服务器磁盘可用空间低于 15%"
+          description: "检查 Stalwart 数据卷、数据库卷和备份保留策略。"
+
+      - alert: MailQueueBacklog
+        expr: max(stalwart_queue_count{job="stalwart"}) > 1000
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "Stalwart 出站队列持续积压"
+          description: "队列超过 1000 封并持续 15 分钟，请检查 DNS、TCP 25、对端退信和 IP 信誉。"
+
+      - alert: MailOAuthCallbackFailures
+        expr: sum(rate(http_server_requests_seconds_count{job="mail-api",uri="/api/oauth/callback",status=~"4..|5.."}[5m])) > 0.1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "邮件站 OAuth 回调持续失败"
+          description: "检查身份中心、回调地址、JWKS、Issuer、Audience 和时钟同步。"
+
+      - alert: MailboxProvisioningFailures
+        expr: sum(rate(http_server_requests_seconds_count{job="mail-api",uri="/internal/v1/mailboxes/provision",status=~"4..|5.."}[10m])) > 0.02
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "邮箱自动开通持续失败"
+          description: "检查 Outbox、内部服务令牌、Stalwart 管理 API 和控制面数据库。"
+
+      - alert: MailCertificateExpiresSoon
+        expr: probe_ssl_earliest_cert_expiry{job="mail-tls"} - time() < 14 * 24 * 3600
+        for: 1h
+        labels: { severity: critical }
+        annotations:
+          summary: "邮件 TLS 证书将在 14 天内到期"
+          description: "立即检查 ACME 自动续期和 Nginx/Stalwart 证书加载。"
+
+      - alert: MailTlsProbeFailed
+        expr: probe_success{job="mail-tls"} == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "邮件 TLS 端点探测失败"
+          description: "Web、SMTP TLS 或 IMAP TLS 端点连续 5 分钟无法完成受信任 TLS 握手。"
+
+      - alert: MailAlertmanagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "邮件告警投递组件已离线"
+          description: "Alertmanager 已连续 2 分钟不可用，其他告警可能无法通知运维。"
+
+      - alert: MailBlackboxExporterDown
+        expr: up{job="blackbox-exporter"} == 0
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: "邮件 TLS 探针已离线"
+          description: "Blackbox Exporter 不可用，证书到期检查可能失效。"
+
+      - alert: MailMalwareScannerDown
+        expr: probe_success{job="mail-malware"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "附件恶意代码扫描服务已离线"
+          description: "ClamAV 连续 2 分钟不可用；系统将按 fail-closed 策略拒绝附件上传和下载。"

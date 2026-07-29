@@ -2,16 +2,17 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.dao.SaTokenDao;
-import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
+import com.nimbusds.jwt.JWTClaimsSet;
 import edu.jmi.openatom.server.openatomsystem.entity.OauthAuthorizationCode;
 import edu.jmi.openatom.server.openatomsystem.entity.OauthClient;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
+import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.mapper.OauthAuthorizationCodeMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.OauthClientMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
+import edu.jmi.openatom.server.openatomsystem.security.OidcSigningKeyProvider;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
-import edu.jmi.openatom.server.openatomsystem.service.AuthCenterService;
 import edu.jmi.openatom.server.openatomsystem.service.OidcService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseTokenIntrospectionVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +24,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -47,13 +49,13 @@ public class OidcServiceImpl implements OidcService {
   private final OauthAuthorizationCodeMapper authorizationCodeMapper;
   private final UserMapper userMapper;
   private final PasswordService passwordService;
-  private final AuthCenterService authCenterService;
+  private final OidcSigningKeyProvider signingKeyProvider;
 
   @Value("${app.oidc.issuer:}")
   private String configuredIssuer;
 
-  @Value("${sa-token.jwt-secret-key:}")
-  private String jwtSecretKey;
+  @Value("${app.oidc.resource-audience:stalwart}")
+  private String resourceAudience;
 
   @Override
   public Map<String, Object> configuration(HttpServletRequest request) {
@@ -68,24 +70,15 @@ public class OidcServiceImpl implements OidcService {
         "response_types_supported", List.of("code"),
         "grant_types_supported", List.of("authorization_code", "refresh_token"),
         "subject_types_supported", List.of("public"),
-        "id_token_signing_alg_values_supported", List.of("HS256"),
-        "scopes_supported", List.of("openid", "profile", "email", "roles", "permissions"),
+        "id_token_signing_alg_values_supported", List.of("RS256"),
+        "scopes_supported", List.of("openid", "profile", "email", "mail", "roles", "permissions"),
         "token_endpoint_auth_methods_supported", List.of("none", "client_secret_post"),
-        "code_challenge_methods_supported", List.of("S256", "plain"));
+        "code_challenge_methods_supported", List.of("S256"));
   }
 
   @Override
   public Map<String, Object> jwks() {
-    String secret = jwtSecretKey == null ? "" : jwtSecretKey;
-    return Map.of(
-        "keys",
-        List.of(
-            ordered(
-                "kty", "oct",
-                "use", "sig",
-                "kid", "sa-token-jwt",
-                "alg", "HS256",
-                "k", Base64.getUrlEncoder().withoutPadding().encodeToString(secret.getBytes(StandardCharsets.UTF_8)))));
+    return signingKeyProvider.jwks();
   }
 
   @Override
@@ -103,17 +96,27 @@ public class OidcServiceImpl implements OidcService {
     if (client == null || !Boolean.TRUE.equals(client.getEnabled())) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
+    if (!isAllowedRedirect(client, redirectUri)) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    }
     if (!"code".equals(responseType) || !contains(client.getGrantTypes(), "authorization_code")) {
       return redirectError(redirectUri, "unsupported_response_type", state);
     }
-    if (!isAllowedRedirect(client, redirectUri)) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    boolean publicClient = client.getClientSecret() == null || client.getClientSecret().isBlank();
+    if ((publicClient && isBlank(codeChallenge))
+        || (!isBlank(codeChallenge) && !"S256".equalsIgnoreCase(codeChallengeMethod))) {
+      return redirectError(redirectUri, "invalid_request", state);
     }
     if (!StpUtil.isLogin()) {
       String redirect = authorizeUrl(request);
       return ResponseEntity.status(HttpStatus.FOUND)
-          .location(URI.create(loginUrl(redirectUri, redirect)))
+          .location(URI.create(loginUrl(redirect, request)))
           .build();
+    }
+    User authorizingUser = userMapper.selectById(StpUtil.getLoginIdAsInt());
+    if (!isActiveUser(authorizingUser)) {
+      StpUtil.logout();
+      return redirectError(redirectUri, "access_denied", state);
     }
     String grantedScope = normalizeScope(scope, client.getScopes());
     String code = secureToken();
@@ -121,7 +124,7 @@ public class OidcServiceImpl implements OidcService {
         OauthAuthorizationCode.builder()
             .code(code)
             .clientId(clientId)
-            .userId(StpUtil.getLoginIdAsInt())
+            .userId(authorizingUser.getId())
             .redirectUri(redirectUri)
             .scope(grantedScope)
             .state(state)
@@ -193,7 +196,7 @@ public class OidcServiceImpl implements OidcService {
     authCode.setConsumedAt(Timestamp.from(Instant.now()));
     authorizationCodeMapper.updateById(authCode);
     User user = userMapper.selectById(authCode.getUserId());
-    if (user == null) return oauthError("invalid_grant", HttpStatus.BAD_REQUEST);
+    if (!isActiveUser(user)) return oauthError("invalid_grant", HttpStatus.BAD_REQUEST);
     return ResponseEntity.ok(tokens(user, client.getClientId(), authCode.getScope(), authCode.getNonce(), request));
   }
 
@@ -204,7 +207,7 @@ public class OidcServiceImpl implements OidcService {
     String[] parts = payload.split("\t", 3);
     if (parts.length < 3 || !client.getClientId().equals(parts[1])) return oauthError("invalid_grant", HttpStatus.BAD_REQUEST);
     User user = userMapper.selectById(Integer.valueOf(parts[0]));
-    if (user == null) return oauthError("invalid_grant", HttpStatus.BAD_REQUEST);
+    if (!isActiveUser(user)) return oauthError("invalid_grant", HttpStatus.BAD_REQUEST);
     SaManager.getSaTokenDao().delete(REFRESH_KEY_PREFIX + refreshToken);
     return ResponseEntity.ok(tokens(user, client.getClientId(), parts[2], null, request));
   }
@@ -212,23 +215,26 @@ public class OidcServiceImpl implements OidcService {
   private Map<String, Object> tokens(User user, String clientId, String scope, String nonce, HttpServletRequest request) {
     List<String> roles = StpUtil.getRoleList(user.getId());
     List<String> permissions = StpUtil.getPermissionList(user.getId());
-    String accessToken =
-        StpUtil.createLoginSession(
-            user.getId(),
-            new SaLoginModel()
-                .setTimeout(OIDC_TOKEN_TTL_SECONDS)
-                .setExtra("client_id", clientId)
-                .setExtra("scope", scope)
-                .setExtra("token_use", "access"));
-    String idToken =
-        StpUtil.createLoginSession(
-            user.getId(),
-            new SaLoginModel()
-                .setTimeout(OIDC_TOKEN_TTL_SECONDS)
-                .setExtra("client_id", clientId)
-                .setExtra("scope", scope)
-                .setExtra("nonce", nonce)
-                .setExtra("token_use", "id"));
+    Instant issuedAt = Instant.now();
+    Instant expiresAt = issuedAt.plusSeconds(OIDC_TOKEN_TTL_SECONDS);
+    String tokenIssuer = issuer(request);
+
+    JWTClaimsSet.Builder accessClaims =
+        standardClaims(user, tokenIssuer, issuedAt, expiresAt)
+            .audience(List.of(clientId, resourceAudience))
+            .claim("client_id", clientId)
+            .claim("scope", scope)
+            .claim("token_use", "access");
+    String accessToken = signingKeyProvider.sign(accessClaims.build());
+
+    JWTClaimsSet.Builder idClaims =
+        standardClaims(user, tokenIssuer, issuedAt, expiresAt)
+            .audience(clientId)
+            .claim("client_id", clientId)
+            .claim("token_use", "id")
+            .claim("auth_time", issuedAt.getEpochSecond());
+    if (!isBlank(nonce)) idClaims.claim("nonce", nonce);
+    String idToken = signingKeyProvider.sign(idClaims.build());
     String refreshToken = secureToken();
     SaTokenDao dao = SaManager.getSaTokenDao();
     dao.set(REFRESH_KEY_PREFIX + refreshToken, user.getId() + "\t" + clientId + "\t" + scope, REFRESH_TOKEN_TTL_SECONDS);
@@ -267,13 +273,76 @@ public class OidcServiceImpl implements OidcService {
   }
 
   private ResponseTokenIntrospectionVO introspectToken(String token) {
-    return authCenterService.introspect(token).getData();
+    try {
+      String value = normalizeBearer(token);
+      if (value == null) return inactiveToken();
+      JWTClaimsSet claims = signingKeyProvider.verify(value);
+      Instant now = Instant.now();
+      if (!issuer(null).equals(claims.getIssuer())
+          || !"access".equals(claims.getStringClaim("token_use"))
+          || claims.getExpirationTime() == null
+          || !claims.getExpirationTime().toInstant().isAfter(now)
+          || (claims.getNotBeforeTime() != null && claims.getNotBeforeTime().toInstant().isAfter(now))) {
+        return inactiveToken();
+      }
+      User user = userMapper.selectById(Integer.valueOf(claims.getSubject()));
+      if (user == null
+          || (user.getUserStatus() != null && user.getUserStatus() != UserStatus.ACTIVE)) {
+        return inactiveToken();
+      }
+      List<String> roles = StpUtil.getRoleList(user.getId());
+      List<String> permissions = StpUtil.getPermissionList(user.getId());
+      long expiresIn = Math.max(0, claims.getExpirationTime().toInstant().getEpochSecond() - now.getEpochSecond());
+      return ResponseTokenIntrospectionVO.builder()
+          .active(true)
+          .sub(String.valueOf(user.getId()))
+          .username(user.getUserName())
+          .name(user.getRealName())
+          .clientId(claims.getStringClaim("client_id"))
+          .scope(claims.getStringClaim("scope"))
+          .exp(claims.getExpirationTime().toInstant().getEpochSecond())
+          .expiresIn(expiresIn)
+          .roles(roles)
+          .permissions(permissions)
+          .build();
+    } catch (Exception exception) {
+      return inactiveToken();
+    }
+  }
+
+  private JWTClaimsSet.Builder standardClaims(
+      User user, String issuer, Instant issuedAt, Instant expiresAt) {
+    return new JWTClaimsSet.Builder()
+        .issuer(issuer)
+        .subject(String.valueOf(user.getId()))
+        .issueTime(Date.from(issuedAt))
+        .notBeforeTime(Date.from(issuedAt.minusSeconds(5)))
+        .expirationTime(Date.from(expiresAt))
+        .jwtID(secureToken())
+        .claim("preferred_username", user.getUserName())
+        .claim("name", user.getRealName())
+        .claim("email", user.getEmail());
+  }
+
+  private ResponseTokenIntrospectionVO inactiveToken() {
+    return ResponseTokenIntrospectionVO.builder().active(false).build();
+  }
+
+  private String normalizeBearer(String token) {
+    if (isBlank(token)) return null;
+    String value = token.trim();
+    if (value.regionMatches(true, 0, "Bearer ", 0, 7)) value = value.substring(7).trim();
+    return value.isBlank() ? null : value;
   }
 
   private boolean validClient(OauthClient client, String clientSecret) {
     if (client == null || !Boolean.TRUE.equals(client.getEnabled())) return false;
     if (client.getClientSecret() == null || client.getClientSecret().isBlank()) return true;
     return passwordService.matches(clientSecret, client.getClientSecret());
+  }
+
+  private boolean isActiveUser(User user) {
+    return user != null && (user.getUserStatus() == null || user.getUserStatus() == UserStatus.ACTIVE);
   }
 
   private boolean isAllowedRedirect(OauthClient client, String redirectUri) {
@@ -291,11 +360,8 @@ public class OidcServiceImpl implements OidcService {
   private boolean verifyPkce(OauthAuthorizationCode code, String verifier) {
     if (code.getCodeChallenge() == null || code.getCodeChallenge().isBlank()) return true;
     if (verifier == null || verifier.isBlank()) return false;
-    String method = code.getCodeChallengeMethod() == null ? "plain" : code.getCodeChallengeMethod();
-    if ("S256".equalsIgnoreCase(method)) {
-      return code.getCodeChallenge().equals(sha256Base64Url(verifier));
-    }
-    return code.getCodeChallenge().equals(verifier);
+    if (!"S256".equalsIgnoreCase(code.getCodeChallengeMethod())) return false;
+    return code.getCodeChallenge().equals(sha256Base64Url(verifier));
   }
 
   private String sha256Base64Url(String value) {
@@ -344,23 +410,32 @@ public class OidcServiceImpl implements OidcService {
 
   private String issuer(HttpServletRequest request) {
     if (configuredIssuer != null && !configuredIssuer.isBlank()) return configuredIssuer;
+    if (request == null) throw new IllegalStateException("OIDC issuer is not configured");
     return request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
   }
 
   private String authorizeUrl(HttpServletRequest request) {
-    String query = request.getQueryString();
+    String query = sanitizeAuthorizeQuery(request.getQueryString());
     return issuer(request) + "/oauth/authorize" + (query == null || query.isBlank() ? "" : "?" + query);
   }
 
-  private String loginUrl(String redirectUri, String authorizeUrl) {
-    URI uri = URI.create(redirectUri);
-    String port = uri.getPort() < 0 ? "" : ":" + uri.getPort();
-    String origin = uri.getScheme() + "://" + uri.getHost() + port;
-    return origin + "/login?redirect=" + encode(authorizeUrl);
+  private String sanitizeAuthorizeQuery(String query) {
+    if (isBlank(query)) return "";
+    return Arrays.stream(query.split("&"))
+        .filter(part -> !part.regionMatches(true, 0, "jmiopenatom=", 0, "jmiopenatom=".length()))
+        .collect(java.util.stream.Collectors.joining("&"));
+  }
+
+  private String loginUrl(String authorizeUrl, HttpServletRequest request) {
+    return issuer(request) + "/oauth/login?return_to=" + encode(authorizeUrl);
   }
 
   private String encode(String value) {
     return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
   }
 
   private Map<String, Object> ordered(Object... values) {

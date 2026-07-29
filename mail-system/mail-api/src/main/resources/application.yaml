@@ -1,0 +1,71 @@
+server:
+  port: ${MAIL_API_PORT:8090}
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: true
+        same-site: lax
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
+      file-size-threshold: 1MB
+  datasource:
+    url: ${MAIL_DB_URL:jdbc:mysql://mail-db:3306/openatom_mail?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${MAIL_DB_USERNAME:openatom_mail}
+    password: ${MAIL_DB_PASSWORD:}
+  flyway:
+    enabled: true
+  session:
+    store-type: redis
+    timeout: 8h
+    redis:
+      namespace: openatom:mail:session
+  data:
+    redis:
+      host: ${MAIL_REDIS_HOST:redis}
+      port: ${MAIL_REDIS_PORT:6379}
+      password: ${MAIL_REDIS_PASSWORD:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+mail:
+  domain: ${MAIL_DOMAIN:jmi-openatom.cn}
+  address-salt: ${MAIL_ADDRESS_SALT:}
+  default-quota-bytes: ${MAIL_DEFAULT_QUOTA_BYTES:2147483648}
+  internal-service-token: ${MAIL_INTERNAL_SERVICE_TOKEN:}
+  malware-scanner:
+    host: ${MAIL_CLAMAV_HOST:clamav}
+    port: ${MAIL_CLAMAV_PORT:3310}
+    connect-timeout-millis: ${MAIL_CLAMAV_CONNECT_TIMEOUT_MILLIS:3000}
+    read-timeout-millis: ${MAIL_CLAMAV_READ_TIMEOUT_MILLIS:30000}
+  stalwart:
+    api-url: ${STALWART_API_URL:http://stalwart:8080/api}
+    session-url: ${STALWART_JMAP_SESSION_URL:http://stalwart:8080/.well-known/jmap}
+    jmap-url: ${STALWART_JMAP_URL:http://stalwart:8080/jmap}
+    api-token: ${STALWART_API_TOKEN:}
+    domain-id: ${STALWART_DOMAIN_ID:}
+  oauth:
+    issuer: ${MAIL_OAUTH_ISSUER:https://oauth.jmi-openatom.cn/api/v1}
+    authorization-url: ${MAIL_OAUTH_AUTHORIZATION_URL:https://oauth.jmi-openatom.cn/api/v1/oauth/authorize}
+    token-url: ${MAIL_OAUTH_TOKEN_URL:https://oauth.jmi-openatom.cn/api/v1/oauth/token}
+    jwks-url: ${MAIL_OAUTH_JWKS_URL:https://oauth.jmi-openatom.cn/api/v1/oauth/jwks}
+    client-id: ${MAIL_OAUTH_CLIENT_ID:openatom-mail-web}
+    client-secret: ${MAIL_OAUTH_CLIENT_SECRET:}
+    redirect-uri: ${MAIL_OAUTH_REDIRECT_URI:https://mail.jmi-openatom.cn/api/oauth/callback}
+
+logging:
+  level:
+    root: INFO
