@@ -26,8 +26,8 @@ value_for() {
 acme_email=$(value_for MAIL_ACME_EMAIL)
 case "$acme_email" in *@*.*) ;; *) echo "MAIL_ACME_EMAIL is required" >&2; exit 65 ;; esac
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-repository_root=$(CDPATH= cd -- "$script_dir/../.." && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
 nginx_conf_dir=$(value_for NGINX_CONF_DIR)
 nginx_conf_dir=${nginx_conf_dir:-/etc/nginx/conf.d}
 case "$nginx_conf_dir" in /*) ;; *) echo "NGINX_CONF_DIR must be absolute" >&2; exit 65 ;; esac

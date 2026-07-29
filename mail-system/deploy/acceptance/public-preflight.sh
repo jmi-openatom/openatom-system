@@ -71,19 +71,31 @@ if [ -n "$ptr_ip" ]; then
 fi
 
 spf=$(dig +short TXT "$mail_domain" | tr -d '"' | grep 'v=spf1' || true)
-[ -n "$spf" ] && pass "SPF record exists" || fail "SPF record is missing"
+if [ -n "$spf" ]; then pass "SPF record exists"; else fail "SPF record is missing"; fi
 
 dkim=$(dig +short TXT "$dkim_selector._domainkey.$mail_domain" | tr -d '"' | grep 'v=DKIM1' || true)
-[ -n "$dkim" ] && pass "DKIM record exists for selector $dkim_selector" || fail "DKIM record is missing for selector $dkim_selector"
+if [ -n "$dkim" ]; then
+  pass "DKIM record exists for selector $dkim_selector"
+else
+  fail "DKIM record is missing for selector $dkim_selector"
+fi
 
 dmarc=$(dig +short TXT "_dmarc.$mail_domain" | tr -d '"' | grep 'v=DMARC1' || true)
-[ -n "$dmarc" ] && pass "DMARC record exists" || fail "DMARC record is missing"
+if [ -n "$dmarc" ]; then pass "DMARC record exists"; else fail "DMARC record is missing"; fi
 
 mta_sts=$(dig +short TXT "_mta-sts.$mail_domain" | tr -d '"' | grep 'v=STSv1' || true)
-[ -n "$mta_sts" ] && pass "MTA-STS DNS record exists" || fail "MTA-STS DNS record is missing"
+if [ -n "$mta_sts" ]; then
+  pass "MTA-STS DNS record exists"
+else
+  fail "MTA-STS DNS record is missing"
+fi
 
 tls_rpt=$(dig +short TXT "_smtp._tls.$mail_domain" | tr -d '"' | grep 'v=TLSRPTv1' || true)
-[ -n "$tls_rpt" ] && pass "TLS-RPT DNS record exists" || fail "TLS-RPT DNS record is missing"
+if [ -n "$tls_rpt" ]; then
+  pass "TLS-RPT DNS record exists"
+else
+  fail "TLS-RPT DNS record is missing"
+fi
 
 if curl --fail --silent --show-error --proto '=https' --tlsv1.2 \
     "https://$mail_web_host/" >/dev/null; then
@@ -147,7 +159,7 @@ else
   fail "SMTP STARTTLS certificate is unavailable or expires within 14 days"
 fi
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 if "$script_dir/open-relay-check.sh" "$mail_hostname"; then
   pass "Open Relay check"
 else

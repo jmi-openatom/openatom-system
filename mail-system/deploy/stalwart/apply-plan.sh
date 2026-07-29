@@ -35,7 +35,7 @@ if [ -z "$config_token" ] && [ -z "$recovery_admin" ]; then
   exit 65
 fi
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 plan_file=$(mktemp "${TMPDIR:-/tmp}/openatom-stalwart-plan.XXXXXX")
 auth_file=$(mktemp "${TMPDIR:-/tmp}/openatom-stalwart-auth.XXXXXX")
 chmod 600 "$auth_file"

@@ -35,7 +35,7 @@ done
 
 (cd "$backup_dir" && sha256sum -c SHA256SUMS)
 
-compose_file=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/docker-compose.mail.yml
+compose_file=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)/docker-compose.mail.yml
 restore_tmp=$(mktemp -d "${TMPDIR:-/tmp}/openatom-mail-restore.XXXXXX")
 trap 'rm -f "$restore_tmp/openatom_mail.sql" "$restore_tmp/stalwart.tar.gz"; rmdir "$restore_tmp"' EXIT HUP INT TERM
 age --decrypt --identity "$identity_file" --output "$restore_tmp/openatom_mail.sql" \

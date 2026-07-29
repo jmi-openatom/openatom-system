@@ -32,8 +32,8 @@ value_for() {
   ' "$env_file" | tail -n 1
 }
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-mail_root=$(CDPATH= cd -- "$script_dir/../.." && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+mail_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
 tls_host_dir=$(value_for STALWART_TLS_HOST_DIR)
 tls_host_dir=${tls_host_dir:-$mail_root/.runtime/stalwart-tls}
 case "$tls_host_dir" in /*) ;; *) tls_host_dir="$mail_root/$tls_host_dir" ;; esac

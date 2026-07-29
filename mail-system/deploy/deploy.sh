@@ -85,7 +85,7 @@ require_value MAIL_DB_PASSWORD
 require_value MAIL_DB_ROOT_PASSWORD
 require_value MAIL_REDIS_PASSWORD
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 compose_file="$script_dir/../docker-compose.mail.yml"
 tls_host_dir=$(value_for STALWART_TLS_HOST_DIR)
 tls_host_dir=${tls_host_dir:-$script_dir/../.runtime/stalwart-tls}

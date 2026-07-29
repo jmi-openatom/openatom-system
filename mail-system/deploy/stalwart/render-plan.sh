@@ -49,7 +49,7 @@ case "$oauth_issuer" in *[!A-Za-z0-9:/?._~-]*) echo "MAIL_OAUTH_ISSUER contains 
 case "$oauth_audience" in ''|*[!A-Za-z0-9._:/-]*) echo "invalid MAIL_OAUTH_AUDIENCE" >&2; exit 65 ;; esac
 case "$max_message_bytes" in ''|*[!0-9]*) echo "MAIL_MAX_MESSAGE_BYTES must be an integer" >&2; exit 65 ;; esac
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 template="$script_dir/plan.ndjson.template"
 umask 077
 awk \

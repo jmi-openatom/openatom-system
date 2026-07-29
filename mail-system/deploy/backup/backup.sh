@@ -37,7 +37,7 @@ timestamp=$(date -u +%Y%m%dT%H%M%SZ)
 backup_dir="$backup_root/$timestamp"
 mkdir -p "$backup_dir"
 
-compose_file=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)/docker-compose.mail.yml
+compose_file=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)/docker-compose.mail.yml
 sql_file="$backup_dir/openatom_mail.sql"
 stalwart_file="$backup_dir/stalwart.tar.gz"
 stalwart_stopped=false
