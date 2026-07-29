@@ -51,6 +51,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
+      - name: Validate Flyway migration versions
+        run: backend/scripts/check-flyway-migrations.sh
       - name: Backend Build Check
         run: |
           cd backend
