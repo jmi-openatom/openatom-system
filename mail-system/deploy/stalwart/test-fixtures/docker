@@ -1,6 +1,17 @@
 #!/bin/sh
 set -eu
 
+if [ "${1:-}" = compose ]; then
+  recovery_admin_state='empty'
+  if [ -n "${STALWART_RECOVERY_ADMIN:-}" ]; then
+    recovery_admin_state='set'
+  fi
+  printf 'compose|%s|mode=%s|admin=%s\n' \
+    "$*" "${STALWART_RECOVERY_MODE:-}" "$recovery_admin_state" \
+    >> "$FAKE_DOCKER_STATE_DIR/commands.log"
+  exit 0
+fi
+
 auth_file=
 mount_source=
 previous=

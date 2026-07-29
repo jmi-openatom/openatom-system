@@ -10,7 +10,7 @@ env_file=$1
 case "$env_file" in /*) ;; *) echo "environment file path must be absolute" >&2; exit 64 ;; esac
 test -f "$env_file"
 
-for command_name in docker openssl awk sed; do
+for command_name in docker curl openssl awk sed; do
   command -v "$command_name" >/dev/null 2>&1 || {
     echo "$command_name is required" >&2
     exit 69
@@ -68,9 +68,40 @@ api_token=$(value_for STALWART_API_TOKEN)
 domain_id=$(value_for STALWART_DOMAIN_ID)
 recovery_admin=$(value_for STALWART_RECOVERY_ADMIN)
 recovery_mode=$(value_for STALWART_RECOVERY_MODE)
+script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+compose_file="$script_dir/../../docker-compose.mail.yml"
+setup_port=$(value_for STALWART_SETUP_PORT)
+setup_port=${setup_port:-18081}
+docker compose version >/dev/null
+
+restart_stalwart() {
+  requested_recovery_admin=$1
+  STALWART_RECOVERY_MODE=0 STALWART_RECOVERY_ADMIN="$requested_recovery_admin" \
+    docker compose --env-file "$env_file" -f "$compose_file" \
+    up -d --force-recreate stalwart
+}
+
+wait_for_stalwart() {
+  attempt=1
+  until curl --fail --silent "http://127.0.0.1:$setup_port/healthz/ready" >/dev/null; do
+    if [ "$attempt" -ge 36 ]; then
+      docker compose --env-file "$env_file" -f "$compose_file" logs --tail=200 stalwart
+      echo "Stalwart API did not become ready within 180 seconds" >&2
+      exit 1
+    fi
+    attempt=$((attempt + 1))
+    sleep 5
+  done
+}
+
 if [ -n "$config_token" ] && [ -n "$api_token" ] && [ -n "$domain_id" ] \
     && ! printf '%s%s%s' "$config_token" "$api_token" "$domain_id" | grep -q 'CHANGE_ME' \
     && [ -z "$recovery_admin" ] && [ "${recovery_mode:-0}" = "0" ]; then
+  # Converge the running container as well as the environment file. This also
+  # recovers safely if a previous run persisted credentials but was interrupted
+  # while removing the recovery administrator from the container.
+  restart_stalwart ''
+  wait_for_stalwart
   echo "Stalwart automation credentials already exist; bootstrap skipped"
   exit 0
 fi
@@ -91,7 +122,6 @@ cli_image=$(value_for STALWART_CLI_IMAGE)
 cli_image=${cli_image:-ghcr.io/stalwartlabs/cli:latest}
 network_name=$(value_for STALWART_DOCKER_NETWORK)
 network_name=${network_name:-openatom-mail_mail-internal}
-script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 
 runtime_dir=$(mktemp -d "${TMPDIR:-/tmp}/openatom-stalwart-bootstrap.XXXXXX")
 chmod 700 "$runtime_dir"
@@ -150,6 +180,14 @@ docker run --rm --network "$network_name" --env-file "$recovery_auth" \
 # Make a newly created or password-updated account visible before its first
 # authentication. Recovery credentials are used only for this one-shot action.
 run_cli "$recovery_auth" create Action --json '{"@type":"InvalidateCaches"}' >/dev/null
+
+# Recovery mode only authorizes the built-in recovery principal. Recreate the
+# server in normal mode before the newly created directory administrator makes
+# any management request. Keep the recovery credential until both API keys are
+# generated and verified so an interrupted run remains recoverable.
+set_value STALWART_RECOVERY_MODE 0
+restart_stalwart "$recovery_admin"
+wait_for_stalwart
 write_auth_file "$automation_auth" basic "$automation_name@$mail_domain" "$temporary_password"
 
 # ID-only queries avoid the additional Object/get call that `--fields` causes.
@@ -222,5 +260,7 @@ run_cli "$automation_auth" update Account "$automation_account_id" \
 set_value STALWART_RECOVERY_MODE 0
 set_value STALWART_RECOVERY_ADMIN ''
 chmod 600 "$env_file"
+restart_stalwart ''
+wait_for_stalwart
 
 echo "Stalwart configuration token, account token and domain id were generated automatically"

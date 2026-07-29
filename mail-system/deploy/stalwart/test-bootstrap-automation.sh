@@ -4,7 +4,7 @@ set -eu
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 test_dir=$(mktemp -d "${TMPDIR:-/tmp}/openatom-bootstrap-test.XXXXXX")
 cleanup() {
-  rm -f "$test_dir/bin/docker" "$test_dir/mail.env"
+  rm -f "$test_dir/bin/curl" "$test_dir/bin/docker" "$test_dir/mail.env"
   rm -f "$test_dir/state/commands.log" "$test_dir/state/api-key-count"
   rm -f "$test_dir/state/automation.ndjson"
   rmdir "$test_dir/bin" "$test_dir/state" "$test_dir" 2>/dev/null || true
@@ -12,6 +12,7 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 mkdir "$test_dir/bin" "$test_dir/state"
+ln -s "$script_dir/test-fixtures/curl" "$test_dir/bin/curl"
 ln -s "$script_dir/test-fixtures/docker" "$test_dir/bin/docker"
 env_file="$test_dir/mail.env"
 {
@@ -54,10 +55,19 @@ grep -q '^automation|.* query Domain ' "$test_dir/state/commands.log"
 grep -q '^automation|.* query Account ' "$test_dir/state/commands.log"
 grep -q '^config|.* query Domain ' "$test_dir/state/commands.log"
 grep -q '^api|.* query Account ' "$test_dir/state/commands.log"
+test "$(grep -c '^compose|.* up -d --force-recreate stalwart|mode=0|admin=' "$test_dir/state/commands.log")" = 2
+test "$(grep -c '|mode=0|admin=set$' "$test_dir/state/commands.log")" = 1
+test "$(grep -c '|mode=0|admin=empty$' "$test_dir/state/commands.log")" = 1
+normal_restart_line=$(grep -n '|mode=0|admin=set$' "$test_dir/state/commands.log" | cut -d: -f1)
+automation_query_line=$(grep -n '^automation|.* query Domain ' "$test_dir/state/commands.log" | cut -d: -f1)
+test "$normal_restart_line" -lt "$automation_query_line"
 
-command_count=$(wc -l < "$test_dir/state/commands.log" | tr -d ' ')
+env_state_before=$(cksum "$env_file")
 PATH="$test_dir/bin:$PATH" FAKE_DOCKER_STATE_DIR="$test_dir/state" \
   "$script_dir/bootstrap-automation.sh" "$env_file"
-test "$(wc -l < "$test_dir/state/commands.log" | tr -d ' ')" = "$command_count"
+env_state_after=$(cksum "$env_file")
+test "$env_state_before" = "$env_state_after"
+test "$(grep -c '^compose|.* up -d --force-recreate stalwart|mode=0|admin=' "$test_dir/state/commands.log")" = 3
+test "$(grep -c '|mode=0|admin=empty$' "$test_dir/state/commands.log")" = 2
 
 echo "bootstrap automation regression test passed"

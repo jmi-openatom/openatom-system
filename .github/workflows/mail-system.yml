@@ -156,6 +156,7 @@ jobs:
           shellcheck mail-system/deploy/stalwart/apply-plan.sh
           shellcheck mail-system/deploy/stalwart/bootstrap-automation.sh
           shellcheck mail-system/deploy/stalwart/test-bootstrap-automation.sh
+          shellcheck mail-system/deploy/stalwart/test-fixtures/curl
           shellcheck mail-system/deploy/stalwart/test-fixtures/docker
           shellcheck mail-system/deploy/stalwart/sync-tls-certificate.sh
           shellcheck mail-system/deploy/stalwart/certbot-deploy-hook.sh

@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+printf 'curl|%s\n' "$*" >> "$FAKE_DOCKER_STATE_DIR/commands.log"
+exit 0
