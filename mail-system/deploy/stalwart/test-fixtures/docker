@@ -1,0 +1,72 @@
+#!/bin/sh
+set -eu
+
+auth_file=
+mount_source=
+previous=
+for argument in "$@"; do
+  if [ "$previous" = "--env-file" ]; then
+    auth_file=$argument
+  elif [ "$previous" = "-v" ]; then
+    mount_source=${argument%%:*}
+  fi
+  previous=$argument
+done
+
+test -n "$auth_file"
+auth_kind=unknown
+if grep -q '^STALWART_USER=admin$' "$auth_file"; then
+  auth_kind=recovery
+elif grep -q '^STALWART_USER=openatom-automation@jmi-openatom.cn$' "$auth_file"; then
+  auth_kind=automation
+elif grep -q '^STALWART_TOKEN=API_config-test-secret$' "$auth_file"; then
+  auth_kind=config
+elif grep -q '^STALWART_TOKEN=API_account-test-secret$' "$auth_file"; then
+  auth_kind=api
+fi
+
+printf '%s|%s\n' "$auth_kind" "$*" >> "$FAKE_DOCKER_STATE_DIR/commands.log"
+
+case "$*" in
+  *" apply --file /work/automation.ndjson --json")
+    test "$auth_kind" = recovery
+    test -n "$mount_source"
+    cp "$mount_source" "$FAKE_DOCKER_STATE_DIR/automation.ndjson"
+    ;;
+  *" create Action --json "*)
+    test "$auth_kind" = recovery
+    ;;
+  *" query Domain "*)
+    test "$auth_kind" != recovery
+    printf '"domain-id"\n'
+    ;;
+  *" query Account "*)
+    test "$auth_kind" != recovery
+    printf '"account-id"\n'
+    ;;
+  *" query ApiKey --json")
+    test "$auth_kind" = automation
+    ;;
+  *" create ApiKey "*)
+    test "$auth_kind" = automation
+    count_file="$FAKE_DOCKER_STATE_DIR/api-key-count"
+    count=0
+    if [ -f "$count_file" ]; then
+      count=$(cat "$count_file")
+    fi
+    count=$((count + 1))
+    printf '%s\n' "$count" > "$count_file"
+    if [ "$count" -eq 1 ]; then
+      printf 'Secret: API_config-test-secret\n'
+    else
+      printf 'Secret: API_account-test-secret\n'
+    fi
+    ;;
+  *" update Account account-id "*)
+    test "$auth_kind" = automation
+    ;;
+  *)
+    echo "unexpected fake docker invocation: $*" >&2
+    exit 1
+    ;;
+esac

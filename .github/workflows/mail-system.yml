@@ -155,8 +155,12 @@ jobs:
           shellcheck mail-system/deploy/stalwart/render-plan.sh
           shellcheck mail-system/deploy/stalwart/apply-plan.sh
           shellcheck mail-system/deploy/stalwart/bootstrap-automation.sh
+          shellcheck mail-system/deploy/stalwart/test-bootstrap-automation.sh
+          shellcheck mail-system/deploy/stalwart/test-fixtures/docker
           shellcheck mail-system/deploy/stalwart/sync-tls-certificate.sh
           shellcheck mail-system/deploy/stalwart/certbot-deploy-hook.sh
+      - name: Test Stalwart credential bootstrap flow
+        run: mail-system/deploy/stalwart/test-bootstrap-automation.sh
       - name: Validate rendered Stalwart plan
         run: |
           plan_file="$(mktemp)"
@@ -205,7 +209,10 @@ jobs:
           done
           mail-system/deploy/stalwart/apply-plan.sh "$ci_env" --dry-run
           mail-system/deploy/stalwart/apply-plan.sh "$ci_env" --domain-only
-          mail-system/deploy/stalwart/bootstrap-automation.sh "$ci_env"
+          if ! mail-system/deploy/stalwart/bootstrap-automation.sh "$ci_env"; then
+            docker compose -f mail-system/docker-compose.mail.yml logs --tail=200 stalwart
+            exit 1
+          fi
           grep -q '^STALWART_CONFIG_TOKEN=API_' "$ci_env"
           grep -q '^STALWART_API_TOKEN=API_' "$ci_env"
           grep -q '^STALWART_DOMAIN_ID=.' "$ci_env"
