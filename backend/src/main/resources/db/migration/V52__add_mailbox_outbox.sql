@@ -20,66 +20,8 @@ CREATE TABLE IF NOT EXISTS `mailbox_outbox_event`
   DEFAULT CHARSET = utf8mb4
   COMMENT ='邮箱账号同步事务Outbox';
 
-DROP TRIGGER IF EXISTS `trg_tb_user_mailbox_created`;
-CREATE TRIGGER `trg_tb_user_mailbox_created`
-    AFTER INSERT
-    ON `tb_user`
-    FOR EACH ROW
-    INSERT INTO `mailbox_outbox_event`
-        (`event_id`, `event_type`, `aggregate_id`, `payload_json`)
-    VALUES
-        (LOWER(REPLACE(UUID(), '-', '')),
-         'USER_CREATED',
-         CAST(NEW.`id` AS CHAR),
-         JSON_OBJECT(
-             'sub', CAST(NEW.`id` AS CHAR),
-             'userId', NEW.`id`,
-             'username', NEW.`user_name`,
-             'displayName', NEW.`real_name`,
-             'status', CASE NEW.`user_status`
-                           WHEN 1 THEN 'ACTIVE'
-                           WHEN 2 THEN 'LOCKED'
-                           ELSE 'DISABLED'
-                       END));
-
-DROP TRIGGER IF EXISTS `trg_tb_user_mailbox_updated`;
-CREATE TRIGGER `trg_tb_user_mailbox_updated`
-    AFTER UPDATE
-    ON `tb_user`
-    FOR EACH ROW
-    INSERT INTO `mailbox_outbox_event`
-        (`event_id`, `event_type`, `aggregate_id`, `payload_json`)
-    SELECT LOWER(REPLACE(UUID(), '-', '')),
-           'USER_UPDATED',
-           CAST(NEW.`id` AS CHAR),
-           JSON_OBJECT(
-               'sub', CAST(NEW.`id` AS CHAR),
-               'userId', NEW.`id`,
-               'username', NEW.`user_name`,
-               'displayName', NEW.`real_name`,
-               'status', CASE NEW.`user_status`
-                             WHEN 1 THEN 'ACTIVE'
-                             WHEN 2 THEN 'LOCKED'
-                             ELSE 'DISABLED'
-                         END)
-    WHERE NOT (NEW.`user_name` <=> OLD.`user_name`)
-       OR NOT (NEW.`real_name` <=> OLD.`real_name`)
-       OR NOT (NEW.`user_status` <=> OLD.`user_status`);
-
-DROP TRIGGER IF EXISTS `trg_tb_user_mailbox_deleted`;
-CREATE TRIGGER `trg_tb_user_mailbox_deleted`
-    AFTER DELETE
-    ON `tb_user`
-    FOR EACH ROW
-    INSERT INTO `mailbox_outbox_event`
-        (`event_id`, `event_type`, `aggregate_id`, `payload_json`)
-    VALUES
-        (LOWER(REPLACE(UUID(), '-', '')),
-         'USER_DELETION_REQUESTED',
-         CAST(OLD.`id` AS CHAR),
-         JSON_OBJECT(
-             'sub', CAST(OLD.`id` AS CHAR),
-             'userId', OLD.`id`,
-             'username', OLD.`user_name`,
-             'displayName', OLD.`real_name`,
-             'status', 'DELETION_REQUESTED'));
+-- Keep this migration compatible with the least-privilege production database account.
+-- MySQL rejects CREATE TRIGGER when binary logging is enabled unless the account has SUPER
+-- or log_bin_trust_function_creators is enabled. MailboxOutboxScheduler performs an
+-- idempotent user reconciliation after startup and hourly, so database triggers are not
+-- required for reliable mailbox provisioning.
