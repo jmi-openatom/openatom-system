@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /** Minimal internal HTTP client. It deliberately never reads or logs response bodies. */
@@ -17,6 +18,7 @@ public class MailboxProvisioningClient {
   private final ObjectMapper objectMapper;
   private final HttpClient httpClient;
 
+  @Autowired
   public MailboxProvisioningClient(MailOutboxProperties properties, ObjectMapper objectMapper) {
     this(properties, objectMapper, HttpClient.newBuilder().build());
   }

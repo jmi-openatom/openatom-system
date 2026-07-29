@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 class MailboxProvisioningClientTest {
   private HttpServer server;
@@ -67,6 +68,18 @@ class MailboxProvisioningClientTest {
     assertThat(result.delivered()).isFalse();
     assertThat(result.retryable()).isFalse();
     assertThat(result.reason()).isEqualTo("http_422");
+  }
+
+  @Test
+  void springSelectsTheConfiguredConstructor() {
+    try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+      context.registerBean(MailOutboxProperties.class);
+      context.registerBean(ObjectMapper.class);
+      context.register(MailboxProvisioningClient.class);
+      context.refresh();
+
+      assertThat(context.getBean(MailboxProvisioningClient.class)).isNotNull();
+    }
   }
 
   private MailboxProvisioningClient.DeliveryResult deliverWithStatus(int status) throws Exception {

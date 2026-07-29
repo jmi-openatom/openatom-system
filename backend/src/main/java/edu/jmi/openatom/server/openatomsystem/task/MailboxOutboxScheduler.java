@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,7 @@ public class MailboxOutboxScheduler {
   private final MailOutboxProperties properties;
   private final Clock clock;
 
+  @Autowired
   public MailboxOutboxScheduler(
       MailboxOutboxEventMapper mapper,
       MailboxProvisioningClient client,

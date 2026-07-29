@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class MailboxOutboxSchedulerTest {
@@ -100,6 +101,19 @@ class MailboxOutboxSchedulerTest {
     scheduler.enqueueDailyReconciliation();
 
     verify(mapper).enqueueDailyReconciliation();
+  }
+
+  @Test
+  void springSelectsTheConfiguredConstructor() {
+    try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+      context.registerBean(MailboxOutboxEventMapper.class, () -> mapper);
+      context.registerBean(MailboxProvisioningClient.class, () -> client);
+      context.registerBean(MailOutboxProperties.class, () -> properties);
+      context.register(MailboxOutboxScheduler.class);
+      context.refresh();
+
+      assertThat(context.getBean(MailboxOutboxScheduler.class)).isNotNull();
+    }
   }
 
   private MailboxOutboxEvent event(int retryCount) {
