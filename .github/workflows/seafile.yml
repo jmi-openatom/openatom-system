@@ -1,0 +1,147 @@
+name: OpenAtom Seafile CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - seafile/**
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/bootstrap/SeafileOauthClientInitializer.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/config/SeafileOauthClientProperties.java
+      - backend/src/main/resources/db/migration/V53__add_seafile_oauth_client.sql
+      - backend/src/test/java/edu/jmi/openatom/server/openatomsystem/bootstrap/SeafileOauthClientInitializerTest.java
+      - docker-compose.yml
+      - .github/workflows/deploy.yml
+      - .github/workflows/seafile.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - seafile/**
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/bootstrap/SeafileOauthClientInitializer.java
+      - backend/src/main/java/edu/jmi/openatom/server/openatomsystem/config/SeafileOauthClientProperties.java
+      - backend/src/main/resources/db/migration/V53__add_seafile_oauth_client.sql
+      - backend/src/test/java/edu/jmi/openatom/server/openatomsystem/bootstrap/SeafileOauthClientInitializerTest.java
+      - docker-compose.yml
+      - .github/workflows/deploy.yml
+      - .github/workflows/seafile.yml
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  oauth-client-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Test automatic OAuth client provisioning
+        working-directory: backend
+        run: ./mvnw -q -DskipTests=false -Dtest=SeafileOauthClientInitializerTest test
+
+  deployment-config-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose model
+        run: docker compose --env-file seafile/.env.production.example -f seafile/docker-compose.yml config --quiet
+      - name: Validate deployment scripts
+        run: |
+          shellcheck seafile/deploy/bootstrap-env.sh
+          shellcheck seafile/deploy/configure-oauth.sh
+          shellcheck seafile/deploy/deploy.sh
+          shellcheck seafile/deploy/install-nginx.sh
+          shellcheck seafile/deploy/backup/backup.sh
+          shellcheck seafile/deploy/backup/scheduler.sh
+      - name: Validate Python OAuth settings
+        run: python -m py_compile seafile/config/openatom_oauth_settings.py
+      - name: Reject accidental production secrets
+        run: |
+          test ! -f seafile/.env
+          if grep -R -n -E '^(SEAFILE_OAUTH_CLIENT_SECRET|INIT_SEAFILE_MYSQL_ROOT_PASSWORD|SEAFILE_MYSQL_DB_PASSWORD|REDIS_PASSWORD|JWT_PRIVATE_KEY)=[^C]' \
+            seafile --include='*.example'; then
+            echo "A populated Seafile secret was found in an example file" >&2
+            exit 1
+          fi
+
+  deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs:
+      - oauth-client-test
+      - deployment-config-check
+    runs-on: ubuntu-latest
+    environment: SERVER
+    concurrency:
+      group: openatom-seafile-production-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare deployment bundle
+        run: |
+          rm -rf .deploy/seafile
+          mkdir -p .deploy/seafile
+          rsync -a --delete \
+            --exclude .env \
+            --exclude data \
+            --exclude mysql \
+            --exclude backups \
+            seafile/ .deploy/seafile/
+      - name: Prepare deployment directory
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            set -eu
+            mkdir -p "${{ vars.SEAFILE_DEPLOY_PATH || '/www/wwwroot/openatom-seafile' }}"
+      - name: Upload deployment files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: .deploy/seafile/docker-compose.yml,.deploy/seafile/.env.production.example,.deploy/seafile/config,.deploy/seafile/deploy,.deploy/seafile/README.md
+          target: ${{ vars.SEAFILE_DEPLOY_PATH || '/www/wwwroot/openatom-seafile' }}
+          strip_components: 2
+      - name: Deploy Seafile, OAuth and Nginx
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          timeout: 30s
+          command_timeout: 20m
+          script: |
+            set -eu
+            DEPLOY_DIR="${{ vars.SEAFILE_DEPLOY_PATH || '/www/wwwroot/openatom-seafile' }}"
+            BACKUP_DIR="${{ vars.SEAFILE_BACKUP_PATH || '/www/backup/openatom-seafile' }}"
+            SHARED_SECRET_FILE="${{ vars.OPENATOM_SHARED_SECRET_DIR || '/www/wwwroot/.openatom-secrets' }}/seafile-oauth-client-secret"
+
+            chmod 0755 "$DEPLOY_DIR"/deploy/*.sh "$DEPLOY_DIR"/deploy/backup/*.sh
+            "$DEPLOY_DIR/deploy/bootstrap-env.sh" \
+              "$DEPLOY_DIR/.env" \
+              "$SHARED_SECRET_FILE" \
+              "$DEPLOY_DIR" \
+              "$BACKUP_DIR"
+            "$DEPLOY_DIR/deploy/deploy.sh" "$DEPLOY_DIR/.env"
+            "$DEPLOY_DIR/deploy/install-nginx.sh" \
+              "$DEPLOY_DIR/.env" \
+              "${{ vars.SEAFILE_NGINX_CONF_DIR || '/www/server/panel/vhost/nginx' }}"
+
+            curl --fail --silent --show-error \
+              --resolve cloud.jmi-openatom.cn:443:127.0.0.1 \
+              https://cloud.jmi-openatom.cn/api2/ping/ | grep -q pong
+            echo "Seafile production deployment completed successfully."

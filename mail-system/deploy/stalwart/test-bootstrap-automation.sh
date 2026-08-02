@@ -38,8 +38,14 @@ test "$(find "$env_file" -perm 600 -print)" = "$env_file"
 
 ruby -rjson -e '
   lines = File.readlines(ARGV.fetch(0)).map { |line| JSON.parse(line) }
-  abort "expected Domain followed by Account" unless lines.map { |line| line["object"] } == %w[Domain Account]
-  account = lines.fetch(1)
+  objects = lines.map { |line| line["object"] }
+  abort "bootstrap must not enable OIDC" unless (objects & %w[Directory Authentication]).empty?
+  abort "bootstrap is missing Domain" unless objects.include?("Domain")
+  abort "bootstrap is missing SystemSettings" unless objects.include?("SystemSettings")
+  abort "Account must follow Domain" unless objects.index("Domain") < objects.index("Account")
+  system_settings = lines.find { |line| line["object"] == "SystemSettings" }
+  abort "default domain reference missing" unless system_settings.dig("value", "defaultDomainId") == "#openatom-domain"
+  account = lines.find { |line| line["object"] == "Account" }
   abort "account upsert is not idempotent" unless account["@type"] == "upsert" && account["matchOn"] == %w[name domainId]
   value = account.fetch("value").fetch("openatom-automation")
   abort "domain reference missing" unless value["domainId"] == "#openatom-domain"

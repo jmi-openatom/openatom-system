@@ -1,0 +1,129 @@
+name: openatom-seafile
+
+services:
+  db:
+    image: ${SEAFILE_DB_IMAGE:-mariadb:10.11}
+    container_name: openatom-seafile-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?INIT_SEAFILE_MYSQL_ROOT_PASSWORD is required}
+      MYSQL_LOG_CONSOLE: "true"
+      MARIADB_AUTO_UPGRADE: "1"
+      TZ: ${TIME_ZONE:-Asia/Shanghai}
+    volumes:
+      - ${SEAFILE_MYSQL_VOLUME:?SEAFILE_MYSQL_VOLUME is required}:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh", "--connect", "--mariadbupgrade", "--innodb_initialized"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - seafile
+
+  redis:
+    image: ${SEAFILE_REDIS_IMAGE:-redis:7-alpine}
+    container_name: openatom-seafile-redis
+    restart: unless-stopped
+    command:
+      - /bin/sh
+      - -c
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --save "" --appendonly no
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      TZ: ${TIME_ZONE:-Asia/Shanghai}
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - seafile
+
+  seafile:
+    image: ${SEAFILE_IMAGE:-seafileltd/seafile-mc:14.0-latest}
+    container_name: openatom-seafile
+    restart: unless-stopped
+    ports:
+      - ${SEAFILE_BIND_ADDRESS:-127.0.0.1}:${SEAFILE_HTTP_PORT:-18083}:80
+    volumes:
+      - ${SEAFILE_VOLUME:?SEAFILE_VOLUME is required}:/shared
+    environment:
+      SEAFILE_MYSQL_DB_HOST: db
+      SEAFILE_MYSQL_DB_PORT: "3306"
+      SEAFILE_MYSQL_DB_USER: ${SEAFILE_MYSQL_DB_USER:-seafile}
+      SEAFILE_MYSQL_DB_PASSWORD: ${SEAFILE_MYSQL_DB_PASSWORD:?SEAFILE_MYSQL_DB_PASSWORD is required}
+      INIT_SEAFILE_MYSQL_ROOT_PASSWORD: ${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?INIT_SEAFILE_MYSQL_ROOT_PASSWORD is required}
+      SEAFILE_MYSQL_DB_CCNET_DB_NAME: ${SEAFILE_MYSQL_DB_CCNET_DB_NAME:-ccnet_db}
+      SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: ${SEAFILE_MYSQL_DB_SEAFILE_DB_NAME:-seafile_db}
+      SEAFILE_MYSQL_DB_SEAHUB_DB_NAME: ${SEAFILE_MYSQL_DB_SEAHUB_DB_NAME:-seahub_db}
+      TIME_ZONE: ${TIME_ZONE:-Asia/Shanghai}
+      INIT_SEAFILE_ADMIN_EMAIL: ${INIT_SEAFILE_ADMIN_EMAIL:?INIT_SEAFILE_ADMIN_EMAIL is required}
+      INIT_SEAFILE_ADMIN_PASSWORD: ${INIT_SEAFILE_ADMIN_PASSWORD:?INIT_SEAFILE_ADMIN_PASSWORD is required}
+      SEAFILE_SERVER_HOSTNAME: ${SEAFILE_SERVER_HOSTNAME:-cloud.jmi-openatom.cn}
+      SEAFILE_SERVER_PROTOCOL: https
+      SITE_ROOT: /
+      NON_ROOT: ${NON_ROOT:-false}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY is required}
+      SEAFILE_LOG_TO_STDOUT: ${SEAFILE_LOG_TO_STDOUT:-true}
+      ENABLE_GO_FILESERVER: "true"
+      ENABLE_SEAFDAV: ${ENABLE_SEAFDAV:-false}
+      ENABLE_SEADOC: "false"
+      CACHE_PROVIDER: redis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      ENABLE_NOTIFICATION_SERVER: "false"
+      CSRF_TRUSTED_ORIGINS: https://cloud.jmi-openatom.cn
+      SEAFILE_OAUTH_CLIENT_ID: ${SEAFILE_OAUTH_CLIENT_ID:-openatom-seafile}
+      SEAFILE_OAUTH_CLIENT_SECRET: ${SEAFILE_OAUTH_CLIENT_SECRET:?SEAFILE_OAUTH_CLIENT_SECRET is required}
+      SEAFILE_OAUTH_REDIRECT_URL: https://cloud.jmi-openatom.cn/oauth/callback/
+      SEAFILE_OAUTH_AUTHORIZE_URL: https://oauth.jmi-openatom.cn/api/v1/oauth/authorize
+      SEAFILE_OAUTH_TOKEN_URL: https://oauth.jmi-openatom.cn/api/v1/oauth/token
+      SEAFILE_OAUTH_USERINFO_URL: https://oauth.jmi-openatom.cn/api/v1/oauth/userinfo
+      SEAFILE_DISABLE_PASSWORD_LOGIN: ${SEAFILE_DISABLE_PASSWORD_LOGIN:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:80/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks:
+      - seafile
+
+  backup:
+    image: ${SEAFILE_DB_IMAGE:-mariadb:10.11}
+    container_name: openatom-seafile-backup
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/scripts/scheduler.sh"]
+    environment:
+      SEAFILE_MYSQL_DB_HOST: db
+      SEAFILE_MYSQL_DB_USER: ${SEAFILE_MYSQL_DB_USER:-seafile}
+      SEAFILE_MYSQL_DB_PASSWORD: ${SEAFILE_MYSQL_DB_PASSWORD:?SEAFILE_MYSQL_DB_PASSWORD is required}
+      SEAFILE_MYSQL_DB_CCNET_DB_NAME: ${SEAFILE_MYSQL_DB_CCNET_DB_NAME:-ccnet_db}
+      SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: ${SEAFILE_MYSQL_DB_SEAFILE_DB_NAME:-seafile_db}
+      SEAFILE_MYSQL_DB_SEAHUB_DB_NAME: ${SEAFILE_MYSQL_DB_SEAHUB_DB_NAME:-seahub_db}
+      SEAFILE_BACKUP_INTERVAL_SECONDS: ${SEAFILE_BACKUP_INTERVAL_SECONDS:-86400}
+      SEAFILE_BACKUP_RETENTION_DAYS: ${SEAFILE_BACKUP_RETENTION_DAYS:-14}
+      TZ: ${TIME_ZONE:-Asia/Shanghai}
+    volumes:
+      - ${SEAFILE_VOLUME:?SEAFILE_VOLUME is required}:/source:ro
+      - ${SEAFILE_BACKUP_VOLUME:?SEAFILE_BACKUP_VOLUME is required}:/backups
+      - ./deploy/backup:/scripts:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      seafile:
+        condition: service_healthy
+    networks:
+      - seafile
+
+networks:
+  seafile:
+    name: openatom-seafile
+    driver: bridge

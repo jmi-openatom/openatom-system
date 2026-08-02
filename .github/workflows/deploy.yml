@@ -58,7 +58,7 @@ jobs:
           cd backend
           ./mvnw -q -DskipTests compile
           ./mvnw -q -DskipTests=false \
-            -Dtest=AuthServiceImplTest,OidcServiceImplTest,OidcSigningKeyProviderTest,OAuthSessionCookieServiceTest,MailboxProvisioningClientTest,MailboxOutboxSchedulerTest \
+            -Dtest=AuthServiceImplTest,OidcServiceImplTest,OidcSigningKeyProviderTest,OAuthSessionCookieServiceTest,MailboxProvisioningClientTest,MailboxOutboxSchedulerTest,SeafileOauthClientInitializerTest \
             test
 
   bot-check:
@@ -82,6 +82,9 @@ jobs:
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: SERVER
+    concurrency:
+      group: openatom-main-production-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -111,6 +114,27 @@ jobs:
 
             # --- 关键修改：先创建 .env 文件，再执行 docker-compose 命令 ---
             echo "Step 1: Creating .env file from GitHub Secrets..."
+
+            # Seafile 与身份中心共享的 OAuth client secret 只在服务器生成一次。
+            # 独立持久化可避免项目 .env 重建或两个部署工作流先后执行时发生密钥漂移。
+            SHARED_SECRET_DIR="${{ vars.OPENATOM_SHARED_SECRET_DIR || '/www/wwwroot/.openatom-secrets' }}"
+            SEAFILE_OAUTH_SECRET_FILE="$SHARED_SECRET_DIR/seafile-oauth-client-secret"
+            mkdir -p "$SHARED_SECRET_DIR"
+            chmod 700 "$SHARED_SECRET_DIR"
+            if [ ! -e "$SEAFILE_OAUTH_SECRET_FILE" ]; then
+              umask 077
+              TEMP_SECRET_FILE=$(mktemp "$SHARED_SECRET_DIR/.seafile-oauth.XXXXXX")
+              openssl rand -hex 48 > "$TEMP_SECRET_FILE"
+              ln "$TEMP_SECRET_FILE" "$SEAFILE_OAUTH_SECRET_FILE" 2>/dev/null || true
+              rm -f "$TEMP_SECRET_FILE"
+            fi
+            test -s "$SEAFILE_OAUTH_SECRET_FILE"
+            chmod 600 "$SEAFILE_OAUTH_SECRET_FILE"
+            SEAFILE_OAUTH_CLIENT_SECRET=$(tr -d '\r\n' < "$SEAFILE_OAUTH_SECRET_FILE")
+            if [ "${#SEAFILE_OAUTH_CLIENT_SECRET}" -lt 32 ]; then
+              echo "Invalid shared Seafile OAuth secret" >&2
+              exit 1
+            fi
             
             # 从 GitHub Secrets 读取敏感环境变量并写入 .env 文件
             echo "# Redis 配置" > .env
@@ -149,6 +173,7 @@ jobs:
             echo "APP_OIDC_PUBLIC_KEY_BASE64=${{ secrets.APP_OIDC_PUBLIC_KEY_BASE64 }}" >> .env
             echo "APP_OIDC_PREVIOUS_KEY_ID=${{ vars.APP_OIDC_PREVIOUS_KEY_ID }}" >> .env
             echo "APP_OIDC_PREVIOUS_PUBLIC_KEY_BASE64=${{ secrets.APP_OIDC_PREVIOUS_PUBLIC_KEY_BASE64 }}" >> .env
+            echo "APP_SEAFILE_OAUTH_CLIENT_SECRET=$SEAFILE_OAUTH_CLIENT_SECRET" >> .env
             echo "" >> .env
             echo "# 邮箱开通 Outbox" >> .env
             echo "APP_MAIL_PROVISION_URL=${{ vars.APP_MAIL_PROVISION_URL || 'http://127.0.0.1:18090/internal/v1/mailboxes/provision' }}" >> .env

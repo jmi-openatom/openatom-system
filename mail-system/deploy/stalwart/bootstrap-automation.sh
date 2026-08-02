@@ -166,7 +166,12 @@ temporary_password=$(openssl rand -hex 48)
 rendered_plan="$runtime_dir/rendered.ndjson"
 automation_plan="$runtime_dir/automation.ndjson"
 "$script_dir/render-plan.sh" "$env_file" "$rendered_plan" >/dev/null
-awk '/"object":"Domain"/' "$rendered_plan" > "$automation_plan"
+# Normal mode needs its singleton defaults and service configuration before the
+# first restart. Keep OIDC out of this bootstrap plan so the temporary local
+# administrator can authenticate long enough to generate the API keys. The
+# regular full apply enables OIDC immediately after bootstrap completes.
+awk '!/"object":"Directory"/ && !/"object":"Authentication"/' \
+  "$rendered_plan" > "$automation_plan"
 printf '{"@type":"upsert","object":"Account","matchOn":["name","domainId"],"value":{"openatom-automation":{"@type":"User","name":"%s","domainId":"#openatom-domain","description":"OpenAtom deployment automation; no mailbox login","credentials":{"0":{"@type":"Password","secret":"%s"}},"memberGroupIds":{},"roles":{"@type":"Admin"},"permissions":{"@type":"Inherit"},"quotas":{},"aliases":{},"encryptionAtRest":{"@type":"Disabled"}}}}\n' \
   "$automation_name" "$temporary_password" >> "$automation_plan"
 test -s "$automation_plan"
