@@ -232,9 +232,11 @@ jobs:
             # 仅检查 TCP 端口会在应用仍初始化时过早放行。
             OIDC_READY=false
             for attempt in $(seq 1 36); do
-              if curl --fail --silent --show-error \
-                http://127.0.0.1:8921/api/v1/.well-known/openid-configuration \
-                | grep -q '"authorization_endpoint"'; then
+              OIDC_STATUS=$(curl --silent --show-error \
+                --output /dev/null \
+                --write-out '%{http_code}' \
+                http://127.0.0.1:8921/api/v1/.well-known/openid-configuration || true)
+              if [ "$OIDC_STATUS" = "200" ]; then
                 OIDC_READY=true
                 break
               fi
@@ -244,6 +246,21 @@ jobs:
             if [ "$OIDC_READY" != "true" ]; then
               echo "Critical Error: OAuth/OIDC endpoint did not become ready within 180 seconds."
               $COMPOSE_CMD ps
+              $COMPOSE_CMD logs --tail=200 backend
+              exit 1
+            fi
+
+            AUTHORIZE_STATUS=$(curl --silent --show-error \
+              --output /dev/null \
+              --write-out '%{http_code}' \
+              --get http://127.0.0.1:8921/api/v1/oauth/authorize \
+              --data-urlencode 'response_type=code' \
+              --data-urlencode 'client_id=openatom-seafile' \
+              --data-urlencode 'redirect_uri=https://cloud.jmi-openatom.cn/oauth/callback/' \
+              --data-urlencode 'scope=openid profile email' \
+              --data-urlencode 'state=deployment-health-check' || true)
+            if [ "$AUTHORIZE_STATUS" != "302" ]; then
+              echo "Critical Error: Seafile OAuth authorization endpoint returned HTTP $AUTHORIZE_STATUS; expected 302."
               $COMPOSE_CMD logs --tail=200 backend
               exit 1
             fi
