@@ -41,7 +41,7 @@ services:
       - seafile
 
   seafile:
-    image: ${SEAFILE_IMAGE:-seafileltd/seafile-mc:14.0-latest}
+    image: ${SEAFILE_IMAGE:-seafileltd/seafile-mc:13.0.25}
     container_name: openatom-seafile
     restart: unless-stopped
     ports:

@@ -73,7 +73,10 @@ compose() {
 }
 
 compose config --quiet
-compose pull db redis seafile backup
+# Resolve the application image first so an invalid Seafile tag fails before
+# downloading or changing any supporting service image.
+compose pull seafile
+compose pull db redis backup
 compose up -d --remove-orphans db redis seafile
 
 http_port=$(value_for SEAFILE_HTTP_PORT)

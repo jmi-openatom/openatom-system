@@ -1,8 +1,8 @@
-# Seafile Community Edition 14
+# Seafile Community Edition
 
 本目录提供 `cloud.jmi-openatom.cn` 的完整生产部署：
 
-- Seafile CE `14.0-latest`
+- Seafile CE `13.0.25`（当前官方已发布的最新稳定版）
 - MariaDB 10.11
 - Redis 7（仅作为缓存，不对宿主机暴露端口）
 - OpenAtom 现有 OAuth/OIDC 登录

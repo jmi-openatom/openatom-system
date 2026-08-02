@@ -52,7 +52,7 @@ pnpm run dev
 
 ### Seafile 私有云
 
-`cloud.jmi-openatom.cn` 的 Seafile Community Edition 14 使用独立的 MariaDB、Redis 和 Docker Compose 编排，并已接入本项目 OAuth。相关 Compose、Nginx、每日备份和 GitHub Actions 自动部署说明见 [seafile/README.md](seafile/README.md)。
+`cloud.jmi-openatom.cn` 使用当前官方已发布的最新稳定版 Seafile Community Edition，并通过独立的 MariaDB、Redis 和 Docker Compose 编排，已接入本项目 OAuth。相关 Compose、Nginx、每日备份和 GitHub Actions 自动部署说明见 [seafile/README.md](seafile/README.md)。
 
 ### 一键启动
 

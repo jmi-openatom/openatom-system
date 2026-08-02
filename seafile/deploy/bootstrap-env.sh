@@ -101,6 +101,17 @@ set_value SEAFILE_VOLUME "$deploy_dir/data" "$env_file"
 set_value SEAFILE_MYSQL_VOLUME "$deploy_dir/mysql" "$env_file"
 set_value SEAFILE_BACKUP_VOLUME "$backup_dir" "$env_file"
 set_value SEAFILE_OAUTH_CLIENT_SECRET "$oauth_secret" "$env_file"
+
+# The CE 14 documentation was published before its production Docker tag.
+# Repair the value persisted by an earlier failed bootstrap while preserving
+# any other operator-selected image override.
+current_image=$(value_for SEAFILE_IMAGE "$env_file")
+case "$current_image" in
+  ''|*CHANGE_ME*|seafileltd/seafile-mc:14.0-latest)
+    set_value SEAFILE_IMAGE seafileltd/seafile-mc:13.0.25 "$env_file"
+    ;;
+esac
+
 ensure_generated INIT_SEAFILE_MYSQL_ROOT_PASSWORD 32
 ensure_generated SEAFILE_MYSQL_DB_PASSWORD 32
 ensure_generated REDIS_PASSWORD 32
