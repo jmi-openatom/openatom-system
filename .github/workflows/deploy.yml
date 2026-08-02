@@ -213,22 +213,20 @@ jobs:
             
             echo ".env file created successfully."
             
-            # 停止旧容器
-            echo "Step 2: Stopping and cleaning up existing containers..."
-            $COMPOSE_CMD down --remove-orphans
-
             # 计算版本号
             BUILD_NUMBER="${{ github.run_number }}"
             SHORT_SHA=$(git rev-parse --short HEAD)
             PKG_VER=$(grep -oP '"version"\s*:\s*"\K[^"]+' frontend/web_pc/package.json || echo "1.0.0")
             APP_VER="v$PKG_VER.$BUILD_NUMBER-$SHORT_SHA"
 
-            echo "Step 3: Starting deployment with version: $APP_VER"
+            # Compose 会先完成镜像构建，再就地替换变化的容器。不要提前 down，
+            # 否则整个构建期间 OAuth/API 都会返回 Nginx upstream unavailable。
+            echo "Step 2: Building and rolling out version: $APP_VER"
             $COMPOSE_CMD pull astrbot napcat || true
             
             VITE_APP_VERSION=$APP_VER \
               VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1 \
-              $COMPOSE_CMD up -d --build
+              $COMPOSE_CMD up -d --build --remove-orphans
 
             # 等待后端真正监听端口，避免把启动失败但仍在重启的容器误判为部署成功
             BACKEND_READY=false
@@ -246,6 +244,10 @@ jobs:
               $COMPOSE_CMD logs --tail=200 backend
               exit 1
             fi
+
+            curl --fail --silent --show-error \
+              http://127.0.0.1:8921/api/v1/.well-known/openid-configuration \
+              | grep -q '"authorization_endpoint"'
 
             $COMPOSE_CMD ps
 

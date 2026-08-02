@@ -45,12 +45,7 @@ fi
 
 http_port=$(value_for SEAFILE_HTTP_PORT)
 http_port=${http_port:-18083}
-acme_email=$(value_for SEAFILE_ACME_EMAIL)
-acme_email=${acme_email:-postmaster@jmi-openatom.cn}
-certbot_image=$(value_for SEAFILE_CERTBOT_IMAGE)
-certbot_image=${certbot_image:-certbot/certbot:latest}
 acme_webroot=/var/www/acme
-certificate_dir=/etc/letsencrypt/live/cloud.jmi-openatom.cn
 destination="$nginx_conf_dir/cloud.jmi-openatom.cn.conf"
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 mkdir -p "$nginx_conf_dir" "$acme_webroot"
@@ -61,7 +56,6 @@ render() {
   sed \
     -e "s|__SEAFILE_HTTP_PORT__|$http_port|g" \
     -e "s|__ACME_WEBROOT__|$acme_webroot|g" \
-    -e "s|__CERTIFICATE_DIR__|$certificate_dir|g" \
     "$template" > "$output"
 }
 
@@ -70,46 +64,6 @@ render "$script_dir/nginx/cloud.jmi-openatom.cn.http.conf.template" "$temp_file"
 install -m 0644 "$temp_file" "$destination"
 "$nginx_bin" -t
 "$nginx_bin" -s reload
-
-if [ ! -s "$certificate_dir/fullchain.pem" ] || [ ! -s "$certificate_dir/privkey.pem" ]; then
-  if command -v certbot >/dev/null 2>&1; then
-    certbot certonly \
-      --non-interactive \
-      --agree-tos \
-      --keep-until-expiring \
-      --webroot \
-      --webroot-path "$acme_webroot" \
-      --email "$acme_email" \
-      --cert-name cloud.jmi-openatom.cn \
-      --domain cloud.jmi-openatom.cn
-  else
-    if ! command -v docker >/dev/null 2>&1; then
-      rm -f "$temp_file"
-      echo "certbot or docker is required to provision cloud.jmi-openatom.cn" >&2
-      exit 69
-    fi
-    mkdir -p /etc/letsencrypt /var/lib/letsencrypt
-    echo "Host certbot not found; provisioning TLS with $certbot_image"
-    docker run --rm \
-      --volume "$acme_webroot:/var/www/acme" \
-      --volume /etc/letsencrypt:/etc/letsencrypt \
-      --volume /var/lib/letsencrypt:/var/lib/letsencrypt \
-      "$certbot_image" certonly \
-      --non-interactive \
-      --agree-tos \
-      --keep-until-expiring \
-      --webroot \
-      --webroot-path /var/www/acme \
-      --email "$acme_email" \
-      --cert-name cloud.jmi-openatom.cn \
-      --domain cloud.jmi-openatom.cn
-  fi
-fi
-
-render "$script_dir/nginx/cloud.jmi-openatom.cn.https.conf.template" "$temp_file"
-install -m 0644 "$temp_file" "$destination"
 rm -f "$temp_file"
-"$nginx_bin" -t
-"$nginx_bin" -s reload
 
-echo "Nginx HTTPS proxy installed for cloud.jmi-openatom.cn"
+echo "Nginx HTTP proxy installed for cloud.jmi-openatom.cn; configure SSL separately"

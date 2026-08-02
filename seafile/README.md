@@ -6,13 +6,13 @@
 - MariaDB 10.11
 - Redis 7（仅作为缓存，不对宿主机暴露端口）
 - OpenAtom 现有 OAuth/OIDC 登录
-- 宿主机 Nginx + Let's Encrypt HTTPS
+- 回环地址上的 HTTP 上游，供宿主机 Nginx/宝塔反向代理
 - 数据库与 Seafile 数据目录每日备份
 - GitHub Actions 在 `main` 分支相关文件变更后自动部署
 
 ## 生产拓扑
 
-只有 Seafile 的 HTTP 端口绑定到 `127.0.0.1:18083`。MariaDB 和 Redis 只存在于 Docker 私有网络中。宿主机 Nginx 终止 TLS，并把 `cloud.jmi-openatom.cn` 转发到该回环地址。
+只有 Seafile 的 HTTP 端口绑定到 `127.0.0.1:18083`。MariaDB 和 Redis 只存在于 Docker 私有网络中。流水线只管理容器，并在回环地址检查服务健康；不会修改宿主机 Nginx，也不会申请、续期或检查 SSL 证书。请在宝塔/Nginx 中自行把 `cloud.jmi-openatom.cn` 反向代理到 `http://127.0.0.1:18083` 并配置 SSL。
 
 持久化目录默认如下：
 
@@ -28,9 +28,9 @@
 ## 首次部署前
 
 1. 将 `cloud.jmi-openatom.cn` 的 A/AAAA 记录指向部署服务器。
-2. 确认公网 80/443 已放行，服务器已安装 Docker Compose 和 Nginx。宿主机未安装 Certbot 时，部署脚本会自动使用官方 Certbot 容器签发证书。
+2. 确认服务器已安装 Docker Compose。Nginx、域名和 SSL 由服务器管理员单独配置。
 3. GitHub Environment `SERVER` 复用现有部署凭据：`SERVER_HOST`、`SERVER_USER`、`SERVER_PASSWORD`，以及可选的 `SERVER_PORT`。
-4. 推送到 `main`。`OpenAtom Seafile CI/CD` 会上传配置、生成持久化随机密钥、启动服务、签发证书、安装 Nginx 配置并做健康检查。
+4. 推送到 `main`。`OpenAtom Seafile CI/CD` 会上传配置、生成持久化随机密钥、启动服务，并通过 `127.0.0.1:18083` 做健康检查。
 
 可选 Variables：
 
@@ -38,7 +38,6 @@
 | --- | --- |
 | `SEAFILE_DEPLOY_PATH` | `/www/wwwroot/openatom-seafile` |
 | `SEAFILE_BACKUP_PATH` | `/www/backup/openatom-seafile` |
-| `SEAFILE_NGINX_CONF_DIR` | `/www/server/panel/vhost/nginx` |
 | `OPENATOM_SHARED_SECRET_DIR` | `/www/wwwroot/.openatom-secrets` |
 
 首次部署生成的 Seafile 应急管理员密码保存在服务器的 `/www/wwwroot/openatom-seafile/.env` 中，不会写入仓库或 Actions 日志：
@@ -91,6 +90,13 @@ sha256sum -c SHA256SUMS
 生产环境还应把该目录同步到异机或对象存储；同机备份不能防范整机磁盘故障。恢复时应停止 Seafile，恢复三个数据库和 `seafile` 数据目录，再运行 `seaf-fsck` 检查一致性。
 
 ## 手工运维
+
+如需生成一份初始 HTTP 反向代理配置，可在配置 SSL 前手工执行；GitHub Actions 不会调用该脚本：
+
+```bash
+cd /www/wwwroot/openatom-seafile
+./deploy/install-nginx.sh "$PWD/.env"
+```
 
 校验并启动：
 

@@ -54,10 +54,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Compose model
         run: docker compose --env-file seafile/.env.production.example -f seafile/docker-compose.yml config --quiet
-      - name: Verify published deployment images
-        run: |
-          docker manifest inspect seafileltd/seafile-mc:13.0.25 >/dev/null
-          docker manifest inspect certbot/certbot:latest >/dev/null
+      - name: Verify published Seafile CE image
+        run: docker manifest inspect seafileltd/seafile-mc:13.0.25 >/dev/null
       - name: Validate deployment scripts
         run: |
           shellcheck seafile/deploy/bootstrap-env.sh
@@ -119,7 +117,7 @@ jobs:
           source: .deploy/seafile/docker-compose.yml,.deploy/seafile/.env.production.example,.deploy/seafile/config,.deploy/seafile/deploy,.deploy/seafile/README.md
           target: ${{ vars.SEAFILE_DEPLOY_PATH || '/www/wwwroot/openatom-seafile' }}
           strip_components: 2
-      - name: Deploy Seafile, OAuth and Nginx
+      - name: Deploy Seafile and OAuth
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -141,11 +139,7 @@ jobs:
               "$DEPLOY_DIR" \
               "$BACKUP_DIR"
             "$DEPLOY_DIR/deploy/deploy.sh" "$DEPLOY_DIR/.env"
-            "$DEPLOY_DIR/deploy/install-nginx.sh" \
-              "$DEPLOY_DIR/.env" \
-              "${{ vars.SEAFILE_NGINX_CONF_DIR || '/www/server/panel/vhost/nginx' }}"
 
             curl --fail --silent --show-error \
-              --resolve cloud.jmi-openatom.cn:443:127.0.0.1 \
-              https://cloud.jmi-openatom.cn/api2/ping/ | grep -q pong
+              http://127.0.0.1:18083/api2/ping/ | grep -q pong
             echo "Seafile production deployment completed successfully."
