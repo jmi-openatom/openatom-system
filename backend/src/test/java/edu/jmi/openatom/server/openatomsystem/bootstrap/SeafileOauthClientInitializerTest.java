@@ -88,6 +88,15 @@ class SeafileOauthClientInitializerTest {
 
     assertThatThrownBy(() -> initializer.run(null))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("at least 32 characters");
+        .hasMessageContaining("between 32 and 72 UTF-8 bytes");
+  }
+
+  @Test
+  void rejectsSecretsLongerThanBcryptLimit() {
+    properties.setClientSecret("x".repeat(73));
+
+    assertThatThrownBy(() -> initializer.run(null))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("between 32 and 72 UTF-8 bytes");
   }
 }

@@ -85,14 +85,27 @@ chmod 0700 "$(dirname -- "$shared_secret_file")"
 if [ ! -e "$shared_secret_file" ]; then
   temp_secret=$(mktemp "$(dirname -- "$shared_secret_file")/.seafile-oauth.XXXXXX")
   chmod 0600 "$temp_secret"
-  openssl rand -hex 48 > "$temp_secret"
+  # 32 random bytes become 64 ASCII hex characters, safely below BCrypt's
+  # hard 72-byte input limit used by the OpenAtom identity service.
+  openssl rand -hex 32 > "$temp_secret"
   ln "$temp_secret" "$shared_secret_file" 2>/dev/null || true
   rm -f "$temp_secret"
 fi
 test -s "$shared_secret_file"
 chmod 0600 "$shared_secret_file"
 oauth_secret=$(tr -d '\r\n' < "$shared_secret_file")
-if [ "${#oauth_secret}" -lt 32 ]; then
+if [ "${#oauth_secret}" -gt 72 ]; then
+  # Migrate the former 96-character hex secret deterministically. Keeping the
+  # first 64 hex characters retains 256 bits of entropy and lets concurrent
+  # backend/Seafile deployments converge on exactly the same value.
+  oauth_secret=$(printf '%s' "$oauth_secret" | cut -c 1-64)
+  temp_secret=$(mktemp "$(dirname -- "$shared_secret_file")/.seafile-oauth.XXXXXX")
+  printf '%s\n' "$oauth_secret" > "$temp_secret"
+  chmod 0600 "$temp_secret"
+  mv "$temp_secret" "$shared_secret_file"
+  echo "Migrated shared Seafile OAuth secret to a BCrypt-compatible length"
+fi
+if [ "${#oauth_secret}" -lt 32 ] || [ "${#oauth_secret}" -gt 72 ]; then
   echo "shared OAuth secret is invalid" >&2
   exit 65
 fi

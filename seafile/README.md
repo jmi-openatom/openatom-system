@@ -28,7 +28,7 @@
 ## 首次部署前
 
 1. 将 `cloud.jmi-openatom.cn` 的 A/AAAA 记录指向部署服务器。
-2. 确认公网 80/443 已放行，服务器已安装 Docker Compose、Nginx 和 Certbot。
+2. 确认公网 80/443 已放行，服务器已安装 Docker Compose 和 Nginx。宿主机未安装 Certbot 时，部署脚本会自动使用官方 Certbot 容器签发证书。
 3. GitHub Environment `SERVER` 复用现有部署凭据：`SERVER_HOST`、`SERVER_USER`、`SERVER_PASSWORD`，以及可选的 `SERVER_PORT`。
 4. 推送到 `main`。`OpenAtom Seafile CI/CD` 会上传配置、生成持久化随机密钥、启动服务、签发证书、安装 Nginx 配置并做健康检查。
 

@@ -54,8 +54,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Compose model
         run: docker compose --env-file seafile/.env.production.example -f seafile/docker-compose.yml config --quiet
-      - name: Verify published Seafile CE image
-        run: docker manifest inspect seafileltd/seafile-mc:13.0.25 >/dev/null
+      - name: Verify published deployment images
+        run: |
+          docker manifest inspect seafileltd/seafile-mc:13.0.25 >/dev/null
+          docker manifest inspect certbot/certbot:latest >/dev/null
       - name: Validate deployment scripts
         run: |
           shellcheck seafile/deploy/bootstrap-env.sh

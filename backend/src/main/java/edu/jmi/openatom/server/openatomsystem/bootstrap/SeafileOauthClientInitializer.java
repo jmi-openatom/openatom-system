@@ -4,6 +4,7 @@ import edu.jmi.openatom.server.openatomsystem.config.SeafileOauthClientPropertie
 import edu.jmi.openatom.server.openatomsystem.entity.OauthClient;
 import edu.jmi.openatom.server.openatomsystem.mapper.OauthClientMapper;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -32,8 +33,10 @@ public class SeafileOauthClientInitializer implements ApplicationRunner {
       log.info("Seafile OAuth client bootstrap is disabled because no client secret is configured");
       return;
     }
-    if (secret.length() < 32) {
-      throw new IllegalStateException("app.seafile-oauth.client-secret must contain at least 32 characters");
+    int secretBytes = secret.getBytes(StandardCharsets.UTF_8).length;
+    if (secretBytes < 32 || secretBytes > 72) {
+      throw new IllegalStateException(
+          "app.seafile-oauth.client-secret must contain between 32 and 72 UTF-8 bytes");
     }
 
     String clientId = required(properties.getClientId(), "app.seafile-oauth.client-id");

@@ -124,14 +124,27 @@ jobs:
             if [ ! -e "$SEAFILE_OAUTH_SECRET_FILE" ]; then
               umask 077
               TEMP_SECRET_FILE=$(mktemp "$SHARED_SECRET_DIR/.seafile-oauth.XXXXXX")
-              openssl rand -hex 48 > "$TEMP_SECRET_FILE"
+              # 32 random bytes become 64 ASCII hex characters, safely below
+              # BCrypt's hard 72-byte input limit.
+              openssl rand -hex 32 > "$TEMP_SECRET_FILE"
               ln "$TEMP_SECRET_FILE" "$SEAFILE_OAUTH_SECRET_FILE" 2>/dev/null || true
               rm -f "$TEMP_SECRET_FILE"
             fi
             test -s "$SEAFILE_OAUTH_SECRET_FILE"
             chmod 600 "$SEAFILE_OAUTH_SECRET_FILE"
             SEAFILE_OAUTH_CLIENT_SECRET=$(tr -d '\r\n' < "$SEAFILE_OAUTH_SECRET_FILE")
-            if [ "${#SEAFILE_OAUTH_CLIENT_SECRET}" -lt 32 ]; then
+            # Migrate the former `openssl rand -hex 48` value (96 characters)
+            # deterministically so the backend and Seafile workflows converge
+            # on the same 256-bit secret even when they deploy concurrently.
+            if [ "${#SEAFILE_OAUTH_CLIENT_SECRET}" -gt 72 ]; then
+              SEAFILE_OAUTH_CLIENT_SECRET=$(printf '%s' "$SEAFILE_OAUTH_CLIENT_SECRET" | cut -c 1-64)
+              TEMP_SECRET_FILE=$(mktemp "$SHARED_SECRET_DIR/.seafile-oauth.XXXXXX")
+              printf '%s\n' "$SEAFILE_OAUTH_CLIENT_SECRET" > "$TEMP_SECRET_FILE"
+              chmod 600 "$TEMP_SECRET_FILE"
+              mv "$TEMP_SECRET_FILE" "$SEAFILE_OAUTH_SECRET_FILE"
+              echo "Migrated shared Seafile OAuth secret to a BCrypt-compatible length"
+            fi
+            if [ "${#SEAFILE_OAUTH_CLIENT_SECRET}" -lt 32 ] || [ "${#SEAFILE_OAUTH_CLIENT_SECRET}" -gt 72 ]; then
               echo "Invalid shared Seafile OAuth secret" >&2
               exit 1
             fi
