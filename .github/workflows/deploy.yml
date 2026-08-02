@@ -228,26 +228,25 @@ jobs:
               VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1 \
               $COMPOSE_CMD up -d --build --remove-orphans
 
-            # 等待后端真正监听端口，避免把启动失败但仍在重启的容器误判为部署成功
-            BACKEND_READY=false
+            # 等待 Spring 完整启动，并验证 OAuth/OIDC 公开端点可用。
+            # 仅检查 TCP 端口会在应用仍初始化时过早放行。
+            OIDC_READY=false
             for attempt in $(seq 1 36); do
-              if $COMPOSE_CMD exec -T backend bash -c 'exec 3<>/dev/tcp/127.0.0.1/8921' >/dev/null 2>&1; then
-                BACKEND_READY=true
+              if curl --fail --silent --show-error \
+                http://127.0.0.1:8921/api/v1/.well-known/openid-configuration \
+                | grep -q '"authorization_endpoint"'; then
+                OIDC_READY=true
                 break
               fi
               sleep 5
             done
 
-            if [ "$BACKEND_READY" != "true" ]; then
-              echo "Critical Error: Backend did not become ready within 180 seconds."
+            if [ "$OIDC_READY" != "true" ]; then
+              echo "Critical Error: OAuth/OIDC endpoint did not become ready within 180 seconds."
               $COMPOSE_CMD ps
               $COMPOSE_CMD logs --tail=200 backend
               exit 1
             fi
-
-            curl --fail --silent --show-error \
-              http://127.0.0.1:8921/api/v1/.well-known/openid-configuration \
-              | grep -q '"authorization_endpoint"'
 
             $COMPOSE_CMD ps
 
