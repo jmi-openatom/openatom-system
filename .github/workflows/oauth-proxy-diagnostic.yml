@@ -28,6 +28,8 @@ jobs:
 
             http_status() {
               curl --silent --show-error \
+                --connect-timeout 3 \
+                --max-time 10 \
                 --output /dev/null \
                 --write-out '%{http_code}' \
                 "$@" || true
