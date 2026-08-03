@@ -1,0 +1,77 @@
+name: OAuth Proxy Diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: SERVER
+    steps:
+      - name: Inspect OAuth proxy chain
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          timeout: 30s
+          command_timeout: 2m
+          script: |
+            set -eu
+
+            http_status() {
+              curl --silent --show-error \
+                --output /dev/null \
+                --write-out '%{http_code}' \
+                "$@" || true
+            }
+
+            printf 'backend_discovery=%s\n' \
+              "$(http_status http://127.0.0.1:8921/api/v1/.well-known/openid-configuration)"
+            printf 'frontend_discovery=%s\n' \
+              "$(http_status -H 'Host: oauth.jmi-openatom.cn' http://127.0.0.1:18080/api/v1/.well-known/openid-configuration)"
+            printf 'host_nginx_discovery=%s\n' \
+              "$(http_status --insecure --resolve oauth.jmi-openatom.cn:443:127.0.0.1 https://oauth.jmi-openatom.cn/api/v1/.well-known/openid-configuration)"
+
+            printf 'backend_authorize=%s\n' \
+              "$(http_status --get http://127.0.0.1:8921/api/v1/oauth/authorize \
+                --data-urlencode 'response_type=code' \
+                --data-urlencode 'client_id=openatom-seafile' \
+                --data-urlencode 'redirect_uri=https://cloud.jmi-openatom.cn/oauth/callback/' \
+                --data-urlencode 'scope=openid profile email' \
+                --data-urlencode 'state=diagnostic')"
+            printf 'host_nginx_authorize=%s\n' \
+              "$(http_status --insecure --resolve oauth.jmi-openatom.cn:443:127.0.0.1 \
+                --get https://oauth.jmi-openatom.cn/api/v1/oauth/authorize \
+                --data-urlencode 'response_type=code' \
+                --data-urlencode 'client_id=openatom-seafile' \
+                --data-urlencode 'redirect_uri=https://cloud.jmi-openatom.cn/oauth/callback/' \
+                --data-urlencode 'scope=openid profile email' \
+                --data-urlencode 'state=diagnostic')"
+
+            vhost_dir=/www/server/panel/vhost/nginx
+            echo 'oauth_vhost_routes:'
+            for file in \
+              "$vhost_dir/oauth.jmi-openatom.cn.conf" \
+              "$vhost_dir/proxy/oauth.jmi-openatom.cn/"*.conf; do
+              [ -f "$file" ] || continue
+              printf '%s\n' "--- $file"
+              awk '/^[[:space:]]*(listen|server_name|location|proxy_pass|include)[[:space:]]/ { print }' "$file"
+            done
+
+            echo 'oauth_upstream_errors:'
+            for log_file in \
+              /www/wwwlogs/oauth.jmi-openatom.cn.error.log \
+              /www/wwwlogs/oauth.jmi-openatom.cn.log; do
+              [ -f "$log_file" ] || continue
+              grep -E 'upstream|connect\(\) failed|no live upstreams' "$log_file" \
+                | tail -n 30 \
+                | sed -E 's/client: [^,]+/client: [redacted]/; s/request: "[^"]+"/request: "[redacted]"/' || true
+            done
