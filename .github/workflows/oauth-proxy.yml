@@ -1,0 +1,129 @@
+name: OpenAtom OAuth Proxy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - backend/deploy/nginx/oauth-api-location.conf
+      - .github/workflows/oauth-proxy.yml
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: SERVER
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare upload directory
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: mkdir -p "/tmp/openatom-oauth-proxy-${{ github.run_id }}"
+
+      - name: Upload OAuth API route
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: backend/deploy/nginx/oauth-api-location.conf
+          target: /tmp/openatom-oauth-proxy-${{ github.run_id }}
+          strip_components: 3
+
+      - name: Install route and verify OAuth
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          timeout: 30s
+          command_timeout: 3m
+          script: |
+            set -eu
+
+            upload_dir="/tmp/openatom-oauth-proxy-${{ github.run_id }}"
+            source_file="$upload_dir/oauth-api-location.conf"
+            extension_dir="${{ vars.OAUTH_NGINX_EXTENSION_DIR || '/www/server/panel/vhost/nginx/extension/oauth.jmi-openatom.cn' }}"
+            destination="$extension_dir/openatom-oauth-api.conf"
+            test -s "$source_file"
+            mkdir -p "$extension_dir"
+
+            if command -v nginx >/dev/null 2>&1; then
+              nginx_bin=$(command -v nginx)
+            elif [ -x /www/server/nginx/sbin/nginx ]; then
+              nginx_bin=/www/server/nginx/sbin/nginx
+            else
+              echo "nginx is required" >&2
+              exit 69
+            fi
+
+            "$nginx_bin" -t
+            backup_file=""
+            if [ -f "$destination" ]; then
+              backup_file=$(mktemp "$extension_dir/.openatom-oauth-api-backup.XXXXXX")
+              cp "$destination" "$backup_file"
+            fi
+            temp_file=$(mktemp "$extension_dir/.openatom-oauth-api.XXXXXX")
+            install -m 0644 "$source_file" "$temp_file"
+            mv "$temp_file" "$destination"
+
+            if ! "$nginx_bin" -t; then
+              if [ -n "$backup_file" ]; then
+                mv "$backup_file" "$destination"
+              else
+                rm -f "$destination"
+              fi
+              "$nginx_bin" -t
+              echo "OAuth Nginx route was rolled back because validation failed" >&2
+              exit 1
+            fi
+            if [ -n "$backup_file" ]; then
+              rm -f "$backup_file"
+            fi
+            "$nginx_bin" -s reload
+
+            discovery_status=$(curl --silent --show-error \
+              --connect-timeout 3 \
+              --max-time 15 \
+              --insecure \
+              --resolve oauth.jmi-openatom.cn:443:127.0.0.1 \
+              --output /dev/null \
+              --write-out '%{http_code}' \
+              https://oauth.jmi-openatom.cn/api/v1/.well-known/openid-configuration || true)
+            if [ "$discovery_status" != "200" ]; then
+              echo "OAuth discovery returned HTTP $discovery_status; expected 200" >&2
+              exit 1
+            fi
+
+            authorize_status=$(curl --silent --show-error \
+              --connect-timeout 3 \
+              --max-time 15 \
+              --insecure \
+              --resolve oauth.jmi-openatom.cn:443:127.0.0.1 \
+              --output /dev/null \
+              --write-out '%{http_code}' \
+              --get https://oauth.jmi-openatom.cn/api/v1/oauth/authorize \
+              --data-urlencode 'response_type=code' \
+              --data-urlencode 'client_id=openatom-seafile' \
+              --data-urlencode 'redirect_uri=https://cloud.jmi-openatom.cn/oauth/callback/' \
+              --data-urlencode 'scope=openid profile email' \
+              --data-urlencode 'state=deployment-health-check' || true)
+            if [ "$authorize_status" != "302" ]; then
+              echo "OAuth authorize returned HTTP $authorize_status; expected 302" >&2
+              exit 1
+            fi
+
+            echo "OAuth Nginx route installed: discovery=200 authorize=302"
