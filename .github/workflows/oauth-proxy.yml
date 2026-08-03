@@ -96,6 +96,7 @@ jobs:
             "$nginx_bin" -s reload
 
             discovery_status=$(curl --silent --show-error \
+              --noproxy '*' \
               --connect-timeout 3 \
               --max-time 15 \
               --insecure \
@@ -109,6 +110,7 @@ jobs:
             fi
 
             authorize_status=$(curl --silent --show-error \
+              --noproxy '*' \
               --connect-timeout 3 \
               --max-time 15 \
               --insecure \
