@@ -29,6 +29,9 @@ OAUTH_PROVIDER_DOMAIN = "jmi-openatom"
 OAUTH_AUTHORIZATION_URL = _required("SEAFILE_OAUTH_AUTHORIZE_URL")
 OAUTH_TOKEN_URL = _required("SEAFILE_OAUTH_TOKEN_URL")
 OAUTH_USER_INFO_URL = _required("SEAFILE_OAUTH_USERINFO_URL")
+# Seahub otherwise authenticates confidential clients with HTTP Basic. The
+# OpenAtom token endpoint accepts client credentials in the form body.
+OAUTH_INCLUDE_CLIENT_ID = True
 OAUTH_SCOPE = ["openid", "profile", "email"]
 OAUTH_ATTRIBUTE_MAP = {
     "sub": (True, "uid"),
