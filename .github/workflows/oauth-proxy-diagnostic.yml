@@ -28,6 +28,7 @@ jobs:
 
             http_status() {
               curl --silent --show-error \
+                --noproxy '*' \
                 --connect-timeout 3 \
                 --max-time 10 \
                 --output /dev/null \
@@ -77,3 +78,35 @@ jobs:
                 | tail -n 30 \
                 | sed -E 's/client: [^,]+/client: [redacted]/; s/request: "[^"]+"/request: "[redacted]"/' || true
             done
+
+            redact_oauth() {
+              sed -E \
+                -e 's/([?&](code|state|access_token|refresh_token|id_token)=)[^&[:space:]]+/\1[redacted]/g' \
+                -e 's/(client_secret[=:][[:space:]]*)[^&[:space:],]+/\1[redacted]/Ig' \
+                -e 's/(Authorization:[[:space:]]*(Bearer|Basic)[[:space:]]+)[^[:space:]]+/\1[redacted]/Ig'
+            }
+
+            echo 'seafile_oauth_errors:'
+            docker logs --since 60m openatom-seafile 2>&1 \
+              | grep -Ei 'oauth|callback|token|traceback|exception|error|failed' \
+              | tail -n 250 \
+              | redact_oauth || true
+
+            echo 'seahub_oauth_errors:'
+            docker exec openatom-seafile sh -c '
+              for file in /shared/logs/seahub.log /shared/seafile/logs/seahub.log; do
+                if [ -f "$file" ]; then
+                  echo "--- $file"
+                  tail -n 400 "$file"
+                fi
+              done
+            ' 2>&1 \
+              | grep -Ei 'oauth|callback|token|traceback|exception|error|failed|---' \
+              | tail -n 300 \
+              | redact_oauth || true
+
+            echo 'backend_oauth_errors:'
+            docker logs --since 60m openatom-backend 2>&1 \
+              | grep -Ei 'oauth|oidc|authorize|token|userinfo|exception|error|failed' \
+              | tail -n 250 \
+              | redact_oauth || true
