@@ -272,4 +272,12 @@ for binding in \
 done
 
 docker compose --env-file "$env_file" -f "$compose_file" ps
+# Running containers keep their layers referenced. Remove only dangling images
+# and bound reusable build cache; persistent mail volumes are intentionally untouched.
+docker image prune --force || true
+if docker builder prune --help 2>&1 | grep -q -- '--max-used-space'; then
+  docker builder prune --force --max-used-space 5GB || true
+else
+  docker builder prune --force --keep-storage 5GB || true
+fi
 echo "mail deployment is ready"

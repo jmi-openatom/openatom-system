@@ -272,6 +272,14 @@ jobs:
             for attempt in $(seq 1 36); do
               if curl -fsS "http://127.0.0.1:${{ vars.LAB_FRONTEND_PORT || '18091' }}/api/health" >/dev/null; then
                 $COMPOSE_CMD --env-file .env -f lab-management-system/docker-compose.prod.yml ps
+                # Keep production volumes, but discard obsolete images and bound
+                # the shared BuildKit cache after the new stack is confirmed healthy.
+                docker image prune --force || true
+                if docker builder prune --help 2>&1 | grep -q -- '--max-used-space'; then
+                  docker builder prune --force --max-used-space 5GB || true
+                else
+                  docker builder prune --force --keep-storage 5GB || true
+                fi
                 exit 0
               fi
               sleep 5

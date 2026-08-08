@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   lab-mysql:
     image: mysql:8.4
@@ -20,6 +26,7 @@ services:
     networks:
       - openatom-lms
     restart: unless-stopped
+    logging: *default-logging
 
   lab-rabbitmq:
     image: rabbitmq:3.13-management
@@ -43,6 +50,7 @@ services:
     networks:
       - openatom-lms
     restart: unless-stopped
+    logging: *default-logging
 
   lab-backend:
     image: openatom-lms-backend:${LAB_IMAGE_TAG:-latest}
@@ -95,6 +103,7 @@ services:
     networks:
       - openatom-lms
     restart: unless-stopped
+    logging: *default-logging
 
   lab-frontend:
     image: openatom-lms-frontend:${LAB_IMAGE_TAG:-latest}
@@ -111,6 +120,7 @@ services:
     networks:
       - openatom-lms
     restart: unless-stopped
+    logging: *default-logging
 
 networks:
   openatom-lms:

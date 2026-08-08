@@ -126,4 +126,12 @@ case "$published_port" in
   *) echo "refusing deployment: Seafile HTTP must be bound to 127.0.0.1" >&2; exit 1 ;;
 esac
 
+# Pulled image tags can leave their previous layers dangling. Clean those only;
+# never prune volumes because they contain Seafile libraries, databases and backups.
+docker image prune --force || true
+if docker builder prune --help 2>&1 | grep -q -- '--max-used-space'; then
+  docker builder prune --force --max-used-space 5GB || true
+else
+  docker builder prune --force --keep-storage 5GB || true
+fi
 echo "Seafile deployment is healthy on 127.0.0.1:$http_port"

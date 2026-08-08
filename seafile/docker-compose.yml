@@ -1,5 +1,11 @@
 name: openatom-seafile
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: ${SEAFILE_DB_IMAGE:-mariadb:10.11}
@@ -20,6 +26,7 @@ services:
       start_period: 30s
     networks:
       - seafile
+    logging: *default-logging
 
   redis:
     image: ${SEAFILE_REDIS_IMAGE:-redis:7-alpine}
@@ -39,6 +46,7 @@ services:
       retries: 12
     networks:
       - seafile
+    logging: *default-logging
 
   seafile:
     image: ${SEAFILE_IMAGE:-seafileltd/seafile-mc:13.0.25}
@@ -95,6 +103,7 @@ services:
       start_period: 120s
     networks:
       - seafile
+    logging: *default-logging
 
   backup:
     image: ${SEAFILE_DB_IMAGE:-mariadb:10.11}
@@ -122,6 +131,7 @@ services:
         condition: service_healthy
     networks:
       - seafile
+    logging: *default-logging
 
 networks:
   seafile:

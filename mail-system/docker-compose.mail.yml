@@ -1,5 +1,11 @@
 name: openatom-mail
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   mail-db:
     image: mysql:8.4
@@ -19,6 +25,7 @@ services:
       timeout: 5s
       retries: 20
     networks: [mail-internal]
+    logging: *default-logging
 
   mail-redis:
     image: redis:7.4-alpine
@@ -34,6 +41,7 @@ services:
     environment:
       MAIL_REDIS_PASSWORD: ${MAIL_REDIS_PASSWORD:?MAIL_REDIS_PASSWORD is required}
     networks: [mail-internal]
+    logging: *default-logging
 
   clamav:
     image: clamav/clamav:1.5
@@ -49,6 +57,7 @@ services:
       start_period: 90s
     security_opt: ["no-new-privileges:true"]
     networks: [mail-internal]
+    logging: *default-logging
 
   stalwart:
     image: stalwartlabs/stalwart:v0.16
@@ -77,6 +86,7 @@ services:
       timeout: 5s
       retries: 20
     networks: [mail-internal]
+    logging: *default-logging
 
   mail-api:
     build:
@@ -122,6 +132,7 @@ services:
       timeout: 5s
       retries: 20
     networks: [mail-internal]
+    logging: *default-logging
 
   mail-web:
     build:
@@ -133,6 +144,7 @@ services:
     depends_on:
       mail-api: { condition: service_healthy }
     networks: [mail-internal]
+    logging: *default-logging
 
   prometheus:
     image: prom/prometheus:v3.13.0
@@ -155,6 +167,7 @@ services:
       node-exporter: { condition: service_started }
       blackbox-exporter: { condition: service_started }
     networks: [mail-internal]
+    logging: *default-logging
 
   alertmanager:
     image: prom/alertmanager:v0.32.1
@@ -168,6 +181,7 @@ services:
     ports:
       - "127.0.0.1:${MAIL_ALERTMANAGER_INTERNAL_PORT:-19093}:9093"
     networks: [mail-internal]
+    logging: *default-logging
 
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.28.0
@@ -178,6 +192,7 @@ services:
     ports:
       - "127.0.0.1:${MAIL_BLACKBOX_INTERNAL_PORT:-19115}:9115"
     networks: [mail-internal]
+    logging: *default-logging
 
   node-exporter:
     image: prom/node-exporter:v1.11.1
@@ -191,6 +206,7 @@ services:
     read_only: true
     security_opt: ["no-new-privileges:true"]
     networks: [mail-internal]
+    logging: *default-logging
 
 networks:
   mail-internal:

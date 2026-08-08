@@ -1,6 +1,18 @@
 # Build stage
 FROM node:20-alpine AS build
 WORKDIR /app
+
+# Pin pnpm to a Node 20 compatible release that matches the lockfile generation.
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+# Copy lockfile and package.json for dependency fetching
+COPY pnpm-lock.yaml package.json ./
+
+# Install dependencies (utilizing layer caching)
+RUN pnpm install --frozen-lockfile || pnpm install
+
+# Deployment-specific values change on every release. Declare them after the
+# dependency layer so a new version does not force pnpm to reinstall everything.
 ARG VITE_APP_VERSION
 ARG VITE_API_BASE_URL
 ARG VITE_OIDC_AUTHORITY
@@ -11,15 +23,6 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_OIDC_AUTHORITY=$VITE_OIDC_AUTHORITY
 ENV VITE_OIDC_CLIENT_ID=$VITE_OIDC_CLIENT_ID
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
-
-# Pin pnpm to a Node 20 compatible release that matches the lockfile generation.
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
-
-# Copy lockfile and package.json for dependency fetching
-COPY pnpm-lock.yaml package.json ./
-
-# Install dependencies (utilizing layer caching)
-RUN pnpm install --frozen-lockfile || pnpm install
 
 # Copy source code and build
 COPY . .
