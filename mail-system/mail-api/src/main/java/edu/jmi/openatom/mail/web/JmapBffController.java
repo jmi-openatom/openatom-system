@@ -218,20 +218,32 @@ public class JmapBffController {
       if (to.isEmpty()) {
         throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "recipient_limit_exceeded");
       }
-      // 3) Send through Resend
-      ResendClient.Result result = resendClient.send(fromAddress, to, subject, text, java.util.List.of());
+      // 3) Download any attachments from Stalwart so Resend can attach them.
+      java.util.List<ResendClient.Attachment> attachments = new java.util.ArrayList<>();
+      for (JsonNode candidate : email.path("attachments")) {
+        String blobId = candidate.path("blobId").asText("");
+        String filename = candidate.path("name").asText("attachment.bin");
+        String contentType = candidate.path("type").asText("application/octet-stream");
+        if (blobId.isBlank()) {
+          continue;
+        }
+        UserJmapClient.BinaryResponse blob =
+            jmapClient.download(session.mailAccountId(), blobId, session.accessToken());
+        if (blob.status() >= 200 && blob.status() < 300) {
+          attachments.add(new ResendClient.Attachment(filename, contentType, blob.body()));
+        }
+      }
+      // 4) Send through Resend
+      ResendClient.Result result = resendClient.send(fromAddress, to, subject, text, attachments);
       if (result.id() == null || result.id().isBlank()) {
         throw new ResponseStatusException(
             HttpStatus.BAD_GATEWAY, "resend_rejected_" + result.status() + ":" + result.detail());
       }
-      // 4) Destroy the draft
+      // 5) Move the sent message from the draft mailbox to the Sent mailbox so
+      // the web client keeps a send history. If the Sent mailbox is unknown,
+      // fall back to destroying the draft.
       if (emailId != null) {
-        ObjectNode destroyArgs = objectMapper.createObjectNode();
-        destroyArgs.put("accountId", session.mailAccountId());
-        destroyArgs.set("destroy", objectMapper.createArrayNode().add(emailId));
-        jmapClient.forward(
-            singleCall(objectMapper.createArrayNode().add("Email/set").add(destroyArgs).add("destroy")),
-            session.accessToken());
+        moveToSentOrDestroy(emailId, session);
       }
       // 5) Build the response the web client expects
       ObjectNode createdEntry = objectMapper.createObjectNode();
@@ -253,6 +265,74 @@ public class JmapBffController {
           "{\"methodResponses\":[\"error\",{\"type\":\"serverFail\"}]}");
     }
   }
+
+  /**
+   * Moves a just-sent message into the Sent mailbox so the web client keeps
+   * a send history; destroys it if the Sent mailbox cannot be resolved.
+   */
+  private void moveToSentOrDestroy(String emailId, MailSession session) {
+    try {
+      String sentId = sentMailboxId(session);
+      if (sentId == null) {
+        destroyDraft(emailId, session);
+        return;
+      }
+      ObjectNode args = objectMapper.createObjectNode();
+      args.put("accountId", session.mailAccountId());
+      ObjectNode update = objectMapper.createObjectNode();
+      ObjectNode patch = objectMapper.createObjectNode();
+      patch.set("mailboxIds", objectMapper.createObjectNode().put(sentId, true));
+      patch.set("keywords", objectMapper.createObjectNode().put("$draft", false));
+      update.set(emailId, patch);
+      args.set("update", update);
+      jmapClient.forward(
+          singleCall(objectMapper.createArrayNode().add("Email/set").add(args).add("sent-move")),
+          session.accessToken());
+    } catch (Exception exception) {
+      log.warn("submitViaResend: failed to move sent message, destroying draft: {}", exception.getMessage());
+      destroyDraft(emailId, session);
+    }
+  }
+
+  private void destroyDraft(String emailId, MailSession session) {
+    try {
+      ObjectNode destroyArgs = objectMapper.createObjectNode();
+      destroyArgs.put("accountId", session.mailAccountId());
+      destroyArgs.set("destroy", objectMapper.createArrayNode().add(emailId));
+      jmapClient.forward(
+          singleCall(objectMapper.createArrayNode().add("Email/set").add(destroyArgs).add("destroy")),
+          session.accessToken());
+    } catch (Exception ignored) {
+      // best effort cleanup
+    }
+  }
+
+  private String sentMailboxId(MailSession session) {
+    ObjectNode args = objectMapper.createObjectNode();
+    args.put("accountId", session.mailAccountId());
+    ObjectNode getCall = objectMapper.createObjectNode();
+    getCall.set("using", objectMapper.createArrayNode()
+        .add("urn:ietf:params:jmap:core")
+        .add("urn:ietf:params:jmap:mail"));
+    getCall.putArray("methodCalls").add(objectMapper.createArrayNode()
+        .add("Mailbox/get").add(args).add("mailboxes"));
+    UserJmapClient.Response response = jmapClient.forward(getCall, session.accessToken());
+    JsonNode list;
+    try {
+      list = objectMapper.readTree(response.body())
+          .path("methodResponses").path(0).path(1).path("list");
+    } catch (Exception exception) {
+      log.warn("submitViaResend: cannot parse mailbox list: {}", exception.getMessage());
+      return null;
+    }
+    for (JsonNode mailbox : list) {
+      if ("sent".equals(mailbox.path("role").asText())) {
+        return mailbox.path("id").asText();
+      }
+    }
+    return null;
+  }
+
 
   private String plainText(JsonNode email) {
     JsonNode bodyValues = email.path("bodyValues");
