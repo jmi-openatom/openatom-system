@@ -5,36 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
     <title>OpenAtom 统一登录</title>
+    <link rel="icon" type="image/png" href="../oauth-logo.png" />
     <link rel="stylesheet" href="../oauth-login.css" />
   </head>
   <body>
-    <main class="shell">
-      <section class="card" aria-labelledby="login-title">
-        <div class="brand" aria-hidden="true">OA</div>
-        <p class="eyebrow">OPENATOM ID</p>
-        <h1 id="login-title">登录以继续</h1>
-        <p class="description">使用你的 OpenAtom 账号安全访问已授权的应用。</p>
+    <div class="login-page">
+      <aside class="login-aside">
+        <div class="login-aside__brand">
+          <div class="login-aside__logo">
+            <img src="../oauth-logo.png" alt="OpenAtom" />
+          </div>
+          <span class="login-aside__badge">JMI · OPENATOM</span>
+        </div>
+        <div class="login-aside__hero">
+          <p class="login-aside__eyebrow">统一身份认证平台</p>
+          <h1 class="login-aside__title">开放原子开源社团</h1>
+          <p class="login-aside__name">JMI-OPENATOM</p>
+          <p class="login-aside__tagline">一个账号访问官网、邮箱与开放应用生态。</p>
+        </div>
+        <div class="login-aside__features">
+          <div class="login-aside__feature"><span class="login-aside__feature-dot"></span><span>社团官网与活动信息</span></div>
+          <div class="login-aside__feature"><span class="login-aside__feature-dot"></span><span>成员邮箱与开放应用</span></div>
+          <div class="login-aside__feature"><span class="login-aside__feature-dot"></span><span>统一授权与安全登录</span></div>
+        </div>
+        <div class="login-aside__footer">
+          <span>© 2025-2027 JMI-OPENATOM · 开放原子开源社团</span>
+        </div>
+      </aside>
 
-        <form id="login-form" novalidate>
-          <label for="username">用户名或学号</label>
-          <input id="username" name="username" autocomplete="username" required />
+      <main class="login-main">
+        <div class="login-form-wrapper">
+          <div class="login-form-header">
+            <p class="login-form-eyebrow">OPENATOM ID</p>
+            <h2 id="login-title">登录以继续</h2>
+            <p class="login-form-desc">使用你的 OpenAtom 账号安全访问已授权的应用。</p>
+          </div>
 
-          <label for="password">密码</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autocomplete="current-password"
-            required
-          />
+          <form id="login-form" novalidate>
+            <div class="login-field">
+              <label for="username">用户名或学号</label>
+              <input id="username" name="username" autocomplete="username" required placeholder="请输入用户名或学号" />
+            </div>
+            <div class="login-field">
+              <label for="password">密码</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="请输入密码" />
+            </div>
+            <p id="message" class="message" role="alert" aria-live="polite"></p>
+            <button id="submit" type="submit">登录并授权</button>
+          </form>
 
-          <p id="message" class="message" role="alert" aria-live="polite"></p>
-          <button id="submit" type="submit">登录并授权</button>
-        </form>
-
-        <p class="privacy">登录凭据仅提交给 OpenAtom 认证中心。</p>
-      </section>
-    </main>
+          <p class="privacy">登录凭据仅提交给 OpenAtom 认证中心。</p>
+        </div>
+      </main>
+    </div>
     <script src="../oauth-login.js" defer></script>
   </body>
 </html>

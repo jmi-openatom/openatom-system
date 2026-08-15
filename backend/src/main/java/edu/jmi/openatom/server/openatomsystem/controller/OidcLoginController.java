@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequiredArgsConstructor
 public class OidcLoginController {
   private static final String LOGIN_CSP =
-      "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+      "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; "
           + "base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
   private final AuthService authService;

@@ -101,6 +101,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				"/oauth/jwks",
 				"/oauth-login.css",
 				"/oauth-login.js",
+				"/oauth-logo.png",
 				"/bot/leave-applications",
 				"/bot/leave-applications/**",
 					"/bot/qq-events",
