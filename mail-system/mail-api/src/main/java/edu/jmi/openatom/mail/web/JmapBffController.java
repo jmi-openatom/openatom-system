@@ -61,6 +61,7 @@ public class JmapBffController {
           "Email/set",
           "EmailSubmission/set",
           "Identity/get",
+          "Identity/set",
           "Thread/get",
           "SearchSnippet/get");
   private static final Set<String> BLOCKED_ATTACHMENT_EXTENSIONS =
@@ -329,9 +330,16 @@ public class JmapBffController {
       }
       if (senderAddress != null) {
         JsonNode from = draft.path("from");
-        if (!from.isArray()
-            || from.size() != 1
-            || !senderAddress.equalsIgnoreCase(from.get(0).path("email").asText())) {
+        if (!from.isArray() || from.size() != 1) {
+          throw new ResponseStatusException(HttpStatus.FORBIDDEN, "sender_address_mismatch");
+        }
+        String fromEmail = from.get(0).path("email").asText();
+        // Sending is also allowed from the Resend relay domain with the same
+        // local part (mailer.jmi-openatom.cn).
+        String relaySender =
+            senderAddress.replaceFirst("@.*$", "@mailer.jmi-openatom.cn");
+        if (!senderAddress.equalsIgnoreCase(fromEmail)
+            && !relaySender.equalsIgnoreCase(fromEmail)) {
           throw new ResponseStatusException(HttpStatus.FORBIDDEN, "sender_address_mismatch");
         }
       }
