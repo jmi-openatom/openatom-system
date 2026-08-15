@@ -136,6 +136,7 @@ public class JmapBffController {
             .body(response.body());
       }
     }
+    log.info("jmap forward: {} -> {}", methodNameSummary(payload), safePreviewBody(jmapClient.forward(payload, session.accessToken()).body(), 500));
     UserJmapClient.Response response = jmapClient.forward(payload, session.accessToken());
     if (response.status() == 401 && session.refreshToken() != null) {
       session = refreshIfNeeded(httpSession, session, true);
@@ -698,6 +699,21 @@ public class JmapBffController {
             refreshed.accessToken(), refreshed.refreshToken(), refreshed.expiresAt());
     httpSession.setAttribute(OAuthBffController.MAIL_SESSION, updated);
     return updated;
+  }
+
+
+  private String methodNameSummary(JsonNode payload) {
+    StringBuilder names = new StringBuilder();
+    for (JsonNode call : payload.path("methodCalls")) {
+      if (names.length() > 0) names.append(",");
+      names.append(call.path(0).asText("?"));
+    }
+    return names.toString();
+  }
+
+  private String safePreviewBody(String body, int max) {
+    if (body == null) return "null";
+    return body.length() <= max ? body : body.substring(0, max) + "...(" + body.length() + "B)";
   }
 
   private record SubmissionWindow(Instant startedAt, int count) {}
