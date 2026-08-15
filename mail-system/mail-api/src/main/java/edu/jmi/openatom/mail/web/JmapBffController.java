@@ -136,8 +136,8 @@ public class JmapBffController {
             .body(response.body());
       }
     }
-    log.info("jmap forward: {} -> {}", methodNameSummary(payload), safePreviewBody(jmapClient.forward(payload, session.accessToken()).body(), 500));
     UserJmapClient.Response response = jmapClient.forward(payload, session.accessToken());
+    log.info("jmap forward: {} -> {}", methodNameSummary(payload), safePreviewBody(response.body(), 500));
     if (response.status() == 401 && session.refreshToken() != null) {
       session = refreshIfNeeded(httpSession, session, true);
       response = jmapClient.forward(payload, session.accessToken());
