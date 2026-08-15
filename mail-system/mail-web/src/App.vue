@@ -418,7 +418,11 @@ async function submitCompose() {
       identityId: mailContext.value.identityId,
       draftsMailboxId: drafts.id,
       fromName: session.value.displayName || '开放原子成员',
-      fromAddress: session.value.address,
+      // Resend relay requires a verified sender domain (mailer.jmi-openatom.cn);
+      // keep the mailbox identity on the main domain but send as the relay domain.
+      fromAddress: session.value.address
+        ? session.value.address.replace(/@.*$/, '@mailer.jmi-openatom.cn')
+        : session.value.address,
       to: recipients,
       subject: compose.subject.trim() || '（无主题）',
       body: compose.body,
