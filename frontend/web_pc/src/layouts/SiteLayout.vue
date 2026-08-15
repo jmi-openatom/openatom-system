@@ -75,6 +75,17 @@
           </el-button>
           <el-button
             v-if="isLoggedIn"
+            class="notification-btn site-header__action--mail"
+            aria-label="打开邮箱"
+            title="打开邮箱"
+            @click="openMail"
+          >
+            <el-icon>
+              <Mail />
+            </el-icon>
+          </el-button>
+          <el-button
+            v-if="isLoggedIn"
             :icon="Grid"
             class="site-header__action--workspace"
             plain
@@ -226,6 +237,7 @@ import {
   ArrowDown as ArrowDownIcon,
   Bell as BellIcon,
   Grid as GridIcon,
+  Mail as MailIcon,
   Menu as MenuIcon,
   UserFilled as UserFilledIcon,
 } from '@element-plus/icons-vue'
@@ -243,6 +255,8 @@ const ArrowDown = markRaw(ArrowDownIcon)
 const UserFilled = markRaw(UserFilledIcon)
 
 const Bell = markRaw(BellIcon)
+
+const Mail = markRaw(MailIcon)
 
 const Grid = markRaw(GridIcon)
 
@@ -313,6 +327,10 @@ async function fetchUnreadCount() {
 
 function updateHeaderState() {
   hasScrolledPastHeroTop.value = window.scrollY > 72
+}
+
+function openMail() {
+  window.open('https://mail.jmi-openatom.cn', '_blank')
 }
 
 async function handleNavCommand(command: string) {
