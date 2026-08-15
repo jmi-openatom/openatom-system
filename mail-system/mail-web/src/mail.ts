@@ -84,7 +84,7 @@ export async function ensureRelayIdentity(
   const created = await jmap([
     ['Identity/set', {
       accountId,
-      create: { relay: { name: displayName || '成员', email: relayEmail, sortOrder: 100 } },
+      create: { relay: { name: displayName || '成员', email: relayEmail } },
     }, 'relay'],
   ])
   const relayResult = created.methodResponses[0]?.[1]
