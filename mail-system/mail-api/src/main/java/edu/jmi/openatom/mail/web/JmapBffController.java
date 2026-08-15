@@ -282,9 +282,11 @@ public class JmapBffController {
     MailSession session = requireSession(httpSession, null, false);
     session = refreshIfNeeded(httpSession, session, false);
     UserJmapClient.Response response = jmapClient.session(session.accessToken());
+    log.info("jmapSession: status={} body={}", response.status(), response.body());
     if (response.status() == 401 && session.refreshToken() != null) {
       session = refreshIfNeeded(httpSession, session, true);
       response = jmapClient.session(session.accessToken());
+      log.info("jmapSession(refreshed): status={} body={}", response.status(), response.body());
     }
     if (response.status() < 200 || response.status() >= 300) {
       return ResponseEntity.status(response.status())
