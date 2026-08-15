@@ -5,6 +5,8 @@ import edu.jmi.openatom.mail.service.AttachmentTooLargeException;
 import edu.jmi.openatom.mail.service.StalwartClientException;
 import java.time.Instant;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,6 +15,8 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+  private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
   @ExceptionHandler(StalwartClientException.class)
   ResponseEntity<Map<String, Object>> stalwartUnavailable(StalwartClientException exception) {
     return error(HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage());
@@ -30,6 +34,7 @@ public class ApiExceptionHandler {
 
   @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
   ResponseEntity<Map<String, Object>> invalid(RuntimeException exception) {
+    log.warn("mail-api rejected request with 422: {}", exception.getMessage(), exception);
     return error(HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage());
   }
 

@@ -47,6 +47,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api")
 public class JmapBffController {
+  private static final org.slf4j.Logger log =
+      org.slf4j.LoggerFactory.getLogger(JmapBffController.class);
+
   private static final String MAIL_CAPABILITY = "urn:ietf:params:jmap:mail";
   private static final String UPLOADED_ATTACHMENTS = "mail.uploaded.attachments";
   private static final int MAX_REQUEST_BYTES = 25 * 1024 * 1024;
@@ -179,6 +182,7 @@ public class JmapBffController {
       if (emailSet != null && !emailSet.isNull()) {
         UserJmapClient.Response setResponse = jmapClient.forward(
             singleCall(emailSet), session.accessToken());
+        log.info("submitViaResend: Email/set status={} body={}", setResponse.status(), setResponse.body());
         JsonNode setBody = objectMapper.readTree(setResponse.body());
         JsonNode created = setBody.path("methodResponses").path(0).path(1).path("created");
         String clientId = emailSet.path(1).path("create").fieldNames().next();
@@ -192,9 +196,14 @@ public class JmapBffController {
       getArgs.put("accountId", session.mailAccountId());
       getArgs.set("ids", objectMapper.createArrayNode().add(emailId));
       ObjectNode getCall = objectMapper.createObjectNode();
+      getCall.set("using", objectMapper.createArrayNode()
+          .add("urn:ietf:params:jmap:core")
+          .add("urn:ietf:params:jmap:mail")
+          .add("urn:ietf:params:jmap:submission"));
       getCall.putArray("methodCalls").add(objectMapper.createArrayNode()
           .add("Email/get").add(getArgs).add("draft-get"));
       UserJmapClient.Response getResponse = jmapClient.forward(getCall, session.accessToken());
+      log.info("submitViaResend: Email/get status={} body={}", getResponse.status(), getResponse.body());
       JsonNode getBody = objectMapper.readTree(getResponse.body());
       JsonNode email = getBody.path("methodResponses").path(0).path(1).path("list").path(0);
       String fromAddress = email.path("from").path(0).path("email").asText(session.address());
