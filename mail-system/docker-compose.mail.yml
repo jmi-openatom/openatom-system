@@ -107,7 +107,9 @@ services:
       # Bootstrap starts only infrastructure. deploy.sh refuses these sentinels in full mode.
       MAIL_ADDRESS_SALT: ${MAIL_ADDRESS_SALT:-bootstrap-not-configured}
       MAIL_INTERNAL_SERVICE_TOKEN: ${MAIL_INTERNAL_SERVICE_TOKEN:-bootstrap-not-configured}
-      STALWART_API_URL: http://stalwart:8080/api
+      # JMAP protocol endpoint, not the /api management surface: the account
+      # automation client POSTs x:Account/* methods here with the API token.
+      STALWART_API_URL: http://stalwart:8080/jmap
       STALWART_JMAP_SESSION_URL: http://stalwart:8080/.well-known/jmap
       STALWART_JMAP_URL: http://stalwart:8080/jmap
       STALWART_API_TOKEN: ${STALWART_API_TOKEN:-bootstrap-not-configured}
