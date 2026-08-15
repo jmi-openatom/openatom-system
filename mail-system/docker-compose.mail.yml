@@ -177,11 +177,21 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.32.1
     restart: unless-stopped
+    environment:
+      RESEND_SMTP_USERNAME: ${MAIL_RESEND_SMTP_USERNAME:-resend}
+      RESEND_SMTP_PASSWORD: ${MAIL_RESEND_SMTP_PASSWORD:-}
+      MAIL_ALERT_RECIPIENT: ${MAIL_ALERT_RECIPIENT:-postmaster@mailer.jmi-openatom.cn}
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - --config.file=/etc/alertmanager/alertmanager.yml
-      - --storage.path=/alertmanager
+      - |
+        set -eu
+        sed -e "s|__RESEND_SMTP_USERNAME__|$$RESEND_SMTP_USERNAME|g" \
+            -e "s|__RESEND_SMTP_PASSWORD__|$$RESEND_SMTP_PASSWORD|g" \
+            -e "s|__ALERT_RECIPIENT__|$$MAIL_ALERT_RECIPIENT|g" \
+            /etc/alertmanager/alertmanager.yml.tmpl > /etc/alertmanager/alertmanager.yml
+        exec /bin/alertmanager --config.file=/etc/alertmanager/alertmanager.yml --storage.path=/alertmanager
     volumes:
-      - ./deploy/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./deploy/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml.tmpl:ro
       - alertmanager_data:/alertmanager
     ports:
       - "127.0.0.1:${MAIL_ALERTMANAGER_INTERNAL_PORT:-19093}:9093"

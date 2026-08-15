@@ -2,6 +2,8 @@
 
 这是独立部署的自建邮件网站实现。它由 Vue 3 邮件前端、Spring Boot OAuth BFF/邮箱控制面、Stalwart、MySQL、Redis、ClamAV 与自托管监控栈组成；主站只通过事务 Outbox 推送用户快照，因此邮件服务故障不会阻塞注册。
 
+外发投递通过 [Resend](https://resend.com) Email API 完成：mail-api 收到 `EmailSubmission/set` 后，草稿仍保存在 Stalwart，正文读回后经 `POST https://api.resend.com/emails` 发送（发件地址使用 Resend 已验证的 `mailer.jmi-openatom.cn` 域），随后销毁草稿并伪造 JMAP 提交响应；收件、存储与读取仍由 Stalwart 提供。因此需要 `MAIL_RESEND_API_KEY`（`re_...`），监控告警则经 Resend SMTP 中继（`smtp.resend.com:465`，用户名 `resend`、密码即 API Key）投递。
+
 ## 目录
 
 - `mail-web/`：独立邮箱网站，UI Token 与主站 `frontend/web_pc/src/styles/tokens.css` 对齐。

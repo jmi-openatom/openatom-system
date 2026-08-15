@@ -1,8 +1,11 @@
+# Rendered at container start from environment; do not edit inside the container.
 global:
   resolve_timeout: 5m
-  smtp_smarthost: stalwart:25
-  smtp_from: alertmanager@localhost
-  smtp_require_tls: false
+  smtp_smarthost: smtp.resend.com:465
+  smtp_from: alertmanager@mailer.jmi-openatom.cn
+  smtp_auth_username: __RESEND_SMTP_USERNAME__
+  smtp_auth_password: __RESEND_SMTP_PASSWORD__
+  smtp_require_tls: true
 
 route:
   receiver: mail-operations
@@ -14,5 +17,5 @@ route:
 receivers:
   - name: mail-operations
     email_configs:
-      - to: postmaster@jmi-openatom.cn
+      - to: __ALERT_RECIPIENT__
         send_resolved: true

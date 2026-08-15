@@ -12,6 +12,7 @@ import edu.jmi.openatom.mail.oauth.MailSession;
 import edu.jmi.openatom.mail.oauth.OAuthClient;
 import edu.jmi.openatom.mail.service.MalwareScanner;
 import edu.jmi.openatom.mail.service.MalwareScanUnavailableException;
+import edu.jmi.openatom.mail.service.ResendClient;
 import edu.jmi.openatom.mail.service.UserJmapClient;
 import java.time.Instant;
 import java.util.Map;
@@ -153,6 +154,73 @@ class JmapBffControllerTest {
             () -> controller.validateMethodCalls(payload, "own-account", "me@example.com"))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("sender_address_mismatch");
+  }
+
+
+  @Test
+  void sendsSubmissionThroughResendWhenConfigured() throws Exception {
+    UserJmapClient client = mock(UserJmapClient.class);
+    ResendClient resend = mock(ResendClient.class);
+    JmapBffController sendController =
+        new JmapBffController(client, mock(OAuthClient.class), json, cleanScanner, resend);
+    when(resend.isConfigured()).thenReturn(true);
+    when(resend.send(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyList()))
+        .thenReturn(new ResendClient.Result("resend-message-1", 200, null));
+    when(client.forward(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(
+            new UserJmapClient.Response(
+                200,
+                "{\"methodResponses\":[[\"Email/set\",{\"accountId\":\"account-1\",\"created\":{\"draft\":{\"id\":\"email-1\"}}},\"c1\"]]}"),
+            new UserJmapClient.Response(
+                200,
+                "{\"methodResponses\":[[\"Email/get\",{\"accountId\":\"account-1\",\"list\":[{\"id\":\"email-1\",\"from\":[{\"email\":\"ceshiyonghu@mailer.jmi-openatom.cn\"}],\"to\":[{\"email\":\"a@example.com\"}],\"subject\":\"hello\",\"textBody\":[{\"partId\":\"body\",\"type\":\"text/plain\"}],\"bodyValues\":{\"body\":{\"value\":\"world\"}}}]},\"c1\"]]}"),
+            new UserJmapClient.Response(
+                200,
+                "{\"methodResponses\":[[\"Email/set\",{\"accountId\":\"account-1\",\"destroyed\":[\"email-1\"]},\"c1\"]]}"));
+    MockHttpServletRequest request = authenticatedRequest();
+    JsonNode payload = json.readTree("""
+        {"methodCalls":[
+          ["Email/set",{"accountId":"account-1","create":{"draft":{"to":[{"email":"a@example.com"}],"from":[{"email":"ceshiyonghu@mailer.jmi-openatom.cn"}],"subject":"hello","textBody":[{"partId":"body","type":"text/plain"}],"bodyValues":{"body":{"value":"world"}}}}},"c1"],
+          ["EmailSubmission/set",{"accountId":"account-1","create":{"send":{"emailId":"#draft","identityId":"id-1"}},"onSuccessDestroyEmail":["#draft"]},"c2"]
+        ]}
+        """);
+
+    var response = sendController.jmap(payload, "csrf-token", request);
+
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    assertThat(response.getBody()).contains("resend-message-1");
+    verify(resend).send(
+        org.mockito.ArgumentMatchers.eq("ceshiyonghu@mailer.jmi-openatom.cn"),
+        org.mockito.ArgumentMatchers.eq(java.util.List.of("a@example.com")),
+        org.mockito.ArgumentMatchers.eq("hello"),
+        org.mockito.ArgumentMatchers.eq("world"),
+        org.mockito.ArgumentMatchers.anyList());
+  }
+
+  @Test
+  void fallsBackToStalwartSubmissionWhenResendNotConfigured() throws Exception {
+    UserJmapClient client = mock(UserJmapClient.class);
+    ResendClient resend = mock(ResendClient.class);
+    JmapBffController sendController =
+        new JmapBffController(client, mock(OAuthClient.class), json, cleanScanner, resend);
+    when(resend.isConfigured()).thenReturn(false);
+    when(client.forward(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(new UserJmapClient.Response(200, "{\"methodResponses\":[]}"));
+    MockHttpServletRequest request = authenticatedRequest();
+    JsonNode payload = json.readTree("""
+        {"methodCalls":[["EmailSubmission/set",{"accountId":"account-1","create":{}},"c1"]]}
+        """);
+
+    var response = sendController.jmap(payload, "csrf-token", request);
+
+    assertThat(response.getStatusCode().value()).isEqualTo(200);
+    verify(client).forward(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq("access-token"));
+    verify(resend, org.mockito.Mockito.never()).send(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyList());
   }
 
   @Test

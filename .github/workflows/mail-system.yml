@@ -288,6 +288,7 @@ jobs:
           MAIL_ADDRESS_SALT: ${{ secrets.MAIL_ADDRESS_SALT }}
           MAIL_INTERNAL_SERVICE_TOKEN: ${{ secrets.MAIL_INTERNAL_SERVICE_TOKEN }}
           MAIL_OAUTH_CLIENT_SECRET: ${{ secrets.MAIL_OAUTH_CLIENT_SECRET }}
+          MAIL_RESEND_API_KEY: ${{ secrets.MAIL_RESEND_API_KEY }}
         run: |
           test -n "$MAIL_SERVER_HOST"
           test -n "$MAIL_SERVER_USER"
@@ -302,6 +303,7 @@ jobs:
             test -n "$MAIL_ADDRESS_SALT"
             test -n "$MAIL_INTERNAL_SERVICE_TOKEN"
             test -n "$MAIL_OAUTH_CLIENT_SECRET"
+            test -n "$MAIL_RESEND_API_KEY"
           fi
       - name: Deploy mail stack over SSH
         uses: appleboy/ssh-action@v1.2.2
@@ -314,6 +316,7 @@ jobs:
           MAIL_ADDRESS_SALT: ${{ secrets.MAIL_ADDRESS_SALT }}
           MAIL_INTERNAL_SERVICE_TOKEN: ${{ secrets.MAIL_INTERNAL_SERVICE_TOKEN }}
           MAIL_OAUTH_CLIENT_SECRET: ${{ secrets.MAIL_OAUTH_CLIENT_SECRET }}
+          MAIL_RESEND_API_KEY: ${{ secrets.MAIL_RESEND_API_KEY }}
         with:
           host: ${{ secrets.MAIL_SERVER_HOST }}
           username: ${{ secrets.MAIL_SERVER_USER }}
@@ -321,7 +324,7 @@ jobs:
           password: ${{ secrets.MAIL_SERVER_PASSWORD }}
           timeout: 30s
           command_timeout: 20m
-          envs: DEPLOYMENT_MODE,MAIL_ACME_EMAIL,MAIL_DB_PASSWORD,MAIL_DB_ROOT_PASSWORD,MAIL_REDIS_PASSWORD,MAIL_ADDRESS_SALT,MAIL_INTERNAL_SERVICE_TOKEN,MAIL_OAUTH_CLIENT_SECRET
+          envs: DEPLOYMENT_MODE,MAIL_ACME_EMAIL,MAIL_DB_PASSWORD,MAIL_DB_ROOT_PASSWORD,MAIL_REDIS_PASSWORD,MAIL_ADDRESS_SALT,MAIL_INTERNAL_SERVICE_TOKEN,MAIL_OAUTH_CLIENT_SECRET,MAIL_RESEND_API_KEY
           script: |
             set -eu
             deploy_path='${{ vars.MAIL_DEPLOY_PATH || '/www/wwwroot/openatom-system' }}'
@@ -352,6 +355,9 @@ jobs:
             fi
             if [ -n "$MAIL_OAUTH_CLIENT_SECRET" ]; then
               upsert_env MAIL_OAUTH_CLIENT_SECRET "$MAIL_OAUTH_CLIENT_SECRET"
+            fi
+            if [ -n "$MAIL_RESEND_API_KEY" ]; then
+              upsert_env MAIL_RESEND_API_KEY "$MAIL_RESEND_API_KEY"
             fi
             if [ -n "$MAIL_ACME_EMAIL" ]; then
               upsert_env MAIL_ACME_EMAIL "$MAIL_ACME_EMAIL"

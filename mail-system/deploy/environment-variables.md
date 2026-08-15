@@ -15,6 +15,10 @@
 | `STALWART_CONFIG_TOKEN` | 仅服务器 `0600` 环境文件 | 幂等应用 Stalwart 域、OIDC、MTA 和监控配置 | 首次自动部署由 Stalwart 生成并写入，不建 GitHub Secret |
 | `STALWART_API_TOKEN` | 仅服务器 `0600` 环境文件 | `mail-api` 自动管理 Stalwart 账号 | 首次自动部署由 Stalwart 生成并写入，不建 GitHub Secret |
 | `STALWART_DOMAIN_ID` | 仅服务器 `0600` 环境文件 | 创建邮箱别名时引用的域对象 | 首次自动部署精确查询并写入，不建 GitHub Secret |
+| `MAIL_RESEND_API_KEY` | GitHub Secret / 邮件环境文件 | Resend 出站发信 API Key（`re_...`），mail-api 经 Resend 投递外发邮件 | 在 Resend 控制台创建 API Key，域名 `mailer.jmi-openatom.cn` 验证通过后填写 |
+| `MAIL_RESEND_SMTP_USERNAME` | GitHub Secret / 邮件环境文件 | Resend SMTP 中继用户名（固定 `resend`） | 与 `MAIL_RESEND_API_KEY` 一起在部署时由 deploy.sh 填充或手工填写 |
+| `MAIL_RESEND_SMTP_PASSWORD` | GitHub Secret / 邮件环境文件 | Resend SMTP 中继密码（即 API Key） | 与 `MAIL_RESEND_API_KEY` 相同；用于 Alertmanager 告警邮件投递 |
+| `MAIL_ALERT_RECIPIENT` | 邮件环境文件 | Alertmanager 告警邮件收件人；必须是真实可收信邮箱（Resend 已验证域上的地址若无 inbound 路由会退信） | 运维或管理员邮箱，如 `ops@example.com` |
 
 `STALWART_RECOVERY_ADMIN` 也不需要 GitHub Secret。首次引导会在服务器本地生成一次性值；两枚 Key 验证成功后删除临时账号密码、清空该值并设置 `STALWART_RECOVERY_MODE=0`。只有明确的灾难恢复才人工设置它。
 
@@ -55,6 +59,7 @@ openssl rand -base64 48
 | `STALWART_TLS_HOST_DIR` | `./.runtime/stalwart-tls` | Certbot 证书复制目录，仅 Stalwart 容器只读挂载 |
 | `NGINX_CONF_DIR` | `/etc/nginx/conf.d` | 自动安装邮件站 Nginx 配置的目录 |
 | `MAIL_BACKUP_AGE_RECIPIENT` | 无 | `age1...` 形式的备份加密公钥；启用备份任务时必填，不是 Secret |
+| `MAIL_RESEND_RELAY_DOMAIN` | `mailer.jmi-openatom.cn` | Resend 已验证的发件域名，Web 前端以此域名构造发件 Identity | Resend 控制台“Domains”中确认验证状态 |
 
 ## 主站必填项
 
