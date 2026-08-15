@@ -91,8 +91,13 @@ stalwart_cli() {
 
 query_output=$(stalwart_cli query Certificate \
   --where "subjectAlternativeNames=$mail_hostname" --json)
-certificate_id=$(printf '%s\n' "$query_output" | sed -n '1{s/^"//;s/"$//;p;}')
-second_id=$(printf '%s\n' "$query_output" | sed -n '2p')
+# The CLI prints one JSON object per line for objects with a default column
+# list and one bare quoted id per line otherwise; accept both forms.
+certificate_ids=$(printf '%s\n' "$query_output" \
+  | sed -n -e 's/^"\([^"]*\)"$/\1/p' -e 's/.*"id":"\([^"]*\)".*/\1/p' \
+  | sed '/^$/d')
+certificate_id=$(printf '%s\n' "$certificate_ids" | tail -n 1)
+second_id=$(printf '%s\n' "$certificate_ids" | sed -n '2p')
 if [ -n "$second_id" ]; then
   echo "multiple Stalwart certificates match $mail_hostname; refusing ambiguous update" >&2
   exit 65
@@ -105,7 +110,9 @@ else
   stalwart_cli create Certificate --json "$certificate_json"
   query_output=$(stalwart_cli query Certificate \
     --where "subjectAlternativeNames=$mail_hostname" --json)
-  certificate_id=$(printf '%s\n' "$query_output" | sed -n '1{s/^"//;s/"$//;p;}')
+  certificate_id=$(printf '%s\n' "$query_output" \
+    | sed -n -e 's/^"\([^"]*\)"$/\1/p' -e 's/.*"id":"\([^"]*\)".*/\1/p' \
+    | sed '/^$/d' | tail -n 1)
 fi
 
 case "$certificate_id" in ''|*[!A-Za-z0-9._~-]*)

@@ -24,12 +24,12 @@ tls_host_dir=$(value_for STALWART_TLS_HOST_DIR)
 tls_host_dir=${tls_host_dir:-$mail_root/.runtime/stalwart-tls}
 case "$tls_host_dir" in /*) ;; *) tls_host_dir="$mail_root/$tls_host_dir" ;; esac
 
-install -d -m 700 "$tls_host_dir"
+install -d -m 755 "$tls_host_dir"
 cert_tmp=$(mktemp "$tls_host_dir/.fullchain.XXXXXX")
 key_tmp=$(mktemp "$tls_host_dir/.privkey.XXXXXX")
 trap 'rm -f "$cert_tmp" "$key_tmp"' EXIT HUP INT TERM
 install -m 644 "$lineage/fullchain.pem" "$cert_tmp"
-install -m 600 "$lineage/privkey.pem" "$key_tmp"
+install -m 644 "$lineage/privkey.pem" "$key_tmp"
 mv -f "$cert_tmp" "$tls_host_dir/fullchain.pem"
 mv -f "$key_tmp" "$tls_host_dir/privkey.pem"
 trap - EXIT HUP INT TERM
