@@ -81,7 +81,7 @@
             @click="openMail"
           >
             <el-icon>
-              <Mail />
+              <Message />
             </el-icon>
           </el-button>
           <el-button
@@ -237,8 +237,8 @@ import {
   ArrowDown as ArrowDownIcon,
   Bell as BellIcon,
   Grid as GridIcon,
-  Mail as MailIcon,
   Menu as MenuIcon,
+  Message as MessageIcon,
   UserFilled as UserFilledIcon,
 } from '@element-plus/icons-vue'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -256,7 +256,7 @@ const UserFilled = markRaw(UserFilledIcon)
 
 const Bell = markRaw(BellIcon)
 
-const Mail = markRaw(MailIcon)
+const Message = markRaw(MessageIcon)
 
 const Grid = markRaw(GridIcon)
 
