@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -85,6 +86,7 @@ public class JmapBffController {
   private final ConcurrentHashMap<String, SubmissionWindow> submissionWindows =
       new ConcurrentHashMap<>();
 
+  @Autowired
   public JmapBffController(
       UserJmapClient jmapClient,
       OAuthClient oauthClient,
@@ -96,6 +98,15 @@ public class JmapBffController {
     this.objectMapper = objectMapper;
     this.malwareScanner = malwareScanner;
     this.resendClient = resendClient;
+  }
+
+  /** Kept for unit tests; the Resend sender is absent (mail is not sent). */
+  JmapBffController(
+      UserJmapClient jmapClient,
+      OAuthClient oauthClient,
+      ObjectMapper objectMapper,
+      MalwareScanner malwareScanner) {
+    this(jmapClient, oauthClient, objectMapper, malwareScanner, null);
   }
 
   @PostMapping(value = "/jmap", consumes = MediaType.APPLICATION_JSON_VALUE)
