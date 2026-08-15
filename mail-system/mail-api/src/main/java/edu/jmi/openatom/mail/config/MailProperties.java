@@ -24,7 +24,11 @@ public class MailProperties {
     requireSecret(addressSalt, "MAIL_ADDRESS_SALT");
     requireSecret(internalServiceToken, "MAIL_INTERNAL_SERVICE_TOKEN");
     requireSecret(stalwart.apiToken, "STALWART_API_TOKEN");
-    requireSecret(stalwart.domainId, "STALWART_DOMAIN_ID");
+    // STALWART_DOMAIN_ID is a Stalwart object id (a short base32 string such
+    // as "b"), not a secret; only require it to be present.
+    if (stalwart.domainId == null || stalwart.domainId.isBlank()) {
+      throw new IllegalStateException("STALWART_DOMAIN_ID is required");
+    }
     URI.create(stalwart.apiUrl);
     URI.create(stalwart.sessionUrl);
     URI.create(stalwart.jmapUrl);
