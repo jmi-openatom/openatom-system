@@ -54,7 +54,7 @@ jmap_call() {
     -H "Authorization: Bearer $api_token" \
     -H 'Content-Type: application/json' \
     --data-binary "@$request_file" \
-    "http://127.0.0.1:$setup_port/api" > "$response_file"
+    "http://127.0.0.1:$setup_port/jmap" > "$response_file"
   chmod 600 "$response_file"
   if ! jq -e '
       (.methodResponses | type == "array") and

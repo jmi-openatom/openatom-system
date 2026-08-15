@@ -225,7 +225,9 @@ jobs:
           mail-system/deploy/stalwart/apply-plan.sh "$ci_env"
           metrics_file="$(mktemp)"
           curl --fail --silent http://127.0.0.1:18081/metrics/prometheus > "$metrics_file"
-          grep -q '^stalwart_queue_count' "$metrics_file"
+          # The queue gauge (stalwart_queue_count) is enterprise-only in Stalwart 0.16;
+          # verify the community Prometheus endpoint instead with a stable exported gauge.
+          grep -q '^domain_count' "$metrics_file"
           rm -f "$metrics_file"
           mail-system/deploy/acceptance/stalwart-account-api-smoke.sh "$ci_env"
           rm -f "$ci_env"

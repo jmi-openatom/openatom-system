@@ -41,14 +41,8 @@ groups:
           summary: "邮件服务器磁盘可用空间低于 15%"
           description: "检查 Stalwart 数据卷、数据库卷和备份保留策略。"
 
-      - alert: MailQueueBacklog
-        expr: max(stalwart_queue_count{job="stalwart"}) > 1000
-        for: 15m
-        labels: { severity: warning }
-        annotations:
-          summary: "Stalwart 出站队列持续积压"
-          description: "队列超过 1000 封并持续 15 分钟，请检查 DNS、TCP 25、对端退信和 IP 信誉。"
-
+      # stalwart_queue_count is enterprise-only in Stalwart 0.16; the community
+      # image does not export a queue gauge, so a queue-backlog alert cannot fire.
       - alert: MailOAuthCallbackFailures
         expr: sum(rate(http_server_requests_seconds_count{job="mail-api",uri="/api/oauth/callback",status=~"4..|5.."}[5m])) > 0.1
         for: 10m
