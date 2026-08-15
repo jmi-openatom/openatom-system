@@ -110,7 +110,9 @@ services:
       # JMAP protocol endpoint, not the /api management surface: the account
       # automation client POSTs x:Account/* methods here with the API token.
       STALWART_API_URL: http://stalwart:8080/jmap
-      STALWART_JMAP_SESSION_URL: http://stalwart:8080/.well-known/jmap
+      # /.well-known/jmap answers with a 307 redirect that the Java HTTP client
+      # does not follow; point directly at the session endpoint.
+      STALWART_JMAP_SESSION_URL: http://stalwart:8080/jmap/session
       STALWART_JMAP_URL: http://stalwart:8080/jmap
       STALWART_API_TOKEN: ${STALWART_API_TOKEN:-bootstrap-not-configured}
       STALWART_DOMAIN_ID: ${STALWART_DOMAIN_ID:-bootstrap-not-configured}
