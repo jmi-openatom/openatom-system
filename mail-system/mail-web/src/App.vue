@@ -308,7 +308,7 @@ async function loadMailbox() {
   mailLoading.value = true
   errorMessage.value = ''
   try {
-    mailContext.value = await bootstrapMail()
+    mailContext.value = await bootstrapMail(session.value.address)
     selectedMailboxId.value =
       mailContext.value.mailboxes.find((item) => item.role === 'inbox')?.id ??
       mailContext.value.mailboxes[0]?.id ?? null
@@ -415,14 +415,12 @@ async function submitCompose() {
   try {
     await sendEmail({
       accountId: mailContext.value.accountId,
-      identityId: mailContext.value.identityId,
+      // Resend relay requires sending as the verified relay domain; use the
+      // relay Identity so the envelope sender matches its email address.
+      identityId: mailContext.value.relayIdentity?.id ?? mailContext.value.identityId,
       draftsMailboxId: drafts.id,
       fromName: session.value.displayName || '开放原子成员',
-      // Resend relay requires a verified sender domain (mailer.jmi-openatom.cn);
-      // keep the mailbox identity on the main domain but send as the relay domain.
-      fromAddress: session.value.address
-        ? session.value.address.replace(/@.*$/, '@mailer.jmi-openatom.cn')
-        : session.value.address,
+      fromAddress: mailContext.value.relayIdentity?.email ?? session.value.address,
       to: recipients,
       subject: compose.subject.trim() || '（无主题）',
       body: compose.body,

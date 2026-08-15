@@ -28,13 +28,20 @@ export interface EmailSummary {
   attachments?: UploadedAttachment[]
 }
 
+export interface RelayIdentity {
+  id: string
+  email: string
+}
+
 export interface MailContext {
   accountId: string
   mailboxes: Mailbox[]
   identityId: string | null
+  /** Identity on the Resend-verified relay domain, used for outbound mail. */
+  relayIdentity: RelayIdentity | null
 }
 
-export async function bootstrapMail(): Promise<MailContext> {
+export async function bootstrapMail(mailboxAddress: string | null): Promise<MailContext> {
   const session = await loadJmapSession()
   const accountId = session.primaryAccounts['urn:ietf:params:jmap:mail']
   if (!accountId) throw new Error('邮箱账户尚未就绪')
@@ -44,13 +51,47 @@ export async function bootstrapMail(): Promise<MailContext> {
   ])
   const mailboxResult = response.methodResponses.find((item) => item[2] === 'mailboxes')?.[1]
   const identityResult = response.methodResponses.find((item) => item[2] === 'identities')?.[1]
+  const identities = ((identityResult?.list as { id: string; email?: string; name?: string }[] | undefined) ?? [])
+  const relayIdentity = await ensureRelayIdentity(accountId, identities, mailboxAddress)
   return {
     accountId,
     mailboxes: ((mailboxResult?.list as Mailbox[] | undefined) ?? []).sort(
       (left, right) => left.sortOrder - right.sortOrder,
     ),
-    identityId: ((identityResult?.list as { id: string }[] | undefined) ?? [])[0]?.id ?? null,
+    identityId: identities[0]?.id ?? null,
+    relayIdentity,
   }
+}
+
+/**
+ * The Resend relay only accepts senders on the verified domain
+ * mailer.jmi-openatom.cn, while the mailbox lives on jmi-openatom.cn.
+ * Find (or create) an Identity whose address uses the relay domain so
+ * EmailSubmission can send as it.
+ */
+export async function ensureRelayIdentity(
+  accountId: string,
+  identities: { id: string; email?: string; name?: string }[],
+  mailboxAddress: string | null,
+): Promise<RelayIdentity | null> {
+  const relayDomain = 'mailer.jmi-openatom.cn'
+  const local = (mailboxAddress ?? '').split('@')[0]
+  if (!local) return null
+  const relayEmail = local + '@' + relayDomain
+  const existing = identities.find((it) => it.email?.toLowerCase() === relayEmail.toLowerCase())
+  if (existing) return { id: existing.id, email: relayEmail }
+  const displayName = identities[0]?.name
+  const created = await jmap([
+    ['Identity/set', {
+      accountId,
+      create: { relay: { name: displayName || '成员', email: relayEmail, sortOrder: 100 } },
+    }, 'relay'],
+  ])
+  const relayResult = created.methodResponses[0]?.[1]
+  const id = relayResult && typeof relayResult === 'object' && 'created' in relayResult
+    ? (relayResult as { created?: { relay?: { id?: string } } }).created?.relay?.id
+    : undefined
+  return id ? { id, email: relayEmail } : null
 }
 
 export async function queryEmails(
