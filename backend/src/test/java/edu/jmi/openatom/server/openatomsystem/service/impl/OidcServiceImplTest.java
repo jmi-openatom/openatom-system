@@ -49,7 +49,7 @@ class OidcServiceImplTest {
   }
 
   @Test
-  void centralLoginUrlNeverUsesClientOriginOrPropagatesLegacyTokenQuery() {
+  void centralLoginUrlRedirectsToMainSiteLoginWithoutPropagatingLegacyTokenQuery() {
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.setQueryString(
         "response_type=code&client_id=openatom-mail&jmiopenatom=secret-token&state=abc");
@@ -59,10 +59,11 @@ class OidcServiceImplTest {
 
     assertFalse(authorizeUrl.contains("secret-token"));
     URI location = URI.create(loginUrl);
-    assertEquals("oauth.example.test", location.getHost());
-    assertEquals("/api/v1/oauth/login", location.getPath());
-    assertTrue(loginUrl.contains("return_to="));
-    assertFalse(loginUrl.contains("mail.example.test/login"));
+    assertEquals("www.jmi-openatom.cn", location.getHost());
+    assertEquals("/login", location.getPath());
+    assertTrue(loginUrl.contains("redirect="));
+    assertFalse(loginUrl.contains("secret-token"));
+    assertFalse(loginUrl.contains("/api/v1/oauth/login"));
   }
 
   @Test
