@@ -303,31 +303,6 @@ jobs:
             test -n "$MAIL_INTERNAL_SERVICE_TOKEN"
             test -n "$MAIL_OAUTH_CLIENT_SECRET"
           fi
-      - name: Fetch SSH host fingerprint
-        id: host-fingerprint
-        env:
-          MAIL_SERVER_HOST: ${{ secrets.MAIL_SERVER_HOST }}
-          MAIL_SERVER_PORT: ${{ secrets.MAIL_SERVER_PORT || '22' }}
-        run: |
-          fingerprint=""
-          for key_type in ed25519 rsa; do
-            fingerprint=$(ssh-keyscan -p "$MAIL_SERVER_PORT" -t "$key_type" "$MAIL_SERVER_HOST" 2>/dev/null \
-              | awk '{print $2, $3}' \
-              | while read -r type key; do
-                  if [ -n "$type" ] && [ -n "$key" ]; then
-                    echo "$type $key" | ssh-keygen -lf - 2>/dev/null
-                  fi
-                done \
-              | awk 'NR == 1 { print $2 }')
-            if [ -n "$fingerprint" ]; then
-              break
-            fi
-          done
-          if [ -z "$fingerprint" ]; then
-            echo "unable to obtain an SSH host fingerprint for $MAIL_SERVER_HOST" >&2
-            exit 1
-          fi
-          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
       - name: Deploy mail stack over SSH
         uses: appleboy/ssh-action@v1.2.2
         env:
@@ -344,7 +319,6 @@ jobs:
           username: ${{ secrets.MAIL_SERVER_USER }}
           port: ${{ secrets.MAIL_SERVER_PORT || '22' }}
           password: ${{ secrets.MAIL_SERVER_PASSWORD }}
-          fingerprint: ${{ steps.host-fingerprint.outputs.fingerprint }}
           timeout: 30s
           command_timeout: 20m
           envs: DEPLOYMENT_MODE,MAIL_ACME_EMAIL,MAIL_DB_PASSWORD,MAIL_DB_ROOT_PASSWORD,MAIL_REDIS_PASSWORD,MAIL_ADDRESS_SALT,MAIL_INTERNAL_SERVICE_TOKEN,MAIL_OAUTH_CLIENT_SECRET
