@@ -29,7 +29,8 @@
         <p class="login-redirect-hint">若未自动跳转，请点击上方按钮。</p>
       </div>
     </section>
-    <footer class="public-footer">© 2025–2027 JMI-OPENATOM & 软件技术252301-何治皓 · 数据由本地邮件服务托管</footer>
+    <footer class="public-footer">© 2025–2027 JMI-OPENATOM .& Ariven(软件技术252301 何治皓) . · 数据由本地邮件服务托管
+    </footer>
   </main>
 
   <div v-else class="mail-shell">
@@ -240,11 +241,13 @@
         </button>
       </header>
       <form @submit.prevent="submitCompose">
-        <label><span>收件人</span><input v-model="compose.to" autocomplete="off" inputmode="email" placeholder="name@example.com，多个地址用逗号分隔" required
+        <label><span>收件人</span><input v-model="compose.to" autocomplete="off" inputmode="email"
+                                         placeholder="name@example.com，多个地址用逗号分隔" required
                                          type="text"/></label>
         <label><span>主题</span><input v-model="compose.subject" maxlength="200" placeholder="邮件主题"
                                        type="text"/></label>
-        <label class="body-field"><span class="sr-only">邮件正文</span><textarea v-model="compose.body" placeholder="写点什么…"
+        <label class="body-field"><span class="sr-only">邮件正文</span><textarea v-model="compose.body"
+                                                                                 placeholder="写点什么…"
                                                                                  required></textarea></label>
         <div v-if="composeAttachments.length" aria-label="待发送附件" class="compose-attachment-list">
           <div v-for="attachment in composeAttachments" :key="attachment.blobId">
@@ -324,7 +327,6 @@ import {
   forgetUploadedAttachment,
   loadSession,
   logout,
-  redirectToOAuth,
   type SessionView,
   uploadAttachment,
   type UploadedAttachment,
@@ -392,10 +394,9 @@ onMounted(async () => {
     session.value = await loadSession()
     if (session.value.authenticated && session.value.status === 'ACTIVE') {
       await loadMailbox()
-    } else if (!session.value.authenticated) {
-      // 未登录：直接跳转 OAuth 统一登录
-      redirectToOAuth()
     }
+    // 未登录时停留在引导页，用户点击“使用 OAuth 登录”才跳转，
+    // 避免退出登录后又被自动弹回登录页。
   } catch (error) {
     errorMessage.value = messageOf(error)
   } finally {
@@ -586,7 +587,8 @@ async function downloadSelectedAttachment(attachment: NonNullable<EmailSummary['
 
 async function handleLogout() {
   await logout()
-  window.location.assign('/api/oauth/login')
+  // 停在引导页（未登录态），不要自动重新登录
+  window.location.assign('/')
 }
 
 function toggleTheme() {
