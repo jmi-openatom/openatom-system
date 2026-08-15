@@ -57,6 +57,9 @@ public class OidcServiceImpl implements OidcService {
   @Value("${app.oidc.resource-audience:stalwart}")
   private String resourceAudience;
 
+  @Value("${app.oidc.main-site-url:https://www.jmi-openatom.cn}")
+  private String mainSiteBaseUrl;
+
   @Override
   public Map<String, Object> configuration(HttpServletRequest request) {
     String issuer = issuer(request);
@@ -427,7 +430,19 @@ public class OidcServiceImpl implements OidcService {
   }
 
   private String loginUrl(String authorizeUrl, HttpServletRequest request) {
-    return issuer(request) + "/oauth/login?return_to=" + encode(authorizeUrl);
+    // Send users to the main-site login page (same visual as the rest of the
+    // portal). After a successful login the main site appends the Sa-Token
+    // credential and redirects back to this authorize URL.
+    String mainSite = mainSiteUrl();
+    return mainSite + "/login?redirect=" + encode(authorizeUrl);
+  }
+
+  private String mainSiteUrl() {
+    String configured = mainSiteBaseUrl;
+    if (configured != null && !configured.isBlank()) {
+      return configured.replaceAll("/+$", "");
+    }
+    return "https://www.jmi-openatom.cn";
   }
 
   private String encode(String value) {
