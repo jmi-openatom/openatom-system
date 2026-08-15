@@ -84,6 +84,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 .brand, .app-brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 11px; color: var(--color-primary-foreground); background: var(--color-primary); font-size: 12px; font-weight: 700; letter-spacing: -0.04em; }
+.brand-logo { width: 38px; height: 38px; flex: 0 0 auto; border-radius: 9px; object-fit: cover; }
 .brand span:last-child, .app-brand div { display: grid; line-height: 1.15; }
 .brand strong, .app-brand strong { font-size: 14px; font-weight: 650; }
 .brand small, .app-brand small { margin-top: 4px; color: var(--color-text-secondary); font-size: 11px; font-weight: 400; }

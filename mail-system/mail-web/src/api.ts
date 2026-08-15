@@ -8,6 +8,13 @@ export interface SessionView {
 
 let csrfToken = ''
 
+/** 会话失效时跳转到 OAuth 登录（仅一次，避免循环）。 */
+export function redirectToOAuth(): void {
+  if (window.location.pathname !== '/api/oauth/login') {
+    window.location.assign('/api/oauth/login')
+  }
+}
+
 export interface UploadedAttachment {
   blobId: string
   name: string
@@ -34,7 +41,11 @@ export async function logout(): Promise<void> {
 
 export async function loadJmapSession(): Promise<JmapSession> {
   const response = await fetch('/api/jmap/session', { credentials: 'same-origin' })
-  if (!response.ok) throw new Error(response.status === 401 ? '登录已过期' : '邮件服务暂不可用')
+  if (response.status === 401) {
+    redirectToOAuth()
+    throw new Error('登录已过期')
+  }
+  if (!response.ok) throw new Error('邮件服务暂不可用')
   return response.json() as Promise<JmapSession>
 }
 
@@ -48,6 +59,10 @@ export async function jmap(methodCalls: unknown[][]): Promise<JmapResponse> {
       methodCalls,
     }),
   })
+  if (response.status === 401) {
+    redirectToOAuth()
+    throw new Error('登录已过期，正在跳转到登录页…')
+  }
   if (!response.ok) {
     const problem = await response.clone().json().catch(() => ({})) as { code?: string; detail?: string }
     const code = problem.code ?? problem.detail ?? ''

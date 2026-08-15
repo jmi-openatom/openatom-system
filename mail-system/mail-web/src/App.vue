@@ -9,7 +9,7 @@
   <main v-else-if="!session.authenticated" id="mail-main" class="login-page" tabindex="-1">
     <nav class="public-nav" aria-label="邮箱站导航">
       <a class="brand" href="https://www.jmi-openatom.cn">
-        <span class="brand-mark" aria-hidden="true">OA</span>
+        <img class="brand-logo" src="/logo.png" alt="开放原子开源社团" />
         <span><strong>开放原子开源社团</strong><small>江苏海事职业技术学院</small></span>
       </a>
       <button class="icon-button" type="button" aria-label="切换深色模式" @click="toggleTheme">
@@ -20,24 +20,12 @@
     <section class="login-hero">
       <div class="login-copy">
         <span class="eyebrow">OPENATOM MAIL</span>
-        <h1>专属于社团成员的<br />自建邮箱</h1>
-        <p>使用开放原子账号登录。你的邮箱地址根据姓名拼音自动生成，邮件数据由社团自己的服务器保存。</p>
-        <a class="primary-button login-button" href="/api/oauth/login">
-          使用 OAuth 安全登录 <ArrowRight :size="18" />
+        <h1>正在前往登录…</h1>
+        <p>即将跳转到开放原子统一登录页面，请稍候。</p>
+        <a class="primary-button login-button" href="/api/oauth/login" ref="loginLink">
+          立即前往登录 <ArrowRight :size="18" />
         </a>
-        <div class="trust-row" aria-label="安全特性">
-          <span><ShieldCheck :size="16" /> OAuth 2.0</span>
-          <span><Server :size="16" /> 自建服务</span>
-          <span><LockKeyhole :size="16" /> HttpOnly 会话</span>
-        </div>
-      </div>
-      <div class="mail-preview" aria-hidden="true">
-        <div class="preview-bar"><i></i><i></i><i></i></div>
-        <div class="preview-layout">
-          <div class="preview-nav"><b></b><span></span><span></span><span></span></div>
-          <div class="preview-list"><b></b><span></span><span></span><span></span><span></span></div>
-          <div class="preview-message"><small></small><b></b><span></span><span></span><span></span></div>
-        </div>
+        <p class="login-redirect-hint">若未自动跳转，请点击上方按钮。</p>
       </div>
     </section>
     <footer class="public-footer">© 2025–2027 JMI-OPENATOM · 数据由本地邮件服务托管</footer>
@@ -46,7 +34,7 @@
   <div v-else class="mail-shell">
     <header class="app-header">
       <div class="app-brand">
-        <span class="brand-mark" aria-hidden="true">OA</span>
+        <img class="brand-logo" src="/logo.png" alt="开放原子邮箱" />
         <div><strong>开放原子邮箱</strong><small>{{ session.address }}</small></div>
       </div>
       <label class="search-field">
@@ -233,12 +221,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import {
   Archive, ArrowLeft, ArrowRight, ChevronDown, CircleAlert, CircleCheck, Command,
-  FilePenLine, HardDrive, Inbox, LayoutGrid, LockKeyhole, LogOut, Mail, MailOpen,
-  MoreHorizontal, Moon, Paperclip, RefreshCw, Reply, Search, Send, Server, ShieldCheck,
+  FilePenLine, HardDrive, Inbox, LayoutGrid, LogOut, Mail, MailOpen,
+  MoreHorizontal, Moon, Paperclip, RefreshCw, Reply, Search, Send, ShieldCheck,
   SlidersHorizontal, SquarePen, Sun, Trash2, X,
 } from 'lucide-vue-next'
 import {
-  downloadAttachment, forgetUploadedAttachment, loadSession, logout, uploadAttachment,
+  downloadAttachment, forgetUploadedAttachment, loadSession, logout, redirectToOAuth, uploadAttachment,
   type SessionView, type UploadedAttachment,
 } from './api'
 import {
@@ -290,7 +278,12 @@ onMounted(async () => {
   window.addEventListener('keydown', handleGlobalKeydown)
   try {
     session.value = await loadSession()
-    if (session.value.authenticated && session.value.status === 'ACTIVE') await loadMailbox()
+    if (session.value.authenticated && session.value.status === 'ACTIVE') {
+      await loadMailbox()
+    } else if (!session.value.authenticated) {
+      // 未登录：直接跳转 OAuth 统一登录
+      redirectToOAuth()
+    }
   } catch (error) {
     errorMessage.value = messageOf(error)
   } finally {
@@ -481,7 +474,7 @@ async function downloadSelectedAttachment(attachment: NonNullable<EmailSummary['
 
 async function handleLogout() {
   await logout()
-  window.location.assign('/')
+  window.location.assign('/api/oauth/login')
 }
 
 function toggleTheme() {
