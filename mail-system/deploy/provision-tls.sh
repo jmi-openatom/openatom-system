@@ -28,20 +28,38 @@ case "$acme_email" in *@*.*) ;; *) echo "MAIL_ACME_EMAIL is required" >&2; exit 
 
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd)
-nginx_conf_dir=$(value_for NGINX_CONF_DIR)
-nginx_conf_dir=${nginx_conf_dir:-/etc/nginx/conf.d}
+
+# BT Panel (宝塔) detection. Its nginx loads /www/server/panel/vhost/nginx/*.conf
+# and its per-site well-known snippet serves challenge files from the site
+# document root or /www/wwwroot/java_node_ssl. The scripted server blocks below
+# would collide with panel-managed sites (duplicate listen/server_name), so on
+# BT panels we only run certbot with a webroot the panel can serve and leave
+# nginx configuration to the panel.
+if [ -d /www/server/panel/vhost/nginx ]; then
+  acme_webroot=/www/wwwroot/java_node_ssl
+  nginx_conf_dir=$(value_for NGINX_CONF_DIR)
+  nginx_conf_dir=${nginx_conf_dir:-/www/server/panel/vhost/nginx}
+  skip_nginx=true
+else
+  acme_webroot=/var/www/acme
+  nginx_conf_dir=$(value_for NGINX_CONF_DIR)
+  nginx_conf_dir=${nginx_conf_dir:-/etc/nginx/conf.d}
+  skip_nginx=false
+fi
 case "$nginx_conf_dir" in /*) ;; *) echo "NGINX_CONF_DIR must be absolute" >&2; exit 65 ;; esac
 
-install -d -m 755 /var/www/acme "$nginx_conf_dir"
-if [ ! -f "$nginx_conf_dir/openatom-mail.conf" ]; then
-  install -m 644 "$script_dir/nginx/acme-bootstrap.conf" \
-    "$nginx_conf_dir/openatom-mail-acme.conf"
+install -d -m 755 "$acme_webroot" "$nginx_conf_dir"
+if [ "$skip_nginx" = false ]; then
+  if [ ! -f "$nginx_conf_dir/openatom-mail.conf" ]; then
+    install -m 644 "$script_dir/nginx/acme-bootstrap.conf" \
+      "$nginx_conf_dir/openatom-mail-acme.conf"
+  fi
+  nginx -t
+  nginx -s reload
 fi
-nginx -t
-nginx -s reload
 
 deploy_hook="$script_dir/stalwart/certbot-deploy-hook.sh $env_file"
-certbot certonly --webroot --webroot-path /var/www/acme \
+certbot certonly --webroot --webroot-path "$acme_webroot" \
   --cert-name openatom-mail \
   --domain mail.jmi-openatom.cn \
   --domain mta-sts.jmi-openatom.cn \
@@ -51,6 +69,11 @@ certbot certonly --webroot --webroot-path /var/www/acme \
 
 "$script_dir/stalwart/certbot-deploy-hook.sh" "$env_file" \
   /etc/letsencrypt/live/openatom-mail
+
+if [ "$skip_nginx" = true ]; then
+  echo "BT panel detected: nginx sites stay under panel management; certificates are installed"
+  exit 0
+fi
 
 rendered_nginx=$(mktemp "${TMPDIR:-/tmp}/openatom-mail-nginx.XXXXXX")
 trap 'rm -f "$rendered_nginx"' EXIT HUP INT TERM
