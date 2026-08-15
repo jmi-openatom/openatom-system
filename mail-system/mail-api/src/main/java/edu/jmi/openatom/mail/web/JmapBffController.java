@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.jmi.openatom.mail.oauth.MailSession;
 import edu.jmi.openatom.mail.oauth.OAuthClient;
+import edu.jmi.openatom.mail.service.ResendClient;
 import edu.jmi.openatom.mail.service.UserJmapClient;
 import edu.jmi.openatom.mail.service.StalwartClientException;
 import edu.jmi.openatom.mail.service.MalwareScanUnavailableException;
@@ -80,6 +81,7 @@ public class JmapBffController {
   private final OAuthClient oauthClient;
   private final ObjectMapper objectMapper;
   private final MalwareScanner malwareScanner;
+  private final ResendClient resendClient;
   private final ConcurrentHashMap<String, SubmissionWindow> submissionWindows =
       new ConcurrentHashMap<>();
 
@@ -87,11 +89,13 @@ public class JmapBffController {
       UserJmapClient jmapClient,
       OAuthClient oauthClient,
       ObjectMapper objectMapper,
-      MalwareScanner malwareScanner) {
+      MalwareScanner malwareScanner,
+      ResendClient resendClient) {
     this.jmapClient = jmapClient;
     this.oauthClient = oauthClient;
     this.objectMapper = objectMapper;
     this.malwareScanner = malwareScanner;
+    this.resendClient = resendClient;
   }
 
   @PostMapping(value = "/jmap", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -111,6 +115,12 @@ public class JmapBffController {
             attachmentRegistry(httpSession));
     if (sendsMail) {
       enforceSubmissionRate(session.sub());
+      if (resendClient.isConfigured()) {
+        UserJmapClient.Response response = submitViaResend(payload, session, httpSession);
+        return ResponseEntity.status(response.status())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(response.body());
+      }
     }
     UserJmapClient.Response response = jmapClient.forward(payload, session.accessToken());
     if (response.status() == 401 && session.refreshToken() != null) {
@@ -121,6 +131,129 @@ public class JmapBffController {
         .contentType(MediaType.APPLICATION_JSON)
         .body(response.body());
   }
+
+  /**
+   * Handles EmailSubmission/set through the Resend Email API instead of
+   * Stalwart's SMTP delivery: creates the draft in Stalwart, reads it back,
+   * sends via Resend, then destroys the draft and fabricates the JMAP
+   * response the web client expects.
+   */
+  private UserJmapClient.Response submitViaResend(
+      JsonNode payload, MailSession session, HttpSession httpSession) {
+    try {
+      JsonNode calls = payload.path("methodCalls");
+      JsonNode emailSet = null;
+      JsonNode submission = null;
+      JsonNode otherCalls = objectMapper.createArrayNode();
+      for (JsonNode call : calls) {
+        String method = call.path(0).asText();
+        if ("Email/set".equals(method)) {
+          emailSet = call;
+        } else if ("EmailSubmission/set".equals(method)) {
+          submission = call;
+        } else {
+          ((com.fasterxml.jackson.databind.node.ArrayNode) otherCalls).add(call);
+        }
+      }
+      if (submission == null) {
+        UserJmapClient.Response fallback = jmapClient.forward(payload, session.accessToken());
+        return fallback.status() == 401 && session.refreshToken() != null
+            ? jmapClient.forward(payload, session.accessToken())
+            : fallback;
+      }
+      ObjectNode mailAccount = objectMapper.createObjectNode();
+      mailAccount.put("accountId", session.mailAccountId());
+      // 1) Forward Email/set (create the draft in Stalwart)
+      String emailId = null;
+      if (emailSet != null && !emailSet.isNull()) {
+        UserJmapClient.Response setResponse = jmapClient.forward(
+            singleCall(emailSet), session.accessToken());
+        JsonNode setBody = objectMapper.readTree(setResponse.body());
+        JsonNode created = setBody.path("methodResponses").path(0).path(1).path("created");
+        String clientId = emailSet.path(1).path("create").fieldNames().next();
+        emailId = created.path(clientId).path("id").asText(null);
+        if (emailId == null) {
+          return setResponse;
+        }
+      }
+      // 2) Read the draft content from Stalwart
+      ObjectNode getArgs = objectMapper.createObjectNode();
+      getArgs.put("accountId", session.mailAccountId());
+      getArgs.set("ids", objectMapper.createArrayNode().add(emailId));
+      ObjectNode getCall = objectMapper.createObjectNode();
+      getCall.putArray("methodCalls").add(objectMapper.createArrayNode()
+          .add("Email/get").add(getArgs).add("draft-get"));
+      UserJmapClient.Response getResponse = jmapClient.forward(getCall, session.accessToken());
+      JsonNode getBody = objectMapper.readTree(getResponse.body());
+      JsonNode email = getBody.path("methodResponses").path(0).path(1).path("list").path(0);
+      String fromAddress = email.path("from").path(0).path("email").asText(session.address());
+      String subject = email.path("subject").asText("");
+      String text = plainText(email);
+      JsonNode toNode = email.path("to");
+      java.util.List<String> to = new java.util.ArrayList<>();
+      for (JsonNode recipient : toNode) {
+        to.add(recipient.path("email").asText());
+      }
+      if (to.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "recipient_limit_exceeded");
+      }
+      // 3) Send through Resend
+      ResendClient.Result result = resendClient.send(fromAddress, to, subject, text, java.util.List.of());
+      if (result.id() == null || result.id().isBlank()) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_GATEWAY, "resend_rejected_" + result.status() + ":" + result.detail());
+      }
+      // 4) Destroy the draft
+      if (emailId != null) {
+        ObjectNode destroyArgs = objectMapper.createObjectNode();
+        destroyArgs.put("accountId", session.mailAccountId());
+        destroyArgs.set("destroy", objectMapper.createArrayNode().add(emailId));
+        jmapClient.forward(
+            singleCall(objectMapper.createArrayNode().add("Email/set").add(destroyArgs).add("destroy")),
+            session.accessToken());
+      }
+      // 5) Build the response the web client expects
+      ObjectNode createdEntry = objectMapper.createObjectNode();
+      createdEntry.put("id", result.id());
+      ObjectNode submissionResult = objectMapper.createObjectNode();
+      submissionResult.put("accountId", session.mailAccountId());
+      submissionResult.put("newState", "r");
+      ObjectNode created = submissionResult.putObject("created");
+      created.set("send", createdEntry);
+      ObjectNode methodResponses = objectMapper.createObjectNode();
+      methodResponses.putArray("methodResponses")
+          .add(objectMapper.createArrayNode().add("EmailSubmission/set").add(submissionResult).add("submit"));
+      return new UserJmapClient.Response(200, objectMapper.writeValueAsString(methodResponses));
+    } catch (ResponseStatusException exception) {
+      return new UserJmapClient.Response(exception.getStatusCode().value(),
+          "{\"methodResponses\":[\"error\",{\"type\":\"unknown\"}]}");
+    } catch (Exception exception) {
+      return new UserJmapClient.Response(500,
+          "{\"methodResponses\":[\"error\",{\"type\":\"serverFail\"}]}");
+    }
+  }
+
+  private String plainText(JsonNode email) {
+    JsonNode bodyValues = email.path("bodyValues");
+    for (JsonNode part : email.path("textBody")) {
+      String partId = part.path("partId").asText();
+      if (bodyValues.has(partId)) {
+        return bodyValues.path(partId).path("value").asText("");
+      }
+    }
+    return email.path("preview").asText("");
+  }
+
+  private JsonNode singleCall(JsonNode call) {
+    ObjectNode wrapper = objectMapper.createObjectNode();
+    wrapper.set("using", objectMapper.createArrayNode()
+        .add("urn:ietf:params:jmap:core")
+        .add("urn:ietf:params:jmap:mail")
+        .add("urn:ietf:params:jmap:submission"));
+    wrapper.putArray("methodCalls").add(call);
+    return wrapper;
+  }
+
 
   @GetMapping("/jmap/session")
   public ResponseEntity<String> jmapSession(HttpServletRequest request) {

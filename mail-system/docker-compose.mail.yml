@@ -116,6 +116,7 @@ services:
       STALWART_JMAP_URL: http://stalwart:8080/jmap
       STALWART_API_TOKEN: ${STALWART_API_TOKEN:-bootstrap-not-configured}
       STALWART_DOMAIN_ID: ${STALWART_DOMAIN_ID:-bootstrap-not-configured}
+      MAIL_RESEND_API_KEY: ${MAIL_RESEND_API_KEY:-}
       MAIL_OAUTH_ISSUER: ${MAIL_OAUTH_ISSUER:-https://oauth.jmi-openatom.cn/api/v1}
       MAIL_OAUTH_AUTHORIZATION_URL: ${MAIL_OAUTH_AUTHORIZATION_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/authorize}
       MAIL_OAUTH_TOKEN_URL: ${MAIL_OAUTH_TOKEN_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/token}
