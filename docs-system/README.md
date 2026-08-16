@@ -59,6 +59,30 @@ server {
 
 ## 3. 部署
 
+### 自动部署（推荐，GitHub Actions）
+
+推送 `docs-system/` 相关代码到 `main` 后，`OpenAtom Docs Deployment` 工作流会自动：
+上传 compose 文件 → 写 `.env` → 启动 HedgeDoc + 数据库 → 健康检查。
+
+需要在 GitHub `SERVER` 环境（与 Seafile/邮件站共用）配置：
+
+- Secrets：`SERVER_HOST`、`SERVER_USER`、`SERVER_PASSWORD`（`SERVER_PORT` 可选，默认 22）
+- Secrets（生成后不回显，重新部署时若缺失需补）：
+  - `HEDGEDOC_SESSION_SECRET`、`HEDGEDOC_DB_PASS`
+  - `OAUTH2_CLIENT_SECRET`（与主站注册的客户端密钥一致）
+  - `DOCUMENT_SERVER_JWT_SECRET`、`DOCUMENT_SERVER_DB_PASS`（ONLYOFFICE 用，可先随便填）
+- Variables：`DOCS_DOMAIN`（默认 `md.jmi-openatom.cn`）、`DOCS_DEPLOY_PATH`（默认 `/www/wwwroot/openatom-docs`）
+
+部署目录为 `DOCS_DEPLOY_PATH`（默认 `/www/wwwroot/openatom-docs`），服务只启动
+HedgeDoc 与数据库；ONLYOFFICE 如需启用，在服务器上手动执行：
+
+```sh
+cd /www/wwwroot/openatom-docs
+docker compose --env-file .env -f docker-compose.docs.yml --profile office up -d
+```
+
+### 手动部署
+
 ```sh
 cp .env.example .env          # 填写密钥（openssl rand -base64 48）
 docker compose --env-file .env -f docker-compose.docs.yml up -d hedgedoc hedgedoc-db

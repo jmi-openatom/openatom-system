@@ -1,0 +1,111 @@
+name: OpenAtom Docs Deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs-system/**"
+      - ".github/workflows/docs-system.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose file
+        run: |
+          HEDGEDOC_SESSION_SECRET=x HEDGEDOC_DB_PASS=y OAUTH2_CLIENT_SECRET=z \
+          DOCUMENT_SERVER_JWT_SECRET=w DOCUMENT_SERVER_DB_PASS=v \
+          docker compose -f docs-system/docker-compose.docs.yml config --quiet
+
+  deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: SERVER
+    concurrency:
+      group: openatom-docs-production-${{ github.ref }}
+      cancel-in-progress: false
+    env:
+      DOCS_DOMAIN: ${{ vars.DOCS_DOMAIN || 'md.jmi-openatom.cn' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare deployment bundle
+        run: |
+          rm -rf .deploy/docs
+          mkdir -p .deploy/docs
+          rsync -a --delete --exclude .env docs-system/ .deploy/docs/
+
+      - name: Prepare deployment directory
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            set -eu
+            mkdir -p "${{ vars.DOCS_DEPLOY_PATH || '/www/wwwroot/openatom-docs' }}"
+
+      - name: Upload deployment files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: .deploy/docs/docker-compose.docs.yml,.deploy/docs/.env.example,.deploy/docs/README.md
+          target: ${{ vars.DOCS_DEPLOY_PATH || '/www/wwwroot/openatom-docs' }}
+          strip_components: 2
+
+      - name: Deploy HedgeDoc
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          timeout: 30s
+          command_timeout: 20m
+          envs: DOCS_DOMAIN,HEDGEDOC_SESSION_SECRET,HEDGEDOC_DB_PASS,OAUTH2_CLIENT_ID,OAUTH2_CLIENT_SECRET,DOCUMENT_SERVER_JWT_SECRET,DOCUMENT_SERVER_DB_PASS
+          script: |
+            set -eu
+            deploy_path='${{ vars.DOCS_DEPLOY_PATH || '/www/wwwroot/openatom-docs' }}'
+            cd "$deploy_path"
+            umask 077
+            env_file="$deploy_path/.env"
+            touch "$env_file"
+            chmod 600 "$env_file"
+            upsert_env() {
+              key=$1
+              value=$2
+              temp_file=$(mktemp)
+              grep -v "^${key}=" "$env_file" > "$temp_file" || true
+              printf '%s=%s\n' "$key" "$value" >> "$temp_file"
+              chmod 600 "$temp_file"
+              mv "$temp_file" "$env_file"
+            }
+            upsert_env HEDGEDOC_DOMAIN "https://${DOCS_DOMAIN:-md.jmi-openatom.cn}"
+            upsert_env HEDGEDOC_SESSION_SECRET "$HEDGEDOC_SESSION_SECRET"
+            upsert_env HEDGEDOC_DB_PASS "$HEDGEDOC_DB_PASS"
+            upsert_env OAUTH2_CLIENT_ID "${OAUTH2_CLIENT_ID:-openatom-hedgedoc}"
+            upsert_env OAUTH2_CLIENT_SECRET "$OAUTH2_CLIENT_SECRET"
+            upsert_env DOCUMENT_SERVER_JWT_SECRET "$DOCUMENT_SERVER_JWT_SECRET"
+            upsert_env DOCUMENT_SERVER_DB_PASS "$DOCUMENT_SERVER_DB_PASS"
+
+            docker compose --env-file "$env_file" -f docker-compose.docs.yml \
+              up -d hedgedoc hedgedoc-db
+            sleep 8
+            docker compose --env-file "$env_file" -f docker-compose.docs.yml ps
+            # 健康检查：HedgeDoc 内部端口默认为 18085（HEDGEDOC_INTERNAL_PORT 可改）
+            internal_port=$(grep '^HEDGEDOC_INTERNAL_PORT=' "$env_file" | cut -d= -f2)
+            internal_port=${internal_port:-18085}
+            curl --fail --silent --show-error \
+              "http://127.0.0.1:$internal_port/" >/dev/null \
+              && echo "HedgeDoc is up on 127.0.0.1:$internal_port" \
+              || { echo "HedgeDoc health check failed" >&2; exit 1; }
