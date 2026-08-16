@@ -92,15 +92,20 @@ public class MailboxProvisioningService {
   private void ensureStalwartAccount(MailboxAccount account) {
     if (account.stalwartAccountId() != null) {
       stalwart.updateAliases(account.stalwartAccountId(), repository.aliases(account.id()));
+    } else {
+      String stalwartId =
+          stalwart.ensureAccount(
+              account.oauthSub(),
+              account.displayName(),
+              repository.aliases(account.id()),
+              account.quotaBytes());
+      repository.markActive(account.id(), stalwartId, "activation-" + account.id());
       return;
     }
-    String stalwartId =
-        stalwart.ensureAccount(
-            account.oauthSub(),
-            account.displayName(),
-            repository.aliases(account.id()),
-            account.quotaBytes());
-    repository.markActive(account.id(), stalwartId, "activation-" + account.id());
+    // Account already existed (historical mailbox): still flip the mailbox to
+    // ACTIVE so the activation wizard does not reappear after reload.
+    repository.markActive(
+        account.id(), account.stalwartAccountId(), "activation-" + account.id());
   }
 
   /**
