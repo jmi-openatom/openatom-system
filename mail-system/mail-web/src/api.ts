@@ -306,7 +306,12 @@ export async function loadExternalRecipients(options: {
 function recipientError(code: string): string {
   const messages: Record<string, string> = {
     main_site_not_configured: '主站接口未配置，请联系运维设置 MAIN_SITE_INTERNAL_USERS_URL。',
-    main_site_unreachable: '无法连接主站获取用户邮箱，请检查主站是否已部署内部接口且可达。',
+    main_site_http_401: '主站拒绝了服务令牌（401）：邮件站 MAIL_INTERNAL_SERVICE_TOKEN 与主站 APP_MAIL_SERVICE_TOKEN 必须完全相同，请核对。',
+    main_site_http_404: '主站上找不到内部接口（404）：请确认主站后端已部署最新代码。',
+    main_site_unreachable: '无法连接主站获取用户邮箱，请检查网络与主站地址。',
+  }
+  if (code.startsWith('main_site_http_')) {
+    return `主站接口返回异常（${code.replace('main_site_http_', '')}），请检查主站状态。`
   }
   return messages[code] ?? '无法加载收件人列表'
 }

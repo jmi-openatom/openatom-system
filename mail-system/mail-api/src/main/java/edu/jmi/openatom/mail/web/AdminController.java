@@ -193,12 +193,12 @@ public class AdminController {
     try {
       return mainSiteUsersClient.recipients(page, pageSize, keyword);
     } catch (IOException exception) {
-      throw new edu.jmi.openatom.mail.service.StalwartClientException("main_site_unreachable");
+      String detail = exception.getMessage() == null ? "" : exception.getMessage().trim();
+      throw new edu.jmi.openatom.mail.service.StalwartClientException(
+          detail.matches("\\d{3}") ? "main_site_http_" + detail : "main_site_unreachable");
     } catch (InterruptedException exception) {
       Thread.currentThread().interrupt();
       throw new edu.jmi.openatom.mail.service.StalwartClientException("main_site_unreachable");
-    } catch (IllegalStateException exception) {
-      throw new edu.jmi.openatom.mail.service.StalwartClientException("main_site_not_configured");
     }
   }
 

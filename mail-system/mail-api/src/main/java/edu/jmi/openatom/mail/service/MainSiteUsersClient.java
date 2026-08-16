@@ -40,15 +40,11 @@ public class MainSiteUsersClient {
 
   public RecipientPage recipients(int page, int pageSize, String keyword)
       throws IOException, InterruptedException {
-    String base = properties.getMainSiteUsersUrl();
-    if (base == null || base.isBlank()) {
-      throw new IllegalStateException("main_site_not_configured");
-    }
-    String query = "page=" + page + "&pageSize=" + Math.min(500, Math.max(1, pageSize));
-    if (keyword != null && !keyword.isBlank()) {
-      query += "&keyword=" + URLEncoder.encode(keyword.trim(), StandardCharsets.UTF_8);
-    }
-    URI uri = URI.create(base + (base.contains("?") ? "&" : "?") + query);
+    URI uri = URI.create(resolvedUsersUrl() + "?page=" + page
+        + "&pageSize=" + Math.min(500, Math.max(1, pageSize))
+        + (keyword != null && !keyword.isBlank()
+            ? "&keyword=" + URLEncoder.encode(keyword.trim(), StandardCharsets.UTF_8)
+            : ""));
     HttpRequest request =
         HttpRequest.newBuilder(uri)
             .timeout(Duration.ofSeconds(10))
@@ -59,7 +55,7 @@ public class MainSiteUsersClient {
     HttpResponse<String> response =
         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() < 200 || response.statusCode() >= 300) {
-      throw new IOException("main_site_http_" + response.statusCode());
+      throw new IOException(String.valueOf(response.statusCode()));
     }
     JsonNode body = objectMapper.readTree(response.body());
     JsonNode data = body.path("data");
@@ -81,6 +77,36 @@ public class MainSiteUsersClient {
         data.path("page").asLong(page),
         data.path("pageSize").asLong(pageSize));
   }
+
+  /**
+   * Resolves the main-site users URL leniently: blank config falls back to the
+   * public API domain, a missing scheme gets https prefixed, and any path is
+   * replaced with the fixed internal route so operators only need to provide
+   * the host.
+   */
+  String resolvedUsersUrl() {
+    String configured = properties.getMainSiteUsersUrl();
+    String base = configured == null || configured.isBlank()
+        ? DEFAULT_USERS_URL
+        : configured.trim();
+    if (!base.startsWith("http://") && !base.startsWith("https://")) {
+      base = "https://" + base;
+    }
+    try {
+      URI parsed = URI.create(base);
+      String authority = parsed.getRawAuthority();
+      if (authority == null || authority.isBlank()) {
+        return DEFAULT_USERS_URL;
+      }
+      return parsed.getScheme() + "://" + authority + USERS_PATH;
+    } catch (IllegalArgumentException exception) {
+      return DEFAULT_USERS_URL;
+    }
+  }
+
+  private static final String DEFAULT_USERS_URL =
+      "https://api.jmi-openatom.cn/api/v1/internal/mail/users";
+  private static final String USERS_PATH = "/api/v1/internal/mail/users";
 
   public record Recipient(long userId, String name, String email) {}
 
