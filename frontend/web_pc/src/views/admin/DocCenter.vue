@@ -168,9 +168,24 @@ async function openEditor(row: any) {
     return
   }
   editorOpen.value = true
+  // el-dialog 内容懒挂载，多次 nextTick 确保容器渲染完成
   await nextTick()
-  if (editorEl.value) {
-    editorInstance = new (window as any).DocsAPI.DocEditor(editorEl.value, config)
+  await nextTick()
+  await nextTick()
+  const el = editorEl.value
+  if (!el) {
+    ElMessage.error('编辑器容器未就绪，请重试')
+    return
+  }
+  const api = (window as any).DocsAPI
+  if (!api?.DocEditor) {
+    ElMessage.error('编辑器组件加载失败，请刷新后重试')
+    return
+  }
+  try {
+    editorInstance = new api.DocEditor(el, config)
+  } catch (error: any) {
+    ElMessage.error(error?.message || '编辑器初始化失败')
   }
 }
 
