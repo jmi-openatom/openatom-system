@@ -289,7 +289,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .reply-button:hover { background: var(--color-bg-hover); }
 
 .modal-backdrop { position: fixed; z-index: 1800; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, 0.38); backdrop-filter: blur(8px); }
-.compose-dialog { width: min(720px, 100%); overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-bg-elevated); box-shadow: var(--shadow-lg); animation: modal-in var(--duration-base) var(--ease-out); }
+.compose-dialog { width: min(900px, 100%); overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-bg-elevated); box-shadow: var(--shadow-lg); animation: modal-in var(--duration-base) var(--ease-out); }
 @keyframes modal-in { from { opacity: 0; transform: translateY(12px) scale(0.985); } }
 .compose-dialog > header { height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px 0 18px; border-bottom: 1px solid var(--color-border-light); }
 .compose-dialog > header > div { display: flex; align-items: center; gap: 9px; }
@@ -298,8 +298,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .compose-dialog label { min-height: 50px; display: grid; grid-template-columns: 66px 1fr; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--color-border-light); }
 .compose-dialog label > span { color: var(--color-text-secondary); font-size: 12px; }
 .compose-dialog input { width: 100%; border: 0; outline: 0; background: transparent; }
-.compose-dialog .body-field { display: block; min-height: 320px; padding: 0; border-bottom: 1px solid var(--color-border-light); }
-.rich-editor { height: 100%; min-height: 320px; display: flex; flex-direction: column; }
+.compose-dialog .body-field { display: block; min-height: 480px; padding: 0; border-bottom: 1px solid var(--color-border-light); }
+.rich-editor { height: 100%; min-height: 480px; display: flex; flex-direction: column; }
 .rich-editor__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 8px 10px; border-bottom: 1px solid var(--color-border-light); background: color-mix(in srgb, var(--color-bg-hover) 55%, transparent); }
 .rich-editor__toolbar .tool { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 8px; color: var(--color-text-secondary); background: transparent; cursor: pointer; }
 .rich-editor__toolbar .tool:hover { color: var(--color-text-primary); background: var(--color-bg-active); }
@@ -308,7 +308,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .rich-editor__toolbar .tool--label { font-size: 13px; font-weight: 700; }
 .rich-editor__toolbar .tool-sep { width: 1px; height: 18px; margin: 0 5px; background: var(--color-border-light); }
 .rich-editor__content { flex: 1; min-height: 0; overflow-y: auto; }
-.rich-editor__content .tiptap { min-height: 250px; padding: 18px 20px; outline: 0; font-size: 15px; line-height: 1.7; word-break: break-word; }
+.rich-editor__content .tiptap { min-height: 420px; padding: 18px 20px; outline: 0; font-size: 15px; line-height: 1.7; word-break: break-word; }
 .rich-editor__content .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; color: var(--color-text-tertiary); pointer-events: none; }
 .rich-editor__content .tiptap > *:first-child { margin-top: 0; }
 .rich-editor__content .tiptap h1, .rich-editor__content .tiptap h2, .rich-editor__content .tiptap h3,
@@ -378,7 +378,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .mobile-bottom-nav button.active { color: var(--color-text-primary); }
   .compose-dialog { align-self: end; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
   .modal-backdrop { padding: 0; }
-  .compose-dialog .body-field, .rich-editor, .rich-editor__content .tiptap { min-height: 230px; }
+  .compose-dialog .body-field, .rich-editor, .rich-editor__content .tiptap { min-height: 280px; }
   .compose-dialog input, .compose-dialog textarea { font-size: 16px; }
   .attachment-actions small { display: none; }
   .compose-dialog form > footer { justify-content: flex-end; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }

@@ -82,7 +82,7 @@ const props = defineProps<{ modelValue: string; placeholder?: string }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>()
 
 const editor = useEditor({
-  content: props.modelValue,
+  content: props.modelValue || '<p></p>',
   extensions: [
     StarterKit,
     Underline,
@@ -94,8 +94,10 @@ const editor = useEditor({
 })
 
 function exec(fn: (chain: ChainedCommands) => ChainedCommands) {
-  if (!editor.value) return
-  fn(editor.value.chain().focus()).run()
+  const instance = editor.value
+  if (!instance) return
+  const { from, to } = instance.state.selection
+  fn(instance.chain().focus().setTextSelection({ from, to })).run()
 }
 
 function setLink() {
