@@ -10,6 +10,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.MembershipApplication;
 import edu.jmi.openatom.server.openatomsystem.mapper.ApprovalRecordMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.service.ApprovalService;
+import edu.jmi.openatom.server.openatomsystem.service.MailBroadcastPlanner;
 import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class ApprovalServiceImpl implements ApprovalService {
   private final ApprovalRecordMapper approvalRecordMapper;
   private final MembershipApplicationMapper applicationMapper;
   private final NotificationService notificationService;
+  private final MailBroadcastPlanner mailBroadcastPlanner;
 
   @Override
   public Result<List<ApprovalRecord>> records(Integer applicationId) {
@@ -53,6 +55,12 @@ public class ApprovalServiceImpl implements ApprovalService {
     if (request.getComment() != null && !request.getComment().isBlank()) content += "\n审核意见：" + request.getComment();
     notificationService.create(RequestCreateNotificationDTO.builder().title(title).content(content)
         .type("approval").receiverUserIds(List.of(application.getUserId())).build());
+    mailBroadcastPlanner.enqueueUserMail(
+        "broadcast_approval_" + applicationId + "_" + request.getNode() + "_" + request.getAction(),
+        application.getUserId(),
+        "approval",
+        title,
+        content);
     return Result.success("审批处理成功");
   }
 

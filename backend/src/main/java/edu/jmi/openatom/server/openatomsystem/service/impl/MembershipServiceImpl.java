@@ -12,6 +12,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import edu.jmi.openatom.server.openatomsystem.service.MailBroadcastPlanner;
 import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
 import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import edu.jmi.openatom.server.openatomsystem.service.UnifiedGroupProjectionService;
@@ -44,6 +45,7 @@ public class MembershipServiceImpl implements MembershipService {
   private final ClubPositionMapper positionMapper;
   private final ClubAlumniGroupMapper alumniGroupMapper;
   private final NotificationService notificationService;
+  private final MailBroadcastPlanner mailBroadcastPlanner;
   private final PasswordService passwordService;
   private final RoleMapper roleMapper;
   private final UserRoleMapper userRoleMapper;
@@ -95,6 +97,12 @@ public class MembershipServiceImpl implements MembershipService {
     if (request.getComment() != null && !request.getComment().isBlank()) content += "\n评价：" + request.getComment();
     if (userId != null) {
       notificationService.create(RequestCreateNotificationDTO.builder().title(title).content(content).type("approval").receiverUserIds(List.of(userId)).build());
+      mailBroadcastPlanner.enqueueUserMail(
+          "broadcast_final_" + applicationId + "_" + request.getDecision(),
+          userId,
+          "approval",
+          title,
+          content);
     }
     return Result.success("终审决策已处理");
   }

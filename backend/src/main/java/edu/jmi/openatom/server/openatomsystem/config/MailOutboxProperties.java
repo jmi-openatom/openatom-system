@@ -49,6 +49,13 @@ public class MailOutboxProperties {
     return URI.create(base + "/internal/v1/mailboxes/" + userId);
   }
 
+  /** Mail-api broadcast endpoint (branded bulk mail), derived from the provision URL. */
+  public URI broadcastUri() {
+    URI provision = URI.create(provisionUrl.trim());
+    String base = provision.getScheme() + "://" + provision.getAuthority();
+    return URI.create(base + "/internal/v1/mailboxes/broadcast");
+  }
+
   public int normalizedBatchSize() {
     return Math.max(1, Math.min(batchSize, 500));
   }

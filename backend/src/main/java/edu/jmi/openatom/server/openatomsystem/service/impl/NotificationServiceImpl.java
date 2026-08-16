@@ -12,6 +12,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.NotificationMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.NotificationReceiverMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
+import edu.jmi.openatom.server.openatomsystem.service.MailBroadcastPlanner;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * 通知管理实现类
@@ -31,6 +34,7 @@ public class NotificationServiceImpl implements NotificationService {
   private final NotificationMapper notificationMapper;
   private final NotificationReceiverMapper notificationReceiverMapper;
   private final UserMapper userMapper;
+  private final MailBroadcastPlanner mailBroadcastPlanner;
 
   @Override
   public Result<List<ResponseNotificationVO>> currentUserNotifications() {
@@ -66,6 +70,20 @@ public class NotificationServiceImpl implements NotificationService {
     if (Boolean.TRUE.equals(request.getIsAll())) {
       List<User> allUsers = userMapper.selectList(null);
       for (User user : allUsers) { notificationReceiverMapper.insert(NotificationReceiver.builder().notificationId(notification.getId()).receiverUserId(user.getId()).readFlag(0).build()); }
+      // System-wide notifications also trigger a broadcast mail after commit.
+      Integer notificationId = notification.getId();
+      String title = notification.getTitle();
+      String content = notification.getContent();
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          mailBroadcastPlanner.enqueueAllBroadcast(
+              "broadcast_notification_" + notificationId,
+              "notification",
+              "[通知] " + title,
+              "通知标题：" + title + "\n通知内容：" + content);
+        }
+      });
     } else {
       for (Integer receiverUserId : request.getReceiverUserIds().stream().distinct().toList()) {
         notificationReceiverMapper.insert(NotificationReceiver.builder().notificationId(notification.getId()).receiverUserId(receiverUserId).readFlag(0).build());

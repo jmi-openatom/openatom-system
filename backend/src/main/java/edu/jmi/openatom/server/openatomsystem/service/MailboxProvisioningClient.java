@@ -32,12 +32,15 @@ public class MailboxProvisioningClient {
   }
 
   public DeliveryResult deliver(MailboxOutboxEvent event) throws IOException, InterruptedException {
+    boolean broadcast = "mail_broadcast".equals(event.getEventType());
     ObjectNode payload = (ObjectNode) objectMapper.readTree(event.getPayloadJson());
-    payload.put("eventId", event.getEventId());
-    payload.put("eventType", event.getEventType());
+    if (!broadcast) {
+      payload.put("eventId", event.getEventId());
+      payload.put("eventType", event.getEventType());
+    }
 
     HttpRequest request =
-        HttpRequest.newBuilder(properties.provisionUri())
+        HttpRequest.newBuilder(broadcast ? properties.broadcastUri() : properties.provisionUri())
             .timeout(properties.normalizedRequestTimeout())
             .header("Authorization", "Bearer " + properties.getServiceToken())
             .header("Content-Type", "application/json")

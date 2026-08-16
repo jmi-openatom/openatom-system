@@ -18,6 +18,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.ClubActivityMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.service.ActivityService;
+import edu.jmi.openatom.server.openatomsystem.service.MailBroadcastPlanner;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ public class ActivityServiceImpl implements ActivityService {
   private final ClubActivityMapper clubActivityMapper;
   private final ActivityRegistrationMapper activityRegistrationMapper;
   private final ClubMembershipMapper clubMembershipMapper;
+  private final MailBroadcastPlanner mailBroadcastPlanner;
 
   @Override
   @RedisCached(cacheName = "site", key = "'admin-activities:' + (#p0 == null ? 'all' : #p0)", ttlSeconds = 300)
@@ -77,6 +79,9 @@ public class ActivityServiceImpl implements ActivityService {
         .participationPoints(safePoints(request.getParticipationPoints()))
         .build();
     int rows = clubActivityMapper.insert(activity);
+    if (rows > 0 && "published".equals(status)) {
+      enqueueActivityBroadcast("broadcast_activity_create_" + activity.getId(), activity);
+    }
     return rows > 0 ? Result.success("活动创建成功") : Result.error("活动创建失败");
   }
 
@@ -106,7 +111,21 @@ public class ActivityServiceImpl implements ActivityService {
               FormSchemaFields.ensureCollegeRegistrationFields(request.getRegistrationFields())));
     if (request.getParticipationPoints() != null) activity.setParticipationPoints(safePoints(request.getParticipationPoints()));
     int rows = clubActivityMapper.updateById(activity);
+    if (rows > 0 && "published".equals(activity.getStatus())) {
+      enqueueActivityBroadcast("broadcast_activity_" + activityId, activity);
+    }
     return rows > 0 ? Result.success("活动更新成功") : Result.error("活动更新失败");
+  }
+
+  private void enqueueActivityBroadcast(String eventId, ClubActivity activity) {
+    mailBroadcastPlanner.enqueueAllBroadcast(
+        eventId,
+        "activity",
+        "[活动] " + activity.getTitle(),
+        "活动名称：" + activity.getTitle()
+            + "\n活动时间：" + (activity.getActivityAt() == null ? "待定" : activity.getActivityAt())
+            + "\n活动地点：" + (activity.getLocation() == null ? "待定" : activity.getLocation())
+            + "\n活动简介：" + (activity.getSummary() == null ? "" : activity.getSummary()));
   }
 
   @Override

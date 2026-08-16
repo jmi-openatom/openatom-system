@@ -13,6 +13,7 @@ import edu.jmi.openatom.server.openatomsystem.entity.RecruitmentCampaign;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.RecruitmentCampaignMapper;
 import edu.jmi.openatom.server.openatomsystem.service.RecruitmentCampaignService;
+import edu.jmi.openatom.server.openatomsystem.service.MailBroadcastPlanner;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
 
   private final RecruitmentCampaignMapper recruitmentCampaignMapper;
   private final ClubMapper clubMapper;
+  private final MailBroadcastPlanner mailBroadcastPlanner;
 
   @Override
   @RedisCached(cacheName = "site", key = "'admin-recruitment:' + #p0", ttlSeconds = 300)
@@ -107,6 +109,15 @@ public class RecruitmentCampaignServiceImpl implements RecruitmentCampaignServic
     if (campaign == null) return Result.error(404, "招新计划不存在");
     campaign.setStatus(status);
     int row = recruitmentCampaignMapper.updateById(campaign);
+    if (row > 0 && "open".equals(status)) {
+      mailBroadcastPlanner.enqueueAllBroadcast(
+          "broadcast_recruitment_" + campaignId,
+          "recruitment",
+          "[招新] " + campaign.getName(),
+          "招新名称：" + campaign.getName()
+              + "\n报名开始：" + (campaign.getApplyStartAt() == null ? "待定" : campaign.getApplyStartAt())
+              + "\n报名截止：" + (campaign.getApplyEndAt() == null ? "待定" : campaign.getApplyEndAt()));
+    }
     return row > 0 ? Result.success(message) : Result.error("招新计划状态更新失败");
   }
 
