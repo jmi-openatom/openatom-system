@@ -6,7 +6,7 @@
       <el-button type="primary" @click="$router.push('/admin/doc-center')">返回文档中心</el-button>
     </div>
     <div v-else-if="loading" class="doc-edit-loading"><span class="spinner"></span><p>正在打开编辑器…</p></div>
-    <div ref="editorEl" class="doc-edit-host"></div>
+    <div id="onlyoffice-editor" class="doc-edit-host"></div>
   </div>
 </template>
 
@@ -18,7 +18,6 @@ import { documentCenterApi } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
-const editorEl = ref<HTMLElement | null>(null)
 const loading = ref(true)
 const error = ref('')
 let editorInstance: any = null
@@ -62,9 +61,7 @@ async function init() {
       error.value = '编辑器组件加载失败，请刷新后重试。'
       return
     }
-    if (editorEl.value) {
-      editorInstance = new api.DocEditor(editorEl.value, result.config)
-    }
+    editorInstance = new api.DocEditor('onlyoffice-editor', result.config)
   } catch (err: any) {
     error.value = err?.message || '无法打开编辑器，请稍后重试。'
     ElMessage.error(error.value)
