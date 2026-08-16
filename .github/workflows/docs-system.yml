@@ -118,6 +118,15 @@ jobs:
 
             docker compose --env-file "$env_file" -f docker-compose.docs.yml \
               up -d hedgedoc hedgedoc-db
+            echo "===== 部署诊断 ====="
+            echo "--- 部署目录 ---"
+            ls -la "$deploy_path"
+            echo "--- compose ps ---"
+            docker compose --env-file "$env_file" -f docker-compose.docs.yml ps
+            echo "--- docker ps (hedgedoc) ---"
+            docker ps --filter name=hedgedoc
+            echo "--- docker compose 版本 ---"
+            docker compose version
             sleep 8
             docker compose --env-file "$env_file" -f docker-compose.docs.yml ps
             # 健康检查：HedgeDoc 内部端口默认为 18085（HEDGEDOC_INTERNAL_PORT 可改）
