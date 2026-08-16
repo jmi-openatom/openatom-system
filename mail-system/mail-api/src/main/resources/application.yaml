@@ -47,7 +47,7 @@ mail:
   default-quota-bytes: ${MAIL_DEFAULT_QUOTA_BYTES:2147483648}
   internal-service-token: ${MAIL_INTERNAL_SERVICE_TOKEN:}
   main-site:
-    users-url: ${MAIN_SITE_INTERNAL_USERS_URL:}
+    users-url: ${MAIN_SITE_INTERNAL_USERS_URL:https://api.jmi-openatom.cn/api/v1/internal/mail/users}
   broadcast:
     from: ${MAIL_BROADCAST_FROM:no-reply@mailer.jmi-openatom.cn}
     max-recipients: ${MAIL_BROADCAST_MAX_RECIPIENTS:200}
