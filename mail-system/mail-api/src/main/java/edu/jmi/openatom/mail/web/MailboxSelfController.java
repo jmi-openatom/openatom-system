@@ -31,12 +31,13 @@ public class MailboxSelfController {
   public Map<String, Object> status(HttpServletRequest request) {
     MailSession session = requireSession(request);
     ProvisionResponse status = service.status(session.sub());
-    return Map.of(
-        "status", status.status(),
-        "provisionStatus", status.provisionStatus(),
-        "address", status.address(),
-        "displayName", session.displayName(),
-        "isAdmin", session.isAdmin());
+    java.util.Map<String, Object> result = new java.util.HashMap<>();
+    result.put("status", status.status());
+    result.put("provisionStatus", status.provisionStatus());
+    result.put("address", status.address() == null ? "" : status.address());
+    result.put("displayName", session.displayName());
+    result.put("isAdmin", session.isAdmin());
+    return result;
   }
 
   @PostMapping("/activate")
@@ -47,20 +48,22 @@ public class MailboxSelfController {
     MailSession session = requireSession(request, csrf);
     if (body.usePinyin() != null && body.usePinyin()) {
       ProvisionResponse result = service.activateWithPinyin(session.sub(), session.displayName());
-      return Map.of(
-          "status", result.status(),
-          "provisionStatus", result.provisionStatus(),
-          "address", result.address());
+      return provisionResult(result);
     }
     if (body.localPart() == null || body.localPart().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "local_part_required");
     }
     ProvisionResponse result =
         service.correctPrimaryAddress(session.sub(), body.localPart());
-    return Map.of(
-        "status", result.status(),
-        "provisionStatus", result.provisionStatus(),
-        "address", result.address());
+    return provisionResult(result);
+  }
+
+  private Map<String, Object> provisionResult(ProvisionResponse result) {
+    java.util.Map<String, Object> map = new java.util.HashMap<>();
+    map.put("status", result.status());
+    map.put("provisionStatus", result.provisionStatus());
+    map.put("address", result.address() == null ? "" : result.address());
+    return map;
   }
 
   private MailSession requireSession(HttpServletRequest request) {

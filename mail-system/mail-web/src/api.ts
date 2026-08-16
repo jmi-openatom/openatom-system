@@ -224,14 +224,33 @@ export interface AdminStats {
   resend: { configured: boolean; verified?: boolean; domain?: string; region?: string; error?: string }
 }
 
-export async function loadAdminMailboxes(): Promise<AdminMailboxView[]> {
-  const response = await fetch('/api/admin/mailboxes', { credentials: 'same-origin' })
+export interface AdminMailboxPage {
+  rows: AdminMailboxView[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export async function loadAdminMailboxes(options: {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  sort?: string
+  order?: string
+} = {}): Promise<AdminMailboxPage> {
+  const params = new URLSearchParams()
+  params.set('page', String(options.page ?? 1))
+  params.set('pageSize', String(options.pageSize ?? 20))
+  params.set('sort', options.sort ?? 'id')
+  params.set('order', options.order ?? 'desc')
+  if (options.keyword) params.set('keyword', options.keyword)
+  const response = await fetch('/api/admin/mailboxes?' + params.toString(), { credentials: 'same-origin' })
   if (response.status === 401) {
     redirectToOAuth()
     throw new Error('登录已过期')
   }
   if (!response.ok) throw new Error(response.status === 403 ? '没有管理员权限' : '无法加载邮箱列表')
-  return response.json() as Promise<AdminMailboxView[]>
+  return response.json() as Promise<AdminMailboxPage>
 }
 
 export async function loadAdminStats(): Promise<AdminStats> {

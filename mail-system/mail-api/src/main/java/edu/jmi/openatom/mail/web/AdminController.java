@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -49,9 +50,62 @@ public class AdminController {
   }
 
   @GetMapping("/mailboxes")
-  public List<MailboxView> mailboxes(HttpServletRequest request) {
+  public MailboxPage mailboxes(
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "20") int pageSize,
+      @RequestParam(defaultValue = "") String keyword,
+      @RequestParam(defaultValue = "id") String sort,
+      @RequestParam(defaultValue = "desc") String order,
+      HttpServletRequest request) {
     requireAdmin(request);
-    return repository.findAll().stream().map(MailboxView::from).toList();
+    List<MailboxAccount> all = repository.findAll();
+    // search
+    if (keyword != null && !keyword.isBlank()) {
+      String term = keyword.trim().toLowerCase();
+      all =
+          all.stream()
+              .filter(
+                  a ->
+                      (a.displayName() != null && a.displayName().toLowerCase().contains(term))
+                          || (a.primaryAddress() != null
+                              && a.primaryAddress().toLowerCase().contains(term))
+                          || (a.oauthSub() != null && a.oauthSub().toLowerCase().contains(term)))
+              .toList();
+    }
+    // sort
+    java.util.Comparator<MailboxAccount> comparator = comparatorFor(sort);
+    if ("asc".equalsIgnoreCase(order)) {
+      all = all.stream().sorted(comparator).toList();
+    } else {
+      all = all.stream().sorted(comparator.reversed()).toList();
+    }
+    // paginate
+    int safePage = Math.max(1, page);
+    int safeSize = Math.min(100, Math.max(1, pageSize));
+    int total = all.size();
+    int from = Math.min((safePage - 1) * safeSize, total);
+    int to = Math.min(from + safeSize, total);
+    List<MailboxView> rows =
+        all.subList(from, to).stream().map(MailboxView::from).toList();
+    return new MailboxPage(rows, total, safePage, safeSize);
+  }
+
+  private java.util.Comparator<MailboxAccount> comparatorFor(String sort) {
+    return switch (sort == null ? "id" : sort) {
+      case "displayName" ->
+          java.util.Comparator.comparing(
+              MailboxAccount::displayName,
+              java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()));
+      case "address" ->
+          java.util.Comparator.comparing(
+              MailboxAccount::primaryAddress,
+              java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()));
+      case "status" ->
+          java.util.Comparator.comparing(
+              MailboxAccount::status,
+              java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()));
+      default -> java.util.Comparator.comparingLong(MailboxAccount::id);
+    };
   }
 
   @PostMapping("/mailboxes/{id}/suspend")
@@ -130,6 +184,8 @@ public class AdminController {
   }
 
   public record SuspendRequest(boolean suspended) {}
+
+  public record MailboxPage(List<MailboxView> rows, int total, int page, int pageSize) {}
 
   public record MailboxView(
       long id,

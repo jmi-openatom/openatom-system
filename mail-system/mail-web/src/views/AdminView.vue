@@ -1,13 +1,14 @@
 <template>
   <div class="mail-shell admin-shell">
-    <header class="app-header">
-      <div class="app-brand">
+    <header class="admin-header">
+      <div class="admin-header__left">
         <img alt="开放原子邮箱" class="brand-logo" src="/logo.png" />
-        <div><strong>邮箱后台管理</strong><small>{{ session.address }}</small></div>
+        <strong>邮箱后台管理</strong>
+        <small>{{ session.address }}</small>
       </div>
-      <div class="header-actions">
+      <div class="admin-header__right">
         <ThemeToggle />
-        <button class="secondary-button" type="button" @click="backToMail">返回邮箱</button>
+        <button class="secondary-button" type="button" @click="emit('back')">返回邮箱</button>
         <button class="icon-button" type="button" aria-label="退出登录" @click="emit('logout')"><LogOut :size="18" /></button>
       </div>
     </header>
@@ -21,8 +22,14 @@
 
       <section class="admin-table-wrap" aria-label="用户邮箱列表">
         <header class="admin-table-header">
-          <h2>用户邮箱</h2>
-          <button class="secondary-button" type="button" :disabled="loading" @click="load">刷新</button>
+          <h2>用户邮箱 <small v-if="pageData">共 {{ pageData.total }} 个</small></h2>
+          <div class="admin-toolbar">
+            <label class="admin-search">
+              <Search :size="15" aria-hidden="true" />
+              <input v-model="keyword" placeholder="搜索姓名/地址/ID" @input="onSearchInput" />
+            </label>
+            <button class="secondary-button" type="button" :disabled="loading" @click="load">刷新</button>
+          </div>
         </header>
         <div v-if="loading" class="email-skeletons">
           <div v-for="i in 5" :key="i" class="email-skeleton"><i></i><span></span><b></b></div>
@@ -32,26 +39,36 @@
           <button class="secondary-button" type="button" @click="load">重新加载</button>
         </div>
         <table v-else class="admin-table">
-          <thead><tr><th>ID</th><th>用户</th><th>地址</th><th>状态</th><th>操作</th></tr></thead>
+          <thead>
+            <tr>
+              <th><button class="sort-btn" type="button" @click="setSort('id')">ID {{ sortIcon('id') }}</button></th>
+              <th><button class="sort-btn" type="button" @click="setSort('displayName')">用户 {{ sortIcon('displayName') }}</button></th>
+              <th><button class="sort-btn" type="button" @click="setSort('address')">地址 {{ sortIcon('address') }}</button></th>
+              <th><button class="sort-btn" type="button" @click="setSort('status')">状态 {{ sortIcon('status') }}</button></th>
+              <th>操作</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr v-for="mailbox in mailboxes" :key="mailbox.id">
+            <tr v-for="mailbox in rows" :key="mailbox.id">
               <td>{{ mailbox.id }}</td>
               <td>{{ mailbox.displayName || mailbox.sub }}</td>
               <td class="admin-address">{{ mailbox.address || '（未分配）' }}</td>
               <td><span :class="'status-badge status-badge--' + mailbox.status.toLowerCase()">{{ mailbox.status }}</span></td>
               <td>
-                <button
-                  class="secondary-button"
-                  type="button"
-                  :disabled="busyId === mailbox.id"
-                  @click="toggleSuspend(mailbox)"
-                >
+                <button class="secondary-button" type="button" :disabled="busyId === mailbox.id" @click="toggleSuspend(mailbox)">
                   {{ mailbox.status === 'SUSPENDED' ? '启用' : '停用' }}
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
+        <footer v-if="pageData && pageData.total > 0" class="admin-pagination">
+          <span>第 {{ page }} / {{ totalPages }} 页 · {{ pageData.total }} 条</span>
+          <div class="admin-pagination__btns">
+            <button class="secondary-button" type="button" :disabled="page <= 1 || loading" @click="goPage(page - 1)">上一页</button>
+            <button class="secondary-button" type="button" :disabled="page >= totalPages || loading" @click="goPage(page + 1)">下一页</button>
+          </div>
+        </footer>
       </section>
     </div>
   </div>
@@ -59,10 +76,10 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
-import { CircleAlert, LogOut } from 'lucide-vue-next'
+import { CircleAlert, LogOut, Search } from 'lucide-vue-next'
 import {
   loadAdminMailboxes, loadAdminStats, setMailboxSuspended,
-  type AdminMailboxView, type AdminStats,
+  type AdminMailboxPage, type AdminMailboxView, type AdminStats,
 } from '../api'
 import type { SessionView } from '../models'
 import ThemeToggle from '../components/common/ThemeToggle.vue'
@@ -72,11 +89,23 @@ defineProps<{ session: SessionView }>()
 const emit = defineEmits<{ (e: 'logout'): void; (e: 'back'): void }>()
 
 const { showToast } = useUiStore()
-const mailboxes = ref<AdminMailboxView[]>([])
+const rows = ref<AdminMailboxView[]>([])
+const pageData = ref<AdminMailboxPage | null>(null)
 const stats = ref<AdminStats | null>(null)
 const loading = ref(false)
 const busyId = ref<number | null>(null)
 const error = ref('')
+const page = ref(1)
+const pageSize = 20
+const keyword = ref('')
+const sort = ref('id')
+const order = ref<'asc' | 'desc'>('desc')
+let searchTimer: number | undefined
+
+const totalPages = computed(() => {
+  const total = pageData.value?.total ?? 0
+  return Math.max(1, Math.ceil(total / pageSize))
+})
 
 const resendDomain = computed(() => {
   const r = stats.value?.resend
@@ -89,20 +118,53 @@ const resendStatus = computed(() => {
   return r.verified ? '已验证' : '未验证'
 })
 
-onMounted(load)
+onMounted(() => void load())
 
 async function load() {
   loading.value = true
   error.value = ''
   try {
-    const [boxes, stat] = await Promise.all([loadAdminMailboxes(), loadAdminStats()])
-    mailboxes.value = boxes
+    const [boxes, stat] = await Promise.all([
+      loadAdminMailboxes({ page: page.value, pageSize, keyword: keyword.value, sort: sort.value, order: order.value }),
+      loadAdminStats(),
+    ])
+    rows.value = boxes.rows
+    pageData.value = boxes
     stats.value = stat
   } catch (err) {
     error.value = err instanceof Error ? err.message : '加载失败'
   } finally {
     loading.value = false
   }
+}
+
+function onSearchInput() {
+  if (searchTimer) window.clearTimeout(searchTimer)
+  searchTimer = window.setTimeout(() => {
+    page.value = 1
+    void load()
+  }, 350)
+}
+
+function setSort(field: string) {
+  if (sort.value === field) {
+    order.value = order.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sort.value = field
+    order.value = 'asc'
+  }
+  void load()
+}
+
+function sortIcon(field: string): string {
+  if (sort.value !== field) return '↕'
+  return order.value === 'asc' ? '↑' : '↓'
+}
+
+function goPage(target: number) {
+  if (target < 1 || target > totalPages.value) return
+  page.value = target
+  void load()
 }
 
 async function toggleSuspend(mailbox: AdminMailboxView) {
@@ -118,6 +180,4 @@ async function toggleSuspend(mailbox: AdminMailboxView) {
     busyId.value = null
   }
 }
-
-function backToMail() { emit('back') }
 </script>
