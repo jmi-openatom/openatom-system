@@ -156,6 +156,44 @@ export async function getEmail(accountId: string, id: string): Promise<EmailSumm
   return email
 }
 
+
+/**
+ * Moves an email to a single target mailbox (e.g. archive or trash) by
+ * replacing its mailboxIds with only the target mailbox.
+ */
+export async function moveEmail(
+  accountId: string,
+  id: string,
+  targetMailboxId: string,
+): Promise<void> {
+  const mailboxIds: Record<string, boolean> = { [targetMailboxId]: true }
+  await jmap([
+    ['Email/set', { accountId, update: { [id]: { mailboxIds } } }, 'move'],
+  ])
+}
+
+/** Marks an email as read or unread. */
+export async function setEmailSeen(
+  accountId: string,
+  id: string,
+  seen: boolean,
+): Promise<void> {
+  await jmap([
+    ['Email/set', { accountId, update: { [id]: { ['keywords/$seen']: seen } } }, 'seen'],
+  ])
+}
+
+/**
+ * Removes an email entirely (JMAP destroy). Used by the delete action in
+ * mailboxes that have no trash, or as a final delete.
+ */
+export async function destroyEmail(accountId: string, id: string): Promise<void> {
+  await jmap([
+    ['Email/set', { accountId, destroy: [id] }, 'destroy'],
+  ])
+}
+
+
 export async function sendEmail(input: {
   accountId: string
   identityId: string
