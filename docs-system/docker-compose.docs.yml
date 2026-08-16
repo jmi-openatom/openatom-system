@@ -19,7 +19,7 @@ x-logging: &default-logging
 services:
   # ===== HedgeDoc：Markdown 实时协作 =====
   hedgedoc:
-    image: quay.io/hedgedoc/hedgedoc:1.9.9
+    image: quay.io/hedgedoc/hedgedoc:1.10.1
     restart: unless-stopped
     environment:
       HEDGEDOC_DOMAIN: ${HEDGEDOC_DOMAIN:-https://md.jmi-openatom.cn}
