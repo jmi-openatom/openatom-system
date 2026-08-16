@@ -47,17 +47,13 @@
     </el-table>
 
     <el-empty v-if="!loading && !rows.length" description="还没有文档，点击右上角上传第一个文档" />
-
-    <el-dialog v-model="editorOpen" class="doc-editor-dialog" :close-on-click-modal="false" fullscreen>
-      <div ref="editorEl" class="doc-editor-host"></div>
-    </el-dialog>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
 import { Document, Files, Grid, Refresh, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { documentCenterApi } from '@/api'
@@ -67,11 +63,6 @@ const uploading = ref(false)
 const rows = ref<any[]>([])
 const query = ref({ keyword: '' })
 const fileInput = ref<HTMLInputElement | null>(null)
-const editorOpen = ref(false)
-const editorEl = ref<HTMLElement | null>(null)
-let editorInstance: any = null
-let sdkLoaded = false
-let sdkLoading: Promise<void> | null = null
 
 const filteredRows = computed(() => {
   const keyword = query.value.keyword.trim().toLowerCase()
@@ -138,55 +129,8 @@ async function remove(row: any) {
   }
 }
 
-function loadSdk(serverUrl: string): Promise<void> {
-  if (sdkLoaded) return Promise.resolve()
-  if (sdkLoading) return sdkLoading
-  sdkLoading = new Promise((resolve, reject) => {
-    const script = document.createElement('script')
-    script.src = `${serverUrl.replace(/\/+$/, '')}/web-apps/apps/api/documents/api.js`
-    script.onload = () => {
-      sdkLoaded = true
-      resolve()
-    }
-    script.onerror = () => {
-      sdkLoading = null
-      reject(new Error('加载编辑器失败'))
-    }
-    document.head.append(script)
-  })
-  return sdkLoading
-}
-
-async function openEditor(row: any) {
-  let config: any
-  try {
-    const result = await documentCenterApi.editConfig(row.id)
-    config = result.config
-    await loadSdk(result.documentServerUrl)
-  } catch (error: any) {
-    ElMessage.error(error?.message || '无法打开编辑器')
-    return
-  }
-  editorOpen.value = true
-  // el-dialog 内容懒挂载，多次 nextTick 确保容器渲染完成
-  await nextTick()
-  await nextTick()
-  await nextTick()
-  const el = editorEl.value
-  if (!el) {
-    ElMessage.error('编辑器容器未就绪，请重试')
-    return
-  }
-  const api = (window as any).DocsAPI
-  if (!api?.DocEditor) {
-    ElMessage.error('编辑器组件加载失败，请刷新后重试')
-    return
-  }
-  try {
-    editorInstance = new api.DocEditor(el, config)
-  } catch (error: any) {
-    ElMessage.error(error?.message || '编辑器初始化失败')
-  }
+function openEditor(row: any) {
+  window.open(`/doc-edit/${row.id}`, '_blank')
 }
 
 function iconOf(extension: string) {
@@ -214,13 +158,6 @@ function formatTime(value: string) {
 
 onMounted(() => {
   void fetchList()
-})
-
-onBeforeUnmount(() => {
-  if (editorInstance?.destroyEditor) {
-    editorInstance.destroyEditor()
-  }
-  editorInstance = null
 })
 </script>
 
@@ -260,10 +197,5 @@ onBeforeUnmount(() => {
   margin: 0;
   color: var(--oa-muted);
   font-size: 12px;
-}
-
-.doc-editor-host {
-  width: 100%;
-  height: 100%;
 }
 </style>

@@ -327,6 +327,12 @@ const routes = [
     component: resilientView(() => import('../views/site/CheckInScan.vue')),
   },
   {
+    path: '/doc-edit/:id',
+    name: 'doc-edit',
+    meta: { requiresSiteLogin: true },
+    component: resilientView(() => import('../views/site/DocEditorPage.vue')),
+  },
+  {
     path: '/lottery/:id/screen',
     name: 'lottery-screen',
     component: resilientView(() => import('../views/site/LotteryScreen.vue')),
