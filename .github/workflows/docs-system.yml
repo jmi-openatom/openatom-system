@@ -30,8 +30,6 @@ jobs:
     concurrency:
       group: openatom-docs-production-${{ github.ref }}
       cancel-in-progress: false
-    env:
-      DOCS_DOMAIN: ${{ vars.DOCS_DOMAIN || 'md.jmi-openatom.cn' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -72,18 +70,10 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           timeout: 30s
           command_timeout: 20m
-          envs: DOCS_DOMAIN,HEDGEDOC_SESSION_SECRET,HEDGEDOC_DB_PASS,OAUTH2_CLIENT_ID,OAUTH2_CLIENT_SECRET,DOCUMENT_SERVER_JWT_SECRET,DOCUMENT_SERVER_DB_PASS
-        env:
-          DOCS_DOMAIN: ${{ vars.DOCS_DOMAIN || 'md.jmi-openatom.cn' }}
-          HEDGEDOC_SESSION_SECRET: ${{ secrets.HEDGEDOC_SESSION_SECRET }}
-          HEDGEDOC_DB_PASS: ${{ secrets.HEDGEDOC_DB_PASS }}
-          OAUTH2_CLIENT_ID: ${{ vars.OAUTH2_CLIENT_ID || 'openatom-hedgedoc' }}
-          OAUTH2_CLIENT_SECRET: ${{ secrets.OAUTH2_CLIENT_SECRET }}
-          DOCUMENT_SERVER_JWT_SECRET: ${{ secrets.DOCUMENT_SERVER_JWT_SECRET || '' }}
-          DOCUMENT_SERVER_DB_PASS: ${{ secrets.DOCUMENT_SERVER_DB_PASS || '' }}
           script: |
             set -eu
             deploy_path='${{ vars.DOCS_DEPLOY_PATH || '/www/wwwroot/openatom-docs' }}'
+            docs_domain='${{ vars.DOCS_DOMAIN || 'md.jmi-openatom.cn' }}'
             cd "$deploy_path"
             umask 077
             env_file="$deploy_path/.env"
@@ -98,21 +88,27 @@ jobs:
               chmod 600 "$temp_file"
               mv "$temp_file" "$env_file"
             }
+            # GitHub Secrets 在 runner 上直接展开（与主站 deploy.yml 一致）
+            HEDGEDOC_SESSION_SECRET='${{ secrets.HEDGEDOC_SESSION_SECRET }}'
+            HEDGEDOC_DB_PASS='${{ secrets.HEDGEDOC_DB_PASS }}'
+            OAUTH2_CLIENT_SECRET='${{ secrets.OAUTH2_CLIENT_SECRET }}'
+            DOCUMENT_SERVER_JWT_SECRET='${{ secrets.DOCUMENT_SERVER_JWT_SECRET }}'
+            DOCUMENT_SERVER_DB_PASS='${{ secrets.DOCUMENT_SERVER_DB_PASS }}'
             # 必填 Secret：缺失时直接报错（在 GitHub SERVER 环境补充后重新运行）
             : "${HEDGEDOC_SESSION_SECRET:?缺少 HEDGEDOC_SESSION_SECRET（SERVER 环境 Secret）}"
             : "${HEDGEDOC_DB_PASS:?缺少 HEDGEDOC_DB_PASS（SERVER 环境 Secret）}"
             : "${OAUTH2_CLIENT_SECRET:?缺少 OAUTH2_CLIENT_SECRET（SERVER 环境 Secret）}"
 
-            upsert_env HEDGEDOC_DOMAIN "https://${DOCS_DOMAIN:-md.jmi-openatom.cn}"
+            upsert_env HEDGEDOC_DOMAIN "https://$docs_domain"
             upsert_env HEDGEDOC_SESSION_SECRET "$HEDGEDOC_SESSION_SECRET"
             upsert_env HEDGEDOC_DB_PASS "$HEDGEDOC_DB_PASS"
-            upsert_env OAUTH2_CLIENT_ID "${OAUTH2_CLIENT_ID:-openatom-hedgedoc}"
+            upsert_env OAUTH2_CLIENT_ID "${{ vars.OAUTH2_CLIENT_ID || 'openatom-hedgedoc' }}"
             upsert_env OAUTH2_CLIENT_SECRET "$OAUTH2_CLIENT_SECRET"
             # ONLYOFFICE 备用密钥：未配置时跳过（保留 .env 已有值）
-            if [ -n "${DOCUMENT_SERVER_JWT_SECRET:-}" ]; then
+            if [ -n "$DOCUMENT_SERVER_JWT_SECRET" ]; then
               upsert_env DOCUMENT_SERVER_JWT_SECRET "$DOCUMENT_SERVER_JWT_SECRET"
             fi
-            if [ -n "${DOCUMENT_SERVER_DB_PASS:-}" ]; then
+            if [ -n "$DOCUMENT_SERVER_DB_PASS" ]; then
               upsert_env DOCUMENT_SERVER_DB_PASS "$DOCUMENT_SERVER_DB_PASS"
             fi
 
