@@ -57,10 +57,14 @@ const { session, loading, mailContext, mailboxStatus, initSession, signOut } = u
 const { initTheme, useGlobalShortcuts } = useUiStore()
 const { requestCloseCompose } = useComposeStore()
 
-// Simple hash router: visit #/admin for the admin console.
-const isAdminRoute = ref(window.location.hash === '#/admin')
+// Simple history router: visit /admin for the admin console.
+const isAdminRoute = ref(window.location.pathname === '/admin')
 function syncAdminRoute() {
-  isAdminRoute.value = window.location.hash === '#/admin'
+  isAdminRoute.value = window.location.pathname === '/admin'
+}
+function setAdminRoute(value: boolean) {
+  isAdminRoute.value = value
+  window.history.pushState(null, '', value ? '/admin' : '/')
 }
 
 /** First-login activation: mailbox exists but has no address yet. */
@@ -94,10 +98,10 @@ async function onActivationDone() {
 }
 
 function goAdmin() {
-  window.location.hash = '#/admin'
+  setAdminRoute(true)
 }
 function goMail() {
-  window.location.hash = '#/'
+  setAdminRoute(false)
 }
-window.addEventListener('hashchange', syncAdminRoute)
+window.addEventListener('popstate', syncAdminRoute)
 </script>

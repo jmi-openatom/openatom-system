@@ -1,12 +1,13 @@
 // ViewModel: mailbox navigation, email list, reader selection and actions.
 import { computed, ref } from 'vue'
 import type { EmailSummary, MailContext } from '../models'
-import { destroyEmail, getEmail, moveEmail, queryEmails, setEmailSeen } from '../mail'
+import { destroyEmail, getEmail, moveEmail, queryEmails, setEmailSeen, type MailFilter } from '../mail'
 
 const selectedMailboxId = ref<string | null>(null)
 const emails = ref<EmailSummary[]>([])
 const selectedEmail = ref<EmailSummary | null>(null)
 const search = ref('')
+const mailFilter = ref<MailFilter>('all')
 const mailLoading = ref(false)
 const detailLoading = ref(false)
 const actionBusy = ref(false)
@@ -51,7 +52,12 @@ export async function loadEmails(mailContext: MailContext): Promise<void> {
   mailLoading.value = true
   errorMessage.value = ''
   try {
-    emails.value = await queryEmails(mailContext.accountId, selectedMailboxId.value, search.value)
+    emails.value = await queryEmails(
+      mailContext.accountId,
+      selectedMailboxId.value,
+      search.value,
+      mailFilter.value,
+    )
   } catch (error) {
     errorMessage.value = messageOf(error)
   } finally {
@@ -66,7 +72,14 @@ export async function refresh(mailContext: MailContext): Promise<void> {
 export async function selectFolder(id: string, mailContext: MailContext): Promise<void> {
   selectedMailboxId.value = id
   selectedEmail.value = null
+  mailFilter.value = 'all'
   await loadEmails(mailContext)
+}
+
+export function setFilter(filter: MailFilter, mailContext: MailContext): void {
+  mailFilter.value = filter
+  selectedEmail.value = null
+  void loadEmails(mailContext)
 }
 
 export async function selectEmail(id: string, mailContext: MailContext): Promise<void> {
@@ -232,6 +245,7 @@ export function useMailboxStore() {
     emails,
     selectedEmail,
     search,
+    mailFilter,
     mailLoading,
     detailLoading,
     actionBusy,
@@ -244,6 +258,7 @@ export function useMailboxStore() {
     loadEmails,
     refresh,
     selectFolder,
+    setFilter,
     selectEmail,
     scheduleSearch,
     archiveSelected,

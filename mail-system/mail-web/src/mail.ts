@@ -94,14 +94,20 @@ export async function ensureRelayIdentity(
   return id ? { id, email: relayEmail } : null
 }
 
+export type MailFilter = 'all' | 'unread' | 'read' | 'attachments'
+
 export async function queryEmails(
   accountId: string,
   mailboxId: string | null,
   search: string,
+  mailFilter: MailFilter = 'all',
 ): Promise<EmailSummary[]> {
   const conditions: Record<string, unknown>[] = []
   if (mailboxId) conditions.push({ inMailbox: mailboxId })
   if (search.trim()) conditions.push({ text: search.trim() })
+  if (mailFilter === 'unread') conditions.push({ unread: true })
+  else if (mailFilter === 'read') conditions.push({ unread: false })
+  else if (mailFilter === 'attachments') conditions.push({ hasAttachment: true })
   const filter = conditions.length > 1 ? { operator: 'AND', conditions } : (conditions[0] ?? {})
   const response = await jmap([
     [

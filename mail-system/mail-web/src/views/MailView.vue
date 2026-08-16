@@ -24,9 +24,11 @@
         :active-folder-name="activeFolderName(mailContext)"
         :mail-loading="mailLoading"
         :error-message="errorMessage"
+        :mail-filter="mailFilter"
         @select="onSelectEmail"
         @refresh="onRefresh"
         @compose="onOpenCompose"
+        @filter="onSetFilter"
       />
       <MessageReader
         :selected-email="selectedEmail"
@@ -59,6 +61,7 @@
 import { onMounted, ref } from 'vue'
 import { Inbox, Search, SquarePen } from 'lucide-vue-next'
 import type { EmailSummary, MailContext, SessionView, UploadedAttachment } from '../models'
+import type { MailFilter } from '../mail'
 import {
   activeFolderName,
   senderAddress,
@@ -77,9 +80,9 @@ import { downloadAttachment } from '../api'
 const props = defineProps<{ session: SessionView; mailContext: MailContext; isAdmin: boolean }>()
 
 const {
-  selectedMailboxId, emails, selectedEmail, search, mailLoading, detailLoading, actionBusy, errorMessage,
+  selectedMailboxId, emails, selectedEmail, search, mailFilter, mailLoading, detailLoading, actionBusy, errorMessage,
   selectedBody,
-  loadMailbox, loadEmails, selectFolder, selectEmail, scheduleSearch, archiveSelected, deleteSelected,
+  loadMailbox, loadEmails, selectFolder, setFilter, selectEmail, scheduleSearch, archiveSelected, deleteSelected,
   deleteForever, toggleSelectedSeen,
 } = useMailboxStore()
 const { showToast } = useUiStore()
@@ -99,6 +102,9 @@ function onRefresh() {
 }
 function onSelectFolder(id: string) {
   void selectFolder(id, props.mailContext)
+}
+function onSetFilter(filter: MailFilter) {
+  setFilter(filter, props.mailContext)
 }
 function onSelectEmail(id: string) {
   void selectEmail(id, props.mailContext)
