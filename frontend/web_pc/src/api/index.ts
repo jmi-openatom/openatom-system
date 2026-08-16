@@ -163,6 +163,26 @@ export const authApi = {
   },
 }
 
+export const documentCenterApi = {
+  list(): Promise<any> {
+    return request.get('/document-center')
+  },
+  upload(file: File): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/document-center', formData)
+  },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/document-center/${id}`)
+  },
+  download(id: string | number): Promise<any> {
+    return request.get(`/document-center/${id}/download`, { responseType: 'blob' })
+  },
+  editConfig(id: string | number): Promise<any> {
+    return request.post(`/document-center/${id}/edit-config`)
+  },
+}
+
 export const memberProfileApi = {
   members(params?: Record<string, unknown>): Promise<any> {
     return request.get('/members', { params })

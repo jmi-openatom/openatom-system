@@ -33,6 +33,14 @@
         </div>
         <el-button type="primary" plain @click="openDocs">进入文档中心</el-button>
       </div>
+      <div class="workspace-mailbox-card">
+        <div class="workspace-mailbox-card__icon"><Files /></div>
+        <div class="workspace-mailbox-card__copy">
+          <strong>办公文档</strong>
+          <span>上传 Word / Excel / PPT 在线编辑</span>
+        </div>
+        <el-button type="primary" plain @click="$router.push('/docs-center')">进入办公文档</el-button>
+      </div>
     </section>
 
     <section class="workspace-section">
@@ -148,6 +156,7 @@ import {
   Coin,
   DocumentChecked,
   EditPen,
+  Files,
   Message,
   Notebook,
   Picture,

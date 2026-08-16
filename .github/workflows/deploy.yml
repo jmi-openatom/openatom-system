@@ -192,6 +192,12 @@ jobs:
             echo "APP_MAIL_PROVISION_URL=${{ vars.APP_MAIL_PROVISION_URL || 'http://127.0.0.1:18090/internal/v1/mailboxes/provision' }}" >> .env
             echo "APP_MAIL_SERVICE_TOKEN=${{ secrets.MAIL_INTERNAL_SERVICE_TOKEN }}" >> .env
             echo "" >> .env
+            echo "# 文档中心（ONLYOFFICE）" >> .env
+            echo "DOCUMENT_SERVER_OFFICE_URL=${{ vars.DOCUMENT_SERVER_OFFICE_URL || 'https://office.jmi-openatom.cn' }}" >> .env
+            echo "DOCUMENT_SERVER_CALLBACK_BASE_URL=${{ vars.DOCUMENT_SERVER_CALLBACK_BASE_URL || 'http://host.docker.internal:8921/api/v1' }}" >> .env
+            echo "DOCUMENT_SERVER_PUBLIC_API_BASE=${{ vars.DOCUMENT_SERVER_PUBLIC_API_BASE || 'https://api.jmi-openatom.cn/api/v1' }}" >> .env
+            echo "DOCUMENT_SERVER_JWT_SECRET=${{ secrets.DOCUMENT_SERVER_JWT_SECRET }}" >> .env
+            echo "" >> .env
             echo "# 第三方登录配置" >> .env
             echo "APP_GITHUB_CLIENT_ID=${{ secrets.APP_GITHUB_CLIENT_ID || 'Ov23liQQCxTjyoR8WAW9' }}" >> .env
             echo "APP_GITHUB_CLIENT_SECRET=${{ secrets.APP_GITHUB_CLIENT_SECRET }}" >> .env

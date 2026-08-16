@@ -74,6 +74,28 @@ server {
 }
 ```
 
+ONLYOFFICE（Word/Excel/PPT）域名 `office.jmi-openatom.cn` 反代到 `127.0.0.1:18086`（上传体积调大，文档保存需要）：
+
+```nginx
+# office.jmi-openatom.cn
+server {
+  listen 80;
+  server_name office.jmi-openatom.cn;
+  # ... SSL 证书（Let's Encrypt）...
+  client_max_body_size 100m;
+  location / {
+    proxy_pass http://127.0.0.1:18086;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+}
+```
+
 ## 3. 部署
 
 ### 自动部署（推荐，GitHub Actions）
@@ -88,10 +110,10 @@ server {
   - `HEDGEDOC_SESSION_SECRET`、`HEDGEDOC_DB_PASS`
   - `OAUTH2_CLIENT_SECRET`（与主站注册的客户端密钥一致）
   - `DOCUMENT_SERVER_JWT_SECRET`、`DOCUMENT_SERVER_DB_PASS`（ONLYOFFICE 用，可先随便填）
-- Variables：`DOCS_DOMAIN`（默认 `md.jmi-openatom.cn`）、`DOCS_DEPLOY_PATH`（默认 `/www/wwwroot/openatom-docs`）
+- Variables：`DOCS_DOMAIN`（默认 `md.jmi-openatom.cn`）、`DOCS_DEPLOY_PATH`（默认 `/www/wwwroot/openatom-docs`）、`DOCS_OFFICE`（设 `1` 启用 ONLYOFFICE 三件套）
 
-部署目录为 `DOCS_DEPLOY_PATH`（默认 `/www/wwwroot/openatom-docs`），服务只启动
-HedgeDoc 与数据库；ONLYOFFICE 如需启用，在服务器上手动执行：
+部署目录为 `DOCS_DEPLOY_PATH`（默认 `/www/wwwroot/openatom-docs`）。ONLYOFFICE 通过
+`DOCS_OFFICE=1` 自动启用（较吃资源，默认关闭）；也可在服务器上手动执行：
 
 ```sh
 cd /www/wwwroot/openatom-docs
@@ -112,18 +134,19 @@ docker compose --env-file .env -f docker-compose.docs.yml ps   # 确认 healthy
 
 访问 `https://md.jmi-openatom.cn` → 点「登录」→ OpenAtom → 主站账号登录。
 
-## 4. ONLYOFFICE（可选，较重）
+## 4. ONLYOFFICE 与主站文档中心
 
-```sh
-docker compose --env-file .env -f docker-compose.docs.yml --profile office up -d
-```
+ONLYOFFICE Document Server 提供 Word/Excel/PPT 渲染与协同引擎；主站后端
+（openatom-system）的「文档中心」作为宿主应用，通过 API + JWT 打开文档：
 
-ONLYOFFICE Document Server 只提供渲染/协同引擎，需要宿主应用才能打开文档。
-后续在 openatom-system 主站增加「文档中心」模块（上传 .docx/.xlsx/.pptx，用
-Document Server API + `DOCUMENT_SERVER_JWT_SECRET` 签名打开），即与 HedgeDoc 一起
-嵌入主站工作台。默认不启动（`--profile office`）。
+- 主站需要配置环境变量（`DOCUMENT_SERVER_*`，GitHub Secret/Variable）：
+  - `DOCUMENT_SERVER_JWT_SECRET`（Secret，**必须与文档站 `DOCUMENT_SERVER_JWT_SECRET` 相同**）
+  - `DOCUMENT_SERVER_OFFICE_URL`（默认 `https://office.jmi-openatom.cn`）
+  - `DOCUMENT_SERVER_CALLBACK_BASE_URL`（默认 `http://host.docker.internal:8921/api/v1`）
+  - `DOCUMENT_SERVER_PUBLIC_API_BASE`（默认 `https://api.jmi-openatom.cn/api/v1`）
+- 主站用户在工作台「办公文档」上传 .docx/.xlsx/.pptx 后即可在线编辑
 
-## 备份
+## 5. 备份
 
 - `hedgedoc-db-data` 卷（PostgreSQL）：`docker compose ... exec hedgedoc-db pg_dump -U hedgedoc hedgedoc`
 - ONLYOFFICE 文档存于 ds-postgres 卷与 documentserver 容器内 `/var/www/onlyoffice/Data`

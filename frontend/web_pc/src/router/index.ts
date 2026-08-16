@@ -308,6 +308,11 @@ const routes = [
         name: 'site-alumni-managers',
         component: resilientView(() => import('../views/site/AlumniManagers.vue')),
       },
+      {
+        path: 'docs-center',
+        name: 'site-doc-center',
+        component: resilientView(() => import('../views/site/DocCenter.vue')),
+      },
     ],
   },
   {

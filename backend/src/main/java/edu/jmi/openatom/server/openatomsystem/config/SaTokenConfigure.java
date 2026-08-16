@@ -122,6 +122,8 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				"/clubs/{clubId}/departments",
 				"/files/avatars/**",
 				"/files/images/**",
+				"/document-center/*/file",
+				"/document-center/*/callback",
 				"/internal/mail/**",
 				"/public/**");
 	}

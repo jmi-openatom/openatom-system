@@ -74,6 +74,7 @@ jobs:
             set -eu
             deploy_path='${{ vars.DOCS_DEPLOY_PATH || '/www/wwwroot/openatom-docs' }}'
             docs_domain='${{ vars.DOCS_DOMAIN || 'md.jmi-openatom.cn' }}'
+            docs_office='${{ vars.DOCS_OFFICE || '0' }}'
             cd "$deploy_path"
             umask 077
             env_file="$deploy_path/.env"
@@ -122,8 +123,14 @@ jobs:
             sh "$deploy_path/generate-config.sh" "$deploy_path/config.json"
 
             # config.json 是挂载文件，内容变化不会触发 compose 重建，必须强制 recreate
-            docker compose --env-file "$env_file" -f docker-compose.docs.yml \
-              up -d --force-recreate hedgedoc hedgedoc-db
+            # 默认只启 HedgeDoc；office profile 由 DOCS_OFFICE=1 开启（ONLYOFFICE 较吃资源）
+            if [ "$docs_office" = "1" ]; then
+              docker compose --env-file "$env_file" -f docker-compose.docs.yml \
+                --profile office up -d --force-recreate
+            else
+              docker compose --env-file "$env_file" -f docker-compose.docs.yml \
+                up -d --force-recreate hedgedoc hedgedoc-db
+            fi
             echo "===== 部署诊断 ====="
             echo "--- 部署目录 ---"
             ls -la "$deploy_path"

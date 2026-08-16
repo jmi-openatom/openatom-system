@@ -72,8 +72,6 @@ services:
     logging: *default-logging
 
   # ===== ONLYOFFICE Document Server：Word/Excel/PPT 在线协同 =====
-  # 用 --profile office 启用。注意：仅提供文档渲染/协同引擎，需要宿主应用
-  # （文档管理模块，可接入主站）通过 API + JWT 打开文档，见 README.md。
   documentserver:
     image: onlyoffice/documentserver:latest
     profiles: ["office"]
@@ -83,6 +81,9 @@ services:
       JWT_SECRET: ${DOCUMENT_SERVER_JWT_SECRET:?DOCUMENT_SERVER_JWT_SECRET is required}
       JWT_HEADER: Authorization
       JWT_IN_BODY: "true"
+    # 保存回调需要访问宿主上的主站后端（127.0.0.1:8921）
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:${DOCUMENT_SERVER_INTERNAL_PORT:-18086}:80"
     depends_on:

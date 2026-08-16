@@ -43,6 +43,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     ensureLeaveApplicationTable();
     ensureSchoolCalendarTables();
     ensureOfficeDocumentTable();
+    ensureDocCenterDocumentTable();
     ensureClubRegulationTable();
     ensureBlogTables();
     ensureImageHostingTable();
@@ -524,6 +525,25 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             KEY `idx_office_document_club` (`club_id`),
             KEY `idx_office_document_type` (`doc_type`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='后台文书单据表'
+        """);
+  }
+
+  private void ensureDocCenterDocumentTable() {
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `doc_center_document`
+        (
+            `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+            `owner_user_id` INT NOT NULL COMMENT '所有者用户ID',
+            `name` VARCHAR(255) NOT NULL COMMENT '原始文件名',
+            `extension` VARCHAR(10) NOT NULL COMMENT '扩展名',
+            `size_bytes` BIGINT NOT NULL DEFAULT 0 COMMENT '文件大小',
+            `storage_name` VARCHAR(100) NOT NULL COMMENT '磁盘文件名',
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+            `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            PRIMARY KEY (`id`),
+            KEY `idx_doc_center_owner` (`owner_user_id`)
+        ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='文档中心文件表'
         """);
   }
 
