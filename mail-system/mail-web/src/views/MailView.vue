@@ -32,7 +32,7 @@
         :selected-email="selectedEmail"
         :detail-loading="detailLoading"
         :action-busy="actionBusy"
-        :active-folder-name="activeFolderName"
+        :active-folder-name="activeFolderName(mailContext)"
         :downloading-attachment-id="downloadingAttachmentId"
         :attachment-download-error="attachmentDownloadError"
         :selected-body="selectedBody"
