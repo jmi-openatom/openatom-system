@@ -33,13 +33,13 @@
         </div>
         <el-button type="primary" plain @click="openDocs">进入文档中心</el-button>
       </div>
-      <div class="workspace-mailbox-card">
+      <div v-if="isAdminUser" class="workspace-mailbox-card">
         <div class="workspace-mailbox-card__icon"><Files /></div>
         <div class="workspace-mailbox-card__copy">
           <strong>办公文档</strong>
           <span>上传 Word / Excel / PPT 在线编辑</span>
         </div>
-        <el-button type="primary" plain @click="$router.push('/docs-center')">进入办公文档</el-button>
+        <el-button type="primary" plain @click="$router.push('/admin/doc-center')">进入办公文档</el-button>
       </div>
     </section>
 
@@ -149,6 +149,7 @@ import WorkspaceHero from '@/components/site/workspace/WorkspaceHero.vue'
 import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
 import { authApi, notificationApi, siteApi } from '@/api'
 import { getCurrentUser } from '@/utils/auth.ts'
+import { hasAdminAccess } from '@/utils/permission.ts'
 import {
   ArrowRight,
   Bell,
@@ -183,6 +184,7 @@ const mailbox = ref<{ address: string; status: string; provisionStatus: string }
   provisionStatus: '',
 })
 const mailboxLoading = ref(false)
+const isAdminUser = hasAdminAccess()
 const mailboxText = computed(() => {
   if (mailbox.value.status === 'UNAVAILABLE') return '邮箱系统暂不可用'
   return '未开通'

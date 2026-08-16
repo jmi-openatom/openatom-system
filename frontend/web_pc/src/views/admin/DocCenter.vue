@@ -1,42 +1,52 @@
 <template>
-  <ViewPage class="doc-center-page">
-    <div class="doc-center-head">
-      <div>
-        <h1>文档中心</h1>
-        <p>上传 .docx / .xlsx / .pptx，在线编辑与协作，文件保存在社团服务器。</p>
+  <ViewPage class="admin-page">
+    <ViewToolbar>
+      <div class="toolbar__filters">
+        <el-input
+          v-model="query.keyword"
+          clearable
+          placeholder="搜索文件名"
+          style="width: 240px"
+          @clear="reload"
+          @keyup.enter="reload"
+        />
+        <el-button type="primary" :icon="Refresh" @click="reload">刷新</el-button>
       </div>
-      <input ref="fileInput" hidden accept=".docx,.xlsx,.pptx" type="file" @change="onUpload" />
-      <el-button :disabled="uploading" type="primary" @click="fileInput?.click()">
-        {{ uploading ? '上传中…' : '上传文档' }}
-      </el-button>
-    </div>
+      <div class="toolbar__actions">
+        <input ref="fileInput" hidden accept=".docx,.xlsx,.pptx" type="file" @change="onUpload" />
+        <el-button :disabled="uploading" type="primary" :icon="Upload" @click="fileInput?.click()">
+          {{ uploading ? '上传中…' : '上传文档' }}
+        </el-button>
+      </div>
+    </ViewToolbar>
 
-    <el-empty v-if="!loading && !rows.length" description="还没有文档，点击右上角上传第一个文档" />
-    <el-table v-else v-loading="loading" :data="rows" class="doc-center-table">
-      <el-table-column label="名称" min-width="280">
+    <el-table v-loading="loading" :data="filteredRows" class="admin-table">
+      <el-table-column label="名称" min-width="300">
         <template #default="{ row }">
-          <span class="doc-name"><component :is="iconOf(row.extension)" /> {{ row.name }}</span>
+          <div class="doc-cell">
+            <span class="doc-icon"><component :is="iconOf(row.extension)" /></span>
+            <span class="doc-copy">
+              <strong>{{ row.name }}</strong>
+              <small class="muted-line">{{ typeName(row.extension) }} · {{ formatSize(row.sizeBytes) }}</small>
+            </span>
+          </div>
         </template>
-      </el-table-column>
-      <el-table-column label="类型" width="120">
-        <template #default="{ row }">{{ typeName(row.extension) }}</template>
-      </el-table-column>
-      <el-table-column label="大小" width="120">
-        <template #default="{ row }">{{ formatSize(row.sizeBytes) }}</template>
       </el-table-column>
       <el-table-column label="修改时间" width="180">
         <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="240" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" type="primary" @click="openEditor(row)">在线编辑</el-button>
-          <el-button size="small" @click="download(row)">下载</el-button>
+          <el-button link type="primary" @click="openEditor(row)">在线编辑</el-button>
+          <el-button link type="primary" @click="download(row)">下载</el-button>
           <el-popconfirm title="删除后不可恢复，确定删除？" @confirm="remove(row)">
-            <template #reference><el-button size="small" type="danger">删除</el-button></template>
+            <template #reference><el-button link type="danger">删除</el-button></template>
           </el-popconfirm>
         </template>
       </el-table-column>
     </el-table>
+
+    <el-empty v-if="!loading && !rows.length" description="还没有文档，点击右上角上传第一个文档" />
 
     <el-dialog v-model="editorOpen" class="doc-editor-dialog" :close-on-click-modal="false" fullscreen>
       <div ref="editorEl" class="doc-editor-host"></div>
@@ -45,15 +55,17 @@
 </template>
 
 <script setup lang="ts">
-import { Document, Grid, Picture as PictureIcon, VideoCamera } from '@element-plus/icons-vue'
+import { Document, Files, Grid, Refresh, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { nextTick, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import ViewPage from '@/components/common/ViewPage.vue'
+import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { documentCenterApi } from '@/api'
 
-const rows = ref<any[]>([])
 const loading = ref(false)
 const uploading = ref(false)
+const rows = ref<any[]>([])
+const query = ref({ keyword: '' })
 const fileInput = ref<HTMLInputElement | null>(null)
 const editorOpen = ref(false)
 const editorEl = ref<HTMLElement | null>(null)
@@ -61,7 +73,13 @@ let editorInstance: any = null
 let sdkLoaded = false
 let sdkLoading: Promise<void> | null = null
 
-async function loadRows() {
+const filteredRows = computed(() => {
+  const keyword = query.value.keyword.trim().toLowerCase()
+  if (!keyword) return rows.value
+  return rows.value.filter((row) => row.name?.toLowerCase().includes(keyword))
+})
+
+async function fetchList() {
   loading.value = true
   try {
     rows.value = (await documentCenterApi.list()) || []
@@ -70,6 +88,10 @@ async function loadRows() {
   } finally {
     loading.value = false
   }
+}
+
+function reload() {
+  void fetchList()
 }
 
 async function onUpload(event: Event) {
@@ -81,7 +103,7 @@ async function onUpload(event: Event) {
   try {
     await documentCenterApi.upload(file)
     ElMessage.success('上传成功')
-    await loadRows()
+    await fetchList()
   } catch (error: any) {
     ElMessage.error(error?.message || '上传失败')
   } finally {
@@ -110,7 +132,7 @@ async function remove(row: any) {
   try {
     await documentCenterApi.remove(row.id)
     ElMessage.success('已删除')
-    await loadRows()
+    await fetchList()
   } catch {
     ElMessage.error('删除失败')
   }
@@ -154,7 +176,7 @@ async function openEditor(row: any) {
 
 function iconOf(extension: string) {
   if (extension === 'xlsx') return Grid
-  if (extension === 'pptx') return VideoCamera
+  if (extension === 'pptx') return Files
   return Document
 }
 
@@ -175,44 +197,54 @@ function formatTime(value: string) {
   return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'short', timeStyle: 'short' }).format(date)
 }
 
+onMounted(() => {
+  void fetchList()
+})
+
 onBeforeUnmount(() => {
   if (editorInstance?.destroyEditor) {
     editorInstance.destroyEditor()
   }
   editorInstance = null
 })
-
-loadRows()
 </script>
 
 <style scoped>
-.doc-center-page {
-  max-width: 1000px;
-}
-
-.doc-center-head {
+.doc-cell {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 12px;
 }
 
-.doc-center-head h1 {
-  margin: 0 0 4px;
-  font-size: 22px;
+.doc-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  color: var(--oa-primary);
+  background: var(--oa-page-bg);
+  border: 1px solid var(--oa-border);
+  font-size: 18px;
 }
 
-.doc-center-head p {
+.doc-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.doc-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted-line {
   margin: 0;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-
-.doc-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+  color: var(--oa-muted);
+  font-size: 12px;
 }
 
 .doc-editor-host {

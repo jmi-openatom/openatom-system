@@ -359,6 +359,12 @@ const menus = ref<AdminMenuItem[]>([
     icon: DocumentChecked,
     permissions: ['document:list'],
   },
+  {
+    path: '/admin/doc-center',
+    label: '文档中心',
+    icon: Files,
+    permissions: ['document:list'],
+  },
   { path: '/admin/images', label: '图床管理', icon: Picture, permissions: ['image:list'] },
 
   // ==== 7. 公共通知与基础配置 ====
@@ -491,6 +497,7 @@ const menuGroups: AdminMenuGroupDefinition[] = [
       '/admin/member-profile-comments',
       '/admin/regulations',
       '/admin/office-documents',
+      '/admin/doc-center',
       '/admin/images',
       '/admin/school-calendar',
       '/admin/notifications',

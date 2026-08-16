@@ -97,6 +97,7 @@ const adminFallbackRoutes = [
   '/admin/logs',
   '/admin/notifications',
   '/admin/file-migration',
+  '/admin/doc-center',
 ]
 
 function canAccessAdminPath(to: RouteLocationNormalized): boolean {
@@ -307,11 +308,6 @@ const routes = [
         path: 'alumni-managers',
         name: 'site-alumni-managers',
         component: resilientView(() => import('../views/site/AlumniManagers.vue')),
-      },
-      {
-        path: 'docs-center',
-        name: 'site-doc-center',
-        component: resilientView(() => import('../views/site/DocCenter.vue')),
       },
     ],
   },
@@ -628,6 +624,12 @@ const routes = [
           permissions: ['file:migration:stats', 'file:migration:export', 'file:migration:import'],
         },
         component: resilientView(() => import('../views/admin/FileMigration.vue')),
+      },
+      {
+        path: 'doc-center',
+        name: 'admin-doc-center',
+        meta: { permissions: ['document:list'] },
+        component: resilientView(() => import('../views/admin/DocCenter.vue')),
       },
     ],
   },
