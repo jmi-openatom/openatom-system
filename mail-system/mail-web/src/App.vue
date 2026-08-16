@@ -13,6 +13,13 @@
     @done="onActivationDone"
   />
 
+  <div v-else-if="mailboxStatus?.status === 'SUSPENDED'" class="boot-screen suspended-screen">
+    <ShieldAlert :size="40" />
+    <h2>邮箱已停用</h2>
+    <p>你的邮箱账号已被管理员停用，如需恢复请联系管理员。</p>
+    <button class="secondary-button" type="button" @click="onLogout">退出登录</button>
+  </div>
+
   <AdminView
     v-else-if="view === 'admin' && mailboxStatus?.isAdmin"
     :session="session"
@@ -36,6 +43,7 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
+import { ShieldAlert } from 'lucide-vue-next'
 import LoginView from './views/LoginView.vue'
 import MailView from './views/MailView.vue'
 import AdminView from './views/AdminView.vue'

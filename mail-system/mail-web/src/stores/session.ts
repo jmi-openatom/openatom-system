@@ -23,8 +23,18 @@ export async function initSession(): Promise<void> {
     if (session.value.authenticated) {
       mailboxStatus.value = await loadMailboxStatus()
     }
-    if (session.value.authenticated && session.value.status === 'ACTIVE') {
-      mailContext.value = await bootstrapMail(session.value.address)
+    // Bootstrap the mail context only when the mailbox is actually active;
+    // WAITING/PENDING and SUSPENDED mailboxes are handled by dedicated views.
+    if (
+      session.value.authenticated &&
+      mailboxStatus.value?.provisionStatus === 'ACTIVE' &&
+      mailboxStatus.value.status === 'ACTIVE'
+    ) {
+      try {
+        mailContext.value = await bootstrapMail(session.value.address)
+      } catch (error) {
+        mailContext.value = null
+      }
     }
   } catch (error) {
     // status call can fail if mailbox not provisioned yet; keep session

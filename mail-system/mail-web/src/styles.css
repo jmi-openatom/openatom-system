@@ -399,3 +399,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .activation-card { padding: 26px 20px; }
   .admin-body { padding: 16px; }
 }
+
+/* ===== Suspended account screen ===== */
+.suspended-screen { display: grid; justify-items: center; gap: 12px; padding: 48px 24px; text-align: center; }
+.suspended-screen svg { color: var(--color-danger, #d92d20); }
+.suspended-screen h2 { margin: 0; font-size: 22px; }
+.suspended-screen p { margin: 0; color: var(--color-text-secondary); line-height: 1.6; }
