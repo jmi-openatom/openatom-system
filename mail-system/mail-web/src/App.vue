@@ -21,10 +21,10 @@
   </div>
 
   <AdminView
-    v-else-if="view === 'admin' && mailboxStatus?.isAdmin"
+    v-else-if="isAdminRoute && mailboxStatus?.isAdmin"
     :session="session"
     @logout="onLogout"
-    @back="view = 'mail'"
+    @back="goMail"
   />
 
   <MailView
@@ -33,7 +33,7 @@
     :mail-context="mailContext"
     :is-admin="!!mailboxStatus?.isAdmin"
     @logout="onLogout"
-    @admin="view = 'admin'"
+    @admin="goAdmin"
   />
 
   <div v-else class="boot-screen"><span aria-hidden="true" class="spinner"></span><p>邮箱账户尚未就绪…</p></div>
@@ -57,7 +57,11 @@ const { session, loading, mailContext, mailboxStatus, initSession, signOut } = u
 const { initTheme, useGlobalShortcuts } = useUiStore()
 const { requestCloseCompose } = useComposeStore()
 
-const view = ref<'mail' | 'admin'>('mail')
+// Simple hash router: visit #/admin for the admin console.
+const isAdminRoute = ref(window.location.hash === '#/admin')
+function syncAdminRoute() {
+  isAdminRoute.value = window.location.hash === '#/admin'
+}
 
 /** First-login activation: mailbox exists but has no address yet. */
 const needsActivation = computed(() => {
@@ -88,4 +92,12 @@ async function onActivationDone() {
   // response-driven views switch to the mail context without a reload loop.
   await initSession()
 }
+
+function goAdmin() {
+  window.location.hash = '#/admin'
+}
+function goMail() {
+  window.location.hash = '#/'
+}
+window.addEventListener('hashchange', syncAdminRoute)
 </script>

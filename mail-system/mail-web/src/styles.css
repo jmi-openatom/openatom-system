@@ -405,3 +405,78 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .suspended-screen svg { color: var(--color-danger, #d92d20); }
 .suspended-screen h2 { margin: 0; font-size: 22px; }
 .suspended-screen p { margin: 0; color: var(--color-text-secondary); line-height: 1.6; }
+
+/* ===== Admin header (left/right layout) ===== */
+.admin-header {
+  position: relative;
+  z-index: 100;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-container) 82%, transparent);
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+.admin-header__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.admin-header__left .brand-logo { width: 38px; height: 38px; }
+.admin-header__left strong { font-size: 16px; white-space: nowrap; }
+.admin-header__left small { color: var(--color-text-secondary); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-header__right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+
+/* ===== Admin toolbar (search + refresh) ===== */
+.admin-toolbar { display: flex; align-items: center; gap: 8px; }
+.admin-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-page);
+  color: var(--color-text-secondary);
+}
+.admin-search:focus-within { border-color: var(--color-border-strong); background: var(--color-bg-container); box-shadow: var(--focus-ring); }
+.admin-search input { min-width: 0; width: 200px; border: 0; outline: 0; background: transparent; font: inherit; }
+
+/* ===== Sortable headers ===== */
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+}
+.sort-btn:hover { color: var(--color-primary); }
+
+/* ===== Pagination ===== */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top: 1px solid var(--color-border-light);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+.admin-pagination__btns { display: flex; gap: 8px; }
+
+@media (max-width: 720px) {
+  .admin-header { flex-wrap: wrap; height: auto; padding-block: 10px; }
+  .admin-search input { width: 120px; }
+  .admin-toolbar { flex-wrap: wrap; }
+  .admin-pagination { flex-direction: column; gap: 8px; align-items: flex-start; }
+}
