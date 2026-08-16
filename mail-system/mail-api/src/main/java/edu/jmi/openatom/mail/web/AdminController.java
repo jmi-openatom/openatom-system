@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.jmi.openatom.mail.domain.MailboxAccount;
 import edu.jmi.openatom.mail.oauth.MailSession;
+import edu.jmi.openatom.mail.repository.BroadcastLogRepository;
 import edu.jmi.openatom.mail.repository.MailboxRepository;
 import edu.jmi.openatom.mail.service.BroadcastSenderService;
 import edu.jmi.openatom.mail.service.MailboxProvisioningService;
@@ -43,6 +44,7 @@ public class AdminController {
   private final MainSiteUsersClient mainSiteUsersClient;
   private final ResendClient resendClient;
   private final BroadcastSenderService broadcastSenderService;
+  private final BroadcastLogRepository broadcastLogRepository;
   private final edu.jmi.openatom.mail.config.MailProperties mailProperties;
 
   public AdminController(
@@ -53,6 +55,7 @@ public class AdminController {
       MainSiteUsersClient mainSiteUsersClient,
       ResendClient resendClient,
       BroadcastSenderService broadcastSenderService,
+      BroadcastLogRepository broadcastLogRepository,
       edu.jmi.openatom.mail.config.MailProperties mailProperties) {
     this.repository = repository;
     this.service = service;
@@ -61,6 +64,7 @@ public class AdminController {
     this.mainSiteUsersClient = mainSiteUsersClient;
     this.resendClient = resendClient;
     this.broadcastSenderService = broadcastSenderService;
+    this.broadcastLogRepository = broadcastLogRepository;
     this.mailProperties = mailProperties;
   }
 
@@ -226,11 +230,23 @@ public class AdminController {
     }
     try {
       BroadcastSenderService.SendResult result =
-          broadcastSenderService.send(body.recipients(), subject, html, text);
+          broadcastSenderService.send(
+              body.recipients(), subject, html, text, "manual",
+              body.kind() == null ? "manual" : body.kind());
       return Map.of("recipients", result.recipients(), "batches", result.batches());
     } catch (IllegalStateException exception) {
       throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "resend_not_configured");
     }
+  }
+
+  /** Paginated broadcast send history. */
+  @GetMapping("/broadcast-logs")
+  public BroadcastLogRepository.BroadcastLogPage broadcastLogs(
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "20") int pageSize,
+      HttpServletRequest request) {
+    requireAdmin(request);
+    return broadcastLogRepository.page(page, pageSize);
   }
 
   /** Active mail-system accounts (with a primary @jmi-openatom.cn address) as broadcast recipients. */
@@ -290,7 +306,7 @@ public class AdminController {
 
   public record SuspendRequest(boolean suspended) {}
 
-  public record BroadcastRequest(List<String> recipients, String subject, String htmlBody, String textBody) {}
+  public record BroadcastRequest(List<String> recipients, String subject, String htmlBody, String textBody, String kind) {}
 
   public record MailboxPage(List<MailboxView> rows, int total, int page, int pageSize) {}
 

@@ -16,6 +16,7 @@
     <nav aria-label="后台管理导航" class="admin-tabs">
       <button :class="{ active: tab === 'mailboxes' }" type="button" @click="tab = 'mailboxes'">邮箱管理</button>
       <button :class="{ active: tab === 'broadcast' }" type="button" @click="tab = 'broadcast'">群发邮件</button>
+      <button :class="{ active: tab === 'logs' }" type="button" @click="tab = 'logs'">发送记录</button>
     </nav>
 
     <div v-if="tab === 'mailboxes'" class="admin-body">
@@ -148,6 +149,57 @@
         </div>
       </section>
     </div>
+
+    <div v-else-if="tab === 'logs'" class="admin-body">
+      <section class="admin-table-wrap" aria-label="群发邮件发送记录">
+        <header class="admin-table-header">
+          <h2>发送记录 <small v-if="logPage">共 {{ logPage.total }} 条</small></h2>
+          <div class="admin-toolbar">
+            <button class="secondary-button" type="button" :disabled="logsLoading" @click="loadLogs">刷新</button>
+          </div>
+        </header>
+        <div v-if="logsLoading" class="email-skeletons">
+          <div v-for="i in 5" :key="i" class="email-skeleton"><i></i><span></span><b></b></div>
+        </div>
+        <div v-else-if="logsError" class="empty-state" role="alert">
+          <CircleAlert :size="30" /><h2>无法加载记录</h2><p>{{ logsError }}</p>
+          <button class="secondary-button" type="button" @click="loadLogs">重新加载</button>
+        </div>
+        <table v-else class="admin-table">
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>来源</th>
+              <th>类型</th>
+              <th>主题</th>
+              <th>发件人</th>
+              <th>收件人</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="log in logRows" :key="log.id">
+              <td>{{ formatLogTime(log.createdAt) }}</td>
+              <td><span class="status-badge" :class="log.source === 'auto' ? 'status-badge--auto' : 'status-badge--manual'">{{ log.source === 'auto' ? '自动' : '手动' }}</span></td>
+              <td>{{ kindName(log.kind) }}</td>
+              <td class="log-subject" :title="log.subject">{{ log.subject || '（无主题）' }}</td>
+              <td class="admin-address">{{ log.sender }}</td>
+              <td>{{ log.recipients }} 位 / {{ log.batches }} 批</td>
+              <td>
+                <span :class="'status-badge status-badge--' + (log.status === 'sent' ? 'active' : 'suspended')">{{ log.status === 'sent' ? '成功' : '失败' }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <footer v-if="logPage && logPage.total > 0" class="admin-pagination">
+          <span>第 {{ logPageNum }} / {{ logTotalPages }} 页 · {{ logPage.total }} 条</span>
+          <div class="admin-pagination__btns">
+            <button class="secondary-button" type="button" :disabled="logPageNum <= 1 || logsLoading" @click="goLogPage(logPageNum - 1)">上一页</button>
+            <button class="secondary-button" type="button" :disabled="logPageNum >= logTotalPages || logsLoading" @click="goLogPage(logPageNum + 1)">下一页</button>
+          </div>
+        </footer>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -157,9 +209,10 @@ import { CircleAlert, LogOut, MailOpen, Search, Send } from 'lucide-vue-next'
 import RichTextEditor from '../components/common/RichTextEditor.vue'
 import { broadcastTemplates } from '../broadcast/templates'
 import {
-  loadAdminMailboxes, loadAdminStats, loadExternalRecipients, loadInternalRecipients,
+  loadAdminMailboxes, loadAdminStats, loadBroadcastLogs, loadExternalRecipients, loadInternalRecipients,
   sendBroadcast, setMailboxSuspended,
-  type AdminMailboxPage, type AdminMailboxView, type AdminStats, type ExternalRecipient,
+  type AdminMailboxPage, type AdminMailboxView, type AdminStats, type BroadcastLogEntry,
+  type BroadcastLogPage, type ExternalRecipient,
 } from '../api'
 import { htmlToPlainText } from '../mail'
 import type { SessionView } from '../models'
@@ -171,7 +224,7 @@ const emit = defineEmits<{ (e: 'logout'): void; (e: 'back'): void }>()
 
 const { showToast } = useUiStore()
 
-const tab = ref<'mailboxes' | 'broadcast'>('mailboxes')
+const tab = ref<'mailboxes' | 'broadcast' | 'logs'>('mailboxes')
 
 // ===== Mailbox management =====
 const rows = ref<AdminMailboxView[]>([])
@@ -206,6 +259,7 @@ const resendStatus = computed(() => {
 onMounted(() => {
   void load()
   void loadRecipients()
+  void loadLogs()
 })
 onBeforeUnmount(() => {
   if (searchTimer) window.clearTimeout(searchTimer)
@@ -271,6 +325,58 @@ async function toggleSuspend(mailbox: AdminMailboxView) {
   } finally {
     busyId.value = null
   }
+}
+
+// ===== Broadcast logs =====
+const logRows = ref<BroadcastLogEntry[]>([])
+const logPage = ref<BroadcastLogPage | null>(null)
+const logsLoading = ref(false)
+const logsError = ref('')
+const logPageNum = ref(1)
+const logPageSize = 20
+
+const logTotalPages = computed(() => {
+  const total = logPage.value?.total ?? 0
+  return Math.max(1, Math.ceil(total / logPageSize))
+})
+
+async function loadLogs() {
+  logsLoading.value = true
+  logsError.value = ''
+  try {
+    const result = await loadBroadcastLogs({ page: logPageNum.value, pageSize: logPageSize })
+    logRows.value = result.rows
+    logPage.value = result
+  } catch (err) {
+    logsError.value = err instanceof Error ? err.message : '加载失败'
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+function goLogPage(target: number) {
+  if (target < 1 || target > logTotalPages.value) return
+  logPageNum.value = target
+  void loadLogs()
+}
+
+function formatLogTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'short', timeStyle: 'medium' }).format(date)
+}
+
+function kindName(kind: string): string {
+  const map: Record<string, string> = {
+    notification: '通知',
+    activity: '活动',
+    recruitment: '招新',
+    approval: '审核',
+    interview: '面试',
+    manual: '手动',
+    auto: '自动',
+  }
+  return map[kind] || kind || '—'
 }
 
 // ===== Broadcast =====

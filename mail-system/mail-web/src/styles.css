@@ -439,6 +439,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .status-badge--active { color: #027a48; background: #ecfdf3; }
 .status-badge--suspended { color: #b42318; background: #fef3f2; }
 .status-badge--pending, .status-badge--waiting_profile { color: #b54708; background: #fffaeb; }
+.status-badge--auto { color: #027a48; background: #ecfdf3; }
+.status-badge--manual { color: #1d4ed8; background: #eff6ff; }
+.log-subject { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .admin-entry { white-space: nowrap; }
 .recipient-panel { border-bottom: 1px solid var(--color-border-light); }
 .recipient-source-switch { display: flex; gap: 4px; padding: 10px 18px; border-bottom: 1px solid var(--color-border-light); }

@@ -94,7 +94,9 @@ public class InternalMailboxController {
     String wrappedHtml = BroadcastEmailTemplate.wrap(html, subject);
     BroadcastSenderService.SendResult result;
     try {
-      result = broadcastSenderService.send(recipients, subject, wrappedHtml, text);
+      result = broadcastSenderService.send(
+          recipients, subject, wrappedHtml, text, "auto",
+          request.kind() == null ? "auto" : request.kind());
     } catch (IllegalStateException exception) {
       throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "resend_not_configured");
     }

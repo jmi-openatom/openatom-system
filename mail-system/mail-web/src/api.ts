@@ -269,6 +269,43 @@ export async function setMailboxSuspended(id: number, suspended: boolean): Promi
   if (!response.ok) throw new Error('操作失败，请稍后重试')
 }
 
+export interface BroadcastLogEntry {
+  id: number
+  source: string
+  kind: string
+  subject: string
+  sender: string
+  recipients: number
+  batches: number
+  messageIds: string | null
+  status: string
+  error: string | null
+  createdAt: string
+}
+
+export interface BroadcastLogPage {
+  rows: BroadcastLogEntry[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export async function loadBroadcastLogs(options: {
+  page?: number
+  pageSize?: number
+} = {}): Promise<BroadcastLogPage> {
+  const params = new URLSearchParams()
+  params.set('page', String(options.page ?? 1))
+  params.set('pageSize', String(options.pageSize ?? 20))
+  const response = await fetch('/api/admin/broadcast-logs?' + params.toString(), { credentials: 'same-origin' })
+  if (response.status === 401) {
+    redirectToOAuth()
+    throw new Error('登录已过期')
+  }
+  if (!response.ok) throw new Error(response.status === 403 ? '没有管理员权限' : '无法加载发送记录')
+  return response.json() as Promise<BroadcastLogPage>
+}
+
 export interface ExternalRecipient {
   userId: number
   name: string
