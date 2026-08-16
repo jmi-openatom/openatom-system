@@ -2,7 +2,7 @@
   <header class="app-header">
     <div class="app-brand">
       <img alt="开放原子邮箱" class="brand-logo" src="/logo.png"/>
-      <div><strong>开放原子邮箱</strong><small>{{ session.address }}</small></div>
+      <div><strong>JMI-OPENATOM 邮箱系统</strong><small>{{ session.address }}</small></div>
     </div>
     <label class="search-field">
       <Search :size="17" aria-hidden="true"/>
@@ -11,30 +11,39 @@
       <kbd>⌘ K</kbd>
     </label>
     <div class="header-actions">
-      <button v-if="isAdmin" aria-label="后台管理" class="secondary-button admin-entry" type="button" @click="emit('admin')">
-        <Settings :size="16" /> 后台管理
+      <button v-if="isAdmin" aria-label="后台管理" class="secondary-button admin-entry" type="button"
+              @click="emit('admin')">
+        <Settings :size="16"/>
+        后台管理
       </button>
       <button :disabled="mailLoading" aria-label="刷新邮件" class="icon-button" type="button" @click="onRefresh">
         <RefreshCw :class="{ rotating: mailLoading }" :size="18"/>
       </button>
-      <ThemeToggle />
+      <ThemeToggle/>
       <button :aria-expanded="accountMenu" class="account-button" type="button" @click="accountMenu = !accountMenu">
         <span class="avatar">{{ avatarText }}</span>
-        <span class="account-copy"><strong>{{ session.displayName || '开放原子成员' }}</strong><small>{{ session.status }}</small></span>
+        <span class="account-copy"><strong>{{ session.displayName || '开放原子成员' }}</strong><small>{{
+            session.status
+          }}</small></span>
         <ChevronDown :size="16"/>
       </button>
       <div v-if="accountMenu" class="account-menu">
-        <a href="https://www.jmi-openatom.cn/workspace"><LayoutGrid :size="16"/> 返回主站工作台</a>
-        <button type="button" @click="onLogout"><LogOut :size="16"/> 退出登录</button>
+        <a href="https://www.jmi-openatom.cn/workspace">
+          <LayoutGrid :size="16"/>
+          返回主站工作台</a>
+        <button type="button" @click="onLogout">
+          <LogOut :size="16"/>
+          退出登录
+        </button>
       </div>
     </div>
   </header>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
-import { ChevronDown, LayoutGrid, LogOut, RefreshCw, Search, Settings } from 'lucide-vue-next'
-import type { SessionView } from '../../models'
+import {computed, ref} from 'vue'
+import {ChevronDown, LayoutGrid, LogOut, RefreshCw, Search, Settings} from 'lucide-vue-next'
+import type {SessionView} from '../../models'
 import ThemeToggle from '../common/ThemeToggle.vue'
 
 const props = defineProps<{
@@ -56,6 +65,12 @@ const avatarText = computed(() => (props.session.displayName || 'OA').trim().sli
 function onSearchInput(event: Event) {
   emit('update:search', (event.target as HTMLInputElement).value)
 }
-function onRefresh() { emit('refresh') }
-function onLogout() { emit('logout') }
+
+function onRefresh() {
+  emit('refresh')
+}
+
+function onLogout() {
+  emit('logout')
+}
 </script>

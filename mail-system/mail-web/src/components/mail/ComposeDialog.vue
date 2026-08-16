@@ -8,7 +8,7 @@
       <form @submit.prevent="onSubmit">
         <label><span>收件人</span><input v-model="compose.to" autocomplete="off" inputmode="email" placeholder="name@example.com，多个地址用逗号分隔" required type="text" /></label>
         <label><span>主题</span><input v-model="compose.subject" maxlength="200" placeholder="邮件主题" type="text" /></label>
-        <label class="body-field"><span class="sr-only">邮件正文</span><textarea v-model="compose.body" placeholder="写点什么…" required></textarea></label>
+        <label class="body-field"><span class="sr-only">邮件正文</span><RichTextEditor v-model="compose.body" /></label>
         <div v-if="attachments.length" aria-label="待发送附件" class="compose-attachment-list">
           <div v-for="attachment in attachments" :key="attachment.blobId">
             <Paperclip :size="16" />
@@ -38,6 +38,7 @@
 
 <script lang="ts" setup>
 import { CircleAlert, Paperclip, Send, X } from 'lucide-vue-next'
+import RichTextEditor from '../common/RichTextEditor.vue'
 import type { MailContext, SessionView } from '../../models'
 import { formatBytes } from '../../stores/mailbox'
 import { useComposeStore } from '../../stores/compose'

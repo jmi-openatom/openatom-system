@@ -44,7 +44,8 @@ public class ResendClient {
   public record Result(String id, int status, String detail) {}
 
   /** Sends an email; returns the Resend message id on success. */
-  public Result send(String from, List<String> to, String subject, String text, List<Attachment> attachments) {
+  public Result send(
+      String from, List<String> to, String subject, String text, String html, List<Attachment> attachments) {
     if (!isConfigured()) {
       throw new IllegalStateException("resend_not_configured");
     }
@@ -55,6 +56,9 @@ public class ResendClient {
     body.put("subject", subject == null ? "" : subject);
     if (text != null && !text.isBlank()) {
       body.put("text", text);
+    }
+    if (html != null && !html.isBlank()) {
+      body.put("html", html);
     }
     if (attachments != null && !attachments.isEmpty()) {
       ArrayNode attachmentNodes = body.putArray("attachments");

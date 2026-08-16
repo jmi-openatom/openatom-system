@@ -200,6 +200,16 @@ export async function destroyEmail(accountId: string, id: string): Promise<void>
 }
 
 
+export function htmlToPlainText(html: string): string {
+  const div = document.createElement('div')
+  div.innerHTML = html
+  div.querySelectorAll('br').forEach((br) => br.replaceWith('\n'))
+  div.querySelectorAll('p, div, li, blockquote, pre, h1, h2, h3, h4, h5, h6, tr').forEach((el) =>
+    el.append('\n'),
+  )
+  return (div.textContent || '').replace(/\n{3,}/g, '\n\n').trim()
+}
+
 export async function sendEmail(input: {
   accountId: string
   identityId: string
@@ -208,10 +218,13 @@ export async function sendEmail(input: {
   fromAddress: string
   to: string[]
   subject: string
-  body: string
+  htmlBody: string
+  textBody: string
   attachments: UploadedAttachment[]
 }): Promise<void> {
   const draftId = 'draft'
+  const hasHtml = Boolean(input.htmlBody.trim())
+  const hasText = Boolean(input.textBody.trim())
   const response = await jmap([
     [
       'Email/set',
@@ -224,8 +237,12 @@ export async function sendEmail(input: {
             from: [{ name: input.fromName, email: input.fromAddress }],
             to: input.to.map((email) => ({ email })),
             subject: input.subject,
-            textBody: [{ partId: 'body', type: 'text/plain' }],
-            bodyValues: { body: { value: input.body, charset: 'utf-8' } },
+            textBody: hasText ? [{ partId: 'text', type: 'text/plain' }] : undefined,
+            htmlBody: hasHtml ? [{ partId: 'html', type: 'text/html' }] : undefined,
+            bodyValues: {
+              ...(hasText ? { text: { value: input.textBody, charset: 'utf-8' } } : {}),
+              ...(hasHtml ? { html: { value: input.htmlBody, charset: 'utf-8' } } : {}),
+            },
             attachments: input.attachments.length
               ? input.attachments.map((attachment) => ({
                   blobId: attachment.blobId,

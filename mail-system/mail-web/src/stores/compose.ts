@@ -2,7 +2,7 @@
 import { nextTick, reactive, ref } from 'vue'
 import { forgetUploadedAttachment, uploadAttachment, type UploadedAttachment } from '../api'
 import type { MailContext, SessionView } from '../models'
-import { sendEmail } from '../mail'
+import { htmlToPlainText, sendEmail } from '../mail'
 
 const open = ref(false)
 const dialog = ref<HTMLElement | null>(null)
@@ -25,7 +25,12 @@ export function openCompose(replyTo?: { address: string; subject: string }): voi
 }
 
 export function requestCloseCompose(): void {
-  if (compose.to || compose.subject || compose.body || attachments.value.length) {
+  if (
+    compose.to ||
+    compose.subject ||
+    htmlToPlainText(compose.body) ||
+    attachments.value.length
+  ) {
     if (!window.confirm('这封邮件尚未发送，确定放弃草稿吗？')) return
   }
   closeCompose()
@@ -59,6 +64,12 @@ export async function submitCompose(
     error.value = '请填写有效的收件人地址；多个地址使用逗号分隔。'
     return
   }
+  const html = compose.body.trim()
+  const text = htmlToPlainText(html)
+  if (!text) {
+    error.value = '请填写邮件正文。'
+    return
+  }
   const drafts = mailContext.mailboxes.find((item) => item.role === 'drafts')
   if (!drafts) {
     error.value = '草稿箱尚未创建，请联系管理员。'
@@ -75,7 +86,8 @@ export async function submitCompose(
       fromAddress: mailContext.relayIdentity?.email ?? session.address,
       to: recipients,
       subject: compose.subject.trim() || '（无主题）',
-      body: compose.body,
+      htmlBody: html,
+      textBody: text,
       attachments: attachments.value,
     })
     closeCompose(false)

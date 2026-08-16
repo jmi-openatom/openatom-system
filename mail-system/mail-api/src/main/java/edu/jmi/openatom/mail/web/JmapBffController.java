@@ -210,6 +210,7 @@ public class JmapBffController {
       String fromAddress = email.path("from").path(0).path("email").asText(session.address());
       String subject = email.path("subject").asText("");
       String text = plainText(email);
+      String html = htmlText(email);
       JsonNode toNode = email.path("to");
       java.util.List<String> to = new java.util.ArrayList<>();
       for (JsonNode recipient : toNode) {
@@ -234,7 +235,8 @@ public class JmapBffController {
         }
       }
       // 4) Send through Resend
-      ResendClient.Result result = resendClient.send(fromAddress, to, subject, text, attachments);
+      ResendClient.Result result =
+          resendClient.send(fromAddress, to, subject, text, html, attachments);
       if (result.id() == null || result.id().isBlank()) {
         throw new ResponseStatusException(
             HttpStatus.BAD_GATEWAY, "resend_rejected_" + result.status() + ":" + result.detail());
@@ -343,6 +345,17 @@ public class JmapBffController {
       }
     }
     return email.path("preview").asText("");
+  }
+
+  private String htmlText(JsonNode email) {
+    JsonNode bodyValues = email.path("bodyValues");
+    for (JsonNode part : email.path("htmlBody")) {
+      String partId = part.path("partId").asText();
+      if (bodyValues.has(partId)) {
+        return bodyValues.path(partId).path("value").asText("");
+      }
+    }
+    return "";
   }
 
   private JsonNode singleCall(JsonNode call) {

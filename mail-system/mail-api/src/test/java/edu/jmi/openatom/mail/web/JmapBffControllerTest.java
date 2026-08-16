@@ -166,7 +166,7 @@ class JmapBffControllerTest {
     when(resend.isConfigured()).thenReturn(true);
     when(resend.send(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList(),
         org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyList()))
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList()))
         .thenReturn(new ResendClient.Result("resend-message-1", 200, null));
     when(client.forward(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
         .thenReturn(
@@ -196,6 +196,7 @@ class JmapBffControllerTest {
         org.mockito.ArgumentMatchers.eq(java.util.List.of("a@example.com")),
         org.mockito.ArgumentMatchers.eq("hello"),
         org.mockito.ArgumentMatchers.eq("world"),
+        org.mockito.ArgumentMatchers.eq(""),
         org.mockito.ArgumentMatchers.anyList());
   }
 
@@ -220,7 +221,7 @@ class JmapBffControllerTest {
     verify(resend, org.mockito.Mockito.never()).send(
         org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList(),
         org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyList());
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList());
   }
 
   @Test

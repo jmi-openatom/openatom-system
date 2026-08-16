@@ -298,8 +298,31 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .compose-dialog label { min-height: 50px; display: grid; grid-template-columns: 66px 1fr; align-items: center; padding: 0 20px; border-bottom: 1px solid var(--color-border-light); }
 .compose-dialog label > span { color: var(--color-text-secondary); font-size: 12px; }
 .compose-dialog input { width: 100%; border: 0; outline: 0; background: transparent; }
-.compose-dialog .body-field { display: block; min-height: 310px; padding: 0; }
-.compose-dialog textarea { width: 100%; min-height: 310px; resize: vertical; padding: 20px; border: 0; outline: 0; background: transparent; font-size: 15px; line-height: 1.7; }
+.compose-dialog .body-field { display: block; min-height: 320px; padding: 0; border-bottom: 1px solid var(--color-border-light); }
+.rich-editor { height: 100%; min-height: 320px; display: flex; flex-direction: column; }
+.rich-editor__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 8px 10px; border-bottom: 1px solid var(--color-border-light); background: color-mix(in srgb, var(--color-bg-hover) 55%, transparent); }
+.rich-editor__toolbar .tool { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 8px; color: var(--color-text-secondary); background: transparent; cursor: pointer; }
+.rich-editor__toolbar .tool:hover { color: var(--color-text-primary); background: var(--color-bg-active); }
+.rich-editor__toolbar .tool:disabled { opacity: 0.35; cursor: default; }
+.rich-editor__toolbar .tool.active { color: var(--color-primary); background: var(--color-bg-active); }
+.rich-editor__toolbar .tool--label { font-size: 13px; font-weight: 700; }
+.rich-editor__toolbar .tool-sep { width: 1px; height: 18px; margin: 0 5px; background: var(--color-border-light); }
+.rich-editor__content { flex: 1; min-height: 0; overflow-y: auto; }
+.rich-editor__content .tiptap { min-height: 250px; padding: 18px 20px; outline: 0; font-size: 15px; line-height: 1.7; word-break: break-word; }
+.rich-editor__content .tiptap p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; color: var(--color-text-tertiary); pointer-events: none; }
+.rich-editor__content .tiptap > *:first-child { margin-top: 0; }
+.rich-editor__content .tiptap h1, .rich-editor__content .tiptap h2, .rich-editor__content .tiptap h3,
+.rich-editor__content .tiptap h4, .rich-editor__content .tiptap h5, .rich-editor__content .tiptap h6 { margin: 0.7em 0 0.3em; line-height: 1.3; }
+.rich-editor__content .tiptap h2 { font-size: 20px; }
+.rich-editor__content .tiptap h3 { font-size: 17px; }
+.rich-editor__content .tiptap ul, .rich-editor__content .tiptap ol { padding-left: 1.5em; }
+.rich-editor__content .tiptap li { margin: 3px 0; }
+.rich-editor__content .tiptap blockquote { margin: 0.6em 0; padding-left: 1em; border-left: 3px solid var(--color-border-strong); color: var(--color-text-secondary); }
+.rich-editor__content .tiptap pre { margin: 0.6em 0; padding: 12px 14px; border-radius: 10px; overflow-x: auto; background: var(--color-bg-page); font-size: 13px; }
+.rich-editor__content .tiptap pre code { padding: 0; background: transparent; }
+.rich-editor__content .tiptap code { padding: 1px 5px; border-radius: 6px; background: var(--color-bg-active); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+.rich-editor__content .tiptap a { color: var(--color-primary); text-decoration: underline; }
+.rich-editor__content .tiptap hr { margin: 1em 0; border: 0; border-top: 1px solid var(--color-border-light); }
 .compose-attachment-list { display: grid; gap: 7px; padding: 10px 20px; border-top: 1px solid var(--color-border-light); }
 .compose-attachment-list > div { min-height: 44px; display: grid; grid-template-columns: auto minmax(0, 1fr) 44px; align-items: center; gap: 9px; padding-left: 10px; border-radius: var(--radius-md); background: var(--color-bg-hover); }
 .compose-attachment-list span { min-width: 0; display: grid; }
@@ -355,7 +378,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .mobile-bottom-nav button.active { color: var(--color-text-primary); }
   .compose-dialog { align-self: end; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
   .modal-backdrop { padding: 0; }
-  .compose-dialog .body-field, .compose-dialog textarea { min-height: 230px; }
+  .compose-dialog .body-field, .rich-editor, .rich-editor__content .tiptap { min-height: 230px; }
   .compose-dialog input, .compose-dialog textarea { font-size: 16px; }
   .attachment-actions small { display: none; }
   .compose-dialog form > footer { justify-content: flex-end; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
