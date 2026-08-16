@@ -316,6 +316,24 @@ function recipientError(code: string): string {
   return messages[code] ?? '无法加载收件人列表'
 }
 
+export async function loadInternalRecipients(options: {
+  page?: number
+  pageSize?: number
+  keyword?: string
+} = {}): Promise<ExternalRecipientPage> {
+  const params = new URLSearchParams()
+  params.set('page', String(options.page ?? 1))
+  params.set('pageSize', String(options.pageSize ?? 200))
+  if (options.keyword) params.set('keyword', options.keyword)
+  const response = await fetch('/api/admin/internal-recipients?' + params.toString(), { credentials: 'same-origin' })
+  if (response.status === 401) {
+    redirectToOAuth()
+    throw new Error('登录已过期')
+  }
+  if (!response.ok) throw new Error(response.status === 403 ? '没有管理员权限' : '无法加载站内收件人')
+  return response.json() as Promise<ExternalRecipientPage>
+}
+
 export async function sendBroadcast(input: {
   recipients: string[]
   subject: string

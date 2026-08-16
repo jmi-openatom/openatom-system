@@ -80,7 +80,7 @@
     <div v-else class="admin-body">
       <section class="admin-table-wrap broadcast-card" aria-label="群发邮件">
         <header class="admin-table-header">
-          <h2>群发邮件 <small>从主站拉取的外部邮箱用户</small></h2>
+          <h2>群发邮件 <small>选择站内系统邮箱或主站外部邮箱收件人</small></h2>
           <div class="admin-toolbar">
             <label class="admin-search">
               <Search :size="15" aria-hidden="true" />
@@ -97,12 +97,16 @@
           <button class="secondary-button" type="button" @click="loadRecipients">重新加载</button>
         </div>
         <div v-else class="recipient-panel">
+          <div class="recipient-source-switch" role="group" aria-label="收件人来源">
+            <button :class="{ active: recipientSource === 'internal' }" type="button" @click="switchRecipientSource('internal')">站内系统邮箱</button>
+            <button :class="{ active: recipientSource === 'external' }" type="button" @click="switchRecipientSource('external')">主站外部邮箱</button>
+          </div>
           <div class="recipient-select-all">
             <label>
               <input :checked="allSelected" type="checkbox" @change="toggleAll" />
               全选本页
             </label>
-            <span>共 {{ recipientPage?.total ?? 0 }} 位外部邮箱用户，已选 {{ selectedRecipients.size }} 位</span>
+            <span>共 {{ recipientPage?.total ?? 0 }} 位收件人，已选 {{ selectedRecipients.size }} 位</span>
           </div>
           <ul v-if="recipients.length" class="recipient-list">
             <li v-for="recipient in recipients" :key="recipient.email">
@@ -114,7 +118,9 @@
             </li>
           </ul>
           <div v-else class="empty-state">
-            <MailOpen :size="30" /><h2>没有匹配的外部邮箱用户</h2><p>主站中还没有登记非 @jmi-openatom.cn 的邮箱。</p>
+            <MailOpen :size="30" /><h2>没有匹配的收件人</h2>
+            <p v-if="recipientSource === 'internal'">还没有已激活的站内邮箱账号。</p>
+            <p v-else>主站中还没有登记非 @jmi-openatom.cn 的邮箱。</p>
           </div>
         </div>
         <div class="broadcast-form">
@@ -139,7 +145,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { CircleAlert, LogOut, MailOpen, Search, Send } from 'lucide-vue-next'
 import RichTextEditor from '../components/common/RichTextEditor.vue'
 import {
-  loadAdminMailboxes, loadAdminStats, loadExternalRecipients, sendBroadcast, setMailboxSuspended,
+  loadAdminMailboxes, loadAdminStats, loadExternalRecipients, loadInternalRecipients,
+  sendBroadcast, setMailboxSuspended,
   type AdminMailboxPage, type AdminMailboxView, type AdminStats, type ExternalRecipient,
 } from '../api'
 import { htmlToPlainText } from '../mail'
@@ -255,6 +262,7 @@ async function toggleSuspend(mailbox: AdminMailboxView) {
 }
 
 // ===== Broadcast =====
+const recipientSource = ref<'internal' | 'external'>('internal')
 const recipients = ref<ExternalRecipient[]>([])
 const recipientPage = ref<{ total: number; page: number; pageSize: number } | null>(null)
 const recipientKeyword = ref('')
@@ -275,7 +283,10 @@ async function loadRecipients() {
   recipientsLoading.value = true
   recipientsError.value = ''
   try {
-    const result = await loadExternalRecipients({ page: 1, pageSize: 200, keyword: recipientKeyword.value })
+    const options = { page: 1, pageSize: 200, keyword: recipientKeyword.value }
+    const result = recipientSource.value === 'internal'
+      ? await loadInternalRecipients(options)
+      : await loadExternalRecipients(options)
     recipients.value = result.rows
     recipientPage.value = { total: result.total, page: result.page, pageSize: result.pageSize }
   } catch (err) {
@@ -283,6 +294,13 @@ async function loadRecipients() {
   } finally {
     recipientsLoading.value = false
   }
+}
+
+function switchRecipientSource(source: 'internal' | 'external') {
+  if (recipientSource.value === source) return
+  recipientSource.value = source
+  selectedRecipients.value = new Set()
+  void loadRecipients()
 }
 
 function onRecipientSearch() {

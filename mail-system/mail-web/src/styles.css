@@ -426,6 +426,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .status-badge--pending, .status-badge--waiting_profile { color: #b54708; background: #fffaeb; }
 .admin-entry { white-space: nowrap; }
 .recipient-panel { border-bottom: 1px solid var(--color-border-light); }
+.recipient-source-switch { display: flex; gap: 4px; padding: 10px 18px; border-bottom: 1px solid var(--color-border-light); }
+.recipient-source-switch button { min-height: 32px; padding: 0 14px; border: 1px solid var(--color-border-light); border-radius: 999px; color: var(--color-text-secondary); background: transparent; font: inherit; font-size: 12px; cursor: pointer; }
+.recipient-source-switch button:hover { color: var(--color-text-primary); background: var(--color-bg-hover); }
+.recipient-source-switch button.active { color: var(--color-primary); border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 8%, transparent); font-weight: 650; }
 .recipient-select-all { min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 18px; border-bottom: 1px solid var(--color-border-light); font-size: 12px; color: var(--color-text-secondary); }
 .recipient-select-all label { display: flex; align-items: center; gap: 7px; color: var(--color-text-primary); }
 .recipient-list { max-height: 320px; margin: 0; padding: 6px 0; overflow-y: auto; list-style: none; }

@@ -245,6 +245,47 @@ public class AdminController {
     return value.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
   }
 
+  /** Active mail-system accounts (with a primary @jmi-openatom.cn address) as broadcast recipients. */
+  @GetMapping("/internal-recipients")
+  public MainSiteUsersClient.RecipientPage internalRecipients(
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "100") int pageSize,
+      @RequestParam(defaultValue = "") String keyword,
+      HttpServletRequest request) {
+    requireAdmin(request);
+    String term = keyword == null ? "" : keyword.trim().toLowerCase();
+    List<MailboxAccount> active =
+        repository.findAll().stream()
+            .filter(a -> a.primaryAddress() != null && !a.primaryAddress().isBlank())
+            .filter(a -> "ACTIVE".equals(a.status()))
+            .filter(
+                a ->
+                    term.isBlank()
+                        || (a.displayName() != null
+                                && a.displayName().toLowerCase().contains(term))
+                        || a.primaryAddress().toLowerCase().contains(term))
+            .sorted(
+                java.util.Comparator.comparing(
+                    MailboxAccount::primaryAddress,
+                    java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+            .toList();
+    int safePage = Math.max(1, page);
+    int safeSize = Math.min(500, Math.max(1, pageSize));
+    int from = Math.min((safePage - 1) * safeSize, active.size());
+    int to = Math.min(from + safeSize, active.size());
+    List<MainSiteUsersClient.Recipient> rows =
+        active.subList(from, to).stream()
+            .map(
+                a ->
+                    new MainSiteUsersClient.Recipient(
+                        a.userId(),
+                        a.displayName() == null ? "" : a.displayName(),
+                        a.primaryAddress()))
+            .toList();
+    return new MainSiteUsersClient.RecipientPage(
+        rows, active.size(), safePage, safeSize);
+  }
+
   private void requireAdmin(HttpServletRequest request) {
     HttpSession httpSession = request.getSession(false);
     MailSession session =
