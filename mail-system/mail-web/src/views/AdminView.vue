@@ -124,6 +124,17 @@
           </div>
         </div>
         <div class="broadcast-form">
+          <div class="broadcast-template-row">
+            <label for="broadcast-template">邮件模板</label>
+            <select id="broadcast-template" v-model="selectedTemplateKey">
+              <option value="default">简约通知 — 日常通知</option>
+              <option value="activity">活动邀请 — 活动报名</option>
+              <option value="recruitment">招新宣传 — 纳新季</option>
+              <option value="announcement">重要公告 — 紧急通知</option>
+              <option value="">不套用模板</option>
+            </select>
+            <small>正文将嵌入所选模板（含社团 logo），与主站风格一致</small>
+          </div>
           <input v-model="broadcastSubject" class="broadcast-subject" maxlength="200" placeholder="邮件主题" type="text" />
           <RichTextEditor v-model="broadcastHtml" placeholder="邮件正文…" />
           <p v-if="broadcastError" class="form-error" role="alert"><CircleAlert :size="16" /> {{ broadcastError }}</p>
@@ -144,6 +155,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { CircleAlert, LogOut, MailOpen, Search, Send } from 'lucide-vue-next'
 import RichTextEditor from '../components/common/RichTextEditor.vue'
+import { broadcastTemplates } from '../broadcast/templates'
 import {
   loadAdminMailboxes, loadAdminStats, loadExternalRecipients, loadInternalRecipients,
   sendBroadcast, setMailboxSuspended,
@@ -273,7 +285,14 @@ const broadcastSubject = ref('')
 const broadcastHtml = ref('')
 const broadcastError = ref('')
 const sending = ref(false)
+const selectedTemplateKey = ref('default')
 let recipientTimer: number | undefined
+
+function wrappedHtml(html: string, subject: string): string {
+  const template = broadcastTemplates.find((item) => item.key === selectedTemplateKey.value)
+  if (!template) return html
+  return template.wrap(html, subject, window.location.origin + '/logo.png')
+}
 
 const allSelected = computed(() => {
   return recipients.value.length > 0 && recipients.value.every((r) => selectedRecipients.value.has(r.email))
@@ -345,7 +364,7 @@ async function onSendBroadcast() {
     const result = await sendBroadcast({
       recipients: emails,
       subject: subject || '（无主题）',
-      htmlBody: broadcastHtml.value,
+      htmlBody: wrappedHtml(broadcastHtml.value, subject || '（无主题）'),
       textBody: text,
     })
     showToast(`群发成功，已发送给 ${result.recipients} 位收件人`)

@@ -442,6 +442,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .recipient-list small { margin-left: auto; font-size: 12px; }
 .broadcast-form { display: grid; gap: 0; }
 .broadcast-form > .rich-editor { min-height: 260px; }
+.broadcast-template-row { min-height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 18px; border-bottom: 1px solid var(--color-border-light); }
+.broadcast-template-row label { color: var(--color-text-secondary); font-size: 12px; white-space: nowrap; }
+.broadcast-template-row select { min-height: 34px; padding: 0 10px; border: 1px solid var(--color-border-light); border-radius: 9px; outline: 0; background: var(--color-bg-container); color: var(--color-text-primary); font: inherit; font-size: 13px; }
+.broadcast-template-row small { overflow: hidden; color: var(--color-text-tertiary); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .broadcast-subject { height: 46px; padding: 0 18px; border: 0; border-bottom: 1px solid var(--color-border-light); outline: 0; background: transparent; font: inherit; font-size: 15px; }
 .broadcast-footer { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 18px; font-size: 12px; color: var(--color-text-secondary); }
 .broadcast-footer strong { color: var(--color-text-primary); }
