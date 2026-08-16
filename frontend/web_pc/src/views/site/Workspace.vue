@@ -286,7 +286,7 @@ function openMail() {
 }
 
 function openDocs() {
-  window.open('https://docs.jmi-openatom.cn', '_blank')
+  window.open(import.meta.env.VITE_DOCS_URL || 'https://md.jmi-openatom.cn', '_blank')
 }
 
 onMounted(() => {

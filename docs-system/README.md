@@ -3,11 +3,21 @@
 社团内部在线文档：**HedgeDoc**（Markdown 实时协作）+ **ONLYOFFICE**（Word/Excel/PPT 在线协同编辑），
 均通过主站 OIDC 身份中心（`oauth.jmi-openatom.cn`）单点登录。
 
+## 域名
+
+默认域名：**`md.jmi-openatom.cn`**（HedgeDoc 文档站）。可换成任意域名/子域名，
+只需在以下两处保持一致：
+
+1. 本目录 `.env` 的 `HEDGEDOC_DOMAIN`
+2. 主站前端构建变量 `VITE_DOCS_URL`（`frontend/web_pc/.env.production`）
+
+ONLYOFFICE 的对外域名同理（README 示例用 `office.jmi-openatom.cn`，可自由替换）。
+
 ## 架构
 
 ```
-docs.jmi-openatom.cn   → nginx 反代 → hedgedoc:3000   （Markdown，OIDC 登录）
-office.jmi-openatom.cn → nginx 反代 → documentserver:80（Office 三件套，仅引擎）
+<文档域名>   → nginx 反代 → hedgedoc:3000   （Markdown，OIDC 登录）
+office 域名  → nginx 反代 → documentserver:80（Office 三件套，仅引擎）
 ```
 
 ## 1. 注册 OAuth 客户端（主站管理端）
@@ -19,7 +29,7 @@ office.jmi-openatom.cn → nginx 反代 → documentserver:80（Office 三件套
 | clientId | `openatom-hedgedoc` |
 | clientSecret | 自定（保留明文，仅显示一次） |
 | 名称 | 在线文档协作 |
-| 回调地址 | `https://docs.jmi-openatom.cn/auth/oauth2/callback`（**必须完全一致**） |
+| 回调地址 | `https://<文档域名>/auth/oauth2/callback`（**必须完全一致**） |
 | scopes | `openid profile email` |
 | grantTypes | `authorization_code refresh_token` |
 
@@ -27,14 +37,14 @@ office.jmi-openatom.cn → nginx 反代 → documentserver:80（Office 三件套
 
 ## 2. DNS 与 nginx
 
-- 添加 A 记录：`docs.jmi-openatom.cn`、`office.jmi-openatom.cn` → 服务器 IP
+- 添加 A 记录：`md.jmi-openatom.cn`、`office.jmi-openatom.cn` → 服务器 IP
 - nginx（宝塔或其他）站点配置：
 
 ```nginx
-# docs.jmi-openatom.cn
+# md.jmi-openatom.cn
 server {
   listen 80;
-  server_name docs.jmi-openatom.cn;
+  server_name md.jmi-openatom.cn;
   # ... SSL 证书（Let's Encrypt）...
   location / {
     proxy_pass http://127.0.0.1:18083;
@@ -55,7 +65,7 @@ docker compose --env-file .env -f docker-compose.docs.yml up -d hedgedoc hedgedo
 docker compose --env-file .env -f docker-compose.docs.yml ps   # 确认 healthy
 ```
 
-访问 `https://docs.jmi-openatom.cn` → 点「登录」→ OpenAtom → 主站账号登录。
+访问 `https://md.jmi-openatom.cn` → 点「登录」→ OpenAtom → 主站账号登录。
 
 ## 4. ONLYOFFICE（可选，较重）
 

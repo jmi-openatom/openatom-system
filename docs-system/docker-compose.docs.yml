@@ -7,7 +7,7 @@
 #     docker compose --env-file .env -f docker-compose.docs.yml --profile office up -d
 #
 # 前置：主站 OIDC 注册客户端（见 README.md），DNS + nginx 反代
-#   docs.jmi-openatom.cn  -> hedgedoc:3000
+#   md.jmi-openatom.cn  -> hedgedoc:3000
 #   office.jmi-openatom.cn -> documentserver:80
 
 x-logging: &default-logging
@@ -22,7 +22,7 @@ services:
     image: quay.io/hedgedoc/hedgedoc:1.9.9
     restart: unless-stopped
     environment:
-      HEDGEDOC_DOMAIN: ${HEDGEDOC_DOMAIN:-https://docs.jmi-openatom.cn}
+      HEDGEDOC_DOMAIN: ${HEDGEDOC_DOMAIN:-https://md.jmi-openatom.cn}
       HEDGEDOC_SESSION_SECRET: ${HEDGEDOC_SESSION_SECRET:?HEDGEDOC_SESSION_SECRET is required}
       HEDGEDOC_DB_DIALECT: postgres
       HEDGEDOC_DB_HOST: hedgedoc-db
