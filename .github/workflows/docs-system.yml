@@ -132,12 +132,18 @@ jobs:
             docker ps --filter name=hedgedoc
             echo "--- docker compose 版本 ---"
             docker compose version
-            sleep 8
-            docker compose --env-file "$env_file" -f docker-compose.docs.yml ps
-            # 健康检查：HedgeDoc 内部端口默认为 18085（HEDGEDOC_INTERNAL_PORT 可改）
+            sleep 5
+            # 健康检查：HedgeDoc 首次启动要跑数据库迁移，最多等 120 秒
             internal_port=$(grep '^HEDGEDOC_INTERNAL_PORT=' "$env_file" | cut -d= -f2)
             internal_port=${internal_port:-18085}
-            curl --fail --silent --show-error \
-              "http://127.0.0.1:$internal_port/" >/dev/null \
-              && echo "HedgeDoc is up on 127.0.0.1:$internal_port" \
-              || { echo "HedgeDoc health check failed" >&2; exit 1; }
+            attempt=1
+            until curl --fail --silent --output /dev/null "http://127.0.0.1:$internal_port/"; do
+              if [ "$attempt" -ge 40 ]; then
+                echo "HedgeDoc health check failed after $attempt attempts" >&2
+                docker logs --tail 40 openatom-docs-hedgedoc-1 >&2 || true
+                exit 1
+              fi
+              attempt=$((attempt + 1))
+              sleep 3
+            done
+            echo "HedgeDoc is up on 127.0.0.1:$internal_port"
