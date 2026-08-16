@@ -194,7 +194,7 @@ jobs:
             echo "" >> .env
             echo "# 文档中心（ONLYOFFICE）" >> .env
             echo "DOCUMENT_SERVER_OFFICE_URL=${{ vars.DOCUMENT_SERVER_OFFICE_URL || 'https://office.jmi-openatom.cn' }}" >> .env
-            echo "DOCUMENT_SERVER_CALLBACK_BASE_URL=${{ vars.DOCUMENT_SERVER_CALLBACK_BASE_URL || 'http://host.docker.internal:8921/api/v1' }}" >> .env
+            echo "DOCUMENT_SERVER_CALLBACK_BASE_URL=${{ vars.DOCUMENT_SERVER_CALLBACK_BASE_URL || 'https://api.jmi-openatom.cn/api/v1' }}" >> .env
             echo "DOCUMENT_SERVER_PUBLIC_API_BASE=${{ vars.DOCUMENT_SERVER_PUBLIC_API_BASE || 'https://api.jmi-openatom.cn/api/v1' }}" >> .env
             echo "DOCUMENT_SERVER_JWT_SECRET=${{ secrets.DOCUMENT_SERVER_JWT_SECRET }}" >> .env
             echo "" >> .env

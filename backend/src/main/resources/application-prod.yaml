@@ -122,7 +122,7 @@ app:
     storage-dir: ${APP_DOCUMENT_CENTER_STORAGE_DIR:./uploads/document-center}
   document-server:
     office-url: ${DOCUMENT_SERVER_OFFICE_URL:https://office.jmi-openatom.cn}
-    callback-base-url: ${DOCUMENT_SERVER_CALLBACK_BASE_URL:http://host.docker.internal:8921/api/v1}
+    callback-base-url: ${DOCUMENT_SERVER_CALLBACK_BASE_URL:https://api.jmi-openatom.cn/api/v1}
     public-api-base: ${DOCUMENT_SERVER_PUBLIC_API_BASE:https://api.jmi-openatom.cn/api/v1}
     jwt-secret: ${DOCUMENT_SERVER_JWT_SECRET:}
   ai:
