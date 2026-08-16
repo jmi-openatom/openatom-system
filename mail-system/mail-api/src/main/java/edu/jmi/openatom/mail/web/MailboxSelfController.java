@@ -46,15 +46,25 @@ public class MailboxSelfController {
       @Valid @RequestBody ActivateRequest body,
       HttpServletRequest request) {
     MailSession session = requireSession(request, csrf);
+    ProvisionResponse result;
     if (body.usePinyin() != null && body.usePinyin()) {
-      ProvisionResponse result = service.activateWithPinyin(session.sub(), session.displayName());
-      return provisionResult(result);
+      result = service.activateWithPinyin(session.sub(), session.displayName());
+    } else {
+      if (body.localPart() == null || body.localPart().isBlank()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "local_part_required");
+      }
+      result = service.correctPrimaryAddress(session.sub(), body.localPart());
     }
-    if (body.localPart() == null || body.localPart().isBlank()) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "local_part_required");
+    // Keep the server-side session in sync so the reloaded client can
+    // bootstrap the mail context with the newly assigned address.
+    if (result.address() != null && !result.address().isBlank()) {
+      MailSession updated =
+          session.withMailAccountId(null).withAddress(result.address()).withMailboxStatus(result.status());
+      HttpSession httpSession = request.getSession(false);
+      if (httpSession != null) {
+        httpSession.setAttribute(OAuthBffController.MAIL_SESSION, updated);
+      }
     }
-    ProvisionResponse result =
-        service.correctPrimaryAddress(session.sub(), body.localPart());
     return provisionResult(result);
   }
 

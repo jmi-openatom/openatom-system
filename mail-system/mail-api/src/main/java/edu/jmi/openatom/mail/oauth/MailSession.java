@@ -32,6 +32,18 @@ public record MailSession(
         accessToken, refreshToken, accessTokenExpiresAt, csrfToken, roles);
   }
 
+  public MailSession withAddress(String newAddress) {
+    return new MailSession(
+        sub, userId, displayName, newAddress, mailboxStatus, mailAccountId,
+        accessToken, refreshToken, accessTokenExpiresAt, csrfToken, roles);
+  }
+
+  public MailSession withMailboxStatus(String newStatus) {
+    return new MailSession(
+        sub, userId, displayName, address, newStatus, mailAccountId,
+        accessToken, refreshToken, accessTokenExpiresAt, csrfToken, roles);
+  }
+
   public MailSession withRoles(List<String> newRoles) {
     return new MailSession(
         sub, userId, displayName, address, mailboxStatus, mailAccountId,
