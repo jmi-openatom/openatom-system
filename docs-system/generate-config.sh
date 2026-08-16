@@ -7,13 +7,18 @@ out="${1:-config.json}"
 : "${HEDGEDOC_SESSION_SECRET:?HEDGEDOC_SESSION_SECRET required}"
 : "${HEDGEDOC_DB_PASS:?HEDGEDOC_DB_PASS required}"
 : "${OAUTH2_CLIENT_SECRET:?OAUTH2_CLIENT_SECRET required}"
-domain="${HEDGEDOC_DOMAIN:-https://md.jmi-openatom.cn}"
+domain="${HEDGEDOC_DOMAIN:-md.jmi-openatom.cn}"
+# HedgeDoc 的 domain 只接受纯域名（协议由 protocolUseSSL 决定），剥掉可能带上的前缀
+domain="${domain#https://}"
+domain="${domain#http://}"
+domain="${domain%%/*}"
 client_id="${OAUTH2_CLIENT_ID:-openatom-hedgedoc}"
 issuer="${OAUTH2_ISSUER:-https://oauth.jmi-openatom.cn/api/v1}"
 cat > "$out" <<JSON
 {
   "production": {
     "domain": "$domain",
+    "protocolUseSSL": true,
     "sessionSecret": "$HEDGEDOC_SESSION_SECRET",
     "db": {
       "dialect": "postgres",
