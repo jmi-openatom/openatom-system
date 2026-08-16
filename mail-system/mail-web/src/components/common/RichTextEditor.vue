@@ -97,7 +97,12 @@ function exec(fn: (chain: ChainedCommands) => ChainedCommands) {
   const instance = editor.value
   if (!instance) return
   const { from, to } = instance.state.selection
+  const rangeSelected = from !== to
   fn(instance.chain().focus().setTextSelection({ from, to })).run()
+  // After applying a command over a selection, collapse the caret to the end
+  // of the styled range so subsequent typing appends instead of replacing the
+  // selected text (which previously deleted the styled text).
+  if (rangeSelected) instance.commands.setTextSelection(to)
 }
 
 function setLink() {
