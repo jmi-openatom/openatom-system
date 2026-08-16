@@ -73,7 +73,8 @@ services:
 
   # ===== ONLYOFFICE Document Server：Word/Excel/PPT 在线协同 =====
   documentserver:
-    image: onlyoffice/documentserver:latest
+    # 8.x 是成熟的稳定分支（/websocket 实时端点稳定）；9.x 改了通信架构
+    image: onlyoffice/documentserver:8.3.2
     profiles: ["office"]
     restart: unless-stopped
     environment:
