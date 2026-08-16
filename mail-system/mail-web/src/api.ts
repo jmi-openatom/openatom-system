@@ -296,8 +296,19 @@ export async function loadExternalRecipients(options: {
     redirectToOAuth()
     throw new Error('登录已过期')
   }
-  if (!response.ok) throw new Error(response.status === 403 ? '没有管理员权限' : '无法加载收件人列表')
+  if (!response.ok) {
+    const problem = await response.clone().json().catch(() => ({})) as { code?: string }
+    throw new Error(response.status === 403 ? '没有管理员权限' : recipientError(problem.code ?? ''))
+  }
   return response.json() as Promise<ExternalRecipientPage>
+}
+
+function recipientError(code: string): string {
+  const messages: Record<string, string> = {
+    main_site_not_configured: '主站接口未配置，请联系运维设置 MAIN_SITE_INTERNAL_USERS_URL。',
+    main_site_unreachable: '无法连接主站获取用户邮箱，请检查主站是否已部署内部接口且可达。',
+  }
+  return messages[code] ?? '无法加载收件人列表'
 }
 
 export async function sendBroadcast(input: {

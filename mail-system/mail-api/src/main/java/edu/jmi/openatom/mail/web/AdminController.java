@@ -193,12 +193,12 @@ public class AdminController {
     try {
       return mainSiteUsersClient.recipients(page, pageSize, keyword);
     } catch (IOException exception) {
-      throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "main_site_unreachable");
+      throw new edu.jmi.openatom.mail.service.StalwartClientException("main_site_unreachable");
     } catch (InterruptedException exception) {
       Thread.currentThread().interrupt();
-      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "main_site_unreachable");
+      throw new edu.jmi.openatom.mail.service.StalwartClientException("main_site_unreachable");
     } catch (IllegalStateException exception) {
-      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "main_site_not_configured");
+      throw new edu.jmi.openatom.mail.service.StalwartClientException("main_site_not_configured");
     }
   }
 
