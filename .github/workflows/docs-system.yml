@@ -90,13 +90,23 @@ jobs:
               chmod 600 "$temp_file"
               mv "$temp_file" "$env_file"
             }
+            # 必填 Secret：缺失时直接报错（在 GitHub SERVER 环境补充后重新运行）
+            : "${HEDGEDOC_SESSION_SECRET:?缺少 HEDGEDOC_SESSION_SECRET（SERVER 环境 Secret）}"
+            : "${HEDGEDOC_DB_PASS:?缺少 HEDGEDOC_DB_PASS（SERVER 环境 Secret）}"
+            : "${OAUTH2_CLIENT_SECRET:?缺少 OAUTH2_CLIENT_SECRET（SERVER 环境 Secret）}"
+
             upsert_env HEDGEDOC_DOMAIN "https://${DOCS_DOMAIN:-md.jmi-openatom.cn}"
             upsert_env HEDGEDOC_SESSION_SECRET "$HEDGEDOC_SESSION_SECRET"
             upsert_env HEDGEDOC_DB_PASS "$HEDGEDOC_DB_PASS"
             upsert_env OAUTH2_CLIENT_ID "${OAUTH2_CLIENT_ID:-openatom-hedgedoc}"
             upsert_env OAUTH2_CLIENT_SECRET "$OAUTH2_CLIENT_SECRET"
-            upsert_env DOCUMENT_SERVER_JWT_SECRET "$DOCUMENT_SERVER_JWT_SECRET"
-            upsert_env DOCUMENT_SERVER_DB_PASS "$DOCUMENT_SERVER_DB_PASS"
+            # ONLYOFFICE 备用密钥：未配置时跳过（保留 .env 已有值）
+            if [ -n "${DOCUMENT_SERVER_JWT_SECRET:-}" ]; then
+              upsert_env DOCUMENT_SERVER_JWT_SECRET "$DOCUMENT_SERVER_JWT_SECRET"
+            fi
+            if [ -n "${DOCUMENT_SERVER_DB_PASS:-}" ]; then
+              upsert_env DOCUMENT_SERVER_DB_PASS "$DOCUMENT_SERVER_DB_PASS"
+            fi
 
             docker compose --env-file "$env_file" -f docker-compose.docs.yml \
               up -d hedgedoc hedgedoc-db
