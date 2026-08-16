@@ -37,8 +37,13 @@ office 域名  → nginx 反代 → documentserver:80（Office 三件套，仅�
 
 ## 2. DNS 与 nginx
 
+> **重要**：HedgeDoc 页面里的 CSS/JS 与 OAuth 回调都使用 `HEDGEDOC_DOMAIN`
+> 生成的绝对地址。**必须**先配好 `md.jmi-openatom.cn` 的反向代理（DNS + nginx），
+> 否则页面会"丢失样式"、登录回调也会失败。请用 `https://md.jmi-openatom.cn`
+> 访问，不要直接用 `127.0.0.1:18085` 或临时域名。
+
 - 添加 A 记录：`md.jmi-openatom.cn`、`office.jmi-openatom.cn` → 服务器 IP
-- nginx（宝塔或其他）站点配置：
+- nginx（宝塔或其他）站点配置（含 WebSocket，实时协同需要）：
 
 ```nginx
 # md.jmi-openatom.cn
@@ -46,6 +51,7 @@ server {
   listen 80;
   server_name md.jmi-openatom.cn;
   # ... SSL 证书（Let's Encrypt）...
+
   location / {
     proxy_pass http://127.0.0.1:18085;
     proxy_http_version 1.1;
@@ -53,6 +59,17 @@ server {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+  location /socket.io/ {
+    proxy_pass http://127.0.0.1:18085;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_read_timeout 86400;
   }
 }
 ```

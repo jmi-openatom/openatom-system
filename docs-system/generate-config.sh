@@ -29,7 +29,12 @@ cat > "$out" <<JSON
       "clientSecret": "$OAUTH2_CLIENT_SECRET",
       "authorizationURL": "$issuer/oauth/authorize",
       "tokenURL": "$issuer/oauth/token",
-      "scope": "openid profile email"
+      "userProfileURL": "$issuer/oauth/userinfo",
+      "scope": "openid profile email",
+      "userProfileIdAttr": "sub",
+      "userProfileUsernameAttr": "preferred_username",
+      "userProfileDisplayNameAttr": "name",
+      "userProfileEmailAttr": "email"
     }
   }
 }
