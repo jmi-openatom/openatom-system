@@ -346,3 +346,56 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* ===== Admin console ===== */
+.admin-shell { min-height: 100vh; display: flex; flex-direction: column; }
+.admin-body { flex: 1; padding: 24px; display: grid; gap: 20px; align-content: start; max-width: 1100px; width: 100%; margin: 0 auto; }
+.admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.stat-card { padding: 18px 20px; border: 1px solid var(--color-border-light); border-radius: 14px; background: var(--color-bg-container); display: grid; gap: 4px; }
+.stat-card span { font-size: 13px; color: var(--color-text-secondary); }
+.stat-card strong { font-size: 26px; letter-spacing: -0.02em; }
+.stat-card small { font-size: 12px; color: var(--color-text-secondary); }
+.admin-table-wrap { border: 1px solid var(--color-border-light); border-radius: 14px; background: var(--color-bg-container); overflow: hidden; }
+.admin-table-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--color-border-light); }
+.admin-table-header h2 { margin: 0; font-size: 16px; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table th, .admin-table td { padding: 11px 18px; text-align: left; border-bottom: 1px solid var(--color-border-light); }
+.admin-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-secondary); }
+.admin-table tr:last-child td { border-bottom: 0; }
+.admin-address { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.status-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.status-badge--active { color: #027a48; background: #ecfdf3; }
+.status-badge--suspended { color: #b42318; background: #fef3f2; }
+.status-badge--pending, .status-badge--waiting_profile { color: #b54708; background: #fffaeb; }
+.admin-entry { white-space: nowrap; }
+
+/* ===== Activation wizard ===== */
+.activation-page { min-height: 100vh; display: flex; flex-direction: column; }
+.activation-hero { flex: 1; display: grid; place-items: center; padding: 40px 24px; }
+.activation-card { width: min(100%, 480px); padding: 38px; border: 1px solid var(--color-border-light); border-radius: 20px; background: var(--color-bg-container); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08); }
+.activation-card h1 { margin: 6px 0 8px; font-size: 26px; letter-spacing: -0.02em; }
+.activation-card > p { margin: 0 0 22px; color: var(--color-text-secondary); line-height: 1.6; }
+.activation-form { display: grid; gap: 18px; }
+.activation-options { display: grid; gap: 10px; }
+.activation-option { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border: 1px solid var(--color-border-light); border-radius: 12px; cursor: pointer; }
+.activation-option:hover { border-color: var(--color-primary); }
+.activation-option input { margin-top: 3px; accent-color: var(--color-primary); }
+.activation-option strong { display: block; font-size: 15px; }
+.activation-option small { display: block; margin-top: 3px; color: var(--color-text-secondary); line-height: 1.5; }
+.activation-custom { display: grid; gap: 8px; }
+.activation-custom label { font-size: 14px; font-weight: 600; }
+.activation-input-row { display: flex; align-items: center; gap: 8px; }
+.activation-input-row input { flex: 1; height: 44px; padding: 0 13px; border: 1px solid var(--color-border-light); border-radius: 10px; background: var(--color-bg); font: inherit; }
+.activation-input-row span { color: var(--color-text-secondary); font-size: 14px; white-space: nowrap; }
+.activation-hint { margin: 0; font-size: 12px; color: var(--color-text-secondary); }
+.activation-submit { width: 100%; margin-top: 4px; }
+.activation-success { display: grid; justify-items: center; gap: 10px; padding: 24px 0; text-align: center; }
+.activation-success svg { color: var(--color-primary); }
+.activation-success h2 { margin: 0; font-size: 22px; }
+.activation-success p { margin: 0; color: var(--color-text-secondary); }
+.activation-success button { margin-top: 10px; }
+
+@media (max-width: 520px) {
+  .activation-card { padding: 26px 20px; }
+  .admin-body { padding: 16px; }
+}

@@ -72,22 +72,35 @@ public class MailboxProvisioningService {
   @Transactional
   public ProvisionResponse correctPrimaryAddress(String sub, String preferredLocalPart) {
     MailboxAccount account = repository.lockBySub(sub);
-    if (account.stalwartAccountId() == null) {
-      throw new IllegalStateException("mailbox_not_active");
-    }
     String base = generator.validateManual(preferredLocalPart);
     for (int attempt = 0; attempt < 8; attempt++) {
       String candidate = generator.candidate(base, account.oauthSub(), attempt);
       String address = candidate + "@" + account.mailDomain();
       if (address.equals(account.primaryAddress())) {
-        return ProvisionResponse.from(account);
+        ensureStalwartAccount(account);
+        return ProvisionResponse.from(repository.lockBySub(sub));
       }
       if (repository.trySetPrimaryAlias(account.id(), candidate, address)) {
-        stalwart.updateAliases(account.stalwartAccountId(), repository.aliases(account.id()));
+        ensureStalwartAccount(repository.lockBySub(sub));
         return ProvisionResponse.from(repository.lockBySub(sub));
       }
     }
     throw new IllegalStateException("mailbox_address_space_exhausted");
+  }
+
+  /** Creates the Stalwart account when it does not exist yet (first activation). */
+  private void ensureStalwartAccount(MailboxAccount account) {
+    if (account.stalwartAccountId() != null) {
+      stalwart.updateAliases(account.stalwartAccountId(), repository.aliases(account.id()));
+      return;
+    }
+    String stalwartId =
+        stalwart.ensureAccount(
+            account.oauthSub(),
+            account.displayName(),
+            repository.aliases(account.id()),
+            account.quotaBytes());
+    repository.markActive(account.id(), stalwartId, "activation-" + account.id());
   }
 
   /**
