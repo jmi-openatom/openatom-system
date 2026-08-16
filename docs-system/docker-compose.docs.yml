@@ -45,7 +45,7 @@ services:
       OAUTH2_USER_PROFILE_DISPLAY_NAME_ATTR: name
       OAUTH2_USER_PROFILE_EMAIL_ATTR: email
     ports:
-      - "127.0.0.1:${HEDGEDOC_INTERNAL_PORT:-18083}:3000"
+      - "127.0.0.1:${HEDGEDOC_INTERNAL_PORT:-18085}:3000"
     depends_on:
       hedgedoc-db: { condition: service_healthy }
     networks: [docs-internal]
@@ -81,7 +81,7 @@ services:
       JWT_HEADER: Authorization
       JWT_IN_BODY: "true"
     ports:
-      - "127.0.0.1:${DOCUMENT_SERVER_INTERNAL_PORT:-18084}:80"
+      - "127.0.0.1:${DOCUMENT_SERVER_INTERNAL_PORT:-18086}:80"
     depends_on:
       ds-postgres: { condition: service_healthy }
       ds-redis: { condition: service_healthy }

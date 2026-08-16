@@ -47,7 +47,7 @@ server {
   server_name md.jmi-openatom.cn;
   # ... SSL 证书（Let's Encrypt）...
   location / {
-    proxy_pass http://127.0.0.1:18083;
+    proxy_pass http://127.0.0.1:18085;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -64,6 +64,10 @@ cp .env.example .env          # 填写密钥（openssl rand -base64 48）
 docker compose --env-file .env -f docker-compose.docs.yml up -d hedgedoc hedgedoc-db
 docker compose --env-file .env -f docker-compose.docs.yml ps   # 确认 healthy
 ```
+
+端口说明：HedgeDoc 默认回环端口 `18085`、ONLYOFFICE `18086`
+（`HEDGEDOC_INTERNAL_PORT` / `DOCUMENT_SERVER_INTERNAL_PORT` 可改）。
+`18083` 已由 Seafile 占用，不要复用。
 
 访问 `https://md.jmi-openatom.cn` → 点「登录」→ OpenAtom → 主站账号登录。
 
