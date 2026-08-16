@@ -13,7 +13,7 @@ public class MailProperties {
   private long defaultQuotaBytes = 2_147_483_648L;
   private String internalServiceToken;
   private String mainSiteUsersUrl;
-  private String broadcastFrom = "no-reply@mailer.jmi-openatom.cn";
+  private String broadcastFrom = "official@mailer.jmi-openatom.cn";
   private int broadcastMaxRecipients = 200;
   private Stalwart stalwart = new Stalwart();
   private OAuth oauth = new OAuth();

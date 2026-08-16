@@ -49,7 +49,7 @@ mail:
   main-site:
     users-url: ${MAIN_SITE_INTERNAL_USERS_URL:https://api.jmi-openatom.cn/api/v1/internal/mail/users}
   broadcast:
-    from: ${MAIL_BROADCAST_FROM:no-reply@mailer.jmi-openatom.cn}
+    from: ${MAIL_BROADCAST_FROM:official@mailer.jmi-openatom.cn}
     max-recipients: ${MAIL_BROADCAST_MAX_RECIPIENTS:200}
   malware-scanner:
     host: ${MAIL_CLAMAV_HOST:clamav}

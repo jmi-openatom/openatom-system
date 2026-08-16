@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import edu.jmi.openatom.server.openatomsystem.common.EmailMarkdown;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.config.MailOutboxProperties;
 import edu.jmi.openatom.server.openatomsystem.entity.MailboxOutboxEvent;
@@ -130,26 +131,35 @@ public class MailBroadcastPlanner {
 
   private String generatedHtml(String kind, String userPayload) {
     try {
-      String html =
+      String output =
           deepSeek.chat(
               "mail_broadcast",
               systemPrompt(kind),
               List.of(Map.of("role", "user", "content", userPayload == null ? "" : userPayload)));
-      if (html == null || html.isBlank() || html.length() > 100_000) {
+      if (output == null || output.isBlank() || output.length() > 100_000) {
         return fallbackHtml(userPayload);
       }
-      return html;
+      return looksLikeHtml(output) ? output : EmailMarkdown.render(output);
     } catch (Exception exception) {
       log.warn("mail broadcast AI generation failed, using fallback: {}", exception.getMessage());
       return fallbackHtml(userPayload);
     }
   }
 
+  /** HTML tag presence check; AI occasionally emits markdown/plain text despite the prompt. */
+  private boolean looksLikeHtml(String value) {
+    String lower = value.toLowerCase();
+    return lower.contains("<p") || lower.contains("<h")
+        || lower.contains("<ul") || lower.contains("<ol")
+        || lower.contains("<div") || lower.contains("<strong")
+        || lower.contains("<br");
+  }
+
   private String systemPrompt(String kind) {
     if ("activity".equals(kind)) {
       return """
           你是开放原子开源社团的邮件小编。请根据提供的活动信息，生成一封吸引人的活动邀请邮件正文。
-          只输出 HTML 正文片段，可包含 <p>、<h2>、<ul>、<li>、<strong> 标签；不要输出 <html>、<body>、<head>、样式、脚本或图片。
+          请使用 Markdown 或纯文本输出（可用 # 标题、- 列表、**加粗**），不要输出 HTML 标签。
           结构建议：问候语（各位同学：）→ 活动亮点 → 时间、地点、报名方式（用列表）→ 邀请语。
           结尾署名：—— 开放原子开源社团。
           """;
@@ -157,28 +167,20 @@ public class MailBroadcastPlanner {
     if ("recruitment".equals(kind)) {
       return """
           你是开放原子开源社团的邮件小编。请根据提供的招新信息，生成一封鼓舞人心的招新宣传邮件正文。
-          只输出 HTML 正文片段，可包含 <p>、<h2>、<ul>、<li>、<strong> 标签；不要输出 <html>、<body>、<head>、样式、脚本或图片。
+          请使用 Markdown 或纯文本输出（可用 # 标题、- 列表、**加粗**），不要输出 HTML 标签。
           结构建议：问候语（各位同学：）→ 社团亮点 → 报名时间与方式（用列表）→ 热情邀请。
           结尾署名：—— 开放原子开源社团。
           """;
     }
     return """
         你是开放原子开源社团的邮件小编。请根据提供的通知内容，生成一封简洁友好的邮件正文。
-        只输出 HTML 正文片段，可包含 <p>、<h2>、<ul>、<li>、<strong> 标签；不要输出 <html>、<body>、<head>、样式、脚本或图片。
+        请使用 Markdown 或纯文本输出（可用 # 标题、- 列表、**加粗**），不要输出 HTML 标签。
         开头问候语用"同学，你好："，结尾署名：—— 开放原子开源社团。
         """;
   }
 
   private String fallbackHtml(String userPayload) {
-    String body = escape(userPayload);
-    return "<p>同学，你好：</p><p>" + body + "</p><p>—— 开放原子开源社团</p>";
-  }
-
-  private String escape(String value) {
-    if (value == null) return "";
-    return value
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;");
+    return EmailMarkdown.render(
+        "同学，你好：\n\n" + (userPayload == null ? "" : userPayload) + "\n\n—— 开放原子开源社团");
   }
 }

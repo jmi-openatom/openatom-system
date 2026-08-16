@@ -363,5 +363,5 @@ jobs:
               upsert_env MAIL_ACME_EMAIL "$MAIL_ACME_EMAIL"
             fi
             upsert_env MAIN_SITE_INTERNAL_USERS_URL "${MAIN_SITE_INTERNAL_USERS_URL:-https://api.jmi-openatom.cn/api/v1/internal/mail/users}"
-            upsert_env MAIL_BROADCAST_FROM "${MAIL_BROADCAST_FROM:-no-reply@mailer.jmi-openatom.cn}"
+            upsert_env MAIL_BROADCAST_FROM "${MAIL_BROADCAST_FROM:-official@mailer.jmi-openatom.cn}"
             mail-system/deploy/deploy.sh "$env_file" "$DEPLOYMENT_MODE"
