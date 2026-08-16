@@ -78,7 +78,7 @@
       </section>
     </div>
 
-    <div v-else class="admin-body">
+    <div v-else-if="tab === 'broadcast'" class="admin-body">
       <section class="admin-table-wrap broadcast-card" aria-label="群发邮件">
         <header class="admin-table-header">
           <h2>群发邮件 <small>选择站内系统邮箱或主站外部邮箱收件人</small></h2>
