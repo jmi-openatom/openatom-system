@@ -1,0 +1,157 @@
+package edu.jmi.openatom.mail.web;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.jmi.openatom.mail.domain.MailboxAccount;
+import edu.jmi.openatom.mail.oauth.MailSession;
+import edu.jmi.openatom.mail.repository.MailboxRepository;
+import edu.jmi.openatom.mail.service.MailboxProvisioningService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+/** Administrator surface for the mail system (user list, suspend, Resend stats). */
+@RestController
+@RequestMapping("/api/admin")
+public class AdminController {
+  private final MailboxRepository repository;
+  private final MailboxProvisioningService service;
+  private final ObjectMapper objectMapper;
+  private final HttpClient httpClient =
+      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+  private final String resendApiKey;
+
+  public AdminController(
+      MailboxRepository repository,
+      MailboxProvisioningService service,
+      ObjectMapper objectMapper,
+      @Value("${mail.resend.api-key:}") String resendApiKey) {
+    this.repository = repository;
+    this.service = service;
+    this.objectMapper = objectMapper;
+    this.resendApiKey = resendApiKey;
+  }
+
+  @GetMapping("/mailboxes")
+  public List<MailboxView> mailboxes(HttpServletRequest request) {
+    requireAdmin(request);
+    return repository.findAll().stream().map(MailboxView::from).toList();
+  }
+
+  @PostMapping("/mailboxes/{id}/suspend")
+  public Map<String, String> suspend(
+      @PathVariable long id,
+      @RequestBody SuspendRequest body,
+      HttpServletRequest request) {
+    requireAdmin(request);
+    MailboxAccount target =
+        repository.findAll().stream()
+            .filter(item -> item.id() == id)
+            .findFirst()
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "mailbox_not_found"));
+    service.setSuspended(target.oauthSub(), body.suspended());
+    return Map.of("status", body.suspended() ? "SUSPENDED" : "ACTIVE");
+  }
+
+  @GetMapping("/stats")
+  public Map<String, Object> stats(HttpServletRequest request) {
+    requireAdmin(request);
+    List<MailboxAccount> all = repository.findAll();
+    long active = all.stream().filter(a -> "ACTIVE".equals(a.status())).count();
+    return Map.of("total", (long) all.size(), "active", active, "resend", resendStats());
+  }
+
+  private Map<String, Object> resendStats() {
+    if (resendApiKey == null || !resendApiKey.startsWith("re_")) {
+      return Map.of("configured", false);
+    }
+    try {
+      HttpRequest req =
+          HttpRequest.newBuilder(URI.create("https://api.resend.com/domains"))
+              .timeout(Duration.ofSeconds(10))
+              .header("Authorization", "Bearer " + resendApiKey)
+              .GET()
+              .build();
+      HttpResponse<String> response =
+          httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+      JsonNode body = objectMapper.readTree(response.body());
+      boolean verified = false;
+      String domain = "";
+      String region = "";
+      for (JsonNode item : body.path("data")) {
+        if ("verified".equals(item.path("status").asText())) {
+          verified = true;
+          domain = item.path("name").asText();
+          region = item.path("region").asText();
+          break;
+        }
+      }
+      return Map.of(
+          "configured", true,
+          "verified", verified,
+          "domain", domain,
+          "region", region);
+    } catch (IOException | InterruptedException exception) {
+      if (exception instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      return Map.of("configured", true, "error", "resend_api_unreachable");
+    }
+  }
+
+  private void requireAdmin(HttpServletRequest request) {
+    HttpSession httpSession = request.getSession(false);
+    MailSession session =
+        httpSession == null
+            ? null
+            : (MailSession) httpSession.getAttribute(OAuthBffController.MAIL_SESSION);
+    if (session == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "login_required");
+    }
+    if (!session.isAdmin()) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "admin_required");
+    }
+  }
+
+  public record SuspendRequest(boolean suspended) {}
+
+  public record MailboxView(
+      long id,
+      String sub,
+      long userId,
+      String displayName,
+      String address,
+      String mailDomain,
+      String status,
+      String provisionStatus,
+      String lastEventId) {
+    static MailboxView from(MailboxAccount account) {
+      return new MailboxView(
+          account.id(),
+          account.oauthSub(),
+          account.userId(),
+          account.displayName(),
+          account.primaryAddress(),
+          account.mailDomain(),
+          account.status(),
+          account.provisionStatus(),
+          account.lastEventId());
+    }
+  }
+}

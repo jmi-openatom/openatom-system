@@ -157,3 +157,95 @@ export interface JmapSession {
 export interface JmapResponse {
   methodResponses: [string, Record<string, unknown>, string][]
 }
+
+// ===== Mailbox self-service =====
+export interface MailboxStatusView {
+  status: string
+  provisionStatus: string
+  address: string | null
+  displayName: string
+  isAdmin: boolean
+}
+
+export async function loadMailboxStatus(): Promise<MailboxStatusView> {
+  const response = await fetch('/api/mailbox/status', { credentials: 'same-origin' })
+  if (response.status === 401) {
+    redirectToOAuth()
+    throw new Error('登录已过期')
+  }
+  if (!response.ok) throw new Error('无法读取邮箱状态')
+  return response.json() as Promise<MailboxStatusView>
+}
+
+export async function activateMailbox(options: {
+  usePinyin?: boolean
+  localPart?: string
+}): Promise<MailboxStatusView> {
+  const response = await fetch('/api/mailbox/activate', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', 'X-Mail-CSRF': csrfToken },
+    body: JSON.stringify(options),
+  })
+  if (!response.ok) {
+    const problem = await response.clone().json().catch(() => ({})) as { code?: string }
+    throw new Error(mailboxActivationError(problem.code ?? ''))
+  }
+  return response.json() as Promise<MailboxStatusView>
+}
+
+function mailboxActivationError(code: string): string {
+  const messages: Record<string, string> = {
+    local_part_required: '请填写你想要的主机名。',
+    invalid_or_reserved_local_part: '该主机名不可用或已被保留，请换一个。',
+    mailbox_address_space_exhausted: '地址空间已用尽，请换一个主机名。',
+    cannot_generate_address: '无法根据姓名生成地址，请手动填写。',
+    mailbox_not_active: '邮箱尚未开通，请稍后重试。',
+  }
+  return messages[code] ?? '激活失败，请稍后重试。'
+}
+
+// ===== Admin =====
+export interface AdminMailboxView {
+  id: number
+  sub: string
+  userId: number
+  displayName: string | null
+  address: string | null
+  mailDomain: string
+  status: string
+  provisionStatus: string
+  lastEventId: string | null
+}
+
+export interface AdminStats {
+  total: number
+  active: number
+  resend: { configured: boolean; verified?: boolean; domain?: string; region?: string; error?: string }
+}
+
+export async function loadAdminMailboxes(): Promise<AdminMailboxView[]> {
+  const response = await fetch('/api/admin/mailboxes', { credentials: 'same-origin' })
+  if (response.status === 401) {
+    redirectToOAuth()
+    throw new Error('登录已过期')
+  }
+  if (!response.ok) throw new Error(response.status === 403 ? '没有管理员权限' : '无法加载邮箱列表')
+  return response.json() as Promise<AdminMailboxView[]>
+}
+
+export async function loadAdminStats(): Promise<AdminStats> {
+  const response = await fetch('/api/admin/stats', { credentials: 'same-origin' })
+  if (!response.ok) throw new Error('无法加载统计信息')
+  return response.json() as Promise<AdminStats>
+}
+
+export async function setMailboxSuspended(id: number, suspended: boolean): Promise<void> {
+  const response = await fetch('/api/admin/mailboxes/' + id + '/suspend', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', 'X-Mail-CSRF': csrfToken },
+    body: JSON.stringify({ suspended }),
+  })
+  if (!response.ok) throw new Error('操作失败，请稍后重试')
+}

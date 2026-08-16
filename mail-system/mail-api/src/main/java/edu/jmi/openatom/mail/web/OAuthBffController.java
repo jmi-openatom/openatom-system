@@ -115,7 +115,8 @@ public class OAuthBffController {
             tokens.accessToken(),
             tokens.refreshToken(),
             tokens.expiresAt(),
-            random(32)));
+            random(32),
+            tokens.roles()));
     response.sendRedirect("/");
   }
 

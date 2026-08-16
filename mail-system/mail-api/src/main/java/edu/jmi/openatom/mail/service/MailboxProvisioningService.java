@@ -91,6 +91,43 @@ public class MailboxProvisioningService {
     throw new IllegalStateException("mailbox_address_space_exhausted");
   }
 
+  /**
+   * Activates a mailbox by allocating its primary address from the user's
+   * display name (pinyin) when the mailbox is still waiting for a profile.
+   */
+  @Transactional
+  public ProvisionResponse activateWithPinyin(String sub, String displayName) {
+    MailboxAccount account = repository.lockBySub(sub);
+    if (account.localPart() != null) {
+      return ProvisionResponse.from(account);
+    }
+    String base = generator.baseFromName(displayName);
+    if (base == null) {
+      throw new IllegalStateException("cannot_generate_address");
+    }
+    MailboxAccount allocated = allocate(account, displayName, base);
+    List<String> aliases = repository.aliases(allocated.id());
+    String stalwartId =
+        stalwart.ensureAccount(
+            allocated.oauthSub(), displayName, aliases, allocated.quotaBytes());
+    repository.markActive(allocated.id(), stalwartId, "activation-" + allocated.id());
+    return ProvisionResponse.from(repository.lockBySub(sub));
+  }
+
+  /** Suspends or re-activates an existing mailbox. */
+  @Transactional
+  public void setSuspended(String sub, boolean suspended) {
+    MailboxAccount account = repository.lockBySub(sub);
+    if (account.stalwartAccountId() != null) {
+      stalwart.setEnabled(account.stalwartAccountId(), !suspended);
+    }
+    if (suspended) {
+      repository.markSuspended(account.id(), "admin-suspend-" + account.id());
+    } else {
+      repository.markActive(account.id(), account.stalwartAccountId(), "admin-reactivate-" + account.id());
+    }
+  }
+
   public ProvisionResponse status(String sub) {
     return repository
         .findBySub(sub)

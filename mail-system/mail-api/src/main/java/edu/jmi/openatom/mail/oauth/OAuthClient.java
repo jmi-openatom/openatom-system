@@ -59,7 +59,8 @@ public class OAuthClient {
     return tokens.withIdentity(
         idToken.getSubject(),
         idToken.getClaimAsString("name"),
-        idToken.getId() == null ? idToken.getIssuedAt().toString() : idToken.getId());
+        idToken.getId() == null ? idToken.getIssuedAt().toString() : idToken.getId(),
+        rolesOf(idToken));
   }
 
   public TokenSet refresh(String refreshToken) {
@@ -97,6 +98,20 @@ public class OAuthClient {
     }
   }
 
+  private java.util.List<String> rolesOf(Jwt idToken) {
+    Object claim = idToken.getClaim("roles");
+    if (!(claim instanceof java.util.List<?> roles)) {
+      return java.util.List.of();
+    }
+    java.util.List<String> result = new java.util.ArrayList<>();
+    for (Object role : roles) {
+      if (role instanceof String value && !value.isBlank()) {
+        result.add(value);
+      }
+    }
+    return result;
+  }
+
   private TokenSet tokenRequest(String form) {
     try {
       HttpRequest request =
@@ -120,7 +135,8 @@ public class OAuthClient {
           Instant.now().plusSeconds(Math.max(30, expiresIn)),
           null,
           null,
-          null);
+          null,
+          java.util.List.of());
     } catch (IOException exception) {
       throw new OAuthException("oauth_transport_error", exception);
     } catch (InterruptedException exception) {
@@ -162,15 +178,17 @@ public class OAuthClient {
       Instant expiresAt,
       String sub,
       String displayName,
-      String identityEventId) {
-    TokenSet withIdentity(String sub, String displayName, String identityEventId) {
+      String identityEventId,
+      java.util.List<String> roles) {
+    TokenSet withIdentity(
+        String sub, String displayName, String identityEventId, java.util.List<String> roles) {
       return new TokenSet(
-          accessToken, refreshToken, idToken, expiresAt, sub, displayName, identityEventId);
+          accessToken, refreshToken, idToken, expiresAt, sub, displayName, identityEventId, roles);
     }
 
     TokenSet withRefreshToken(String refresh) {
       return new TokenSet(
-          accessToken, refresh, idToken, expiresAt, sub, displayName, identityEventId);
+          accessToken, refresh, idToken, expiresAt, sub, displayName, identityEventId, roles);
     }
   }
 }

@@ -53,6 +53,10 @@ public class MailboxRepository {
     return matches.stream().findFirst();
   }
 
+  public List<MailboxAccount> findAll() {
+    return jdbc.query("SELECT * FROM mailbox_account ORDER BY id DESC", rowMapper);
+  }
+
   public boolean assignAddress(long id, String displayName, String localPart, String address) {
     try {
       jdbc.update(

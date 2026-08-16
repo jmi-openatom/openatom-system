@@ -11,6 +11,9 @@
       <kbd>⌘ K</kbd>
     </label>
     <div class="header-actions">
+      <button v-if="isAdmin" aria-label="后台管理" class="secondary-button admin-entry" type="button" @click="emit('admin')">
+        <Settings :size="16" /> 后台管理
+      </button>
       <button :disabled="mailLoading" aria-label="刷新邮件" class="icon-button" type="button" @click="onRefresh">
         <RefreshCw :class="{ rotating: mailLoading }" :size="18"/>
       </button>
@@ -30,7 +33,7 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { ChevronDown, LayoutGrid, LogOut, RefreshCw, Search } from 'lucide-vue-next'
+import { ChevronDown, LayoutGrid, LogOut, RefreshCw, Search, Settings } from 'lucide-vue-next'
 import type { SessionView } from '../../models'
 import ThemeToggle from '../common/ThemeToggle.vue'
 
@@ -38,11 +41,13 @@ const props = defineProps<{
   session: SessionView
   search: string
   mailLoading: boolean
+  isAdmin: boolean
 }>()
 const emit = defineEmits<{
   (e: 'update:search', value: string): void
   (e: 'refresh'): void
   (e: 'logout'): void
+  (e: 'admin'): void
 }>()
 
 const accountMenu = ref(false)

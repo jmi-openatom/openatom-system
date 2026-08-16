@@ -4,9 +4,11 @@
       :session="session"
       :search="search"
       :mail-loading="mailLoading"
+      :is-admin="isAdmin"
       @update:search="onSearchInput"
       @refresh="onRefresh"
       @logout="onLogout"
+      @admin="emit('admin')"
     />
     <div class="mail-workspace">
       <FolderSidebar
@@ -72,7 +74,7 @@ import MessageReader from '../components/mail/MessageReader.vue'
 import ComposeDialog from '../components/mail/ComposeDialog.vue'
 import { downloadAttachment } from '../api'
 
-const props = defineProps<{ session: SessionView; mailContext: MailContext }>()
+const props = defineProps<{ session: SessionView; mailContext: MailContext; isAdmin: boolean }>()
 
 const {
   selectedMailboxId, emails, selectedEmail, search, mailLoading, detailLoading, actionBusy, errorMessage,
@@ -138,5 +140,5 @@ function onLogout() {
   // handled by session store via App root; emit to parent
   emit('logout')
 }
-const emit = defineEmits<{ (e: 'logout'): void }>()
+const emit = defineEmits<{ (e: 'logout'): void; (e: 'admin'): void }>()
 </script>

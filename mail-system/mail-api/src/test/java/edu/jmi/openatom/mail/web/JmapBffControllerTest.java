@@ -370,7 +370,8 @@ class JmapBffControllerTest {
             "access-token",
             "refresh-token",
             Instant.now().plusSeconds(600),
-            "csrf-token"));
+            "csrf-token",
+            java.util.List.of()));
     return request;
   }
 }
