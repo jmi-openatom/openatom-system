@@ -25,6 +25,14 @@
           {{ mailbox.address ? '进入邮箱' : '前往激活' }}
         </el-button>
       </div>
+      <div class="workspace-mailbox-card">
+        <div class="workspace-mailbox-card__icon"><Notebook /></div>
+        <div class="workspace-mailbox-card__copy">
+          <strong>在线文档</strong>
+          <span>Markdown 实时协作 · Office 文档在线编辑</span>
+        </div>
+        <el-button type="primary" plain @click="openDocs">进入文档中心</el-button>
+      </div>
     </section>
 
     <section class="workspace-section">
@@ -141,6 +149,7 @@ import {
   DocumentChecked,
   EditPen,
   Message,
+  Notebook,
   Picture,
   Setting,
   Tickets,
@@ -276,6 +285,10 @@ function openMail() {
   window.open('https://mail.jmi-openatom.cn', '_blank')
 }
 
+function openDocs() {
+  window.open('https://docs.jmi-openatom.cn', '_blank')
+}
+
 onMounted(() => {
   void loadWorkspace()
   void loadMailbox()
@@ -290,6 +303,11 @@ onMounted(() => {
 
 .workspace-mailbox {
   padding-top: 24px;
+}
+
+.workspace-mailbox {
+  display: grid;
+  gap: 14px;
 }
 
 .workspace-mailbox-card {

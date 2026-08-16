@@ -1,0 +1,139 @@
+# 社团在线文档协作系统（HedgeDoc + ONLYOFFICE）
+#
+# 用法：
+#   HedgeDoc（Markdown 协作，默认）:
+#     docker compose --env-file .env -f docker-compose.docs.yml up -d hedgedoc hedgedoc-db
+#   完整（含 ONLYOFFICE 三件套）:
+#     docker compose --env-file .env -f docker-compose.docs.yml --profile office up -d
+#
+# 前置：主站 OIDC 注册客户端（见 README.md），DNS + nginx 反代
+#   docs.jmi-openatom.cn  -> hedgedoc:3000
+#   office.jmi-openatom.cn -> documentserver:80
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  # ===== HedgeDoc：Markdown 实时协作 =====
+  hedgedoc:
+    image: quay.io/hedgedoc/hedgedoc:1.9.9
+    restart: unless-stopped
+    environment:
+      HEDGEDOC_DOMAIN: ${HEDGEDOC_DOMAIN:-https://docs.jmi-openatom.cn}
+      HEDGEDOC_SESSION_SECRET: ${HEDGEDOC_SESSION_SECRET:?HEDGEDOC_SESSION_SECRET is required}
+      HEDGEDOC_DB_DIALECT: postgres
+      HEDGEDOC_DB_HOST: hedgedoc-db
+      HEDGEDOC_DB_PORT: 5432
+      HEDGEDOC_DB_USER: hedgedoc
+      HEDGEDOC_DB_PASS: ${HEDGEDOC_DB_PASS:?HEDGEDOC_DB_PASS is required}
+      HEDGEDOC_DB_NAME: hedgedoc
+      HEDGEDOC_ALLOW_ANONYMOUS: "false"
+      HEDGEDOC_ALLOW_FREE_URL: "false"
+      HEDGEDOC_ALLOW_EMAIL_REGISTER: "false"
+      # 主站 OIDC 登录（client_secret_post，回调须与注册的 redirect_uri 完全一致）
+      OAUTH2_ENABLED: "true"
+      OAUTH2_PROVIDER_NAME: OpenAtom
+      OAUTH2_CLIENT_ID: ${OAUTH2_CLIENT_ID:-openatom-hedgedoc}
+      OAUTH2_CLIENT_SECRET: ${OAUTH2_CLIENT_SECRET:?OAUTH2_CLIENT_SECRET is required}
+      OAUTH2_AUTHORIZATION_URL: ${OAUTH2_AUTHORIZATION_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/authorize}
+      OAUTH2_TOKEN_URL: ${OAUTH2_TOKEN_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/token}
+      OAUTH2_USER_PROFILE_URL: ${OAUTH2_USER_PROFILE_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/userinfo}
+      OAUTH2_USER_PROFILE_USERNAME_ATTR: preferred_username
+      OAUTH2_USER_PROFILE_DISPLAY_NAME_ATTR: name
+      OAUTH2_USER_PROFILE_EMAIL_ATTR: email
+    ports:
+      - "127.0.0.1:${HEDGEDOC_INTERNAL_PORT:-18083}:3000"
+    depends_on:
+      hedgedoc-db: { condition: service_healthy }
+    networks: [docs-internal]
+    logging: *default-logging
+
+  hedgedoc-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hedgedoc
+      POSTGRES_PASSWORD: ${HEDGEDOC_DB_PASS:?HEDGEDOC_DB_PASS is required}
+      POSTGRES_DB: hedgedoc
+    volumes:
+      - hedgedoc-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hedgedoc -d hedgedoc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [docs-internal]
+    logging: *default-logging
+
+  # ===== ONLYOFFICE Document Server：Word/Excel/PPT 在线协同 =====
+  # 用 --profile office 启用。注意：仅提供文档渲染/协同引擎，需要宿主应用
+  # （文档管理模块，可接入主站）通过 API + JWT 打开文档，见 README.md。
+  documentserver:
+    image: onlyoffice/documentserver:latest
+    profiles: ["office"]
+    restart: unless-stopped
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${DOCUMENT_SERVER_JWT_SECRET:?DOCUMENT_SERVER_JWT_SECRET is required}
+      JWT_HEADER: Authorization
+      JWT_IN_BODY: "true"
+    ports:
+      - "127.0.0.1:${DOCUMENT_SERVER_INTERNAL_PORT:-18084}:80"
+    depends_on:
+      ds-postgres: { condition: service_healthy }
+      ds-redis: { condition: service_healthy }
+      ds-rabbitmq: { condition: service_healthy }
+    networks: [docs-internal]
+    logging: *default-logging
+
+  ds-postgres:
+    image: postgres:15-alpine
+    profiles: ["office"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: onlyoffice
+      POSTGRES_PASSWORD: ${DOCUMENT_SERVER_DB_PASS:?DOCUMENT_SERVER_DB_PASS is required}
+      POSTGRES_DB: onlyoffice
+    volumes:
+      - ds-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onlyoffice -d onlyoffice"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [docs-internal]
+    logging: *default-logging
+
+  ds-redis:
+    image: redis:7-alpine
+    profiles: ["office"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [docs-internal]
+    logging: *default-logging
+
+  ds-rabbitmq:
+    image: rabbitmq:3-management-alpine
+    profiles: ["office"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [docs-internal]
+    logging: *default-logging
+
+volumes:
+  hedgedoc-db-data:
+  ds-postgres-data:
+
+networks:
+  docs-internal:
