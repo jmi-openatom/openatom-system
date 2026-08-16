@@ -12,27 +12,25 @@ client_id="${OAUTH2_CLIENT_ID:-openatom-hedgedoc}"
 issuer="${OAUTH2_ISSUER:-https://oauth.jmi-openatom.cn/api/v1}"
 cat > "$out" <<JSON
 {
-  "domain": "$domain",
-  "sessionSecret": "$HEDGEDOC_SESSION_SECRET",
-  "db": {
-    "dialect": "postgres",
-    "host": "hedgedoc-db",
-    "port": 5432,
-    "user": "hedgedoc",
-    "password": "$HEDGEDOC_DB_PASS",
-    "name": "hedgedoc"
-  },
-  "oauth2": {
-    "enabled": true,
-    "providerName": "OpenAtom",
-    "clientID": "$client_id",
-    "clientSecret": "$OAUTH2_CLIENT_SECRET",
-    "authorizationURL": "$issuer/oauth/authorize",
-    "tokenURL": "$issuer/oauth/token",
-    "userProfileURL": "$issuer/oauth/userinfo",
-    "userProfileUsernameAttr": "preferred_username",
-    "userProfileDisplayNameAttr": "name",
-    "userProfileEmailAttr": "email"
+  "production": {
+    "domain": "$domain",
+    "sessionSecret": "$HEDGEDOC_SESSION_SECRET",
+    "db": {
+      "dialect": "postgres",
+      "host": "hedgedoc-db",
+      "port": 5432,
+      "username": "hedgedoc",
+      "password": "$HEDGEDOC_DB_PASS",
+      "database": "hedgedoc"
+    },
+    "oauth2": {
+      "providerName": "OpenAtom",
+      "clientID": "$client_id",
+      "clientSecret": "$OAUTH2_CLIENT_SECRET",
+      "authorizationURL": "$issuer/oauth/authorize",
+      "tokenURL": "$issuer/oauth/token",
+      "scope": "openid profile email"
+    }
   }
 }
 JSON
