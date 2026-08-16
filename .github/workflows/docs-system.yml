@@ -57,7 +57,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT || '22' }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: .deploy/docs/docker-compose.docs.yml,.deploy/docs/.env.example,.deploy/docs/README.md
+          source: .deploy/docs/docker-compose.docs.yml,.deploy/docs/.env.example,.deploy/docs/README.md,.deploy/docs/generate-config.sh
           target: ${{ vars.DOCS_DEPLOY_PATH || '/www/wwwroot/openatom-docs' }}
           strip_components: 2
 
@@ -114,33 +114,12 @@ jobs:
             fi
 
             # HedgeDoc 配置（config.json 优先级最高，绕开镜像的环境变量读取问题）
-            cat > "$deploy_path/config.json" <<JSON
-{
-  "domain": "https://$docs_domain",
-  "sessionSecret": "$HEDGEDOC_SESSION_SECRET",
-  "db": {
-    "dialect": "postgres",
-    "host": "hedgedoc-db",
-    "port": 5432,
-    "user": "hedgedoc",
-    "password": "$HEDGEDOC_DB_PASS",
-    "name": "hedgedoc"
-  },
-  "oauth2": {
-    "enabled": true,
-    "providerName": "OpenAtom",
-    "clientID": "$OAUTH2_CLIENT_ID",
-    "clientSecret": "$OAUTH2_CLIENT_SECRET",
-    "authorizationURL": "https://oauth.jmi-openatom.cn/api/v1/oauth/authorize",
-    "tokenURL": "https://oauth.jmi-openatom.cn/api/v1/oauth/token",
-    "userProfileURL": "https://oauth.jmi-openatom.cn/api/v1/oauth/userinfo",
-    "userProfileUsernameAttr": "preferred_username",
-    "userProfileDisplayNameAttr": "name",
-    "userProfileEmailAttr": "email"
-  }
-}
-JSON
-            chmod 600 "$deploy_path/config.json"
+            HEDGEDOC_DOMAIN="https://$docs_domain" \
+            OAUTH2_CLIENT_ID="$OAUTH2_CLIENT_ID" \
+            HEDGEDOC_SESSION_SECRET="$HEDGEDOC_SESSION_SECRET" \
+            HEDGEDOC_DB_PASS="$HEDGEDOC_DB_PASS" \
+            OAUTH2_CLIENT_SECRET="$OAUTH2_CLIENT_SECRET" \
+            sh "$deploy_path/generate-config.sh" "$deploy_path/config.json"
 
             docker compose --env-file "$env_file" -f docker-compose.docs.yml \
               up -d hedgedoc hedgedoc-db
