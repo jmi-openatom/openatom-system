@@ -21,6 +21,9 @@ services:
   hedgedoc:
     image: quay.io/hedgedoc/hedgedoc:1.10.1
     restart: unless-stopped
+    # 配置通过挂载的 config.json 提供（优先级最高，不依赖环境变量读取）
+    volumes:
+      - ./config.json:/hedgedoc/config.json:ro
     environment:
       HEDGEDOC_DOMAIN: ${HEDGEDOC_DOMAIN:-https://md.jmi-openatom.cn}
       HEDGEDOC_SESSION_SECRET: ${HEDGEDOC_SESSION_SECRET:?HEDGEDOC_SESSION_SECRET is required}
