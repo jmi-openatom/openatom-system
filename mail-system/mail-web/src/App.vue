@@ -83,7 +83,9 @@ async function onLogout() {
   await signOut()
 }
 
-function onActivationDone() {
-  window.location.reload()
+async function onActivationDone() {
+  // Re-fetch session + mailbox status instead of a hard reload, so the
+  // response-driven views switch to the mail context without a reload loop.
+  await initSession()
 }
 </script>
