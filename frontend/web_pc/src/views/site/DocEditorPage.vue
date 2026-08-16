@@ -30,7 +30,9 @@ async function loadSdk(serverUrl: string): Promise<void> {
   if (sdkLoading) return sdkLoading
   sdkLoading = new Promise((resolve, reject) => {
     const script = document.createElement('script')
-    script.src = `${serverUrl.replace(/\/+$/, '')}/web-apps/apps/api/documents/api.js`
+    // 带版本参数：主站每次部署都会变化，避免浏览器长期缓存旧的 api.js
+    const version = (import.meta.env.VITE_APP_VERSION || 'dev').replace(/[^a-zA-Z0-9._-]/g, '')
+    script.src = `${serverUrl.replace(/\/+$/, '')}/web-apps/apps/api/documents/api.js?v=${version}`
     script.onload = () => {
       sdkLoaded = true
       resolve()
