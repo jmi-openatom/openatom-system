@@ -73,6 +73,14 @@ jobs:
           timeout: 30s
           command_timeout: 20m
           envs: DOCS_DOMAIN,HEDGEDOC_SESSION_SECRET,HEDGEDOC_DB_PASS,OAUTH2_CLIENT_ID,OAUTH2_CLIENT_SECRET,DOCUMENT_SERVER_JWT_SECRET,DOCUMENT_SERVER_DB_PASS
+        env:
+          DOCS_DOMAIN: ${{ vars.DOCS_DOMAIN || 'md.jmi-openatom.cn' }}
+          HEDGEDOC_SESSION_SECRET: ${{ secrets.HEDGEDOC_SESSION_SECRET }}
+          HEDGEDOC_DB_PASS: ${{ secrets.HEDGEDOC_DB_PASS }}
+          OAUTH2_CLIENT_ID: ${{ vars.OAUTH2_CLIENT_ID || 'openatom-hedgedoc' }}
+          OAUTH2_CLIENT_SECRET: ${{ secrets.OAUTH2_CLIENT_SECRET }}
+          DOCUMENT_SERVER_JWT_SECRET: ${{ secrets.DOCUMENT_SERVER_JWT_SECRET || '' }}
+          DOCUMENT_SERVER_DB_PASS: ${{ secrets.DOCUMENT_SERVER_DB_PASS || '' }}
           script: |
             set -eu
             deploy_path='${{ vars.DOCS_DEPLOY_PATH || '/www/wwwroot/openatom-docs' }}'
