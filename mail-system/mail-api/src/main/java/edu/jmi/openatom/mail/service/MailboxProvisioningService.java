@@ -52,13 +52,12 @@ public class MailboxProvisioningService {
     }
 
     if (account.localPart() == null) {
-      String base = generator.baseFromName(request.displayName());
-      if (base == null) {
-        repository.markWaiting(account.id(), request.displayName(), request.eventId());
-        repository.recordProcessed(request.eventId(), account.id());
-        return ProvisionResponse.from(repository.lockBySub(request.sub()));
-      }
-      account = allocate(account, request.displayName(), base);
+      // Do not auto-assign on first provisioning: the user picks their
+      // preferred local part (pinyin or custom) on their first login via the
+      // activation wizard.
+      repository.markWaiting(account.id(), request.displayName(), request.eventId());
+      repository.recordProcessed(request.eventId(), account.id());
+      return ProvisionResponse.from(repository.lockBySub(request.sub()));
     }
 
     List<String> aliases = repository.aliases(account.id());

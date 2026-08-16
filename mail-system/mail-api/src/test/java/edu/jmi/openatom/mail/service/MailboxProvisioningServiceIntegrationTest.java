@@ -54,40 +54,48 @@ class MailboxProvisioningServiceIntegrationTest {
   }
 
   @Test
-  void provisionsBeforeFirstLoginAndDuplicateEventReturnsSameMailbox() {
+  void provisionsWaitForActivationAndActivateWithPinyinAssignsAddress() {
     ProvisionResponse first = service.provision(request("evt-1", "42", 42L, "张三", "ACTIVE"));
     ProvisionResponse duplicate = service.provision(request("evt-1", "42", 42L, "张三", "ACTIVE"));
 
-    assertThat(first.address()).isEqualTo("zhangsan@jmi-openatom.cn");
-    assertThat(first.status()).isEqualTo("ACTIVE");
+    assertThat(first.address()).isNull();
+    assertThat(first.provisionStatus()).isEqualTo("WAITING_PROFILE");
     assertThat(duplicate).isEqualTo(first);
+    assertThat(stalwart.ensuredSubjects).isEmpty();
+
+    ProvisionResponse activated = service.activateWithPinyin("42", "张三");
+    assertThat(activated.address()).isEqualTo("zhangsan@jmi-openatom.cn");
     assertThat(stalwart.ensuredSubjects).containsExactly("42");
     assertThat(stalwart.lastAliases).containsExactly("zhangsan@jmi-openatom.cn");
   }
 
   @Test
   void sameNameGetsDistinctStablePrivacySuffix() {
-    ProvisionResponse first = service.provision(request("evt-a", "100", 100L, "张三", "ACTIVE"));
-    ProvisionResponse second = service.provision(request("evt-b", "101", 101L, "张三", "ACTIVE"));
+    service.provision(request("evt-a", "100", 100L, "张三", "ACTIVE"));
+    service.provision(request("evt-b", "101", 101L, "张三", "ACTIVE"));
 
+    ProvisionResponse first = service.activateWithPinyin("100", "张三");
+    ProvisionResponse second = service.activateWithPinyin("101", "张三");
     assertThat(first.address()).isEqualTo("zhangsan@jmi-openatom.cn");
     assertThat(second.address()).matches("zhangsan\\.[a-z2-7]{4}@jmi-openatom\\.cn");
     assertThat(second.address()).doesNotContain("101");
   }
 
   @Test
-  void missingNameWaitsAndLaterProfileUpdateActivatesSameAccount() {
+  void missingNameWaitsAndLaterActivationUsesUpdatedName() {
     ProvisionResponse waiting = service.provision(request("evt-w1", "200", 200L, null, "ACTIVE"));
-    ProvisionResponse active = service.provision(request("evt-w2", "200", 200L, "李雷", "ACTIVE"));
+    service.provision(request("evt-w2", "200", 200L, "李雷", "ACTIVE"));
 
     assertThat(waiting.provisionStatus()).isEqualTo("WAITING_PROFILE");
     assertThat(waiting.address()).isNull();
+    ProvisionResponse active = service.activateWithPinyin("200", "李雷");
     assertThat(active.address()).isEqualTo("lilei@jmi-openatom.cn");
   }
 
   @Test
   void disabledUserIsSuspendedAndRecoveryKeepsAddress() {
-    ProvisionResponse active = service.provision(request("evt-s1", "300", 300L, "王五", "ACTIVE"));
+    service.provision(request("evt-s1", "300", 300L, "王五", "ACTIVE"));
+    ProvisionResponse active = service.activateWithPinyin("300", "王五");
     ProvisionResponse disabled = service.provision(request("evt-s2", "300", 300L, "王五", "DISABLED"));
     ProvisionResponse restored = service.provision(request("evt-s3", "300", 300L, "王五", "ACTIVE"));
 
@@ -99,6 +107,7 @@ class MailboxProvisioningServiceIntegrationTest {
   @Test
   void pronunciationCorrectionMakesNewPrimaryAndPreservesOldAlias() {
     service.provision(request("evt-c1", "400", 400L, "曾乐", "ACTIVE"));
+    service.activateWithPinyin("400", "曾乐");
     ProvisionResponse corrected = service.correctPrimaryAddress("400", "zengyue");
 
     assertThat(corrected.address()).isEqualTo("zengyue@jmi-openatom.cn");

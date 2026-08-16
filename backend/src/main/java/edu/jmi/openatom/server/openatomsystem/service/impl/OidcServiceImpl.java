@@ -227,7 +227,9 @@ public class OidcServiceImpl implements OidcService {
             .audience(List.of(clientId, resourceAudience))
             .claim("client_id", clientId)
             .claim("scope", scope)
-            .claim("token_use", "access");
+            .claim("token_use", "access")
+            .claim("roles", roles)
+            .claim("permissions", permissions);
     String accessToken = signingKeyProvider.sign(accessClaims.build());
 
     JWTClaimsSet.Builder idClaims =
@@ -235,7 +237,8 @@ public class OidcServiceImpl implements OidcService {
             .audience(clientId)
             .claim("client_id", clientId)
             .claim("token_use", "id")
-            .claim("auth_time", issuedAt.getEpochSecond());
+            .claim("auth_time", issuedAt.getEpochSecond())
+            .claim("roles", roles);
     if (!isBlank(nonce)) idClaims.claim("nonce", nonce);
     String idToken = signingKeyProvider.sign(idClaims.build());
     String refreshToken = secureToken();

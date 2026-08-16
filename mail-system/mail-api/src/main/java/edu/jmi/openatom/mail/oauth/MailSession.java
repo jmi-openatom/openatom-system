@@ -38,14 +38,11 @@ public record MailSession(
         accessToken, refreshToken, accessTokenExpiresAt, csrfToken, newRoles);
   }
 
-  /** True when the user holds any of the site-wide admin roles. */
+  /** True when the user holds a site admin role (mirrors the main site). */
   public boolean isAdmin() {
     return roles != null
         && roles.stream()
             .anyMatch(
-                role ->
-                    "super_admin".equals(role)
-                        || "club_admin".equals(role)
-                        || "formal_member".equals(role));
+                role -> "super_admin".equals(role) || "club_admin".equals(role));
   }
 }
