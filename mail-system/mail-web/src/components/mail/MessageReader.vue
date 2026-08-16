@@ -42,8 +42,9 @@
           <div><strong>{{ senderName(selectedEmail) }}</strong><small>{{ senderAddress(selectedEmail) }} → {{ recipientText(selectedEmail) }}</small></div>
           <time>{{ formatFullDate(selectedEmail.receivedAt) }}</time>
         </div>
-        <div class="privacy-notice"><ShieldCheck :size="16" /><span>为保护隐私，HTML 与远程图片默认不加载；当前以安全纯文本显示。</span></div>
-        <div class="message-body">{{ selectedBody }}</div>
+        <div class="privacy-notice"><ShieldCheck :size="16" /><span>邮件正文已安全渲染：脚本与可执行内容已过滤，远程图片可能被发送方用于追踪。</span></div>
+        <div v-if="selectedBodyHtml" class="message-body-html" v-html="selectedBodyHtml"></div>
+        <div v-else class="message-body">{{ selectedBody }}</div>
         <section v-if="selectedEmail.attachments?.length" aria-labelledby="reader-attachments-title" class="reader-attachments">
           <h2 id="reader-attachments-title">附件（仅下载，不在线预览）</h2>
           <button
@@ -91,6 +92,7 @@ defineProps<{
   downloadingAttachmentId: string
   attachmentDownloadError: string
   selectedBody: string
+  selectedBodyHtml: string
 }>()
 const emit = defineEmits<{
   (e: 'close'): void

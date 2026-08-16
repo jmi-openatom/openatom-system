@@ -38,6 +38,7 @@
         :downloading-attachment-id="downloadingAttachmentId"
         :attachment-download-error="attachmentDownloadError"
         :selected-body="selectedBody"
+        :selected-body-html="selectedBodyHtml"
         @close="selectedEmail = null"
         @reply="onReply"
         @archive="onArchive"
@@ -81,7 +82,7 @@ const props = defineProps<{ session: SessionView; mailContext: MailContext; isAd
 
 const {
   selectedMailboxId, emails, selectedEmail, search, mailFilter, mailLoading, detailLoading, actionBusy, errorMessage,
-  selectedBody,
+  selectedBody, selectedBodyHtml,
   loadMailbox, loadEmails, selectFolder, setFilter, selectEmail, scheduleSearch, archiveSelected, deleteSelected,
   deleteForever, toggleSelectedSeen,
 } = useMailboxStore()

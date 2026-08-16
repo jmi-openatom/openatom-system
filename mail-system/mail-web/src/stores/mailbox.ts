@@ -1,6 +1,7 @@
 // ViewModel: mailbox navigation, email list, reader selection and actions.
 import { computed, ref } from 'vue'
 import type { EmailSummary, MailContext } from '../models'
+import { sanitizeEmailHtml } from '../sanitize'
 import { destroyEmail, getEmail, moveEmail, queryEmails, setEmailSeen, type MailFilter } from '../mail'
 
 const selectedMailboxId = ref<string | null>(null)
@@ -32,6 +33,14 @@ const selectedBody = computed(() => {
     selectedEmail.value?.preview ||
     '这封邮件没有可显示的纯文本内容。'
   )
+})
+
+/** Sanitized HTML body when the email carries one; empty string otherwise. */
+const selectedBodyHtml = computed(() => {
+  const email = selectedEmail.value
+  const partId = email?.htmlBody?.find((part) => part.type === 'text/html')?.partId
+  const value = partId ? email?.bodyValues?.[partId]?.value : ''
+  return value ? sanitizeEmailHtml(value) : ''
 })
 
 export async function loadMailbox(mailContext: MailContext): Promise<void> {
@@ -254,6 +263,7 @@ export function useMailboxStore() {
     visibleFolders,
     activeFolderName,
     selectedBody,
+    selectedBodyHtml,
     loadMailbox,
     loadEmails,
     refresh,

@@ -276,6 +276,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .privacy-notice { display: flex; align-items: flex-start; gap: 8px; margin: 30px 0; padding: 10px 12px; border-radius: var(--radius-md); color: var(--color-text-secondary); background: var(--color-info-bg); font-size: 11px; }
 .privacy-notice svg { flex: 0 0 auto; }
 .message-body { min-height: 220px; color: var(--color-text-regular); font-size: 15px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.message-body-html { min-height: 220px; color: var(--color-text-regular); font-size: 15px; line-height: 1.8; overflow-wrap: anywhere; }
+.message-body-html p { margin: 0 0 14px; }
+.message-body-html h1, .message-body-html h2, .message-body-html h3, .message-body-html h4 { margin: 20px 0 10px; line-height: 1.35; }
+.message-body-html h2 { font-size: 20px; }
+.message-body-html h3 { font-size: 17px; }
+.message-body-html ul, .message-body-html ol { margin: 0 0 14px; padding-left: 24px; }
+.message-body-html li { margin: 4px 0; }
+.message-body-html a { color: var(--color-primary); text-decoration: underline; }
+.message-body-html blockquote { margin: 14px 0; padding-left: 14px; border-left: 3px solid var(--color-border-strong); color: var(--color-text-secondary); }
+.message-body-html pre { margin: 14px 0; padding: 12px 14px; border-radius: 10px; overflow-x: auto; background: var(--color-bg-page); font-size: 13px; }
+.message-body-html code { padding: 1px 5px; border-radius: 6px; background: var(--color-bg-active); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+.message-body-html img { max-width: 100%; height: auto; border-radius: 8px; }
+.message-body-html table { max-width: 100%; border-collapse: collapse; }
+.message-body-html table td, .message-body-html table th { padding: 6px 10px; border: 1px solid var(--color-border-light); }
+.message-body-html hr { margin: 18px 0; border: 0; border-top: 1px solid var(--color-border-light); }
 .reader-attachments { display: grid; gap: 8px; margin-top: 30px; }
 .reader-attachments h2 { margin: 0 0 4px; font-size: 13px; }
 .reader-attachments > button { min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); background: var(--color-bg-container); text-align: left; }

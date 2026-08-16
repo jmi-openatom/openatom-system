@@ -25,6 +25,8 @@ export interface EmailSummary {
   subject: string
   preview: string
   bodyValues?: Record<string, { value: string; isTruncated: boolean }>
+  textBody?: { partId: string; type: string }[]
+  htmlBody?: { partId: string; type: string }[]
   attachments?: UploadedAttachment[]
 }
 
@@ -143,9 +145,10 @@ export async function getEmail(accountId: string, id: string): Promise<EmailSumm
         ids: [id],
         properties: [
           'id', 'threadId', 'mailboxIds', 'keywords', 'receivedAt', 'from', 'to', 'subject',
-          'preview', 'bodyValues', 'textBody', 'attachments',
+          'preview', 'bodyValues', 'textBody', 'htmlBody', 'attachments',
         ],
         fetchTextBodyValues: true,
+        fetchHTMLBodyValues: true,
         maxBodyValueBytes: 262144,
       },
       'email',

@@ -49,6 +49,8 @@ export interface EmailSummary {
   subject: string
   preview: string
   bodyValues?: Record<string, { value: string; isTruncated: boolean }>
+  textBody?: { partId: string; type: string }[]
+  htmlBody?: { partId: string; type: string }[]
   attachments?: UploadedAttachment[]
 }
 
