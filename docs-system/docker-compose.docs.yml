@@ -82,6 +82,8 @@ services:
       JWT_SECRET: ${DOCUMENT_SERVER_JWT_SECRET:?DOCUMENT_SERVER_JWT_SECRET is required}
       JWT_HEADER: Authorization
       JWT_IN_BODY: "true"
+      # 示例页用于验证 Document Server 本身可用（验证后可关闭）
+      DS_EXAMPLE_ENABLED: "true"
     # 保存回调需要访问宿主上的主站后端（127.0.0.1:8921）
     extra_hosts:
       - "host.docker.internal:host-gateway"
