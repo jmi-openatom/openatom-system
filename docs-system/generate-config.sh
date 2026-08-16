@@ -36,5 +36,5 @@ cat > "$out" <<JSON
   }
 }
 JSON
-chmod 600 "$out"
+chmod 644 "$out"
 echo "generated $out"
