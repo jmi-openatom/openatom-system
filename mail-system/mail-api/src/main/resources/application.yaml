@@ -46,6 +46,11 @@ mail:
   address-salt: ${MAIL_ADDRESS_SALT:}
   default-quota-bytes: ${MAIL_DEFAULT_QUOTA_BYTES:2147483648}
   internal-service-token: ${MAIL_INTERNAL_SERVICE_TOKEN:}
+  main-site:
+    users-url: ${MAIN_SITE_INTERNAL_USERS_URL:}
+  broadcast:
+    from: ${MAIL_BROADCAST_FROM:no-reply@mailer.jmi-openatom.cn}
+    max-recipients: ${MAIL_BROADCAST_MAX_RECIPIENTS:200}
   malware-scanner:
     host: ${MAIL_CLAMAV_HOST:clamav}
     port: ${MAIL_CLAMAV_PORT:3310}

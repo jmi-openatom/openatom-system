@@ -1,5 +1,6 @@
 package edu.jmi.openatom.server.openatomsystem.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.jmi.openatom.server.openatomsystem.config.MailOutboxProperties;
@@ -68,4 +69,37 @@ public class MailboxProvisioningClient {
       return new DeliveryResult(false, false, reason, 0);
     }
   }
+
+  /** Queries a user's mailbox status; returns null when the mail system is unreachable. */
+  public MailboxStatus queryStatus(int userId) {
+    if (!properties.enabled()) {
+      return null;
+    }
+    try {
+      HttpRequest request =
+          HttpRequest.newBuilder(properties.queryStatusUri(String.valueOf(userId)))
+              .timeout(properties.normalizedRequestTimeout())
+              .header("Authorization", "Bearer " + properties.getServiceToken())
+              .header("Accept", "application/json")
+              .GET()
+              .build();
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      if (response.statusCode() < 200 || response.statusCode() >= 300) {
+        return null;
+      }
+      JsonNode body = objectMapper.readTree(response.body());
+      return new MailboxStatus(
+          body.path("address").asText(""),
+          body.path("status").asText(""),
+          body.path("provisionStatus").asText(""));
+    } catch (IOException | InterruptedException exception) {
+      if (exception instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      return null;
+    }
+  }
+
+  public record MailboxStatus(String address, String status, String provisionStatus) {}
 }

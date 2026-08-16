@@ -60,6 +60,8 @@ openssl rand -base64 48
 | `NGINX_CONF_DIR` | `/etc/nginx/conf.d` | 自动安装邮件站 Nginx 配置的目录 |
 | `MAIL_BACKUP_AGE_RECIPIENT` | 无 | `age1...` 形式的备份加密公钥；启用备份任务时必填，不是 Secret |
 | `MAIL_RESEND_RELAY_DOMAIN` | `mailer.jmi-openatom.cn` | Resend 已验证的发件域名，Web 前端以此域名构造发件 Identity | Resend 控制台“Domains”中确认验证状态 |
+| `MAIN_SITE_INTERNAL_USERS_URL` | `http://host.docker.internal:8921/api/v1/internal/mail/users` | 主站内部接口，供邮件后台拉取“非 @jmi-openatom.cn”外部邮箱作为群发收件人 | 与主站同机时默认即可；主站端口不同时需覆盖 |
+| `MAIL_BROADCAST_FROM` | `no-reply@mailer.jmi-openatom.cn` | 群发邮件的发件地址（必须在 Resend 已验证域名上） | Resend 已验证域名上的任意地址 |
 
 ## 主站必填项
 

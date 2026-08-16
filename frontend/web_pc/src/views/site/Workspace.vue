@@ -12,6 +12,21 @@
       </template>
     </WorkspaceHero>
 
+    <section class="container workspace-mailbox">
+      <div class="workspace-mailbox-card">
+        <div class="workspace-mailbox-card__icon"><Message /></div>
+        <div class="workspace-mailbox-card__copy">
+          <strong>社团邮箱</strong>
+          <span v-if="mailboxLoading">正在同步邮箱信息…</span>
+          <span v-else-if="mailbox.address">{{ mailbox.address }}</span>
+          <span v-else>{{ mailboxText }}</span>
+        </div>
+        <el-button type="primary" plain @click="openMail">
+          {{ mailbox.address ? '进入邮箱' : '前往激活' }}
+        </el-button>
+      </div>
+    </section>
+
     <section class="workspace-section">
       <div class="container personal-workspace__layout">
         <WorkspacePanel
@@ -116,7 +131,7 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import WorkspaceHero from '@/components/site/workspace/WorkspaceHero.vue'
 import WorkspacePanel from '@/components/site/workspace/WorkspacePanel.vue'
-import { notificationApi, siteApi } from '@/api'
+import { authApi, notificationApi, siteApi } from '@/api'
 import { getCurrentUser } from '@/utils/auth.ts'
 import {
   ArrowRight,
@@ -125,6 +140,7 @@ import {
   Coin,
   DocumentChecked,
   EditPen,
+  Message,
   Picture,
   Setting,
   Tickets,
@@ -143,6 +159,16 @@ type WorkspaceLink = {
 const user = ref(getCurrentUser())
 const unreadCount = ref(0)
 const applications = ref<any[]>([])
+const mailbox = ref<{ address: string; status: string; provisionStatus: string }>({
+  address: '',
+  status: '',
+  provisionStatus: '',
+})
+const mailboxLoading = ref(false)
+const mailboxText = computed(() => {
+  if (mailbox.value.status === 'UNAVAILABLE') return '邮箱系统暂不可用'
+  return '未开通'
+})
 
 const activeStatuses = new Set([
   'submitted',
@@ -230,13 +256,80 @@ async function loadWorkspace() {
   }
 }
 
-onMounted(loadWorkspace)
+async function loadMailbox() {
+  mailboxLoading.value = true
+  try {
+    const result = await authApi.meMailbox()
+    mailbox.value = {
+      address: result?.address || '',
+      status: result?.status || '',
+      provisionStatus: result?.provisionStatus || '',
+    }
+  } catch {
+    mailbox.value = { address: '', status: '', provisionStatus: '' }
+  } finally {
+    mailboxLoading.value = false
+  }
+}
+
+function openMail() {
+  window.open('https://mail.jmi-openatom.cn', '_blank')
+}
+
+onMounted(() => {
+  void loadWorkspace()
+  void loadMailbox()
+})
 </script>
 
 <style scoped>
 .personal-workspace__layout {
   display: grid;
   gap: 28px;
+}
+
+.workspace-mailbox {
+  padding-top: 24px;
+}
+
+.workspace-mailbox-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-base);
+  background: var(--el-bg-color);
+}
+
+.workspace-mailbox-card__icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  font-size: 18px;
+}
+
+.workspace-mailbox-card__copy {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.workspace-mailbox-card__copy strong {
+  font-size: 14px;
+}
+
+.workspace-mailbox-card__copy span {
+  overflow: hidden;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .workspace-task-grid {

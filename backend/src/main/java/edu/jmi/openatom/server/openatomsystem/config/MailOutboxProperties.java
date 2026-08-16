@@ -42,6 +42,13 @@ public class MailOutboxProperties {
     return URI.create(provisionUrl.trim());
   }
 
+  /** Mail-api status endpoint for a user's mailbox, derived from the provision URL. */
+  public URI queryStatusUri(String userId) {
+    URI provision = URI.create(provisionUrl.trim());
+    String base = provision.getScheme() + "://" + provision.getAuthority();
+    return URI.create(base + "/internal/v1/mailboxes/" + userId);
+  }
+
   public int normalizedBatchSize() {
     return Math.max(1, Math.min(batchSize, 500));
   }

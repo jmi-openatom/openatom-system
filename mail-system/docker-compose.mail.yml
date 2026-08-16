@@ -117,6 +117,8 @@ services:
       STALWART_API_TOKEN: ${STALWART_API_TOKEN:-bootstrap-not-configured}
       STALWART_DOMAIN_ID: ${STALWART_DOMAIN_ID:-bootstrap-not-configured}
       MAIL_RESEND_API_KEY: ${MAIL_RESEND_API_KEY:-}
+      MAIN_SITE_INTERNAL_USERS_URL: ${MAIN_SITE_INTERNAL_USERS_URL:-http://host.docker.internal:8921/api/v1/internal/mail/users}
+      MAIL_BROADCAST_FROM: ${MAIL_BROADCAST_FROM:-no-reply@mailer.jmi-openatom.cn}
       MAIL_OAUTH_ISSUER: ${MAIL_OAUTH_ISSUER:-https://oauth.jmi-openatom.cn/api/v1}
       MAIL_OAUTH_AUTHORIZATION_URL: ${MAIL_OAUTH_AUTHORIZATION_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/authorize}
       MAIL_OAUTH_TOKEN_URL: ${MAIL_OAUTH_TOKEN_URL:-https://oauth.jmi-openatom.cn/api/v1/oauth/token}
@@ -124,6 +126,8 @@ services:
       MAIL_OAUTH_CLIENT_ID: ${MAIL_OAUTH_CLIENT_ID:-openatom-mail-web}
       MAIL_OAUTH_CLIENT_SECRET: ${MAIL_OAUTH_CLIENT_SECRET:-bootstrap-not-configured}
       MAIL_OAUTH_REDIRECT_URI: ${MAIL_OAUTH_REDIRECT_URI:-https://mail.jmi-openatom.cn/api/oauth/callback}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:${MAIL_API_INTERNAL_PORT:-18090}:8090"
     depends_on:

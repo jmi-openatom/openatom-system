@@ -13,7 +13,12 @@
       </div>
     </header>
 
-    <div class="admin-body">
+    <nav aria-label="后台管理导航" class="admin-tabs">
+      <button :class="{ active: tab === 'mailboxes' }" type="button" @click="tab = 'mailboxes'">邮箱管理</button>
+      <button :class="{ active: tab === 'broadcast' }" type="button" @click="tab = 'broadcast'">群发邮件</button>
+    </nav>
+
+    <div v-if="tab === 'mailboxes'" class="admin-body">
       <section class="admin-stats" aria-label="统计概览">
         <div class="stat-card"><span>总邮箱</span><strong>{{ stats?.total ?? '—' }}</strong></div>
         <div class="stat-card"><span>已激活</span><strong>{{ stats?.active ?? '—' }}</strong></div>
@@ -71,16 +76,73 @@
         </footer>
       </section>
     </div>
+
+    <div v-else class="admin-body">
+      <section class="admin-table-wrap broadcast-card" aria-label="群发邮件">
+        <header class="admin-table-header">
+          <h2>群发邮件 <small>从主站拉取的外部邮箱用户</small></h2>
+          <div class="admin-toolbar">
+            <label class="admin-search">
+              <Search :size="15" aria-hidden="true" />
+              <input v-model="recipientKeyword" placeholder="搜索姓名/邮箱" @input="onRecipientSearch" />
+            </label>
+            <button class="secondary-button" type="button" :disabled="recipientsLoading" @click="loadRecipients">刷新</button>
+          </div>
+        </header>
+        <div v-if="recipientsLoading" class="email-skeletons">
+          <div v-for="i in 4" :key="i" class="email-skeleton"><i></i><span></span><b></b></div>
+        </div>
+        <div v-else-if="recipientsError" class="empty-state" role="alert">
+          <CircleAlert :size="30" /><h2>无法加载收件人</h2><p>{{ recipientsError }}</p>
+          <button class="secondary-button" type="button" @click="loadRecipients">重新加载</button>
+        </div>
+        <div v-else class="recipient-panel">
+          <div class="recipient-select-all">
+            <label>
+              <input :checked="allSelected" type="checkbox" @change="toggleAll" />
+              全选本页
+            </label>
+            <span>共 {{ recipientPage?.total ?? 0 }} 位外部邮箱用户，已选 {{ selectedRecipients.size }} 位</span>
+          </div>
+          <ul v-if="recipients.length" class="recipient-list">
+            <li v-for="recipient in recipients" :key="recipient.email">
+              <label>
+                <input :checked="selectedRecipients.has(recipient.email)" type="checkbox" @change="toggleRecipient(recipient)" />
+                <span class="recipient-name">{{ recipient.name || '未命名用户' }}</span>
+                <small class="admin-address">{{ recipient.email }}</small>
+              </label>
+            </li>
+          </ul>
+          <div v-else class="empty-state">
+            <MailOpen :size="30" /><h2>没有匹配的外部邮箱用户</h2><p>主站中还没有登记非 @jmi-openatom.cn 的邮箱。</p>
+          </div>
+        </div>
+        <div class="broadcast-form">
+          <input v-model="broadcastSubject" class="broadcast-subject" maxlength="200" placeholder="邮件主题" type="text" />
+          <RichTextEditor v-model="broadcastHtml" placeholder="邮件正文…" />
+          <p v-if="broadcastError" class="form-error" role="alert"><CircleAlert :size="16" /> {{ broadcastError }}</p>
+          <footer class="broadcast-footer">
+            <span>将发送给 <strong>{{ selectedRecipients.size }}</strong> 位收件人</span>
+            <button class="primary-button" :disabled="sending || selectedRecipients.size === 0" type="button" @click="onSendBroadcast">
+              <span v-if="sending" class="spinner small"></span><Send v-else :size="16" />
+              {{ sending ? '正在发送…' : '群发邮件' }}
+            </button>
+          </footer>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
-import { CircleAlert, LogOut, Search } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { CircleAlert, LogOut, MailOpen, Search, Send } from 'lucide-vue-next'
+import RichTextEditor from '../components/common/RichTextEditor.vue'
 import {
-  loadAdminMailboxes, loadAdminStats, setMailboxSuspended,
-  type AdminMailboxPage, type AdminMailboxView, type AdminStats,
+  loadAdminMailboxes, loadAdminStats, loadExternalRecipients, sendBroadcast, setMailboxSuspended,
+  type AdminMailboxPage, type AdminMailboxView, type AdminStats, type ExternalRecipient,
 } from '../api'
+import { htmlToPlainText } from '../mail'
 import type { SessionView } from '../models'
 import ThemeToggle from '../components/common/ThemeToggle.vue'
 import { useUiStore } from '../stores/ui'
@@ -89,6 +151,10 @@ defineProps<{ session: SessionView }>()
 const emit = defineEmits<{ (e: 'logout'): void; (e: 'back'): void }>()
 
 const { showToast } = useUiStore()
+
+const tab = ref<'mailboxes' | 'broadcast'>('mailboxes')
+
+// ===== Mailbox management =====
 const rows = ref<AdminMailboxView[]>([])
 const pageData = ref<AdminMailboxPage | null>(null)
 const stats = ref<AdminStats | null>(null)
@@ -118,7 +184,14 @@ const resendStatus = computed(() => {
   return r.verified ? '已验证' : '未验证'
 })
 
-onMounted(() => void load())
+onMounted(() => {
+  void load()
+  void loadRecipients()
+})
+onBeforeUnmount(() => {
+  if (searchTimer) window.clearTimeout(searchTimer)
+  if (recipientTimer) window.clearTimeout(recipientTimer)
+})
 
 async function load() {
   loading.value = true
@@ -178,6 +251,93 @@ async function toggleSuspend(mailbox: AdminMailboxView) {
     showToast(err instanceof Error ? err.message : '操作失败')
   } finally {
     busyId.value = null
+  }
+}
+
+// ===== Broadcast =====
+const recipients = ref<ExternalRecipient[]>([])
+const recipientPage = ref<{ total: number; page: number; pageSize: number } | null>(null)
+const recipientKeyword = ref('')
+const recipientsLoading = ref(false)
+const recipientsError = ref('')
+const selectedRecipients = ref(new Set<string>())
+const broadcastSubject = ref('')
+const broadcastHtml = ref('')
+const broadcastError = ref('')
+const sending = ref(false)
+let recipientTimer: number | undefined
+
+const allSelected = computed(() => {
+  return recipients.value.length > 0 && recipients.value.every((r) => selectedRecipients.value.has(r.email))
+})
+
+async function loadRecipients() {
+  recipientsLoading.value = true
+  recipientsError.value = ''
+  try {
+    const result = await loadExternalRecipients({ page: 1, pageSize: 200, keyword: recipientKeyword.value })
+    recipients.value = result.rows
+    recipientPage.value = { total: result.total, page: result.page, pageSize: result.pageSize }
+  } catch (err) {
+    recipientsError.value = err instanceof Error ? err.message : '加载失败'
+  } finally {
+    recipientsLoading.value = false
+  }
+}
+
+function onRecipientSearch() {
+  if (recipientTimer) window.clearTimeout(recipientTimer)
+  recipientTimer = window.setTimeout(() => {
+    void loadRecipients()
+  }, 350)
+}
+
+function toggleRecipient(recipient: ExternalRecipient) {
+  const selected = selectedRecipients.value
+  if (selected.has(recipient.email)) selected.delete(recipient.email)
+  else selected.add(recipient.email)
+  selectedRecipients.value = new Set(selected)
+}
+
+function toggleAll() {
+  const selected = selectedRecipients.value
+  if (allSelected.value) {
+    for (const recipient of recipients.value) selected.delete(recipient.email)
+  } else {
+    for (const recipient of recipients.value) selected.add(recipient.email)
+  }
+  selectedRecipients.value = new Set(selected)
+}
+
+async function onSendBroadcast() {
+  const emails = Array.from(selectedRecipients.value)
+  const subject = broadcastSubject.value.trim()
+  const text = htmlToPlainText(broadcastHtml.value)
+  if (!emails.length) {
+    broadcastError.value = '请至少选择一位收件人。'
+    return
+  }
+  if (!subject || !text) {
+    broadcastError.value = '请填写主题和正文。'
+    return
+  }
+  sending.value = true
+  broadcastError.value = ''
+  try {
+    const result = await sendBroadcast({
+      recipients: emails,
+      subject: subject || '（无主题）',
+      htmlBody: broadcastHtml.value,
+      textBody: text,
+    })
+    showToast(`群发成功，已发送给 ${result.recipients} 位收件人`)
+    selectedRecipients.value = new Set()
+    broadcastSubject.value = ''
+    broadcastHtml.value = ''
+  } catch (err) {
+    broadcastError.value = err instanceof Error ? err.message : '群发失败，请稍后重试。'
+  } finally {
+    sending.value = false
   }
 }
 </script>

@@ -268,3 +268,71 @@ export async function setMailboxSuspended(id: number, suspended: boolean): Promi
   })
   if (!response.ok) throw new Error('操作失败，请稍后重试')
 }
+
+export interface ExternalRecipient {
+  userId: number
+  name: string
+  email: string
+}
+
+export interface ExternalRecipientPage {
+  rows: ExternalRecipient[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export async function loadExternalRecipients(options: {
+  page?: number
+  pageSize?: number
+  keyword?: string
+} = {}): Promise<ExternalRecipientPage> {
+  const params = new URLSearchParams()
+  params.set('page', String(options.page ?? 1))
+  params.set('pageSize', String(options.pageSize ?? 200))
+  if (options.keyword) params.set('keyword', options.keyword)
+  const response = await fetch('/api/admin/external-recipients?' + params.toString(), { credentials: 'same-origin' })
+  if (response.status === 401) {
+    redirectToOAuth()
+    throw new Error('登录已过期')
+  }
+  if (!response.ok) throw new Error(response.status === 403 ? '没有管理员权限' : '无法加载收件人列表')
+  return response.json() as Promise<ExternalRecipientPage>
+}
+
+export async function sendBroadcast(input: {
+  recipients: string[]
+  subject: string
+  htmlBody: string
+  textBody: string
+}): Promise<{ id: string; recipients: number }> {
+  const response = await fetch('/api/admin/broadcast', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', 'X-Mail-CSRF': csrfToken },
+    body: JSON.stringify(input),
+  })
+  if (response.status === 401) {
+    redirectToOAuth()
+    throw new Error('登录已过期')
+  }
+  if (!response.ok) {
+    const problem = await response.clone().json().catch(() => ({})) as { code?: string }
+    throw new Error(broadcastError(problem.code ?? ''))
+  }
+  return response.json() as Promise<{ id: string; recipients: number }>
+}
+
+function broadcastError(code: string): string {
+  const messages: Record<string, string> = {
+    recipients_required: '请至少选择一位收件人。',
+    too_many_recipients: '收件人数量超过上限，请分批发送。',
+    invalid_recipients: '部分收件人邮箱格式不正确。',
+    content_required: '请填写主题和正文。',
+    resend_not_configured: '发信服务未配置，请联系运维。',
+    resend_not_configured_re_required: '发信服务未配置，请联系运维。',
+    main_site_unreachable: '无法连接主站获取用户邮箱，请稍后重试。',
+    main_site_not_configured: '主站接口未配置，无法拉取收件人。',
+  }
+  return messages[code] ?? '群发失败，请稍后重试。'
+}

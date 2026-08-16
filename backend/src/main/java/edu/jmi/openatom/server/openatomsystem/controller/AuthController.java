@@ -1,13 +1,16 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.*;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
+import edu.jmi.openatom.server.openatomsystem.service.MailboxProvisioningClient;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinTokenVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinVerifyVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseMailboxVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseTokenIntrospectionVO;
 import edu.jmi.openatom.server.openatomsystem.service.AuthCenterService;
@@ -37,6 +40,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class AuthController {
   private final AuthService authService;
   private final AuthCenterService authCenterService;
+  private final MailboxProvisioningClient mailboxProvisioningClient;
 
   /**
    * 用户注册
@@ -182,6 +186,23 @@ public class AuthController {
   @SaCheckPermission("auth:me")
   public Result<ResponseCurrentUserVO> me() {
     return authService.getCurrentUserInfo();
+  }
+
+  /**
+   * 获取当前用户的社团邮箱地址（由邮箱系统提供）
+   *
+   * @return 邮箱地址与开通状态
+   */
+  @GetMapping("/me/mailbox")
+  @SaCheckPermission("auth:me")
+  public Result<ResponseMailboxVO> mailbox() {
+    int userId = StpUtil.getLoginIdAsInt();
+    MailboxProvisioningClient.MailboxStatus status = mailboxProvisioningClient.queryStatus(userId);
+    if (status == null) {
+      return Result.success(ResponseMailboxVO.unavailable());
+    }
+    return Result.success(
+        new ResponseMailboxVO(status.address(), status.status(), status.provisionStatus()));
   }
 
   /**

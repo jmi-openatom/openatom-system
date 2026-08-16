@@ -9,6 +9,7 @@ import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.web.ApplicationSubmitRateLimitInterceptor;
+import edu.jmi.openatom.server.openatomsystem.common.web.MailInternalAuthFilter;
 import edu.jmi.openatom.server.openatomsystem.common.web.OperationLogInterceptor;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 
 	private final OperationLogInterceptor operationLogInterceptor;
 	private final ApplicationSubmitRateLimitInterceptor applicationSubmitRateLimitInterceptor;
+	private final MailInternalAuthFilter mailInternalAuthFilter;
 
 	@Value("${app.cors.allowed-origin-patterns:*}")
 	private String[] allowedOriginPatterns;
@@ -56,6 +58,15 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 		source.registerCorsConfiguration("/**", config);
 		FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
 		bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+		return bean;
+	}
+
+	@Bean
+	public FilterRegistrationBean<MailInternalAuthFilter> mailInternalAuthFilterRegistration() {
+		FilterRegistrationBean<MailInternalAuthFilter> bean =
+				new FilterRegistrationBean<>(mailInternalAuthFilter);
+		bean.addUrlPatterns("/internal/mail/*");
+		bean.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
 		return bean;
 	}
 
@@ -111,6 +122,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				"/clubs/{clubId}/departments",
 				"/files/avatars/**",
 				"/files/images/**",
+				"/internal/mail/**",
 				"/public/**");
 	}
 

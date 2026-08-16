@@ -59,6 +59,13 @@
             <el-descriptions-item label="用户名">{{ user.userName || '-' }}</el-descriptions-item>
             <el-descriptions-item label="姓名">{{ user.realName || '-' }}</el-descriptions-item>
             <el-descriptions-item label="邮箱">{{ user.email || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="社团邮箱">
+              <span v-if="mailbox.address">
+                <code class="mailbox-address">{{ mailbox.address }}</code>
+                <el-link type="primary" :href="'https://mail.jmi-openatom.cn'" target="_blank" class="mailbox-link">进入邮箱</el-link>
+              </span>
+              <span v-else>{{ mailboxText() }}</span>
+            </el-descriptions-item>
             <el-descriptions-item label="手机号">{{ user.phone || '-' }}</el-descriptions-item>
           </el-descriptions>
 
@@ -292,6 +299,11 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const user = ref(getCurrentUser() || {})
+const mailbox = ref<{ address: string; status: string; provisionStatus: string }>({
+  address: '',
+  status: '',
+  provisionStatus: '',
+})
 
 const membership = ref<any>(null)
 const applications = ref<any[]>([])
@@ -394,6 +406,27 @@ async function fetchProfile() {
       permissions: result.permissions || [],
     })
   }
+}
+
+async function fetchMailbox() {
+  try {
+    const result = await authApi.meMailbox()
+    if (result) {
+      mailbox.value = {
+        address: result.address || '',
+        status: result.status || '',
+        provisionStatus: result.provisionStatus || '',
+      }
+    }
+  } catch {
+    mailbox.value = { address: '', status: '', provisionStatus: '' }
+  }
+}
+
+function mailboxText(): string {
+  if (mailbox.value.address) return mailbox.value.address
+  if (mailbox.value.status === 'UNAVAILABLE') return '邮箱系统暂不可用'
+  return '未开通'
 }
 
 async function fetchApplications() {
@@ -565,7 +598,7 @@ function isQqAvatarUrl(src: string) {
 
 onMounted(async () => {
   if (isLogin.value) {
-    await Promise.all([fetchProfile(), fetchApplications(), fetchMembership()])
+    await Promise.all([fetchProfile(), fetchApplications(), fetchMembership(), fetchMailbox()])
     await initializeGoogleBind()
   }
 })
@@ -576,6 +609,14 @@ onBeforeUnmount(cancelGoogleIdentityPrompt)
 <style scoped>
 .profile-grid {
   align-items: start;
+}
+
+.mailbox-address {
+  font-size: 13px;
+}
+
+.mailbox-link {
+  margin-left: 10px;
 }
 
 .profile-avatar {

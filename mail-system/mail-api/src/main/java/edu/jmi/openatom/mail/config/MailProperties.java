@@ -12,6 +12,9 @@ public class MailProperties {
   private String addressSalt;
   private long defaultQuotaBytes = 2_147_483_648L;
   private String internalServiceToken;
+  private String mainSiteUsersUrl;
+  private String broadcastFrom = "no-reply@mailer.jmi-openatom.cn";
+  private int broadcastMaxRecipients = 200;
   private Stalwart stalwart = new Stalwart();
   private OAuth oauth = new OAuth();
   private MalwareScanner malwareScanner = new MalwareScanner();
@@ -32,6 +35,9 @@ public class MailProperties {
     URI.create(stalwart.apiUrl);
     URI.create(stalwart.sessionUrl);
     URI.create(stalwart.jmapUrl);
+    if (mainSiteUsersUrl != null && !mainSiteUsersUrl.isBlank()) {
+      URI.create(mainSiteUsersUrl);
+    }
     requireSecret(oauth.clientSecret, "MAIL_OAUTH_CLIENT_SECRET");
     URI.create(oauth.issuer);
     URI.create(oauth.authorizationUrl);
@@ -60,6 +66,12 @@ public class MailProperties {
   public void setDefaultQuotaBytes(long defaultQuotaBytes) { this.defaultQuotaBytes = defaultQuotaBytes; }
   public String getInternalServiceToken() { return internalServiceToken; }
   public void setInternalServiceToken(String internalServiceToken) { this.internalServiceToken = internalServiceToken; }
+  public String getMainSiteUsersUrl() { return mainSiteUsersUrl; }
+  public void setMainSiteUsersUrl(String mainSiteUsersUrl) { this.mainSiteUsersUrl = mainSiteUsersUrl; }
+  public String getBroadcastFrom() { return broadcastFrom; }
+  public void setBroadcastFrom(String broadcastFrom) { this.broadcastFrom = broadcastFrom; }
+  public int getBroadcastMaxRecipients() { return broadcastMaxRecipients; }
+  public void setBroadcastMaxRecipients(int broadcastMaxRecipients) { this.broadcastMaxRecipients = broadcastMaxRecipients; }
   public Stalwart getStalwart() { return stalwart; }
   public void setStalwart(Stalwart stalwart) { this.stalwart = stalwart; }
   public OAuth getOauth() { return oauth; }

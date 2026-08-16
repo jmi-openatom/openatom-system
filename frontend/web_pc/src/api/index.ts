@@ -121,6 +121,9 @@ export const authApi = {
   me(): Promise<any> {
     return request.get('/auth/me')
   },
+  meMailbox(): Promise<any> {
+    return request.get('/auth/me/mailbox')
+  },
   oidcToken(data: Record<string, string>): Promise<any> {
     return request.post('/oauth/token', new URLSearchParams(data), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
