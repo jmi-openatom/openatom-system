@@ -85,9 +85,25 @@ public class NotificationServiceImpl implements NotificationService {
         }
       });
     } else {
-      for (Integer receiverUserId : request.getReceiverUserIds().stream().distinct().toList()) {
+      List<Integer> receiverIds = request.getReceiverUserIds().stream().distinct().toList();
+      for (Integer receiverUserId : receiverIds) {
         notificationReceiverMapper.insert(NotificationReceiver.builder().notificationId(notification.getId()).receiverUserId(receiverUserId).readFlag(0).build());
       }
+      // Targeted notifications also mail each selected user after commit.
+      Integer notificationId = notification.getId();
+      String title = notification.getTitle();
+      String content = notification.getContent();
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          mailBroadcastPlanner.enqueueUserBroadcast(
+              "broadcast_notification_targeted_" + notificationId,
+              receiverIds,
+              "notification",
+              "[通知] " + title,
+              "通知标题：" + title + "\n通知内容：" + content);
+        }
+      });
     }
     return Result.success("通知发送成功");
   }

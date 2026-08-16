@@ -67,15 +67,33 @@ public class MailBroadcastPlanner {
   /** Sends to a single user's mailbox: external email first, then the mail-system address. */
   public void enqueueUserMail(
       String eventId, Integer userId, String kind, String subject, String userPayload) {
-    if (!properties.enabled() || userId == null || eventId == null || eventId.isBlank()) {
+    if (userId == null) {
+      return;
+    }
+    enqueueUserBroadcast(eventId, List.of(userId), kind, subject, userPayload);
+  }
+
+  /** Sends to each user's mailbox (external email or mail-system address). */
+  public void enqueueUserBroadcast(
+      String eventId, List<Integer> userIds, String kind, String subject, String userPayload) {
+    if (!properties.enabled()
+        || eventId == null
+        || eventId.isBlank()
+        || userIds == null
+        || userIds.isEmpty()) {
       return;
     }
     Thread.startVirtualThread(
         () -> {
           try {
-            List<String> emails = resolveUserEmails(userId);
+            List<String> emails =
+                userIds.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .flatMap(userId -> resolveUserEmails(userId).stream())
+                    .distinct()
+                    .toList();
             if (emails.isEmpty()) {
-              log.warn("mail broadcast: user {} has no email address, skipping", userId);
+              log.warn("mail broadcast: no email addresses for eventId={}, skipping", eventId);
               return;
             }
             String html = generatedHtml(kind, userPayload);
