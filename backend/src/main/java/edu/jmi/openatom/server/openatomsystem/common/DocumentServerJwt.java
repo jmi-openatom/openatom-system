@@ -21,6 +21,7 @@ public final class DocumentServerJwt {
 
   /** Signs a JSON payload (typically the ONLYOFFICE editor config). */
   public static String sign(String secret, JsonNode payload) {
+    requireSecret(secret);
     String header = B64.encodeToString("{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
     String body = B64.encodeToString(payload.toString().getBytes(StandardCharsets.UTF_8));
     String signingInput = header + "." + body;
@@ -35,6 +36,7 @@ public final class DocumentServerJwt {
 
   /** Verifies the signature and returns the payload as JSON. */
   public static JsonNode verify(String secret, String token) {
+    requireSecret(secret);
     String[] parts = token == null ? new String[0] : token.split("\\.");
     if (parts.length != 3) {
       throw new IllegalArgumentException("invalid_jwt");
@@ -48,6 +50,12 @@ public final class DocumentServerJwt {
       return JSON.readTree(new String(B64D.decode(parts[1]), StandardCharsets.UTF_8));
     } catch (Exception exception) {
       throw new IllegalArgumentException("invalid_jwt_payload", exception);
+    }
+  }
+
+  private static void requireSecret(String secret) {
+    if (secret == null || secret.isBlank()) {
+      throw new IllegalStateException("document_server_not_configured");
     }
   }
 

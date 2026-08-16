@@ -121,6 +121,8 @@ public class DocCenterController {
     JsonNode claim;
     try {
       claim = DocumentServerJwt.verify(jwtSecret, token);
+    } catch (IllegalStateException exception) {
+      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "document_server_not_configured");
     } catch (IllegalArgumentException exception) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "invalid_token");
     }
@@ -141,6 +143,14 @@ public class DocCenterController {
   @PostMapping("/{documentId}/edit-config")
   public Result<ObjectNode> editConfig(@PathVariable Long documentId) {
     DocCenterDocument document = requireOwned(documentId);
+    try {
+      return Result.success(buildEditorConfig(document));
+    } catch (IllegalStateException exception) {
+      return Result.error(503, "文档编辑服务未配置，请先在主站环境配置 DOCUMENT_SERVER_JWT_SECRET");
+    }
+  }
+
+  private ObjectNode buildEditorConfig(DocCenterDocument document) {
     String fileType = document.getExtension();
     String documentType = switch (fileType) {
       case "xlsx" -> "spreadsheet";
@@ -150,9 +160,9 @@ public class DocCenterController {
     String key = document.getId() + "_"
         + (document.getUpdatedAt() == null ? document.getCreatedAt() : document.getUpdatedAt()).getTime();
     String downloadUrl = publicApiBase
-        + "/document-center/" + documentId + "/file?token="
-        + downloadToken(documentId);
-    String callbackUrl = callbackBaseUrl + "/document-center/" + documentId + "/callback";
+        + "/document-center/" + document.getId() + "/file?token="
+        + downloadToken(document.getId());
+    String callbackUrl = callbackBaseUrl + "/document-center/" + document.getId() + "/callback";
     Integer userId = StpUtil.getLoginIdAsInt();
     User owner = userMapper.selectById(userId);
 
@@ -193,7 +203,7 @@ public class DocCenterController {
     ObjectNode response = objectMapper.createObjectNode();
     response.put("documentServerUrl", officeUrl);
     response.set("config", config);
-    return Result.success(response);
+    return response;
   }
 
   /**
@@ -259,6 +269,9 @@ public class DocCenterController {
     try {
       DocumentServerJwt.verify(jwtSecret, token);
       return true;
+    } catch (IllegalStateException exception) {
+      log.warn("document callback rejected: {}", exception.getMessage());
+      return false;
     } catch (IllegalArgumentException exception) {
       log.warn("document callback rejected: {}", exception.getMessage());
       return false;
