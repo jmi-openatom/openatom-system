@@ -322,6 +322,17 @@ public class SharedFileController {
   }
 
   /**
+   * ONLYOFFICE 专用下载端点（公开白名单，仅接受短期签名 token，无登录态）。
+   * Document Server 无法携带主站登录态，走此端点拉取文档内容。
+   */
+  @GetMapping("/{fileId}/raw")
+  public ResponseEntity<Resource> raw(
+      @PathVariable Long fileId, @RequestParam(required = false) String token) {
+    verifyDownloadToken(token, fileId);
+    return streamFile(requireFile(fileId));
+  }
+
+  /**
    * 文件内容（预览 + ONLYOFFICE 下载共用）。
    * 预览：?password=；ONLYOFFICE：?token=（短期签名）。
    */
@@ -433,7 +444,7 @@ public class SharedFileController {
     }
     String key = file.getId() + "_"
         + (file.getUpdatedAt() == null ? file.getCreatedAt() : file.getUpdatedAt()).getTime();
-    String downloadUrl = publicApiBase + "/shared-files/" + file.getId() + "/content?token="
+    String downloadUrl = publicApiBase + "/shared-files/" + file.getId() + "/raw?token="
         + downloadToken(file.getId());
     String callbackUrl = callbackBaseUrl + "/shared-files/" + file.getId() + "/callback";
     Integer userId = StpUtil.getLoginIdAsInt();

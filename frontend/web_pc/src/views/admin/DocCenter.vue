@@ -10,7 +10,7 @@
           @clear="fetchList"
           @keyup.enter="fetchList"
         />
-        <el-button type="primary" :icon="Refresh" @click="fetchList">刷新</el-button>
+        <el-button :icon="Refresh" @click="fetchList">刷新</el-button>
       </div>
       <div class="toolbar__actions">
         <el-button :icon="FolderAdd" @click="openCreateDir">新建目录</el-button>
@@ -38,17 +38,32 @@
       @dragleave="dragLeaveZone"
       @drop.prevent="onDropZone"
     >
-      <div
-        v-if="dragOverDepth > 0"
-        class="drop-overlay"
-      >{{ draggingExternal ? '松开上传到当前目录' : '松开移动到当前目录' }}</div>
+      <div v-if="dragOverDepth > 0" class="drop-overlay">
+        <el-icon :size="34"><component :is="draggingExternal ? UploadFilled : FolderOpened" /></el-icon>
+        <p>{{ draggingExternal ? '松开上传到当前目录' : '松开移动到当前目录' }}</p>
+      </div>
+
+      <!-- 选中操作条 -->
+      <div v-if="selectedRows.length" class="selection-bar">
+        <span>已选 <strong>{{ selectedRows.length }}</strong> 项</span>
+        <div>
+          <el-button size="small" type="primary" :icon="FolderOpened" @click="openMoveDialog">移动到</el-button>
+          <el-button v-if="selectedFiles.length" size="small" :icon="Download" @click="bulkDownload">下载</el-button>
+          <el-popconfirm title="确定删除选中的项？" @confirm="bulkDelete">
+            <template #reference><el-button size="small" type="danger" :icon="Delete">删除</el-button></template>
+          </el-popconfirm>
+          <el-button size="small" text @click="clearSelection">取消选择</el-button>
+        </div>
+      </div>
 
       <el-table
         v-loading="loading"
         :data="filteredRows"
         class="admin-table"
         @row-contextmenu="onRowContextMenu"
+        @selection-change="onSelectionChange"
       >
+        <el-table-column type="selection" width="42" />
         <el-table-column label="名称" min-width="220">
           <template #default="{ row }">
             <span
@@ -94,9 +109,9 @@
           </template>
         </el-table-column>
       </el-table>
-    </div>
 
-    <el-empty v-if="!loading && !rows.length" description="这里还没有内容，上传文件或新建目录" />
+      <el-empty v-if="!loading && !rows.length" description="这里还没有内容，上传文件或新建目录" />
+    </div>
 
     <!-- 右键菜单 -->
     <div
@@ -107,31 +122,31 @@
     >
       <template v-if="contextMenu.target">
         <div class="context-menu__title">{{ contextMenu.target.name }}</div>
-        <button v-if="contextMenu.target.dir" type="button" @click="menuEnterDir">打开</button>
-        <template v-else>
-          <button type="button" @click="menuPreview">预览</button>
-          <button v-if="isOffice(contextMenu.target)" type="button" @click="menuEdit">在线编辑</button>
-          <button type="button" @click="menuDownload">下载</button>
+        <button type="button" @click="menuOpen"><component :is="iconOf(contextMenu.target)" /> 打开</button>
+        <template v-if="!contextMenu.target.dir">
+          <button type="button" @click="menuPreview"><el-icon><View /></el-icon> 预览</button>
+          <button v-if="isOffice(contextMenu.target)" type="button" @click="menuEdit"><el-icon><EditPen /></el-icon> 在线编辑</button>
+          <button type="button" @click="menuDownload"><el-icon><Download /></el-icon> 下载</button>
         </template>
-        <button type="button" @click="menuRename">重命名</button>
-        <button type="button" @click="menuPassword">
-          {{ contextMenu.target.hasPassword ? '修改密码' : '设置密码' }}
-        </button>
-        <button type="button" class="danger" @click="menuDelete">删除</button>
+        <button type="button" @click="menuMove"><el-icon><FolderOpened /></el-icon> 移动到</button>
+        <button type="button" @click="menuRename"><el-icon><EditPen /></el-icon> 重命名</button>
+        <button type="button" @click="menuPassword"><el-icon><Lock /></el-icon> {{ contextMenu.target.hasPassword ? '修改密码' : '设置密码' }}</button>
+        <div class="context-menu__sep"></div>
+        <button type="button" class="danger" @click="menuDelete"><el-icon><Delete /></el-icon> 删除</button>
       </template>
       <template v-else>
         <div class="context-menu__title">当前目录</div>
-        <button type="button" @click="menuCreateDir">新建目录</button>
-        <button type="button" @click="menuUpload">上传文件</button>
-        <button type="button" @click="menuRefresh">刷新</button>
+        <button type="button" @click="menuCreateDir"><el-icon><FolderAdd /></el-icon> 新建目录</button>
+        <button type="button" @click="menuUpload"><el-icon><Upload /></el-icon> 上传文件</button>
+        <button type="button" @click="menuRefresh"><el-icon><Refresh /></el-icon> 刷新</button>
       </template>
     </div>
 
     <!-- 新建目录 -->
-    <el-dialog v-model="createDirOpen" title="新建目录" width="420px">
-      <el-form label-width="70px">
-        <el-form-item label="目录名"><el-input v-model="dirForm.name" maxlength="200" /></el-form-item>
-        <el-form-item label="访问密码"><el-input v-model="dirForm.password" type="password" show-password placeholder="选填，设置后需密码才能访问" /></el-form-item>
+    <el-dialog v-model="createDirOpen" title="新建目录" width="440px">
+      <el-form label-width="80px">
+        <el-form-item label="目录名"><el-input v-model="dirForm.name" maxlength="200" placeholder="请输入目录名" /></el-form-item>
+        <el-form-item label="访问密码"><el-input v-model="dirForm.password" type="password" show-password placeholder="选填，设置后访问需输入密码" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="createDirOpen = false">取消</el-button>
@@ -140,8 +155,10 @@
     </el-dialog>
 
     <!-- 重命名 -->
-    <el-dialog v-model="renameOpen" title="重命名" width="420px">
-      <el-input v-model="renameForm.name" maxlength="200" />
+    <el-dialog v-model="renameOpen" title="重命名" width="440px">
+      <el-form label-width="80px">
+        <el-form-item label="名称"><el-input v-model="renameForm.name" maxlength="200" /></el-form-item>
+      </el-form>
       <template #footer>
         <el-button @click="renameOpen = false">取消</el-button>
         <el-button type="primary" @click="doRename">保存</el-button>
@@ -149,8 +166,8 @@
     </el-dialog>
 
     <!-- 设置密码 -->
-    <el-dialog v-model="passwordOpen" title="访问密码" width="420px">
-      <el-form label-width="70px">
+    <el-dialog v-model="passwordOpen" title="访问密码" width="440px">
+      <el-form label-width="80px">
         <el-form-item :label="passwordTarget?.hasPassword ? '新密码' : '密码'">
           <el-input v-model="passwordForm.value" type="password" show-password placeholder="留空则清除密码" />
         </el-form-item>
@@ -161,12 +178,43 @@
       </template>
     </el-dialog>
 
-    <!-- 输入访问密码（预览/下载/编辑） -->
-    <el-dialog v-model="askPasswordOpen" :title="`「${askPasswordTarget?.name}」需要访问密码`" width="420px">
-      <el-input v-model="askPasswordValue" type="password" show-password placeholder="请输入访问密码" @keyup.enter="confirmAskPassword" />
+    <!-- 输入访问密码 -->
+    <el-dialog v-model="askPasswordOpen" :title="`「${askPasswordTarget?.name}」需要访问密码`" width="440px">
+      <el-form label-width="80px">
+        <el-form-item label="访问密码">
+          <el-input v-model="askPasswordValue" type="password" show-password placeholder="请输入访问密码" @keyup.enter="confirmAskPassword" />
+        </el-form-item>
+      </el-form>
       <template #footer>
         <el-button @click="askPasswordOpen = false">取消</el-button>
         <el-button type="primary" @click="confirmAskPassword">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 移动到 -->
+    <el-dialog v-model="moveDialogOpen" title="移动到" width="480px">
+      <el-breadcrumb class="move-crumbs" separator="/">
+        <el-breadcrumb-item><el-link type="primary" @click="moveGoRoot">文件架根目录</el-link></el-breadcrumb-item>
+        <el-breadcrumb-item v-for="item in moveBreadcrumbs" :key="item.id">
+          <el-link type="primary" @click="moveGoTo(item.id)">{{ item.name }}</el-link>
+        </el-breadcrumb-item>
+      </el-breadcrumb>
+      <div v-loading="moveLoading" class="move-dir-list">
+        <div v-if="!moveDirs.length" class="move-dir-empty">当前目录下没有子目录</div>
+        <div
+          v-for="dir in moveDirs"
+          :key="dir.id"
+          class="move-dir-item"
+          @click="moveEnter(dir)"
+        >
+          <el-icon><Folder /></el-icon>
+          <span>{{ dir.name }}</span>
+        </div>
+      </div>
+      <template #footer>
+        <span class="move-hint">将移动到：{{ moveTargetName }}</span>
+        <el-button @click="moveDialogOpen = false">取消</el-button>
+        <el-button type="primary" @click="confirmMove">移动到这里</el-button>
       </template>
     </el-dialog>
 
@@ -187,7 +235,8 @@
 
 <script setup lang="ts">
 import {
-  Document, Files, Folder, FolderAdd, Grid, Lock, Picture, Refresh, Upload, VideoCamera,
+  Delete, Document, Download, EditPen, Files, Folder, FolderAdd, FolderOpened,
+  Grid, Lock, Picture, Refresh, Upload, UploadFilled, View, VideoCamera,
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
@@ -223,6 +272,105 @@ const previewHtml = ref('')
 const previewTitle = ref('')
 const previewTarget = ref<any>(null)
 let previewObjectUrl = ''
+
+// ===== 选中 =====
+const selectedRows = ref<any[]>([])
+const selectedFiles = computed(() => selectedRows.value.filter((row) => !row.dir))
+const selectedDirIds = computed(() =>
+  selectedRows.value.filter((row) => row.dir).map((row) => row.id))
+
+function onSelectionChange(selection: any[]) {
+  selectedRows.value = selection
+}
+
+function clearSelection() {
+  selectedRows.value = []
+}
+
+// ===== 移动 =====
+const moveDialogOpen = ref(false)
+const moveLoading = ref(false)
+const moveTargetId = ref<number | null>(null)
+const moveBreadcrumbs = ref<{ id: number; name: string }[]>([])
+const moveDirs = ref<any[]>([])
+const moveTargetName = ref('')
+
+function openMoveDialog() {
+  moveTargetId.value = null
+  moveTargetName.value = '文件架根目录'
+  moveDialogOpen.value = true
+  void loadMoveDirs(null)
+}
+
+async function loadMoveDirs(parentId: number | null) {
+  moveLoading.value = true
+  try {
+    const items = (await sharedFilesApi.list(parentId)) || []
+    moveDirs.value = items.filter((item: any) => item.dir)
+    moveBreadcrumbs.value = (await sharedFilesApi.path(parentId)) || []
+  } catch {
+    ElMessage.error('加载目录失败')
+  } finally {
+    moveLoading.value = false
+  }
+}
+
+function moveGoRoot() {
+  moveTargetId.value = null
+  moveTargetName.value = '文件架根目录'
+  void loadMoveDirs(null)
+}
+
+function moveGoTo(id: number) {
+  moveTargetId.value = id
+  moveTargetName.value = moveBreadcrumbs.value.find((item) => item.id === id)?.name || ''
+  void loadMoveDirs(id)
+}
+
+function moveEnter(dir: any) {
+  moveTargetId.value = dir.id
+  moveTargetName.value = dir.name
+  void loadMoveDirs(dir.id)
+}
+
+async function confirmMove() {
+  const ids = selectedRows.value.map((row) => row.id)
+  if (!ids.length) {
+    moveDialogOpen.value = false
+    return
+  }
+  try {
+    for (const id of ids) {
+      await sharedFilesApi.move(id, moveTargetId.value)
+    }
+    ElMessage.success('已移动')
+    moveDialogOpen.value = false
+    clearSelection()
+    await fetchList()
+  } catch (error: any) {
+    ElMessage.error(error?.message || '移动失败')
+  }
+}
+
+// ===== 批量操作 =====
+async function bulkDownload() {
+  for (const row of selectedFiles.value) {
+    await download(row)
+  }
+}
+
+async function bulkDelete() {
+  try {
+    for (const row of selectedRows.value) {
+      await sharedFilesApi.remove(row.id)
+    }
+    ElMessage.success('已删除')
+    clearSelection()
+    await fetchList()
+  } catch {
+    ElMessage.error('删除失败')
+  }
+}
 
 // ===== 拖拽 =====
 const dragOverDepth = ref(0)
@@ -271,12 +419,6 @@ async function onDropZone(event: DragEvent) {
   }
 }
 
-function moveToDir(row: any) {
-  if (draggedRowId == null) return
-  moveItem(draggedRowId, row.id)
-  draggedRowId = null
-}
-
 async function moveItem(id: number, targetParentId: number | null) {
   try {
     await sharedFilesApi.move(id, targetParentId)
@@ -311,8 +453,8 @@ const contextMenu = ref<{ visible: boolean; x: number; y: number; target: any }>
 function openContextMenu(event: MouseEvent, row: any) {
   contextMenu.value = {
     visible: true,
-    x: Math.min(event.clientX, window.innerWidth - 190),
-    y: Math.min(event.clientY, window.innerHeight - 300),
+    x: Math.min(event.clientX, window.innerWidth - 200),
+    y: Math.min(event.clientY, window.innerHeight - 320),
     target: row,
   }
 }
@@ -325,10 +467,12 @@ function onRowContextMenu(row: any, column: any, event: MouseEvent) {
   openContextMenu(event, row)
 }
 
-function menuEnterDir() {
+function menuOpen() {
   const target = contextMenu.value.target
   if (target?.dir) {
     enterDir(target)
+  } else if (target) {
+    preview(target)
   }
   closeContextMenu()
 }
@@ -349,6 +493,13 @@ function menuDownload() {
   const target = contextMenu.value.target
   if (target) download(target)
   closeContextMenu()
+}
+
+function menuMove() {
+  const target = contextMenu.value.target
+  selectedRows.value = target ? [target] : []
+  closeContextMenu()
+  openMoveDialog()
 }
 
 function menuRename() {
@@ -386,21 +537,7 @@ function menuRefresh() {
   void fetchList()
 }
 
-const filteredRows = computed(() => {
-  const keyword = query.value.keyword.trim().toLowerCase()
-  if (!keyword) return rows.value
-  return rows.value.filter((row) => row.name?.toLowerCase().includes(keyword))
-})
-
-const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif']
-const TEXT_EXTS = ['md', 'markdown', 'txt', 'text']
-const OFFICE_EXTS = ['docx', 'doc', 'odt', 'rtf', 'txt', 'xlsx', 'xls', 'ods', 'csv', 'pptx', 'ppt', 'odp']
-
-function isImage(row: any) { return IMAGE_EXTS.includes(row.extension) }
-function isText(row: any) { return TEXT_EXTS.includes(row.extension) }
-function isOffice(row: any) { return OFFICE_EXTS.includes(row.extension) }
-function isPdf(row: any) { return row.extension === 'pdf' }
-
+// ===== 数据加载 =====
 async function fetchList() {
   loading.value = true
   try {
@@ -428,6 +565,13 @@ function goTo(id: number) {
   void fetchList()
 }
 
+const filteredRows = computed(() => {
+  const keyword = query.value.keyword.trim().toLowerCase()
+  if (!keyword) return rows.value
+  return rows.value.filter((row) => row.name?.toLowerCase().includes(keyword))
+})
+
+// ===== 表单操作 =====
 function openCreateDir() {
   dirForm.value = { name: '', password: '' }
   createDirOpen.value = true
@@ -457,23 +601,7 @@ async function onUpload(event: Event) {
   const file = input.files?.[0]
   input.value = ''
   if (!file) return
-  const proceed = async (password?: string) => {
-    uploading.value = true
-    try {
-      await sharedFilesApi.upload(file, currentParentId.value, password)
-      ElMessage.success('上传成功')
-      await fetchList()
-    } catch (error: any) {
-      ElMessage.error(error?.message || '上传失败')
-    } finally {
-      uploading.value = false
-    }
-  }
-  if (askPasswordTarget.value) {
-    // 目录密码场景：上传到带密码的目录时校验目录密码
-    askPasswordTarget.value = null
-  }
-  await proceed()
+  await uploadFile(file)
 }
 
 function openRename(row: any) {
@@ -540,6 +668,7 @@ function confirmAskPassword() {
   action(askPasswordValue.value || undefined)
 }
 
+// ===== 预览/编辑/下载 =====
 function preview(row: any) {
   previewTarget.value = row
   requirePassword(row, (password) => {
@@ -613,10 +742,20 @@ function download(row: any) {
   })
 }
 
+// ===== 展示工具 =====
+const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif']
+const TEXT_EXTS = ['md', 'markdown', 'txt', 'text']
+const OFFICE_EXTS = ['docx', 'doc', 'odt', 'rtf', 'txt', 'xlsx', 'xls', 'ods', 'csv', 'pptx', 'ppt', 'odp']
+
+function isImage(row: any) { return IMAGE_EXTS.includes(row.extension) }
+function isText(row: any) { return TEXT_EXTS.includes(row.extension) }
+function isOffice(row: any) { return OFFICE_EXTS.includes(row.extension) }
+function isPdf(row: any) { return row.extension === 'pdf' }
+
 function iconOf(row: any) {
   if (row.dir) return Folder
-  if (row.extension === 'xlsx') return Grid
-  if (row.extension === 'pptx') return VideoCamera
+  if (row.extension === 'xlsx' || row.extension === 'xls' || row.extension === 'ods') return Grid
+  if (row.extension === 'pptx' || row.extension === 'ppt' || row.extension === 'odp') return VideoCamera
   if (isImage(row)) return Picture
   if (row.extension === 'pdf') return Document
   return Files
@@ -668,6 +807,47 @@ onMounted(() => {
   max-width: 100%;
 }
 
+.selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--oa-primary);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--oa-primary) 6%, transparent);
+  font-size: 13px;
+}
+
+.selection-bar > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  border: 2px dashed var(--oa-primary);
+  border-radius: 12px;
+  color: var(--oa-primary);
+  background: color-mix(in srgb, var(--oa-page-bg) 92%, transparent);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.drop-overlay p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .file-cell {
   display: flex;
   align-items: center;
@@ -713,6 +893,96 @@ onMounted(() => {
   margin: 0;
   color: var(--oa-muted);
   font-size: 12px;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 3000;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--oa-border);
+  border-radius: 10px;
+  background: var(--oa-bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+}
+
+.context-menu__title {
+  padding: 6px 10px 8px;
+  overflow: hidden;
+  color: var(--oa-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-menu button {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--oa-text);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.context-menu button:hover {
+  background: var(--oa-primary-soft);
+}
+
+.context-menu button.danger {
+  color: var(--el-color-danger);
+}
+
+.context-menu__sep {
+  height: 1px;
+  margin: 5px 8px;
+  background: var(--oa-border);
+}
+
+.move-crumbs {
+  margin-bottom: 12px;
+}
+
+.move-dir-list {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--oa-border);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.move-dir-item {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.move-dir-item:hover {
+  background: var(--oa-primary-soft);
+}
+
+.move-dir-empty {
+  padding: 24px;
+  color: var(--oa-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.move-hint {
+  margin-right: auto;
+  color: var(--oa-muted);
+  font-size: 13px;
 }
 
 .preview-body {

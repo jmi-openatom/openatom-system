@@ -125,6 +125,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				"/document-center/*/file",
 				"/document-center/*/callback",
 				"/shared-files/*/callback",
+				"/shared-files/*/raw",
 				"/internal/mail/**",
 				"/public/**");
 	}
