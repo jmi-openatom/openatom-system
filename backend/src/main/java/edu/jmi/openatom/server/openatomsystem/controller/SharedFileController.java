@@ -65,6 +65,20 @@ public class SharedFileController {
       Set.of("png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico", "avif");
   private static final Set<String> TEXT_EXTENSIONS = Set.of("md", "markdown", "txt", "text");
 
+  private static final Set<String> OFFICE_WORD =
+      Set.of("docx", "doc", "odt", "rtf", "txt");
+  private static final Set<String> OFFICE_CELL = Set.of("xlsx", "xls", "ods", "csv");
+  private static final Set<String> OFFICE_SLIDE = Set.of("pptx", "ppt", "odp");
+  private static final Set<String> OFFICE_EXTS;
+
+  static {
+    java.util.HashSet<String> all = new java.util.HashSet<>();
+    all.addAll(OFFICE_WORD);
+    all.addAll(OFFICE_CELL);
+    all.addAll(OFFICE_SLIDE);
+    OFFICE_EXTS = java.util.Collections.unmodifiableSet(all);
+  }
+
   private final SharedFileMapper fileMapper;
   private final UserMapper userMapper;
   private final PasswordService passwordService;
@@ -409,11 +423,14 @@ public class SharedFileController {
 
   private ObjectNode buildEditorConfig(SharedFile file) {
     String fileType = file.getExtension();
-    String documentType = switch (fileType) {
-      case "xlsx" -> "spreadsheet";
-      case "pptx" -> "presentation";
-      default -> "word";
-    };
+    String documentType;
+    if (OFFICE_CELL.contains(fileType)) {
+      documentType = "spreadsheet";
+    } else if (OFFICE_SLIDE.contains(fileType)) {
+      documentType = "presentation";
+    } else {
+      documentType = "word";
+    }
     String key = file.getId() + "_"
         + (file.getUpdatedAt() == null ? file.getCreatedAt() : file.getUpdatedAt()).getTime();
     String downloadUrl = publicApiBase + "/shared-files/" + file.getId() + "/content?token="
@@ -590,7 +607,7 @@ public class SharedFileController {
   }
 
   private boolean isOffice(String extension) {
-    return "docx".equals(extension) || "xlsx".equals(extension) || "pptx".equals(extension);
+    return extension != null && OFFICE_EXTS.contains(extension.toLowerCase(Locale.ROOT));
   }
 
   public static boolean isImage(String extension) {

@@ -49,7 +49,7 @@
         class="admin-table"
         @row-contextmenu="onRowContextMenu"
       >
-        <el-table-column label="名称" min-width="300">
+        <el-table-column label="名称" min-width="220">
           <template #default="{ row }">
             <span
               class="file-cell"
@@ -68,16 +68,16 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="密码" width="80" align="center">
+        <el-table-column label="密码" width="70" align="center">
           <template #default="{ row }">
             <el-icon v-if="row.hasPassword" color="#f0a020"><Lock /></el-icon>
             <span v-else class="muted-line">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="修改时间" width="170">
+        <el-table-column label="修改时间" width="160">
           <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="300" fixed="right">
+        <el-table-column label="操作" width="290">
           <template #default="{ row }">
             <template v-if="!row.dir">
               <el-button link type="primary" @click="preview(row)">预览</el-button>
@@ -394,7 +394,7 @@ const filteredRows = computed(() => {
 
 const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif']
 const TEXT_EXTS = ['md', 'markdown', 'txt', 'text']
-const OFFICE_EXTS = ['docx', 'xlsx', 'pptx']
+const OFFICE_EXTS = ['docx', 'doc', 'odt', 'rtf', 'txt', 'xlsx', 'xls', 'ods', 'csv', 'pptx', 'ppt', 'odp']
 
 function isImage(row: any) { return IMAGE_EXTS.includes(row.extension) }
 function isText(row: any) { return TEXT_EXTS.includes(row.extension) }
@@ -624,7 +624,10 @@ function iconOf(row: any) {
 
 function typeName(extension: string) {
   const map: Record<string, string> = {
-    docx: 'Word', xlsx: 'Excel', pptx: 'PPT', pdf: 'PDF', md: 'Markdown',
+    docx: 'Word', doc: 'Word', odt: 'Word', rtf: 'Word',
+    xlsx: 'Excel', xls: 'Excel', ods: 'Excel', csv: 'CSV',
+    pptx: 'PPT', ppt: 'PPT', odp: 'PPT',
+    pdf: 'PDF', md: 'Markdown',
     png: '图片', jpg: '图片', jpeg: '图片', gif: '图片', webp: '图片', svg: '图片',
     txt: '文本', zip: '压缩包', rar: '压缩包', mp4: '视频', mp3: '音频',
   }
@@ -659,10 +662,18 @@ onMounted(() => {
   margin: 0 0 14px;
 }
 
+.drop-zone {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .file-cell {
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
+  min-width: 0;
 }
 
 .file-icon {
@@ -680,11 +691,19 @@ onMounted(() => {
 
 .file-copy {
   min-width: 0;
+  flex: 1;
   display: grid;
   gap: 2px;
 }
 
-.file-copy strong {
+.file-copy strong,
+.file-copy .el-link {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-copy small {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
