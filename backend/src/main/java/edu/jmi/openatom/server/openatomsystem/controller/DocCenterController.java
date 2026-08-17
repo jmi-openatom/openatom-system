@@ -1,5 +1,6 @@
 package edu.jmi.openatom.server.openatomsystem.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,17 +72,55 @@ public class DocCenterController {
   @Value("${app.document-server.jwt-secret:}")
   private String jwtSecret;
 
+  /** 文档中心共享库：所有管理员可见全部文档。 */
   @GetMapping
-  public Result<List<DocCenterDocument>> list() {
-    Integer userId = StpUtil.getLoginIdAsInt();
-    return Result.success(
+  @SaCheckPermission("document:list")
+  public Result<List<DocumentView>> list() {
+    List<DocCenterDocument> documents =
         documentMapper.selectList(
             new LambdaQueryWrapper<DocCenterDocument>()
-                .eq(DocCenterDocument::getOwnerUserId, userId)
-                .orderByDesc(DocCenterDocument::getUpdatedAt)));
+                .orderByDesc(DocCenterDocument::getUpdatedAt));
+    List<Integer> ownerIds =
+        documents.stream().map(DocCenterDocument::getOwnerUserId).distinct().toList();
+    Map<Integer, String> ownerNames = new java.util.HashMap<>();
+    if (!ownerIds.isEmpty()) {
+      userMapper.selectBatchIds(ownerIds).forEach(
+          user -> ownerNames.put(user.getId(), displayName(user)));
+    }
+    return Result.success(
+        documents.stream()
+            .map(document -> DocumentView.from(document,
+                ownerNames.getOrDefault(document.getOwnerUserId(), "")))
+            .toList());
+  }
+
+  private static String displayName(User user) {
+    return user.getRealName() != null && !user.getRealName().isBlank()
+        ? user.getRealName() : user.getUserName();
+  }
+
+  public record DocumentView(
+      Long id,
+      String name,
+      String extension,
+      Long sizeBytes,
+      String ownerName,
+      String createdAt,
+      String updatedAt) {
+    static DocumentView from(DocCenterDocument document, String ownerName) {
+      return new DocumentView(
+          document.getId(),
+          document.getName(),
+          document.getExtension(),
+          document.getSizeBytes(),
+          ownerName,
+          document.getCreatedAt() == null ? null : document.getCreatedAt().toString(),
+          document.getUpdatedAt() == null ? null : document.getUpdatedAt().toString());
+    }
   }
 
   @PostMapping
+  @SaCheckPermission("document:list")
   public Result<DocCenterDocument> upload(@RequestParam("file") MultipartFile file) {
     try {
       DocCenterDocument document = storageService.store(file);
@@ -96,8 +136,9 @@ public class DocCenterController {
   }
 
   @DeleteMapping("/{documentId}")
+  @SaCheckPermission("document:list")
   public Result<String> delete(@PathVariable Long documentId) {
-    DocCenterDocument document = requireOwned(documentId);
+    DocCenterDocument document = findOr404(documentId);
     documentMapper.deleteById(documentId);
     storageService.delete(document);
     return Result.success("文档已删除");
@@ -105,8 +146,9 @@ public class DocCenterController {
 
   /** 登录用户下载（普通场景）。 */
   @GetMapping("/{documentId}/download")
+  @SaCheckPermission("document:list")
   public ResponseEntity<Resource> download(@PathVariable Long documentId) {
-    DocCenterDocument document = requireOwned(documentId);
+    DocCenterDocument document = findOr404(documentId);
     return streamFile(document);
   }
 
@@ -141,8 +183,9 @@ public class DocCenterController {
 
   /** 生成 ONLYOFFICE 编辑器配置（整份 config 用 JWT 签名后返回）。 */
   @PostMapping("/{documentId}/edit-config")
+  @SaCheckPermission("document:list")
   public Result<ObjectNode> editConfig(@PathVariable Long documentId) {
-    DocCenterDocument document = requireOwned(documentId);
+    DocCenterDocument document = findOr404(documentId);
     try {
       return Result.success(buildEditorConfig(document));
     } catch (IllegalStateException exception) {
@@ -320,15 +363,6 @@ public class DocCenterController {
   private String downloadToken(Long documentId) {
     long expiresAt = System.currentTimeMillis() / 1000 + DOWNLOAD_TOKEN_TTL_SECONDS;
     return DocumentServerJwt.signString(jwtSecret, "doc:" + documentId + ":" + expiresAt);
-  }
-
-  private DocCenterDocument requireOwned(Long documentId) {
-    DocCenterDocument document = findOr404(documentId);
-    Integer userId = StpUtil.getLoginIdAsInt();
-    if (!document.getOwnerUserId().equals(userId)) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "document_forbidden");
-    }
-    return document;
   }
 
   private DocCenterDocument findOr404(Long documentId) {

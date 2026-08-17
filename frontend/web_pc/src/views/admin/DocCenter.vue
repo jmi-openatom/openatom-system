@@ -32,6 +32,9 @@
           </div>
         </template>
       </el-table-column>
+      <el-table-column label="上传者" width="120">
+        <template #default="{ row }">{{ row.ownerName || '—' }}</template>
+      </el-table-column>
       <el-table-column label="修改时间" width="180">
         <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
       </el-table-column>
