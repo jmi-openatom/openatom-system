@@ -132,7 +132,7 @@ onMounted(() => {
 
 .alumni-group__header h2 {
   color: var(--oa-text);
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: 28px;
   font-weight: 600;
   line-height: 1.2;
@@ -206,7 +206,7 @@ onMounted(() => {
 
 .alumni-card__meta strong {
   color: var(--oa-text);
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: 20px;
   font-weight: 600;
   line-height: 1.2;

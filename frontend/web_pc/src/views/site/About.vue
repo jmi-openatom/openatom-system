@@ -1127,7 +1127,7 @@ onBeforeUnmount(() => {
 .community-section h2,
 .final-section h2 {
   margin: 0;
-  font-family: 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-family-display);
   font-weight: 800;
   letter-spacing: -0.04em;
 }
@@ -1754,7 +1754,7 @@ onBeforeUnmount(() => {
 
 .award-row__year strong {
   color: var(--apple-ink);
-  font-family: 'SF Pro Display', 'PingFang SC', sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(34px, 4vw, 52px);
   font-weight: 700;
   letter-spacing: -0.04em;

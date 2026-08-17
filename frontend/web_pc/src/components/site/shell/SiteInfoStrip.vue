@@ -43,7 +43,7 @@ defineProps<{
 
 .site-info-strip strong {
   color: var(--oa-text);
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(18px, 2vw, 24px);
   font-weight: 500;
   line-height: 1.45;

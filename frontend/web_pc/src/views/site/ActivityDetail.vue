@@ -263,12 +263,7 @@ onMounted(() => {
 
 .detail-hero h1 {
   margin: 12px 0 16px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(38px, 4.8vw, 62px);
   font-weight: 600;
   line-height: 1.05;
@@ -323,7 +318,7 @@ onMounted(() => {
 }
 
 .detail-hero__placeholder strong {
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(58px, 7vw, 88px);
   font-weight: 600;
   line-height: 0.95;
@@ -413,12 +408,7 @@ onMounted(() => {
 .markdown-body :deep(h2),
 .markdown-body :deep(h3) {
   color: var(--oa-text);
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
 }
 
 .markdown-body :deep(h1:first-child),
@@ -452,12 +442,7 @@ onMounted(() => {
 
 .signup-panel h2 {
   margin: 10px 0 0;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: 28px;
   font-weight: 600;
 }

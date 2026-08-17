@@ -13,14 +13,7 @@
   --ob-shadow-hover: var(--shadow-lg);
   background: var(--color-bg-secondary);
   color: var(--ob-ink);
-  font-family:
-    Inter,
-    'SF Pro Display',
-    'PingFang SC',
-    'Microsoft YaHei',
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
 }
 
 .onboard::before {

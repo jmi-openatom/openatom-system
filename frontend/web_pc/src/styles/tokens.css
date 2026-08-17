@@ -53,9 +53,12 @@
   --color-info-bg: rgba(58, 58, 60, 0.08);
 
   /* Typography */
+  --font-family-display:
+    'Orbitron', 'Oxanium', 'Noto Sans SC', -apple-system, BlinkMacSystemFont,
+    'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
   --font-family-sans:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue',
-    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+    'Space Grotesk', 'Noto Sans SC', -apple-system, BlinkMacSystemFont,
+    'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
   --font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   --font-size-xs: 12px;
   --font-size-sm: 13px;

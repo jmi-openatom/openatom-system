@@ -1059,12 +1059,7 @@ onBeforeUnmount(() => {
   overflow-x: hidden;
   background: var(--oa-page-bg);
   color: var(--oa-text);
-  font-family:
-    'SF Pro Display',
-    -apple-system,
-    system-ui,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   opacity: 0;
   transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1);
   isolation: isolate;
@@ -2634,13 +2629,7 @@ html.dark .ob-dept-head--primary {
 /* ============ Minimal Editorial Refactor ============ */
 .onboard {
   background: var(--oa-page-bg);
-  font-family:
-    Inter,
-    'SF Pro Display',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font-family: var(--font-family-display);
 }
 
 .onboard::before {

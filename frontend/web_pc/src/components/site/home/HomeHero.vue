@@ -5,7 +5,7 @@
     <div class="container hero__inner">
       <div class="hero__content">
         <MorphingText
-          class="home-hero__morph"
+          class="home-hero__morph title"
           :cool-down-time="coolDownTime"
           :morph-time="morphTime"
           :texts="texts"
@@ -32,3 +32,23 @@ withDefaults(defineProps<HeroProps>(), {
   revealDelayMs: 100,
 })
 </script>
+
+<style>
+/* 海报感主标题：Orbitron 超粗 + 宽字距 + 纯色 + 投影 */
+.home-hero__morph.title {
+  font-family: var(--font-family-display);
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.home-hero__morph.title span {
+  color: #16161c;
+  filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.22));
+}
+
+html.dark .home-hero__morph.title span {
+  color: #ffffff;
+  filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.45));
+}
+</style>

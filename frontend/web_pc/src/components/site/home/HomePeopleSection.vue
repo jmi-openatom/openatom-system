@@ -299,7 +299,7 @@ onBeforeUnmount(() => {
 
 .people-person__meta strong {
   color: var(--oa-text);
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: 24px;
   font-weight: 600;
   line-height: 1;

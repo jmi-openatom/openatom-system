@@ -11,7 +11,7 @@
         <router-link aria-label="开放原子开源社团首页" class="brand" to="/">
           <img alt="开放原子开源社团徽标" class="site-footer__logo" src="/logo.png" />
           <span>
-            <strong>开放原子开源社团</strong>
+            <strong >开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
           </span>
         </router-link>
@@ -568,7 +568,7 @@ onBeforeUnmount(() => {
   color: var(--oa-text);
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0;
+  letter-spacing: 1px;
   line-height: 1.15;
 }
 
@@ -577,6 +577,8 @@ onBeforeUnmount(() => {
   margin-top: 2px;
   color: var(--oa-muted);
   font-size: 12px;
+  letter-spacing: 1px;
+  text-align: left;
   line-height: 1;
 }
 

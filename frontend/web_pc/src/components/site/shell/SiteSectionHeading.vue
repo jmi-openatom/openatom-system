@@ -43,12 +43,7 @@ withDefaults(
 
 .site-section-heading h2 {
   margin: 10px 0 0;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(28px, 3vw, 38px);
   font-weight: 700;
   line-height: 1.1;

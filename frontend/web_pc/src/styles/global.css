@@ -4,7 +4,7 @@
 
 :root {
   color-scheme: light;
-  --oa-font-family: Inter, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  --oa-font-family: 'Space Grotesk', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
   --oa-font-size-display: 32px;
   --oa-font-size-page-title: 24px;
   --oa-font-size-section-title: 18px;
@@ -297,12 +297,7 @@ a {
 
 .page-title {
   margin: 0 0 17px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: 40px;
   font-weight: 600;
   line-height: 1.1;
@@ -311,12 +306,7 @@ a {
 
 .section-title {
   margin: 0;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: 40px;
   font-weight: 600;
   line-height: 1.1;
@@ -1240,12 +1230,7 @@ a:hover {
 .section-heading h2,
 .page-title,
 .section-title {
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-weight: 600;
   letter-spacing: 0;
 }

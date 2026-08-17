@@ -900,12 +900,7 @@ onBeforeUnmount(() => {
 .hero h1 {
   max-width: 960px;
   margin: 18px auto 14px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: 56px;
   font-weight: 600;
   line-height: 1.07;
@@ -999,7 +994,7 @@ onBeforeUnmount(() => {
 }
 
 .metric-console__core strong {
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(70px, 8vw, 110px);
   font-weight: 600;
   line-height: 0.9;
@@ -1091,7 +1086,7 @@ onBeforeUnmount(() => {
 }
 
 .metric-node strong {
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   color: var(--metric-ink);
   font-size: 34px;
   font-weight: 600;
@@ -1214,12 +1209,7 @@ onBeforeUnmount(() => {
 
 .home-page .section-heading h2 {
   margin: 10px 0;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: 40px;
   font-weight: 600;
   line-height: 1.1;
@@ -1450,12 +1440,7 @@ onBeforeUnmount(() => {
 .activity-stage__content h3 {
   margin: 0;
   color: #ffffff;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(28px, 3vw, 40px);
   line-height: 1.08;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.52);
@@ -1547,7 +1532,7 @@ onBeforeUnmount(() => {
   right: -8px;
   bottom: -22px;
   color: rgba(29, 29, 31, 0.055);
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(120px, 19vw, 280px);
   font-weight: 700;
   line-height: 0.78;
@@ -1604,7 +1589,7 @@ onBeforeUnmount(() => {
 
 .award-exhibit__year {
   color: rgba(29, 29, 31, 0.36);
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: 42px;
   font-weight: 600;
   line-height: 1;
@@ -1711,7 +1696,7 @@ onBeforeUnmount(() => {
 .award-exhibit__spotlight h3 {
   margin: 0;
   color: #1d1d1f;
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(30px, 3vw, 44px);
   line-height: 1.08;
 }

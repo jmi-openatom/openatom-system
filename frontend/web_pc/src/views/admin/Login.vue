@@ -632,12 +632,7 @@ onBeforeUnmount(cancelGoogleIdentityPrompt)
 
 .login-aside__title {
   margin: 0;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: 48px;
   font-weight: 700;
   line-height: 1.12;
@@ -811,12 +806,7 @@ onBeforeUnmount(cancelGoogleIdentityPrompt)
 
 .login-form-header h2 {
   margin: 0;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: 32px;
   font-weight: 800;
   line-height: 1.12;

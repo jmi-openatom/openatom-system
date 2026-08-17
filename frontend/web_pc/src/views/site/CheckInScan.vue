@@ -178,12 +178,7 @@ watch(() => [route.query.token, route.query.t], loadRouteToken)
 
 .scan-heading h1 {
   margin: 14px 0 10px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: 56px;
   font-weight: 600;
   line-height: 1.07;

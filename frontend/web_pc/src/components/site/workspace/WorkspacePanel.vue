@@ -72,12 +72,7 @@ withDefaults(
 .workspace-panel__header h2 {
   margin: 0;
   color: var(--oa-text);
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(20px, 2vw, 26px);
   font-weight: 600;
 }

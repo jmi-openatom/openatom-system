@@ -229,12 +229,7 @@ onMounted(() => {
 
 .activities-hero h1 {
   margin: 12px 0 16px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(40px, 4.6vw, 58px);
   font-weight: 700;
   line-height: 1.05;
@@ -274,7 +269,7 @@ onMounted(() => {
 }
 
 .activities-hero__metrics strong {
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(24px, 3vw, 32px);
   font-weight: 650;
   line-height: 1;
@@ -307,12 +302,7 @@ onMounted(() => {
 
 .section-heading h2 {
   margin: 10px 0 0;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(28px, 3vw, 36px);
   font-weight: 700;
   line-height: 1.1;
@@ -404,12 +394,7 @@ onMounted(() => {
 
 .activities-featured-card h3 {
   margin: 0;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(28px, 3vw, 38px);
   font-weight: 700;
   line-height: 1.1;
@@ -483,7 +468,7 @@ onMounted(() => {
 }
 
 .activity-list-card__placeholder strong {
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: 40px;
   line-height: 1;
 }
@@ -501,12 +486,7 @@ onMounted(() => {
 
 .activity-list-card h3 {
   margin: 0;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: 26px;
   font-weight: 600;
   line-height: 1.2;

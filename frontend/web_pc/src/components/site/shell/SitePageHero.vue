@@ -140,12 +140,7 @@ withDefaults(
 
 .site-page-hero__copy h1 {
   margin: 12px 0 16px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(36px, 4vw, 52px);
   font-weight: 700;
   line-height: 1.06;

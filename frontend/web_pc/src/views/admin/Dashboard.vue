@@ -331,12 +331,7 @@ onMounted(() => {
 .stat-card strong {
   display: block;
   margin-top: 4px;
-  font-family:
-    'SF Pro Display',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-family-display);
   font-size: var(--oa-font-size-display);
   font-weight: 600;
   line-height: 1.1;

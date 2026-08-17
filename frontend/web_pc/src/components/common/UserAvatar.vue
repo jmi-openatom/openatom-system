@@ -82,7 +82,7 @@ function qqAvatarUrl(value?: string) {
   border-radius: 999px;
   background: #1d1d1f;
   color: #ffffff;
-  font-family: 'SF Pro Display', system-ui, sans-serif;
+  font-family: var(--font-family-display);
   font-size: calc(var(--avatar-size) * 0.42);
   font-weight: 600;
   line-height: 1;
