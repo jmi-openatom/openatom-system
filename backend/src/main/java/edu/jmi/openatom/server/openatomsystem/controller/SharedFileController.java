@@ -91,12 +91,15 @@ public class SharedFileController {
   @GetMapping
   @SaCheckPermission("document:list")
   public Result<List<FileView>> list(@RequestParam(required = false) Long parentId) {
+    LambdaQueryWrapper<SharedFile> wrapper = new LambdaQueryWrapper<>();
+    if (parentId == null) {
+      wrapper.isNull(SharedFile::getParentId);
+    } else {
+      wrapper.eq(SharedFile::getParentId, parentId);
+    }
     List<SharedFile> children =
         fileMapper.selectList(
-            new LambdaQueryWrapper<SharedFile>()
-                .eq(SharedFile::getParentId, parentId)
-                .orderByDesc(SharedFile::getDir)
-                .orderByAsc(SharedFile::getName));
+            wrapper.orderByDesc(SharedFile::getDir).orderByAsc(SharedFile::getName));
     return Result.success(children.stream().map(FileView::from).toList());
   }
 
@@ -117,6 +120,37 @@ public class SharedFileController {
     }
     java.util.Collections.reverse(chain);
     return Result.success(chain);
+  }
+
+  /** 移动到其他目录（拖拽）。 */
+  @PostMapping("/{fileId}/move")
+  @SaCheckPermission("document:list")
+  public Result<String> move(@PathVariable Long fileId, @RequestBody MoveRequest request) {
+    SharedFile file = requireFile(fileId);
+    ensureParent(request.parentId());
+    if (file.getDir() && request.parentId() != null) {
+      List<Long> descendants = new ArrayList<>();
+      List<Long> frontier = new ArrayList<>(List.of(file.getId()));
+      while (!frontier.isEmpty()) {
+        List<Long> next = new ArrayList<>();
+        for (Long parent : frontier) {
+          fileMapper.selectList(
+                  new LambdaQueryWrapper<SharedFile>().eq(SharedFile::getParentId, parent))
+              .forEach(child -> next.add(child.getId()));
+        }
+        descendants.addAll(next);
+        frontier = next;
+      }
+      if (descendants.contains(request.parentId())) {
+        return Result.error(400, "不能移动到自身或其子目录");
+      }
+    }
+    if (nameExists(request.parentId(), file.getName(), file.getDir())) {
+      return Result.error(400, "目标目录已存在同名项");
+    }
+    file.setParentId(request.parentId());
+    fileMapper.updateById(file);
+    return Result.success("已移动");
   }
 
   /** 创建目录。 */
@@ -498,12 +532,16 @@ public class SharedFileController {
   }
 
   private boolean nameExists(Long parentId, String name, boolean dir) {
-    Long count =
-        fileMapper.selectCount(
-            new LambdaQueryWrapper<SharedFile>()
-                .eq(SharedFile::getParentId, parentId)
-                .eq(SharedFile::getName, name)
-                .eq(SharedFile::getDir, dir));
+    LambdaQueryWrapper<SharedFile> wrapper =
+        new LambdaQueryWrapper<SharedFile>()
+            .eq(SharedFile::getName, name)
+            .eq(SharedFile::getDir, dir);
+    if (parentId == null) {
+      wrapper.isNull(SharedFile::getParentId);
+    } else {
+      wrapper.eq(SharedFile::getParentId, parentId);
+    }
+    Long count = fileMapper.selectCount(wrapper);
     return count != null && count > 0;
   }
 
@@ -608,6 +646,8 @@ public class SharedFileController {
           file.getUpdatedAt() == null ? null : file.getUpdatedAt().toString());
     }
   }
+
+  public record MoveRequest(Long parentId) {}
 
   public record PathItem(Long id, String name) {}
 

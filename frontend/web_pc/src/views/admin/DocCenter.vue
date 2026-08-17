@@ -28,47 +28,104 @@
       </el-breadcrumb-item>
     </el-breadcrumb>
 
-    <el-table v-loading="loading" :data="filteredRows" class="admin-table">
-      <el-table-column label="名称" min-width="300">
-        <template #default="{ row }">
-          <span class="file-cell">
-            <span class="file-icon"><component :is="iconOf(row)" /></span>
-            <span class="file-copy">
-              <el-link v-if="row.dir" type="primary" @click="enterDir(row)">{{ row.name }}</el-link>
-              <strong v-else>{{ row.name }}</strong>
-              <small class="muted-line">{{ row.dir ? '目录' : typeName(row.extension) + ' · ' + formatSize(row.sizeBytes) }}</small>
+    <div
+      class="drop-zone"
+      :class="{ 'drop-active': dragOverDepth > 0 }"
+      @click="closeContextMenu"
+      @contextmenu.prevent="openContextMenu($event, null)"
+      @dragenter.prevent="dragEnterZone"
+      @dragover.prevent="dragEnterZone"
+      @dragleave="dragLeaveZone"
+      @drop.prevent="onDropZone"
+    >
+      <div
+        v-if="dragOverDepth > 0"
+        class="drop-overlay"
+      >{{ draggingExternal ? '松开上传到当前目录' : '松开移动到当前目录' }}</div>
+
+      <el-table
+        v-loading="loading"
+        :data="filteredRows"
+        class="admin-table"
+        @row-contextmenu="onRowContextMenu"
+      >
+        <el-table-column label="名称" min-width="300">
+          <template #default="{ row }">
+            <span
+              class="file-cell"
+              draggable="true"
+              @dragstart="onDragStart($event, row)"
+              @dragend="onDragEnd"
+              @click.stop="closeContextMenu"
+              @contextmenu.stop="openContextMenu($event, row)"
+            >
+              <span class="file-icon"><component :is="iconOf(row)" /></span>
+              <span class="file-copy">
+                <el-link v-if="row.dir" type="primary" @click="enterDir(row)">{{ row.name }}</el-link>
+                <strong v-else>{{ row.name }}</strong>
+                <small class="muted-line">{{ row.dir ? '目录' : typeName(row.extension) + ' · ' + formatSize(row.sizeBytes) }}</small>
+              </span>
             </span>
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column label="密码" width="80" align="center">
-        <template #default="{ row }">
-          <el-icon v-if="row.hasPassword" color="#f0a020"><Lock /></el-icon>
-          <span v-else class="muted-line">—</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="修改时间" width="170">
-        <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="300" fixed="right">
-        <template #default="{ row }">
-          <template v-if="!row.dir">
-            <el-button link type="primary" @click="preview(row)">预览</el-button>
-            <el-button v-if="isOffice(row)" link type="primary" @click="edit(row)">在线编辑</el-button>
           </template>
-          <el-button link type="primary" @click="download(row)">下载</el-button>
-          <el-button link type="primary" @click="openRename(row)">重命名</el-button>
-          <el-button link type="primary" @click="openSetPassword(row)">
-            {{ row.hasPassword ? '改密码' : '设密码' }}
-          </el-button>
-          <el-popconfirm title="删除后不可恢复，确定删除？" @confirm="remove(row)">
-            <template #reference><el-button link type="danger">删除</el-button></template>
-          </el-popconfirm>
-        </template>
-      </el-table-column>
-    </el-table>
+        </el-table-column>
+        <el-table-column label="密码" width="80" align="center">
+          <template #default="{ row }">
+            <el-icon v-if="row.hasPassword" color="#f0a020"><Lock /></el-icon>
+            <span v-else class="muted-line">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="修改时间" width="170">
+          <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="300" fixed="right">
+          <template #default="{ row }">
+            <template v-if="!row.dir">
+              <el-button link type="primary" @click="preview(row)">预览</el-button>
+              <el-button v-if="isOffice(row)" link type="primary" @click="edit(row)">在线编辑</el-button>
+            </template>
+            <el-button link type="primary" @click="download(row)">下载</el-button>
+            <el-button link type="primary" @click="openRename(row)">重命名</el-button>
+            <el-button link type="primary" @click="openSetPassword(row)">
+              {{ row.hasPassword ? '改密码' : '设密码' }}
+            </el-button>
+            <el-popconfirm title="删除后不可恢复，确定删除？" @confirm="remove(row)">
+              <template #reference><el-button link type="danger" @click.stop>删除</el-button></template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <el-empty v-if="!loading && !rows.length" description="这里还没有内容，上传文件或新建目录" />
+
+    <!-- 右键菜单 -->
+    <div
+      v-if="contextMenu.visible"
+      class="context-menu"
+      :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+      @click.stop
+    >
+      <template v-if="contextMenu.target">
+        <div class="context-menu__title">{{ contextMenu.target.name }}</div>
+        <button v-if="contextMenu.target.dir" type="button" @click="menuEnterDir">打开</button>
+        <template v-else>
+          <button type="button" @click="menuPreview">预览</button>
+          <button v-if="isOffice(contextMenu.target)" type="button" @click="menuEdit">在线编辑</button>
+          <button type="button" @click="menuDownload">下载</button>
+        </template>
+        <button type="button" @click="menuRename">重命名</button>
+        <button type="button" @click="menuPassword">
+          {{ contextMenu.target.hasPassword ? '修改密码' : '设置密码' }}
+        </button>
+        <button type="button" class="danger" @click="menuDelete">删除</button>
+      </template>
+      <template v-else>
+        <div class="context-menu__title">当前目录</div>
+        <button type="button" @click="menuCreateDir">新建目录</button>
+        <button type="button" @click="menuUpload">上传文件</button>
+        <button type="button" @click="menuRefresh">刷新</button>
+      </template>
+    </div>
 
     <!-- 新建目录 -->
     <el-dialog v-model="createDirOpen" title="新建目录" width="420px">
@@ -166,6 +223,168 @@ const previewHtml = ref('')
 const previewTitle = ref('')
 const previewTarget = ref<any>(null)
 let previewObjectUrl = ''
+
+// ===== 拖拽 =====
+const dragOverDepth = ref(0)
+const draggingExternal = ref(false)
+let draggedRowId: number | null = null
+let dragLeaveTimer: number | undefined
+
+function onDragStart(event: DragEvent, row: any) {
+  draggedRowId = row.id
+  event.dataTransfer?.setData('text/plain', String(row.id))
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+}
+
+function onDragEnd() {
+  draggedRowId = null
+}
+
+function dragEnterZone(event: DragEvent) {
+  window.clearTimeout(dragLeaveTimer)
+  if (event.dataTransfer) {
+    draggingExternal.value = Array.from(event.dataTransfer.types).includes('Files')
+  }
+  dragOverDepth.value += 1
+}
+
+function dragLeaveZone() {
+  dragOverDepth.value = Math.max(0, dragOverDepth.value - 1)
+  window.clearTimeout(dragLeaveTimer)
+  dragLeaveTimer = window.setTimeout(() => {
+    dragOverDepth.value = 0
+  }, 80)
+}
+
+async function onDropZone(event: DragEvent) {
+  dragOverDepth.value = 0
+  const files = event.dataTransfer?.files
+  if (files && files.length) {
+    for (const file of Array.from(files)) {
+      await uploadFile(file)
+    }
+    return
+  }
+  if (draggedRowId != null) {
+    await moveItem(draggedRowId, currentParentId.value)
+    draggedRowId = null
+  }
+}
+
+function moveToDir(row: any) {
+  if (draggedRowId == null) return
+  moveItem(draggedRowId, row.id)
+  draggedRowId = null
+}
+
+async function moveItem(id: number, targetParentId: number | null) {
+  try {
+    await sharedFilesApi.move(id, targetParentId)
+    ElMessage.success('已移动')
+    await fetchList()
+  } catch (error: any) {
+    ElMessage.error(error?.message || '移动失败')
+  }
+}
+
+async function uploadFile(file: File) {
+  uploading.value = true
+  try {
+    await sharedFilesApi.upload(file, currentParentId.value)
+    ElMessage.success('上传成功')
+    await fetchList()
+  } catch (error: any) {
+    ElMessage.error(error?.message || '上传失败')
+  } finally {
+    uploading.value = false
+  }
+}
+
+// ===== 右键菜单 =====
+const contextMenu = ref<{ visible: boolean; x: number; y: number; target: any }>({
+  visible: false,
+  x: 0,
+  y: 0,
+  target: null,
+})
+
+function openContextMenu(event: MouseEvent, row: any) {
+  contextMenu.value = {
+    visible: true,
+    x: Math.min(event.clientX, window.innerWidth - 190),
+    y: Math.min(event.clientY, window.innerHeight - 300),
+    target: row,
+  }
+}
+
+function closeContextMenu() {
+  contextMenu.value.visible = false
+}
+
+function onRowContextMenu(row: any, column: any, event: MouseEvent) {
+  openContextMenu(event, row)
+}
+
+function menuEnterDir() {
+  const target = contextMenu.value.target
+  if (target?.dir) {
+    enterDir(target)
+  }
+  closeContextMenu()
+}
+
+function menuPreview() {
+  const target = contextMenu.value.target
+  if (target) preview(target)
+  closeContextMenu()
+}
+
+function menuEdit() {
+  const target = contextMenu.value.target
+  if (target) edit(target)
+  closeContextMenu()
+}
+
+function menuDownload() {
+  const target = contextMenu.value.target
+  if (target) download(target)
+  closeContextMenu()
+}
+
+function menuRename() {
+  const target = contextMenu.value.target
+  if (target) openRename(target)
+  closeContextMenu()
+}
+
+function menuPassword() {
+  const target = contextMenu.value.target
+  if (target) openSetPassword(target)
+  closeContextMenu()
+}
+
+function menuDelete() {
+  const target = contextMenu.value.target
+  closeContextMenu()
+  if (target) {
+    void remove(target)
+  }
+}
+
+function menuCreateDir() {
+  closeContextMenu()
+  openCreateDir()
+}
+
+function menuUpload() {
+  closeContextMenu()
+  fileInput.value?.click()
+}
+
+function menuRefresh() {
+  closeContextMenu()
+  void fetchList()
+}
 
 const filteredRows = computed(() => {
   const keyword = query.value.keyword.trim().toLowerCase()

@@ -209,6 +209,9 @@ export const sharedFilesApi = {
   remove(id: string | number): Promise<any> {
     return request.delete(`/shared-files/${id}`)
   },
+  move(id: string | number, parentId: string | number | null): Promise<any> {
+    return request.post(`/shared-files/${id}/move`, { parentId })
+  },
   download(id: string | number, password?: string): Promise<any> {
     return request.get(`/shared-files/${id}/download`, {
       params: password ? { password } : {},
