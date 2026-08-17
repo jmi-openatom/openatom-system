@@ -6,11 +6,15 @@
           v-model="query.keyword"
           clearable
           placeholder="搜索名称"
-          style="width: 220px"
+          style="width: 200px"
           @clear="fetchList"
           @keyup.enter="fetchList"
         />
-        <el-button :icon="Refresh" @click="fetchList">刷新</el-button>
+        <el-button :icon="Refresh" circle @click="fetchList" />
+        <el-radio-group v-model="viewMode" size="default">
+          <el-radio-button value="grid"><el-icon><Menu /></el-icon></el-radio-button>
+          <el-radio-button value="list"><el-icon><Expand /></el-icon></el-radio-button>
+        </el-radio-group>
       </div>
       <div class="toolbar__actions">
         <el-button :icon="FolderAdd" @click="openCreateDir">新建目录</el-button>
@@ -21,12 +25,25 @@
       </div>
     </ViewToolbar>
 
-    <el-breadcrumb class="crumbs" separator="/">
-      <el-breadcrumb-item><el-link type="primary" @click="goRoot">文件架</el-link></el-breadcrumb-item>
-      <el-breadcrumb-item v-for="item in breadcrumbs" :key="item.id">
-        <el-link type="primary" @click="goTo(item.id)">{{ item.name }}</el-link>
-      </el-breadcrumb-item>
-    </el-breadcrumb>
+    <div class="crumbs-row">
+      <el-breadcrumb separator="/">
+        <el-breadcrumb-item><el-link type="primary" @click="goRoot">文件架</el-link></el-breadcrumb-item>
+        <el-breadcrumb-item v-for="item in breadcrumbs" :key="item.id">
+          <el-link type="primary" @click="goTo(item.id)">{{ item.name }}</el-link>
+        </el-breadcrumb-item>
+      </el-breadcrumb>
+      <transition name="fade">
+        <div v-if="selectedRows.length" class="selection-bar">
+          <span>已选 <strong>{{ selectedRows.length }}</strong> 项</span>
+          <el-button size="small" round :icon="FolderOpened" @click="openMoveDialog">移动到</el-button>
+          <el-button v-if="selectedFiles.length" size="small" round :icon="Download" @click="bulkDownload">下载</el-button>
+          <el-popconfirm title="确定删除选中的项？" @confirm="bulkDelete">
+            <template #reference><el-button size="small" round type="danger" :icon="Delete">删除</el-button></template>
+          </el-popconfirm>
+          <el-button size="small" text @click="clearSelection">取消</el-button>
+        </div>
+      </transition>
+    </div>
 
     <div
       class="drop-zone"
@@ -39,24 +56,56 @@
       @drop.prevent="onDropZone"
     >
       <div v-if="dragOverDepth > 0" class="drop-overlay">
-        <el-icon :size="34"><component :is="draggingExternal ? UploadFilled : FolderOpened" /></el-icon>
+        <el-icon :size="36"><component :is="draggingExternal ? UploadFilled : FolderOpened" /></el-icon>
         <p>{{ draggingExternal ? '松开上传到当前目录' : '松开移动到当前目录' }}</p>
       </div>
 
-      <!-- 选中操作条 -->
-      <div v-if="selectedRows.length" class="selection-bar">
-        <span>已选 <strong>{{ selectedRows.length }}</strong> 项</span>
-        <div>
-          <el-button size="small" type="primary" :icon="FolderOpened" @click="openMoveDialog">移动到</el-button>
-          <el-button v-if="selectedFiles.length" size="small" :icon="Download" @click="bulkDownload">下载</el-button>
-          <el-popconfirm title="确定删除选中的项？" @confirm="bulkDelete">
-            <template #reference><el-button size="small" type="danger" :icon="Delete">删除</el-button></template>
-          </el-popconfirm>
-          <el-button size="small" text @click="clearSelection">取消选择</el-button>
+      <!-- 网格视图 -->
+      <div v-if="viewMode === 'grid'" v-loading="loading" class="file-grid">
+        <div
+          v-for="row in filteredRows"
+          :key="row.id"
+          class="file-card"
+          :class="{ selected: isSelected(row), droppable: dropTargetId === row.id && row.dir }"
+          draggable="true"
+          @dragstart="onDragStart($event, row)"
+          @dragend="onDragEnd"
+          @dragover.prevent="dropTargetId = row.dir ? row.id : null"
+          @dragleave="dropTargetId = null"
+          @drop.prevent.stop="onDropOnRow($event, row)"
+          @dblclick.stop="openRow(row)"
+          @contextmenu.stop.prevent="openContextMenu($event, row)"
+        >
+          <el-checkbox
+            :model-value="isSelected(row)"
+            class="file-card__check"
+            @change="toggleSelect(row)"
+            @click.stop
+          />
+          <div class="file-card__icon" :class="'tone-' + toneOf(row)">
+            <component :is="iconOf(row)" />
+          </div>
+          <div class="file-card__name" :title="row.name">
+            <el-icon v-if="row.hasPassword" class="lock"><Lock /></el-icon>{{ row.name }}
+          </div>
+          <div class="file-card__meta">{{ row.dir ? '目录' : typeName(row.extension) + ' · ' + formatSize(row.sizeBytes) }}</div>
+          <div class="file-card__actions">
+            <el-tooltip content="打开" placement="top"><el-button circle :icon="row.dir ? FolderOpened : View" size="small" @click.stop="openRow(row)" /></el-tooltip>
+            <el-tooltip v-if="!row.dir && isOffice(row)" content="在线编辑" placement="top"><el-button circle :icon="EditPen" size="small" @click.stop="edit(row)" /></el-tooltip>
+            <el-tooltip content="下载" placement="top"><el-button circle :icon="Download" size="small" @click.stop="download(row)" /></el-tooltip>
+            <el-tooltip content="更多" placement="top">
+              <el-button circle :icon="MoreFilled" size="small" @click.stop="openCardMenu($event, row)" />
+            </el-tooltip>
+          </div>
+        </div>
+        <div v-if="!loading && !filteredRows.length" class="grid-empty">
+          <el-empty description="这里还没有内容，上传文件或新建目录" />
         </div>
       </div>
 
+      <!-- 列表视图 -->
       <el-table
+        v-else
         v-loading="loading"
         :data="filteredRows"
         class="admin-table"
@@ -72,7 +121,7 @@
               @dragstart="onDragStart($event, row)"
               @dragend="onDragEnd"
               @click.stop="closeContextMenu"
-              @contextmenu.stop="openContextMenu($event, row)"
+              @contextmenu.stop.prevent="openContextMenu($event, row)"
             >
               <span class="file-icon"><component :is="iconOf(row)" /></span>
               <span class="file-copy">
@@ -100,9 +149,7 @@
             </template>
             <el-button link type="primary" @click="download(row)">下载</el-button>
             <el-button link type="primary" @click="openRename(row)">重命名</el-button>
-            <el-button link type="primary" @click="openSetPassword(row)">
-              {{ row.hasPassword ? '改密码' : '设密码' }}
-            </el-button>
+            <el-button link type="primary" @click="openSetPassword(row)">{{ row.hasPassword ? '改密码' : '设密码' }}</el-button>
             <el-popconfirm title="删除后不可恢复，确定删除？" @confirm="remove(row)">
               <template #reference><el-button link type="danger" @click.stop>删除</el-button></template>
             </el-popconfirm>
@@ -110,7 +157,7 @@
         </el-table-column>
       </el-table>
 
-      <el-empty v-if="!loading && !rows.length" description="这里还没有内容，上传文件或新建目录" />
+      <el-empty v-if="!loading && !rows.length && viewMode === 'list'" description="这里还没有内容，上传文件或新建目录" />
     </div>
 
     <!-- 右键菜单 -->
@@ -201,12 +248,7 @@
       </el-breadcrumb>
       <div v-loading="moveLoading" class="move-dir-list">
         <div v-if="!moveDirs.length" class="move-dir-empty">当前目录下没有子目录</div>
-        <div
-          v-for="dir in moveDirs"
-          :key="dir.id"
-          class="move-dir-item"
-          @click="moveEnter(dir)"
-        >
+        <div v-for="dir in moveDirs" :key="dir.id" class="move-dir-item" @click="moveEnter(dir)">
           <el-icon><Folder /></el-icon>
           <span>{{ dir.name }}</span>
         </div>
@@ -235,8 +277,8 @@
 
 <script setup lang="ts">
 import {
-  Delete, Document, Download, EditPen, Files, Folder, FolderAdd, FolderOpened,
-  Grid, Lock, Picture, Refresh, Upload, UploadFilled, View, VideoCamera,
+  Delete, Document, Download, EditPen, Expand, Files, Folder, FolderAdd, FolderOpened,
+  Grid, Lock, Menu, MoreFilled, Picture, Refresh, Upload, UploadFilled, View, VideoCamera,
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
@@ -252,6 +294,7 @@ const query = ref({ keyword: '' })
 const fileInput = ref<HTMLInputElement | null>(null)
 const currentParentId = ref<number | null>(null)
 const breadcrumbs = ref<{ id: number; name: string }[]>([])
+const viewMode = ref<'grid' | 'list'>('grid')
 
 const createDirOpen = ref(false)
 const dirForm = ref({ name: '', password: '' })
@@ -276,11 +319,19 @@ let previewObjectUrl = ''
 // ===== 选中 =====
 const selectedRows = ref<any[]>([])
 const selectedFiles = computed(() => selectedRows.value.filter((row) => !row.dir))
-const selectedDirIds = computed(() =>
-  selectedRows.value.filter((row) => row.dir).map((row) => row.id))
 
 function onSelectionChange(selection: any[]) {
   selectedRows.value = selection
+}
+
+function isSelected(row: any) {
+  return selectedRows.value.some((item) => item.id === row.id)
+}
+
+function toggleSelect(row: any) {
+  const index = selectedRows.value.findIndex((item) => item.id === row.id)
+  if (index >= 0) selectedRows.value.splice(index, 1)
+  else selectedRows.value.push(row)
 }
 
 function clearSelection() {
@@ -375,6 +426,7 @@ async function bulkDelete() {
 // ===== 拖拽 =====
 const dragOverDepth = ref(0)
 const draggingExternal = ref(false)
+const dropTargetId = ref<number | null>(null)
 let draggedRowId: number | null = null
 let dragLeaveTimer: number | undefined
 
@@ -386,6 +438,7 @@ function onDragStart(event: DragEvent, row: any) {
 
 function onDragEnd() {
   draggedRowId = null
+  dropTargetId.value = null
 }
 
 function dragEnterZone(event: DragEvent) {
@@ -415,6 +468,22 @@ async function onDropZone(event: DragEvent) {
   }
   if (draggedRowId != null) {
     await moveItem(draggedRowId, currentParentId.value)
+    draggedRowId = null
+  }
+}
+
+async function onDropOnRow(_event: DragEvent, row: any) {
+  dragOverDepth.value = 0
+  dropTargetId.value = null
+  const files = _event.dataTransfer?.files
+  if (files && files.length) {
+    for (const file of Array.from(files)) {
+      await uploadFile(file)
+    }
+    return
+  }
+  if (draggedRowId != null && row.dir && draggedRowId !== row.id) {
+    await moveItem(draggedRowId, row.id)
     draggedRowId = null
   }
 }
@@ -459,6 +528,10 @@ function openContextMenu(event: MouseEvent, row: any) {
   }
 }
 
+function openCardMenu(event: MouseEvent, row: any) {
+  openContextMenu(event, row)
+}
+
 function closeContextMenu() {
   contextMenu.value.visible = false
 }
@@ -469,11 +542,7 @@ function onRowContextMenu(row: any, column: any, event: MouseEvent) {
 
 function menuOpen() {
   const target = contextMenu.value.target
-  if (target?.dir) {
-    enterDir(target)
-  } else if (target) {
-    preview(target)
-  }
+  if (target) openRow(target)
   closeContextMenu()
 }
 
@@ -669,6 +738,14 @@ function confirmAskPassword() {
 }
 
 // ===== 预览/编辑/下载 =====
+function openRow(row: any) {
+  if (row.dir) {
+    enterDir(row)
+  } else {
+    preview(row)
+  }
+}
+
 function preview(row: any) {
   previewTarget.value = row
   requirePassword(row, (password) => {
@@ -754,11 +831,21 @@ function isPdf(row: any) { return row.extension === 'pdf' }
 
 function iconOf(row: any) {
   if (row.dir) return Folder
-  if (row.extension === 'xlsx' || row.extension === 'xls' || row.extension === 'ods') return Grid
-  if (row.extension === 'pptx' || row.extension === 'ppt' || row.extension === 'odp') return VideoCamera
+  if (['xlsx', 'xls', 'ods'].includes(row.extension)) return Grid
+  if (['pptx', 'ppt', 'odp'].includes(row.extension)) return VideoCamera
   if (isImage(row)) return Picture
   if (row.extension === 'pdf') return Document
   return Files
+}
+
+function toneOf(row: any) {
+  if (row.dir) return 'dir'
+  if (['docx', 'doc', 'odt', 'rtf'].includes(row.extension)) return 'word'
+  if (['xlsx', 'xls', 'ods', 'csv'].includes(row.extension)) return 'cell'
+  if (['pptx', 'ppt', 'odp'].includes(row.extension)) return 'slide'
+  if (isImage(row)) return 'image'
+  if (row.extension === 'pdf') return 'pdf'
+  return 'file'
 }
 
 function typeName(extension: string) {
@@ -797,33 +884,40 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.crumbs {
-  margin: 0 0 14px;
+.crumbs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  min-height: 32px;
+}
+
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 14px;
+  border: 1px solid var(--el-color-primary-light-7);
+  border-radius: 999px;
+  background: var(--el-color-primary-light-9);
+  font-size: 13px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .drop-zone {
   position: relative;
   min-width: 0;
   max-width: 100%;
-}
-
-.selection-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  border: 1px solid var(--oa-primary);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--oa-primary) 6%, transparent);
-  font-size: 13px;
-}
-
-.selection-bar > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .drop-overlay {
@@ -834,10 +928,10 @@ onMounted(() => {
   place-content: center;
   justify-items: center;
   gap: 10px;
-  border: 2px dashed var(--oa-primary);
-  border-radius: 12px;
-  color: var(--oa-primary);
-  background: color-mix(in srgb, var(--oa-page-bg) 92%, transparent);
+  border: 2px dashed var(--el-color-primary);
+  border-radius: 14px;
+  color: var(--el-color-primary);
+  background: color-mix(in srgb, var(--el-color-primary-light-9) 90%, transparent);
   backdrop-filter: blur(2px);
   pointer-events: none;
 }
@@ -848,6 +942,114 @@ onMounted(() => {
   font-weight: 600;
 }
 
+/* ===== 网格视图 ===== */
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 14px;
+  min-height: 200px;
+}
+
+.grid-empty {
+  grid-column: 1 / -1;
+}
+
+.file-card {
+  position: relative;
+  padding: 18px 12px 12px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  border: 1px solid var(--oa-border);
+  border-radius: 14px;
+  background: #fff;
+  cursor: default;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.file-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  border-color: var(--el-color-primary-light-5);
+}
+
+.file-card.selected {
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.file-card.droppable {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 3px var(--el-color-primary-light-7);
+}
+
+.file-card__check {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.file-card:hover .file-card__check,
+.file-card.selected .file-card__check {
+  opacity: 1;
+}
+
+.file-card__icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  font-size: 26px;
+}
+
+.tone-dir { color: #0a4b78; background: #e8f1f8; }
+.tone-word { color: #1d5f9e; background: #eaf1fb; }
+.tone-cell { color: #16794f; background: #e9f7ef; }
+.tone-slide { color: #b35900; background: #fdf2e4; }
+.tone-image { color: #7c3aed; background: #f3edfd; }
+.tone-pdf { color: #c0392b; background: #fdeceb; }
+.tone-file { color: #555; background: var(--oa-primary-soft); }
+
+.file-card__name {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-card__name .lock {
+  flex: 0 0 auto;
+  color: #f0a020;
+}
+
+.file-card__meta {
+  color: var(--oa-muted);
+  font-size: 11px;
+}
+
+.file-card__actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.file-card:hover .file-card__actions {
+  opacity: 1;
+}
+
+/* ===== 列表视图 ===== */
 .file-cell {
   display: flex;
   align-items: center;
@@ -864,7 +1066,7 @@ onMounted(() => {
   flex: 0 0 auto;
   border-radius: 10px;
   color: var(--oa-primary);
-  background: var(--oa-page-bg);
+  background: var(--oa-primary-soft);
   border: 1px solid var(--oa-border);
   font-size: 18px;
 }
@@ -895,6 +1097,7 @@ onMounted(() => {
   font-size: 12px;
 }
 
+/* ===== 右键菜单 ===== */
 .context-menu {
   position: fixed;
   z-index: 3000;
@@ -902,7 +1105,7 @@ onMounted(() => {
   padding: 6px;
   border: 1px solid var(--oa-border);
   border-radius: 10px;
-  background: var(--oa-bg);
+  background: #fff;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
 }
 
@@ -924,7 +1127,7 @@ onMounted(() => {
   padding: 0 10px;
   border: 0;
   border-radius: 7px;
-  color: var(--oa-text);
+  color: var(--oa-text, #1d1d1f);
   background: transparent;
   font: inherit;
   font-size: 13px;
@@ -946,6 +1149,7 @@ onMounted(() => {
   background: var(--oa-border);
 }
 
+/* ===== 移动对话框 ===== */
 .move-crumbs {
   margin-bottom: 12px;
 }
@@ -985,6 +1189,7 @@ onMounted(() => {
   font-size: 13px;
 }
 
+/* ===== 预览 ===== */
 .preview-body {
   min-height: 60vh;
   display: grid;
