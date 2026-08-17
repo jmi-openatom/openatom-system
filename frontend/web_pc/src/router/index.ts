@@ -333,6 +333,12 @@ const routes = [
     component: resilientView(() => import('../views/site/DocEditorPage.vue')),
   },
   {
+    path: '/shared-edit/:id',
+    name: 'shared-edit',
+    meta: { requiresSiteLogin: true },
+    component: resilientView(() => import('../views/site/SharedEditPage.vue')),
+  },
+  {
     path: '/lottery/:id/screen',
     name: 'lottery-screen',
     component: resilientView(() => import('../views/site/LotteryScreen.vue')),

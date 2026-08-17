@@ -44,6 +44,7 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     ensureSchoolCalendarTables();
     ensureOfficeDocumentTable();
     ensureDocCenterDocumentTable();
+    ensureSharedFileTable();
     ensureClubRegulationTable();
     ensureBlogTables();
     ensureImageHostingTable();
@@ -544,6 +545,28 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
             PRIMARY KEY (`id`),
             KEY `idx_doc_center_owner` (`owner_user_id`)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='文档中心文件表'
+        """);
+  }
+
+  private void ensureSharedFileTable() {
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `shared_file`
+        (
+            `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+            `parent_id` BIGINT DEFAULT NULL COMMENT '父目录ID，空为根',
+            `name` VARCHAR(255) NOT NULL COMMENT '名称',
+            `is_dir` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否目录',
+            `extension` VARCHAR(20) DEFAULT '' COMMENT '扩展名',
+            `size_bytes` BIGINT NOT NULL DEFAULT 0 COMMENT '文件大小',
+            `storage_name` VARCHAR(100) DEFAULT NULL COMMENT '磁盘文件名',
+            `password_hash` VARCHAR(100) DEFAULT NULL COMMENT '访问密码BCrypt哈希',
+            `owner_user_id` INT NOT NULL COMMENT '创建人',
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+            `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            PRIMARY KEY (`id`),
+            KEY `idx_shared_file_parent` (`parent_id`)
+        ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='共享文件架'
         """);
   }
 

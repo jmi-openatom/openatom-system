@@ -361,7 +361,7 @@ const menus = ref<AdminMenuItem[]>([
   },
   {
     path: '/admin/doc-center',
-    label: '文档中心',
+    label: '共享文件',
     icon: Files,
     permissions: ['document:list'],
   },

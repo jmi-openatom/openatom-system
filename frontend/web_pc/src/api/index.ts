@@ -183,6 +183,48 @@ export const documentCenterApi = {
   },
 }
 
+export const sharedFilesApi = {
+  list(parentId: string | number | null): Promise<any> {
+    return request.get('/shared-files', { params: parentId ? { parentId } : {} })
+  },
+  path(fileId: string | number | null): Promise<any> {
+    return request.get('/shared-files/path', { params: fileId ? { fileId } : {} })
+  },
+  createDir(data: { parentId: string | number | null; name: string; password?: string }): Promise<any> {
+    return request.post('/shared-files/dir', data)
+  },
+  upload(file: File, parentId: string | number | null, password?: string): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (parentId) formData.append('parentId', String(parentId))
+    if (password) formData.append('password', password)
+    return request.post('/shared-files/upload', formData)
+  },
+  rename(id: string | number, name: string): Promise<any> {
+    return request.post(`/shared-files/${id}/rename`, { name })
+  },
+  setPassword(id: string | number, password: string): Promise<any> {
+    return request.post(`/shared-files/${id}/password`, { password })
+  },
+  remove(id: string | number): Promise<any> {
+    return request.delete(`/shared-files/${id}`)
+  },
+  download(id: string | number, password?: string): Promise<any> {
+    return request.get(`/shared-files/${id}/download`, {
+      params: password ? { password } : {},
+      responseType: 'blob',
+    })
+  },
+  text(id: string | number, password?: string): Promise<any> {
+    return request.get(`/shared-files/${id}/text`, { params: password ? { password } : {} })
+  },
+  editConfig(id: string | number, password?: string): Promise<any> {
+    return request.post(`/shared-files/${id}/edit-config`, null, {
+      params: password ? { password } : {},
+    })
+  },
+}
+
 export const memberProfileApi = {
   members(params?: Record<string, unknown>): Promise<any> {
     return request.get('/members', { params })

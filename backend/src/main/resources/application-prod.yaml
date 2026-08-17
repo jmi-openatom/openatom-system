@@ -120,6 +120,8 @@ app:
     storage-dir: ${APP_GENERATED_DOCUMENT_STORAGE_DIR:./uploads/generated-documents}
   document-center:
     storage-dir: ${APP_DOCUMENT_CENTER_STORAGE_DIR:./uploads/document-center}
+  shared-files:
+    storage-dir: ${APP_SHARED_FILES_STORAGE_DIR:./uploads/shared-files}
   document-server:
     office-url: ${DOCUMENT_SERVER_OFFICE_URL:https://office.jmi-openatom.cn}
     callback-base-url: ${DOCUMENT_SERVER_CALLBACK_BASE_URL:https://api.jmi-openatom.cn/api/v1}
