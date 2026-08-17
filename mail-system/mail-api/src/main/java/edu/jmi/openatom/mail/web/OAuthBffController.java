@@ -103,7 +103,9 @@ public class OAuthBffController {
                 tokens.displayName(),
                 "ACTIVE"));
     request.changeSessionId();
-    session.setAttribute(
+    // changeSessionId 会使旧会话失效，必须重新获取会话对象再写入
+    HttpSession currentSession = request.getSession();
+    currentSession.setAttribute(
         MAIL_SESSION,
         new MailSession(
             tokens.sub(),
