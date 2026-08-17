@@ -889,7 +889,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   min-height: 32px;
 }
 
@@ -900,8 +900,7 @@ onMounted(() => {
   padding: 5px 8px 5px 14px;
   border: 1px solid var(--el-color-primary-light-7);
   border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  background: var(--el-color-primary-light-9);
   font-size: 13px;
 }
 
@@ -930,10 +929,10 @@ onMounted(() => {
   justify-items: center;
   gap: 10px;
   border: 2px dashed var(--el-color-primary);
-  border-radius: 16px;
+  border-radius: 14px;
   color: var(--el-color-primary);
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(3px);
+  background: color-mix(in srgb, var(--el-color-primary-light-9) 90%, transparent);
+  backdrop-filter: blur(2px);
   pointer-events: none;
 }
 
@@ -941,14 +940,13 @@ onMounted(() => {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.02em;
 }
 
 /* ===== 网格视图 ===== */
 .file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 14px;
   min-height: 200px;
 }
 
@@ -958,30 +956,31 @@ onMounted(() => {
 
 .file-card {
   position: relative;
-  padding: 16px 10px 12px;
+  padding: 18px 12px 12px;
   display: grid;
   justify-items: center;
-  gap: 5px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: transparent;
+  gap: 6px;
+  border: 1px solid var(--oa-border);
+  border-radius: 14px;
+  background: #fff;
   cursor: default;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .file-card:hover {
-  background: var(--oa-primary-soft);
-  border-color: var(--oa-border);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  border-color: var(--el-color-primary-light-5);
 }
 
 .file-card.selected {
+  border-color: var(--el-color-primary);
   background: var(--el-color-primary-light-9);
-  border-color: var(--el-color-primary-light-5);
 }
 
 .file-card.droppable {
   border-color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
+  box-shadow: 0 0 0 3px var(--el-color-primary-light-7);
 }
 
 .file-card__check {
@@ -998,22 +997,21 @@ onMounted(() => {
 }
 
 .file-card__icon {
-  width: 52px;
-  height: 52px;
+  width: 54px;
+  height: 54px;
   display: grid;
   place-items: center;
-  border-radius: 15px;
-  font-size: 25px;
-  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 14px;
+  font-size: 26px;
 }
 
-.tone-dir { color: #0a4b78; background: linear-gradient(145deg, #eaf3fa, #dcebf6); }
-.tone-word { color: #1d5f9e; background: linear-gradient(145deg, #edf3fc, #e0ebf9); }
-.tone-cell { color: #16794f; background: linear-gradient(145deg, #ebf8f0, #ddf2e7); }
-.tone-slide { color: #b35900; background: linear-gradient(145deg, #fdf3e6, #faecd9); }
-.tone-image { color: #7c3aed; background: linear-gradient(145deg, #f4eefe, #ece4fb); }
-.tone-pdf { color: #c0392b; background: linear-gradient(145deg, #fdeeed, #fbe3e1); }
-.tone-file { color: #555; background: linear-gradient(145deg, #f6f6f8, #ececef); }
+.tone-dir { color: #0a4b78; background: #e8f1f8; }
+.tone-word { color: #1d5f9e; background: #eaf1fb; }
+.tone-cell { color: #16794f; background: #e9f7ef; }
+.tone-slide { color: #b35900; background: #fdf2e4; }
+.tone-image { color: #7c3aed; background: #f3edfd; }
+.tone-pdf { color: #c0392b; background: #fdeceb; }
+.tone-file { color: #555; background: var(--oa-primary-soft); }
 
 .file-card__name {
   max-width: 100%;
@@ -1022,7 +1020,7 @@ onMounted(() => {
   gap: 4px;
   overflow: hidden;
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1039,22 +1037,16 @@ onMounted(() => {
 
 .file-card__actions {
   position: absolute;
-  top: 7px;
-  right: 7px;
+  top: 8px;
+  right: 8px;
   display: flex;
-  gap: 2px;
-  padding: 3px 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  gap: 4px;
   opacity: 0;
-  transform: translateY(-3px);
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition: opacity 0.12s ease;
 }
 
 .file-card:hover .file-card__actions {
   opacity: 1;
-  transform: translateY(0);
 }
 
 /* ===== 列表视图 ===== */
