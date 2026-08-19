@@ -75,7 +75,7 @@ openatomsystem/
 
 ### controller（控制器层）
 
-共有 44 个 Controller，按业务模块分组：
+共有 53 个 Controller，按业务模块分组：
 
 #### 认证与用户
 
@@ -84,6 +84,7 @@ openatomsystem/
 | `AuthController` | `/auth` | 登录、登出、Token 刷新、当前用户信息 |
 | `UserController` | `/users` | 用户 CRUD、角色分配、密码重置、导入 |
 | `OidcController` | `/oidc` | OIDC 认证端点 |
+| `OidcLoginController` | `/oidc` | 第三方登录（Google/GitHub/Gitee） |
 | `OauthClientController` | `/oauth` | OAuth 客户端管理 |
 
 #### 社团管理
@@ -123,6 +124,7 @@ openatomsystem/
 | `OfficeDocumentController` | `/office-documents` | 文书管理 |
 | `DocumentTemplateController` | `/document-templates` | 文书模板 |
 | `NotificationController` | `/notifications` | 通知管理 |
+| `InternalMailController` | `/internal/mail` | 内部邮件（出站队列） |
 
 #### 互动功能
 
@@ -137,12 +139,18 @@ openatomsystem/
 
 | Controller | 路由前缀 | 说明 |
 |------------|----------|------|
-| `SiteController` | `/site` | 公开信息、注册开关 |
+| `SiteController` | `/site` | 公开信息、注册开关、激活设置 |
 | `PublicController` | `/public` | 公开数据接口 |
 | `SiteFormController` | `/site-forms` | 信息收集表单 |
 | `FormSubmissionController` | `/form-submissions` | 表单提交 |
 | `FileController` | `/files` | 文件上传 |
 | `ImageHostingController` | `/image-hosting` | 图床服务 |
+| `MemberProfileController` | `/member-profiles` | 成员主页 |
+| `PartnerClubController` | `/partner-clubs` | 合作社团 |
+| `NextPageController` | `/next` | 加入页统计与报名 |
+| `SharedFileController` | `/shared-files` | 共享文件（ONLYOFFICE） |
+| `DocCenterController` | `/doc-center` | 文档中心 |
+| `SitemapController` | `/site/sitemap.xml` | 站点地图（SEO） |
 
 #### 系统管理
 
@@ -154,6 +162,8 @@ openatomsystem/
 | `DataOpenController` | `/data-open` | 数据开放平台 |
 | `ShowcaseAppController` | `/showcase-apps` | 应用展示 |
 | `AlumniGroupController` | `/alumni-groups` | 校友分组 |
+| `UnifiedGroupController` | `/groups` | 统一分组中心（部门/外群/校友） |
+| `FileMigrationController` | `/file-migration` | 存储迁移 |
 
 #### AI 与机器人
 
@@ -166,16 +176,22 @@ openatomsystem/
 
 ### entity（实体类）
 
-60+ 个实体类，与数据库表一一对应。主要实体包括：
+77 个实体类，与数据库表一一对应。主要实体包括：
 
-- **用户体系**：`User`, `UserRole`, `Role`, `RolePermission`, `Permission`
-- **社团体系**：`Club`, `ClubDepartment`, `ClubPosition`, `ClubMembership`, `ClubPositionRole`
+- **用户体系**：`User`, `UserRole`, `Role`, `RolePermission`, `Permission`, `UserExternalIdentity`
+- **社团体系**：`Club`, `ClubDepartment`, `ClubPosition`, `ClubMembership`, `ClubPositionRole`, `ClubVicePresident`
 - **招新体系**：`MembershipApplication`, `ApprovalRecord`, `Interview`, `InterviewFeedback`, `InterviewInterviewer`, `RecruitmentCampaign`
 - **活动体系**：`ClubActivity`, `ActivityRegistration`, `ClubAward`
 - **签到体系**：`CheckInSession`, `CheckInGroup`, `CheckInGroupMember`, `CheckInRecord`, `CheckInTarget`, `CheckInExclusion`
 - **办公体系**：`LeaveApplication`, `OfficeDocument`, `DocumentTemplate`, `GeneratedDocument`, `Notification`, `NotificationReceiver`
 - **互动体系**：`BlogArticle`, `BlogComment`, `BlogArticleInteraction`, `VoteCampaign`, `VoteOption`, `VoteRecord`, `LotteryCampaign`, `LotteryPrize`, `LotteryWinner`
 - **积分体系**：`PointAccount`, `PointTransaction`, `PointRedeemItem`, `PointRedemption`
+- **成员主页体系**：`MemberProfile`, `MemberProfileModule`, `MemberProfileSocialLink`, `MemberProfileComment`, `MemberProfileLike`
+- **统一分组体系**：`UnifiedGroup`, `UnifiedGroupMember`, `UnifiedGroupBinding`
+- **合作社团**：`PartnerClub`
+- **文档中心**：`DocCenterDocument`, `SharedFile`
+- **邮件体系**：`MailboxOutboxEvent`
+- **加入页**：`NextPageStats`, `NextPageJoin`
 - **系统体系**：`SystemSetting`, `OperationLog`, `LoginLog`, `SchoolCalendarSetting`, `SchoolCalendarAdjustment`
 - **OAuth 体系**：`OauthClient`, `OauthAuthorizationCode`
 - **其他**：`SiteForm`, `FormSubmission`, `ImageHostingAsset`, `ShowcaseApp`, `DataOpenApplication`, `ClubRegulation`, `ClubAlumniGroup`, `ExitApplication`, `EveningStudySchedule`, `AiActivitySession`, `AiActivityPlan`, `AiActivityMessage`, `AiCallLog`

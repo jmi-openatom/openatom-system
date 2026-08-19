@@ -2,12 +2,15 @@
 
 ## 双域名架构
 
-生产环境使用两个独立域名：
+生产环境使用多个独立域名：
 
 | 域名 | 代理目标 | 说明 |
 |------|----------|------|
 | `www.jmi-openatom.cn` | `127.0.0.1:18080` | Frontend 前端 |
 | `api.jmi-openatom.cn` | `127.0.0.1:8921` | Backend 后端 API |
+| `docs.jmi-openatom.cn` | `127.0.0.1:16000` | 文档站（docs 容器） |
+| `oauth.jmi-openatom.cn` | `127.0.0.1:8921` | OAuth/API（见 `backend/deploy/nginx/oauth-api-location.conf`） |
+| `office.jmi-openatom.cn` | 文档中心 | ONLYOFFICE 文档中心 |
 
 ::: warning 重要
 如果宝塔 Nginx 和 Docker Compose 运行在同一台服务器，反向代理目标应使用本机地址 `127.0.0.1`，不要使用服务器公网 IP。

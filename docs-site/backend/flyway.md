@@ -63,13 +63,13 @@ V{版本号}__{描述}.sql
 V1__init_schema.sql                          # 初始化建表
 V2__add_qq_openid_to_user.sql                # 给用户表添加 QQ openid 字段
 V12__add_points_system.sql                    # 添加积分系统
-V29__add_alumni_group_feature.sql             # 添加校友分组功能
-V30__add_new_field.sql                        # 新字段示例
+V53__add_seafile_oauth_client.sql             # Seafile OAuth 客户端
+V54__add_new_field.sql                        # 新字段示例
 ```
 
 ## 现有迁移脚本
 
-系统已有 29 个迁移脚本（V1 ~ V29），按功能分类：
+系统已有 53 个迁移脚本（V1 ~ V53），按功能分类：
 
 ### 基础初始化
 
@@ -150,23 +150,62 @@ V30__add_new_field.sql                        # 新字段示例
 | V27 | `V27__add_club_regulations.sql` | 社团规章制度 |
 | V29 | `V29__add_alumni_group_feature.sql` | 校友分组功能 |
 
+### 加入页与用户演进
+
+| 版本 | 文件 | 说明 |
+|------|------|------|
+| V30 | `V30__add_next_page_stats.sql` | 加入页统计 |
+| V31 | `V31__add_next_page_join.sql` | 加入页报名 |
+| V32 | `V32__add_membership_delete_permission.sql` | 成员删除权限 |
+| V33 | `V33__add_user_onboarding_completed_at.sql` | 用户 onboarding 完成时间 |
+| V34 | `V34__add_user_activation_and_club_vice_president.sql` | 账号激活与副社长 |
+| V35 | `V35__add_club_officers_and_department_vice_manager.sql` | 社团干部与部门副主管 |
+| V36 | `V36__add_group_qrcode_fields.sql` | 群二维码字段 |
+| V37 | `V37__add_user_qq_group_joined_at.sql` | 用户入群时间 |
+
+### 合作社团与外部身份
+
+| 版本 | 文件 | 说明 |
+|------|------|------|
+| V38 | `V38__add_partner_clubs.sql` | 合作社团 |
+| V39 | `V39__repair_partner_club_permissions.sql` | 修复合作社团权限 |
+| V40 | `V40__allow_partner_club_without_website.sql` | 允许合作社团无官网 |
+| V41 | `V41__add_google_identity.sql` | Google 身份 |
+| V42 | `V42__add_external_identity.sql` | 外部身份绑定 |
+| V43 | `V43__add_member_profiles.sql` | 成员主页 |
+| V44 | `V44__add_member_profile_interactions.sql` | 成员主页互动 |
+| V45 | `V45__add_partner_club_president.sql` | 合作社团社长 |
+| V46 | `V46__bind_partner_club_president_user.sql` | 绑定合作社团社长 |
+| V47 | `V47__add_member_profile_comment_management_permissions.sql` | 主页评论管理权限 |
+
+### 统一分组与近期功能
+
+| 版本 | 文件 | 说明 |
+|------|------|------|
+| V48 | `V48__add_unified_group_center.sql` | 统一分组中心 |
+| V49 | `V49__add_unified_group_update_permission.sql` | 统一分组更新权限 |
+| V50 | `V50__add_showcase_app_atomgit.sql` | 应用展示 AtomGit |
+| V51 | `V51__add_comment_area_switches.sql` | 评论区开关 |
+| V52 | `V52__add_mailbox_outbox.sql` | 内部邮件出站队列 |
+| V53 | `V53__add_seafile_oauth_client.sql` | Seafile OAuth 客户端 |
+
 ## 新增迁移脚本流程
 
 ### 1. 确定版本号
 
-查看现有最大版本号（当前为 V29），下一个版本号为 V30。
+查看现有最大版本号（当前为 V53），下一个版本号为 V54。
 
 ### 2. 创建迁移文件
 
 ```bash
 # 在正确目录下创建
-touch backend/src/main/resources/db/migration/V30__add_new_feature.sql
+touch backend/src/main/resources/db/migration/V54__add_new_feature.sql
 ```
 
 ### 3. 编写 SQL
 
 ```sql
--- V30__add_new_feature.sql
+-- V54__add_new_feature.sql
 
 -- 添加新字段
 ALTER TABLE `club_membership` ADD COLUMN `new_field` VARCHAR(255) DEFAULT NULL COMMENT '新字段说明';
@@ -184,7 +223,7 @@ CREATE TABLE IF NOT EXISTS `new_table` (
 ### 4. 开发环境手动执行
 
 ```bash
-mysql -u root -p openatom_db < backend/src/main/resources/db/migration/V30__add_new_feature.sql
+mysql -u root -p openatom_db < backend/src/main/resources/db/migration/V54__add_new_feature.sql
 ```
 
 ### 5. 生产环境自动执行

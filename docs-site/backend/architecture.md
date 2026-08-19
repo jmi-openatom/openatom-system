@@ -64,7 +64,7 @@
 - 调用 Service 层处理业务逻辑
 - 返回统一响应格式 `Result<T>`
 - 通过 `@SaCheckPermission` 注解进行接口级权限控制
-- 共有 44 个 Controller，覆盖全部业务模块
+- 共有 53 个 Controller，覆盖全部业务模块
 
 ### Service 层
 
@@ -86,7 +86,7 @@
 - 与数据库表一一对应
 - 使用 Lombok `@Data` / `@Getter` 简化代码
 - MyBatis Plus `@TableName` / `@TableField` 注解
-- 共有 60+ 个实体类
+- 共有 77 个实体类
 
 ## 统一响应格式
 

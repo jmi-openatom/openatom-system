@@ -132,8 +132,8 @@
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
 | `SERVER_PORT` | `8921` | 后端服务端口 |
-| `MULTIPART_MAX_FILE_SIZE` | `20MB` | 上传文件最大大小 |
-| `MULTIPART_MAX_REQUEST_SIZE` | `20MB` | 请求体最大大小 |
+| `MULTIPART_MAX_FILE_SIZE` | `500MB` | 上传文件最大大小 |
+| `MULTIPART_MAX_REQUEST_SIZE` | `500MB` | 请求体最大大小 |
 
 ## .env 文件示例
 

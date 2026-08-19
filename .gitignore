@@ -31,6 +31,10 @@ astrbot/ntqq/*
 node_modules/
 .pnpm-store/
 
+# VuePress build artifacts
+docs-site/.vuepress/.cache/
+docs-site/.vuepress/.temp/
+
 # runtime secrets
 .env
 .env.*

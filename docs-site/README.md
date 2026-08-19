@@ -40,11 +40,11 @@ footer: Copyright © 2026 JMI-OPENATOM · 开放原子开源社团 · 开源精�
 
 <div class="homepage-stats">
   <div class="stat-item">
-    <div class="stat-value">26+</div>
+    <div class="stat-value">28+</div>
     <div class="stat-label">文档页面</div>
   </div>
   <div class="stat-item">
-    <div class="stat-value">44</div>
+    <div class="stat-value">53</div>
     <div class="stat-label">后端接口</div>
   </div>
   <div class="stat-item">
@@ -52,7 +52,7 @@ footer: Copyright © 2026 JMI-OPENATOM · 开放原子开源社团 · 开源精�
     <div class="stat-label">权限点</div>
   </div>
   <div class="stat-item">
-    <div class="stat-value">60+</div>
+    <div class="stat-value">87</div>
     <div class="stat-label">数据表</div>
   </div>
   <div class="stat-item">

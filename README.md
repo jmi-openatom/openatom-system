@@ -1,8 +1,15 @@
 # OpenAtom System
 
+> [!WARNING]
+> **Gitee 上的镜像仓库不是最新版本**，可能滞后于主仓库。请以 GitHub 仓库为准：
+> 🔗 **GitHub**: <https://github.com/jmi-openatom/openatom-system>
+>
+> The Gitee mirror may be out of date. Please always check the GitHub repository for the latest code.
+
 OpenAtom System 是一个基于 Spring Boot 3 + Vue 3 组合式 的社团/组织管理系统，旨在提供高效的成员管理、招新流程、活动组织及文书审批功能。
 
 📖 **开发文档**: [https://docs.jmi-openatom.cn](https://docs.jmi-openatom.cn)
+🌐 **官网**: [https://www.jmi-openatom.cn](https://www.jmi-openatom.cn)
 
 ## 🚀 技术栈
 
@@ -186,13 +193,19 @@ API 域名失败，表示 `api.jmi-openatom.cn` 的宝塔站点或 DNS 配置有
 
 ## 📂 项目结构
 
-- `src/`: 后端 Java 源代码
-- `frontend/`: 前端 Vue 源代码
-- `backend/db/`: 手工初始化脚本
-- `backend/src/main/resources/db/migration/`: 生产环境自动执行的 Flyway 迁移脚本
+- `backend/`: 后端 Spring Boot 3 源代码（含 Flyway 迁移脚本、部署配置）
+- `frontend/web_pc/`: 前端 PC 端 Vue 3 源代码
+- `frontend/uni_app/`: UniApp 微信小程序
+- `astrbot/`: AstrBot QQ 机器人配置
 - `docs/`: PRD 及 API 文档
+- `docs-site/`: VuePress 开发文档站
+- `docs-system/`: 文档中心（ONLYOFFICE）子系统
+- `mail-system/`: 独立自托管邮件系统
+- `seafile/`: Seafile 网盘集成
+- `lab-management-system/` + `lab-ui-web/`: 实验室管理子系统
 - `Dockerfile`: 后端容器化配置
-- `docker-compose.yml`: 全栈编排配置
+- `docker-compose.yml`: 全栈编排配置（redis / backend / frontend / astrbot / napcat / docs）
+- `.github/workflows/`: CI/CD 工作流
 
 ## 📝 核心功能
 

@@ -101,6 +101,18 @@ JMI-OPENATOM System 是一个面向高校开源社团的全栈管理系统，旨
 - 群公告管理
 - 入群申请处理
 
+## 子系统生态
+
+主仓库还包含多个独立部署的子系统，由各自 CI/CD 工作流发布：
+
+| 子系统 | 目录 | 说明 |
+|--------|------|------|
+| 文档中心 | `docs-system/` | ONLYOFFICE 在线文档编辑，独立部署 |
+| 邮件系统 | `mail-system/` | 独立自托管邮件服务（含 web 端） |
+| 网盘集成 | `seafile/` | Seafile 网盘服务 |
+| OAuth 代理 | `.github/workflows/oauth-proxy*.yml` | OAuth 反向代理诊断与部署 |
+| 实验室管理 | `lab-management-system/` + `lab-ui-web/` | 实验室管理子系统 |
+
 ## 系统架构图
 
 ```
@@ -154,6 +166,8 @@ JMI-OPENATOM System 是一个面向高校开源社团的全栈管理系统，旨
 openatom-system/
 ├── backend/                    # 后端 Spring Boot 项目
 │   ├── db/                     # 手工初始化 SQL 脚本
+│   ├── deploy/                 # 部署配置（nginx 片段）
+│   ├── scripts/                # 运维脚本
 │   ├── src/main/java/          # Java 源代码
 │   ├── src/main/resources/     # 配置文件、Flyway 迁移脚本
 │   └── pom.xml                 # Maven 依赖配置
@@ -169,19 +183,21 @@ openatom-system/
 │   │   │   │   ├── admin/      # 管理后台页面
 │   │   │   │   └── site/       # 前台展示页面
 │   │   │   └── ...
-│   │   └── package.json
+│   │   ├── nginx.conf          # 前端 Nginx 配置
+│   │   └── Dockerfile
 │   ├── uni_app/                # UniApp 微信小程序
 │   └── ios_app/                # iOS 原生项目（预留）
 ├── astrbot/                    # AstrBot QQ 机器人配置
-│   ├── data/                   # AstrBot 数据目录
-│   └── napcat/                 # NapCat 配置
+├── docs/                       # PRD 及 API 文档
+├── docs-site/                  # VuePress 开发文档站（本目录）
+├── docs-system/                # 文档中心子系统（ONLYOFFICE）
+├── mail-system/                # 独立自托管邮件系统
+├── seafile/                    # Seafile 网盘集成
 ├── lab-management-system/      # 实验室管理系统（独立子系统）
 ├── lab-ui-web/                 # 实验室管理系统前端
-├── docs/                       # PRD 及 API 文档
-├── docs-site/                  # VuePress 开发文档（本目录）
 ├── docker-compose.yml          # 全栈 Docker 编排
 ├── Dockerfile                  # 后端容器化配置
-└── .github/workflows/          # CI/CD 工作流
+└── .github/workflows/          # CI/CD 工作流（7 个）
 ```
 
 ## 相关文档

@@ -2,7 +2,17 @@
 
 ## 概述
 
-项目使用 GitHub Actions 实现自动化构建检查和部署。工作流定义在 `.github/workflows/deploy.yml` 中。
+项目使用 GitHub Actions 实现自动化构建检查和部署。主工作流定义在 `.github/workflows/deploy.yml` 中，另有多达 6 个独立子系统的部署工作流：
+
+| 工作流 | 部署对象 | 说明 |
+|--------|----------|------|
+| `deploy.yml` | 主系统 | 全栈主流程（本文档） |
+| `docs-system.yml` | 文档中心 | ONLYOFFICE 文档子系统 |
+| `mail-system.yml` | 邮件系统 | 自托管邮件服务 |
+| `lab-lms.yml` | 实验室管理系统 | LMS 前后端 |
+| `seafile.yml` | Seafile | 网盘服务 |
+| `oauth-proxy.yml` | OAuth 代理 | OAuth 反代配置 |
+| `oauth-proxy-diagnostic.yml` | OAuth 代理 | 诊断辅助 |
 
 ## 工作流触发
 
