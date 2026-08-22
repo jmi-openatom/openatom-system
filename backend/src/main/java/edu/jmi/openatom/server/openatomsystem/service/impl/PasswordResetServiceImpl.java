@@ -85,7 +85,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     mailBroadcastPlanner.enqueueUserMailHtml(
         "password_reset_" + user.getId() + "_" + System.currentTimeMillis(),
         user.getId(),
-        "【开放原子开源社团】找回密码验证码",
+        "【开放原子开源社团】重置密码验证码",
         buildCodeMailHtml(code));
     return Result.success("验证码已发送，请查收邮件");
   }
@@ -152,7 +152,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
   private String buildCodeMailHtml(String code) {
     return """
         <div style="max-width:520px;margin:0 auto;padding:24px;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;color:#1f2937;line-height:1.6;">
-          <h2 style="font-size:20px;margin:0 0 16px;">找回密码</h2>
+          <h2 style="font-size:20px;margin:0 0 16px;">重置密码</h2>
           <p style="margin:0 0 16px;">同学，你好：</p>
           <p style="margin:0 0 16px;">你正在申请重置登录密码，本次验证码为：</p>
           <p style="margin:0 0 16px;font-size:28px;font-weight:700;letter-spacing:6px;color:#2563eb;">%s</p>
