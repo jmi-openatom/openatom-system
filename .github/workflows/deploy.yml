@@ -101,7 +101,41 @@ jobs:
           script: |
             set -eu
             cd /www/wwwroot/openatom-system || { echo "Directory not found"; exit 1; }
-            
+
+            # --- Docker 国内镜像加速 ---
+            # 中国大陆网络无法直连 docker.io（DNS 污染导致连接超时），首次部署自动
+            # 配置 registry mirror。幂等：已有 registry-mirrors 时跳过，不重复重启 Docker。
+            if ! grep -q '"registry-mirrors"' /etc/docker/daemon.json 2>/dev/null; then
+              echo "Step 0: Configuring Docker registry mirrors for mainland China..."
+              if [ "$(id -u)" -ne 0 ]; then
+                echo "Critical Error: need root to write /etc/docker/daemon.json" >&2
+                exit 1
+              fi
+              mkdir -p /etc/docker
+              if [ -f /etc/docker/daemon.json ]; then
+                cp /etc/docker/daemon.json "/etc/docker/daemon.json.openatom.bak.$(date +%s)"
+              fi
+              cat > /etc/docker/daemon.json <<'EOF'
+            {
+              "registry-mirrors": [
+                "https://docker.1ms.run",
+                "https://docker.xuanyuan.me",
+                "https://docker.m.daocloud.io",
+                "https://hub.rat.dev",
+                "https://dockerproxy.net"
+              ]
+            }
+            EOF
+              systemctl restart docker || service docker restart || {
+                echo "Critical Error: failed to restart Docker daemon" >&2
+                exit 1
+              }
+              sleep 3
+              echo "Docker registry mirrors configured."
+            else
+              echo "Docker registry mirrors already configured, skipping."
+            fi
+
             git fetch --all
             git reset --hard origin/main
             
