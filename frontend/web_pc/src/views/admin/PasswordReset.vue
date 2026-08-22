@@ -13,10 +13,10 @@
 
         <div class="reset-aside__hero">
           <p class="reset-aside__eyebrow">统一身份认证平台</p>
-          <h1 class="reset-aside__title">找回密码</h1>
-          <p class="reset-aside__name">邮箱验证码安全重置</p>
+          <h1 class="reset-aside__title">忘记密码</h1>
+          <p class="reset-aside__name">邮箱验证码安全找回</p>
           <p class="reset-aside__tagline">
-            通过绑定邮箱接收验证码，即可安全重置账号密码，全程无需管理员介入。
+            通过绑定邮箱接收验证码，即可安全找回账号密码，全程无需管理员介入。
           </p>
         </div>
 
@@ -50,7 +50,7 @@
           </div>
           <div class="reset-form-brand__copy">
             <strong>JMI-OPENATOM</strong>
-            <small>找回密码</small>
+            <small>忘记密码</small>
           </div>
         </div>
 
@@ -143,7 +143,7 @@
         <!-- 步骤 2：输入验证码与新密码 -->
         <div v-else-if="currentStep === 2" class="reset-panel">
           <div class="reset-form-header">
-            <h2>重置密码</h2>
+            <h2>设置新密码</h2>
             <p>
               验证码已发送至 <strong>{{ form.account }}</strong>
               绑定的邮箱，请在 5 分钟内完成验证。
@@ -216,21 +216,21 @@
             <button type="submit" class="reset-submit" :disabled="submitting">
               <template v-if="!submitting">
                 <KeyRound :size="18" aria-hidden="true" />
-                <span>确认重置</span>
+                <span>确认修改</span>
               </template>
               <span v-else class="reset-spinner"></span>
             </button>
           </form>
         </div>
 
-        <!-- 步骤 3：重置成功 -->
+        <!-- 步骤 3：修改成功 -->
         <div v-else class="reset-panel">
           <div class="reset-success">
             <div class="reset-success__icon">
               <CheckCircle2 :size="34" aria-hidden="true" />
             </div>
             <div class="reset-form-header">
-              <h2>重置成功</h2>
+              <h2>修改成功</h2>
               <p>密码已更新，请使用新密码重新登录。所有旧会话已安全退出。</p>
             </div>
             <button type="button" class="reset-submit" @click="goToLogin">
@@ -428,7 +428,7 @@ async function handleReset() {
       code: form.code.trim(),
       newPassword: form.newPassword,
     })
-    ElMessage.success('密码重置成功')
+    ElMessage.success('密码修改成功')
     currentStep.value = 3
   } catch {
     // 错误已由请求拦截器统一处理

@@ -65,7 +65,7 @@ public class AuthController {
   }
 
   /**
-   * 发送找回密码验证码邮件
+   * 发送忘记密码验证码邮件
    *
    * @param request 账号（用户名/学号/邮箱）
    * @return 操作结果（无论账号是否存在均返回成功，防枚举）
