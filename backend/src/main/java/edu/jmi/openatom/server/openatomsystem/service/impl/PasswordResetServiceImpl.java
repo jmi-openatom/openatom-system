@@ -9,6 +9,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestPasswordResetSendCodeDT
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import edu.jmi.openatom.server.openatomsystem.service.CaptchaService;
 import edu.jmi.openatom.server.openatomsystem.service.MailBroadcastPlanner;
 import edu.jmi.openatom.server.openatomsystem.service.PasswordResetService;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +45,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
   private final PasswordService passwordService;
   private final MailBroadcastPlanner mailBroadcastPlanner;
   private final StringRedisTemplate redisTemplate;
+  private final CaptchaService captchaService;
   private final SecureRandom secureRandom = new SecureRandom();
 
   @Override
@@ -51,6 +53,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     String account = normalize(request == null ? null : request.getAccount());
     if (account == null) {
       return Result.error("请输入账号或邮箱");
+    }
+    if (request.getCaptchaId() == null
+        || request.getCaptchaId().isBlank()
+        || request.getCaptchaValue() == null) {
+      return Result.error("请先完成滑块验证");
+    }
+    if (!captchaService.verify(request.getCaptchaId(), request.getCaptchaValue())) {
+      return Result.error("滑块验证未通过，请重试");
     }
     Boolean acquired =
         redisTemplate

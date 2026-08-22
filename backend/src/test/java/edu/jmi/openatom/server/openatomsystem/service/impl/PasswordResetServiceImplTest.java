@@ -16,6 +16,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestPasswordResetSendCodeDT
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import edu.jmi.openatom.server.openatomsystem.service.CaptchaService;
 import edu.jmi.openatom.server.openatomsystem.service.MailBroadcastPlanner;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,12 +28,14 @@ import org.springframework.data.redis.core.ValueOperations;
 class PasswordResetServiceImplTest {
   private static final String CODE_KEY = "openatom:pwd-reset:code:7";
   private static final String ATTEMPT_KEY = "openatom:pwd-reset:attempt:7";
+  private static final String CAPTCHA_ID = "captcha-1";
 
   private UserMapper userMapper;
   private PasswordService passwordService;
   private MailBroadcastPlanner mailBroadcastPlanner;
   private StringRedisTemplate redisTemplate;
   private ValueOperations<String, String> valueOps;
+  private CaptchaService captchaService;
   private PasswordResetServiceImpl service;
 
   @BeforeEach
@@ -43,10 +46,20 @@ class PasswordResetServiceImplTest {
     mailBroadcastPlanner = mock(MailBroadcastPlanner.class);
     redisTemplate = mock(StringRedisTemplate.class);
     valueOps = mock(ValueOperations.class);
+    captchaService = mock(CaptchaService.class);
     when(redisTemplate.opsForValue()).thenReturn(valueOps);
+    when(captchaService.verify(anyString(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(true);
     service =
         new PasswordResetServiceImpl(userMapper, passwordService, mailBroadcastPlanner,
-            redisTemplate);
+            redisTemplate, captchaService);
+  }
+
+  private RequestPasswordResetSendCodeDTO sendCodeRequest(String account) {
+    return RequestPasswordResetSendCodeDTO.builder()
+        .account(account)
+        .captchaId(CAPTCHA_ID)
+        .captchaValue(120)
+        .build();
   }
 
   @Test
@@ -56,8 +69,7 @@ class PasswordResetServiceImplTest {
     when(valueOps.setIfAbsent(eq("openatom:pwd-reset:send-limit:member"), eq("1"), any(Duration.class)))
         .thenReturn(true);
 
-    Result<String> result = service.sendCode(
-        RequestPasswordResetSendCodeDTO.builder().account("member").build());
+    Result<String> result = service.sendCode(sendCodeRequest("member"));
 
     assertEquals(0, result.getCode());
     ArgumentCaptor<String> codeCaptor = ArgumentCaptor.forClass(String.class);
@@ -68,14 +80,25 @@ class PasswordResetServiceImplTest {
   }
 
   @Test
+  void sendCodeRejectsWhenSliderCaptchaFails() {
+    when(captchaService.verify(anyString(), org.mockito.ArgumentMatchers.anyInt()))
+        .thenReturn(false);
+
+    Result<String> result = service.sendCode(sendCodeRequest("member"));
+
+    assertEquals(50000, result.getCode());
+    assertEquals("滑块验证未通过，请重试", result.getMessage());
+    verify(mailBroadcastPlanner, never()).enqueueUserMailHtml(any(), any(), any(), any());
+  }
+
+  @Test
   void sendCodeAlwaysSucceedsForUnknownAccountWithoutEnqueueing() {
     when(userMapper.selectByStudentIdOrUserName("nobody")).thenReturn(null);
     when(userMapper.selectByEmail("nobody")).thenReturn(null);
     when(valueOps.setIfAbsent(eq("openatom:pwd-reset:send-limit:nobody"), eq("1"), any(Duration.class)))
         .thenReturn(true);
 
-    Result<String> result =
-        service.sendCode(RequestPasswordResetSendCodeDTO.builder().account("nobody").build());
+    Result<String> result = service.sendCode(sendCodeRequest("nobody"));
 
     assertEquals(0, result.getCode());
     assertEquals("验证码已发送，请查收邮件", result.getData());
@@ -86,8 +109,7 @@ class PasswordResetServiceImplTest {
   void sendCodeRejectsRequestsWithinOneMinute() {
     when(valueOps.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(false);
 
-    Result<String> result =
-        service.sendCode(RequestPasswordResetSendCodeDTO.builder().account("member").build());
+    Result<String> result = service.sendCode(sendCodeRequest("member"));
 
     assertEquals(50000, result.getCode());
     assertEquals("发送过于频繁，请 1 分钟后再试", result.getMessage());
@@ -100,8 +122,7 @@ class PasswordResetServiceImplTest {
     when(userMapper.selectByStudentIdOrUserName("member")).thenReturn(user);
     when(valueOps.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
 
-    Result<String> result =
-        service.sendCode(RequestPasswordResetSendCodeDTO.builder().account("member").build());
+    Result<String> result = service.sendCode(sendCodeRequest("member"));
 
     assertEquals(0, result.getCode());
     verify(mailBroadcastPlanner, never()).enqueueUserMailHtml(any(), any(), any(), any());
@@ -116,7 +137,7 @@ class PasswordResetServiceImplTest {
     when(passwordService.encode("new-password-123")).thenReturn("$2a$10$encoded");
     when(valueOps.setIfAbsent(anyString(), anyString(), any(Duration.class))).thenReturn(true);
 
-    service.sendCode(RequestPasswordResetSendCodeDTO.builder().account("member").build());
+    service.sendCode(sendCodeRequest("member"));
     Result<String> result =
         service.reset(
             RequestPasswordResetDTO.builder()

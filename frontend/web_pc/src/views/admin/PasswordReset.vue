@@ -58,7 +58,7 @@
         <div v-if="currentStep === 1" class="reset-panel">
           <div class="reset-form-header">
             <h2>输入账号</h2>
-            <p>请输入注册时的用户名、学号或绑定邮箱，我们将向绑定邮箱发送验证码。</p>
+            <p>请输入注册时的用户名、学号或绑定邮箱，完成滑块验证后，我们将向绑定邮箱发送验证码。</p>
           </div>
           <form class="reset-form" @submit.prevent="handleSendCode">
             <div class="reset-field">
@@ -75,7 +75,62 @@
                 />
               </div>
             </div>
-            <button type="submit" class="reset-submit" :disabled="sending">
+
+            <div class="reset-field">
+              <label class="reset-label">滑块验证</label>
+              <div
+                v-if="captcha"
+                class="reset-captcha"
+                :class="{ 'is-loading': captchaLoading }"
+              >
+                <div class="reset-captcha__stage">
+                  <img
+                    ref="imageRef"
+                    :src="captcha.backgroundBase64"
+                    class="reset-captcha__bg"
+                    alt="滑块验证码背景"
+                    @load="measureScale"
+                  />
+                  <img
+                    :src="captcha.pieceBase64"
+                    class="reset-captcha__piece"
+                    :style="pieceStyle"
+                    alt=""
+                  />
+                  <button
+                    type="button"
+                    class="reset-captcha__refresh"
+                    aria-label="刷新验证码"
+                    title="刷新验证码"
+                    @click="loadCaptcha"
+                  >
+                    <RefreshCw :size="15" aria-hidden="true" />
+                  </button>
+                </div>
+                <div
+                  ref="sliderRef"
+                  class="reset-captcha__slider"
+                  :class="{ 'is-dragging': dragging }"
+                  @pointerdown="onSliderPointerDown"
+                  @pointermove="onSliderPointerMove"
+                  @pointerup="onSliderPointerUp"
+                  @pointercancel="onSliderPointerUp"
+                >
+                  <span class="reset-captcha__slider-hint">向右滑动完成验证</span>
+                  <span class="reset-captcha__slider-knob" :style="{ left: pieceX + 'px' }">
+                    <ChevronsRight :size="18" aria-hidden="true" />
+                  </span>
+                </div>
+              </div>
+              <div v-else class="reset-captcha__empty">
+                <button type="button" class="reset-captcha__empty-btn" @click="loadCaptcha">
+                  <RefreshCw :size="16" aria-hidden="true" />
+                  <span>验证码加载失败，点击重试</span>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="reset-submit" :disabled="sending || !captcha">
               <template v-if="!sending">
                 <Send :size="18" aria-hidden="true" />
                 <span>发送验证码</span>
@@ -192,20 +247,33 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { authApi } from '@/api'
-import { onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import HomeMapSection from '@/components/site/home/HomeMapSection.vue'
 import {
   ArrowLeft,
   CheckCircle2,
+  ChevronsRight,
   Eye,
   EyeOff,
   KeyRound,
   LockKeyhole,
   LogIn,
+  RefreshCw,
   Send,
   UserRound,
 } from 'lucide-vue-next'
+
+const CAPTCHA_NATURAL_WIDTH = 280
+const CAPTCHA_PIECE_NATURAL_WIDTH = 55
+const CAPTCHA_PIECE_NATURAL_HEIGHT = 44
+
+interface CaptchaData {
+  captchaId: string
+  backgroundBase64: string
+  pieceBase64: string
+  pieceY: number
+}
 
 const steps = ['验证邮箱', '设置新密码', '完成']
 
@@ -224,20 +292,98 @@ const form = reactive({
   confirmPassword: '',
 })
 
+const captcha = ref<CaptchaData | null>(null)
+const captchaLoading = ref(false)
+const pieceX = ref(0)
+const dragging = ref(false)
+const imageScale = ref(1)
+const imageRef = ref<HTMLImageElement>()
+const sliderRef = ref<HTMLDivElement>()
+
+const trackMax = computed(
+  () => Math.max(0, CAPTCHA_NATURAL_WIDTH - CAPTCHA_PIECE_NATURAL_WIDTH) * imageScale.value,
+)
+
+const pieceStyle = computed(() => {
+  const scale = imageScale.value
+  return {
+    left: `${pieceX.value}px`,
+    top: `${(captcha.value ? captcha.value.pieceY : 0) * scale}px`,
+    width: `${CAPTCHA_PIECE_NATURAL_WIDTH * scale}px`,
+    height: `${CAPTCHA_PIECE_NATURAL_HEIGHT * scale}px`,
+  }
+})
+
+function measureScale() {
+  if (imageRef.value && imageRef.value.clientWidth > 0) {
+    imageScale.value = imageRef.value.clientWidth / CAPTCHA_NATURAL_WIDTH
+  }
+}
+
+async function loadCaptcha() {
+  captchaLoading.value = true
+  try {
+    captcha.value = await authApi.captcha()
+    pieceX.value = 0
+    await nextTick()
+    measureScale()
+  } catch {
+    captcha.value = null
+  } finally {
+    captchaLoading.value = false
+  }
+}
+
+function onSliderPointerDown(event: PointerEvent) {
+  if (!sliderRef.value || !captcha.value) return
+  dragging.value = true
+  sliderRef.value.setPointerCapture(event.pointerId)
+  updatePieceFromPointer(event)
+}
+
+function updatePieceFromPointer(event: PointerEvent) {
+  const slider = sliderRef.value
+  if (!slider || !captcha.value) return
+  const rect = slider.getBoundingClientRect()
+  pieceX.value = Math.min(trackMax.value, Math.max(0, event.clientX - rect.left))
+}
+
+function onSliderPointerMove(event: PointerEvent) {
+  if (!dragging.value) return
+  updatePieceFromPointer(event)
+}
+
+function onSliderPointerUp(event: PointerEvent) {
+  if (!dragging.value) return
+  dragging.value = false
+  if (sliderRef.value) sliderRef.value.releasePointerCapture?.(event.pointerId)
+  if (pieceX.value > 0) handleSendCode()
+}
+
 async function handleSendCode() {
   if (!form.account.trim()) {
     ElMessage.warning('请输入账号')
+    pieceX.value = 0
+    return
+  }
+  if (!captcha.value) {
+    ElMessage.warning('请先完成滑块验证')
+    await loadCaptcha()
     return
   }
   if (countdown.value > 0) return
   sending.value = true
   try {
-    await authApi.sendPasswordResetCode({ account: form.account.trim() })
+    await authApi.sendPasswordResetCode({
+      account: form.account.trim(),
+      captchaId: captcha.value.captchaId,
+      captchaValue: Math.round(pieceX.value / imageScale.value),
+    })
     ElMessage.success('验证码已发送，请查收邮件')
     startCountdown()
     if (currentStep.value === 1) currentStep.value = 2
   } catch {
-    // 错误已由请求拦截器统一处理
+    await loadCaptcha()
   } finally {
     sending.value = false
   }
@@ -294,6 +440,8 @@ async function handleReset() {
 function goToLogin() {
   router.push('/login')
 }
+
+onMounted(loadCaptcha)
 
 onBeforeUnmount(() => {
   if (countdownTimer) clearInterval(countdownTimer)
@@ -596,6 +744,131 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.reset-captcha {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reset-captcha__stage {
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+  overflow: hidden;
+  border: 1px solid var(--oa-border);
+  border-radius: 12px;
+}
+
+.reset-captcha__bg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.reset-captcha__piece {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.reset-captcha__refresh {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--oa-muted);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
+}
+
+.reset-captcha__refresh:hover {
+  color: var(--oa-text);
+}
+
+.reset-captcha__slider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 280px;
+  height: 44px;
+  border: 1px solid var(--oa-border);
+  border-radius: var(--reset-control-radius);
+  background: var(--oa-button-bg);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.reset-captcha__slider.is-dragging {
+  cursor: grabbing;
+}
+
+.reset-captcha__slider-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--oa-faint);
+  pointer-events: none;
+}
+
+.reset-captcha__slider-knob {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: inline-flex;
+  width: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: var(--oa-text);
+  color: var(--oa-active-text);
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.reset-captcha__empty {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 280px;
+  min-height: 44px;
+}
+
+.reset-captcha__empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px dashed var(--oa-border-strong);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--oa-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.reset-captcha__empty-btn:hover {
+  color: var(--oa-text);
+  border-color: var(--oa-text);
 }
 
 .reset-field {

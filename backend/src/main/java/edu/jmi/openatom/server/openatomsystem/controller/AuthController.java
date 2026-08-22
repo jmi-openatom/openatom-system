@@ -7,6 +7,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.*;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.service.MailboxProvisioningClient;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseCurrentUserVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseCaptchaVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseLoginVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinTokenVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseGroupJoinVerifyVO;
@@ -15,6 +16,7 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseTokenIntrospectionVO;
 import edu.jmi.openatom.server.openatomsystem.service.AuthCenterService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
+import edu.jmi.openatom.server.openatomsystem.service.CaptchaService;
 import edu.jmi.openatom.server.openatomsystem.service.PasswordResetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +45,13 @@ public class AuthController {
   private final AuthCenterService authCenterService;
   private final MailboxProvisioningClient mailboxProvisioningClient;
   private final PasswordResetService passwordResetService;
+  private final CaptchaService captchaService;
+
+  /** 获取滑块拼图验证码（自建，中国大陆可用） */
+  @GetMapping("/captcha")
+  public Result<ResponseCaptchaVO> captcha() {
+    return Result.success(captchaService.generate());
+  }
 
   /**
    * 用户注册
