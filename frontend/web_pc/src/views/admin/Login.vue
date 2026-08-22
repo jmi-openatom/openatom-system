@@ -137,6 +137,7 @@
               <input v-model="rememberPassword" type="checkbox" />
               <span>记住密码</span>
             </label>
+            <router-link class="login-form-link" to="/password-reset">忘记密码？</router-link>
           </div>
           <button type="submit" class="login-submit" :disabled="loading">
             <template v-if="!loading">
@@ -990,6 +991,26 @@ onBeforeUnmount(cancelGoogleIdentityPrompt)
 
 .login-checkbox:hover {
   color: var(--oa-text);
+}
+
+.login-form-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin: -10px 0;
+  padding: 0 4px;
+  font-size: 14px;
+  color: var(--oa-muted);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: color 0.18s ease;
+}
+
+.login-form-link:hover,
+.login-form-link:focus-visible {
+  color: var(--oa-text);
+  outline: 2px solid var(--oa-border-strong);
+  outline-offset: 2px;
 }
 
 .login-submit {

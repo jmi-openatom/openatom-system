@@ -144,6 +144,12 @@ export const authApi = {
   updatePassword(data: Record<string, unknown>): Promise<any> {
     return request.patch('/auth/password', data)
   },
+  sendPasswordResetCode(data: { account: string }): Promise<any> {
+    return request.post('/auth/password-reset/send-code', data)
+  },
+  resetPassword(data: { account: string; code: string; newPassword: string }): Promise<any> {
+    return request.post('/auth/password-reset/reset', data)
+  },
   uploadAvatar(file: File): Promise<any> {
     const formData = new FormData()
     formData.append('file', file)

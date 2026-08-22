@@ -95,6 +95,8 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				"/auth/gitee-login-url",
 				"/auth/gitee-callback",
 				"/auth/miniapp-login",
+				"/auth/password-reset/send-code",
+				"/auth/password-reset/reset",
 				"/auth/refresh-token",
 				"/auth/introspect",
 				"/auth/qq-bind",

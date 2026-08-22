@@ -117,6 +117,7 @@ const ACTIVATION_BYPASS_PATHS = new Set([
   '/activation',
   '/login',
   '/admin/login',
+  '/password-reset',
   '/auth/callback',
   '/auth/github/callback',
   '/auth/gitee/callback',
@@ -352,6 +353,11 @@ const routes = [
     path: '/login',
     name: 'login',
     component: resilientView(() => import('../views/admin/Login.vue')),
+  },
+  {
+    path: '/password-reset',
+    name: 'password-reset',
+    component: resilientView(() => import('../views/admin/PasswordReset.vue')),
   },
   {
     path: '/activation',

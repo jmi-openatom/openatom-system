@@ -15,6 +15,7 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseQqBindTokenVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseTokenIntrospectionVO;
 import edu.jmi.openatom.server.openatomsystem.service.AuthCenterService;
 import edu.jmi.openatom.server.openatomsystem.service.AuthService;
+import edu.jmi.openatom.server.openatomsystem.service.PasswordResetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -41,6 +42,7 @@ public class AuthController {
   private final AuthService authService;
   private final AuthCenterService authCenterService;
   private final MailboxProvisioningClient mailboxProvisioningClient;
+  private final PasswordResetService passwordResetService;
 
   /**
    * 用户注册
@@ -51,6 +53,29 @@ public class AuthController {
   @PostMapping("/register")
   public Result<String> register(@Valid @RequestBody RequestRegisterDTO requestRegisterDTO) {
     return authService.register(requestRegisterDTO);
+  }
+
+  /**
+   * 发送找回密码验证码邮件
+   *
+   * @param request 账号（用户名/学号/邮箱）
+   * @return 操作结果（无论账号是否存在均返回成功，防枚举）
+   */
+  @PostMapping("/password-reset/send-code")
+  public Result<String> sendPasswordResetCode(
+      @Valid @RequestBody RequestPasswordResetSendCodeDTO request) {
+    return passwordResetService.sendCode(request);
+  }
+
+  /**
+   * 校验验证码并重置密码
+   *
+   * @param request 账号、验证码和新密码
+   * @return 操作结果
+   */
+  @PostMapping("/password-reset/reset")
+  public Result<String> resetPassword(@Valid @RequestBody RequestPasswordResetDTO request) {
+    return passwordResetService.reset(request);
   }
 
   /**

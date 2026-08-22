@@ -34,6 +34,15 @@ public interface UserMapper extends BaseMapper<User> {
             .eq(User::getUserName, loginName));
   }
 
+  /** 按邮箱查询用户（忽略大小写） */
+  default User selectByEmail(String email) {
+    if (email == null || email.isBlank()) return null;
+    return selectOne(
+        new LambdaQueryWrapper<User>()
+            .apply("LOWER(email) = {0}", email.trim().toLowerCase())
+            .last("LIMIT 1"));
+  }
+
   /** 按小程序 openid 查询用户 */
   default User selectByMiniappOpenid(String openid) {
     if (openid == null || openid.isBlank()) return null;

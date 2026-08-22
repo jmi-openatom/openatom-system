@@ -73,6 +73,33 @@ public class MailBroadcastPlanner {
     enqueueUserBroadcast(eventId, List.of(userId), kind, subject, userPayload);
   }
 
+  /**
+   * Sends a single user's mailbox a pre-rendered HTML mail, bypassing AI generation.
+   *
+   * <p>Used for content that must reach the recipient byte-for-byte (e.g. verification codes).
+   */
+  public void enqueueUserMailHtml(String eventId, Integer userId, String subject, String html) {
+    if (userId == null) {
+      return;
+    }
+    if (!properties.enabled() || eventId == null || eventId.isBlank()) {
+      return;
+    }
+    Thread.startVirtualThread(
+        () -> {
+          try {
+            List<String> emails = resolveUserEmails(userId);
+            if (emails.isEmpty()) {
+              log.warn("mail broadcast: no email addresses for eventId={}, skipping", eventId);
+              return;
+            }
+            insertEvent(eventId, "password_reset", subject, html, emails);
+          } catch (Exception exception) {
+            log.error("mail broadcast planning failed for eventId={}", eventId, exception);
+          }
+        });
+  }
+
   /** Sends to each user's mailbox (external email or mail-system address). */
   public void enqueueUserBroadcast(
       String eventId, List<Integer> userIds, String kind, String subject, String userPayload) {
