@@ -309,6 +309,116 @@ jobs:
               exit 1
             fi
 
+            # --- Step 3: api.jmi-openatom.cn 入口 Nginx 自动配置 ---
+            # 幂等：upstream/缓存 location 已存在则跳过；nginx -t 失败自动回滚并中止部署。
+            # 路径可按服务器实际布局通过 Repository Variable 覆盖。
+            NGINX_CONF="${OPENATOM_NGINX_CONF:-/www/server/panel/vhost/nginx/api.jmi-openatom.cn.conf}"
+            NGINX_EXT_DIR="${OPENATOM_NGINX_EXT_DIR:-/www/server/panel/vhost/nginx/extension/api.jmi-openatom.cn}"
+            NGINX_CACHE_CONF="$NGINX_EXT_DIR/cache.conf"
+            NGINX_CACHE_DIR="${OPENATOM_NGINX_CACHE_DIR:-/www/wwwroot/api.jmi-openatom.cn/proxy_cache_dir}"
+
+            if [ -f "$NGINX_CONF" ]; then
+              echo "Step 3: Auto-configuring api.jmi-openatom.cn Nginx..."
+              mkdir -p "$NGINX_CACHE_DIR" "$NGINX_EXT_DIR"
+              chown -R www:www "$NGINX_CACHE_DIR" 2>/dev/null || true
+              chown -R www:www "$NGINX_EXT_DIR" 2>/dev/null || true
+
+              # 备份当前配置，供 nginx -t 失败时回滚
+              cp "$NGINX_CONF" "$NGINX_CONF.bak.$(date +%s)"
+
+              # 1) upstream：只包含实际运行的后端实例
+              if ! grep -q "upstream openatom_api" "$NGINX_CONF"; then
+                UPSTREAM_TMP=$(mktemp)
+                {
+                  echo "upstream openatom_api {"
+                  echo "    server 127.0.0.1:8921 max_fails=3 fail_timeout=10s;"
+                  if $COMPOSE_CMD ps backend-2 2>/dev/null | grep -iq "Up"; then
+                    echo "    server 127.0.0.1:8922 max_fails=3 fail_timeout=10s;"
+                  fi
+                  echo "    keepalive 64;"
+                  echo "}"
+                  echo ""
+                } > "$UPSTREAM_TMP"
+                awk 'NR==FNR { buf = buf $0 ORS; next } /^server {/ && !inserted { printf "%s", buf; inserted=1 } { print }' \
+                  "$UPSTREAM_TMP" "$NGINX_CONF" > "$NGINX_CONF.tmp"
+                mv "$NGINX_CONF.tmp" "$NGINX_CONF"
+                rm -f "$UPSTREAM_TMP"
+                echo "Nginx upstream inserted."
+              fi
+
+              # 2) 原反代指向 upstream（保留 URI 透传）
+              if grep -q "proxy_pass http://127.0.0.1:8921;" "$NGINX_CONF"; then
+                sed -i 's#proxy_pass http://127.0.0.1:8921;#proxy_pass http://openatom_api;#' "$NGINX_CONF"
+                echo "Nginx proxy_pass switched to upstream."
+              fi
+
+                # 3) 公开接口缓存 location（extension include 目录，幂等）
+                if [ ! -f "$NGINX_CACHE_CONF" ] || ! grep -q "openatom_api" "$NGINX_CACHE_CONF"; then
+                cat > "$NGINX_CACHE_CONF" <<'NGINXEOF'
+            # 自动生成：公开只读接口 30 秒缓存，扛瞬时高峰；captcha 缓存 5 秒
+            location ^~ /api/v1/site/ {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache api_jmi-openatom_cn_cache;
+            proxy_cache_valid 200 30s;
+            proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+            proxy_ignore_headers Set-Cookie Vary;
+            add_header X-Proxy-Cache $upstream_cache_status;
+            }
+
+            location ^~ /api/v1/public/ {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache api_jmi-openatom_cn_cache;
+            proxy_cache_valid 200 30s;
+            proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+            proxy_ignore_headers Set-Cookie Vary;
+            add_header X-Proxy-Cache $upstream_cache_status;
+            }
+
+            location = /api/v1/auth/captcha {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_cache api_jmi-openatom_cn_cache;
+            proxy_cache_valid 200 5s;
+            add_header X-Proxy-Cache $upstream_cache_status;
+            }
+            NGINXEOF
+                echo "Nginx cache locations written."
+              fi
+
+              # 4) 校验并重载，失败回滚
+              if nginx -t 2>&1; then
+                nginx -s reload || /etc/init.d/nginx reload || systemctl reload nginx || true
+                echo "Nginx configured and reloaded."
+              else
+                LATEST_BACKUP=$(ls -t "$NGINX_CONF".bak.* 2>/dev/null | head -1)
+                if [ -n "$LATEST_BACKUP" ]; then
+                  cp "$LATEST_BACKUP" "$NGINX_CONF"
+                  nginx -t 2>&1 || true
+                  nginx -s reload || /etc/init.d/nginx reload || systemctl reload nginx || true
+                fi
+                echo "Critical Error: invalid Nginx config, rolled back to previous version." >&2
+                exit 1
+              fi
+            else
+              echo "Warning: $NGINX_CONF not found; skip Nginx auto-config (manual config required)."
+            fi
+
             $COMPOSE_CMD ps
 
             for service in redis backend backend-2 frontend astrbot napcat; do
