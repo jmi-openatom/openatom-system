@@ -4,6 +4,64 @@ x-logging: &default-logging
     max-size: "10m"
     max-file: "3"
 
+# backend 副本共享的环境变量（YAML anchor，两个服务复用）
+x-backend-env: &backend-env
+  # Redis 配置
+  REDIS_HOST: 127.0.0.1
+  REDIS_PORT: 6379
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-openatom123}
+  # 数据库配置（生产环境）
+  SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+  SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+  SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+  # JVM / Tomcat 调优
+  JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx1024m -XX:MaxMetaspaceSize=320m -XX:+UseG1GC -XX:MaxGCPauseMillis=100}
+  TOMCAT_MAX_THREADS: ${TOMCAT_MAX_THREADS:-200}
+  # JWT / Sa-Token 配置
+  SA_TOKEN_JWT_SECRET_KEY: ${SA_TOKEN_JWT_SECRET_KEY}
+  APP_OIDC_ISSUER: ${APP_OIDC_ISSUER:-https://oauth.jmi-openatom.cn/api/v1}
+  APP_OIDC_RESOURCE_AUDIENCE: ${APP_OIDC_RESOURCE_AUDIENCE:-stalwart}
+  APP_OIDC_KEY_ID: ${APP_OIDC_KEY_ID:-openatom-oidc-rs256}
+  APP_OIDC_PRIVATE_KEY_BASE64: ${APP_OIDC_PRIVATE_KEY_BASE64}
+  APP_OIDC_PUBLIC_KEY_BASE64: ${APP_OIDC_PUBLIC_KEY_BASE64}
+  APP_OIDC_PREVIOUS_KEY_ID: ${APP_OIDC_PREVIOUS_KEY_ID:-}
+  APP_OIDC_PREVIOUS_PUBLIC_KEY_BASE64: ${APP_OIDC_PREVIOUS_PUBLIC_KEY_BASE64:-}
+  APP_SEAFILE_OAUTH_CLIENT_SECRET: ${APP_SEAFILE_OAUTH_CLIENT_SECRET:-}
+  APP_MAIL_PROVISION_URL: ${APP_MAIL_PROVISION_URL:-}
+  APP_MAIL_SERVICE_TOKEN: ${APP_MAIL_SERVICE_TOKEN:-}
+  APP_MAIL_OUTBOX_BATCH_SIZE: ${APP_MAIL_OUTBOX_BATCH_SIZE:-50}
+  APP_MAIL_OUTBOX_MAX_RETRIES: ${APP_MAIL_OUTBOX_MAX_RETRIES:-12}
+  APP_GOOGLE_CLIENT_ID: ${APP_GOOGLE_CLIENT_ID:-456373207373-4md7t52dkhbo7p48e8omhjoct2squ06c.apps.googleusercontent.com}
+  APP_GITHUB_CLIENT_ID: ${APP_GITHUB_CLIENT_ID:-Ov23liQQCxTjyoR8WAW9}
+  APP_GITHUB_CLIENT_SECRET: ${APP_GITHUB_CLIENT_SECRET:-}
+  APP_GITHUB_CALLBACK_URI: ${APP_GITHUB_CALLBACK_URI:-https://www.jmi-openatom.cn/auth/github/callback}
+  APP_GITEE_CLIENT_ID: ${APP_GITEE_CLIENT_ID:-12ed9f6f4df02c05cdf05045221e650e3bd3481f6301707a1d7ac8dd97211fa8}
+  APP_GITEE_CLIENT_SECRET: ${APP_GITEE_CLIENT_SECRET:-}
+  APP_GITEE_CALLBACK_URI: ${APP_GITEE_CALLBACK_URI:-https://www.jmi-openatom.cn/auth/gitee/callback}
+  APP_APPLICATION_SUBMIT_MAX_PER_SECOND: ${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:-5}
+  APP_AUTH_IP_MAX_PER_MINUTE: ${APP_AUTH_IP_MAX_PER_MINUTE:-30}
+  APP_AVATAR_STORAGE_DIR: "/app/uploads/avatars"
+  APP_IMAGE_HOSTING_STORAGE_DIR: "/app/uploads/images"
+  APP_LEAVE_ATTACHMENT_STORAGE_DIR: "/app/uploads/leave-attachments"
+  APP_DOCUMENT_TEMPLATE_STORAGE_DIR: "/app/uploads/document-templates"
+  APP_GENERATED_DOCUMENT_STORAGE_DIR: "/app/uploads/generated-documents"
+  APP_SHARED_FILES_STORAGE_DIR: "/app/uploads/shared-files"
+  DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+  DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+  DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+  APP_BOT_LEAVE_REVIEW_CALLBACK_URL: ${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:-http://127.0.0.1:6198/openatom/leave-review}
+  APP_BOT_CALLBACK_TOKEN: ${APP_BOT_CALLBACK_TOKEN:-}
+  APP_NAPCAT_BASE_URL: ${APP_NAPCAT_BASE_URL:-http://127.0.0.1:3000}
+  APP_NAPCAT_ACCESS_TOKEN: ${APP_NAPCAT_ACCESS_TOKEN:-sRtnBQJy-lqPTWjj}
+  # 文件上传限制（默认 500MB，支持大体积备份导入）
+  MULTIPART_MAX_FILE_SIZE: ${MULTIPART_MAX_FILE_SIZE:-500MB}
+  MULTIPART_MAX_REQUEST_SIZE: ${MULTIPART_MAX_REQUEST_SIZE:-500MB}
+  # 文档中心（ONLYOFFICE）
+  DOCUMENT_SERVER_OFFICE_URL: ${DOCUMENT_SERVER_OFFICE_URL:-https://office.jmi-openatom.cn}
+  DOCUMENT_SERVER_CALLBACK_BASE_URL: ${DOCUMENT_SERVER_CALLBACK_BASE_URL:-https://api.jmi-openatom.cn/api/v1}
+  DOCUMENT_SERVER_PUBLIC_API_BASE: ${DOCUMENT_SERVER_PUBLIC_API_BASE:-https://api.jmi-openatom.cn/api/v1}
+  DOCUMENT_SERVER_JWT_SECRET: ${DOCUMENT_SERVER_JWT_SECRET:-}
+
 services:
   redis:
     image: redis:7-alpine
@@ -32,59 +90,8 @@ services:
       dockerfile: Dockerfile
     container_name: openatom-backend
     environment:
-      # Redis 配置
-      - REDIS_HOST=127.0.0.1
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-openatom123}
-      
-      # 数据库配置（生产环境）
-      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
-      
-      # JWT / Sa-Token 配置
-      - SA_TOKEN_JWT_SECRET_KEY=${SA_TOKEN_JWT_SECRET_KEY}
-      - APP_OIDC_ISSUER=${APP_OIDC_ISSUER:-https://oauth.jmi-openatom.cn/api/v1}
-      - APP_OIDC_RESOURCE_AUDIENCE=${APP_OIDC_RESOURCE_AUDIENCE:-stalwart}
-      - APP_OIDC_KEY_ID=${APP_OIDC_KEY_ID:-openatom-oidc-rs256}
-      - APP_OIDC_PRIVATE_KEY_BASE64=${APP_OIDC_PRIVATE_KEY_BASE64}
-      - APP_OIDC_PUBLIC_KEY_BASE64=${APP_OIDC_PUBLIC_KEY_BASE64}
-      - APP_OIDC_PREVIOUS_KEY_ID=${APP_OIDC_PREVIOUS_KEY_ID:-}
-      - APP_OIDC_PREVIOUS_PUBLIC_KEY_BASE64=${APP_OIDC_PREVIOUS_PUBLIC_KEY_BASE64:-}
-      - APP_SEAFILE_OAUTH_CLIENT_SECRET=${APP_SEAFILE_OAUTH_CLIENT_SECRET:-}
-      - APP_MAIL_PROVISION_URL=${APP_MAIL_PROVISION_URL:-}
-      - APP_MAIL_SERVICE_TOKEN=${APP_MAIL_SERVICE_TOKEN:-}
-      - APP_MAIL_OUTBOX_BATCH_SIZE=${APP_MAIL_OUTBOX_BATCH_SIZE:-50}
-      - APP_MAIL_OUTBOX_MAX_RETRIES=${APP_MAIL_OUTBOX_MAX_RETRIES:-12}
-      - APP_GOOGLE_CLIENT_ID=${APP_GOOGLE_CLIENT_ID:-456373207373-4md7t52dkhbo7p48e8omhjoct2squ06c.apps.googleusercontent.com}
-      - APP_GITHUB_CLIENT_ID=${APP_GITHUB_CLIENT_ID:-Ov23liQQCxTjyoR8WAW9}
-      - APP_GITHUB_CLIENT_SECRET=${APP_GITHUB_CLIENT_SECRET:-}
-      - APP_GITHUB_CALLBACK_URI=${APP_GITHUB_CALLBACK_URI:-https://www.jmi-openatom.cn/auth/github/callback}
-      - APP_GITEE_CLIENT_ID=${APP_GITEE_CLIENT_ID:-12ed9f6f4df02c05cdf05045221e650e3bd3481f6301707a1d7ac8dd97211fa8}
-      - APP_GITEE_CLIENT_SECRET=${APP_GITEE_CLIENT_SECRET:-}
-      - APP_GITEE_CALLBACK_URI=${APP_GITEE_CALLBACK_URI:-https://www.jmi-openatom.cn/auth/gitee/callback}
-      - APP_APPLICATION_SUBMIT_MAX_PER_SECOND=${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:-5}
-      - APP_AVATAR_STORAGE_DIR=/app/uploads/avatars
-      - APP_IMAGE_HOSTING_STORAGE_DIR=/app/uploads/images
-      - APP_LEAVE_ATTACHMENT_STORAGE_DIR=/app/uploads/leave-attachments
-      - APP_DOCUMENT_TEMPLATE_STORAGE_DIR=/app/uploads/document-templates
-      - APP_GENERATED_DOCUMENT_STORAGE_DIR=/app/uploads/generated-documents
-      - APP_SHARED_FILES_STORAGE_DIR=/app/uploads/shared-files
-      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
-      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
-      - APP_BOT_LEAVE_REVIEW_CALLBACK_URL=${APP_BOT_LEAVE_REVIEW_CALLBACK_URL:-http://127.0.0.1:6198/openatom/leave-review}
-      - APP_BOT_CALLBACK_TOKEN=${APP_BOT_CALLBACK_TOKEN:-}
-      - APP_NAPCAT_BASE_URL=${APP_NAPCAT_BASE_URL:-http://127.0.0.1:3000}
-      - APP_NAPCAT_ACCESS_TOKEN=${APP_NAPCAT_ACCESS_TOKEN:-sRtnBQJy-lqPTWjj}
-      # 文件上传限制（默认 500MB，支持大体积备份导入）
-      - MULTIPART_MAX_FILE_SIZE=${MULTIPART_MAX_FILE_SIZE:-500MB}
-      - MULTIPART_MAX_REQUEST_SIZE=${MULTIPART_MAX_REQUEST_SIZE:-500MB}
-      # 文档中心（ONLYOFFICE）
-      - DOCUMENT_SERVER_OFFICE_URL=${DOCUMENT_SERVER_OFFICE_URL:-https://office.jmi-openatom.cn}
-      - DOCUMENT_SERVER_CALLBACK_BASE_URL=${DOCUMENT_SERVER_CALLBACK_BASE_URL:-https://api.jmi-openatom.cn/api/v1}
-      - DOCUMENT_SERVER_PUBLIC_API_BASE=${DOCUMENT_SERVER_PUBLIC_API_BASE:-https://api.jmi-openatom.cn/api/v1}
-      - DOCUMENT_SERVER_JWT_SECRET=${DOCUMENT_SERVER_JWT_SECRET:-}
+      <<: *backend-env
+      SERVER_PORT: 8921
     network_mode: host
     volumes:
       - avatar_data:/app/uploads
@@ -97,6 +104,35 @@ services:
       retries: 12
       start_period: 60s
     depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+    logging: *default-logging
+
+  # 第二副本：与 backend 共享构建与环境（Sa-Token 会话已落 Redis，可水平扩展）。
+  # 服务器入口 Nginx 需配置 upstream 轮询 8921/8922（见 backend/deploy/nginx/api-upstream.conf）。
+  # 若服务器内存不足 4G，可将 BACKEND_REPLICAS=1 时跳过本服务。
+  backend-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openatom-backend-2
+    environment:
+      <<: *backend-env
+      SERVER_PORT: 8922
+    network_mode: host
+    volumes:
+      - avatar_data:/app/uploads
+      - ./uploads/export-backups:/app/uploads/export-backups
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8922'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    depends_on:
+      backend:
+        condition: service_started
       redis:
         condition: service_healthy
     restart: always

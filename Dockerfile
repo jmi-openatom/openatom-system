@@ -11,4 +11,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8921
-ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+# host 网络下 docker 无法用 mem_limit 约束容器，JVM 必须显式指定堆大小。
+# 默认 1G 堆适配多副本部署（4G 服务器可跑 2 实例），可用 JAVA_OPTS 覆盖。
+ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:MaxMetaspaceSize=320m -XX:+UseG1GC -XX:MaxGCPauseMillis=100"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dspring.profiles.active=prod -jar app.jar"]

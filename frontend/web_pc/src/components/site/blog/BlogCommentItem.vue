@@ -24,7 +24,9 @@
           <span class="reply-text">回复</span>
         </el-button>
       </header>
-      <div class="blog-comment-item__content" v-html="contentHtml"></div>
+      <div class="blog-comment-item__content">
+        <MarkdownContent :content="comment.content || ''" mode="minimal" />
+      </div>
 
       <div v-if="comment.replies?.length" class="blog-comment-item__replies">
         <BlogCommentItem
@@ -42,10 +44,9 @@
 
 <script lang="ts" setup>
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import { ChatLineRound } from '@element-plus/icons-vue'
 import { formatDateTime } from '@/utils/format.ts'
-import { renderMarkdown } from '@/utils/markdown.ts'
-import { computed } from 'vue'
 
 defineOptions({ name: 'BlogCommentItem' })
 
@@ -64,8 +65,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   reply: [comment: Record<string, any>]
 }>()
-
-const contentHtml = computed(() => renderMarkdown(props.comment.content || ''))
 
 function handleReply(comment: Record<string, any>) {
   emit('reply', comment)

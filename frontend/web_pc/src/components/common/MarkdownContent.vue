@@ -1,88 +1,38 @@
 <template>
-  <article :key="resolvedTheme" ref="contentRef" class="markdown-content" v-html="html"></article>
+  <MarkdownRender
+    class="markdown-content"
+    :content="content"
+    :mode="mode"
+    :final="true"
+    :smooth-streaming="false"
+    :fade="false"
+    :typewriter="false"
+    :is-dark="isDark"
+  />
 </template>
 
 <script setup lang="ts">
-import { renderMarkdown } from '@/utils/markdown.ts'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { MarkdownRender } from 'markstream-vue'
+import { computed } from 'vue'
 import { useTheme } from '@/composables/useTheme'
 
 const props = withDefaults(
   defineProps<{
     content?: string
+    mode?: 'docs' | 'chat' | 'minimal'
   }>(),
   {
     content: '',
+    mode: 'docs',
   },
 )
 
-const html = computed(() => renderMarkdown(props.content))
-const contentRef = ref<HTMLElement>()
 const { resolvedTheme } = useTheme()
-let renderSequence = 0
+const isDark = computed(() => resolvedTheme.value === 'dark')
 
-async function renderMermaid() {
-  await nextTick()
-  const root = contentRef.value
-  if (!root) return
-  const codeBlocks = Array.from(root.querySelectorAll<HTMLElement>('pre > code.language-mermaid'))
-  if (!codeBlocks.length) return
-
-  const { default: mermaid } = await import('mermaid')
-  const dark = resolvedTheme.value === 'dark'
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: 'strict',
-    theme: 'base',
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
-    themeVariables: {
-      fontFamily:
-        '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
-      background: dark ? '#1c1c1f' : '#ffffff',
-      mainBkg: dark ? '#252529' : '#f2f2f4',
-      secondBkg: dark ? '#303035' : '#e8e8eb',
-      tertiaryColor: dark ? '#38383d' : '#dedee1',
-      textColor: dark ? '#f7f7f8' : '#1d1d1f',
-      primaryTextColor: dark ? '#f7f7f8' : '#1d1d1f',
-      secondaryTextColor: dark ? '#e2e2e5' : '#333336',
-      tertiaryTextColor: dark ? '#e2e2e5' : '#333336',
-      primaryColor: dark ? '#252529' : '#f2f2f4',
-      primaryBorderColor: dark ? '#68686f' : '#8e8e93',
-      lineColor: dark ? '#b8b8be' : '#6e6e73',
-      clusterBkg: dark ? '#202024' : '#f7f7f8',
-      clusterBorder: dark ? '#55555b' : '#b8b8bd',
-    },
-    flowchart: {
-      htmlLabels: false,
-      useMaxWidth: true,
-    },
-  })
-
-  for (const codeBlock of codeBlocks) {
-    const pre = codeBlock.parentElement
-    if (!pre) continue
-    const diagram = document.createElement('div')
-    diagram.className = 'mermaid-diagram'
-    pre.replaceWith(diagram)
-    try {
-      renderSequence += 1
-      const result = await mermaid.render(
-        `oa-mermaid-${renderSequence}`,
-        codeBlock.textContent || '',
-      )
-      diagram.innerHTML = result.svg
-      result.bindFunctions?.(diagram)
-    } catch (_error) {
-      diagram.classList.add('is-error')
-      diagram.textContent = 'Mermaid 图表语法有误，请检查后重试。'
-    }
-  }
-}
-
-watch([() => props.content, resolvedTheme], () => renderMermaid(), { flush: 'post' })
-
-onMounted(renderMermaid)
+defineExpose({
+  content: () => props.content,
+})
 </script>
 
 <style scoped>
@@ -92,142 +42,17 @@ onMounted(renderMermaid)
   overflow-wrap: anywhere;
 }
 
-.markdown-content :deep(h1),
-.markdown-content :deep(h2),
-.markdown-content :deep(h3),
-.markdown-content :deep(h4),
-.markdown-content :deep(h5),
-.markdown-content :deep(h6) {
-  margin: 1.35em 0 0.65em;
-  color: var(--oa-text);
-  line-height: 1.35;
-  scroll-margin-top: calc(var(--oa-site-header-height) + 24px);
-}
-
-.markdown-content :deep(h1:first-child),
-.markdown-content :deep(h2:first-child),
-.markdown-content :deep(h3:first-child),
-.markdown-content :deep(h4:first-child),
-.markdown-content :deep(h5:first-child),
-.markdown-content :deep(h6:first-child),
-.markdown-content :deep(p:first-child) {
+.markdown-content :deep(.markdown-renderer > :first-child) {
   margin-top: 0;
 }
 
-.markdown-content :deep(p),
-.markdown-content :deep(li) {
-  line-height: 1.85;
-}
-
-.markdown-content :deep(ul),
-.markdown-content :deep(ol) {
-  padding-left: 1.5em;
-}
-
-.markdown-content :deep(blockquote) {
-  margin: 1em 0;
-  padding: 10px 16px;
-  border-left: 3px solid var(--oa-primary);
-  border-radius: 0 10px 10px 0;
-  background: var(--oa-page-soft-bg);
-}
-
-.markdown-content :deep(blockquote p) {
-  margin: 0;
-}
-
-.markdown-content :deep(code) {
-  padding: 2px 6px;
-  border-radius: 5px;
-  color: var(--oa-text);
-  background: var(--oa-button-subtle-bg);
-}
-
-.markdown-content :deep(pre) {
-  max-width: 100%;
-  padding: 16px;
-  border-radius: 12px;
-  color: var(--oa-text);
-  background: var(--oa-page-soft-bg);
-  overflow-x: auto;
-}
-
-.markdown-content :deep(pre code) {
-  padding: 0;
-  background: transparent;
-}
-
+.markdown-content :deep(.link-node),
 .markdown-content :deep(a) {
   color: var(--oa-primary);
   text-underline-offset: 3px;
 }
 
 .markdown-content :deep(img) {
-  display: block;
-  max-width: 100%;
-  height: auto;
-  margin: 18px auto;
   border-radius: 14px;
-}
-
-.markdown-content :deep(table) {
-  display: block;
-  width: 100%;
-  border-collapse: collapse;
-  overflow-x: auto;
-}
-
-.markdown-content :deep(th),
-.markdown-content :deep(td) {
-  padding: 10px 12px;
-  border: 1px solid var(--oa-border);
-  text-align: left;
-}
-
-.markdown-content :deep(hr) {
-  margin: 24px 0;
-  border: 0;
-  border-top: 1px solid var(--oa-border);
-}
-
-.markdown-content :deep(.mermaid-diagram) {
-  margin: 24px 0;
-  padding: 20px;
-  border: 1px solid var(--oa-border);
-  border-radius: 16px;
-  background: var(--oa-elevated-bg);
-  overflow-x: auto;
-  text-align: center;
-}
-
-.markdown-content :deep(.mermaid-diagram svg) {
-  display: block;
-  max-width: 100%;
-  height: auto;
-  margin: 0 auto;
-}
-
-.markdown-content :deep(.mermaid-diagram text),
-.markdown-content :deep(.mermaid-diagram .label text),
-.markdown-content :deep(.mermaid-diagram .nodeLabel) {
-  fill: var(--oa-text) !important;
-  color: var(--oa-text) !important;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
-  font-size: 14px !important;
-  opacity: 1 !important;
-}
-
-.markdown-content :deep(.mermaid-diagram foreignObject div),
-.markdown-content :deep(.mermaid-diagram foreignObject span) {
-  color: var(--oa-text) !important;
-  -webkit-text-fill-color: var(--oa-text) !important;
-  opacity: 1 !important;
-}
-
-.markdown-content :deep(.mermaid-diagram.is-error) {
-  color: var(--el-color-danger);
-  background: var(--oa-page-soft-bg);
-  text-align: left;
 }
 </style>

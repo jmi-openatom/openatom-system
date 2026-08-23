@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.common.TaskLockService;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInGroupDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCheckInRecordStatusDTO;
@@ -45,6 +46,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -101,6 +103,7 @@ public class CheckInServiceImpl implements CheckInService {
   private final LeaveApplicationMapper leaveApplicationMapper;
   private final PointService pointService;
   private final UnifiedGroupProjectionService unifiedGroupProjectionService;
+  private final TaskLockService taskLockService;
 
   @Value("${app.checkin.evening-study-auto-generate-enabled:true}")
   private boolean eveningStudyAutoGenerateEnabled;
@@ -525,12 +528,16 @@ public class CheckInServiceImpl implements CheckInService {
       fixedDelayString = "${app.checkin.evening-study-scan-ms:600000}")
   public void autoGenerateTodayEveningStudySessions() {
     if (!eveningStudyAutoGenerateEnabled) return;
+    // 多副本部署时防止多个实例同时生成重复的晚自习会话
+    if (!taskLockService.tryLock("checkin:evening-study", Duration.ofMinutes(5))) return;
     try {
       generateEveningStudySessions(null);
       Club club = defaultClub();
       if (club != null) settleEndedEveningStudySessions(club);
     } catch (RuntimeException e) {
       log.warn("Auto generate evening study check-ins failed: {}", e.getMessage());
+    } finally {
+      taskLockService.unlock("checkin:evening-study");
     }
   }
 

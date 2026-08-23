@@ -54,7 +54,7 @@
 
       <div class="container detail-grid">
         <article class="markdown-body detail-story-card">
-          <div v-if="html" v-html="html"></div>
+          <MarkdownContent v-if="content" :content="content" />
           <div v-else class="detail-story-empty">
             <span>活动介绍</span>
             <p>活动说明稍后补充，当前可先查看时间、地点和报名方式。</p>
@@ -105,7 +105,7 @@ import { activityApi, siteApi } from '@/api'
 import { ensureCollegeRegistrationField, resolveCollegeValue } from '@/constants/colleges'
 import { formatDateTime, monthDayParts } from '@/utils/format.ts'
 import { getCurrentUser, getToken } from '@/utils/auth.ts'
-import { renderMarkdown } from '@/utils/markdown.ts'
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import { SITE_NAME, SITE_URL, updateSeo } from '@/utils/seo.ts'
 import { hasRole } from '@/utils/permission.ts'
 import { computed, onMounted, ref } from 'vue'
@@ -119,8 +119,8 @@ const form = ref<Record<string, any>>({})
 const router = useRouter()
 const route = useRoute()
 
-const html = computed(() => {
-  return renderMarkdown(activity.value.descriptionMarkdown || activity.value.summary || '')
+const content = computed(() => {
+  return activity.value.descriptionMarkdown || activity.value.summary || ''
 })
 
 const fields = computed(() => {

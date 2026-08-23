@@ -54,17 +54,19 @@
         <div
           v-if="module.key === 'about'"
           class="profile-copy"
-          v-html="
-            renderMarkdown(
-              profile.bio || String(module.data?.content || '这个成员还没有填写介绍。'),
-            )
-          "
-        ></div>
+        >
+          <MarkdownContent
+            :content="
+              profile.bio || String(module.data?.content || '这个成员还没有填写介绍。')
+            "
+          />
+        </div>
         <div
           v-else-if="module.key === 'markdown'"
           class="profile-copy"
-          v-html="renderMarkdown(String(module.data?.content || ''))"
-        ></div>
+        >
+          <MarkdownContent :content="String(module.data?.content || '')" />
+        </div>
         <div v-else-if="module.key === 'hero_statement'" class="profile-statement">
           <p>{{ module.data?.text || '保持好奇，持续创造。' }}</p>
           <span v-if="module.data?.caption">{{ module.data.caption }}</span>
@@ -201,8 +203,8 @@
 
 <script lang="ts" setup>
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import type { MemberProfile, ProfileArticle, ProfileModule } from '@/types/member-profile'
-import { renderMarkdown } from '@/utils/markdown'
 import { computed } from 'vue'
 
 const props = defineProps<{ profile: MemberProfile }>()

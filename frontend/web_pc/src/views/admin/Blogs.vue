@@ -148,10 +148,11 @@
             <span>{{ formatDateTime(currentArticle.updatedAt || currentArticle.createdAt) }}</span>
           </div>
           <article
-            v-if="reviewPreviewHtml"
+            v-if="reviewContent"
             class="markdown-body review-preview__markdown"
-            v-html="reviewPreviewHtml"
-          ></article>
+          >
+            <MarkdownContent :content="reviewContent" />
+          </article>
           <el-empty v-else description="暂无正文可预览" :image-size="80" />
         </article>
       </div>
@@ -246,7 +247,7 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { blogApi } from '@/api'
 import { formatDateTime, statusType } from '@/utils/format.ts'
-import { renderMarkdown } from '@/utils/markdown.ts'
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Refresh, Tickets } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
@@ -264,8 +265,8 @@ const total = ref(0)
 const interactionTotal = ref(0)
 const currentArticle = ref<Record<string, any>>({})
 const reviewForm = ref({ status: 'published', featured: false, reason: '' })
-const reviewPreviewHtml = computed(() =>
-  renderMarkdown(currentArticle.value.contentMarkdown || currentArticle.value.summary || ''),
+const reviewContent = computed(() =>
+  currentArticle.value.contentMarkdown || currentArticle.value.summary || '',
 )
 const query = ref({
   status: '',

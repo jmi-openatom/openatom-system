@@ -1,6 +1,8 @@
 package edu.jmi.openatom.server.openatomsystem.task;
 
+import edu.jmi.openatom.server.openatomsystem.common.TaskLockService;
 import edu.jmi.openatom.server.openatomsystem.service.impl.ExportTaskService;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -8,8 +10,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * 导出任务清理与备份调度器
- * 
- * <p>定时清理过期任务和自动化备份导出文件
+ *
+ * <p>定时清理过期任务和自动化备份导出文件。
+ * 多副本部署时通过 Redis 锁保证同一时刻只有一个实例执行。
  */
 @Slf4j
 @Component
@@ -17,18 +20,22 @@ import org.springframework.stereotype.Component;
 public class ExportTaskCleanupScheduler {
 
   private final ExportTaskService exportTaskService;
+  private final TaskLockService taskLockService;
 
   /**
    * 每天凌晨2点执行清理（删除超过24小时的任务和临时文件）
    */
   @Scheduled(cron = "0 0 2 * * ?")
   public void cleanupExpiredTasks() {
+    if (!taskLockService.tryLock("export:cleanup", Duration.ofHours(1))) return;
     log.info("=== 开始清理过期导出任务 ===");
     try {
       exportTaskService.cleanupExpiredTasks();
       log.info("=== 过期导出任务清理完成 ===");
     } catch (Exception e) {
       log.error("清理过期导出任务失败", e);
+    } finally {
+      taskLockService.unlock("export:cleanup");
     }
   }
 
@@ -37,12 +44,15 @@ public class ExportTaskCleanupScheduler {
    */
   @Scheduled(cron = "0 0 3 * * ?")
   public void autoBackup() {
+    if (!taskLockService.tryLock("export:backup", Duration.ofHours(1))) return;
     log.info("=== 开始自动化备份导出文件 ===");
     try {
       exportTaskService.autoBackupCompletedTasks();
       log.info("=== 自动化备份完成 ===");
     } catch (Exception e) {
       log.error("自动化备份失败", e);
+    } finally {
+      taskLockService.unlock("export:backup");
     }
   }
 }

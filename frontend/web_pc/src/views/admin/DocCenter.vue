@@ -266,7 +266,14 @@
         <img :src="previewUrl" alt="预览" />
       </div>
       <iframe v-else-if="previewKind === 'pdf'" :src="previewUrl" class="preview-frame"></iframe>
-      <div v-else-if="previewKind === 'md'" class="preview-body preview-md markdown-body" v-html="previewHtml"></div>
+      <div v-else-if="previewKind === 'md' && previewIsMarkdown" class="preview-body preview-md markdown-body">
+        <MarkdownContent :content="previewText" />
+      </div>
+      <div
+        v-else-if="previewKind === 'md' && !previewIsMarkdown"
+        class="preview-body preview-md markdown-body"
+        v-html="previewHtml"
+      ></div>
       <div v-else class="preview-body preview-none">
         <p>该文件类型暂不支持预览，请下载后查看。</p>
         <el-button type="primary" @click="download(previewTarget)">下载文件</el-button>
@@ -285,7 +292,7 @@ import { computed, onMounted, ref } from 'vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { sharedFilesApi } from '@/api'
-import { renderMarkdown } from '@/utils/markdown.ts'
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 
 const loading = ref(false)
 const uploading = ref(false)
@@ -312,6 +319,8 @@ const previewOpen = ref(false)
 const previewKind = ref<'image' | 'pdf' | 'md' | 'none'>('none')
 const previewUrl = ref('')
 const previewHtml = ref('')
+const previewText = ref('')
+const previewIsMarkdown = ref(false)
 const previewTitle = ref('')
 const previewTarget = ref<any>(null)
 let previewObjectUrl = ''
@@ -781,8 +790,10 @@ async function openTextPreview(row: any, password?: string) {
   try {
     const text = await sharedFilesApi.text(row.id, password)
     previewKind.value = 'md'
-    previewHtml.value = row.extension === 'md' || row.extension === 'markdown'
-      ? renderMarkdown(text)
+    previewIsMarkdown.value = row.extension === 'md' || row.extension === 'markdown'
+    previewText.value = text
+    previewHtml.value = previewIsMarkdown.value
+      ? ''
       : `<pre style="white-space:pre-wrap">${escapeHtml(text)}</pre>`
     previewTitle.value = row.name
     previewOpen.value = true

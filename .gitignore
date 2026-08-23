@@ -31,6 +31,10 @@ astrbot/ntqq/*
 node_modules/
 .pnpm-store/
 
+# agent skills (installed via npx skills add)
+.agents/
+skills-lock.json
+
 # VuePress build artifacts
 docs-site/.vuepress/.cache/
 docs-site/.vuepress/.temp/

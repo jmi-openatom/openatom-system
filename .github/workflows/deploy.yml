@@ -268,27 +268,31 @@ jobs:
               VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1 \
               $COMPOSE_CMD up -d --build --remove-orphans
 
-            # 等待 Spring 完整启动，并验证 OAuth/OIDC 公开端点可用。
+            # 等待 Spring 完整启动，并验证 OAuth/OIDC 公开端点可用（两个副本都要就绪）。
             # 仅检查 TCP 端口会在应用仍初始化时过早放行。
-            OIDC_READY=false
-            for attempt in $(seq 1 36); do
-              OIDC_STATUS=$(curl --silent --show-error \
-                --output /dev/null \
-                --write-out '%{http_code}' \
-                http://127.0.0.1:8921/api/v1/.well-known/openid-configuration || true)
-              if [ "$OIDC_STATUS" = "200" ]; then
-                OIDC_READY=true
-                break
-              fi
-              sleep 5
-            done
+            for BACKEND_PORT in 8921 8922; do
+              OIDC_READY=false
+              for attempt in $(seq 1 36); do
+                OIDC_STATUS=$(curl --silent --show-error \
+                  --output /dev/null \
+                  --write-out '%{http_code}' \
+                  "http://127.0.0.1:${BACKEND_PORT}/api/v1/.well-known/openid-configuration" || true)
+                if [ "$OIDC_STATUS" = "200" ]; then
+                  OIDC_READY=true
+                  break
+                fi
+                sleep 5
+              done
 
-            if [ "$OIDC_READY" != "true" ]; then
-              echo "Critical Error: OAuth/OIDC endpoint did not become ready within 180 seconds."
-              $COMPOSE_CMD ps
-              $COMPOSE_CMD logs --tail=200 backend
-              exit 1
-            fi
+              if [ "$OIDC_READY" != "true" ]; then
+                echo "Critical Error: OAuth/OIDC endpoint on port ${BACKEND_PORT} did not become ready within 180 seconds."
+                $COMPOSE_CMD ps
+                $COMPOSE_CMD logs --tail=200 backend
+                $COMPOSE_CMD logs --tail=200 backend-2 || true
+                exit 1
+              fi
+              echo "Backend instance on port ${BACKEND_PORT} is ready."
+            done
 
             AUTHORIZE_STATUS=$(curl --silent --show-error \
               --output /dev/null \
@@ -307,7 +311,7 @@ jobs:
 
             $COMPOSE_CMD ps
 
-            for service in redis backend frontend astrbot napcat; do
+            for service in redis backend backend-2 frontend astrbot napcat; do
               if ! $COMPOSE_CMD ps "$service" | grep -iq "Up"; then
                 echo "Critical Error: Service $service is not running!"
                 $COMPOSE_CMD logs --tail=100 "$service"

@@ -56,6 +56,13 @@
             <artifactId>sa-token-jwt</artifactId>
             <version>${sa-token.version}</version>
         </dependency>
+        <!-- sa-token 会话/令牌落 Redis：refresh token 与登录会话跨实例共享，
+             是 backend 多副本水平扩展的前提 -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-redis-jackson</artifactId>
+            <version>${sa-token.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>

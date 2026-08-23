@@ -162,7 +162,9 @@
                 />
               </el-tab-pane>
               <el-tab-pane label="预览" name="preview">
-                <article class="markdown-body editor-preview" v-html="previewHtml"></article>
+                <article class="markdown-body editor-preview">
+                  <MarkdownContent :content="form.contentMarkdown || ''" />
+                </article>
               </el-tab-pane>
             </el-tabs>
           </div>
@@ -217,7 +219,7 @@ import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import {blogApi, imageHostingApi} from '@/api'
 import {formatDateTime, statusType} from '@/utils/format.ts'
 import {hasRole} from '@/utils/permission.ts'
-import {renderMarkdown} from '@/utils/markdown.ts'
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import {Document, EditPen, Grid, Link, List, Memo, Picture, Plus, Refresh, UploadFilled,} from '@element-plus/icons-vue'
 import {computed, nextTick, onMounted, ref} from 'vue'
@@ -246,7 +248,6 @@ const query = ref({
 })
 
 const canWrite = computed(() => hasRole('formal_member'))
-const previewHtml = computed(() => renderMarkdown(form.value.contentMarkdown || ''))
 const rules = ref({
   title: [{ required: true, message: '请输入文章标题', trigger: 'blur' }],
   contentMarkdown: [{ required: true, message: '请输入文章正文', trigger: 'blur' }],

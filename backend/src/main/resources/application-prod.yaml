@@ -53,6 +53,14 @@ server:
     min-response-size: 1024
   forward-headers-strategy: framework
   tomcat:
+    threads:
+      max: ${TOMCAT_MAX_THREADS:200}
+      min-spare: ${TOMCAT_MIN_SPARE:20}
+    accept-count: ${TOMCAT_ACCEPT_COUNT:1000}
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:10000}
+    connection-timeout: ${TOMCAT_CONNECTION_TIMEOUT:20000}
+    keep-alive-timeout: ${TOMCAT_KEEP_ALIVE_TIMEOUT:60000}
+    max-keep-alive-requests: ${TOMCAT_MAX_KEEP_ALIVE_REQUESTS:200}
     basedir: ${TOMCAT_BASEDIR:/tmp/openatom-system}
     accesslog:
       enabled: ${TOMCAT_ACCESS_LOG_ENABLED:true}
@@ -108,6 +116,8 @@ app:
   rate-limit:
     application-submit:
       max-per-second: ${APP_APPLICATION_SUBMIT_MAX_PER_SECOND:5}
+    auth-ip:
+      max-per-minute: ${APP_AUTH_IP_MAX_PER_MINUTE:30}
   avatar:
     storage-dir: ${APP_AVATAR_STORAGE_DIR:./uploads/avatars}
   image-hosting:

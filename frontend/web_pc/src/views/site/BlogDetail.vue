@@ -56,7 +56,7 @@
     <section class="blog-detail__body home-interactive-section">
       <div class="container blog-detail__grid">
         <article class="markdown-body blog-article">
-          <div v-html="html"></div>
+          <MarkdownContent :content="content" />
         </article>
 
         <aside class="blog-aside">
@@ -169,7 +169,7 @@ import { Pointer, Share, Star } from '@element-plus/icons-vue'
 import { siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { getCurrentUser, getToken } from '@/utils/auth.ts'
-import { renderMarkdown } from '@/utils/markdown.ts'
+import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import { SITE_NAME, SITE_URL, updateSeo } from '@/utils/seo.ts'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -189,8 +189,8 @@ const currentUser = computed(() => getCurrentUser())
 const canEdit = computed(
   () => currentUser.value?.id && currentUser.value.id === article.value.authorId,
 )
-const html = computed(() =>
-  renderMarkdown(article.value.contentMarkdown || article.value.summary || ''),
+const content = computed(() =>
+  article.value.contentMarkdown || article.value.summary || '',
 )
 const totalComments = computed(() => countComments(comments.value))
 const currentUserName = computed(

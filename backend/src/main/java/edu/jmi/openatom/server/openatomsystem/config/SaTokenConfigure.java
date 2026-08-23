@@ -9,6 +9,7 @@ import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.web.ApplicationSubmitRateLimitInterceptor;
+import edu.jmi.openatom.server.openatomsystem.common.web.AuthIpRateLimitInterceptor;
 import edu.jmi.openatom.server.openatomsystem.common.web.MailInternalAuthFilter;
 import edu.jmi.openatom.server.openatomsystem.common.web.OperationLogInterceptor;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 
 	private final OperationLogInterceptor operationLogInterceptor;
 	private final ApplicationSubmitRateLimitInterceptor applicationSubmitRateLimitInterceptor;
+	private final AuthIpRateLimitInterceptor authIpRateLimitInterceptor;
 	private final MailInternalAuthFilter mailInternalAuthFilter;
 
 	@Value("${app.cors.allowed-origin-patterns:*}")
@@ -78,6 +80,9 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 
 		registry.addInterceptor(applicationSubmitRateLimitInterceptor)
 				.addPathPatterns("/applications");
+
+		registry.addInterceptor(authIpRateLimitInterceptor)
+				.addPathPatterns("/auth/captcha", "/auth/login", "/auth/password-reset/**");
 
 		registry.addInterceptor(new SaInterceptor(handle -> {
 			String path = SaHolder.getRequest().getRequestPath();
