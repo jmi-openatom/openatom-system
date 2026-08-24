@@ -669,40 +669,40 @@ export const activityApi = {
 
 export const aiActivityApi = {
   sessions(): Promise<any> {
-    return request.get('/ai/activity/sessions')
+    return request.get('/ai/activity/sessions', { timeout: 300000 })
   },
   detail(id: string | number): Promise<any> {
-    return request.get(`/ai/activity/sessions/${id}`)
+    return request.get(`/ai/activity/sessions/${id}`, { timeout: 300000 })
   },
   createSession(data: Record<string, unknown>): Promise<any> {
-    return request.post('/ai/activity/sessions', data)
+    return request.post('/ai/activity/sessions', data, { timeout: 300000 })
   },
   deleteSession(id: string | number): Promise<any> {
-    return request.delete(`/ai/activity/sessions/${id}`)
+    return request.delete(`/ai/activity/sessions/${id}`, { timeout: 300000 })
   },
   sendMessage(id: string | number, data: Record<string, unknown>): Promise<any> {
-    return request.post(`/ai/activity/sessions/${id}/messages`, data)
+    return request.post(`/ai/activity/sessions/${id}/messages`, data, { timeout: 300000 })
   },
   confirmRequirement(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
-    return request.post(`/ai/activity/sessions/${id}/confirm-requirement`, data)
+    return request.post(`/ai/activity/sessions/${id}/confirm-requirement`, data, { timeout: 300000 })
   },
   generatePlan(id: string | number): Promise<any> {
-    return request.post(`/ai/activity/sessions/${id}/generate-plan`)
+    return request.post(`/ai/activity/sessions/${id}/generate-plan`, { timeout: 300000 })
   },
   revisePlan(id: string | number, data: Record<string, unknown>): Promise<any> {
-    return request.post(`/ai/activity/sessions/${id}/revise-plan`, data)
+    return request.post(`/ai/activity/sessions/${id}/revise-plan`, data, { timeout: 300000 })
   },
   savePlan(id: string | number, data: Record<string, unknown>): Promise<any> {
-    return request.post(`/ai/activity/sessions/${id}/plans`, data)
+    return request.post(`/ai/activity/sessions/${id}/plans`, data, { timeout: 300000 })
   },
   confirmPlan(id: string | number): Promise<any> {
-    return request.post(`/ai/activity/sessions/${id}/confirm-plan`)
+    return request.post(`/ai/activity/sessions/${id}/confirm-plan`, { timeout: 300000 })
   },
   createActivity(id: string | number): Promise<any> {
-    return request.post(`/ai/activity/sessions/${id}/create-activity`)
+    return request.post(`/ai/activity/sessions/${id}/create-activity`, { timeout: 300000 })
   },
   generateDocuments(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
-    return request.post(`/ai/activity/sessions/${id}/documents/generate`, data)
+    return request.post(`/ai/activity/sessions/${id}/documents/generate`, data, { timeout: 300000 })
   },
 }
 
@@ -775,13 +775,13 @@ export async function postAiStream(
 
 export const aiSettingsApi = {
   get(): Promise<any> {
-    return request.get('/ai/settings')
+    return request.get('/ai/settings', { timeout: 300000 })
   },
   update(data: Record<string, unknown>): Promise<any> {
-    return request.put('/ai/settings', data)
+    return request.put('/ai/settings', data, { timeout: 300000 })
   },
   test(): Promise<any> {
-    return request.post('/ai/settings/test')
+    return request.post('/ai/settings/test', { timeout: 300000 })
   },
 }
 

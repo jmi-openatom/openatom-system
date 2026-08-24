@@ -24,49 +24,16 @@
     </section>
 
     <div class="workspace">
-      <aside class="session-panel">
-        <div class="panel-title">
-          <span>活动会话</span>
-          <el-button link :icon="Refresh" @click="loadSessions">刷新</el-button>
-        </div>
-        <div class="session-scroll">
-          <div
-            v-for="item in sessions"
-            :key="item.id"
-            class="session-item"
-            :class="{ active: current?.id === item.id }"
-          >
-            <button class="session-main" type="button" @click="openSession(item.id)">
-              <strong>{{ item.title }}</strong>
-              <small>{{ statusText(item.status) }}</small>
-            </button>
-            <div class="session-actions">
-              <el-tag size="small" :type="statusTypeOf(item.status)">{{ sessionBadge(item.status) }}</el-tag>
-              <el-popconfirm
-                title="确定删除这个对话吗？"
-                confirm-button-text="删除"
-                cancel-button-text="取消"
-                width="220"
-                @confirm="deleteSession(item)"
-              >
-                <template #reference>
-                  <el-button
-                    class="session-delete"
-                    link
-                    type="danger"
-                    :icon="Delete"
-                    :disabled="deletingSessionId === item.id || streaming"
-                    :loading="deletingSessionId === item.id"
-                  />
-                </template>
-              </el-popconfirm>
-            </div>
-          </div>
-          <div v-if="!sessions.length" class="empty-inline">
-            <strong>还没有活动</strong>
-            <span>从一个活动想法开始，AI 会帮你往下问。</span>
-          </div>
-        </div>
+      <aside class="session-panel-wrap">
+        <AiSessionPanel
+          :sessions="sessions"
+          :current-id="current?.id"
+          :streaming="streaming"
+          :deleting-session-id="deletingSessionId"
+          @open="openSession"
+          @delete="deleteSession"
+          @refresh="loadSessions"
+        />
       </aside>
 
       <main class="main-panel">
@@ -112,180 +79,57 @@
 
           <el-tabs v-model="activeTab" class="work-tabs">
             <el-tab-pane label="需求对话" name="chat">
-              <div class="chat-surface">
-                <div class="chat-scroll">
-                  <div
-                    v-for="message in current.messages || []"
-                    :key="message.id"
-                    class="message"
-                    :class="`message--${message.role}`"
-                  >
-                    <div class="message-role">{{ message.role === 'user' ? '我' : 'AI' }}</div>
-                    <div v-if="isStructuredAssistant(message)" class="ai-card">
-                      <p v-if="structuredMessage(message).summary" class="ai-summary">
-                        {{ structuredMessage(message).summary }}
-                      </p>
-
-                      <div v-if="structuredMessage(message).suggestions?.length" class="ai-block">
-                        <strong>建议</strong>
-                        <ul>
-                          <li v-for="item in structuredMessage(message).suggestions" :key="item">{{ item }}</li>
-                        </ul>
-                      </div>
-
-                      <div v-if="structuredMessage(message).questions?.length" class="ai-block">
-                        <strong>需要补充</strong>
-                        <div class="question-list">
-                          <button
-                            v-for="question in structuredMessage(message).questions"
-                            :key="question"
-                            type="button"
-                            class="question-item"
-                            @click="useQuestion(question)"
-                          >
-                            {{ question }}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div v-if="structuredMessage(message).missingFields?.length" class="field-tags">
-                        <el-tag
-                          v-for="field in structuredMessage(message).missingFields"
-                          :key="field"
-                          size="small"
-                          type="info"
-                        >
-                          {{ field }}
-                        </el-tag>
-                      </div>
-                    </div>
-                    <pre v-else>{{ displayMessage(message) }}</pre>
-                  </div>
-                  <div v-if="aiResponsePending" class="message message--assistant">
-                    <div class="message-role">AI</div>
-                    <div class="ai-skeleton">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
-                </div>
-                <div class="composer">
-                  <el-input
-                    v-model="messageText"
-                    type="textarea"
-                    :autosize="{ minRows: 3, maxRows: 6 }"
-                    placeholder="补充活动时间、地点、人数、预算、志愿者要求，或直接让 AI 继续追问..."
-                    @keydown.meta.enter.prevent="sendMessage"
-                    @keydown.ctrl.enter.prevent="sendMessage"
-                  />
-                  <el-button type="primary" :loading="sending" :disabled="streaming" @click="sendMessage">发送</el-button>
-                </div>
-              </div>
+              <AiChatSurface
+                :messages="current.messages || []"
+                :pending="aiResponsePending"
+                :streaming="streaming"
+                :sending="sending"
+                @send="sendMessage"
+              />
             </el-tab-pane>
 
             <el-tab-pane label="策划案" name="plan">
-              <div v-if="hasPlanEditorContent" class="plan-editor">
-                <div class="plan-toolbar">
-                  <div>
-                    <strong>{{ latestPlan?.title || 'AI 正在生成策划案' }}</strong>
-                    <span>{{ streamPhase || `版本 ${latestPlan?.version || 1} · ${latestPlan?.status || 'draft'}` }}</span>
-                  </div>
-                  <el-button :loading="revising" :disabled="streaming || !reviseInstruction.trim()" @click="revisePlan">
-                    按要求修改
-                  </el-button>
-                </div>
-                <el-input v-model="planText" type="textarea" :rows="20" resize="vertical" />
-                <el-input
-                  v-model="reviseInstruction"
-                  class="revise-input"
-                  placeholder="例如：把活动流程写得更细，把志愿者职责独立成一段"
-                />
-              </div>
-              <div v-else class="empty-state">
-                <strong>还没有策划案</strong>
-                <span>先确认需求，然后点击“生成策划案”。</span>
-                <el-button type="primary" :loading="generatingPlan" :disabled="streaming" @click="generatePlan">生成策划案</el-button>
-              </div>
+              <AiPlanEditor
+                :latest-plan="latestPlan"
+                :phase="streamPhase"
+                :streaming="streaming || streamingPlan"
+                :revising="revising"
+                :plan-text="planText"
+                :revise-instruction="reviseInstruction"
+                @update:plan-text="planText = $event"
+                @update:revise-instruction="reviseInstruction = $event"
+                @revise="revisePlan"
+                @save="savePlanDraft"
+                @generate="generatePlan"
+              />
             </el-tab-pane>
           </el-tabs>
         </template>
       </main>
 
-      <aside class="ops-panel">
-        <section class="ops-section">
-          <div class="panel-title">
-            <span>模板状态</span>
-            <el-button link @click="templateVisible = true">管理</el-button>
-          </div>
-          <div class="template-list">
-            <div v-for="type in documentTypes" :key="type.value" class="template-row">
-              <div>
-                <strong>{{ type.label }}</strong>
-                <small>{{ templateByType(type.value)?.templateName || '请上传 docx 模板' }}</small>
-              </div>
-              <el-tag :type="templateByType(type.value) ? 'success' : 'warning'" size="small">
-                {{ templateByType(type.value) ? '就绪' : '缺失' }}
-              </el-tag>
-            </div>
-          </div>
-        </section>
-
-        <section class="ops-section">
-          <div class="panel-title">
-            <span>生成材料</span>
-            <el-tag size="small" type="info">{{ current?.documents?.length || 0 }} 份</el-tag>
-          </div>
-          <el-button
-            class="full-btn"
-            type="primary"
-            :disabled="streaming || !canGenerateDocuments"
-            :loading="generatingDocs"
-            @click="generateDocuments"
-          >
-            生成五份材料
-          </el-button>
-          <div class="doc-list">
-            <div v-for="doc in current?.documents || []" :key="doc.id" class="doc-item">
-              <span>{{ doc.fileName }}</span>
-              <el-button link type="primary" @click="downloadDoc(doc)">下载</el-button>
-            </div>
-            <div v-if="!current?.documents?.length" class="empty-mini">策划案确认后生成正式材料。</div>
-          </div>
-        </section>
-
-        <section class="ops-section">
-          <div class="panel-title">
-            <span>AI 配置</span>
-            <el-tag size="small" :type="aiSettings.hasApiKey ? 'success' : 'warning'">
-              {{ aiSettings.hasApiKey ? '已配置' : '未配置' }}
-            </el-tag>
-          </div>
-          <p class="config-line">{{ aiSettings.model || 'deepseek-chat' }}</p>
-          <p class="config-line">{{ aiSettings.baseUrl || 'https://api.deepseek.com' }}</p>
-        </section>
+      <aside class="ops-panel-wrap">
+        <AiOpsPanel
+          :document-types="documentTypes"
+          :templates="templates"
+          :documents="current?.documents"
+          :ai-settings="aiSettings"
+          :streaming="streaming"
+          :can-generate-documents="canGenerateDocuments"
+          :generating-docs="generatingDocs"
+          @manage-templates="templateVisible = true"
+          @manage-settings="settingsVisible = true"
+          @generate-documents="generateDocuments"
+          @download="downloadDoc"
+        />
       </aside>
     </div>
 
-    <el-dialog v-model="newSessionVisible" title="新建 AI 活动" width="680px">
-      <el-form label-width="96px">
-        <el-form-item label="会话标题">
-          <el-input v-model="newSession.title" placeholder="可选，例如：新生开源破冰活动" />
-        </el-form-item>
-        <el-form-item label="活动需求">
-          <el-input
-            v-model="newSession.initialMessage"
-            type="textarea"
-            :rows="7"
-            placeholder="例如：我想办一个面向新生的开源社团破冰活动，轻松一点，让大家认识社团项目。"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="newSessionVisible = false">取消</el-button>
-        <el-button type="primary" :loading="creating" @click="createSession">开始澄清需求</el-button>
-      </template>
-    </el-dialog>
+    <AiNewSessionDialog
+      :visible="newSessionVisible"
+      :loading="creating"
+      @update:visible="newSessionVisible = $event"
+      @create="createSession"
+    />
 
     <el-dialog v-model="templateVisible" title="上传 Word 模板" width="780px">
       <div class="template-dialog">
@@ -329,44 +173,13 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="supplementVisible" title="补充材料生成信息" width="720px">
-      <div class="supplement-dialog">
-        <el-alert
-          title="这些信息会写入正式申请材料，未填写的字段将继续保留“待补充”。"
-          type="warning"
-          :closable="false"
-          show-icon
-        />
-        <el-form label-width="128px">
-          <el-form-item v-for="field in supplementFields" :key="field.key" :label="field.label">
-            <el-date-picker
-              v-if="field.control === 'datetimeRange'"
-              v-model="field.value"
-              class="supplement-date-picker"
-              type="datetimerange"
-              start-placeholder="开始时间"
-              end-placeholder="结束时间"
-              range-separator="至"
-              value-format="YYYY-MM-DD HH:mm"
-              format="YYYY 年 MM 月 DD 日 HH:mm"
-            />
-            <el-input
-              v-else
-              v-model="field.value"
-              :type="field.multiline ? 'textarea' : 'text'"
-              :rows="field.multiline ? 3 : undefined"
-              :placeholder="field.placeholder"
-            />
-          </el-form-item>
-        </el-form>
-      </div>
-      <template #footer>
-        <el-button @click="supplementVisible = false">取消</el-button>
-        <el-button type="primary" :loading="generatingDocs" @click="submitSupplementAndGenerate">
-          生成正式材料
-        </el-button>
-      </template>
-    </el-dialog>
+    <AiSupplementDialog
+      :visible="supplementVisible"
+      :fields="supplementFields"
+      :loading="generatingDocs"
+      @update:visible="supplementVisible = $event"
+      @submit="submitSupplementAndGenerate"
+    />
 
     <el-drawer v-model="settingsVisible" title="DeepSeek 配置" size="520px" @open="loadAiSettings">
       <el-form label-width="124px">
@@ -406,6 +219,12 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import AiSessionPanel from './ai/AiSessionPanel.vue'
+import AiChatSurface from './ai/AiChatSurface.vue'
+import AiPlanEditor from './ai/AiPlanEditor.vue'
+import AiOpsPanel from './ai/AiOpsPanel.vue'
+import AiSupplementDialog from './ai/AiSupplementDialog.vue'
+import AiNewSessionDialog from './ai/AiNewSessionDialog.vue'
 import { aiActivityApi, aiSettingsApi, documentTemplateApi, postAiStream } from '@/api/index.ts'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Delete, Plus, Refresh, Setting, Upload } from '@element-plus/icons-vue'
@@ -444,7 +263,6 @@ const streamPhase = ref('')
 const testResult = ref('')
 const streamController = ref<AbortController | null>(null)
 const templateFile = ref<File | null>(null)
-const newSession = ref({ title: '', initialMessage: '' })
 const templateForm = ref({
   templateType: 'activity_proposal',
   templateName: '',
@@ -585,131 +403,57 @@ watch(latestPlan, (plan) => {
   if (plan) activeTab.value = 'plan'
 })
 
-function statusText(status: string) {
-  return (
-    {
-      drafting: '澄清中',
-      requirement_confirmed: '需求已确认',
-      plan_generated: '策划案待确认',
-      plan_confirmed: '策划案已确认',
-      documents_generated: '文档已生成',
-      submitted: '已提交',
-      archived: '已归档',
-    }[status] || status
-  )
-}
 
-function sessionBadge(status: string) {
-  if (status === 'documents_generated') return '完成'
-  if (status === 'plan_confirmed') return '文档'
-  if (status === 'plan_generated') return '审稿'
-  if (status === 'requirement_confirmed') return '写稿'
-  return '对话'
-}
 
-function statusTypeOf(status: string) {
-  if (status === 'documents_generated' || status === 'plan_confirmed') return 'success'
-  if (status === 'plan_generated' || status === 'requirement_confirmed') return 'warning'
-  return 'info'
-}
 
 function documentTypeLabel(value: string) {
   return documentTypes.find((item) => item.value === value)?.label || value
 }
 
-function structuredMessage(message: any) {
-  if (!message?.structuredPayload) return {}
-  if (typeof message.structuredPayload === 'object') return message.structuredPayload
-  try {
-    return JSON.parse(message.structuredPayload)
-  } catch {
-    return {}
+function statusText(status: string) {
+  return (
+    {
+      drafting: '需求澄清中',
+      requirement_confirmed: '需求已确认',
+      plan_generated: '策划案已生成',
+      plan_confirmed: '策划案已确认',
+      documents_generated: '材料已生成',
+    }[status] || status
+  )
+}
+
+function statusTypeOf(status: string) {
+  return (
+    {
+      drafting: 'info',
+      requirement_confirmed: 'warning',
+      plan_generated: 'warning',
+      plan_confirmed: 'primary',
+      documents_generated: 'success',
+    } as const
+  )[status] || 'info'
+}
+
+async function savePlanDraft() {
+  if (!current.value) return
+  if (!planText.value.trim()) {
+    ElMessage.warning('策划案内容不能为空')
+    return
   }
+  await aiActivityApi.savePlan(current.value.id, { contentMarkdown: planText.value })
+  ElMessage.success('草稿已保存')
+  await loadSessions()
 }
 
-function isStructuredAssistant(message: any) {
-  return message?.role === 'assistant' && Boolean(message?.structuredPayload) && Object.keys(structuredMessage(message)).length > 0
-}
 
-function displayMessage(message: any) {
-  if (message.structuredPayload) {
-    try {
-      const parsed = structuredMessage(message)
-      return parsed.summary || message.content
-    } catch {
-      return message.content
-    }
-  }
-  if (message.role === 'assistant') {
-    return requirementStreamPreview(message.content) || message.content
-  }
-  return message.content
-}
 
-function requirementStreamPreview(content: string) {
-  const text = (content || '').trim()
-  if (!text.startsWith('{')) return ''
-  try {
-    return structuredPreviewText(JSON.parse(text))
-  } catch {
-    const preview: string[] = []
-    const summary = extractJsonString(text, 'summary')
-    if (summary) preview.push(summary)
-    const suggestions = extractJsonArrayStrings(text, 'suggestions')
-    if (suggestions.length) preview.push(`建议：\n${suggestions.map((item) => `- ${item}`).join('\n')}`)
-    const questions = extractJsonArrayStrings(text, 'questions')
-    if (questions.length) preview.push(`需要补充：\n${questions.map((item) => `- ${item}`).join('\n')}`)
-    const missingFields = extractJsonArrayStrings(text, 'missingFields')
-    if (missingFields.length) preview.push(`缺失字段：${missingFields.join('、')}`)
-    return preview.join('\n\n') || 'AI 正在整理需求...'
-  }
-}
 
-function structuredPreviewText(payload: any) {
-  const preview: string[] = []
-  if (payload?.summary) preview.push(String(payload.summary))
-  if (Array.isArray(payload?.suggestions) && payload.suggestions.length) {
-    preview.push(`建议：\n${payload.suggestions.map((item: string) => `- ${item}`).join('\n')}`)
-  }
-  if (Array.isArray(payload?.questions) && payload.questions.length) {
-    preview.push(`需要补充：\n${payload.questions.map((item: string) => `- ${item}`).join('\n')}`)
-  }
-  if (Array.isArray(payload?.missingFields) && payload.missingFields.length) {
-    preview.push(`缺失字段：${payload.missingFields.join('、')}`)
-  }
-  return preview.join('\n\n')
-}
 
-function extractJsonString(text: string, key: string) {
-  const match = text.match(new RegExp(`"${key}"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"`))
-  return match ? unescapeJsonString(match[1]) : ''
-}
 
-function extractJsonArrayStrings(text: string, key: string) {
-  const match = text.match(new RegExp(`"${key}"\\s*:\\s*\\[([\\s\\S]*?)(?:\\]|$)`))
-  if (!match) return []
-  const values: string[] = []
-  const itemPattern = /"((?:\\.|[^"\\])*)"/g
-  let item: RegExpExecArray | null
-  while ((item = itemPattern.exec(match[1])) !== null) values.push(unescapeJsonString(item[1]))
-  return values
-}
 
-function unescapeJsonString(value: string) {
-  try {
-    return JSON.parse(`"${value}"`)
-  } catch {
-    return value
-  }
-}
 
-function useQuestion(question: string) {
-  messageText.value = messageText.value ? `${messageText.value}\n${question}：` : `${question}：`
-}
 
-function templateByType(type: string) {
-  return templates.value.find((item) => item.templateType === type && item.status === 'enabled')
-}
+
 
 async function loadSessions() {
   sessions.value = (await aiActivityApi.sessions()) || []
@@ -858,8 +602,8 @@ function stopCurrentStream() {
   streamPhase.value = ''
 }
 
-async function createSession() {
-  if (!newSession.value.initialMessage.trim()) {
+async function createSession(payload: { title: string; initialMessage: string }) {
+  if (!payload?.initialMessage.trim()) {
     ElMessage.warning('请先输入活动需求')
     return
   }
@@ -868,10 +612,9 @@ async function createSession() {
   aiResponsePending.value = true
   streamPhase.value = 'AI 正在澄清活动需求'
   try {
-    await runAiStream('/ai/activity/sessions/stream', newSession.value)
+    await runAiStream('/ai/activity/sessions/stream', payload)
     activeTab.value = 'chat'
     newSessionVisible.value = false
-    newSession.value = { title: '', initialMessage: '' }
     await loadSessions()
   } finally {
     creating.value = false
@@ -1272,18 +1015,27 @@ onMounted(async () => {
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   background: var(--el-bg-color);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
-.status-step strong,
-.template-row strong {
+.status-step.active {
+  border-color: var(--el-color-primary);
+  background: var(--el-fill-color-light);
+}
+
+.status-step.done {
+  border-color: var(--el-color-success);
+}
+
+.status-step strong {
   display: block;
   font-size: 14px;
   line-height: 1.4;
 }
 
-.status-step small,
-.template-row small,
-.session-main small {
+.status-step small {
   display: block;
   margin-top: 2px;
   color: var(--el-text-color-secondary);
@@ -1298,526 +1050,153 @@ onMounted(async () => {
   height: 34px;
   border-radius: 8px;
   background: var(--el-fill-color-light);
+  font-size: 14px;
+  font-weight: 600;
   color: var(--el-text-color-secondary);
-  font-size: 12px;
-  font-weight: 700;
 }
 
-.status-step.current {
-  border-color: var(--el-color-primary);
-}
-
-.status-step.current .step-index,
-.status-step.done .step-index {
+.status-step.active .step-index {
   background: var(--el-color-primary);
-  color: var(--el-color-primary-foreground, #fff);
+  color: #fff;
+}
+
+.status-step.done .step-index {
+  background: var(--el-color-success);
+  color: #fff;
 }
 
 .workspace {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 340px;
+  grid-template-columns: 280px minmax(0, 1fr) 300px;
   gap: 16px;
-  min-height: calc(100vh - 300px);
+  align-items: start;
 }
 
-.session-panel,
+.session-panel-wrap,
 .main-panel,
-.ops-panel {
-  min-width: 0;
+.ops-panel-wrap {
+  min-height: 480px;
+  padding: 16px;
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   background: var(--el-bg-color);
 }
 
-.session-panel,
-.ops-panel {
-  padding: 14px;
-}
-
-.panel-title {
+.session-panel-wrap {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.session-scroll {
-  display: grid;
-  gap: 8px;
-  max-height: calc(100vh - 360px);
-  overflow: auto;
-}
-
-.session-item {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 11px;
-  background: transparent;
-  color: var(--el-text-color-primary);
-  text-align: left;
-}
-
-.session-item:hover,
-.session-item.active {
-  border-color: var(--el-border-color);
-  background: var(--el-fill-color-light);
-}
-
-.session-main strong {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
-}
-
-.session-main {
-  min-width: 0;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.session-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.session-delete {
-  width: 24px;
-  height: 24px;
+  min-height: 520px;
+  max-height: calc(100vh - 300px);
+  position: sticky;
+  top: 88px;
 }
 
 .main-panel {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  overflow: hidden;
+  gap: 14px;
+  align-content: start;
 }
 
-.current-head,
-.action-bar {
-  border-bottom: 1px solid var(--el-border-color-light);
+.ops-panel-wrap {
+  position: sticky;
+  top: 88px;
 }
 
 .current-head {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
+  gap: 12px;
 }
 
-.current-head h3,
-.welcome-panel h3 {
+.current-head h3 {
   margin: 0;
   font-size: 18px;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
-.current-head p,
-.welcome-panel p {
-  margin: 6px 0 0;
-  color: var(--el-text-color-secondary);
+.current-head p {
+  margin: 4px 0 0;
   font-size: 13px;
+  color: var(--el-text-color-secondary);
 }
 
 .welcome-panel {
-  align-self: center;
-  justify-self: center;
-  width: min(520px, calc(100% - 32px));
-  padding: 28px;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 64px 24px;
   text-align: center;
+  color: var(--el-text-color-secondary);
 }
 
-.welcome-panel .el-button {
-  margin-top: 16px;
+.welcome-panel h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--el-text-color-primary);
 }
 
 .action-bar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 10px;
   background: var(--el-fill-color-light);
 }
 
 .next-action {
   display: grid;
   gap: 2px;
-  min-width: 150px;
 }
 
 .next-action span {
-  color: var(--el-text-color-secondary);
   font-size: 12px;
-  line-height: 1.3;
+  color: var(--el-text-color-secondary);
 }
 
 .next-action strong {
   font-size: 14px;
-  line-height: 1.35;
 }
 
 .action-buttons {
   display: flex;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
-}
-
-.action-buttons :deep(.el-button + .el-button) {
-  margin-left: 0;
 }
 
 .work-tabs {
-  min-height: 0;
-  padding: 0 16px 16px;
-}
-
-.work-tabs :deep(.el-tabs__content) {
-  min-height: 0;
-}
-
-.chat-surface {
-  display: grid;
-  grid-template-rows: minmax(360px, 1fr) auto;
-  min-height: 560px;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.chat-scroll {
-  padding: 16px;
-  overflow: auto;
-}
-
-.message {
-  max-width: 82%;
-  margin-bottom: 14px;
-}
-
-.message--user {
-  margin-left: auto;
-}
-
-.message-role {
-  margin-bottom: 5px;
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
-}
-
-.message pre {
-  margin: 0;
-  padding: 12px 14px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  border-radius: 8px;
-  background: var(--el-fill-color-light);
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.65;
-}
-
-.message--user pre {
-  background: var(--el-color-primary-light-9);
-}
-
-.ai-card {
-  display: grid;
-  gap: 12px;
-  padding: 13px 14px;
-  border-radius: 8px;
-  background: var(--el-fill-color-light);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.ai-summary {
-  margin: 0;
-  color: var(--el-text-color-primary);
-}
-
-.ai-block {
-  display: grid;
-  gap: 8px;
-}
-
-.ai-block strong {
-  font-size: 13px;
-}
-
-.ai-block ul {
-  margin: 0;
-  padding-left: 18px;
-}
-
-.ai-block li + li {
-  margin-top: 4px;
-}
-
-.question-list {
-  display: grid;
-  gap: 8px;
-}
-
-.question-item {
   width: 100%;
-  padding: 9px 10px;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  background: var(--el-bg-color);
-  color: var(--el-text-color-primary);
-  text-align: left;
-  line-height: 1.5;
-  cursor: pointer;
 }
 
-.question-item:hover {
-  border-color: var(--el-color-primary);
-  color: var(--el-color-primary);
-}
-
-.field-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.ai-skeleton {
+.template-dialog {
   display: grid;
-  gap: 8px;
-  width: min(360px, 100%);
-  padding: 13px 14px;
-  border-radius: 8px;
-  background: var(--el-fill-color-light);
+  gap: 16px;
 }
 
-.ai-skeleton span {
-  height: 12px;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    var(--el-fill-color) 0%,
-    var(--el-fill-color-dark) 50%,
-    var(--el-fill-color) 100%
-  );
-  background-size: 200% 100%;
-  animation: ai-loading 1.2s ease-in-out infinite;
-}
-
-.ai-skeleton span:nth-child(2) {
-  width: 86%;
-}
-
-.ai-skeleton span:nth-child(3) {
-  width: 62%;
-}
-
-@keyframes ai-loading {
-  from {
-    background-position: 100% 0;
-  }
-
-  to {
-    background-position: -100% 0;
-  }
-}
-
-.composer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px;
-  gap: 10px;
-  padding: 12px;
-  border-top: 1px solid var(--el-border-color-light);
-  background: var(--el-bg-color);
-}
-
-.plan-editor {
-  display: grid;
-  gap: 10px;
-}
-
-.plan-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.plan-toolbar span {
-  display: block;
-  margin-top: 2px;
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
-}
-
-.revise-input {
-  max-width: 760px;
-}
-
-.empty-state,
-.empty-inline,
-.empty-mini {
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-  padding: 18px;
-  border-radius: 8px;
-  background: var(--el-fill-color-light);
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-
-.empty-state {
-  justify-items: center;
-  text-align: center;
-}
-
-.ops-panel {
-  display: grid;
-  align-content: start;
-  gap: 14px;
-}
-
-.ops-section {
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--el-border-color-light);
-}
-
-.ops-section:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
-}
-
-.template-list,
-.doc-list {
-  display: grid;
-  gap: 8px;
-}
-
-.template-row,
-.doc-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px;
-  border-radius: 8px;
-  background: var(--el-fill-color-light);
-}
-
-.doc-item span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-}
-
-.full-btn {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.config-line {
-  margin: 0 0 6px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-}
-
-.form-tip {
-  width: 100%;
-  margin: 6px 0 0;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
+.form-tip,
 .test-result {
-  margin: 12px 0 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--el-fill-color-light);
+  font-size: 12px;
   color: var(--el-text-color-secondary);
-  font-size: 13px;
-  line-height: 1.5;
+  margin: 6px 0 0;
 }
 
-.template-dialog,
-.supplement-dialog {
-  display: grid;
-  gap: 12px;
-}
-
-.supplement-dialog :deep(.el-alert) {
-  align-items: flex-start;
-}
-
-.supplement-date-picker {
-  width: 100%;
-}
-
-@media (max-width: 1280px) {
+@media (max-width: 1200px) {
   .workspace {
-    grid-template-columns: 250px minmax(0, 1fr);
-  }
-
-  .ops-panel {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .ops-section {
-    border-bottom: 0;
-    padding-bottom: 0;
-  }
-}
-
-@media (max-width: 860px) {
-  .page-head,
-  .current-head,
-  .plan-toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .status-strip,
-  .workspace,
-  .ops-panel {
     grid-template-columns: 1fr;
   }
 
-  .session-scroll {
+  .session-panel-wrap,
+  .ops-panel-wrap {
+    position: static;
     max-height: none;
   }
 
-  .composer {
-    grid-template-columns: 1fr;
-  }
-
-  .action-bar,
-  .action-buttons {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .action-buttons :deep(.el-button) {
-    width: 100%;
+  .session-panel-wrap {
+    min-height: 0;
   }
 }
 </style>

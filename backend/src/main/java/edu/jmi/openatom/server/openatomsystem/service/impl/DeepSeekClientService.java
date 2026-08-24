@@ -28,6 +28,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class DeepSeekClientService {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final int MAX_RETRIES = 2;
+  private static final long RETRY_BASE_DELAY_MS = 800;
 
   private final AiCallLogMapper aiCallLogMapper;
   private final AiSettingsService aiSettingsService;
@@ -43,6 +45,9 @@ public class DeepSeekClientService {
               : callDeepSeek(settings, systemPrompt, messages);
       log(settings, scene, requestSummary, truncate(response, 900), "success", null, System.currentTimeMillis() - start);
       return response;
+    } catch (AiApiException e) {
+      log(settings, scene, requestSummary, null, "failed_" + e.kind().name().toLowerCase(), truncate(e.getMessage(), 900), System.currentTimeMillis() - start);
+      return fallback(scene, messages);
     } catch (Exception e) {
       log(settings, scene, requestSummary, null, "failed", truncate(e.getMessage(), 900), System.currentTimeMillis() - start);
       return fallback(scene, messages);
@@ -100,41 +105,43 @@ public class DeepSeekClientService {
   private String callDeepSeek(
       AiSettingsService.RuntimeSettings settings,
       String systemPrompt,
-      List<Map<String, String>> messages)
-      throws IOException, InterruptedException {
-    List<Map<String, String>> payloadMessages = new ArrayList<>();
-    payloadMessages.add(Map.of("role", "system", "content", systemPrompt));
-    payloadMessages.addAll(messages);
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("model", settings.model());
-    payload.put("messages", payloadMessages);
-    payload.put("temperature", 0.4);
-    payload.put("stream", false);
-    String body = OBJECT_MAPPER.writeValueAsString(payload);
-    HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(URI.create(settings.baseUrl().replaceAll("/+$", "") + "/chat/completions"))
-            .timeout(Duration.ofSeconds(Math.max(5, settings.timeoutSeconds())))
-            .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + settings.apiKey())
-            .POST(HttpRequest.BodyPublishers.ofString(body))
-            .build();
-    HttpResponse<String> response =
-        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
-            .send(request, HttpResponse.BodyHandlers.ofString());
-    if (response.statusCode() < 200 || response.statusCode() >= 300) {
-      throw new IOException("DeepSeek 调用失败: HTTP " + response.statusCode());
-    }
-    Map<String, Object> responseBody =
-        OBJECT_MAPPER.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
-    Object choices = responseBody.get("choices");
-    if (choices instanceof List<?> list && !list.isEmpty() && list.getFirst() instanceof Map<?, ?> first) {
-      Object message = first.get("message");
-      if (message instanceof Map<?, ?> messageMap && messageMap.get("content") != null) {
-        return String.valueOf(messageMap.get("content"));
+      List<Map<String, String>> messages) {
+    HttpRequest request = buildRequest(settings, systemPrompt, messages, false);
+    int attempt = 0;
+    while (true) {
+      attempt += 1;
+      try {
+        HttpResponse<String> response =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
+                .send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+          throw classifyError(response.statusCode(), response.body());
+        }
+        Map<String, Object> responseBody =
+            OBJECT_MAPPER.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
+        Object choices = responseBody.get("choices");
+        if (choices instanceof List<?> list && !list.isEmpty() && list.getFirst() instanceof Map<?, ?> first) {
+          Object message = first.get("message");
+          if (message instanceof Map<?, ?> messageMap && messageMap.get("content") != null) {
+            return String.valueOf(messageMap.get("content"));
+          }
+        }
+        throw new AiApiException(AiApiException.Kind.API_ERROR, "DeepSeek 响应格式不正确");
+      } catch (AiApiException e) {
+        if (e.kind() == AiApiException.Kind.RATE_LIMITED && attempt <= MAX_RETRIES) {
+          sleepRetry(attempt);
+          continue;
+        }
+        throw e;
+      } catch (java.net.http.HttpTimeoutException e) {
+        throw new AiApiException(AiApiException.Kind.TIMEOUT, "DeepSeek 请求超时", e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AiApiException(AiApiException.Kind.NETWORK, "DeepSeek 调用中断", e);
+      } catch (IOException e) {
+        throw new AiApiException(AiApiException.Kind.NETWORK, "DeepSeek 网络错误: " + e.getMessage(), e);
       }
     }
-    throw new IOException("DeepSeek 响应格式不正确");
   }
 
   private void callDeepSeekStream(
@@ -142,8 +149,60 @@ public class DeepSeekClientService {
       String systemPrompt,
       List<Map<String, String>> messages,
       StreamChunkConsumer consumer,
-      StringBuilder responseBuilder)
-      throws Exception {
+      StringBuilder responseBuilder) {
+    HttpRequest request = buildRequest(settings, systemPrompt, messages, true);
+    int attempt = 0;
+    while (true) {
+      attempt += 1;
+      try {
+        HttpResponse<java.io.InputStream> response =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
+                .send(request, HttpResponse.BodyHandlers.ofInputStream());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+          throw classifyError(response.statusCode(), "");
+        }
+        try (BufferedReader reader =
+            new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
+          String line;
+          while ((line = reader.readLine()) != null) {
+            if (!line.startsWith("data:")) continue;
+            String data = line.substring(5).trim();
+            if (data.isBlank()) continue;
+            if ("[DONE]".equals(data)) break;
+            String delta = parseStreamDelta(data);
+            if (delta == null || delta.isEmpty()) continue;
+            responseBuilder.append(delta);
+            consumer.accept(delta);
+          }
+        }
+        return;
+      } catch (AiApiException e) {
+        if (e.kind() == AiApiException.Kind.RATE_LIMITED && attempt <= MAX_RETRIES) {
+          sleepRetry(attempt);
+          continue;
+        }
+        throw e;
+      } catch (java.net.http.HttpTimeoutException e) {
+        throw new AiApiException(AiApiException.Kind.TIMEOUT, "DeepSeek 请求超时", e);
+      } catch (IOException e) {
+        throw new AiApiException(AiApiException.Kind.NETWORK, "DeepSeek 网络错误: " + e.getMessage(), e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AiApiException(AiApiException.Kind.NETWORK, "DeepSeek 流式调用中断", e);
+      } catch (UncheckedIOException e) {
+        throw new AiApiException(AiApiException.Kind.NETWORK, "DeepSeek 流式读取失败: " + e.getCause().getMessage(), e.getCause());
+      } catch (Exception e) {
+        if (e instanceof AiApiException aiError) throw aiError;
+        throw new AiApiException(AiApiException.Kind.API_ERROR, "DeepSeek 流式输出失败: " + e.getMessage(), e);
+      }
+    }
+  }
+
+  private HttpRequest buildRequest(
+      AiSettingsService.RuntimeSettings settings,
+      String systemPrompt,
+      List<Map<String, String>> messages,
+      boolean stream) {
     List<Map<String, String>> payloadMessages = new ArrayList<>();
     payloadMessages.add(Map.of("role", "system", "content", systemPrompt));
     payloadMessages.addAll(messages);
@@ -151,38 +210,46 @@ public class DeepSeekClientService {
     payload.put("model", settings.model());
     payload.put("messages", payloadMessages);
     payload.put("temperature", 0.4);
-    payload.put("stream", true);
-    String body = OBJECT_MAPPER.writeValueAsString(payload);
-    HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(URI.create(settings.baseUrl().replaceAll("/+$", "") + "/chat/completions"))
-            .timeout(Duration.ofSeconds(Math.max(5, settings.timeoutSeconds())))
-            .header("Content-Type", "application/json")
-            .header("Accept", "text/event-stream")
-            .header("Authorization", "Bearer " + settings.apiKey())
-            .POST(HttpRequest.BodyPublishers.ofString(body))
-            .build();
-    HttpResponse<java.io.InputStream> response =
-        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
-            .send(request, HttpResponse.BodyHandlers.ofInputStream());
-    if (response.statusCode() < 200 || response.statusCode() >= 300) {
-      throw new IOException("DeepSeek 调用失败: HTTP " + response.statusCode());
+    payload.put("stream", stream);
+    try {
+      String body = OBJECT_MAPPER.writeValueAsString(payload);
+      HttpRequest.Builder builder =
+          HttpRequest.newBuilder()
+              .uri(URI.create(settings.baseUrl().replaceAll("/+$", "") + "/chat/completions"))
+              .timeout(Duration.ofSeconds(Math.max(5, settings.timeoutSeconds())))
+              .header("Content-Type", "application/json")
+              .header("Authorization", "Bearer " + settings.apiKey())
+              .POST(HttpRequest.BodyPublishers.ofString(body));
+      if (stream) builder.header("Accept", "text/event-stream");
+      return builder.build();
+    } catch (IOException e) {
+      throw new AiApiException(AiApiException.Kind.API_ERROR, "DeepSeek 请求构造失败", e);
     }
-    try (BufferedReader reader =
-        new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
-      String line;
-      while ((line = reader.readLine()) != null) {
-        if (!line.startsWith("data:")) continue;
-        String data = line.substring(5).trim();
-        if (data.isBlank()) continue;
-        if ("[DONE]".equals(data)) break;
-        String delta = parseStreamDelta(data);
-        if (delta == null || delta.isEmpty()) continue;
-        responseBuilder.append(delta);
-        consumer.accept(delta);
-      }
-    } catch (UncheckedIOException e) {
-      throw e.getCause();
+  }
+
+  private AiApiException classifyError(int statusCode, String body) {
+    String detail = body == null || body.isBlank() ? "" : " - " + truncate(body, 300);
+    return switch (statusCode) {
+      case 429 ->
+          new AiApiException(
+              AiApiException.Kind.RATE_LIMITED, "DeepSeek 限流（HTTP 429），请稍后重试" + detail);
+      case 401, 403 ->
+          new AiApiException(
+              AiApiException.Kind.API_ERROR, "DeepSeek 鉴权失败（HTTP " + statusCode + "），请检查 API Key");
+      case 408, 504 ->
+          new AiApiException(AiApiException.Kind.TIMEOUT, "DeepSeek 请求超时（HTTP " + statusCode + "）");
+      default ->
+          new AiApiException(
+              AiApiException.Kind.API_ERROR, "DeepSeek 调用失败: HTTP " + statusCode + detail);
+    };
+  }
+
+  private void sleepRetry(int attempt) {
+    try {
+      Thread.sleep(RETRY_BASE_DELAY_MS * attempt);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new AiApiException(AiApiException.Kind.NETWORK, "DeepSeek 重试等待中断", e);
     }
   }
 

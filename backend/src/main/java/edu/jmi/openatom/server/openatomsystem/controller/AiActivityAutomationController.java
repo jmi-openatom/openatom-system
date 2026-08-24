@@ -28,13 +28,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class AiActivityAutomationController {
   private final AiActivityAutomationService aiActivityAutomationService;
 
-  @PostMapping("/ai/activity/sessions")
-  @SaCheckPermission("activity:create")
-  public Result<Map<String, Object>> createSession(
-      @Valid @RequestBody RequestCreateAiActivitySessionDTO request) {
-    return aiActivityAutomationService.createSession(request);
-  }
-
   @PostMapping(value = "/ai/activity/sessions/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   @SaCheckPermission("activity:create")
   public SseEmitter createSessionStream(
@@ -60,13 +53,6 @@ public class AiActivityAutomationController {
     return aiActivityAutomationService.deleteSession(sessionId);
   }
 
-  @PostMapping("/ai/activity/sessions/{sessionId}/messages")
-  @SaCheckPermission("activity:create")
-  public Result<Map<String, Object>> sendMessage(
-      @PathVariable Long sessionId, @Valid @RequestBody RequestAiActivityMessageDTO request) {
-    return aiActivityAutomationService.sendMessage(sessionId, request);
-  }
-
   @PostMapping(value = "/ai/activity/sessions/{sessionId}/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   @SaCheckPermission("activity:create")
   public SseEmitter sendMessageStream(
@@ -82,23 +68,10 @@ public class AiActivityAutomationController {
         sessionId, request == null ? new RequestConfirmAiRequirementDTO() : request);
   }
 
-  @PostMapping("/ai/activity/sessions/{sessionId}/generate-plan")
-  @SaCheckPermission("activity:create")
-  public Result<Map<String, Object>> generatePlan(@PathVariable Long sessionId) {
-    return aiActivityAutomationService.generatePlan(sessionId);
-  }
-
   @PostMapping(value = "/ai/activity/sessions/{sessionId}/generate-plan/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   @SaCheckPermission("activity:create")
   public SseEmitter generatePlanStream(@PathVariable Long sessionId) {
     return aiActivityAutomationService.generatePlanStream(sessionId);
-  }
-
-  @PostMapping("/ai/activity/sessions/{sessionId}/revise-plan")
-  @SaCheckPermission("activity:create")
-  public Result<Map<String, Object>> revisePlan(
-      @PathVariable Long sessionId, @Valid @RequestBody RequestReviseAiActivityPlanDTO request) {
-    return aiActivityAutomationService.revisePlan(sessionId, request);
   }
 
   @PostMapping(value = "/ai/activity/sessions/{sessionId}/revise-plan/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

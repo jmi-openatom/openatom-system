@@ -12,15 +12,11 @@ import java.util.Map;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface AiActivityAutomationService {
-  Result<Map<String, Object>> createSession(RequestCreateAiActivitySessionDTO request);
-
   Result<List<Map<String, Object>>> sessions();
 
   Result<Map<String, Object>> detail(Long sessionId);
 
   Result<String> deleteSession(Long sessionId);
-
-  Result<Map<String, Object>> sendMessage(Long sessionId, RequestAiActivityMessageDTO request);
 
   SseEmitter createSessionStream(RequestCreateAiActivitySessionDTO request);
 
@@ -28,11 +24,7 @@ public interface AiActivityAutomationService {
 
   Result<Map<String, Object>> confirmRequirement(Long sessionId, RequestConfirmAiRequirementDTO request);
 
-  Result<Map<String, Object>> generatePlan(Long sessionId);
-
   SseEmitter generatePlanStream(Long sessionId);
-
-  Result<Map<String, Object>> revisePlan(Long sessionId, RequestReviseAiActivityPlanDTO request);
 
   SseEmitter revisePlanStream(Long sessionId, RequestReviseAiActivityPlanDTO request);
 
