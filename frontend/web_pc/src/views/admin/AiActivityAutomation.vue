@@ -115,10 +115,12 @@
           :ai-settings="aiSettings"
           :streaming="streaming"
           :can-generate-documents="canGenerateDocuments"
+          :can-create-activity-draft="canCreateActivityDraft"
           :generating-docs="generatingDocs"
           @manage-templates="templateVisible = true"
           @manage-settings="settingsVisible = true"
           @generate-documents="generateDocuments"
+          @create-activity="createActivityDraft"
           @download="downloadDoc"
         />
       </aside>
@@ -1099,6 +1101,10 @@ onMounted(async () => {
 .ops-panel-wrap {
   position: sticky;
   top: 88px;
+  min-height: 0;
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .current-head {

@@ -26,11 +26,11 @@
       <el-button
         class="full-btn"
         type="primary"
-        :disabled="streaming || !canGenerateDocuments"
+        :disabled="streaming || (!canGenerateDocuments && !canCreateActivityDraft)"
         :loading="generatingDocs"
-        @click="emit('generateDocuments')"
+        @click="canGenerateDocuments ? emit('generateDocuments') : emit('createActivity')"
       >
-        生成五份材料
+        {{ canGenerateDocuments ? '生成五份材料' : '创建活动草稿' }}
       </el-button>
       <div class="doc-list">
         <div v-for="doc in documents || []" :key="doc.id" class="doc-item">
@@ -63,6 +63,7 @@ const props = defineProps<{
   aiSettings: Record<string, any>
   streaming?: boolean
   canGenerateDocuments?: boolean
+  canCreateActivityDraft?: boolean
   generatingDocs?: boolean
 }>()
 
@@ -70,6 +71,7 @@ const emit = defineEmits<{
   manageTemplates: []
   manageSettings: []
   generateDocuments: []
+  createActivity: []
   download: [doc: any]
 }>()
 
