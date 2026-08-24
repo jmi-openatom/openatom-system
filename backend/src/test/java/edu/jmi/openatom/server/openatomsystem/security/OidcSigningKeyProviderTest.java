@@ -55,7 +55,10 @@ class OidcSigningKeyProviderTest {
     String token = provider.sign(claims);
 
     assertEquals("42", provider.verify(token).getSubject());
-    String tampered = token.substring(0, token.length() - 2) + "xx";
+    // 注意：不能只改签名尾部两字符——RSA-2048 签名 base64url 长度恒为 342
+    // （342 mod 4 == 2），末尾字符解码时后 4 位被忽略，约 1/1024 概率
+    // 篡改前后解码字节相同导致验证误通过。改为替换整段签名为固定错误值。
+    String tampered = token.substring(0, token.lastIndexOf('.') + 1) + "y9y9y9y9y9y9y9";
     assertThrows(IllegalArgumentException.class, () -> provider.verify(tampered));
   }
 
