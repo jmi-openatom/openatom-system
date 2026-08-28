@@ -12,6 +12,8 @@ import java.util.List;
 public interface PartnerClubService {
   Result<List<ResponsePartnerClubVO>> publicList(Boolean featured, Integer limit);
 
+  Result<ResponsePartnerClubVO> publicDetail(Integer partnerClubId);
+
   Result<PageDataVO<PartnerClub>> adminList(
       String keyword, String status, Boolean featured, Long page, Long pageSize);
 

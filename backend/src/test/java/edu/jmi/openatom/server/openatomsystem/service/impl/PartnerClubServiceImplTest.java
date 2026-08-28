@@ -89,6 +89,55 @@ class PartnerClubServiceImplTest {
     assertEquals("绑定的社长用户不存在", error.getMessage());
   }
 
+  @Test
+  void publicDetailReturnsPublishedPartnerWithPresident() {
+    PartnerClub club = partner("https://example.org", "[\"开源\"]");
+    club.setStatus("published");
+    PartnerClubMapper mapper =
+        (PartnerClubMapper)
+            Proxy.newProxyInstance(
+                PartnerClubMapper.class.getClassLoader(),
+                new Class<?>[] {PartnerClubMapper.class},
+                (proxy, method, args) -> {
+                  if (method.getName().equals("selectById")) {
+                    return club.getId().equals(args[0]) ? club : null;
+                  }
+                  if (method.getName().equals("toString")) return "PartnerClubMapperTestDouble";
+                  throw new UnsupportedOperationException(method.getName());
+                });
+    PartnerClubServiceImpl partnerClubService =
+        new PartnerClubServiceImpl(mapper, userMapperReturning(president()), new ObjectMapper());
+
+    var result = partnerClubService.publicDetail(1);
+
+    assertEquals(0, result.getCode());
+    assertEquals("示例开源伙伴", result.getData().getName());
+    assertEquals("张同学", result.getData().getPresidentName());
+  }
+
+  @Test
+  void publicDetailHidesDraftOrMissingPartner() {
+    PartnerClub draft = partner(null, "[]");
+    draft.setStatus("draft");
+    PartnerClubMapper mapper =
+        (PartnerClubMapper)
+            Proxy.newProxyInstance(
+                PartnerClubMapper.class.getClassLoader(),
+                new Class<?>[] {PartnerClubMapper.class},
+                (proxy, method, args) -> {
+                  if (method.getName().equals("selectById")) {
+                    return draft.getId().equals(args[0]) ? draft : null;
+                  }
+                  if (method.getName().equals("toString")) return "PartnerClubMapperTestDouble";
+                  throw new UnsupportedOperationException(method.getName());
+                });
+    PartnerClubServiceImpl partnerClubService =
+        new PartnerClubServiceImpl(mapper, userMapperReturning(null), new ObjectMapper());
+
+    assertEquals(404, partnerClubService.publicDetail(1).getCode());
+    assertEquals(404, partnerClubService.publicDetail(99).getCode());
+  }
+
   private UserMapper userMapperReturning(User user) {
     return (UserMapper)
         Proxy.newProxyInstance(

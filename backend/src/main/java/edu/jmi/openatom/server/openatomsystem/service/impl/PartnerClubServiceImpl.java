@@ -59,6 +59,18 @@ public class PartnerClubServiceImpl implements PartnerClubService {
   }
 
   @Override
+  public Result<ResponsePartnerClubVO> publicDetail(Integer partnerClubId) {
+    PartnerClub club = partnerClubId == null ? null : partnerClubMapper.selectById(partnerClubId);
+    if (club == null
+        || !STATUS_PUBLISHED.equals(club.getStatus())
+        || (trimToNull(club.getWebsiteUrl()) != null && !isSafeWebsite(club.getWebsiteUrl()))) {
+      return Result.error(404, "开源伙伴不存在");
+    }
+    Map<Integer, User> presidents = presidentUsers(List.of(club));
+    return Result.success(toResponse(club, presidentUser(presidents, club.getPresidentUserId())));
+  }
+
+  @Override
   public Result<PageDataVO<PartnerClub>> adminList(
       String keyword, String status, Boolean featured, Long page, Long pageSize) {
     Page<PartnerClub> result =

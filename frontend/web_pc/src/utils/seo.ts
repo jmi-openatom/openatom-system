@@ -64,6 +64,7 @@ const ROUTE_SEO: Record<string, SeoConfig> = {
     title: `伙伴社团｜${SITE_NAME}`,
     description: '认识与 JMI-OPENATOM 共同建设校园开源生态的伙伴社团。',
   },
+  'site-partner-detail': { title: `伙伴详情｜${SITE_NAME}` },
   'site-calendar': {
     title: `校园日历｜${SITE_NAME}`,
     description: '查看校园日历与近期安排，快速了解重要日期。',

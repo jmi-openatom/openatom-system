@@ -214,6 +214,11 @@ const routes = [
         component: resilientView(() => import('../views/site/Partners.vue')),
       },
       {
+        path: 'partners/:id',
+        name: 'site-partner-detail',
+        component: resilientView(() => import('../views/site/PartnerClubDetail.vue')),
+      },
+      {
         path: 'apps/:id',
         name: 'site-app-detail',
         component: resilientView(() => import('../views/site/AppDetail.vue')),

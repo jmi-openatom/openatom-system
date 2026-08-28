@@ -33,6 +33,11 @@ public class PartnerClubController {
     return partnerClubService.publicList(featured, limit);
   }
 
+  @GetMapping("/site/partner-clubs/{partnerClubId}")
+  public Result<ResponsePartnerClubVO> publicDetail(@PathVariable Integer partnerClubId) {
+    return partnerClubService.publicDetail(partnerClubId);
+  }
+
   @GetMapping("/partner-clubs")
   @SaCheckPermission("partner-club:list")
   public Result<PageDataVO<PartnerClub>> adminList(

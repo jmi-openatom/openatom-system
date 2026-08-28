@@ -13,6 +13,9 @@ export const siteApi = {
   partnerClubs(params?: { featured?: boolean; limit?: number }): Promise<any> {
     return request.get('/site/partner-clubs', { params })
   },
+  partnerClubDetail(id: string | number): Promise<any> {
+    return request.get(`/site/partner-clubs/${id}`)
+  },
   activityDetail(id: string | number): Promise<any> {
     return request.get(`/site/activities/${id}`)
   },

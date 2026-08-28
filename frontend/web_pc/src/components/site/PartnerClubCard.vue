@@ -1,49 +1,63 @@
 <template>
   <article :class="[`partner-club-card--${variant}`]" class="partner-club-card">
-    <div class="partner-club-card__header">
-      <div class="partner-club-card__logo" :aria-busy="!logoLoaded && !logoFailed">
-        <span v-if="logoFailed" aria-hidden="true" class="partner-club-card__initial">
-          {{ initial }}
-        </span>
-        <img
-          v-else
-          :alt="`${club.name} Logo`"
-          :class="{ 'is-loaded': logoLoaded }"
-          :src="club.logoUrl"
-          height="72"
-          loading="lazy"
-          width="72"
-          @error="logoFailed = true"
-          @load="logoLoaded = true"
+    <RouterLink
+      class="partner-club-card__body"
+      :aria-label="`查看${club.name}详情`"
+      :to="`/partners/${club.id}`"
+    >
+      <div class="partner-club-card__header">
+        <div class="partner-club-card__logo" :aria-busy="!logoLoaded && !logoFailed">
+          <span v-if="logoFailed" aria-hidden="true" class="partner-club-card__initial">
+            {{ initial }}
+          </span>
+          <img
+            v-else
+            :alt="`${club.name} Logo`"
+            :class="{ 'is-loaded': logoLoaded }"
+            :src="club.logoUrl"
+            height="72"
+            loading="lazy"
+            width="72"
+            @error="logoFailed = true"
+            @load="logoLoaded = true"
+          />
+        </div>
+
+        <div class="partner-club-card__identity">
+          <h2>{{ club.name }}</h2>
+          <p v-if="club.organization || club.category">
+            <span v-if="club.organization">{{ club.organization }}</span>
+            <span v-if="club.organization && club.category" aria-hidden="true">/</span>
+            <span v-if="club.category">{{ club.category }}</span>
+          </p>
+        </div>
+      </div>
+
+      <p class="partner-club-card__description">{{ club.description }}</p>
+
+      <div v-if="club.presidentName" class="partner-club-card__president">
+        <UserAvatar
+          :name="club.presidentName"
+          :size="variant === 'compact' ? 32 : 36"
+          :src="club.presidentAvatarUrl"
         />
+        <p><span>社长</span>{{ club.presidentName }}</p>
       </div>
 
-      <div class="partner-club-card__identity">
-        <h2>{{ club.name }}</h2>
-        <p v-if="club.organization || club.category">
-          <span v-if="club.organization">{{ club.organization }}</span>
-          <span v-if="club.organization && club.category" aria-hidden="true">/</span>
-          <span v-if="club.category">{{ club.category }}</span>
-        </p>
-      </div>
-    </div>
-
-    <p class="partner-club-card__description">{{ club.description }}</p>
-
-    <div v-if="club.presidentName" class="partner-club-card__president">
-      <UserAvatar
-        :name="club.presidentName"
-        :size="variant === 'compact' ? 32 : 36"
-        :src="club.presidentAvatarUrl"
-      />
-      <p><span>社长</span>{{ club.presidentName }}</p>
-    </div>
-
-    <ul v-if="variant === 'default' && club.tags?.length" class="partner-club-card__tags">
-      <li v-for="tag in club.tags" :key="tag">{{ tag }}</li>
-    </ul>
+      <ul v-if="variant === 'default' && club.tags?.length" class="partner-club-card__tags">
+        <li v-for="tag in club.tags" :key="tag">{{ tag }}</li>
+      </ul>
+    </RouterLink>
 
     <div class="partner-club-card__footer">
+      <RouterLink
+        class="partner-club-card__more"
+        :aria-label="`查看${club.name}详情`"
+        :to="`/partners/${club.id}`"
+      >
+        <span>查看详情</span>
+        <ArrowRight aria-hidden="true" :size="16" :stroke-width="1.8" />
+      </RouterLink>
       <LinkPreview
         v-if="safeWebsiteUrl"
         :aria-label="`访问${club.name}官网（在新标签页打开）`"
@@ -65,7 +79,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { ExternalLink } from 'lucide-vue-next'
+import { ArrowRight, ExternalLink } from 'lucide-vue-next'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { LinkPreview } from '@/components/ui/link-preview'
 import type { PartnerClub } from '@/types/partner-club'
@@ -121,6 +135,21 @@ watch(
 .partner-club-card:focus-within {
   border-color: var(--oa-border-strong);
   background: color-mix(in srgb, var(--oa-elevated-bg) 94%, var(--oa-text));
+}
+
+.partner-club-card__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  color: inherit;
+  text-decoration: none;
+}
+
+.partner-club-card__body:focus-visible {
+  outline: 3px solid var(--oa-focus-ring);
+  outline-offset: 3px;
+  border-radius: 10px;
 }
 
 .partner-club-card__header {
@@ -264,9 +293,41 @@ watch(
 
 .partner-club-card__footer {
   display: flex;
-  align-items: flex-end;
-  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   padding-top: 22px;
+}
+
+.partner-club-card__more {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 17px;
+  border: 1px solid var(--oa-border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--oa-text-soft);
+  font-size: 14px;
+  font-weight: 550;
+  text-decoration: none;
+  transition:
+    border-color var(--oa-duration-fast) ease,
+    background-color var(--oa-duration-fast) ease,
+    color var(--oa-duration-fast) ease;
+}
+
+.partner-club-card__more:hover {
+  border-color: var(--oa-active-bg);
+  background: color-mix(in srgb, var(--oa-active-bg) 10%, var(--oa-elevated-bg));
+  color: var(--oa-active-text);
+}
+
+.partner-club-card__more:focus-visible {
+  outline: 3px solid var(--oa-focus-ring);
+  outline-offset: 3px;
 }
 
 .partner-club-card__link {
