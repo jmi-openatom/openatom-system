@@ -214,6 +214,14 @@ export const sharedFilesApi = {
   createDir(data: { parentId: string | number | null; name: string; password?: string }): Promise<any> {
     return request.post('/shared-files/dir', data)
   },
+  createFile(data: {
+    parentId: string | number | null
+    name: string
+    type: 'md' | 'docx' | 'xlsx' | 'pptx'
+    password?: string
+  }): Promise<any> {
+    return request.post('/shared-files/create', data)
+  },
   upload(file: File, parentId: string | number | null, password?: string): Promise<any> {
     const formData = new FormData()
     formData.append('file', file)

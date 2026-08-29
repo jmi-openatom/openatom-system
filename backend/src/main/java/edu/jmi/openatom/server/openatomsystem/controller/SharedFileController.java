@@ -14,6 +14,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.SharedFileMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -52,6 +53,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
 
 /** 共享文件架：目录 + 任意文件，支持密码保护与分类预览/在线编辑。 */
 @Slf4j
@@ -70,6 +76,19 @@ public class SharedFileController {
   private static final Set<String> OFFICE_CELL = Set.of("xlsx", "xls", "ods", "csv");
   private static final Set<String> OFFICE_SLIDE = Set.of("pptx", "ppt", "odp");
   private static final Set<String> OFFICE_EXTS;
+
+  private static final Set<String> CREATABLE_TYPES =
+      Set.of("md", "docx", "xlsx", "pptx");
+  private static final Set<String> KNOWN_DOC_EXTS =
+      Set.of("md", "markdown", "docx", "doc", "odt", "rtf", "txt", "text",
+          "xlsx", "xls", "ods", "csv", "pptx", "ppt", "odp");
+
+  private static final Map<String, String> NEW_FILE_DEFAULT_NAMES =
+      Map.of(
+          "md", "未命名文档.md",
+          "docx", "未命名文档.docx",
+          "xlsx", "未命名表格.xlsx",
+          "pptx", "未命名演示文稿.pptx");
 
   static {
     java.util.HashSet<String> all = new java.util.HashSet<>();
@@ -194,6 +213,46 @@ public class SharedFileController {
             .build();
     fileMapper.insert(dir);
     return Result.success(dir);
+  }
+
+  /** 新建空白文件（markdown/word/excel/ppt）。 */
+  @PostMapping("/create")
+  @SaCheckPermission("document:list")
+  public Result<SharedFile> createFile(@RequestBody CreateFileRequest request) {
+    String type = request.type() == null ? null : request.type().toLowerCase(Locale.ROOT);
+    if (type == null || !CREATABLE_TYPES.contains(type)) {
+      return Result.error(400, "仅支持新建 md、docx、xlsx 或 pptx 文件");
+    }
+    ensureParent(request.parentId());
+    String name = resolveNewFileName(request.name(), type);
+    if (nameExists(request.parentId(), name, false)) {
+      return Result.error(400, "同级已存在同名文件");
+    }
+    String storageName = UUID.randomUUID() + "." + type;
+    Path target = root().resolve(storageName).normalize();
+    if (!target.getParent().equals(root())) {
+      return Result.error(500, "文件名不合法");
+    }
+    try {
+      Files.createDirectories(root());
+      Files.write(target, initialFileContent(type, name));
+    } catch (IOException exception) {
+      log.warn("shared file create failed: {}", exception.getMessage());
+      return Result.error(500, "文件创建失败，请稍后重试");
+    }
+    SharedFile entity =
+        SharedFile.builder()
+            .parentId(request.parentId())
+            .name(name)
+            .dir(false)
+            .extension(type)
+            .sizeBytes(safeSize(target))
+            .storageName(storageName)
+            .ownerUserId(StpUtil.getLoginIdAsInt())
+            .passwordHash(encodePassword(request.password()))
+            .build();
+    fileMapper.insert(entity);
+    return Result.success(entity);
   }
 
   /** 上传文件（任意类型）。 */
@@ -639,6 +698,64 @@ public class SharedFileController {
     return dot < 0 ? "" : name.substring(dot + 1).toLowerCase(Locale.ROOT);
   }
 
+  private String resolveNewFileName(String name, String type) {
+    String base = name == null || name.isBlank()
+        ? NEW_FILE_DEFAULT_NAMES.get(type)
+        : sanitizeName(name);
+    int dot = base.lastIndexOf('.');
+    if (dot > 0 && KNOWN_DOC_EXTS.contains(base.substring(dot + 1).toLowerCase(Locale.ROOT))) {
+      base = base.substring(0, dot);
+    }
+    base = base.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
+    if (base.isBlank()) {
+      base = NEW_FILE_DEFAULT_NAMES.get(type);
+      base = base.substring(0, base.lastIndexOf('.'));
+    }
+    return base + "." + type;
+  }
+
+  private byte[] initialFileContent(String type, String name) throws IOException {
+    String baseName = name.substring(0, name.lastIndexOf('.'));
+    return switch (type) {
+      case "md" -> ("# " + baseName + "\n\n在这里开始写作…\n").getBytes(StandardCharsets.UTF_8);
+      case "docx" -> {
+        try (XWPFDocument document = new XWPFDocument();
+            ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+          XWPFParagraph paragraph = document.createParagraph();
+          XWPFRun run = paragraph.createRun();
+          run.setText(baseName);
+          document.write(out);
+          yield out.toByteArray();
+        }
+      }
+      case "xlsx" -> {
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+            ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+          workbook.createSheet("Sheet1");
+          workbook.write(out);
+          yield out.toByteArray();
+        }
+      }
+      case "pptx" -> {
+        try (XMLSlideShow slideshow = new XMLSlideShow();
+            ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+          slideshow.createSlide();
+          slideshow.write(out);
+          yield out.toByteArray();
+        }
+      }
+      default -> throw new IllegalArgumentException("unsupported file type: " + type);
+    };
+  }
+
+  private long safeSize(Path target) {
+    try {
+      return Files.size(target);
+    } catch (IOException ignored) {
+      return 0L;
+    }
+  }
+
   private String encodeName(String name) {
     try {
       return java.net.URLEncoder.encode(name == null ? "file" : name, StandardCharsets.UTF_8);
@@ -680,6 +797,8 @@ public class SharedFileController {
   public record PathItem(Long id, String name) {}
 
   public record DirRequest(Long parentId, String name, String password) {}
+
+  public record CreateFileRequest(Long parentId, String name, String type, String password) {}
 
   public record RenameRequest(String name) {}
 

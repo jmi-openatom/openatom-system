@@ -18,6 +18,20 @@
       </div>
       <div class="toolbar__actions">
         <el-button :icon="FolderAdd" @click="openCreateDir">新建目录</el-button>
+        <el-dropdown trigger="click" @command="onCreateFileCommand">
+          <el-button :icon="DocumentAdd">
+            新建文件
+            <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="md">Markdown 文档</el-dropdown-item>
+              <el-dropdown-item command="docx">Word 文档</el-dropdown-item>
+              <el-dropdown-item command="xlsx">Excel 表格</el-dropdown-item>
+              <el-dropdown-item command="pptx">PPT 演示文稿</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <input ref="fileInput" hidden type="file" @change="onUpload" />
         <el-button :disabled="uploading" type="primary" :icon="Upload" @click="fileInput?.click()">
           {{ uploading ? '上传中…' : '上传文件' }}
@@ -184,6 +198,9 @@
       <template v-else>
         <div class="context-menu__title">当前目录</div>
         <button type="button" @click="menuCreateDir"><el-icon><FolderAdd /></el-icon> 新建目录</button>
+        <button type="button" @click="menuCreateFile">
+          <el-icon><DocumentAdd /></el-icon> 新建文件
+        </button>
         <button type="button" @click="menuUpload"><el-icon><Upload /></el-icon> 上传文件</button>
         <button type="button" @click="menuRefresh"><el-icon><Refresh /></el-icon> 刷新</button>
       </template>
@@ -198,6 +215,35 @@
       <template #footer>
         <el-button @click="createDirOpen = false">取消</el-button>
         <el-button type="primary" @click="createDir">创建</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 新建文件 -->
+    <el-dialog
+      v-model="createFileOpen"
+      :title="`新建${NEW_FILE_TYPES[createFileForm.type].label}`"
+      width="440px"
+    >
+      <el-form label-width="80px">
+        <el-form-item label="文件名">
+          <el-input
+            v-model="createFileForm.name"
+            maxlength="200"
+            :placeholder="`默认：${NEW_FILE_TYPES[createFileForm.type].defaultName}`"
+          />
+        </el-form-item>
+        <el-form-item label="访问密码">
+          <el-input
+            v-model="createFileForm.password"
+            type="password"
+            show-password
+            placeholder="选填，设置后访问需输入密码"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createFileOpen = false">取消</el-button>
+        <el-button type="primary" @click="doCreateFile">创建</el-button>
       </template>
     </el-dialog>
 
@@ -284,8 +330,9 @@
 
 <script setup lang="ts">
 import {
-  Delete, Document, Download, EditPen, Expand, Files, Folder, FolderAdd, FolderOpened,
-  Grid, Lock, Menu, MoreFilled, Picture, Refresh, Upload, UploadFilled, View, VideoCamera,
+  ArrowDown, Delete, Document, DocumentAdd, Download, EditPen, Expand, Files, Folder,
+  FolderAdd, FolderOpened, Grid, Lock, Menu, MoreFilled, Picture, Refresh, Upload,
+  UploadFilled, View, VideoCamera,
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, ref } from 'vue'
@@ -305,6 +352,19 @@ const viewMode = ref<'grid' | 'list'>('grid')
 
 const createDirOpen = ref(false)
 const dirForm = ref({ name: '', password: '' })
+
+const NEW_FILE_TYPES: Record<string, { label: string; defaultName: string }> = {
+  md: { label: 'Markdown 文档', defaultName: '未命名文档.md' },
+  docx: { label: 'Word 文档', defaultName: '未命名文档.docx' },
+  xlsx: { label: 'Excel 表格', defaultName: '未命名表格.xlsx' },
+  pptx: { label: 'PPT 演示文稿', defaultName: '未命名演示文稿.pptx' },
+}
+const createFileOpen = ref(false)
+const createFileForm = ref<{ type: 'md' | 'docx' | 'xlsx' | 'pptx'; name: string; password: string }>({
+  type: 'md',
+  name: '',
+  password: '',
+})
 const renameOpen = ref(false)
 const renameForm = ref({ id: 0, name: '' })
 const passwordOpen = ref(false)
@@ -605,6 +665,11 @@ function menuCreateDir() {
   openCreateDir()
 }
 
+function menuCreateFile() {
+  closeContextMenu()
+  onCreateFileCommand('md')
+}
+
 function menuUpload() {
   closeContextMenu()
   fileInput.value?.click()
@@ -669,6 +734,35 @@ async function createDir() {
     ElMessage.success('目录已创建')
     createDirOpen.value = false
     await fetchList()
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建失败')
+  }
+}
+
+function onCreateFileCommand(type: string) {
+  if (!(type in NEW_FILE_TYPES)) return
+  createFileForm.value = { type: type as any, name: '', password: '' }
+  createFileOpen.value = true
+}
+
+async function doCreateFile() {
+  const type = createFileForm.value.type
+  const name = createFileForm.value.name.trim() || NEW_FILE_TYPES[type].defaultName
+  const password = createFileForm.value.password || undefined
+  try {
+    const created = await sharedFilesApi.createFile({
+      parentId: currentParentId.value,
+      name,
+      type,
+      password,
+    })
+    ElMessage.success('文件已创建')
+    createFileOpen.value = false
+    await fetchList()
+    if (type !== 'md') {
+      const row = rows.value.find((item: any) => item.id === created?.id)
+      if (row) openEdit(row, password)
+    }
   } catch (error: any) {
     ElMessage.error(error?.message || '创建失败')
   }
