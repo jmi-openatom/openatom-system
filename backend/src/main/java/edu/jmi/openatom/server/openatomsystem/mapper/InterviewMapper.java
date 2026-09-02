@@ -23,6 +23,14 @@ public interface InterviewMapper extends BaseMapper<Interview> {
             .orderByDesc(Interview::getId));
   }
 
+  default List<Interview> selectBySessionId(Integer sessionId) {
+    return selectList(
+        new LambdaQueryWrapper<Interview>()
+            .eq(Interview::getSessionId, sessionId)
+            .orderByAsc(Interview::getScheduledStartAt)
+            .orderByAsc(Interview::getRoomId));
+  }
+
   /** 按条件查面试列表 */
   default List<Interview> selectByConditions(
       Integer applicationId, String status, List<Integer> applicationIds,
@@ -32,6 +40,9 @@ public interface InterviewMapper extends BaseMapper<Interview> {
         .eq(applicationId != null, Interview::getApplicationId, applicationId)
         .eq(status != null && !status.isBlank(), Interview::getStatus, status)
         .orderByDesc(Interview::getId);
+    if (status == null || status.isBlank()) {
+      wrapper.ne(Interview::getStatus, "draft");
+    }
     if (applicationIds != null) {
       wrapper.in(Interview::getApplicationId, applicationIds);
     }

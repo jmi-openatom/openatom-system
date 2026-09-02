@@ -256,9 +256,19 @@
         <el-form-item label="处理人数">
           <el-input :model-value="String(batchInterviewTargets.length)" disabled />
         </el-form-item>
+        <el-form-item label="场次名称">
+          <el-input v-model="batchInterviewForm.name" placeholder="例如：2026 秋季招新第一轮面试" />
+        </el-form-item>
         <el-form-item label="首场开始时间">
           <el-date-picker
             v-model="batchInterviewForm.scheduledStartAt"
+            type="datetime"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+          />
+        </el-form-item>
+        <el-form-item label="场次结束时间">
+          <el-date-picker
+            v-model="batchInterviewForm.scheduledEndAt"
             type="datetime"
             value-format="YYYY-MM-DDTHH:mm:ss"
           />
@@ -271,9 +281,6 @@
           <el-input-number v-model="batchInterviewForm.gapMinutes" :min="0" :step="5" />
           <span class="form-suffix">分钟</span>
         </el-form-item>
-        <el-form-item label="地点/链接">
-          <el-input v-model="batchInterviewForm.location" />
-        </el-form-item>
         <el-form-item label="方式">
           <el-select v-model="batchInterviewForm.mode" style="width: 180px">
             <el-option label="线下" value="offline" />
@@ -282,12 +289,79 @@
         </el-form-item>
       </el-form>
 
+      <el-divider content-position="left">面试间与固定面试官组</el-divider>
+      <div class="room-config-list">
+        <el-card
+          v-for="(room, roomIndex) in batchInterviewForm.rooms"
+          :key="room.key"
+          shadow="never"
+          class="room-config-card"
+        >
+          <template #header>
+            <div class="room-config-card__header">
+              <strong>面试间 {{ roomIndex + 1 }}</strong>
+              <el-button
+                v-if="batchInterviewForm.rooms.length > 1"
+                link
+                type="danger"
+                @click="removeInterviewRoom(roomIndex)"
+                >移除</el-button
+              >
+            </div>
+          </template>
+          <el-input v-model="room.name" placeholder="面试间名称" />
+          <el-input v-model="room.location" placeholder="地点或会议链接" />
+          <el-select
+            v-model="room.interviewerIds"
+            multiple
+            filterable
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="选择固定面试官"
+          >
+            <el-option
+              v-for="person in interviewerOptions"
+              :key="person.userId"
+              :label="person.name"
+              :value="person.userId"
+              :disabled="isInterviewerUsed(person.userId, roomIndex)"
+            />
+          </el-select>
+        </el-card>
+      </div>
+      <el-button plain class="add-room-button" @click="addInterviewRoom">+ 添加面试间</el-button>
+
+      <div class="schedule-preview-action">
+        <el-button :loading="batchPreviewLoading" @click="generateBatchInterviewPreview">
+          生成排期预览
+        </el-button>
+        <span v-if="schedulePreview">
+          <template v-if="previewNeedsRefresh">面试间已调整，请重新生成预览</template>
+          <template v-else>
+            已将 {{ schedulePreview.totalCandidates }} 人均衡分配至
+            {{ schedulePreview.rooms?.length || 0 }} 个面试间
+          </template>
+        </span>
+      </div>
+
       <el-divider content-position="left">自动编排预览</el-divider>
-      <el-table :data="batchInterviewPreview" max-height="320">
-        <el-table-column prop="order" label="编号" width="72" />
+      <el-empty v-if="!batchInterviewPreview.length" description="配置完成后生成排期预览" />
+      <el-table v-else :data="batchInterviewPreview" max-height="320">
+        <el-table-column prop="queueNumber" label="编号" width="72" />
         <el-table-column prop="applicationId" label="申请ID" width="90" />
         <el-table-column prop="applicantName" label="申请人" min-width="120" />
-        <el-table-column prop="preferredDepartment" label="意向部门" min-width="120" />
+        <el-table-column label="面试间" min-width="150">
+          <template #default="{ row }">
+            <el-select v-model="row.roomIndex" size="small" @change="previewNeedsRefresh = true">
+              <el-option
+                v-for="(room, index) in schedulePreview.rooms"
+                :key="index"
+                :label="room.name"
+                :value="index"
+              />
+            </el-select>
+          </template>
+        </el-table-column>
         <el-table-column label="排期时间" min-width="220">
           <template #default="{ row }">
             {{ formatRange(row.scheduledStartAt, row.scheduledEndAt) }}
@@ -297,8 +371,18 @@
 
       <template #footer>
         <el-button @click="batchInterviewVisible = false">取消</el-button>
-        <el-button type="primary" :loading="batchInterviewSubmitting" @click="submitBatchInterview"
-          >保存</el-button
+        <el-button
+          :loading="batchInterviewSubmitting"
+          :disabled="!schedulePreview || previewNeedsRefresh"
+          @click="submitBatchInterview(false)"
+          >保存草稿</el-button
+        >
+        <el-button
+          type="primary"
+          :loading="batchInterviewSubmitting"
+          :disabled="!schedulePreview || previewNeedsRefresh"
+          @click="submitBatchInterview(true)"
+          >保存并发布</el-button
         >
       </template>
     </el-dialog>
@@ -319,6 +403,8 @@
           <el-select
             v-model="finalForm.departmentId"
             filterable
+            :loading="finalOptionsLoading"
+            :no-data-text="finalOptionsLoading ? '正在加载部门…' : '暂无可选部门'"
             placeholder="请选择部门"
             style="width: 320px"
             @change="finalForm.positionId = undefined"
@@ -336,6 +422,8 @@
             v-model="finalForm.positionId"
             filterable
             clearable
+            :loading="finalOptionsLoading"
+            :no-data-text="finalOptionsLoading ? '正在加载岗位…' : '该部门暂无岗位'"
             placeholder="请选择岗位（可选）"
             style="width: 320px"
           >
@@ -353,7 +441,11 @@
       </el-form>
       <template #footer>
         <el-button @click="finalVisible = false">取消</el-button>
-        <el-button type="primary" :loading="finalSubmitting" @click="submitFinalDecision"
+        <el-button
+          type="primary"
+          :loading="finalSubmitting"
+          :disabled="finalOptionsLoading"
+          @click="submitFinalDecision"
           >提交</el-button
         >
       </template>
@@ -408,9 +500,16 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Search } from '@element-plus/icons-vue'
-import { applicationApi, approvalApi, clubApi, interviewApi, membershipApi } from '@/api'
+import {
+  applicationApi,
+  approvalApi,
+  clubApi,
+  interviewApi,
+  interviewSessionApi,
+  membershipApi,
+} from '@/api'
 import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 const loading = ref(false)
 
@@ -451,19 +550,31 @@ const batchInterviewVisible = ref(false)
 
 const batchInterviewSubmitting = ref(false)
 
+const batchPreviewLoading = ref(false)
+
+const schedulePreview = ref<any>(null)
+
+const previewNeedsRefresh = ref(false)
+
+const interviewerOptions = ref<any[]>([])
+
 const batchInterviewTargets = ref<any[]>([])
 
 const batchInterviewForm = ref({
+  name: '',
   scheduledStartAt: '',
+  scheduledEndAt: '',
   durationMinutes: 30,
   gapMinutes: 10,
-  location: '',
   mode: 'offline',
+  rooms: [newInterviewRoom(1)],
 })
 
 const finalVisible = ref(false)
 
 const finalSubmitting = ref(false)
+
+const finalOptionsLoading = ref(false)
 
 const finalForm = ref({
   applicationId: '',
@@ -503,29 +614,16 @@ const batchFinalCandidates = computed(() => {
   return selection.value.filter((item) => canFinalDecision(item))
 })
 
-const batchInterviewPreview = computed(() => {
-  const duration = Number(batchInterviewForm.value.durationMinutes) || 30
-  const gap = Number(batchInterviewForm.value.gapMinutes) || 0
-  const baseTime = batchInterviewForm.value.scheduledStartAt
-    ? new Date(batchInterviewForm.value.scheduledStartAt).getTime()
-    : Number.NaN
-  return batchInterviewTargets.value.map((item, index) => {
-    const startTime = Number.isNaN(baseTime)
-      ? ''
-      : toDateTimeValue(baseTime + index * (duration + gap) * 60 * 1000)
-    const endTime = startTime
-      ? toDateTimeValue(new Date(startTime).getTime() + duration * 60 * 1000)
-      : ''
-    return {
-      order: index + 1,
-      applicationId: item.id,
-      applicantName: item.applicantName || `申请 ${item.id}`,
-      preferredDepartment: item.preferredDepartment || '未选择部门',
-      scheduledStartAt: startTime,
-      scheduledEndAt: endTime,
-    }
-  })
-})
+const batchInterviewPreview = computed(() => schedulePreview.value?.assignments || [])
+
+watch(
+  batchInterviewForm,
+  () => {
+    schedulePreview.value = null
+    previewNeedsRefresh.value = false
+  },
+  { deep: true },
+)
 
 const batchFinalPreview = computed(() => {
   return batchFinalTargets.value.map((item, index) => {
@@ -664,20 +762,34 @@ function openInterview(row: any) {
   interviewVisible.value = true
 }
 
-function openBatchInterview() {
+async function openBatchInterview() {
   if (!batchInterviewCandidates.value.length) {
     ElMessage.warning('请选择可安排面试的申请')
     return
   }
+  const campaignIds = new Set(batchInterviewCandidates.value.map((item) => item.campaignId))
+  if (campaignIds.size !== 1 || campaignIds.has(undefined)) {
+    ElMessage.warning('批量安排面试时，请选择同一招新批次的申请')
+    return
+  }
   batchInterviewTargets.value = [...batchInterviewCandidates.value]
   batchInterviewForm.value = {
+    name: '',
     scheduledStartAt: '',
+    scheduledEndAt: '',
     durationMinutes: 30,
     gapMinutes: 10,
-    location: '',
     mode: 'offline',
+    rooms: [newInterviewRoom(1)],
   }
+  schedulePreview.value = null
   batchInterviewVisible.value = true
+  try {
+    interviewerOptions.value = normalizeOptionList(await interviewSessionApi.interviewerOptions())
+  } catch (error) {
+    console.error('Failed to load interviewer options', error)
+    interviewerOptions.value = []
+  }
 }
 
 async function createInterview() {
@@ -687,27 +799,93 @@ async function createInterview() {
   fetchList()
 }
 
-async function submitBatchInterview() {
-  if (batchInterviewSubmitting.value) return
-  if (!batchInterviewForm.value.scheduledStartAt) {
-    ElMessage.error('请选择首场开始时间')
+function newInterviewRoom(index: number) {
+  return {
+    key: `${Date.now()}-${index}-${Math.random()}`,
+    name: `第${index}面试间`,
+    location: '',
+    interviewerIds: [] as number[],
+  }
+}
+
+function addInterviewRoom() {
+  batchInterviewForm.value.rooms.push(newInterviewRoom(batchInterviewForm.value.rooms.length + 1))
+  schedulePreview.value = null
+}
+
+function removeInterviewRoom(index: number) {
+  batchInterviewForm.value.rooms.splice(index, 1)
+  schedulePreview.value = null
+}
+
+function isInterviewerUsed(userId: number, currentRoomIndex: number) {
+  return batchInterviewForm.value.rooms.some(
+    (room, index) => index !== currentRoomIndex && room.interviewerIds.includes(userId),
+  )
+}
+
+function buildAutoSchedulePayload(previewOnly: boolean) {
+  return {
+    campaignId: batchInterviewTargets.value[0]?.campaignId,
+    name: batchInterviewForm.value.name,
+    round: 1,
+    scheduledStartAt: batchInterviewForm.value.scheduledStartAt,
+    scheduledEndAt: batchInterviewForm.value.scheduledEndAt,
+    durationMinutes: batchInterviewForm.value.durationMinutes,
+    gapMinutes: batchInterviewForm.value.gapMinutes,
+    mode: batchInterviewForm.value.mode,
+    applicationIds: batchInterviewTargets.value.map((item) => item.id),
+    rooms: batchInterviewForm.value.rooms.map(({ name, location, interviewerIds }) => ({
+      name,
+      location,
+      interviewerIds,
+    })),
+    roomAssignments: schedulePreview.value
+      ? Object.fromEntries(
+          schedulePreview.value.assignments.map((item) => [item.applicationId, item.roomIndex]),
+        )
+      : undefined,
+    previewOnly,
+  }
+}
+
+function validateAutoScheduleForm() {
+  if (!batchInterviewForm.value.name.trim()) return '请输入场次名称'
+  if (!batchInterviewForm.value.scheduledStartAt) return '请选择首场开始时间'
+  if (!batchInterviewForm.value.scheduledEndAt) return '请选择场次结束时间'
+  if (batchInterviewForm.value.rooms.some((room) => !room.name.trim())) return '请填写面试间名称'
+  if (batchInterviewForm.value.rooms.some((room) => !room.interviewerIds.length)) {
+    return '每个面试间至少需要一位面试官'
+  }
+  return ''
+}
+
+async function generateBatchInterviewPreview() {
+  const error = validateAutoScheduleForm()
+  if (error) {
+    ElMessage.warning(error)
     return
   }
+  batchPreviewLoading.value = true
+  try {
+    schedulePreview.value = await interviewSessionApi.autoSchedule(buildAutoSchedulePayload(true))
+    previewNeedsRefresh.value = false
+  } finally {
+    batchPreviewLoading.value = false
+  }
+}
+
+async function submitBatchInterview(publish: boolean) {
+  if (batchInterviewSubmitting.value || !schedulePreview.value) return
   batchInterviewSubmitting.value = true
   try {
-    await Promise.all(
-      batchInterviewPreview.value.map((item) =>
-        interviewApi.create({
-          applicationId: item.applicationId,
-          round: 1,
-          scheduledStartAt: item.scheduledStartAt,
-          scheduledEndAt: item.scheduledEndAt,
-          location: batchInterviewForm.value.location,
-          mode: batchInterviewForm.value.mode,
-        }),
-      ),
+    const result = await interviewSessionApi.autoSchedule(buildAutoSchedulePayload(false))
+    if (publish) await interviewSessionApi.publish(result.sessionId)
+    ElMessage.success(
+      publish
+        ? `面试场次已发布，共安排 ${result.totalCandidates} 位候选人`
+        : `排期草稿已保存，共安排 ${result.totalCandidates} 位候选人`,
     )
-    ElMessage.success(`已批量安排 ${batchInterviewTargets.value.length} 场面试`)
     batchInterviewVisible.value = false
     fetchList()
   } finally {
@@ -726,15 +904,53 @@ async function openFinalDecision(row: any) {
   }
   departments.value = []
   positions.value = []
-  if (row.clubId) {
-    const [departments, positions] = await Promise.all([
-      clubApi.departments(row.clubId),
-      clubApi.positions(row.clubId),
-    ])
-    departments.value = departments || []
-    positions.value = positions || []
-  }
   finalVisible.value = true
+  finalOptionsLoading.value = true
+
+  try {
+    // Resolve against the canonical application record; list responses can be stale or partial.
+    const detail = await applicationApi.detail(row.id)
+    const clubId = detail?.clubId || row.clubId
+    finalForm.value.clubId = clubId || ''
+    if (!clubId) {
+      ElMessage.error('无法确定申请所属社团，请刷新列表后重试')
+      return
+    }
+
+    // Load independently: a position permission/error must not empty the department selector.
+    const [departmentResult, positionResult] = await Promise.allSettled([
+      clubApi.departments(clubId),
+      clubApi.positions(clubId),
+    ])
+    departments.value =
+      departmentResult.status === 'fulfilled' ? normalizeOptionList(departmentResult.value) : []
+    positions.value =
+      positionResult.status === 'fulfilled' ? normalizeOptionList(positionResult.value) : []
+
+    if (departmentResult.status === 'rejected') {
+      ElMessage.error('部门列表加载失败，请稍后重试')
+    } else if (!departments.value.length) {
+      ElMessage.warning('该社团暂未配置部门')
+    } else if (
+      finalForm.value.departmentId &&
+      !departments.value.some((item) => Number(item.id) === Number(finalForm.value.departmentId))
+    ) {
+      finalForm.value.departmentId = undefined
+      finalForm.value.positionId = undefined
+    }
+  } catch (error) {
+    console.error('Failed to load final decision options', error)
+    ElMessage.error('部门列表加载失败，请重试')
+  } finally {
+    finalOptionsLoading.value = false
+  }
+}
+
+function normalizeOptionList(result: any): any[] {
+  if (Array.isArray(result)) return result
+  if (Array.isArray(result?.list)) return result.list
+  if (Array.isArray(result?.records)) return result.records
+  return []
 }
 
 function openBatchFinalDecision() {
@@ -824,13 +1040,6 @@ async function submitBatchFinalDecision() {
   }
 }
 
-function toDateTimeValue(value: any) {
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  const pad = (num) => String(num).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-}
-
 async function exportExcel() {
   exporting.value = true
   try {
@@ -875,6 +1084,43 @@ onMounted(() => {
 .form-suffix {
   margin-left: 10px;
   color: var(--oa-muted);
+}
+
+.room-config-list {
+  display: grid;
+  gap: 12px;
+}
+
+.room-config-card :deep(.el-card__body) {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1fr) minmax(220px, 1.4fr);
+  gap: 12px;
+}
+
+.room-config-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.add-room-button {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.schedule-preview-action {
+  display: flex;
+  margin-top: 16px;
+  align-items: center;
+  gap: 12px;
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .room-config-card :deep(.el-card__body) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .profile-panel {

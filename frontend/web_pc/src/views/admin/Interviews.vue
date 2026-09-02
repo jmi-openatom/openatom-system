@@ -1,5 +1,45 @@
 <template>
   <ViewPage class="admin-page">
+    <section class="session-section">
+      <div class="session-section__header">
+        <div>
+          <h2>面试场次</h2>
+          <p>查看自动排期草稿并发布面试安排</p>
+        </div>
+        <el-button :loading="sessionsLoading" @click="fetchSessions">刷新</el-button>
+      </div>
+      <el-table v-loading="sessionsLoading" :data="sessions" class="admin-table">
+        <el-table-column prop="name" label="场次名称" min-width="180" />
+        <el-table-column prop="round" label="轮次" width="80" />
+        <el-table-column label="开始时间" min-width="170">
+          <template #default="{ row }">{{ formatDateTime(row.scheduledStartAt) }}</template>
+        </el-table-column>
+        <el-table-column label="结束时间" min-width="170">
+          <template #default="{ row }">{{ formatDateTime(row.scheduledEndAt) }}</template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'published' ? 'success' : 'info'">
+              {{ row.status === 'published' ? '已发布' : '草稿' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="160" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="viewSession(row)">查看排期</el-button>
+            <el-button
+              v-if="row.status === 'draft'"
+              link
+              type="success"
+              @click="publishSession(row)"
+              >发布</el-button
+            >
+          </template>
+        </el-table-column>
+      </el-table>
+    </section>
+
+    <el-divider content-position="left">面试记录</el-divider>
     <ViewToolbar>
       <div class="toolbar__filters">
         <el-input
@@ -103,6 +143,35 @@
         <el-button type="primary" :loading="batchConfirmSubmitting" @click="submitBatchConfirm"
           >确认</el-button
         >
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="sessionDetailVisible" title="面试排期" width="860px">
+      <template v-if="sessionDetail">
+        <div class="session-room-summary">
+          <el-card v-for="room in sessionDetail.rooms" :key="room.roomId" shadow="never">
+            <strong>{{ room.name }}</strong>
+            <p>{{ room.location || '地点待定' }} · {{ room.assignedCount }} 人</p>
+            <div>
+              <el-tag v-for="person in room.interviewers" :key="person.userId" size="small">
+                {{ person.name }}
+              </el-tag>
+            </div>
+          </el-card>
+        </div>
+        <el-table :data="sessionDetail.assignments" max-height="420">
+          <el-table-column prop="queueNumber" label="编号" width="72" />
+          <el-table-column prop="applicantName" label="候选人" min-width="120" />
+          <el-table-column prop="roomName" label="面试间" min-width="130" />
+          <el-table-column label="时间" min-width="260">
+            <template #default="{ row }">
+              {{ formatDateTime(row.scheduledStartAt) }} — {{ formatDateTime(row.scheduledEndAt) }}
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
+      <template #footer>
+        <el-button @click="sessionDetailVisible = false">关闭</el-button>
       </template>
     </el-dialog>
 
@@ -362,11 +431,19 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Search } from '@element-plus/icons-vue'
-import { interviewApi } from '@/api'
+import { interviewApi, interviewSessionApi } from '@/api'
 import { formatDateTime, interviewStatusText, statusType } from '@/utils/format.ts'
 import { computed, onMounted, ref } from 'vue'
 
 const loading = ref(false)
+
+const sessionsLoading = ref(false)
+
+const sessions = ref<any[]>([])
+
+const sessionDetailVisible = ref(false)
+
+const sessionDetail = ref<any>(null)
 
 const rows = ref<any[]>([])
 
@@ -474,6 +551,26 @@ async function fetchList() {
   } finally {
     loading.value = false
   }
+}
+
+async function fetchSessions() {
+  sessionsLoading.value = true
+  try {
+    sessions.value = (await interviewSessionApi.list()) || []
+  } finally {
+    sessionsLoading.value = false
+  }
+}
+
+async function viewSession(row: any) {
+  sessionDetail.value = await interviewSessionApi.detail(row.id)
+  sessionDetailVisible.value = true
+}
+
+async function publishSession(row: any) {
+  await interviewSessionApi.publish(row.id)
+  ElMessage.success('面试场次已发布')
+  await Promise.all([fetchSessions(), fetchList()])
 }
 
 function openBatchConfirm() {
@@ -646,6 +743,7 @@ async function submitComplete() {
 
 onMounted(() => {
   fetchList()
+  fetchSessions()
 })
 </script>
 
@@ -653,5 +751,45 @@ onMounted(() => {
 .toolbar__actions {
   display: flex;
   gap: 12px;
+}
+
+.session-section {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.session-section__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.session-section__header h2,
+.session-section__header p,
+.session-room-summary p {
+  margin: 0;
+}
+
+.session-section__header p,
+.session-room-summary p {
+  margin-top: 5px;
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+
+.session-room-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.session-room-summary :deep(.el-card__body) > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
 }
 </style>

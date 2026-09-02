@@ -350,6 +350,11 @@ const routes = [
     component: resilientView(() => import('../views/site/LotteryScreen.vue')),
   },
   {
+    path: '/interview-call-screen/:sessionId',
+    name: 'interview-call-screen',
+    component: resilientView(() => import('../views/site/InterviewCallScreen.vue')),
+  },
+  {
     path: '/qr-screen',
     name: 'qr-screen',
     component: resilientView(() => import('../views/site/QrScreen.vue')),
@@ -601,6 +606,24 @@ const routes = [
         name: 'admin-interviews',
         meta: { permissions: ['interview:list'] },
         component: resilientView(() => import('../views/admin/Interviews.vue')),
+      },
+      {
+        path: 'interviewer-workbench',
+        name: 'admin-interviewer-workbench',
+        meta: { permissions: ['interview:feedback'], title: '面试官工作台' },
+        component: resilientView(() => import('../views/admin/InterviewerWorkbench.vue')),
+      },
+      {
+        path: 'interview-queue',
+        name: 'admin-interview-queue',
+        meta: { permissions: ['interview:update'], title: '面试现场' },
+        component: resilientView(() => import('../views/admin/InterviewQueue.vue')),
+      },
+      {
+        path: 'interview-evaluation-templates',
+        name: 'admin-interview-evaluation-templates',
+        meta: { permissions: ['interview:update'], title: '评价模板' },
+        component: resilientView(() => import('../views/admin/InterviewEvaluationTemplates.vue')),
       },
       {
         path: 'memberships',

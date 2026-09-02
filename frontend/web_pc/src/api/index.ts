@@ -211,7 +211,11 @@ export const sharedFilesApi = {
   path(fileId: string | number | null): Promise<any> {
     return request.get('/shared-files/path', { params: fileId ? { fileId } : {} })
   },
-  createDir(data: { parentId: string | number | null; name: string; password?: string }): Promise<any> {
+  createDir(data: {
+    parentId: string | number | null
+    name: string
+    password?: string
+  }): Promise<any> {
     return request.post('/shared-files/dir', data)
   },
   createFile(data: {
@@ -695,7 +699,9 @@ export const aiActivityApi = {
     return request.post(`/ai/activity/sessions/${id}/messages`, data, { timeout: 300000 })
   },
   confirmRequirement(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
-    return request.post(`/ai/activity/sessions/${id}/confirm-requirement`, data, { timeout: 300000 })
+    return request.post(`/ai/activity/sessions/${id}/confirm-requirement`, data, {
+      timeout: 300000,
+    })
   },
   generatePlan(id: string | number): Promise<any> {
     return request.post(`/ai/activity/sessions/${id}/generate-plan`, { timeout: 300000 })
@@ -1039,6 +1045,9 @@ export const applicationApi = {
   list(params?: Record<string, unknown>): Promise<any> {
     return request.get('/applications', { params })
   },
+  detail(id: string | number): Promise<any> {
+    return request.get(`/applications/${id}`)
+  },
   create(data: Record<string, unknown>): Promise<any> {
     return request.post('/applications', data)
   },
@@ -1089,6 +1098,101 @@ export const interviewApi = {
   },
   feedbacks(id: string | number): Promise<any> {
     return request.get(`/interviews/${id}/feedbacks`)
+  },
+  saveFeedbackDraft(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/interviews/${id}/feedback-draft`, data)
+  },
+  submitFeedback(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/interviews/${id}/feedback-submit`, data)
+  },
+  withdrawFeedback(id: string | number): Promise<any> {
+    return request.post(`/interviews/${id}/feedback-withdraw`)
+  },
+  groupFeedbacks(id: string | number): Promise<any> {
+    return request.get(`/interviews/${id}/group-feedbacks`)
+  },
+  feedbackRevisions(id: string | number): Promise<any> {
+    return request.get(`/interviews/${id}/feedback-revisions`)
+  },
+}
+
+export const interviewerWorkbenchApi = {
+  list(): Promise<any> {
+    return request.get('/interviewer-workbench')
+  },
+}
+
+export const interviewEvaluationTemplateApi = {
+  list(campaignId: string | number): Promise<any> {
+    return request.get('/interview-evaluation-templates', { params: { campaignId } })
+  },
+  active(campaignId: string | number): Promise<any> {
+    return request.get('/interview-evaluation-templates/active', { params: { campaignId } })
+  },
+  save(data: Record<string, unknown>): Promise<any> {
+    return request.post('/interview-evaluation-templates', data)
+  },
+}
+
+export const interviewSessionApi = {
+  autoSchedule(data: Record<string, unknown>): Promise<any> {
+    return request.post('/interview-sessions/auto-schedule', data)
+  },
+  list(params?: { campaignId?: string | number }): Promise<any> {
+    return request.get('/interview-sessions', { params })
+  },
+  detail(id: string | number): Promise<any> {
+    return request.get(`/interview-sessions/${id}`)
+  },
+  publish(id: string | number): Promise<any> {
+    return request.post(`/interview-sessions/${id}/publish`)
+  },
+  interviewerOptions(keyword?: string): Promise<any> {
+    return request.get('/interview-sessions/interviewer-options', { params: { keyword } })
+  },
+  queue(id: string | number): Promise<any> {
+    return request.get(`/interview-sessions/${id}/queue`)
+  },
+  checkIn(interviewId: string | number): Promise<any> {
+    return request.post(`/interviews/${interviewId}/check-in`)
+  },
+  undoCheckIn(interviewId: string | number): Promise<any> {
+    return request.post(`/interviews/${interviewId}/undo-check-in`)
+  },
+  callNext(roomId: string | number): Promise<any> {
+    return request.post(`/interview-rooms/${roomId}/call-next`)
+  },
+  callAgain(roomId: string | number): Promise<any> {
+    return request.post(`/interview-rooms/${roomId}/call-again`)
+  },
+  callScreen(id: string | number): Promise<any> {
+    return request.get(`/site/interview-call-screens/${id}`)
+  },
+  markNoShow(interviewId: string | number): Promise<any> {
+    return request.post(`/interviews/${interviewId}/no-show`)
+  },
+  restoreWaiting(interviewId: string | number): Promise<any> {
+    return request.post(`/interviews/${interviewId}/restore-waiting`)
+  },
+  moveRoom(interviewId: string | number, targetRoomId: string | number): Promise<any> {
+    return request.post(`/interviews/${interviewId}/move-room`, { targetRoomId })
+  },
+  recoverRoom(roomId: string | number): Promise<any> {
+    return request.post(`/interview-rooms/${roomId}/recover`)
+  },
+  completeSession(sessionId: string | number): Promise<any> {
+    return request.post(`/interview-sessions/${sessionId}/complete`)
+  },
+  reopenSession(sessionId: string | number): Promise<any> {
+    return request.post(`/interview-sessions/${sessionId}/reopen`)
+  },
+  operations(sessionId: string | number): Promise<any> {
+    return request.get(`/interview-sessions/${sessionId}/queue-operations`)
+  },
+  exportEvaluationSummary(sessionId: string | number): Promise<any> {
+    return request.get(`/interview-sessions/${sessionId}/evaluation-summary.csv`, {
+      responseType: 'blob',
+    })
   },
 }
 

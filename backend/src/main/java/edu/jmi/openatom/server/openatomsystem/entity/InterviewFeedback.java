@@ -30,10 +30,27 @@ public class InterviewFeedback {
   @TableField("interviewer_id")
   private Integer interviewerId;
 
+  @TableField("template_id")
+  private Integer templateId;
+
+  @TableField("template_version")
+  private Integer templateVersion;
+
   private String scores;
+  private String details;
   private String suggestion;
   private String comment;
+  private String status;
 
   @TableField("created_at")
   private Timestamp createdAt;
+
+  @TableField("updated_at")
+  private Timestamp updatedAt;
+
+  @TableField("submitted_at")
+  private Timestamp submittedAt;
+
+  @TableField("withdrawn_at")
+  private Timestamp withdrawnAt;
 }

@@ -6,6 +6,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestInterviewFeedbackDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateInterviewDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedback;
+import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedbackRevision;
 import java.util.List;
 
 /**
@@ -27,7 +28,17 @@ public interface InterviewService {
 
   Result<String> feedback(Integer interviewId, RequestInterviewFeedbackDTO request);
 
+  Result<String> saveFeedbackDraft(Integer interviewId, RequestInterviewFeedbackDTO request);
+
+  Result<String> submitFeedback(Integer interviewId, RequestInterviewFeedbackDTO request);
+
+  Result<String> withdrawFeedback(Integer interviewId);
+
   Result<String> complete(Integer interviewId);
 
   Result<List<InterviewFeedback>> getFeedbacks(Integer interviewId);
+
+  Result<List<InterviewFeedback>> getGroupFeedbacks(Integer interviewId);
+
+  Result<List<InterviewFeedbackRevision>> getFeedbackRevisions(Integer interviewId);
 }

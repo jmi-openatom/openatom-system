@@ -24,6 +24,15 @@ public class Interview {
   @TableId(value = "id", type = IdType.AUTO)
   private Integer id;
 
+  @TableField("session_id")
+  private Integer sessionId;
+
+  @TableField("room_id")
+  private Integer roomId;
+
+  @TableField("queue_number")
+  private Integer queueNumber;
+
   @TableField("application_id")
   private Integer applicationId;
 

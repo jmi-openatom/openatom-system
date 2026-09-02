@@ -7,6 +7,7 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestInterviewFeedbackDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateInterviewDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedback;
+import edu.jmi.openatom.server.openatomsystem.entity.InterviewFeedbackRevision;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -112,6 +113,32 @@ public class InterviewController {
     return interviewService.feedback(interviewId, request);
   }
 
+  @PatchMapping("/interviews/{interviewId}/feedback-draft")
+  @SaCheckPermission("interview:feedback")
+  public Result<String> saveFeedbackDraft(
+      @PathVariable Integer interviewId, @RequestBody RequestInterviewFeedbackDTO request) {
+    return interviewService.saveFeedbackDraft(interviewId, request);
+  }
+
+  @PostMapping("/interviews/{interviewId}/feedback-submit")
+  @SaCheckPermission("interview:feedback")
+  public Result<String> submitFeedback(
+      @PathVariable Integer interviewId, @RequestBody RequestInterviewFeedbackDTO request) {
+    return interviewService.submitFeedback(interviewId, request);
+  }
+
+  @PostMapping("/interviews/{interviewId}/feedback-withdraw")
+  @SaCheckPermission("interview:feedback")
+  public Result<String> withdrawFeedback(@PathVariable Integer interviewId) {
+    return interviewService.withdrawFeedback(interviewId);
+  }
+
+  @GetMapping("/interviews/{interviewId}/group-feedbacks")
+  @SaCheckPermission("interview:feedback")
+  public Result<List<InterviewFeedback>> groupFeedbacks(@PathVariable Integer interviewId) {
+    return interviewService.getGroupFeedbacks(interviewId);
+  }
+
   /**
    * 完成面试
    *
@@ -134,5 +161,11 @@ public class InterviewController {
   @SaCheckPermission("interview:detail")
   public Result<List<InterviewFeedback>> feedbacks(@PathVariable Integer interviewId) {
     return interviewService.getFeedbacks(interviewId);
+  }
+
+  @GetMapping("/interviews/{interviewId}/feedback-revisions")
+  @SaCheckPermission("interview:detail")
+  public Result<List<InterviewFeedbackRevision>> feedbackRevisions(@PathVariable Integer interviewId) {
+    return interviewService.getFeedbackRevisions(interviewId);
   }
 }

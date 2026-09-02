@@ -327,6 +327,24 @@ const menus = ref<AdminMenuItem[]>([
     icon: MessageBox,
     permissions: ['interview:list'],
   },
+  {
+    path: '/admin/interviewer-workbench',
+    label: '面试官工作台',
+    icon: EditPen,
+    permissions: ['interview:feedback'],
+  },
+  {
+    path: '/admin/interview-queue',
+    label: '面试现场',
+    icon: Monitor,
+    permissions: ['interview:update'],
+  },
+  {
+    path: '/admin/interview-evaluation-templates',
+    label: '评价模板',
+    icon: List,
+    permissions: ['interview:update'],
+  },
 
   // ==== 5. 互动营销与运营工具 ====
   { path: '/admin/votes', label: '投票管理', icon: Tickets, permissions: ['vote:list'] },
@@ -469,6 +487,9 @@ const menuGroups: AdminMenuGroupDefinition[] = [
       '/admin/recruitment-campaigns',
       '/admin/applications',
       '/admin/interviews',
+      '/admin/interviewer-workbench',
+      '/admin/interview-queue',
+      '/admin/interview-evaluation-templates',
       '/admin/leaves',
     ],
   },

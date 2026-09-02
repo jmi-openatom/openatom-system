@@ -14,6 +14,13 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface InterviewFeedbackMapper extends BaseMapper<InterviewFeedback> {
 
+  default InterviewFeedback selectLatest(Integer interviewId, Integer interviewerId) {
+    return selectOne(new LambdaQueryWrapper<InterviewFeedback>()
+        .eq(InterviewFeedback::getInterviewId, interviewId)
+        .eq(InterviewFeedback::getInterviewerId, interviewerId)
+        .orderByDesc(InterviewFeedback::getId).last("LIMIT 1"));
+  }
+
   /** 按面试ID查反馈（ordered by id desc） */
   default List<InterviewFeedback> selectByInterviewId(Integer interviewId) {
     return selectList(

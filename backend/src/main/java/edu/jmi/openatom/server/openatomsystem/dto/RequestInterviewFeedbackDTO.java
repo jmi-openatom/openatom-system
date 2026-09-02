@@ -16,7 +16,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RequestInterviewFeedbackDTO {
+  private Integer templateId;
   private Map<String, Object> scores;
+  private Map<String, Object> details;
   private String suggestion;
   private String comment;
 }
