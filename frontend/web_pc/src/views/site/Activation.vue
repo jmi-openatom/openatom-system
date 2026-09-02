@@ -626,6 +626,22 @@
                 />
               </svg>
               <p class="ob-loader__text">{{ loadingText }}</p>
+              <div class="ob-activation-stages" aria-live="polite">
+                <div
+                  v-for="(item, index) in activationStages"
+                  :key="item"
+                  class="ob-activation-stage"
+                  :class="{
+                    'ob-activation-stage--done': activationPhase > index,
+                    'ob-activation-stage--active': activationPhase === index,
+                  }"
+                >
+                  <span>{{
+                    activationPhase > index ? '✓' : String(index + 1).padStart(2, '0')
+                  }}</span>
+                  {{ item }}
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -666,12 +682,34 @@
             </h2>
 
             <p class="ob-subtitle" :style="{ '--delay': '0.65s' }">
-              你的身份已完成激活。
+              你的成员身份与数字通行证已完成激活。
               <br />
               欢迎成为
               <strong>{{ info?.club?.name || '开放原子开源社团' }}</strong>
               的正式成员。
             </p>
+
+            <div class="ob-member-pass" :style="{ '--delay': '0.76s' }">
+              <div class="ob-member-pass__seal" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                  <path d="M12 3 4.5 7v5c0 4.8 3.2 7.7 7.5 9 4.3-1.3 7.5-4.2 7.5-9V7L12 3Z" />
+                  <path d="m8.5 12 2.2 2.2 4.8-5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <div class="ob-member-pass__copy">
+                <span>OPENATOM · FOUNDING THE FUTURE</span>
+                <strong>{{ displayName }} 的成员凭证</strong>
+                <p>
+                  {{ info?.membership?.departmentName || '开放原子开源社团' }}
+                  <template v-if="info?.membership?.positionName">
+                    · {{ info.membership.positionName }}
+                  </template>
+                </p>
+              </div>
+              <div class="ob-member-pass__id">
+                #{{ String(info?.userId || 0).padStart(4, '0') }}
+              </div>
+            </div>
 
             <div class="ob-success-terminal" :style="{ '--delay': '0.8s' }">
               <div class="ob-success-terminal__bar">
@@ -791,6 +829,9 @@ const orb1Ref = ref<HTMLElement>()
 const orb2Ref = ref<HTMLElement>()
 const orb3Ref = ref<HTMLElement>()
 const checkingStatus = ref(false)
+const activationPhase = ref(0)
+
+const activationStages = ['确认成员身份', '更新安全凭据', '签发成员徽章']
 
 let parallaxFrame = 0
 let parallaxY = 0
@@ -987,6 +1028,7 @@ async function handleActivate() {
   stepInAnim.value = false
   step.value = 8
   loadingText.value = '正在验证身份…'
+  activationPhase.value = 0
 
   try {
     // Phase 1: Activate
@@ -994,6 +1036,7 @@ async function handleActivate() {
     await new Promise((resolve) => setTimeout(resolve, 600))
     const result = await authApi.activate()
     if (result) setSession({ accessToken: getToken() || undefined, user: result })
+    activationPhase.value = 1
 
     // Phase 2: Update password
     loadingText.value = '正在设置密码…'
@@ -1003,9 +1046,15 @@ async function handleActivate() {
       newPassword: passwordForm.value.newPassword,
     })
 
-    // Phase 3: Success
-    loadingText.value = '即将完成…'
-    await new Promise((resolve) => setTimeout(resolve, 600))
+    // Phase 3: seal the activation ceremony with the member credential.
+    activationPhase.value = 2
+    loadingText.value = '正在签发成员徽章…'
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    activationPhase.value = 3
+
+    // Phase 4: Success
+    loadingText.value = '数字通行证签发完成'
+    await new Promise((resolve) => setTimeout(resolve, 450))
 
     // Sync activation status
     if (info.value) {
