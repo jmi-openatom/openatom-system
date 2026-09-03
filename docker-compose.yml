@@ -46,6 +46,7 @@ x-backend-env: &backend-env
   APP_DOCUMENT_TEMPLATE_STORAGE_DIR: "/app/uploads/document-templates"
   APP_GENERATED_DOCUMENT_STORAGE_DIR: "/app/uploads/generated-documents"
   APP_SHARED_FILES_STORAGE_DIR: "/app/uploads/shared-files"
+  APP_INTERVIEW_RECORDING_STORAGE_DIR: "/app/uploads/interview-recordings"
   DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
   DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
   DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}

@@ -111,6 +111,8 @@ app:
     storage-dir: ${APP_DOCUMENT_CENTER_STORAGE_DIR:./uploads/document-center}
   shared-files:
     storage-dir: ${APP_SHARED_FILES_STORAGE_DIR:./uploads/shared-files}
+  interview-recording:
+    storage-dir: ${APP_INTERVIEW_RECORDING_STORAGE_DIR:./uploads/interview-recordings}
   document-server:
     office-url: ${DOCUMENT_SERVER_OFFICE_URL:https://office.jmi-openatom.cn}
     callback-base-url: ${DOCUMENT_SERVER_CALLBACK_BASE_URL:https://api.jmi-openatom.cn/api/v1}

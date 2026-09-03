@@ -1122,6 +1122,24 @@ export const interviewerWorkbenchApi = {
   },
 }
 
+export const interviewRecordingApi = {
+  list(interviewId: string | number): Promise<any> {
+    return request.get(`/interviews/${interviewId}/recordings`)
+  },
+  upload(interviewId: string | number, file: Blob, durationSeconds: number): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file, `interview-recording-${Date.now()}.webm`)
+    formData.append('durationSeconds', String(durationSeconds))
+    return request.post(`/interviews/${interviewId}/recordings`, formData, { timeout: 120000 })
+  },
+  updateTranscript(interviewId: string | number, recordingId: string | number, transcript: string): Promise<any> {
+    return request.patch(`/interviews/${interviewId}/recordings/${recordingId}/transcript`, { transcript })
+  },
+  audio(recordingId: string | number): Promise<Blob> {
+    return request.get(`/interview-recordings/${recordingId}/audio`, { responseType: 'blob', timeout: 120000 })
+  },
+}
+
 export const interviewEvaluationTemplateApi = {
   list(campaignId: string | number): Promise<any> {
     return request.get('/interview-evaluation-templates', { params: { campaignId } })

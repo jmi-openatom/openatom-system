@@ -98,6 +98,68 @@
             />
           </div>
 
+          <section class="recording-panel" aria-labelledby="recording-title">
+            <div class="recording-panel__heading">
+              <div>
+                <span>INTERVIEW RECORD</span>
+                <h3 id="recording-title">全程面试录音</h3>
+              </div>
+              <el-tag v-if="recording" type="danger" effect="dark" round>
+                <span class="recording-live-dot" />录音中 {{ formatDuration(recordingElapsed) }}
+              </el-tag>
+              <el-tag v-else type="info" effect="plain">录音会加密权限保护</el-tag>
+            </div>
+
+            <p class="recording-panel__notice">
+              开始前请确认已向候选人说明录音用途。原始录音仅本场面试官可查看；支持的浏览器会在录音期间同步生成可编辑的中文转写，停止后一起保存。
+            </p>
+            <div class="recording-panel__actions">
+              <el-button
+                v-if="!recording"
+                type="danger"
+                size="large"
+                :loading="recordingUpload"
+                :disabled="!canRecordCurrent"
+                @click="startRecording"
+              >
+                开始录音
+              </el-button>
+              <el-button v-else type="danger" plain size="large" @click="stopRecording">结束并保存</el-button>
+              <span v-if="!recording && !canRecordCurrent" class="recording-panel__tip">
+                请在候选人被叫号后、全组评价完成前开始录音
+              </span>
+              <span v-else-if="!speechRecognitionSupported" class="recording-panel__tip">
+                当前浏览器不支持实时转写；仍可正常保存录音
+              </span>
+            </div>
+            <el-input
+              v-if="recording"
+              v-model="recordingTranscript"
+              class="live-transcript"
+              type="textarea"
+              :rows="5"
+              placeholder="正在实时转写… 可手动补充、修正文字"
+            />
+
+            <div v-loading="recordingsLoading" class="recording-list">
+              <el-empty v-if="!recordingsLoading && !recordings.length" description="本场暂无已保存录音" :image-size="48" />
+              <article v-for="item in recordings" :key="item.id" class="recording-item">
+                <div class="recording-item__meta">
+                  <strong>录音 {{ formatDateTime(item.createdAt) }}</strong>
+                  <span>{{ formatDuration(item.durationSeconds) }} · {{ formatFileSize(item.fileSize) }}</span>
+                </div>
+                <div class="recording-item__actions">
+                  <el-button size="small" :loading="audioLoadingId === item.id" @click="prepareAudio(item)">
+                    {{ audioUrls[item.id] ? '重新播放' : '播放录音' }}
+                  </el-button>
+                </div>
+                <audio v-if="audioUrls[item.id]" class="recording-audio" :src="audioUrls[item.id]" controls />
+                <p v-if="item.transcript" class="recording-transcript">{{ item.transcript }}</p>
+                <p v-else class="recording-transcript recording-transcript--empty">尚无转写文本</p>
+              </article>
+            </div>
+          </section>
+
           <div class="dimension-list">
             <div v-for="dimension in dimensions" :key="dimension.key" class="dimension-item">
               <div>
@@ -244,14 +306,34 @@
 </template>
 
 <script setup lang="ts">
-import { interviewApi, interviewerWorkbenchApi, interviewSessionApi } from '@/api'
+import { interviewApi, interviewRecordingApi, interviewerWorkbenchApi, interviewSessionApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { ArrowLeft, ArrowRight, Close, List, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 type Dimension = { key: string; label: string; description?: string; required?: boolean }
+type BrowserSpeechRecognitionEvent = {
+  resultIndex: number
+  results: ArrayLike<{ isFinal: boolean; [index: number]: { transcript?: string } }>
+}
+type BrowserSpeechRecognition = {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null
+  onend: (() => void) | null
+  onerror: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition
+type SpeechRecognitionWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor
+  webkitSpeechRecognition?: SpeechRecognitionConstructor
+}
 const loading = ref(false)
 const saving = ref(false)
 const submitting = ref(false)
@@ -262,9 +344,35 @@ const candidateSearch = ref('')
 const candidateStatus = ref('all')
 const items = ref<any[]>([])
 const selectedId = ref<number | null>(null)
+type RecordingItem = {
+  id: number
+  interviewerId: number
+  mimeType: string
+  fileSize: number
+  durationSeconds?: number
+  transcript?: string
+  createdAt?: string
+}
+const recordings = ref<RecordingItem[]>([])
+const recordingsLoading = ref(false)
+const recording = ref(false)
+const recordingUpload = ref(false)
+const recordingElapsed = ref(0)
+const recordingTranscript = ref('')
+const audioLoadingId = ref<number | null>(null)
+const audioUrls = reactive<Record<number, string>>({})
 const hydrated = ref(false)
 const draftState = ref('尚未保存')
 let saveTimer: ReturnType<typeof setTimeout> | undefined
+let recordingTimer: ReturnType<typeof setInterval> | undefined
+let mediaRecorder: MediaRecorder | null = null
+let mediaStream: MediaStream | null = null
+let recordingChunks: BlobPart[] = []
+let recordingStartedAt = 0
+let recordingInterviewId: number | null = null
+let stoppedRecordingTranscript = ''
+let speechRecognition: BrowserSpeechRecognition | null = null
+let stopSpeechRecognition = false
 const route = useRoute()
 const router = useRouter()
 const selectionStorageKey = 'openatom:interviewer-workbench:selected-id'
@@ -302,6 +410,13 @@ const allInterviewersSubmitted = computed(
 const canCallNext = computed(
   () => allInterviewersSubmitted.value && current.value?.queueStatus === 'called',
 )
+const canRecordCurrent = computed(
+  () => !!current.value && current.value.queueStatus === 'called' && !allInterviewersSubmitted.value,
+)
+const speechRecognitionSupported = computed(() => {
+  const host = window as SpeechRecognitionWindow
+  return Boolean(host.SpeechRecognition || host.webkitSpeechRecognition)
+})
 const filteredCandidates = computed(() => {
   const keyword = candidateSearch.value.trim().toLowerCase()
   return items.value.filter((item) => {
@@ -382,6 +497,7 @@ async function fetchList(keepSelection = true, rehydrate = false) {
 async function selectCandidate(id: number) {
   if (id === selectedId.value || switching.value) return
   switching.value = true
+  if (recording.value) await stopRecording()
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = undefined
   if (hydrated.value && current.value && !isSubmitted.value && draftState.value === '有未保存修改') {
@@ -393,6 +509,160 @@ async function selectCandidate(id: number) {
   await nextTick()
   document.querySelector('.workbench-content')?.scrollTo({ top: 0, behavior: 'smooth' })
   switching.value = false
+}
+
+async function fetchRecordings(interviewId: number) {
+  recordingsLoading.value = true
+  try {
+    const result = await interviewRecordingApi.list(interviewId)
+    if (current.value?.interviewId === interviewId) recordings.value = Array.isArray(result) ? result : []
+  } finally {
+    recordingsLoading.value = false
+  }
+}
+
+async function startRecording() {
+  if (!canRecordCurrent.value || !current.value || recording.value) return
+  try {
+    await ElMessageBox.confirm(
+      '请确认已告知候选人本场面试将录音，录音仅用于招新评估与复核，并会按系统权限保存。',
+      '开始面试录音前确认',
+      { confirmButtonText: '已告知，开始录音', cancelButtonText: '取消', type: 'warning' },
+    )
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      ElMessage.error('当前浏览器不支持录音，请使用最新版 Chrome 或 Edge')
+      return
+    }
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const preferredMime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus']
+      .find((mime) => MediaRecorder.isTypeSupported(mime))
+    mediaRecorder = preferredMime ? new MediaRecorder(mediaStream, { mimeType: preferredMime }) : new MediaRecorder(mediaStream)
+    recordingChunks = []
+    recordingTranscript.value = ''
+    recordingStartedAt = Date.now()
+    recordingInterviewId = current.value.interviewId
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size) recordingChunks.push(event.data)
+    }
+    mediaRecorder.onstop = () => { void persistRecording() }
+    mediaRecorder.start(5000)
+    recording.value = true
+    recordingElapsed.value = 0
+    recordingTimer = window.setInterval(() => {
+      recordingElapsed.value = Math.floor((Date.now() - recordingStartedAt) / 1000)
+    }, 1000)
+    startSpeechRecognition()
+    ElMessage.success('录音已开始')
+  } catch (error: any) {
+    if (error !== 'cancel' && error?.message !== 'cancel') ElMessage.error('无法使用麦克风，请检查浏览器授权')
+    releaseMediaStream()
+  }
+}
+
+async function stopRecording() {
+  if (!recording.value || !mediaRecorder) return
+  recording.value = false
+  stoppedRecordingTranscript = recordingTranscript.value
+  if (recordingTimer) window.clearInterval(recordingTimer)
+  recordingTimer = undefined
+  stopSpeechRecognition = true
+  try { speechRecognition?.stop() } catch { /* recognition may already be stopped */ }
+  speechRecognition = null
+  if (mediaRecorder.state !== 'inactive') mediaRecorder.stop()
+}
+
+async function persistRecording() {
+  const recorder = mediaRecorder
+  mediaRecorder = null
+  releaseMediaStream()
+  const interviewId = recordingInterviewId
+  recordingInterviewId = null
+  if (!interviewId || !recordingChunks.length) return
+  const duration = Math.max(1, Math.floor((Date.now() - recordingStartedAt) / 1000))
+  const mimeType = recorder?.mimeType || 'audio/webm'
+  const audio = new Blob(recordingChunks, { type: mimeType })
+  recordingChunks = []
+  recordingUpload.value = true
+  try {
+    const saved = await interviewRecordingApi.upload(interviewId, audio, duration)
+    if (stoppedRecordingTranscript.trim()) {
+      const withTranscript = await interviewRecordingApi.updateTranscript(
+        interviewId, saved.id, stoppedRecordingTranscript,
+      )
+      if (current.value?.interviewId === interviewId) replaceRecording(withTranscript)
+    } else {
+      if (current.value?.interviewId === interviewId) replaceRecording(saved)
+    }
+    ElMessage.success('录音和转写已保存')
+  } finally {
+    recordingUpload.value = false
+    stoppedRecordingTranscript = ''
+    if (!recording.value) recordingTranscript.value = ''
+  }
+}
+
+function startSpeechRecognition() {
+  const host = window as SpeechRecognitionWindow
+  const Recognition = host.SpeechRecognition || host.webkitSpeechRecognition
+  if (!Recognition) return
+  stopSpeechRecognition = false
+  const recognition = new Recognition()
+  recognition.lang = 'zh-CN'
+  recognition.continuous = true
+  recognition.interimResults = false
+  recognition.onresult = (event) => {
+    let text = ''
+    for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      if (event.results[index].isFinal) text += event.results[index][0]?.transcript || ''
+    }
+    if (text.trim()) recordingTranscript.value = `${recordingTranscript.value}${recordingTranscript.value ? '\n' : ''}${text.trim()}`
+  }
+  recognition.onend = () => {
+    if (recording.value && !stopSpeechRecognition) {
+      try { recognition.start() } catch { /* browser may restart it independently */ }
+    }
+  }
+  recognition.onerror = () => { /* AI 转写仍可在保存后使用 */ }
+  speechRecognition = recognition
+  try { recognition.start() } catch { /* browser may reject duplicate start */ }
+}
+
+function releaseMediaStream() {
+  mediaStream?.getTracks().forEach((track) => track.stop())
+  mediaStream = null
+}
+
+function replaceRecording(value: RecordingItem) {
+  const index = recordings.value.findIndex((item) => item.id === value.id)
+  if (index >= 0) recordings.value.splice(index, 1, value)
+  else recordings.value.unshift(value)
+}
+
+async function prepareAudio(item: RecordingItem) {
+  if (audioUrls[item.id]) return
+  audioLoadingId.value = item.id
+  try {
+    const audio = await interviewRecordingApi.audio(item.id)
+    audioUrls[item.id] = URL.createObjectURL(audio)
+    await nextTick()
+  } finally {
+    audioLoadingId.value = null
+  }
+}
+
+function releaseAudioUrls() {
+  Object.values(audioUrls).forEach((url) => URL.revokeObjectURL(url))
+  Object.keys(audioUrls).forEach((key) => delete audioUrls[Number(key)])
+}
+
+function formatDuration(seconds?: number) {
+  const value = Math.max(0, Number(seconds) || 0)
+  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
+}
+
+function formatFileSize(size?: number) {
+  const value = Number(size) || 0
+  return value < 1024 * 1024 ? `${Math.max(1, Math.round(value / 1024))} KB` : `${(value / 1024 / 1024).toFixed(1)} MB`
 }
 
 async function chooseCandidate(id: number) {
@@ -429,6 +699,17 @@ watch(
     saveTimer = setTimeout(saveDraft, 900)
   },
   { deep: true },
+)
+
+watch(
+  () => current.value?.interviewId,
+  (interviewId, previousId) => {
+    if (previousId && recording.value) void stopRecording()
+    releaseAudioUrls()
+    recordings.value = []
+    if (interviewId) void fetchRecordings(interviewId)
+  },
+  { immediate: true },
 )
 
 function payload() {
@@ -537,6 +818,10 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   if (saveTimer) clearTimeout(saveTimer)
+  if (recording.value) void stopRecording()
+  if (recordingTimer) window.clearInterval(recordingTimer)
+  releaseMediaStream()
+  releaseAudioUrls()
   window.removeEventListener('keydown', handleShortcut)
 })
 </script>
@@ -1010,6 +1295,124 @@ onBeforeUnmount(() => {
   color: var(--oa-muted);
 }
 
+.recording-panel {
+  margin: 28px 0;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--el-color-danger) 22%, var(--el-border-color-lighter));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--el-color-danger-light-9) 52%, var(--el-bg-color));
+}
+
+.recording-panel__heading,
+.recording-panel__actions,
+.recording-item__meta,
+.recording-item__actions {
+  display: flex;
+  align-items: center;
+}
+
+.recording-panel__heading {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.recording-panel__heading span:first-child {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--el-color-danger);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.recording-panel__heading h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.recording-live-dot {
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: recording-pulse 1.3s ease-in-out infinite;
+}
+
+.recording-panel__notice,
+.recording-panel__tip {
+  color: var(--oa-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.recording-panel__notice {
+  margin: 14px 0;
+}
+
+.recording-panel__actions {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.live-transcript {
+  margin-top: 16px;
+}
+
+.recording-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.recording-item {
+  padding: 14px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  background: var(--el-bg-color);
+}
+
+.recording-item__meta {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.recording-item__meta span {
+  color: var(--oa-muted);
+  font-size: 12px;
+}
+
+.recording-item__actions {
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.recording-audio {
+  width: 100%;
+  height: 34px;
+  margin-top: 10px;
+}
+
+.recording-transcript {
+  max-height: 180px;
+  margin: 10px 0 0;
+  overflow: auto;
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.recording-transcript--empty {
+  color: var(--oa-muted);
+}
+
+@keyframes recording-pulse {
+  50% { opacity: 0.35; transform: scale(0.75); }
+}
+
 @media (max-width: 1050px) {
   .workbench-header {
     grid-template-columns: 1fr auto;
@@ -1071,6 +1474,10 @@ onBeforeUnmount(() => {
   .detail-form__row {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .recording-panel {
+    padding: 16px;
   }
 
   .suggestion-group {
