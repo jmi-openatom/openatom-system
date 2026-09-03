@@ -21,6 +21,9 @@ public class RequestUpdateProfileDTO {
   @Size(max = 64, message = "真实姓名长度不能超过64个字符")
   private String realName;
 
+  @Size(max = 32, message = "学号长度不能超过32个字符")
+  private String studentId;
+
   @Size(max = 10, message = "性别长度不能超过10个字符")
   private String gender;
 

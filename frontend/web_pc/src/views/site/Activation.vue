@@ -550,8 +550,36 @@
           </div>
         </section>
 
-        <!-- ====== Step 7: Password ====== -->
-        <section v-else-if="step === 7" class="ob-step ob-step--password">
+        <!-- ====== Step 7: Basic profile ====== -->
+        <section v-else-if="step === 7" class="ob-step ob-step--profile">
+          <div class="ob-step__inner ob-step__inner--narrow">
+            <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">基础资料 · PROFILE</p>
+            <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">完善你的基础信息</h2>
+            <p class="ob-desc" :style="{ '--delay': '0.3s' }">
+              这些信息用于成员管理和活动通知。带 <strong>*</strong> 的项目为必填项。
+            </p>
+
+            <form class="ob-form ob-profile-form" :style="{ '--delay': '0.4s' }" @submit.prevent="saveProfile">
+              <div class="ob-profile-grid">
+                <label class="ob-field"><span>姓名 <b>*</b></span><input v-model.trim="profileForm.realName" class="ob-input" autocomplete="name" maxlength="64" required /></label>
+                <label class="ob-field"><span>学号 <b>*</b></span><input v-model.trim="profileForm.studentId" class="ob-input" autocomplete="off" maxlength="32" required /></label>
+                <label class="ob-field ob-field--full"><span>学院 <b>*</b></span><select v-model="profileForm.college" class="ob-input" required><option value="" disabled>请选择学院</option><option v-for="college in COLLEGE_NAMES" :key="college" :value="college">{{ college }}</option></select></label>
+                <label class="ob-field"><span>专业 <b>*</b></span><input v-model.trim="profileForm.major" class="ob-input" maxlength="100" required /></label>
+                <label class="ob-field"><span>年级 <b>*</b></span><input v-model.trim="profileForm.grade" class="ob-input" maxlength="20" placeholder="例如：2026" required /></label>
+                <label class="ob-field ob-field--full"><span>班级 <b>*</b></span><input v-model.trim="profileForm.className" class="ob-input" maxlength="100" required /></label>
+                <label class="ob-field ob-field--full"><span>手机号 <em>选填</em></span><input v-model.trim="profileForm.phone" class="ob-input" type="tel" autocomplete="tel" maxlength="11" placeholder="用于重要通知" /></label>
+              </div>
+              <p v-if="profileError" class="ob-form-error" role="alert">{{ profileError }}</p>
+              <div class="ob-step__actions">
+                <button type="button" class="ob-btn ob-btn--ghost ob-btn--back" :disabled="profileSubmitting" @click="prevStep"><span class="ob-btn__back-arrow">←</span> 返回上一步</button>
+                <button type="submit" class="ob-btn ob-btn--primary" :disabled="profileSubmitting">{{ profileSubmitting ? '正在保存…' : '保存并继续' }}<span v-if="!profileSubmitting" class="ob-btn__arrow">→</span></button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- ====== Step 8: Password ====== -->
+        <section v-else-if="step === 8" class="ob-step ob-step--password">
           <div class="ob-step__inner ob-step__inner--narrow">
             <p class="ob-eyebrow" :style="{ '--delay': '0.05s' }">安全设置 · SECURITY</p>
             <h2 class="ob-title ob-title--md" :style="{ '--delay': '0.15s' }">设置你的密码</h2>
@@ -600,8 +628,8 @@
           </div>
         </section>
 
-        <!-- ====== Step 8: Activating ====== -->
-        <section v-else-if="step === 8" class="ob-step ob-step--loading">
+        <!-- ====== Step 9: Activating ====== -->
+        <section v-else-if="step === 9" class="ob-step ob-step--loading">
           <div class="ob-step__inner">
             <div class="ob-loader">
               <svg class="ob-loader__ring" viewBox="0 0 100 100">
@@ -646,8 +674,8 @@
           </div>
         </section>
 
-        <!-- ====== Step 9: Success ====== -->
-        <section v-else-if="step === 9" class="ob-step ob-step--success">
+        <!-- ====== Step 10: Success ====== -->
+        <section v-else-if="step === 10" class="ob-step ob-step--success">
           <div class="ob-step__inner">
             <!-- Success Animation -->
             <div class="ob-success-check" :class="{ 'ob-success-check--in': stepInAnim }">
@@ -759,6 +787,7 @@ import { ElMessage } from 'element-plus/es/components/message/index'
 import { computed, onBeforeUnmount, onMounted, ref, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { authApi, siteApi } from '@/api'
+import { COLLEGE_NAMES } from '@/constants/colleges'
 import { setSession, getToken, getCurrentUser } from '@/utils/auth.ts'
 
 interface Leader {
@@ -798,6 +827,13 @@ interface ActivationInfo {
   userId: number
   userName: string
   realName: string
+  studentId?: string
+  gender?: string
+  phone?: string
+  college?: string
+  major?: string
+  grade?: string
+  className?: string
   avatar?: string
   qqOpenid?: string
   activated: boolean
@@ -812,7 +848,7 @@ interface ActivationInfo {
   club?: ClubInfo
 }
 
-const TOTAL_STEPS = 9
+const TOTAL_STEPS = 10
 const router = useRouter()
 
 // ============ State ============
@@ -824,6 +860,9 @@ const info = ref<ActivationInfo | null>(null)
 const groupJoinToken = ref('')
 const tokenLoading = ref(false)
 const passwordForm = ref({ oldPassword: '', newPassword: '' })
+const profileForm = ref({ realName: '', studentId: '', college: '', major: '', grade: '', className: '', phone: '' })
+const profileSubmitting = ref(false)
+const profileError = ref('')
 const loadingText = ref('正在验证身份…')
 const orb1Ref = ref<HTMLElement>()
 const orb2Ref = ref<HTMLElement>()
@@ -931,13 +970,18 @@ async function fetchActivationInfo() {
     const result = await siteApi.activation()
     const wasJoined = info.value?.qqGroupJoined
     info.value = result as ActivationInfo
+    profileForm.value = {
+      realName: info.value?.realName || '', studentId: info.value?.studentId || '',
+      college: info.value?.college || '', major: info.value?.major || '',
+      grade: info.value?.grade || '', className: info.value?.className || '', phone: info.value?.phone || '',
+    }
     // Sync server-side activation status to localStorage
     setSession({
       user: { ...getCurrentUser(), activatedAt: info.value?.activatedAt || null },
     })
     // If already activated, skip to success step
     if (info.value?.activated) {
-      step.value = 9
+      step.value = 10
       stepInAnim.value = true
     }
     // If QQ group join status changed to true during polling, notify the user
@@ -947,6 +991,31 @@ async function fetchActivationInfo() {
   } catch (error) {
     console.error('加载激活信息失败', error)
     ElMessage.error('激活信息加载失败，请刷新重试')
+  }
+}
+
+async function saveProfile() {
+  const required = [profileForm.value.realName, profileForm.value.studentId, profileForm.value.college,
+    profileForm.value.major, profileForm.value.grade, profileForm.value.className]
+  if (required.some((value) => !value.trim())) {
+    profileError.value = '请补全姓名、学号、学院、专业、年级和班级后继续'
+    return
+  }
+  if (profileForm.value.phone && !/^1\d{10}$/.test(profileForm.value.phone)) {
+    profileError.value = '请输入正确的11位手机号，或留空'
+    return
+  }
+  profileSubmitting.value = true
+  profileError.value = ''
+  try {
+    const user = await authApi.updateProfile(profileForm.value)
+    if (info.value) Object.assign(info.value, user)
+    setSession({ accessToken: getToken() || undefined, user: { ...getCurrentUser(), ...user } })
+    nextStep()
+  } catch (error: any) {
+    profileError.value = error?.message || '资料保存失败，请检查后重试'
+  } finally {
+    profileSubmitting.value = false
   }
 }
 
@@ -1026,7 +1095,7 @@ async function handleActivate() {
   // Move to loading step
   transitionName.value = 'ob-slide-next'
   stepInAnim.value = false
-  step.value = 8
+  step.value = 9
   loadingText.value = '正在验证身份…'
   activationPhase.value = 0
 
@@ -1065,7 +1134,7 @@ async function handleActivate() {
     // Move to success step
     transitionName.value = 'ob-slide-next'
     stepInAnim.value = false
-    step.value = 9
+    step.value = 10
     ElMessage.success('账号已激活，请使用新密码重新登录')
   } catch (error: any) {
     const msg = error?.message || error?.msg || '激活失败，请重试'
@@ -1073,7 +1142,7 @@ async function handleActivate() {
     // Go back to password step
     transitionName.value = 'ob-slide-prev'
     stepInAnim.value = false
-    step.value = 7
+    step.value = 8
   }
 }
 

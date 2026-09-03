@@ -85,20 +85,39 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
   public Result<String> checkIn(Integer interviewId) {
     Interview interview = findPublishedInterview(interviewId);
     if (interview == null) return Result.error(404, "找不到可签到的已发布面试安排");
+    return checkInInterview(interview, StpUtil.getLoginIdAsInt(), Map.of());
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> selfCheckIn(Integer sessionId, String studentId) {
+    if (!isPublished(sessionId)) return Result.error(422, "本场次暂未开放签到");
+    String normalizedStudentId = text(studentId);
+    if (normalizedStudentId == null || normalizedStudentId.isBlank()) return Result.error(400, "请输入学号");
+    Interview interview = interviewMapper.selectBySessionId(sessionId).stream()
+        .filter(item -> !"draft".equals(item.getStatus()))
+        .filter(item -> matchesStudentId(item, normalizedStudentId))
+        .findFirst().orElse(null);
+    if (interview == null) return Result.error(404, "未找到本场次可签到的候选人，请核对学号后重试");
+    return checkInInterview(interview, null, Map.of("source", "self_service"));
+  }
+
+  private Result<String> checkInInterview(Interview interview, Integer checkedInBy,
+      Map<String, Object> detail) {
     if ("completed".equals(interview.getStatus())) return Result.error(422, "该候选人的面试已完成");
-    InterviewQueueState state = queueMapper.selectByInterviewId(interviewId);
+    InterviewQueueState state = queueMapper.selectByInterviewId(interview.getId());
     if (state != null && !"cancelled".equals(state.getStatus())) return Result.error(422, "候选人已经签到");
     Timestamp now = new Timestamp(System.currentTimeMillis());
     if (state == null) {
-      state = InterviewQueueState.builder().interviewId(interviewId).sessionId(interview.getSessionId())
-          .roomId(interview.getRoomId()).status("waiting").checkedInBy(StpUtil.getLoginIdAsInt())
+      state = InterviewQueueState.builder().interviewId(interview.getId()).sessionId(interview.getSessionId())
+          .roomId(interview.getRoomId()).status("waiting").checkedInBy(checkedInBy)
           .checkedInAt(now).callCount(0).build();
       queueMapper.insert(state);
     } else {
-      state.setStatus("waiting"); state.setCheckedInBy(StpUtil.getLoginIdAsInt());
+      state.setStatus("waiting"); state.setCheckedInBy(checkedInBy);
       state.setCheckedInAt(now); state.setCalledAt(null); state.setCallCount(0); queueMapper.updateById(state);
     }
-    log(interview.getSessionId(), interviewId, interview.getRoomId(), "check_in", Map.of());
+    log(interview.getSessionId(), interview.getId(), interview.getRoomId(), "check_in", detail);
     return Result.success("签到成功，已进入候场队列");
   }
 
@@ -132,9 +151,20 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
         .filter(i -> Objects.equals(i.getRoomId(), roomId)).toList();
     Map<Integer, Interview> interviewMap = roomInterviews.stream()
         .collect(Collectors.toMap(Interview::getId, Function.identity()));
-    InterviewQueueState next = queueMapper.selectBySessionId(room.getSessionId()).stream()
-        .filter(s -> Objects.equals(s.getRoomId(), roomId) && "waiting".equals(s.getStatus()))
+    List<InterviewQueueState> roomQueueStates = queueMapper.selectBySessionId(room.getSessionId()).stream()
+        .filter(s -> Objects.equals(s.getRoomId(), roomId))
         .filter(s -> interviewMap.containsKey(s.getInterviewId()))
+        .toList();
+    for (InterviewQueueState state : roomQueueStates) {
+      Interview queuedInterview = interviewMap.get(state.getInterviewId());
+      if ("waiting".equals(state.getStatus()) && "completed".equals(queuedInterview.getStatus())) {
+        state.setStatus("completed");
+        queueMapper.updateById(state);
+      }
+    }
+    InterviewQueueState next = roomQueueStates.stream()
+        .filter(s -> Objects.equals(s.getRoomId(), roomId) && "waiting".equals(s.getStatus()))
+        .filter(s -> !"completed".equals(interviewMap.get(s.getInterviewId()).getStatus()))
         .min(Comparator.comparing((InterviewQueueState s) -> interviewMap.get(s.getInterviewId()).getQueueNumber(),
             Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(InterviewQueueState::getCheckedInAt, Comparator.nullsLast(Comparator.naturalOrder())))
@@ -322,13 +352,23 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
     return session != null && "published".equals(session.getStatus());
   }
 
+  private boolean matchesStudentId(Interview interview, String studentId) {
+    MembershipApplication application = applicationMapper.selectById(interview.getApplicationId());
+    if (application == null) return false;
+    User user = application.getUserId() == null ? null : userMapper.selectById(application.getUserId());
+    String applicationStudentId = text(Jsons.parseObject(application.getProfile()).get("studentId"));
+    return studentId.equals(user == null ? applicationStudentId : user.getStudentId())
+        || studentId.equals(applicationStudentId);
+  }
+
   private ResponseInterviewQueueVO.Candidate candidate(
       Interview interview, InterviewQueueState state, String roomName) {
     MembershipApplication application = interview == null ? null : applicationMapper.selectById(interview.getApplicationId());
     User user = application == null || application.getUserId() == null ? null : userMapper.selectById(application.getUserId());
     Map<String, Object> profile = application == null ? Map.of() : Jsons.parseObject(application.getProfile());
     String name = user != null && user.getRealName() != null ? user.getRealName()
-        : String.valueOf(profile.getOrDefault("realName", profile.getOrDefault("name", "姓名未填写")));
+        : firstNonBlank(text(profile.get("applicantName")), text(profile.get("name")),
+            text(profile.get("realName")), "姓名未填写");
     String studentId = user == null ? text(profile.get("studentId")) : user.getStudentId();
     return ResponseInterviewQueueVO.Candidate.builder().interviewId(interview.getId())
         .applicationId(interview.getApplicationId()).roomId(interview.getRoomId()).roomName(roomName)
@@ -354,4 +394,8 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
   }
 
   private String text(Object value) { return value == null ? null : String.valueOf(value); }
+  private String firstNonBlank(String... values) {
+    for (String value : values) if (value != null && !value.isBlank()) return value.trim();
+    return null;
+  }
 }

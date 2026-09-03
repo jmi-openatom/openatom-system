@@ -1156,6 +1156,9 @@ export const interviewSessionApi = {
   checkIn(interviewId: string | number): Promise<any> {
     return request.post(`/interviews/${interviewId}/check-in`)
   },
+  selfCheckIn(sessionId: string | number, studentId: string): Promise<any> {
+    return request.post(`/site/interview-sessions/${sessionId}/check-in`, { studentId })
+  },
   undoCheckIn(interviewId: string | number): Promise<any> {
     return request.post(`/interviews/${interviewId}/undo-check-in`)
   },

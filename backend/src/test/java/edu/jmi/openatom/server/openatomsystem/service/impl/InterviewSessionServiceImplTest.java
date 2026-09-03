@@ -50,6 +50,44 @@ class InterviewSessionServiceImplTest {
     assertEquals(5, result.getData().getAssignments().size());
   }
 
+  @Test
+  void previewRoutesByFirstChoiceAndSkipsConfiguredDepartments() {
+    MembershipApplicationMapper applicationMapper = mock(MembershipApplicationMapper.class);
+    UserMapper userMapper = mock(UserMapper.class);
+    InterviewMapper interviewMapper = mock(InterviewMapper.class);
+    List<MembershipApplication> applications = List.of(
+        MembershipApplication.builder().id(1).campaignId(9).status("pre_screen_passed")
+            .firstChoiceDepartmentId(10).build(),
+        MembershipApplication.builder().id(2).campaignId(9).status("pre_screen_passed")
+            .firstChoiceDepartmentId(20).build(),
+        MembershipApplication.builder().id(3).campaignId(9).status("pre_screen_passed")
+            .firstChoiceDepartmentId(10).build());
+    when(applicationMapper.selectBatchIds(anyCollection())).thenReturn(applications);
+    when(userMapper.selectBatchIds(anyCollection())).thenReturn(List.of(
+        User.builder().id(101).realName("甲面试官").userStatus(UserStatus.ACTIVE).build(),
+        User.builder().id(102).realName("乙面试官").userStatus(UserStatus.ACTIVE).build()));
+    when(interviewMapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+
+    InterviewSessionServiceImpl service = new InterviewSessionServiceImpl(
+        mock(InterviewSessionMapper.class), mock(InterviewRoomMapper.class),
+        mock(InterviewRoomInterviewerMapper.class), interviewMapper,
+        mock(InterviewInterviewerMapper.class), applicationMapper, userMapper, null, null);
+    RequestAutoScheduleInterviewDTO request = request();
+    request.setApplicationIds(List.of(1, 2, 3));
+    request.setAssignmentStrategy("first_choice_department");
+    request.setSkipInterviewDepartmentIds(List.of(20));
+    request.getRooms().get(0).setPreferredDepartmentIds(List.of(10));
+    request.getRooms().get(1).setPreferredDepartmentIds(List.of(20));
+
+    var result = service.autoSchedule(request);
+
+    assertEquals(0, result.getCode());
+    assertEquals(List.of(0, 0), result.getData().getAssignments().stream()
+        .map(assignment -> assignment.getRoomIndex()).toList());
+    assertEquals(List.of(2), result.getData().getSkippedCandidates().stream()
+        .map(candidate -> candidate.getApplicationId()).toList());
+  }
+
   private RequestAutoScheduleInterviewDTO request() {
     RequestAutoScheduleInterviewDTO first = new RequestAutoScheduleInterviewDTO();
     first.setCampaignId(9);

@@ -79,11 +79,40 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
       }
     }
 
+    Set<Integer> skipInterviewDepartmentIds = request.getSkipInterviewDepartmentIds() == null
+        ? Set.of() : new HashSet<>(request.getSkipInterviewDepartmentIds());
+    Map<Integer, User> applicants = loadApplicants(applications);
+    List<MembershipApplication> skippedApplications = applications.stream()
+        .filter(application -> application.getFirstChoiceDepartmentId() != null
+            && skipInterviewDepartmentIds.contains(application.getFirstChoiceDepartmentId()))
+        .toList();
+    List<MembershipApplication> interviewApplications = applications.stream()
+        .filter(application -> !skippedApplications.contains(application)).toList();
+    List<ResponseInterviewScheduleVO.SkippedCandidate> skippedCandidates = skippedApplications.stream()
+        .map(application -> ResponseInterviewScheduleVO.SkippedCandidate.builder()
+            .applicationId(application.getId())
+            .applicantName(applicantName(application, applicantFor(application, applicants)))
+            .departmentId(application.getFirstChoiceDepartmentId()).build())
+        .toList();
+
+    if (interviewApplications.isEmpty()) {
+      if (!Boolean.TRUE.equals(request.getPreviewOnly())) {
+        skippedApplications.forEach(application -> {
+          application.setStatus("interviewed");
+          applicationMapper.updateById(application);
+        });
+      }
+      return Result.success(ResponseInterviewScheduleVO.builder().sessionName(request.getName())
+          .status(Boolean.TRUE.equals(request.getPreviewOnly()) ? "preview" : "no_interview")
+          .totalCandidates(0).rooms(List.of()).assignments(List.of())
+          .skippedCandidates(skippedCandidates).build());
+    }
+
     int slotMinutes = request.getDurationMinutes() + request.getGapMinutes();
     long totalMinutes = Duration.between(start.toInstant(), end.toInstant()).toMinutes();
     int capacityPerRoom = (int) ((totalMinutes + request.getGapMinutes()) / slotMinutes);
     if (capacityPerRoom <= 0) return Result.error(400, "面试时间段不足以安排一场面试");
-    if ((long) capacityPerRoom * request.getRooms().size() < applicationIds.size()) {
+    if ((long) capacityPerRoom * request.getRooms().size() < interviewApplications.size()) {
       return Result.error(400, "面试间容量不足，请增加面试间或延长时间段");
     }
 
@@ -100,10 +129,10 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
       roomStates.add(new RoomState(index, request.getRooms().get(index), capacityPerRoom, start.toInstant()));
     }
 
-    Map<Integer, User> applicants = loadApplicants(applications);
     List<ResponseInterviewScheduleVO.Assignment> assignments = new ArrayList<>();
-    for (int index = 0; index < applicationIds.size(); index++) {
-      Integer applicationId = applicationIds.get(index);
+    for (int index = 0; index < interviewApplications.size(); index++) {
+      MembershipApplication application = interviewApplications.get(index);
+      Integer applicationId = application.getId();
       Integer preferredRoomIndex = request.getRoomAssignments() == null
           ? null : request.getRoomAssignments().get(applicationId);
       RoomState target;
@@ -116,7 +145,13 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
           return Result.error(400, target.request.getName() + " 容量不足，请调整其他候选人");
         }
       } else {
-        target = roomStates.stream()
+        List<RoomState> departmentRooms = "first_choice_department".equals(request.getAssignmentStrategy())
+            && application.getFirstChoiceDepartmentId() != null
+            ? roomStates.stream().filter(room -> room.matchesDepartment(application.getFirstChoiceDepartmentId())).toList()
+            : List.of();
+        List<RoomState> availableDepartmentRooms = departmentRooms.stream()
+            .filter(room -> room.assigned < room.capacity).toList();
+        target = (availableDepartmentRooms.isEmpty() ? roomStates : availableDepartmentRooms).stream()
             .filter(room -> room.assigned < room.capacity)
             .min(Comparator.comparingDouble(RoomState::load)
                 .thenComparing(room -> room.nextStart)
@@ -128,11 +163,8 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
       if (hasCandidateConflict(applicationId, slotStart, slotEnd)) {
         return Result.error(409, "申请 " + applicationId + " 与已有面试时间冲突");
       }
-      MembershipApplication application = applicationMap.get(applicationId);
-      User applicant = applicants.get(application.getUserId());
-      String applicantName = applicant == null
-          ? firstProfileValue(application.getProfile(), "applicantName", "name", "realName")
-          : blank(applicant.getRealName()) ? applicant.getUserName() : applicant.getRealName();
+      User applicant = applicantFor(application, applicants);
+      String applicantName = applicantName(application, applicant);
       target.assigned++;
       target.nextStart = slotStart.plus(Duration.ofMinutes(slotMinutes));
       assignments.add(ResponseInterviewScheduleVO.Assignment.builder()
@@ -151,9 +183,14 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
           .createdBy(StpUtil.getLoginIdAsInt()).build();
       sessionMapper.insert(session);
       persistRoomsAndAssignments(session, roomStates, assignments, request);
+      skippedApplications.forEach(application -> {
+        application.setStatus("interviewed");
+        applicationMapper.updateById(application);
+      });
     }
 
-    return Result.success(buildResponse(session, request.getName(), roomStates, assignments, interviewerUsers));
+    return Result.success(buildResponse(session, request.getName(), roomStates, assignments, interviewerUsers,
+        skippedCandidates));
   }
 
   @Override
@@ -305,7 +342,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
   private ResponseInterviewScheduleVO buildResponse(InterviewSession session, String sessionName,
       List<RoomState> states, List<ResponseInterviewScheduleVO.Assignment> assignments,
-      Map<Integer, User> users) {
+      Map<Integer, User> users, List<ResponseInterviewScheduleVO.SkippedCandidate> skippedCandidates) {
     List<ResponseInterviewScheduleVO.Room> rooms = states.stream().map(state ->
         ResponseInterviewScheduleVO.Room.builder().roomId(state.roomId).name(state.request.getName())
             .location(state.request.getLocation()).capacity(state.capacity).assignedCount(state.assigned)
@@ -314,7 +351,18 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
             .build()).toList();
     return ResponseInterviewScheduleVO.builder().sessionId(session == null ? null : session.getId())
         .sessionName(sessionName).status(session == null ? "preview" : session.getStatus())
-        .totalCandidates(assignments.size()).rooms(rooms).assignments(assignments).build();
+        .totalCandidates(assignments.size()).rooms(rooms).assignments(assignments)
+        .skippedCandidates(skippedCandidates).build();
+  }
+
+  private String applicantName(MembershipApplication application, User applicant) {
+    return applicant == null
+        ? firstProfileValue(application.getProfile(), "applicantName", "name", "realName")
+        : blank(applicant.getRealName()) ? applicant.getUserName() : applicant.getRealName();
+  }
+
+  private User applicantFor(MembershipApplication application, Map<Integer, User> applicants) {
+    return application.getUserId() == null ? null : applicants.get(application.getUserId());
   }
 
   private String firstProfileValue(String profileJson, String... keys) {
@@ -352,6 +400,11 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
 
     private double load() {
       return capacity == 0 ? 1 : (double) assigned / capacity;
+    }
+
+    private boolean matchesDepartment(Integer departmentId) {
+      return request.getPreferredDepartmentIds() != null
+          && request.getPreferredDepartmentIds().contains(departmentId);
     }
   }
 }

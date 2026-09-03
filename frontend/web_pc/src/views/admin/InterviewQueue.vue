@@ -20,6 +20,7 @@
             :value="session.id"
           />
         </el-select>
+        <el-button :disabled="!sessionId" @click="openCheckIn">打开签到页</el-button>
         <el-button :disabled="!sessionId" @click="openScreen">打开叫号大屏</el-button>
         <el-button :disabled="!sessionId" :loading="exporting" @click="exportSummary"
           >导出评价汇总</el-button
@@ -504,6 +505,9 @@ async function showOperations() {
 }
 function openScreen() {
   window.open(`/interview-call-screen/${sessionId.value}`, '_blank', 'noopener,noreferrer')
+}
+function openCheckIn() {
+  window.open(`/interview-check-in/${sessionId.value}`, '_blank', 'noopener,noreferrer')
 }
 function queueNumber(row: any) {
   return row.queueNumber ? `#${String(row.queueNumber).padStart(3, '0')}` : `#${row.interviewId}`

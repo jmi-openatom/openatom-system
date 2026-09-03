@@ -22,6 +22,9 @@ public class ResponseInterviewerWorkbenchItemVO {
   private Timestamp scheduledStartAt;
   private Timestamp scheduledEndAt;
   private String interviewStatus;
+  private String queueStatus;
+  private Timestamp checkedInAt;
+  private Timestamp calledAt;
   private String applicantName;
   private String studentId;
   private String college;

@@ -15,6 +15,13 @@ public class ResponseActivationVO {
   private Integer userId;
   private String userName;
   private String realName;
+  private String studentId;
+  private String gender;
+  private String phone;
+  private String college;
+  private String major;
+  private String grade;
+  private String className;
   private String avatar;
   private String qqOpenid;
   private Boolean activated;

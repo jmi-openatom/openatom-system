@@ -355,6 +355,11 @@ const routes = [
     component: resilientView(() => import('../views/site/InterviewCallScreen.vue')),
   },
   {
+    path: '/interview-check-in/:sessionId',
+    name: 'interview-check-in',
+    component: resilientView(() => import('../views/site/InterviewSelfCheckIn.vue')),
+  },
+  {
     path: '/qr-screen',
     name: 'qr-screen',
     component: resilientView(() => import('../views/site/QrScreen.vue')),

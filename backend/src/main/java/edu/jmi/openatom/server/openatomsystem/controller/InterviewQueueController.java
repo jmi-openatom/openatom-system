@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestInterviewSelfCheckInDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMoveInterviewRoomDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewQueueOperation;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewQueueService;
@@ -30,6 +31,12 @@ public class InterviewQueueController {
   @GetMapping("/site/interview-call-screens/{sessionId}")
   public Result<ResponseInterviewQueueVO> callScreen(@PathVariable Integer sessionId) {
     return service.callScreen(sessionId);
+  }
+
+  @PostMapping("/site/interview-sessions/{sessionId}/check-in")
+  public Result<String> selfCheckIn(@PathVariable Integer sessionId,
+      @Valid @RequestBody RequestInterviewSelfCheckInDTO request) {
+    return service.selfCheckIn(sessionId, request.getStudentId());
   }
 
   @PostMapping("/interviews/{interviewId}/check-in")

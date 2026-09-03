@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class InterviewerWorkbenchServiceImpl implements InterviewerWorkbenchService {
   private final InterviewInterviewerMapper interviewerMapper;
   private final InterviewMapper interviewMapper;
+  private final InterviewQueueStateMapper queueStateMapper;
   private final InterviewFeedbackMapper feedbackMapper;
   private final InterviewEvaluationTemplateMapper templateMapper;
   private final InterviewSessionMapper sessionMapper;
@@ -42,6 +43,7 @@ public class InterviewerWorkbenchServiceImpl implements InterviewerWorkbenchServ
     User user = application == null ? null : userMapper.selectById(application.getUserId());
     InterviewSession session = interview.getSessionId() == null ? null : sessionMapper.selectById(interview.getSessionId());
     InterviewRoom room = interview.getRoomId() == null ? null : roomMapper.selectById(interview.getRoomId());
+    InterviewQueueState queueState = queueStateMapper.selectByInterviewId(interview.getId());
     Integer campaignId = application == null ? null : application.getCampaignId();
     InterviewEvaluationTemplate template = templateMapper.selectActive(campaignId);
     if (template == null) template = templateMapper.selectActive(null);
@@ -62,7 +64,10 @@ public class InterviewerWorkbenchServiceImpl implements InterviewerWorkbenchServ
         .roomName(room == null ? null : room.getName()).location(room == null ? interview.getLocation() : room.getLocation())
         .queueNumber(interview.getQueueNumber()).scheduledStartAt(interview.getScheduledStartAt())
         .scheduledEndAt(interview.getScheduledEndAt()).interviewStatus(interview.getStatus())
-        .applicantName(user == null ? profileText(application, "realName", "姓名未填写") : user.getRealName())
+        .queueStatus(queueState == null ? "not_checked_in" : queueState.getStatus())
+        .checkedInAt(queueState == null ? null : queueState.getCheckedInAt())
+        .calledAt(queueState == null ? null : queueState.getCalledAt())
+        .applicantName(user == null ? applicantName(application) : user.getRealName())
         .studentId(user == null ? profileText(application, "studentId", null) : user.getStudentId())
         .college(user == null ? profileText(application, "college", null) : user.getCollege())
         .major(user == null ? profileText(application, "major", null) : user.getMajor())
@@ -98,5 +103,12 @@ public class InterviewerWorkbenchServiceImpl implements InterviewerWorkbenchServ
     if (app == null) return fallback;
     Object value = Jsons.parseObject(app.getProfile()).get(key);
     return value == null ? fallback : String.valueOf(value);
+  }
+
+  private String applicantName(MembershipApplication app) {
+    String name = profileText(app, "applicantName", null);
+    if (name == null || name.isBlank()) name = profileText(app, "name", null);
+    if (name == null || name.isBlank()) name = profileText(app, "realName", null);
+    return name == null || name.isBlank() ? "姓名未填写" : name;
   }
 }

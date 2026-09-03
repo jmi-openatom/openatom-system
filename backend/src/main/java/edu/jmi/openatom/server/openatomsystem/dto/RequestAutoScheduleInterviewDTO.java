@@ -21,6 +21,10 @@ public class RequestAutoScheduleInterviewDTO {
   private String mode;
   @NotEmpty(message = "请选择候选人") private List<Integer> applicationIds;
   @Valid @NotEmpty(message = "请至少配置一个面试间") private List<Room> rooms;
+  /** balanced（默认）或 first_choice_department（按第一志愿部门优先）。 */
+  private String assignmentStrategy;
+  /** 第一志愿属于这些部门的候选人免面试，直接进入终审候选池。 */
+  private List<Integer> skipInterviewDepartmentIds;
   private Map<Integer, Integer> roomAssignments;
   private Boolean previewOnly = true;
 
@@ -29,5 +33,7 @@ public class RequestAutoScheduleInterviewDTO {
     @NotBlank(message = "面试间名称不能为空") private String name;
     private String location;
     @NotEmpty(message = "每个面试间至少需要一位面试官") private List<Integer> interviewerIds;
+    /** 按第一志愿分配时，本面试间优先承接的部门。 */
+    private List<Integer> preferredDepartmentIds;
   }
 }

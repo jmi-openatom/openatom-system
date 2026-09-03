@@ -14,6 +14,7 @@ public class ResponseInterviewScheduleVO {
   private Integer totalCandidates;
   private List<Room> rooms;
   private List<Assignment> assignments;
+  private List<SkippedCandidate> skippedCandidates;
 
   @Data
   @Builder
@@ -45,5 +46,13 @@ public class ResponseInterviewScheduleVO {
     private Integer queueNumber;
     private Timestamp scheduledStartAt;
     private Timestamp scheduledEndAt;
+  }
+
+  @Data
+  @Builder
+  public static class SkippedCandidate {
+    private Integer applicationId;
+    private String applicantName;
+    private Integer departmentId;
   }
 }

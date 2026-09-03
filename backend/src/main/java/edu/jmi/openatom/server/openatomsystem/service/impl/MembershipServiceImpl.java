@@ -67,11 +67,15 @@ public class MembershipServiceImpl implements MembershipService {
         if (isBlank(applicantName)) applicantName = readString(profile.get("name"));
         if (isBlank(applicantName)) applicantName = readString(profile.get("realName"));
         if (isBlank(applicantName)) applicantName = "匿名用户";
-        String password = UUID.randomUUID().toString().substring(0, 8);
-        String username = generateUniqueUsername(applicantName);
+        String password = "123456";
+        String studentId = readString(profile.get("studentId"));
+        String username = isBlank(studentId) ? generateUniqueUsername(applicantName) : studentId;
+        if (!isBlank(studentId) && userMapper.selectByStudentIdOrUserName(username) != null) {
+          return Result.error(409, "该学号已存在系统账号，无法自动创建账号");
+        }
         String contact = firstNonBlank(readString(profile.get("contact")), readString(profile.get("phone")), readString(profile.get("email")));
         User user = User.builder().userName(username).realName(applicantName)
-            .studentId(firstNonBlank(readString(profile.get("studentId")), username))
+            .studentId(firstNonBlank(studentId, username))
             .phone(contact != null && contact.contains("@") ? null : contact)
             .email(contact != null && contact.contains("@") ? contact : null)
             .password(passwordService.encode(password))

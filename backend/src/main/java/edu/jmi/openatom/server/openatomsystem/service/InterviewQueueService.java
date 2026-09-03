@@ -8,6 +8,7 @@ import java.util.List;
 public interface InterviewQueueService {
   Result<ResponseInterviewQueueVO> detail(Integer sessionId);
   Result<ResponseInterviewQueueVO> callScreen(Integer sessionId);
+  Result<String> selfCheckIn(Integer sessionId, String studentId);
   Result<String> checkIn(Integer interviewId);
   Result<String> undoCheckIn(Integer interviewId);
   Result<ResponseInterviewQueueVO.Candidate> callNext(Integer roomId);

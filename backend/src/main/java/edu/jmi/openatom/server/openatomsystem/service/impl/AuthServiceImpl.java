@@ -838,6 +838,16 @@ public class AuthServiceImpl implements AuthService {
     if (requestUpdateProfileDTO.getRealName() != null) {
       user.setRealName(requestUpdateProfileDTO.getRealName());
     }
+    if (requestUpdateProfileDTO.getStudentId() != null) {
+      String studentId = requestUpdateProfileDTO.getStudentId().trim();
+      if (!studentId.isBlank()) {
+        User existing = userMapper.selectByStudentIdOrUserName(studentId);
+        if (existing != null && !Integer.valueOf(id).equals(existing.getId())) {
+          return Result.error(409, "该学号已被其他账号使用");
+        }
+      }
+      user.setStudentId(studentId);
+    }
     if (requestUpdateProfileDTO.getGender() != null) {
       user.setGender(requestUpdateProfileDTO.getGender());
     }

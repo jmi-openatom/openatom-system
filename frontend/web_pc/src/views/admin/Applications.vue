@@ -21,7 +21,15 @@
           <el-option label="已拒绝" value="rejected" />
           <el-option label="已撤回" value="cancelled" />
         </el-select>
-        <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
+        <el-select v-model="query.campaignId" clearable filterable placeholder="招新批次" style="width: 190px">
+          <el-option
+            v-for="campaign in campaignOptions"
+            :key="campaign.id"
+            :label="campaign.name"
+            :value="campaign.id"
+          />
+        </el-select>
+        <el-button type="primary" :icon="Search" @click="applyQuery">查询</el-button>
       </div>
       <div class="toolbar__actions">
         <el-button type="info" :loading="exporting" @click="exportExcel">导出 Excel</el-button>
@@ -44,6 +52,16 @@
           >批量安排面试</el-button
         >
         <el-button
+          plain
+          type="primary"
+          :loading="selectAllSchedulableLoading"
+          @click="selectAllSchedulable"
+          >全选可安排候选人</el-button
+        >
+        <el-button v-if="selection.length" link type="info" @click="clearSelection"
+          >已选 {{ selection.length }} 人，清除</el-button
+        >
+        <el-button
           type="warning"
           :disabled="!batchFinalCandidates.length"
           @click="openBatchFinalDecision"
@@ -52,12 +70,14 @@
       </div>
     </ViewToolbar>
     <el-table
+      ref="applicationTableRef"
       v-loading="loading"
       :data="rows"
+      row-key="id"
       class="admin-table"
-      @selection-change="selection = $event"
+      @selection-change="handlePageSelectionChange"
     >
-      <el-table-column type="selection" width="48" />
+      <el-table-column type="selection" :reserve-selection="true" width="48" />
       <el-table-column type="index" label="编号" width="72" />
       <el-table-column prop="id" label="申请ID" width="90" />
       <el-table-column prop="applicantName" label="申请人" min-width="130" />
@@ -111,7 +131,7 @@
       :total="total"
       v-model:current-page="query.page"
       v-model:page-size="query.pageSize"
-      @change="fetchList"
+      @change="fetchList()"
     />
 
     <el-dialog v-model="approvalVisible" title="处理申请" width="520px">
@@ -287,6 +307,34 @@
             <el-option label="线上" value="online" />
           </el-select>
         </el-form-item>
+        <el-form-item label="分配方式">
+          <el-radio-group v-model="batchInterviewForm.assignmentStrategy">
+            <el-radio-button value="balanced">负载均衡</el-radio-button>
+            <el-radio-button value="first_choice_department">按第一志愿部门</el-radio-button>
+          </el-radio-group>
+          <p class="form-helper">
+            按第一志愿部门时，将优先分配到负责该部门的面试间；未配置或容量不足时自动均衡分配。
+          </p>
+        </el-form-item>
+        <el-form-item label="免面试部门">
+          <el-select
+            v-model="batchInterviewForm.skipInterviewDepartmentIds"
+            multiple
+            filterable
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="选择后，该部门候选人直接进入终审"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="department in interviewDepartments"
+              :key="department.id"
+              :label="department.name"
+              :value="department.id"
+            />
+          </el-select>
+          <p class="form-helper">免面试候选人不会创建面试记录，保存后可直接终审。</p>
+        </el-form-item>
       </el-form>
 
       <el-divider content-position="left">面试间与固定面试官组</el-divider>
@@ -327,6 +375,23 @@
               :disabled="isInterviewerUsed(person.userId, roomIndex)"
             />
           </el-select>
+          <el-select
+            v-if="batchInterviewForm.assignmentStrategy === 'first_choice_department'"
+            v-model="room.preferredDepartmentIds"
+            multiple
+            filterable
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="选择本面试间负责的志愿部门（可多选）"
+          >
+            <el-option
+              v-for="department in interviewDepartments"
+              :key="department.id"
+              :label="department.name"
+              :value="department.id"
+              :disabled="batchInterviewForm.skipInterviewDepartmentIds.includes(department.id)"
+            />
+          </el-select>
         </el-card>
       </div>
       <el-button plain class="add-room-button" @click="addInterviewRoom">+ 添加面试间</el-button>
@@ -338,8 +403,11 @@
         <span v-if="schedulePreview">
           <template v-if="previewNeedsRefresh">面试间已调整，请重新生成预览</template>
           <template v-else>
-            已将 {{ schedulePreview.totalCandidates }} 人均衡分配至
+            已安排 {{ schedulePreview.totalCandidates }} 人至
             {{ schedulePreview.rooms?.length || 0 }} 个面试间
+            <template v-if="schedulePreview.skippedCandidates?.length">
+              ，{{ schedulePreview.skippedCandidates.length }} 人免面试
+            </template>
           </template>
         </span>
       </div>
@@ -368,6 +436,14 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-alert
+        v-if="schedulePreview?.skippedCandidates?.length"
+        type="success"
+        show-icon
+        :closable="false"
+        class="skipped-candidate-alert"
+        :title="`${schedulePreview.skippedCandidates.length} 位候选人来自免面试部门，保存后将直接进入终审候选池。`"
+      />
 
       <template #footer>
         <el-button @click="batchInterviewVisible = false">取消</el-button>
@@ -488,7 +564,7 @@
       <template #footer>
         <el-button @click="batchFinalVisible = false">取消</el-button>
         <el-button type="primary" :loading="batchFinalSubmitting" @click="submitBatchFinalDecision"
-          >提交</el-button
+          >{{ batchFinalSubmitting ? `处理中 ${batchFinalProgress}/${batchFinalTargets.length}` : '提交' }}</el-button
         >
       </template>
     </el-dialog>
@@ -509,7 +585,7 @@ import {
   membershipApi,
 } from '@/api'
 import { applicationStatusText, formatDateTime, statusType } from '@/utils/format.ts'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 const loading = ref(false)
 
@@ -521,7 +597,13 @@ const total = ref(0)
 
 const selection = ref<any[]>([])
 
-const query = ref({ keyword: '', status: '', page: 1, pageSize: 10 })
+const applicationTableRef = ref<any>(null)
+
+const query = ref({ keyword: '', status: '', campaignId: '', page: 1, pageSize: 10 })
+
+const campaignOptions = ref<any[]>([])
+
+const selectAllSchedulableLoading = ref(false)
 
 const approvalVisible = ref(false)
 
@@ -558,6 +640,8 @@ const previewNeedsRefresh = ref(false)
 
 const interviewerOptions = ref<any[]>([])
 
+const interviewDepartments = ref<any[]>([])
+
 const batchInterviewTargets = ref<any[]>([])
 
 const batchInterviewForm = ref({
@@ -567,6 +651,8 @@ const batchInterviewForm = ref({
   durationMinutes: 30,
   gapMinutes: 10,
   mode: 'offline',
+  assignmentStrategy: 'balanced',
+  skipInterviewDepartmentIds: [] as number[],
   rooms: [newInterviewRoom(1)],
 })
 
@@ -588,6 +674,8 @@ const finalForm = ref({
 const batchFinalVisible = ref(false)
 
 const batchFinalSubmitting = ref(false)
+
+const batchFinalProgress = ref(0)
 
 const batchFinalTargets = ref<any[]>([])
 
@@ -709,6 +797,79 @@ async function fetchList() {
   }
 }
 
+function applyQuery() {
+  query.value.page = 1
+  clearSelection()
+  fetchList()
+}
+
+function handlePageSelectionChange(pageSelection: any[]) {
+  const pageIds = new Set(rows.value.map((row) => Number(row.id)))
+  const merged = new Map<number, any>()
+  selection.value
+    .filter((row) => !pageIds.has(Number(row.id)))
+    .forEach((row) => merged.set(Number(row.id), row))
+  pageSelection.forEach((row) => merged.set(Number(row.id), row))
+  selection.value = Array.from(merged.values())
+}
+
+function clearSelection() {
+  selection.value = []
+  applicationTableRef.value?.clearSelection()
+}
+
+async function selectAllSchedulable() {
+  selectAllSchedulableLoading.value = true
+  try {
+    const allCandidates: any[] = []
+    let page = 1
+    let expectedTotal = 0
+    do {
+      const result = await applicationApi.list({
+        campaignId: query.value.campaignId || undefined,
+        keyword: query.value.keyword || undefined,
+        status: 'pre_screen_passed',
+        page,
+        pageSize: 100,
+      })
+      const pageRows = result?.list || result || []
+      expectedTotal = Number(result?.total || pageRows.length)
+      allCandidates.push(...pageRows)
+      page += 1
+    } while (allCandidates.length < expectedTotal)
+
+    if (!allCandidates.length) {
+      ElMessage.warning('没有可安排面试的申请')
+      return
+    }
+    const campaignIds = new Set(allCandidates.map((item) => item.campaignId).filter(Boolean))
+    if (campaignIds.size > 1) {
+      ElMessage.warning('当前包含多个招新批次，请先选择一个招新批次后再全选')
+      return
+    }
+    clearSelection()
+    selection.value = allCandidates
+    await nextTick()
+    rows.value.forEach((row) => applicationTableRef.value?.toggleRowSelection(row, true))
+    ElMessage.success(`已选中 ${allCandidates.length} 位可安排候选人`)
+  } finally {
+    selectAllSchedulableLoading.value = false
+  }
+}
+
+async function loadCampaignOptions() {
+  try {
+    const clubs = normalizeOptionList(await clubApi.list({ page: 1, pageSize: 100 }))
+    const campaignLists = await Promise.all(
+      clubs.map((club) => clubApi.campaigns(club.id).then(normalizeOptionList)),
+    )
+    campaignOptions.value = campaignLists.flat()
+  } catch (error) {
+    console.error('Failed to load recruitment campaigns', error)
+    campaignOptions.value = []
+  }
+}
+
 function openApproval(row: any, action: any) {
   approvalForm.value = { applicationId: row.id, action, comment: '' }
   approvalVisible.value = true
@@ -780,15 +941,24 @@ async function openBatchInterview() {
     durationMinutes: 30,
     gapMinutes: 10,
     mode: 'offline',
+    assignmentStrategy: 'balanced',
+    skipInterviewDepartmentIds: [],
     rooms: [newInterviewRoom(1)],
   }
   schedulePreview.value = null
   batchInterviewVisible.value = true
   try {
-    interviewerOptions.value = normalizeOptionList(await interviewSessionApi.interviewerOptions())
+    const clubId = batchInterviewTargets.value[0]?.clubId
+    const [interviewers, departmentOptions] = await Promise.all([
+      interviewSessionApi.interviewerOptions(),
+      clubId ? clubApi.departments(clubId) : Promise.resolve([]),
+    ])
+    interviewerOptions.value = normalizeOptionList(interviewers)
+    interviewDepartments.value = normalizeOptionList(departmentOptions)
   } catch (error) {
-    console.error('Failed to load interviewer options', error)
+    console.error('Failed to load interview scheduling options', error)
     interviewerOptions.value = []
+    interviewDepartments.value = []
   }
 }
 
@@ -805,6 +975,7 @@ function newInterviewRoom(index: number) {
     name: `第${index}面试间`,
     location: '',
     interviewerIds: [] as number[],
+    preferredDepartmentIds: [] as number[],
   }
 }
 
@@ -834,12 +1005,17 @@ function buildAutoSchedulePayload(previewOnly: boolean) {
     durationMinutes: batchInterviewForm.value.durationMinutes,
     gapMinutes: batchInterviewForm.value.gapMinutes,
     mode: batchInterviewForm.value.mode,
+    assignmentStrategy: batchInterviewForm.value.assignmentStrategy,
+    skipInterviewDepartmentIds: batchInterviewForm.value.skipInterviewDepartmentIds,
     applicationIds: batchInterviewTargets.value.map((item) => item.id),
-    rooms: batchInterviewForm.value.rooms.map(({ name, location, interviewerIds }) => ({
+    rooms: batchInterviewForm.value.rooms.map(
+      ({ name, location, interviewerIds, preferredDepartmentIds }) => ({
       name,
       location,
       interviewerIds,
-    })),
+        preferredDepartmentIds,
+      }),
+    ),
     roomAssignments: schedulePreview.value
       ? Object.fromEntries(
           schedulePreview.value.assignments.map((item) => [item.applicationId, item.roomIndex]),
@@ -880,11 +1056,14 @@ async function submitBatchInterview(publish: boolean) {
   batchInterviewSubmitting.value = true
   try {
     const result = await interviewSessionApi.autoSchedule(buildAutoSchedulePayload(false))
-    if (publish) await interviewSessionApi.publish(result.sessionId)
+    if (publish && result.sessionId) await interviewSessionApi.publish(result.sessionId)
+    const skippedCount = result.skippedCandidates?.length || 0
     ElMessage.success(
-      publish
-        ? `面试场次已发布，共安排 ${result.totalCandidates} 位候选人`
-        : `排期草稿已保存，共安排 ${result.totalCandidates} 位候选人`,
+      result.totalCandidates
+        ? publish
+          ? `面试场次已发布，共安排 ${result.totalCandidates} 位候选人${skippedCount ? `，${skippedCount} 人免面试` : ''}`
+          : `排期草稿已保存，共安排 ${result.totalCandidates} 位候选人${skippedCount ? `，${skippedCount} 人免面试` : ''}`
+        : `已处理 ${skippedCount} 位免面试候选人，可直接终审`,
     )
     batchInterviewVisible.value = false
     fetchList()
@@ -963,6 +1142,7 @@ function openBatchFinalDecision() {
     decision: 'approved',
     comment: '',
   }
+  batchFinalProgress.value = 0
   batchFinalVisible.value = true
 }
 
@@ -1017,24 +1197,38 @@ async function submitBatchFinalDecision() {
     return
   }
   batchFinalSubmitting.value = true
+  batchFinalProgress.value = 0
   try {
-    await Promise.all(
-      targets.map((item) =>
-        membershipApi.finalDecision(item.id, {
+    let succeeded = 0
+    const failed: string[] = []
+    // 每条终审都会同步成员、角色和统一分组。同一社团并发执行会争抢分组记录，
+    // 因此在客户端按顺序提交，避免数据库死锁并保留每位候选人的处理结果。
+    for (const item of targets) {
+      try {
+        await membershipApi.finalDecision(item.id, {
           decision: batchFinalForm.value.decision,
           departmentId:
             batchFinalForm.value.decision === 'approved' ? item.firstChoiceDepartmentId : undefined,
           comment: batchFinalForm.value.comment,
-        }),
-      ),
-    )
-    ElMessage.success(
-      skippedCount
-        ? `批量终审完成，已处理 ${targets.length} 条，跳过 ${skippedCount} 条`
-        : `批量终审完成，已处理 ${targets.length} 条`,
-    )
+        })
+        succeeded += 1
+      } catch (error: any) {
+        failed.push(`${item.applicantName || `申请 #${item.id}`}：${error?.message || '处理失败'}`)
+      } finally {
+        batchFinalProgress.value += 1
+      }
+    }
+    if (failed.length) {
+      ElMessage.warning(`批量终审完成：成功 ${succeeded} 条，失败 ${failed.length} 条。${failed[0]}`)
+    } else {
+      ElMessage.success(
+        skippedCount
+          ? `批量终审完成，已处理 ${succeeded} 条，跳过 ${skippedCount} 条`
+          : `批量终审完成，已处理 ${succeeded} 条`,
+      )
+    }
     batchFinalVisible.value = false
-    fetchList()
+    await fetchList()
   } finally {
     batchFinalSubmitting.value = false
   }
@@ -1067,6 +1261,7 @@ async function exportExcel() {
 
 onMounted(() => {
   fetchList()
+  loadCampaignOptions()
 })
 </script>
 
@@ -1086,6 +1281,14 @@ onMounted(() => {
   color: var(--oa-muted);
 }
 
+.form-helper {
+  width: 100%;
+  margin: 8px 0 0;
+  color: var(--oa-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .room-config-list {
   display: grid;
   gap: 12px;
@@ -1093,7 +1296,7 @@ onMounted(() => {
 
 .room-config-card :deep(.el-card__body) {
   display: grid;
-  grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1fr) minmax(220px, 1.4fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1115,6 +1318,10 @@ onMounted(() => {
   gap: 12px;
   color: var(--oa-muted);
   font-size: 13px;
+}
+
+.skipped-candidate-alert {
+  margin-top: 12px;
 }
 
 @media (max-width: 760px) {
