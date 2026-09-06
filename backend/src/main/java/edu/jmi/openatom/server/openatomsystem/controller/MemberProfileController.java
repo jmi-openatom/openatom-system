@@ -3,7 +3,9 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateMemberProfileCommentDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBatchUpdateCommentStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestSaveMemberProfileDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestReportCommentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateBlogCommentStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.service.MemberProfileService;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
@@ -19,6 +21,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,15 +65,48 @@ public class MemberProfileController {
   }
 
   @GetMapping("/members/{slug}/comments")
-  public Result<List<ResponseMemberProfileCommentVO>> comments(@PathVariable String slug) {
-    return memberProfileService.comments(slug);
+  public Result<PageDataVO<ResponseMemberProfileCommentVO>> comments(
+      @PathVariable String slug,
+      @RequestParam(required = false) String sort,
+      @RequestParam(required = false) Long page,
+      @RequestParam(required = false) Long pageSize) {
+    return memberProfileService.comments(slug, sort, page, pageSize);
+  }
+
+  @GetMapping("/members/{slug}/comments/{rootId}/replies")
+  public Result<PageDataVO<ResponseMemberProfileCommentVO>> commentReplies(
+      @PathVariable String slug,
+      @PathVariable Long rootId,
+      @RequestParam(required = false) Long page,
+      @RequestParam(required = false) Long pageSize) {
+    return memberProfileService.commentReplies(slug, rootId, page, pageSize);
   }
 
   @PostMapping("/members/{slug}/comments")
-  public Result<String> createComment(
+  public Result<ResponseMemberProfileCommentVO> createComment(
       @PathVariable String slug,
       @Valid @RequestBody RequestCreateMemberProfileCommentDTO request) {
     return memberProfileService.createComment(slug, request);
+  }
+
+  @PostMapping("/members/{slug}/comments/{commentId}/like")
+  public Result<ResponseMemberProfileCommentVO> toggleCommentLike(
+      @PathVariable String slug, @PathVariable Long commentId) {
+    return memberProfileService.toggleCommentLike(slug, commentId);
+  }
+
+  @DeleteMapping("/members/{slug}/comments/{commentId}")
+  public Result<String> deleteOwnComment(
+      @PathVariable String slug, @PathVariable Long commentId) {
+    return memberProfileService.deleteOwnComment(slug, commentId);
+  }
+
+  @PostMapping("/members/{slug}/comments/{commentId}/reports")
+  public Result<String> reportComment(
+      @PathVariable String slug,
+      @PathVariable Long commentId,
+      @Valid @RequestBody RequestReportCommentDTO request) {
+    return memberProfileService.reportComment(slug, commentId, request.getReason());
   }
 
   @GetMapping("/member-profile-comments")
@@ -89,6 +125,14 @@ public class MemberProfileController {
       @PathVariable Long commentId,
       @Valid @RequestBody RequestUpdateBlogCommentStatusDTO request) {
     return memberProfileService.adminUpdateCommentStatus(commentId, request.getStatus());
+  }
+
+  @PatchMapping("/member-profile-comments/status")
+  @SaCheckPermission("member-profile-comment:manage")
+  public Result<String> adminBatchUpdateCommentStatus(
+      @Valid @RequestBody RequestBatchUpdateCommentStatusDTO request) {
+    return memberProfileService.adminBatchUpdateCommentStatus(
+        request.getCommentIds(), request.getStatus());
   }
 
   @GetMapping("/me/profile")

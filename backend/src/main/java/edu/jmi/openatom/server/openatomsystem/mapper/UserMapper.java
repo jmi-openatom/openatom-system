@@ -43,6 +43,17 @@ public interface UserMapper extends BaseMapper<User> {
             .last("LIMIT 1"));
   }
 
+  default User selectByUserNameOrRealName(String name) {
+    if (name == null || name.isBlank()) return null;
+    String normalized = name.trim();
+    return selectOne(new LambdaQueryWrapper<User>()
+        .eq(User::getUserName, normalized)
+        .or()
+        .eq(User::getRealName, normalized)
+        .orderByAsc(User::getId)
+        .last("LIMIT 1"));
+  }
+
   /** 按小程序 openid 查询用户 */
   default User selectByMiniappOpenid(String openid) {
     if (openid == null || openid.isBlank()) return null;

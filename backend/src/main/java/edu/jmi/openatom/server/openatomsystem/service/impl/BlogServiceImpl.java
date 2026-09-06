@@ -14,15 +14,20 @@ import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.BlogArticle;
 import edu.jmi.openatom.server.openatomsystem.entity.BlogArticleInteraction;
 import edu.jmi.openatom.server.openatomsystem.entity.BlogComment;
+import edu.jmi.openatom.server.openatomsystem.entity.CommentInteraction;
+import edu.jmi.openatom.server.openatomsystem.entity.CommentReport;
 import edu.jmi.openatom.server.openatomsystem.entity.Club;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.BlogArticleMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.BlogArticleInteractionMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.BlogCommentMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.CommentInteractionMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.CommentReportMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubMembershipMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.BlogService;
+import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import edu.jmi.openatom.server.openatomsystem.service.PointService;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseBlogArticleVO;
@@ -36,6 +41,10 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,14 +63,21 @@ public class BlogServiceImpl implements BlogService {
       List.of("draft", "pending", "published", "hidden", "rejected");
   private static final List<String> COMMENT_STATUSES = List.of("visible", "hidden");
   private static final List<String> INTERACTION_TYPES = List.of("like", "favorite", "share");
+  private static final String COMMENT_TARGET = "blog";
+  private static final int COMMENT_PREVIEW_SIZE = 3;
+  private static final Pattern MENTION_PATTERN =
+      Pattern.compile("(?<![\\p{L}\\p{N}_])@([\\p{L}\\p{N}_-]{1,32})");
 
   private final BlogArticleMapper blogArticleMapper;
   private final BlogArticleInteractionMapper blogArticleInteractionMapper;
   private final BlogCommentMapper blogCommentMapper;
+  private final CommentInteractionMapper commentInteractionMapper;
+  private final CommentReportMapper commentReportMapper;
   private final ClubMapper clubMapper;
   private final ClubMembershipMapper clubMembershipMapper;
   private final UserMapper userMapper;
   private final PointService pointService;
+  private final NotificationService notificationService;
 
   @Override
   public Result<PageDataVO<ResponseBlogArticleVO>> publicArticles(
@@ -101,16 +117,45 @@ public class BlogServiceImpl implements BlogService {
   }
 
   @Override
-  public Result<List<ResponseBlogCommentVO>> publicComments(Integer articleId) {
+  public Result<PageDataVO<ResponseBlogCommentVO>> publicComments(
+      Integer articleId, String sort, Long page, Long pageSize) {
     if (blogArticleMapper.selectPublishedById(articleId) == null) {
       return Result.error(404, "文章不存在或未发布");
     }
-    return Result.success(toCommentTree(blogCommentMapper.selectVisibleByArticleId(articleId)));
+    String normalizedSort = "oldest".equals(sort) ? "oldest" : "latest";
+    Page<BlogComment> roots = blogCommentMapper.selectVisibleRootPage(
+        new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)), articleId, normalizedSort);
+    List<Integer> rootIds = roots.getRecords().stream().map(BlogComment::getId).toList();
+    List<BlogComment> replies = rootIds.stream()
+        .flatMap(rootId -> blogCommentMapper
+            .selectVisibleReplyPreview(rootId, COMMENT_PREVIEW_SIZE).stream())
+        .toList();
+    Map<Integer, Long> replyCounts = rootIds.stream().collect(
+        Collectors.toMap(Function.identity(), blogCommentMapper::countVisibleReplies));
+    return Result.success(PageDataVO.<ResponseBlogCommentVO>builder()
+        .list(toCommentThreads(roots.getRecords(), replies, replyCounts))
+        .page(roots.getCurrent()).pageSize(roots.getSize()).total(roots.getTotal()).build());
+  }
+
+  @Override
+  public Result<PageDataVO<ResponseBlogCommentVO>> publicCommentReplies(
+      Integer articleId, Integer rootId, Long page, Long pageSize) {
+    BlogComment root = blogCommentMapper.selectById(rootId);
+    if (root == null || !Objects.equals(root.getArticleId(), articleId)
+        || root.getParentId() != null || !"visible".equals(root.getStatus())) {
+      return Result.error(404, "评论讨论不存在或不可见");
+    }
+    Page<BlogComment> replies = blogCommentMapper.selectVisibleReplyPage(
+        new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)), articleId, rootId);
+    return Result.success(PageDataVO.<ResponseBlogCommentVO>builder()
+        .list(toCommentResponseList(replies.getRecords()))
+        .page(replies.getCurrent()).pageSize(replies.getSize()).total(replies.getTotal()).build());
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Result<String> createComment(Integer articleId, RequestCreateBlogCommentDTO request) {
+  public Result<ResponseBlogCommentVO> createComment(
+      Integer articleId, RequestCreateBlogCommentDTO request) {
     if (!StpUtil.isLogin()) return Result.error(401, "请先登录后再评论");
     BlogArticle article = blogArticleMapper.selectPublishedById(articleId);
     if (article == null) {
@@ -123,11 +168,16 @@ public class BlogServiceImpl implements BlogService {
     if (content == null) return Result.error(400, "评论内容不能为空");
     if (content.length() > 1000) return Result.error(400, "评论内容不能超过1000字");
     Integer parentId = request == null ? null : request.getParentId();
+    BlogComment parent = null;
     if (parentId != null) {
-      BlogComment parent = blogCommentMapper.selectById(parentId);
+      parent = blogCommentMapper.selectById(parentId);
+      BlogComment root = parent == null || parent.getRootId() == null
+          ? parent : blogCommentMapper.selectById(parent.getRootId());
       if (parent == null
           || !Objects.equals(parent.getArticleId(), articleId)
-          || !"visible".equals(parent.getStatus())) {
+          || !"visible".equals(parent.getStatus())
+          || root == null
+          || !"visible".equals(root.getStatus())) {
         return Result.error(404, "要回复的评论不存在或不可见");
       }
     }
@@ -136,11 +186,74 @@ public class BlogServiceImpl implements BlogService {
             .articleId(articleId)
             .userId(StpUtil.getLoginIdAsInt())
             .parentId(parentId)
+            .rootId(parent == null ? null : (parent.getRootId() == null ? parent.getId() : parent.getRootId()))
             .content(content)
             .status("visible")
+            .likeCount(0)
             .build();
     int row = blogCommentMapper.insert(comment);
-    return row > 0 ? Result.success("评论已发布") : Result.error("评论发布失败");
+    if (row > 0 && parent != null && !Objects.equals(parent.getUserId(), comment.getUserId())) {
+      notificationService.sendToUser(parent.getUserId(), "你的评论收到新回复",
+          displayName(userMapper.selectById(comment.getUserId())) + " 回复了你：" + content, "comment");
+    }
+    if (row > 0) notifyMentionedUsers(content, comment.getUserId(), parent == null ? null : parent.getUserId());
+    return row > 0
+        ? Result.success(toCommentResponseList(List.of(comment)).get(0), "评论已发布")
+        : Result.error("评论发布失败");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseBlogCommentVO> toggleCommentLike(Integer articleId, Integer commentId) {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录后点赞");
+    BlogComment comment = visibleBlogComment(articleId, commentId);
+    if (comment == null) return Result.error(404, "评论不存在或不可见");
+    Integer userId = StpUtil.getLoginIdAsInt();
+    CommentInteraction existing = commentInteractionMapper.selectOne(COMMENT_TARGET, commentId.longValue(), userId);
+    int delta;
+    if (existing == null) {
+      commentInteractionMapper.insert(CommentInteraction.builder().targetType(COMMENT_TARGET)
+          .commentId(commentId.longValue()).userId(userId).build());
+      delta = 1;
+    } else {
+      commentInteractionMapper.deleteById(existing.getId());
+      delta = -1;
+    }
+    blogCommentMapper.updateLikeCount(commentId, delta);
+    return Result.success(toCommentResponseList(List.of(blogCommentMapper.selectById(commentId))).get(0));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> deleteOwnComment(Integer articleId, Integer commentId) {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+    BlogComment comment = visibleBlogComment(articleId, commentId);
+    if (comment == null) return Result.error(404, "评论不存在或不可见");
+    if (!Objects.equals(comment.getUserId(), StpUtil.getLoginIdAsInt())) {
+      return Result.error(403, "只能删除自己的评论");
+    }
+    comment.setStatus("deleted");
+    return blogCommentMapper.updateById(comment) > 0
+        ? Result.success("评论已删除") : Result.error("评论删除失败");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> reportComment(Integer articleId, Integer commentId, String reason) {
+    if (!StpUtil.isLogin()) return Result.error(401, "请先登录");
+    BlogComment comment = visibleBlogComment(articleId, commentId);
+    if (comment == null) return Result.error(404, "评论不存在或不可见");
+    Integer userId = StpUtil.getLoginIdAsInt();
+    if (Objects.equals(comment.getUserId(), userId)) return Result.error(400, "不能举报自己的评论");
+    if (commentReportMapper.selectOne(COMMENT_TARGET, commentId.longValue(), userId) != null) {
+      return Result.error(409, "你已经举报过这条评论");
+    }
+    String normalizedReason = trimToNull(reason);
+    if (normalizedReason == null) return Result.error(400, "请填写举报原因");
+    commentReportMapper.insert(CommentReport.builder().targetType(COMMENT_TARGET)
+        .commentId(commentId.longValue()).reporterUserId(userId).reason(normalizedReason)
+        .status("pending").build());
+    return Result.success("举报已提交");
   }
 
   @Override
@@ -362,7 +475,19 @@ public class BlogServiceImpl implements BlogService {
   @Override
   public Result<List<ResponseBlogCommentVO>> adminComments(Integer articleId) {
     if (blogArticleMapper.selectById(articleId) == null) return Result.error(404, "文章不存在");
-    return Result.success(toCommentResponseList(blogCommentMapper.selectByArticleIdOrdered(articleId)));
+    List<ResponseBlogCommentVO> comments =
+        toCommentResponseList(blogCommentMapper.selectByArticleIdOrdered(articleId));
+    List<CommentReport> reports = commentReportMapper.selectPendingByComments(COMMENT_TARGET,
+        comments.stream().map(comment -> comment.getId().longValue()).toList());
+    Map<Long, List<CommentReport>> reportsByComment = reports.stream()
+        .collect(Collectors.groupingBy(CommentReport::getCommentId));
+    comments.forEach(comment -> {
+      List<CommentReport> commentReports =
+          reportsByComment.getOrDefault(comment.getId().longValue(), List.of());
+      comment.setReportCount(commentReports.size());
+      comment.setReportReasons(commentReports.stream().map(CommentReport::getReason).toList());
+    });
+    return Result.success(comments);
   }
 
   @Override
@@ -374,7 +499,30 @@ public class BlogServiceImpl implements BlogService {
     if (!COMMENT_STATUSES.contains(normalized)) return Result.error(400, "评论状态不合法");
     comment.setStatus(normalized);
     int row = blogCommentMapper.updateById(comment);
+    if (row > 0 && "hidden".equals(normalized)) {
+      commentReportMapper.resolveByComment(COMMENT_TARGET, commentId.longValue());
+    }
     return row > 0 ? Result.success("评论状态已更新") : Result.error("评论状态更新失败");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> adminBatchUpdateCommentStatus(List<Long> commentIds, String status) {
+    String normalized = trimToNull(status);
+    if (!COMMENT_STATUSES.contains(normalized)) return Result.error(400, "评论状态不合法");
+    if (commentIds == null || commentIds.isEmpty()) return Result.error(400, "请选择评论");
+    int updated = 0;
+    for (Long id : commentIds.stream().filter(Objects::nonNull).distinct().toList()) {
+      if (id > Integer.MAX_VALUE) continue;
+      BlogComment comment = blogCommentMapper.selectById(id.intValue());
+      if (comment == null || "deleted".equals(comment.getStatus())) continue;
+      comment.setStatus(normalized);
+      updated += blogCommentMapper.updateById(comment);
+      if ("hidden".equals(normalized)) {
+        commentReportMapper.resolveByComment(COMMENT_TARGET, id);
+      }
+    }
+    return Result.success("已更新 " + updated + " 条评论");
   }
 
   @Override
@@ -657,56 +805,110 @@ public class BlogServiceImpl implements BlogService {
 
   private List<ResponseBlogCommentVO> toCommentResponseList(List<BlogComment> comments) {
     if (comments == null || comments.isEmpty()) return List.of();
-    List<Integer> userIds =
-        comments.stream().map(BlogComment::getUserId).filter(Objects::nonNull).distinct().toList();
-    Map<Integer, User> users =
-        userIds.isEmpty()
-            ? Map.of()
-            : userMapper.selectBatchIds(userIds).stream()
-                .collect(Collectors.toMap(User::getId, Function.identity(), (left, right) -> left));
-    return comments.stream().map(comment -> toCommentResponse(comment, users)).toList();
+    Map<Integer, BlogComment> parentMap = blogCommentMapper.selectBatchIds(comments.stream()
+            .map(BlogComment::getParentId).filter(Objects::nonNull).distinct().toList())
+        .stream().collect(Collectors.toMap(BlogComment::getId, Function.identity()));
+    Set<Integer> userIds = comments.stream().map(BlogComment::getUserId)
+        .filter(Objects::nonNull).collect(Collectors.toSet());
+    parentMap.values().stream().map(BlogComment::getUserId).filter(Objects::nonNull)
+        .forEach(userIds::add);
+    Map<Integer, User> users = userIds.isEmpty() ? Map.of() : userMapper.selectBatchIds(userIds)
+        .stream().collect(Collectors.toMap(User::getId, Function.identity(), (left, right) -> left));
+    Map<Integer, BlogArticle> articles = blogArticleMapper.selectBatchIds(comments.stream()
+            .map(BlogComment::getArticleId).filter(Objects::nonNull).distinct().toList())
+        .stream().collect(Collectors.toMap(BlogArticle::getId, Function.identity()));
+    Integer currentUserId = currentUserIdOrNull();
+    Set<Long> likedIds = currentUserId == null ? Set.of() : commentInteractionMapper
+        .selectByComments(COMMENT_TARGET, comments.stream().map(comment -> comment.getId().longValue()).toList())
+        .stream().filter(item -> Objects.equals(item.getUserId(), currentUserId))
+        .map(CommentInteraction::getCommentId).collect(Collectors.toSet());
+    return comments.stream().map(comment -> toCommentResponse(
+        comment, users, parentMap, articles, likedIds, currentUserId)).toList();
   }
 
-  private List<ResponseBlogCommentVO> toCommentTree(List<BlogComment> comments) {
-    if (comments == null || comments.isEmpty()) return List.of();
-    List<ResponseBlogCommentVO> flat = toCommentResponseList(comments);
-    Map<Integer, ResponseBlogCommentVO> commentMap = new LinkedHashMap<>();
-    for (ResponseBlogCommentVO comment : flat) {
-      comment.setReplies(new ArrayList<>());
-      commentMap.put(comment.getId(), comment);
-    }
-    List<ResponseBlogCommentVO> roots = new ArrayList<>();
-    for (ResponseBlogCommentVO comment : flat) {
-      Integer parentId = comment.getParentId();
-      ResponseBlogCommentVO parent = parentId == null ? null : commentMap.get(parentId);
-      if (parent == null) {
-        roots.add(comment);
-      } else {
-        parent.getReplies().add(comment);
+  private List<ResponseBlogCommentVO> toCommentThreads(
+      List<BlogComment> roots, List<BlogComment> replies, Map<Integer, Long> replyCounts) {
+    List<BlogComment> all = new ArrayList<>(roots);
+    all.addAll(replies);
+    Map<Integer, ResponseBlogCommentVO> responseMap = toCommentResponseList(all).stream()
+        .collect(Collectors.toMap(ResponseBlogCommentVO::getId, Function.identity(),
+            (left, right) -> left, LinkedHashMap::new));
+    Map<Integer, List<ResponseBlogCommentVO>> byRoot = new LinkedHashMap<>();
+    for (BlogComment reply : replies) {
+      ResponseBlogCommentVO response = responseMap.get(reply.getId());
+      if (response != null && reply.getRootId() != null) {
+        byRoot.computeIfAbsent(reply.getRootId(), ignored -> new ArrayList<>()).add(response);
       }
     }
-    for (ResponseBlogCommentVO comment : flat) {
-      comment.setReplyCount(comment.getReplies() == null ? 0 : comment.getReplies().size());
+    List<ResponseBlogCommentVO> result = new ArrayList<>();
+    for (BlogComment root : roots) {
+      ResponseBlogCommentVO response = responseMap.get(root.getId());
+      if (response == null) continue;
+      List<ResponseBlogCommentVO> threadReplies = byRoot.getOrDefault(root.getId(), List.of());
+      response.setReplyCount(replyCounts.getOrDefault(root.getId(), 0L).intValue());
+      response.setReplies(new ArrayList<>(threadReplies));
+      result.add(response);
     }
-    return roots;
+    return result;
   }
 
-  private ResponseBlogCommentVO toCommentResponse(BlogComment comment, Map<Integer, User> users) {
+  private ResponseBlogCommentVO toCommentResponse(
+      BlogComment comment,
+      Map<Integer, User> users,
+      Map<Integer, BlogComment> parentMap,
+      Map<Integer, BlogArticle> articles,
+      Set<Long> likedIds,
+      Integer currentUserId) {
     User user = comment.getUserId() == null ? null : users.get(comment.getUserId());
+    BlogComment parent = comment.getParentId() == null ? null : parentMap.get(comment.getParentId());
+    User replyTo = parent == null ? null : users.get(parent.getUserId());
+    BlogArticle article = comment.getArticleId() == null ? null : articles.get(comment.getArticleId());
     return ResponseBlogCommentVO.builder()
         .id(comment.getId())
         .articleId(comment.getArticleId())
         .userId(comment.getUserId())
         .parentId(comment.getParentId())
+        .rootId(comment.getRootId())
+        .replyToUserId(parent == null ? null : parent.getUserId())
+        .replyToUserName(displayName(replyTo))
+        .replyTargetHidden(comment.getParentId() != null
+            && (parent == null || !"visible".equals(parent.getStatus())))
         .userName(displayName(user))
         .userAvatar(user == null ? null : user.getAvatar())
         .content(comment.getContent())
         .status(comment.getStatus())
         .replyCount(0)
+        .likeCount(comment.getLikeCount() == null ? 0 : comment.getLikeCount())
+        .liked(likedIds.contains(comment.getId().longValue()))
+        .own(currentUserId != null && Objects.equals(currentUserId, comment.getUserId()))
+        .author(article != null && Objects.equals(article.getAuthorId(), comment.getUserId()))
         .replies(new ArrayList<>())
         .createdAt(comment.getCreatedAt())
         .updatedAt(comment.getUpdatedAt())
         .build();
+  }
+
+  private BlogComment visibleBlogComment(Integer articleId, Integer commentId) {
+    BlogComment comment = commentId == null ? null : blogCommentMapper.selectById(commentId);
+    if (comment == null || !Objects.equals(comment.getArticleId(), articleId)
+        || !"visible".equals(comment.getStatus())) return null;
+    BlogComment root = comment.getRootId() == null
+        ? comment : blogCommentMapper.selectById(comment.getRootId());
+    return root != null && "visible".equals(root.getStatus()) ? comment : null;
+  }
+
+  private void notifyMentionedUsers(String content, Integer senderUserId, Integer alreadyNotifiedUserId) {
+    Matcher matcher = MENTION_PATTERN.matcher(content == null ? "" : content);
+    Set<Integer> notified = new HashSet<>();
+    if (alreadyNotifiedUserId != null) notified.add(alreadyNotifiedUserId);
+    while (matcher.find()) {
+      User mentioned = userMapper.selectByUserNameOrRealName(matcher.group(1));
+      if (mentioned != null && !Objects.equals(mentioned.getId(), senderUserId)
+          && notified.add(mentioned.getId())) {
+        notificationService.sendToUser(mentioned.getId(), "你在评论中被提及",
+            displayName(userMapper.selectById(senderUserId)) + " 提到了你：" + content, "comment");
+      }
+    }
   }
 
   private String displayName(User user) {

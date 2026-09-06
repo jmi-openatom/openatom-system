@@ -198,6 +198,7 @@ const typeText = (type: string) => {
     system: '系统通知',
     activity: '活动通知',
     approval: '审批通知',
+    comment: '评论通知',
     other: '其他',
   }
   return map[type] || type

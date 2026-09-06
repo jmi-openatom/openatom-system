@@ -18,6 +18,8 @@ import edu.jmi.openatom.server.openatomsystem.entity.MemberProfileComment;
 import edu.jmi.openatom.server.openatomsystem.entity.MemberProfileLike;
 import edu.jmi.openatom.server.openatomsystem.entity.MemberProfileModule;
 import edu.jmi.openatom.server.openatomsystem.entity.MemberProfileSocialLink;
+import edu.jmi.openatom.server.openatomsystem.entity.CommentInteraction;
+import edu.jmi.openatom.server.openatomsystem.entity.CommentReport;
 import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.BlogArticleMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.ClubDepartmentMapper;
@@ -29,8 +31,11 @@ import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileCommentMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileLikeMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileModuleMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MemberProfileSocialLinkMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.CommentInteractionMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.CommentReportMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.service.MemberProfileService;
+import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import edu.jmi.openatom.server.openatomsystem.vo.PageDataVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseAdminMemberProfileCommentVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseImageUploadVO;
@@ -51,8 +56,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,10 +102,16 @@ public class MemberProfileServiceImpl implements MemberProfileService {
       Set.of("website", "github", "gitee", "bilibili", "zhihu", "weibo", "other");
   private static final int MAX_MODULES = 20;
   private static final int MAX_SOCIAL_LINKS = 10;
+  private static final String COMMENT_TARGET = "member_profile";
+  private static final int COMMENT_PREVIEW_SIZE = 3;
+  private static final Pattern MENTION_PATTERN =
+      Pattern.compile("(?<![\\p{L}\\p{N}_])@([\\p{L}\\p{N}_-]{1,32})");
 
   private final MemberProfileMapper memberProfileMapper;
   private final MemberProfileLikeMapper memberProfileLikeMapper;
   private final MemberProfileCommentMapper memberProfileCommentMapper;
+  private final CommentInteractionMapper commentInteractionMapper;
+  private final CommentReportMapper commentReportMapper;
   private final MemberProfileModuleMapper memberProfileModuleMapper;
   private final MemberProfileSocialLinkMapper memberProfileSocialLinkMapper;
   private final UserMapper userMapper;
@@ -105,6 +121,7 @@ public class MemberProfileServiceImpl implements MemberProfileService {
   private final ClubPositionMapper clubPositionMapper;
   private final BlogArticleMapper blogArticleMapper;
   private final ImageHostingStorageServiceImpl imageHostingStorageService;
+  private final NotificationService notificationService;
 
   @Override
   public Result<PageDataVO<ResponseMemberCardVO>> members(
@@ -260,19 +277,51 @@ public class MemberProfileServiceImpl implements MemberProfileService {
   }
 
   @Override
-  public Result<List<ResponseMemberProfileCommentVO>> comments(String slug) {
+  public Result<PageDataVO<ResponseMemberProfileCommentVO>> comments(
+      String slug, String sort, Long page, Long pageSize) {
     Result<MemberContext> access = requireMember();
     if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
     MemberTarget target = findVisibleTarget(slug, access.getData());
     if (target == null) return Result.error(404, "成员主页不存在");
-    return Result.success(
-        toCommentTree(
-            memberProfileCommentMapper.selectVisibleByProfileUserId(target.user().getId())));
+    String normalizedSort = "oldest".equals(sort) ? "oldest" : "latest";
+    Page<MemberProfileComment> roots = memberProfileCommentMapper.selectVisibleRootPage(
+        new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)),
+        target.user().getId(), normalizedSort);
+    List<Long> rootIds = roots.getRecords().stream().map(MemberProfileComment::getId).toList();
+    List<MemberProfileComment> replies = rootIds.stream()
+        .flatMap(rootId -> memberProfileCommentMapper
+            .selectVisibleReplyPreview(rootId, COMMENT_PREVIEW_SIZE).stream())
+        .toList();
+    Map<Long, Long> replyCounts = rootIds.stream().collect(
+        Collectors.toMap(Function.identity(), memberProfileCommentMapper::countVisibleReplies));
+    return Result.success(PageDataVO.<ResponseMemberProfileCommentVO>builder()
+        .list(toCommentThreads(roots.getRecords(), replies, target.user().getId(), replyCounts))
+        .page(roots.getCurrent()).pageSize(roots.getSize()).total(roots.getTotal()).build());
+  }
+
+  @Override
+  public Result<PageDataVO<ResponseMemberProfileCommentVO>> commentReplies(
+      String slug, Long rootId, Long page, Long pageSize) {
+    Result<MemberContext> access = requireMember();
+    if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
+    MemberTarget target = findVisibleTarget(slug, access.getData());
+    if (target == null) return Result.error(404, "成员主页不存在");
+    MemberProfileComment root = memberProfileCommentMapper.selectById(rootId);
+    if (root == null || !Objects.equals(root.getProfileUserId(), target.user().getId())
+        || root.getParentId() != null || !"visible".equals(root.getStatus())) {
+      return Result.error(404, "评论讨论不存在或不可见");
+    }
+    Page<MemberProfileComment> replies = memberProfileCommentMapper.selectVisibleReplyPage(
+        new Page<>(PageRequests.page(page), PageRequests.pageSize(pageSize)),
+        target.user().getId(), rootId);
+    return Result.success(PageDataVO.<ResponseMemberProfileCommentVO>builder()
+        .list(toCommentResponses(replies.getRecords(), target.user().getId()))
+        .page(replies.getCurrent()).pageSize(replies.getSize()).total(replies.getTotal()).build());
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Result<String> createComment(
+  public Result<ResponseMemberProfileCommentVO> createComment(
       String slug, RequestCreateMemberProfileCommentDTO request) {
     Result<MemberContext> access = requireMember();
     if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
@@ -285,24 +334,103 @@ public class MemberProfileServiceImpl implements MemberProfileService {
     if (content == null) return Result.error(400, "评论内容不能为空");
     if (content.length() > 1000) return Result.error(400, "评论内容不能超过1000字");
     Long parentId = request == null ? null : request.getParentId();
+    MemberProfileComment parent = null;
     if (parentId != null) {
-      MemberProfileComment parent = memberProfileCommentMapper.selectById(parentId);
+      parent = memberProfileCommentMapper.selectById(parentId);
+      MemberProfileComment root = parent == null || parent.getRootId() == null
+          ? parent : memberProfileCommentMapper.selectById(parent.getRootId());
       if (parent == null
           || !Objects.equals(parent.getProfileUserId(), target.user().getId())
-          || !"visible".equals(parent.getStatus())) {
+          || !"visible".equals(parent.getStatus())
+          || root == null
+          || !"visible".equals(root.getStatus())) {
         return Result.error(404, "要回复的评论不存在或不可见");
       }
     }
-    int rows =
-        memberProfileCommentMapper.insert(
-            MemberProfileComment.builder()
-                .profileUserId(target.user().getId())
-                .userId(access.getData().userId())
-                .parentId(parentId)
-                .content(content)
-                .status("visible")
-                .build());
-    return rows > 0 ? Result.success("评论已发布") : Result.error("评论发布失败");
+    MemberProfileComment comment = MemberProfileComment.builder()
+        .profileUserId(target.user().getId())
+        .userId(access.getData().userId())
+        .parentId(parentId)
+        .rootId(parent == null ? null : (parent.getRootId() == null ? parent.getId() : parent.getRootId()))
+        .content(content)
+        .status("visible")
+        .likeCount(0)
+        .build();
+    int rows = memberProfileCommentMapper.insert(comment);
+    if (rows > 0 && parent != null && !Objects.equals(parent.getUserId(), access.getData().userId())) {
+      notificationService.sendToUser(parent.getUserId(), "你的主页评论收到新回复",
+          displayName(userMapper.selectById(access.getData().userId()), null) + " 回复了你：" + content,
+          "comment");
+    }
+    if (rows > 0) notifyMentionedUsers(content, access.getData().userId(), parent == null ? null : parent.getUserId());
+    return rows > 0
+        ? Result.success(toCommentResponses(List.of(comment), target.user().getId()).get(0),
+            "评论已发布")
+        : Result.error("评论发布失败");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseMemberProfileCommentVO> toggleCommentLike(String slug, Long commentId) {
+    Result<MemberContext> access = requireMember();
+    if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
+    MemberTarget target = findVisibleTarget(slug, access.getData());
+    if (target == null) return Result.error(404, "成员主页不存在");
+    MemberProfileComment comment = visibleProfileComment(target.user().getId(), commentId);
+    if (comment == null) return Result.error(404, "评论不存在或不可见");
+    Integer userId = access.getData().userId();
+    CommentInteraction existing = commentInteractionMapper.selectOne(COMMENT_TARGET, commentId, userId);
+    int delta;
+    if (existing == null) {
+      commentInteractionMapper.insert(CommentInteraction.builder().targetType(COMMENT_TARGET)
+          .commentId(commentId).userId(userId).build());
+      delta = 1;
+    } else {
+      commentInteractionMapper.deleteById(existing.getId());
+      delta = -1;
+    }
+    memberProfileCommentMapper.updateLikeCount(commentId, delta);
+    return Result.success(toCommentResponses(
+        List.of(memberProfileCommentMapper.selectById(commentId)), target.user().getId()).get(0));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> deleteOwnComment(String slug, Long commentId) {
+    Result<MemberContext> access = requireMember();
+    if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
+    MemberTarget target = findVisibleTarget(slug, access.getData());
+    if (target == null) return Result.error(404, "成员主页不存在");
+    MemberProfileComment comment = visibleProfileComment(target.user().getId(), commentId);
+    if (comment == null) return Result.error(404, "评论不存在或不可见");
+    if (!Objects.equals(comment.getUserId(), access.getData().userId())) {
+      return Result.error(403, "只能删除自己的评论");
+    }
+    comment.setStatus("deleted");
+    return memberProfileCommentMapper.updateById(comment) > 0
+        ? Result.success("评论已删除") : Result.error("评论删除失败");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> reportComment(String slug, Long commentId, String reason) {
+    Result<MemberContext> access = requireMember();
+    if (access.getCode() != Result.SUCCESS_CODE) return copyError(access);
+    MemberTarget target = findVisibleTarget(slug, access.getData());
+    if (target == null) return Result.error(404, "成员主页不存在");
+    MemberProfileComment comment = visibleProfileComment(target.user().getId(), commentId);
+    if (comment == null) return Result.error(404, "评论不存在或不可见");
+    Integer userId = access.getData().userId();
+    if (Objects.equals(comment.getUserId(), userId)) return Result.error(400, "不能举报自己的评论");
+    if (commentReportMapper.selectOne(COMMENT_TARGET, commentId, userId) != null) {
+      return Result.error(409, "你已经举报过这条评论");
+    }
+    String normalizedReason = trimToNull(reason);
+    if (normalizedReason == null) return Result.error(400, "请填写举报原因");
+    commentReportMapper.insert(CommentReport.builder().targetType(COMMENT_TARGET)
+        .commentId(commentId).reporterUserId(userId).reason(normalizedReason)
+        .status("pending").build());
+    return Result.success("举报已提交");
   }
 
   @Override
@@ -318,8 +446,18 @@ public class MemberProfileServiceImpl implements MemberProfileService {
         memberProfileCommentMapper.selectAdminPage(
             new Page<>(current, size), trimToNull(keyword), normalizedStatus);
     List<MemberProfileComment> comments = commentPage.getRecords();
+    Map<Long, List<CommentReport>> reportsByComment = commentReportMapper
+        .selectPendingByComments(COMMENT_TARGET,
+            comments.stream().map(MemberProfileComment::getId).toList())
+        .stream().collect(Collectors.groupingBy(CommentReport::getCommentId));
+    Map<Long, MemberProfileComment> parentComments = memberProfileCommentMapper.selectBatchIds(
+            comments.stream().map(MemberProfileComment::getParentId).filter(Objects::nonNull)
+                .distinct().toList())
+        .stream().collect(Collectors.toMap(MemberProfileComment::getId, Function.identity()));
     Map<Integer, User> commentUsers =
-        users(comments.stream().map(MemberProfileComment::getUserId).distinct().toList());
+        users(Stream.concat(comments.stream().map(MemberProfileComment::getUserId),
+                parentComments.values().stream().map(MemberProfileComment::getUserId))
+            .filter(Objects::nonNull).distinct().toList());
     Map<Integer, User> profileUsers =
         users(comments.stream().map(MemberProfileComment::getProfileUserId).distinct().toList());
     Map<Integer, MemberProfile> profiles =
@@ -334,6 +472,8 @@ public class MemberProfileServiceImpl implements MemberProfileService {
                   User author = commentUsers.get(comment.getUserId());
                   User profileUser = profileUsers.get(comment.getProfileUserId());
                   MemberProfile profile = profiles.get(comment.getProfileUserId());
+                  MemberProfileComment parent = parentComments.get(comment.getParentId());
+                  User replyTo = parent == null ? null : commentUsers.get(parent.getUserId());
                   return ResponseAdminMemberProfileCommentVO.builder()
                       .id(comment.getId())
                       .profileUserId(comment.getProfileUserId())
@@ -343,6 +483,11 @@ public class MemberProfileServiceImpl implements MemberProfileService {
                       .userName(displayName(author, null))
                       .userAvatar(author == null ? null : author.getAvatar())
                       .parentId(comment.getParentId())
+                      .rootId(comment.getRootId())
+                      .replyToUserName(displayName(replyTo, null))
+                      .reportCount(reportsByComment.getOrDefault(comment.getId(), List.of()).size())
+                      .reportReasons(reportsByComment.getOrDefault(comment.getId(), List.of()).stream()
+                          .map(CommentReport::getReason).toList())
                       .content(comment.getContent())
                       .status(comment.getStatus())
                       .createdAt(comment.getCreatedAt())
@@ -369,7 +514,29 @@ public class MemberProfileServiceImpl implements MemberProfileService {
     if (!COMMENT_STATUSES.contains(normalizedStatus)) return Result.error(400, "评论状态不合法");
     comment.setStatus(normalizedStatus);
     int rows = memberProfileCommentMapper.updateById(comment);
+    if (rows > 0 && "hidden".equals(normalizedStatus)) {
+      commentReportMapper.resolveByComment(COMMENT_TARGET, commentId);
+    }
     return rows > 0 ? Result.success("评论状态已更新") : Result.error("评论状态更新失败");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> adminBatchUpdateCommentStatus(List<Long> commentIds, String status) {
+    String normalized = trimToNull(status);
+    if (!COMMENT_STATUSES.contains(normalized)) return Result.error(400, "评论状态不合法");
+    if (commentIds == null || commentIds.isEmpty()) return Result.error(400, "请选择评论");
+    int updated = 0;
+    for (Long id : commentIds.stream().filter(Objects::nonNull).distinct().toList()) {
+      MemberProfileComment comment = memberProfileCommentMapper.selectById(id);
+      if (comment == null || "deleted".equals(comment.getStatus())) continue;
+      comment.setStatus(normalized);
+      updated += memberProfileCommentMapper.updateById(comment);
+      if ("hidden".equals(normalized)) {
+        commentReportMapper.resolveByComment(COMMENT_TARGET, id);
+      }
+    }
+    return Result.success("已更新 " + updated + " 条评论");
   }
 
   @Override
@@ -802,42 +969,97 @@ public class MemberProfileServiceImpl implements MemberProfileService {
     return new MemberTarget(user, membership, profile, owner, customized);
   }
 
-  private List<ResponseMemberProfileCommentVO> toCommentTree(
-      List<MemberProfileComment> comments) {
+  private List<ResponseMemberProfileCommentVO> toCommentThreads(
+      List<MemberProfileComment> roots,
+      List<MemberProfileComment> replies,
+      Integer profileUserId,
+      Map<Long, Long> replyCounts) {
+    List<MemberProfileComment> all = new ArrayList<>(roots);
+    all.addAll(replies);
+    Map<Long, ResponseMemberProfileCommentVO> responseMap = toCommentResponses(all, profileUserId)
+        .stream().collect(Collectors.toMap(ResponseMemberProfileCommentVO::getId,
+            Function.identity(), (left, right) -> left, LinkedHashMap::new));
+    Map<Long, List<ResponseMemberProfileCommentVO>> byRoot = new LinkedHashMap<>();
+    for (MemberProfileComment reply : replies) {
+      ResponseMemberProfileCommentVO response = responseMap.get(reply.getId());
+      if (response != null && reply.getRootId() != null) {
+        byRoot.computeIfAbsent(reply.getRootId(), ignored -> new ArrayList<>()).add(response);
+      }
+    }
+    List<ResponseMemberProfileCommentVO> result = new ArrayList<>();
+    for (MemberProfileComment root : roots) {
+      ResponseMemberProfileCommentVO response = responseMap.get(root.getId());
+      if (response == null) continue;
+      List<ResponseMemberProfileCommentVO> threadReplies =
+          byRoot.getOrDefault(root.getId(), List.of());
+      response.setReplyCount(replyCounts.getOrDefault(root.getId(), 0L).intValue());
+      response.setReplies(new ArrayList<>(threadReplies));
+      result.add(response);
+    }
+    return result;
+  }
+
+  private List<ResponseMemberProfileCommentVO> toCommentResponses(
+      List<MemberProfileComment> comments, Integer profileUserId) {
     if (comments == null || comments.isEmpty()) return List.of();
-    Map<Integer, User> commentUsers =
-        users(comments.stream().map(MemberProfileComment::getUserId).distinct().toList());
-    Map<Long, ResponseMemberProfileCommentVO> commentMap = new LinkedHashMap<>();
-    for (MemberProfileComment comment : comments) {
+    Map<Integer, User> commentUsers = new HashMap<>(users(comments.stream()
+        .map(MemberProfileComment::getUserId).filter(Objects::nonNull).distinct().toList()));
+    Map<Long, MemberProfileComment> parentMap = memberProfileCommentMapper.selectBatchIds(
+            comments.stream().map(MemberProfileComment::getParentId).filter(Objects::nonNull)
+                .distinct().toList())
+        .stream().collect(Collectors.toMap(MemberProfileComment::getId, Function.identity()));
+    List<Integer> parentUserIds = parentMap.values().stream().map(MemberProfileComment::getUserId)
+        .filter(Objects::nonNull).distinct().toList();
+    commentUsers.putAll(users(parentUserIds));
+    Integer currentUserId = StpUtil.isLogin() ? StpUtil.getLoginIdAsInt() : null;
+    Set<Long> likedIds = currentUserId == null ? Set.of() : commentInteractionMapper
+        .selectByComments(COMMENT_TARGET, comments.stream().map(MemberProfileComment::getId).toList())
+        .stream().filter(item -> Objects.equals(item.getUserId(), currentUserId))
+        .map(CommentInteraction::getCommentId).collect(Collectors.toSet());
+    return comments.stream().map(comment -> {
       User user = commentUsers.get(comment.getUserId());
-      commentMap.put(
-          comment.getId(),
-          ResponseMemberProfileCommentVO.builder()
-              .id(comment.getId())
-              .profileUserId(comment.getProfileUserId())
-              .userId(comment.getUserId())
-              .parentId(comment.getParentId())
-              .userName(displayName(user, null))
-              .userAvatar(user == null ? null : user.getAvatar())
-              .content(comment.getContent())
-              .status(comment.getStatus())
-              .replyCount(0)
-              .replies(new ArrayList<>())
-              .createdAt(comment.getCreatedAt())
-              .updatedAt(comment.getUpdatedAt())
-              .build());
+      MemberProfileComment parent = parentMap.get(comment.getParentId());
+      User replyTo = parent == null ? null : commentUsers.get(parent.getUserId());
+      return ResponseMemberProfileCommentVO.builder()
+          .id(comment.getId()).profileUserId(comment.getProfileUserId())
+          .userId(comment.getUserId()).parentId(comment.getParentId()).rootId(comment.getRootId())
+          .replyToUserId(parent == null ? null : parent.getUserId())
+          .replyToUserName(displayName(replyTo, null))
+          .replyTargetHidden(comment.getParentId() != null
+              && (parent == null || !"visible".equals(parent.getStatus())))
+          .userName(displayName(user, null)).userAvatar(user == null ? null : user.getAvatar())
+          .content(comment.getContent()).status(comment.getStatus()).replyCount(0)
+          .likeCount(comment.getLikeCount() == null ? 0 : comment.getLikeCount())
+          .liked(likedIds.contains(comment.getId()))
+          .own(currentUserId != null && Objects.equals(currentUserId, comment.getUserId()))
+          .author(Objects.equals(profileUserId, comment.getUserId()))
+          .replies(new ArrayList<>()).createdAt(comment.getCreatedAt())
+          .updatedAt(comment.getUpdatedAt()).build();
+    }).toList();
+  }
+
+  private MemberProfileComment visibleProfileComment(Integer profileUserId, Long commentId) {
+    MemberProfileComment comment = commentId == null ? null : memberProfileCommentMapper.selectById(commentId);
+    if (comment == null || !Objects.equals(comment.getProfileUserId(), profileUserId)
+        || !"visible".equals(comment.getStatus())) return null;
+    MemberProfileComment root = comment.getRootId() == null
+        ? comment : memberProfileCommentMapper.selectById(comment.getRootId());
+    return root != null && "visible".equals(root.getStatus()) ? comment : null;
+  }
+
+  private void notifyMentionedUsers(String content, Integer senderUserId, Integer alreadyNotifiedUserId) {
+    Matcher matcher = MENTION_PATTERN.matcher(content == null ? "" : content);
+    Set<Integer> notified = new HashSet<>();
+    if (alreadyNotifiedUserId != null) notified.add(alreadyNotifiedUserId);
+    while (matcher.find()) {
+      User mentioned = userMapper.selectByUserNameOrRealName(matcher.group(1));
+      if (mentioned != null && !Objects.equals(mentioned.getId(), senderUserId)
+          && notified.add(mentioned.getId())) {
+        notificationService.sendToUser(mentioned.getId(), "你在主页评论中被提及",
+            displayName(userMapper.selectById(senderUserId), null) + " 提到了你：" + content,
+            "comment");
+      }
     }
-    List<ResponseMemberProfileCommentVO> roots = new ArrayList<>();
-    for (ResponseMemberProfileCommentVO comment : commentMap.values()) {
-      ResponseMemberProfileCommentVO parent =
-          comment.getParentId() == null ? null : commentMap.get(comment.getParentId());
-      if (comment.getParentId() == null) roots.add(comment);
-      else if (parent != null) parent.getReplies().add(comment);
-    }
-    for (ResponseMemberProfileCommentVO comment : commentMap.values()) {
-      comment.setReplyCount(comment.getReplies().size());
-    }
-    return roots;
   }
 
   private boolean isProfileVisible(MemberProfile profile, boolean owner, boolean direct) {

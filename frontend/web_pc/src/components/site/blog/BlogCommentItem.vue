@@ -1,237 +1,287 @@
 <template>
-  <article :class="{ 'is-reply': depth > 0 }" class="blog-comment-item">
-    <div class="blog-comment-item__avatar">
-      <UserAvatar
-        :name="comment.userName || '匿名用户'"
-        :size="depth > 0 ? 32 : 44"
-        :src="comment.userAvatar || ''"
+  <article class="comment-thread">
+    <CommentRow :comment="comment" :reply-enabled="replyEnabled" root @action="handleAction" />
+    <section
+      v-if="comment.replies?.length || comment.replyCount"
+      class="comment-thread__replies"
+      :aria-label="`${comment.userName || '匿名用户'}的回复列表`"
+    >
+      <CommentRow
+        v-for="reply in comment.replies || []"
+        :key="reply.id"
+        :comment="reply"
+        :reply-enabled="replyEnabled"
+        @action="handleAction"
       />
-    </div>
-    <div class="blog-comment-item__body">
-      <header class="blog-comment-item__head">
-        <div class="blog-comment-item__author">
-          <span class="author-name">{{ comment.userName || '匿名用户' }}</span>
-          <span class="comment-time">{{ formatDateTime(comment.createdAt) }}</span>
-        </div>
-        <el-button
-          v-if="replyEnabled"
-          class="blog-comment-item__reply"
-          link
-          type="primary"
-          @click="emit('reply', comment)"
-        >
-          <el-icon class="reply-icon"><ChatLineRound /></el-icon>
-          <span class="reply-text">回复</span>
-        </el-button>
-      </header>
-      <div class="blog-comment-item__content">
-        <MarkdownContent :content="comment.content || ''" mode="minimal" />
-      </div>
-
-      <div v-if="comment.replies?.length" class="blog-comment-item__replies">
-        <BlogCommentItem
-          v-for="reply in comment.replies"
-          :key="reply.id"
-          :comment="reply"
-          :depth="depth + 1"
-          :reply-enabled="replyEnabled"
-          @reply="handleReply"
-        />
-      </div>
-    </div>
+      <el-button
+        v-if="remainingReplies > 0"
+        :aria-expanded="false"
+        :loading="loadingReplies"
+        class="comment-thread__more"
+        plain
+        @click="emit('load-replies', comment)"
+      >
+        展开其余 {{ remainingReplies }} 条回复
+      </el-button>
+    </section>
   </article>
 </template>
 
 <script lang="ts" setup>
+import { computed, defineComponent, h, type PropType } from 'vue'
+import { ChatLineRound, Star } from '@element-plus/icons-vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import MarkdownContent from '@/components/common/MarkdownContent.vue'
-import { ChatLineRound } from '@element-plus/icons-vue'
 import { formatDateTime } from '@/utils/format.ts'
 
 defineOptions({ name: 'BlogCommentItem' })
+type CommentAction = 'reply' | 'like' | 'delete' | 'report'
 
 const props = withDefaults(
   defineProps<{
     comment: Record<string, any>
-    depth?: number
     replyEnabled?: boolean
+    loadingReplies?: boolean
   }>(),
-  {
-    depth: 0,
-    replyEnabled: true,
-  },
+  { replyEnabled: true, loadingReplies: false },
 )
-
 const emit = defineEmits<{
   reply: [comment: Record<string, any>]
+  like: [comment: Record<string, any>]
+  delete: [comment: Record<string, any>]
+  report: [comment: Record<string, any>]
+  'load-replies': [comment: Record<string, any>]
 }>()
-
-function handleReply(comment: Record<string, any>) {
-  emit('reply', comment)
+const remainingReplies = computed(() =>
+  Math.max(0, Number(props.comment.replyCount || 0) - Number(props.comment.replies?.length || 0)),
+)
+function handleAction(action: CommentAction, comment: Record<string, any>) {
+  emit(action, comment)
 }
+
+const CommentRow = defineComponent({
+  name: 'CommentRow',
+  props: {
+    comment: { type: Object as PropType<Record<string, any>>, required: true },
+    replyEnabled: { type: Boolean, default: true },
+    root: { type: Boolean, default: false },
+  },
+  emits: ['action'],
+  setup(rowProps, { emit: rowEmit }) {
+    const action = (name: CommentAction) => rowEmit('action', name, rowProps.comment)
+    return () =>
+      h('article', { class: ['comment-row', { 'is-root': rowProps.root }] }, [
+        h(UserAvatar, {
+          name: rowProps.comment.userName || '匿名用户',
+          size: rowProps.root ? 44 : 32,
+          src: rowProps.comment.userAvatar || '',
+        }),
+        h('div', { class: 'comment-row__main' }, [
+          h('header', { class: 'comment-row__head' }, [
+            h('div', { class: 'comment-row__identity' }, [
+              h('strong', rowProps.comment.userName || '匿名用户'),
+              rowProps.comment.author ? h('span', { class: 'comment-row__badge' }, '作者') : null,
+              rowProps.comment.replyToUserName
+                ? h('span', { class: 'comment-row__reply-to' }, [
+                    '回复 ',
+                    h('b', `@${rowProps.comment.replyToUserName}`),
+                    rowProps.comment.replyTargetHidden ? ' · 原内容已隐藏' : '',
+                  ])
+                : rowProps.comment.replyTargetHidden
+                  ? h('span', { class: 'comment-row__reply-to' }, '回复内容已隐藏')
+                  : null,
+              h('time', formatDateTime(rowProps.comment.createdAt)),
+            ]),
+            h(
+              'button',
+              {
+                type: 'button',
+                class: 'comment-row__menu',
+                'aria-label': rowProps.comment.own ? '删除评论' : '举报评论',
+                onClick: () => action(rowProps.comment.own ? 'delete' : 'report'),
+              },
+              rowProps.comment.own ? '删除' : '举报',
+            ),
+          ]),
+          h(MarkdownContent, {
+            class: 'comment-row__content',
+            content: rowProps.comment.content || '',
+            mode: 'minimal',
+          }),
+          h('footer', { class: 'comment-row__actions' }, [
+            h(
+              'button',
+              {
+                type: 'button',
+                class: ['comment-row__action', { 'is-active': rowProps.comment.liked }],
+                'aria-pressed': Boolean(rowProps.comment.liked),
+                onClick: () => action('like'),
+              },
+              [
+                h(Star),
+                h('span', rowProps.comment.likeCount ? `赞 ${rowProps.comment.likeCount}` : '赞'),
+              ],
+            ),
+            rowProps.replyEnabled
+              ? h(
+                  'button',
+                  { type: 'button', class: 'comment-row__action', onClick: () => action('reply') },
+                  [h(ChatLineRound), h('span', '回复')],
+                )
+              : null,
+          ]),
+        ]),
+      ])
+  },
+})
 </script>
 
 <style scoped>
-.blog-comment-item {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 16px;
-  position: relative;
-  padding: 20px 0 12px;
+.comment-thread {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--oa-border);
 }
-
-.blog-comment-item.is-reply {
+.comment-row {
+  display: grid;
   grid-template-columns: 32px minmax(0, 1fr);
   gap: 12px;
-  padding: 16px 0 4px;
+  padding: 12px 0;
 }
-
-.blog-comment-item__avatar {
-  position: relative;
-  z-index: 2;
+.comment-row.is-root {
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 16px;
+  padding-top: 0;
 }
-
-.blog-comment-item__avatar::after {
-  content: '';
-  position: absolute;
-  top: 50px;
-  bottom: -24px;
-  left: 50%;
-  width: 1px;
-  background: var(--oa-border);
-  opacity: 0.6;
-  transform: translateX(-50%);
-}
-
-.blog-comment-item:last-child > .blog-comment-item__avatar::after {
-  display: none;
-}
-
-.blog-comment-item.is-reply .blog-comment-item__avatar::after {
-  top: 38px;
-  bottom: -20px;
-}
-
-.blog-comment-item__body {
+.comment-row__main {
   min-width: 0;
-  padding: 18px 20px;
-  background: var(--oa-elevated-bg);
-  border: 1px solid var(--oa-border);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.015);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
-
-.blog-comment-item__head {
+.comment-row__head {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 8px;
+  gap: 12px;
 }
-
-.blog-comment-item__author {
+.comment-row__identity {
   display: flex;
-  min-width: 0;
   flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
 }
-
-.author-name {
+.comment-row__identity strong {
   color: var(--oa-text);
   font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
 }
-
-.comment-time {
+.comment-row__identity time,
+.comment-row__reply-to {
   color: var(--oa-muted);
   font-size: 12px;
-  opacity: 0.85;
 }
-
-.blog-comment-item__reply {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 28px;
-  padding: 0 10px;
+.comment-row__reply-to b {
+  color: var(--oa-text-soft);
+  font-weight: 600;
+}
+.comment-row__badge {
+  padding: 2px 6px;
+  color: var(--oa-primary);
+  background: color-mix(in srgb, var(--oa-primary) 10%, transparent);
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 11px;
+}
+.comment-row__menu {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -10px -10px 0 0;
+  padding: 0 10px;
   color: var(--oa-muted);
   background: transparent;
-  transition: all 0.2s ease;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
 }
-
-.blog-comment-item__reply:hover {
-  color: var(--oa-primary, #1d1d1f) !important;
-  background: color-mix(in srgb, var(--oa-primary, #1d1d1f) 8%, transparent);
+.comment-row__menu:hover,
+.comment-row__menu:focus-visible {
+  color: var(--oa-text);
+  background: var(--oa-page-soft-bg);
+  outline: 2px solid color-mix(in srgb, var(--oa-primary) 35%, transparent);
+  outline-offset: 1px;
 }
-
-.reply-icon {
-  font-size: 14px;
-  transition: transform 0.2s ease;
-}
-
-.blog-comment-item__reply:hover .reply-icon {
-  transform: scale(1.15) rotate(-8deg);
-}
-
-.blog-comment-item__content {
+.comment-row__content {
+  margin-top: 6px;
   color: var(--oa-text-soft);
   font-size: 14.5px;
   line-height: 1.7;
 }
-
-.blog-comment-item__replies {
-  display: grid;
-  gap: 4px;
-  position: relative;
-  margin-top: 18px;
-  padding-left: 12px;
+.comment-row__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
 }
-
-.blog-comment-item__replies::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 24px;
-  left: -4px;
-  width: 1px;
-  background: var(--oa-border);
-  opacity: 0.6;
+.comment-row__action {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  color: var(--oa-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
 }
-
+.comment-row__action svg {
+  width: 15px;
+}
+.comment-row__action:hover,
+.comment-row__action:focus-visible,
+.comment-row__action.is-active {
+  color: var(--oa-primary);
+  background: color-mix(in srgb, var(--oa-primary) 8%, transparent);
+  outline: none;
+}
+.comment-thread__replies {
+  margin: 4px 0 0 60px;
+  padding: 4px 16px;
+  background: color-mix(in srgb, var(--oa-elevated-bg) 80%, var(--oa-page-soft-bg));
+  border-left: 2px solid var(--oa-border);
+  border-radius: 0 12px 12px 0;
+}
+.comment-thread__more {
+  min-height: 44px;
+  margin: 4px 0 4px 44px;
+}
 @media (max-width: 640px) {
-  .blog-comment-item {
-    grid-template-columns: 36px minmax(0, 1fr);
-    gap: 12px;
-    padding: 16px 0 8px;
+  .comment-thread {
+    padding: 16px 0;
   }
-
-  .blog-comment-item.is-reply {
+  .comment-row.is-root {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .comment-row {
     grid-template-columns: 28px minmax(0, 1fr);
     gap: 8px;
-    padding: 12px 0 2px;
   }
-
-  .blog-comment-item__body {
-    padding: 14px 16px;
-    border-radius: 12px;
+  .comment-thread__replies {
+    margin-left: 18px;
+    padding: 2px 0 2px 10px;
   }
-
-  .blog-comment-item__head {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 6px;
+  .comment-thread__more {
+    margin-left: 36px;
   }
-
-  .blog-comment-item__reply {
-    align-self: flex-end;
-    margin-top: -30px;
+  .comment-row__content {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .comment-row__action {
+    transition: none;
   }
 }
 </style>

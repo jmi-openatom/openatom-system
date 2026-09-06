@@ -3,9 +3,11 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestBlogInteractionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestBatchUpdateCommentStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateBlogCommentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestReviewBlogArticleDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestReportCommentDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateBlogArticleDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateBlogCommentStatusDTO;
 import edu.jmi.openatom.server.openatomsystem.service.BlogService;
@@ -57,14 +59,47 @@ public class BlogController {
   }
 
   @GetMapping("/site/blog/articles/{articleId}/comments")
-  public Result<List<ResponseBlogCommentVO>> publicComments(@PathVariable Integer articleId) {
-    return blogService.publicComments(articleId);
+  public Result<PageDataVO<ResponseBlogCommentVO>> publicComments(
+      @PathVariable Integer articleId,
+      @RequestParam(required = false) String sort,
+      @RequestParam(required = false) Long page,
+      @RequestParam(required = false) Long pageSize) {
+    return blogService.publicComments(articleId, sort, page, pageSize);
+  }
+
+  @GetMapping("/site/blog/articles/{articleId}/comments/{rootId}/replies")
+  public Result<PageDataVO<ResponseBlogCommentVO>> publicCommentReplies(
+      @PathVariable Integer articleId,
+      @PathVariable Integer rootId,
+      @RequestParam(required = false) Long page,
+      @RequestParam(required = false) Long pageSize) {
+    return blogService.publicCommentReplies(articleId, rootId, page, pageSize);
   }
 
   @PostMapping("/site/blog/articles/{articleId}/comments")
-  public Result<String> createComment(
+  public Result<ResponseBlogCommentVO> createComment(
       @PathVariable Integer articleId, @Valid @RequestBody RequestCreateBlogCommentDTO request) {
     return blogService.createComment(articleId, request);
+  }
+
+  @PostMapping("/site/blog/articles/{articleId}/comments/{commentId}/like")
+  public Result<ResponseBlogCommentVO> toggleCommentLike(
+      @PathVariable Integer articleId, @PathVariable Integer commentId) {
+    return blogService.toggleCommentLike(articleId, commentId);
+  }
+
+  @DeleteMapping("/site/blog/articles/{articleId}/comments/{commentId}")
+  public Result<String> deleteOwnComment(
+      @PathVariable Integer articleId, @PathVariable Integer commentId) {
+    return blogService.deleteOwnComment(articleId, commentId);
+  }
+
+  @PostMapping("/site/blog/articles/{articleId}/comments/{commentId}/reports")
+  public Result<String> reportComment(
+      @PathVariable Integer articleId,
+      @PathVariable Integer commentId,
+      @Valid @RequestBody RequestReportCommentDTO request) {
+    return blogService.reportComment(articleId, commentId, request.getReason());
   }
 
   @PostMapping("/site/blog/articles/{articleId}/like")
@@ -153,6 +188,13 @@ public class BlogController {
       @PathVariable Integer commentId,
       @Valid @RequestBody RequestUpdateBlogCommentStatusDTO request) {
     return blogService.adminUpdateCommentStatus(commentId, request.getStatus());
+  }
+
+  @PatchMapping("/blog/admin/comments/status")
+  @SaCheckPermission("blog-comment:manage")
+  public Result<String> adminBatchUpdateCommentStatus(
+      @Valid @RequestBody RequestBatchUpdateCommentStatusDTO request) {
+    return blogService.adminBatchUpdateCommentStatus(request.getCommentIds(), request.getStatus());
   }
 
   @GetMapping("/blog/admin/interactions")

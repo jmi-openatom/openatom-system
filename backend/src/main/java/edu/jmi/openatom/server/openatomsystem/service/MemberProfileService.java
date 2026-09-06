@@ -29,14 +29,27 @@ public interface MemberProfileService {
 
   Result<ResponseMemberProfileLikeVO> toggleLike(String slug);
 
-  Result<List<ResponseMemberProfileCommentVO>> comments(String slug);
+  Result<PageDataVO<ResponseMemberProfileCommentVO>> comments(
+      String slug, String sort, Long page, Long pageSize);
 
-  Result<String> createComment(String slug, RequestCreateMemberProfileCommentDTO request);
+  Result<PageDataVO<ResponseMemberProfileCommentVO>> commentReplies(
+      String slug, Long rootId, Long page, Long pageSize);
+
+  Result<ResponseMemberProfileCommentVO> createComment(
+      String slug, RequestCreateMemberProfileCommentDTO request);
+
+  Result<ResponseMemberProfileCommentVO> toggleCommentLike(String slug, Long commentId);
+
+  Result<String> deleteOwnComment(String slug, Long commentId);
+
+  Result<String> reportComment(String slug, Long commentId, String reason);
 
   Result<PageDataVO<ResponseAdminMemberProfileCommentVO>> adminComments(
       String keyword, String status, Long page, Long pageSize);
 
   Result<String> adminUpdateCommentStatus(Long commentId, String status);
+
+  Result<String> adminBatchUpdateCommentStatus(List<Long> commentIds, String status);
 
   Result<ResponseMemberProfileVO> mine();
 

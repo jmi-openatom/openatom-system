@@ -128,6 +128,19 @@
           <strong>{{ totalComments }} 条讨论</strong>
         </div>
 
+        <div class="comment-toolbar">
+          <span>共 {{ commentTotal }} 个话题</span>
+          <el-select
+            v-model="commentSort"
+            aria-label="评论排序"
+            style="width: 120px"
+            @change="changeCommentSort"
+          >
+            <el-option label="最新发布" value="latest" />
+            <el-option label="最早发布" value="oldest" />
+          </el-select>
+        </div>
+
         <el-alert
           v-if="article.commentsEnabled === false"
           :closable="false"
@@ -175,11 +188,25 @@
             v-for="comment in comments"
             :key="comment.id"
             :comment="comment"
+            :loading-replies="Boolean(comment._loadingReplies)"
             :reply-enabled="article.commentsEnabled !== false"
             @reply="startReply"
+            @like="toggleCommentLike"
+            @delete="deleteComment"
+            @report="reportComment"
+            @load-replies="loadReplies"
           />
           <el-empty v-if="!comments.length" description="还没有评论" />
         </div>
+        <el-pagination
+          v-if="commentTotal > commentPageSize"
+          v-model:current-page="commentPage"
+          :page-size="commentPageSize"
+          :total="commentTotal"
+          background
+          layout="prev, pager, next"
+          @current-change="refreshComments"
+        />
       </div>
     </section>
   </ViewPage>
@@ -190,6 +217,7 @@ import ViewPage from '@/components/common/ViewPage.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import BlogCommentItem from '@/components/site/blog/BlogCommentItem.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus'
 import { Pointer, Share, Star } from '@element-plus/icons-vue'
 import { siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
@@ -217,6 +245,10 @@ const article = ref<Record<string, any>>({})
 const comments = ref<any[]>([])
 const commentForm = ref({ content: '', parentId: null as number | null })
 const replyTarget = ref<Record<string, any> | null>(null)
+const commentPage = ref(1)
+const commentPageSize = 10
+const commentTotal = ref(0)
+const commentSort = ref<'latest' | 'oldest'>('latest')
 const articleContent = ref<HTMLElement | null>(null)
 const activeHeadingId = ref('')
 const readingProgress = ref(0)
@@ -242,7 +274,9 @@ const readingMinutes = computed(() => {
       .match(/[\p{Letter}\p{Number}]+/gu)?.length || 0
   return Math.max(1, Math.ceil(chineseCharacters / 350 + otherWords / 220))
 })
-const totalComments = computed(() => countComments(comments.value))
+const totalComments = computed(() =>
+  Number(article.value.commentCount ?? countComments(comments.value)),
+)
 const currentUserName = computed(
   () => currentUser.value?.realName || currentUser.value?.userName || '我',
 )
@@ -297,8 +331,16 @@ async function fetchDetail() {
       },
       route.path,
     )
-    const articleComments = await siteApi.blogComments(articleId)
-    if (requestId === detailRequestId) comments.value = articleComments || []
+    commentPage.value = 1
+    const articleComments = await siteApi.blogComments(articleId, {
+      page: commentPage.value,
+      pageSize: commentPageSize,
+      sort: commentSort.value,
+    })
+    if (requestId === detailRequestId) {
+      comments.value = articleComments?.list || []
+      commentTotal.value = Number(articleComments?.total || 0)
+    }
   } finally {
     if (requestId === detailRequestId) {
       loading.value = false
@@ -310,7 +352,18 @@ async function fetchDetail() {
 }
 
 async function refreshComments() {
-  comments.value = (await siteApi.blogComments(route.params.id)) || []
+  const result = await siteApi.blogComments(route.params.id, {
+    page: commentPage.value,
+    pageSize: commentPageSize,
+    sort: commentSort.value,
+  })
+  comments.value = result?.list || []
+  commentTotal.value = Number(result?.total || 0)
+}
+
+async function changeCommentSort() {
+  commentPage.value = 1
+  await refreshComments()
 }
 
 async function submitComment() {
@@ -321,14 +374,34 @@ async function submitComment() {
   }
   commenting.value = true
   try {
-    await siteApi.createBlogComment(route.params.id, {
+    const target = replyTarget.value
+    const created = await siteApi.createBlogComment(route.params.id, {
       content: commentForm.value.content,
       parentId: commentForm.value.parentId || undefined,
     })
+    if (target) {
+      const rootId = target.rootId || target.id
+      const root = comments.value.find((item) => item.id === rootId)
+      if (root) {
+        root.replyCount = Number(root.replyCount || 0) + 1
+        root.replies = [...(root.replies || []), created]
+      }
+    } else {
+      created.replies = []
+      created.replyCount = 0
+      commentTotal.value += 1
+      if (commentPage.value === 1 && commentSort.value === 'latest') {
+        comments.value.unshift(created)
+        comments.value = comments.value.slice(0, commentPageSize)
+      } else {
+        commentPage.value = 1
+        commentSort.value = 'latest'
+        await refreshComments()
+      }
+    }
     commentForm.value = { content: '', parentId: null }
     replyTarget.value = null
-    await refreshComments()
-    article.value.commentCount = totalComments.value
+    article.value.commentCount = Number(article.value.commentCount || 0) + 1
     ElMessage.success('评论已发布')
   } finally {
     commenting.value = false
@@ -371,6 +444,62 @@ function startReply(comment: Record<string, any>) {
 function cancelReply() {
   replyTarget.value = null
   commentForm.value.parentId = null
+}
+
+async function loadReplies(root: Record<string, any>) {
+  if (root._loadingReplies) return
+  root._loadingReplies = true
+  try {
+    const nextPage = Number(root._replyPage || 0) + 1
+    const result = await siteApi.blogCommentReplies(route.params.id, root.id, {
+      page: nextPage,
+      pageSize: 20,
+    })
+    const incoming = result?.list || []
+    root.replies =
+      nextPage === 1
+        ? incoming
+        : [
+            ...(root.replies || []),
+            ...incoming.filter(
+              (item: any) => !(root.replies || []).some((current: any) => current.id === item.id),
+            ),
+          ]
+    root._replyPage = nextPage
+  } finally {
+    root._loadingReplies = false
+  }
+}
+
+async function toggleCommentLike(comment: Record<string, any>) {
+  if (!ensureLogin()) return
+  const updated = await siteApi.toggleBlogCommentLike(route.params.id, comment.id)
+  Object.assign(comment, updated)
+}
+
+async function deleteComment(comment: Record<string, any>) {
+  await ElMessageBox.confirm('删除后评论不会再公开显示，确定继续吗？', '删除评论', {
+    type: 'warning',
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+  })
+  await siteApi.deleteBlogComment(route.params.id, comment.id)
+  const removedCount = comment.parentId ? 1 : 1 + Number(comment.replyCount || 0)
+  article.value.commentCount = Math.max(0, Number(article.value.commentCount || 0) - removedCount)
+  await refreshComments()
+  ElMessage.success('评论已删除')
+}
+
+async function reportComment(comment: Record<string, any>) {
+  if (!ensureLogin()) return
+  const { value } = await ElMessageBox.prompt('请说明举报原因，管理员会进行审核。', '举报评论', {
+    inputType: 'textarea',
+    inputValidator: (text) => Boolean(String(text || '').trim()) || '请填写举报原因',
+    confirmButtonText: '提交',
+    cancelButtonText: '取消',
+  })
+  await siteApi.reportBlogComment(route.params.id, comment.id, String(value).trim())
+  ElMessage.success('举报已提交')
 }
 
 function ensureLogin() {
@@ -731,6 +860,16 @@ useResizeObserver(articleContent, updateReadingState)
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
+}
+
+.comment-toolbar {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--oa-muted);
+  font-size: 13px;
 }
 
 .comment-composer {

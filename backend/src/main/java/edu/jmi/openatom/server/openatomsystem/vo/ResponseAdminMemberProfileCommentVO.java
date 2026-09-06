@@ -1,6 +1,7 @@
 package edu.jmi.openatom.server.openatomsystem.vo;
 
 import java.sql.Timestamp;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,10 @@ public class ResponseAdminMemberProfileCommentVO {
   private String userName;
   private String userAvatar;
   private Long parentId;
+  private Long rootId;
+  private String replyToUserName;
+  private Integer reportCount;
+  private List<String> reportReasons;
   private String content;
   private String status;
   private Timestamp createdAt;

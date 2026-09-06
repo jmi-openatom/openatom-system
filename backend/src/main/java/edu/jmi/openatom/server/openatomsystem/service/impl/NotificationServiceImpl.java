@@ -138,4 +138,20 @@ public class NotificationServiceImpl implements NotificationService {
     Long count = notificationReceiverMapper.countUnread(userId);
     return Result.success(count.intValue());
   }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void sendToUser(Integer receiverUserId, String title, String content, String type) {
+    if (receiverUserId == null || title == null || title.isBlank()) return;
+    Notification notification =
+        Notification.builder().title(title.trim()).content(content).type(type).build();
+    if (notificationMapper.insert(notification) > 0) {
+      notificationReceiverMapper.insert(
+          NotificationReceiver.builder()
+              .notificationId(notification.getId())
+              .receiverUserId(receiverUserId)
+              .readFlag(0)
+              .build());
+    }
+  }
 }

@@ -25,9 +25,19 @@ public interface BlogService {
 
   Result<List<String>> publicCategories();
 
-  Result<List<ResponseBlogCommentVO>> publicComments(Integer articleId);
+  Result<PageDataVO<ResponseBlogCommentVO>> publicComments(
+      Integer articleId, String sort, Long page, Long pageSize);
 
-  Result<String> createComment(Integer articleId, RequestCreateBlogCommentDTO request);
+  Result<PageDataVO<ResponseBlogCommentVO>> publicCommentReplies(
+      Integer articleId, Integer rootId, Long page, Long pageSize);
+
+  Result<ResponseBlogCommentVO> createComment(Integer articleId, RequestCreateBlogCommentDTO request);
+
+  Result<ResponseBlogCommentVO> toggleCommentLike(Integer articleId, Integer commentId);
+
+  Result<String> deleteOwnComment(Integer articleId, Integer commentId);
+
+  Result<String> reportComment(Integer articleId, Integer commentId, String reason);
 
   Result<ResponseBlogArticleVO> likeArticle(Integer articleId, RequestBlogInteractionDTO request);
 
@@ -55,6 +65,8 @@ public interface BlogService {
   Result<List<ResponseBlogCommentVO>> adminComments(Integer articleId);
 
   Result<String> adminUpdateCommentStatus(Integer commentId, String status);
+
+  Result<String> adminBatchUpdateCommentStatus(List<Long> commentIds, String status);
 
   Result<PageDataVO<ResponseBlogInteractionVO>> adminInteractions(
       String interactionType, Integer articleId, Long page, Long pageSize);

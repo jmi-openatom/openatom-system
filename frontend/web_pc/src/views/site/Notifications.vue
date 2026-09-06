@@ -147,6 +147,7 @@ const typeText = (type: string) =>
     system: '系统通知',
     activity: '活动通知',
     approval: '审批通知',
+    comment: '评论通知',
     other: '其他通知',
   })[type] || '通知'
 
@@ -277,6 +278,11 @@ onMounted(fetchNotifications)
 .item-icon.approval {
   background: var(--oa-page-soft-bg);
   color: var(--oa-text);
+}
+
+.item-icon.comment {
+  color: var(--oa-primary);
+  background: color-mix(in srgb, var(--oa-primary) 10%, var(--oa-elevated-bg));
 }
 .item-icon.other {
   background: var(--oa-button-subtle-bg);

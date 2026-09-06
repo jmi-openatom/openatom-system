@@ -14,32 +14,15 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("member_profile_comment")
-public class MemberProfileComment {
+@TableName("comment_report")
+public class CommentReport {
   @TableId(value = "id", type = IdType.AUTO)
   private Long id;
-
-  @TableField("profile_user_id")
-  private Integer profileUserId;
-
-  @TableField("user_id")
-  private Integer userId;
-
-  @TableField("parent_id")
-  private Long parentId;
-
-  @TableField("root_id")
-  private Long rootId;
-
-  private String content;
+  @TableField("target_type") private String targetType;
+  @TableField("comment_id") private Long commentId;
+  @TableField("reporter_user_id") private Integer reporterUserId;
+  private String reason;
   private String status;
-
-  @TableField("like_count")
-  private Integer likeCount;
-
-  @TableField("created_at")
-  private Timestamp createdAt;
-
-  @TableField("updated_at")
-  private Timestamp updatedAt;
+  @TableField("created_at") private Timestamp createdAt;
+  @TableField("updated_at") private Timestamp updatedAt;
 }

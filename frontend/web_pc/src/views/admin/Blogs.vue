@@ -34,7 +34,9 @@
       <el-table-column prop="category" label="分类" width="120" />
       <el-table-column prop="featured" label="推荐" width="90">
         <template #default="{ row }">
-          <el-tag :type="row.featured ? 'warning' : 'info'">{{ row.featured ? '是' : '否' }}</el-tag>
+          <el-tag :type="row.featured ? 'warning' : 'info'">{{
+            row.featured ? '是' : '否'
+          }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" width="110">
@@ -44,8 +46,8 @@
       </el-table-column>
       <el-table-column label="数据" width="210">
         <template #default="{ row }">
-          {{ row.viewCount || 0 }} 阅读 · {{ row.likeCount || 0 }} 赞 · {{ row.favoriteCount || 0 }} 藏 ·
-          {{ row.shareCount || 0 }} 分享
+          {{ row.viewCount || 0 }} 阅读 · {{ row.likeCount || 0 }} 赞 ·
+          {{ row.favoriteCount || 0 }} 藏 · {{ row.shareCount || 0 }} 分享
         </template>
       </el-table-column>
       <el-table-column prop="updatedAt" label="更新时间" width="180">
@@ -135,7 +137,9 @@
               <h2>{{ currentArticle.title || '未命名文章' }}</h2>
               <p>{{ currentArticle.summary || '暂无摘要' }}</p>
             </div>
-            <el-tag :type="statusType(currentArticle.status)">{{ statusText(currentArticle.status) }}</el-tag>
+            <el-tag :type="statusType(currentArticle.status)">{{
+              statusText(currentArticle.status)
+            }}</el-tag>
           </header>
           <img
             v-if="currentArticle.coverUrl"
@@ -147,10 +151,7 @@
             <span>{{ currentArticle.authorName || '匿名作者' }}</span>
             <span>{{ formatDateTime(currentArticle.updatedAt || currentArticle.createdAt) }}</span>
           </div>
-          <article
-            v-if="reviewContent"
-            class="markdown-body review-preview__markdown"
-          >
+          <article v-if="reviewContent" class="markdown-body review-preview__markdown">
             <MarkdownContent :content="reviewContent" />
           </article>
           <el-empty v-else description="暂无正文可预览" :image-size="80" />
@@ -163,16 +164,40 @@
     </el-dialog>
 
     <el-drawer v-model="commentsVisible" size="560px" title="评论管理">
+      <div v-if="selectedCommentIds.length" class="comment-batch-actions">
+        <span>已选 {{ selectedCommentIds.length }} 条</span>
+        <el-button size="small" @click="batchUpdateComments('visible')">批量恢复</el-button>
+        <el-button size="small" type="warning" @click="batchUpdateComments('hidden')"
+          >批量隐藏</el-button
+        >
+      </div>
       <div class="comment-list">
         <article v-for="comment in comments" :key="comment.id" class="comment-item">
-          <UserAvatar :name="comment.userName || '匿名用户'" :size="38" :src="comment.userAvatar || ''" />
+          <el-checkbox v-model="selectedCommentIds" :value="comment.id" aria-label="选择评论" />
+          <UserAvatar
+            :name="comment.userName || '匿名用户'"
+            :size="38"
+            :src="comment.userAvatar || ''"
+          />
           <div>
             <header>
               <strong>{{ comment.userName || '匿名用户' }}</strong>
               <el-tag :type="comment.status === 'visible' ? 'success' : 'info'" size="small">
                 {{ comment.status === 'visible' ? '显示中' : '已隐藏' }}
               </el-tag>
-              <el-tag v-if="comment.parentId" type="info" size="small">回复 #{{ comment.parentId }}</el-tag>
+              <el-tag v-if="comment.rootId" type="info" size="small"
+                >讨论 #{{ comment.rootId }}</el-tag
+              >
+              <el-tag v-if="comment.replyToUserName" type="info" size="small">
+                回复 @{{ comment.replyToUserName }}
+              </el-tag>
+              <el-tooltip
+                v-if="comment.reportCount"
+                :content="(comment.reportReasons || []).join('；')"
+                placement="top"
+              >
+                <el-tag type="danger" size="small">{{ comment.reportCount }} 次举报</el-tag>
+              </el-tooltip>
             </header>
             <p>{{ comment.content }}</p>
             <small>{{ formatDateTime(comment.createdAt) }}</small>
@@ -191,7 +216,12 @@
 
     <el-drawer v-model="interactionsVisible" size="720px" title="互动记录">
       <div class="interaction-toolbar">
-        <el-select v-model="interactionQuery.interactionType" clearable placeholder="互动类型" @change="reloadInteractions">
+        <el-select
+          v-model="interactionQuery.interactionType"
+          clearable
+          placeholder="互动类型"
+          @change="reloadInteractions"
+        >
           <el-option label="点赞" value="like" />
           <el-option label="收藏" value="favorite" />
           <el-option label="分享" value="share" />
@@ -217,7 +247,11 @@
         <el-table-column label="用户" min-width="150">
           <template #default="{ row }">
             <div class="interaction-user">
-              <UserAvatar :name="row.userName || '匿名用户'" :size="30" :src="row.userAvatar || ''" />
+              <UserAvatar
+                :name="row.userName || '匿名用户'"
+                :size="30"
+                :src="row.userAvatar || ''"
+              />
               <span>{{ row.userName || '匿名用户' }}</span>
             </div>
           </template>
@@ -260,13 +294,14 @@ const interactionsVisible = ref(false)
 const interactionsLoading = ref(false)
 const rows = ref<any[]>([])
 const comments = ref<any[]>([])
+const selectedCommentIds = ref<number[]>([])
 const interactions = ref<any[]>([])
 const total = ref(0)
 const interactionTotal = ref(0)
 const currentArticle = ref<Record<string, any>>({})
 const reviewForm = ref({ status: 'published', featured: false, reason: '' })
-const reviewContent = computed(() =>
-  currentArticle.value.contentMarkdown || currentArticle.value.summary || '',
+const reviewContent = computed(
+  () => currentArticle.value.contentMarkdown || currentArticle.value.summary || '',
 )
 const query = ref({
   status: '',
@@ -283,18 +318,20 @@ const interactionQuery = ref({
 
 function statusText(status: string) {
   return (
-    { draft: '草稿', pending: '待审核', published: '已发布', hidden: '已隐藏', rejected: '已驳回' }[status] ||
+    { draft: '草稿', pending: '待审核', published: '已发布', hidden: '已隐藏', rejected: '已驳回' }[
+      status
+    ] ||
     status ||
     '-'
   )
 }
 
 function interactionText(type: string) {
-  return ({ like: '点赞', favorite: '收藏', share: '分享' }[type] || type || '-')
+  return { like: '点赞', favorite: '收藏', share: '分享' }[type] || type || '-'
 }
 
 function interactionTagType(type: string) {
-  return ({ like: 'success', favorite: 'warning', share: 'primary' }[type] || 'info')
+  return { like: 'success', favorite: 'warning', share: 'primary' }[type] || 'info'
 }
 
 async function fetchList() {
@@ -357,8 +394,18 @@ async function remove(row: any) {
 
 async function openComments(row: any) {
   currentArticle.value = row
+  selectedCommentIds.value = []
   comments.value = (await blogApi.adminComments(row.id)) || []
   commentsVisible.value = true
+}
+
+async function batchUpdateComments(status: 'visible' | 'hidden') {
+  if (!selectedCommentIds.value.length) return
+  await blogApi.batchUpdateCommentStatus(selectedCommentIds.value, status)
+  ElMessage.success('评论状态已批量更新')
+  selectedCommentIds.value = []
+  comments.value = (await blogApi.adminComments(currentArticle.value.id)) || []
+  fetchList()
 }
 
 async function toggleComment(comment: any) {
@@ -521,6 +568,16 @@ onMounted(() => {
   background: var(--oa-elevated-bg);
   border: 1px solid var(--oa-border);
   border-radius: var(--oa-radius);
+}
+
+.comment-batch-actions {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--oa-muted);
+  font-size: 13px;
 }
 
 .comment-item header {

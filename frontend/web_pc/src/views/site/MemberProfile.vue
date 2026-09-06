@@ -36,6 +36,19 @@
           <strong>{{ totalComments }} 条评论</strong>
         </header>
 
+        <div class="comment-toolbar">
+          <span>共 {{ commentTotal }} 个话题</span>
+          <el-select
+            v-model="commentSort"
+            aria-label="评论排序"
+            style="width: 120px"
+            @change="changeCommentSort"
+          >
+            <el-option label="最新发布" value="latest" />
+            <el-option label="最早发布" value="oldest" />
+          </el-select>
+        </div>
+
         <el-alert
           v-if="profile.commentsEnabled === false"
           :closable="false"
@@ -78,11 +91,25 @@
             v-for="comment in comments"
             :key="comment.id"
             :comment="comment"
+            :loading-replies="Boolean(comment._loadingReplies)"
             :reply-enabled="profile.commentsEnabled !== false"
             @reply="startReply"
+            @like="toggleCommentLike"
+            @delete="deleteComment"
+            @report="reportComment"
+            @load-replies="loadReplies"
           />
           <el-empty v-if="!comments.length" description="还没有评论，来留下第一条留言吧" />
         </div>
+        <el-pagination
+          v-if="commentTotal > commentPageSize"
+          v-model:current-page="commentPage"
+          :page-size="commentPageSize"
+          :total="commentTotal"
+          background
+          layout="prev, pager, next"
+          @current-change="refreshComments"
+        />
       </section>
     </div>
     <el-result
@@ -110,6 +137,7 @@ import type { MemberProfile } from '@/types/member-profile'
 import { getCurrentUser } from '@/utils/auth.ts'
 import { Pointer } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -121,6 +149,10 @@ const profile = ref<MemberProfile | null>(null)
 const comments = ref<Record<string, any>[]>([])
 const commentForm = ref({ content: '', parentId: null as number | null })
 const replyTarget = ref<Record<string, any> | null>(null)
+const commentPage = ref(1)
+const commentPageSize = 10
+const commentTotal = ref(0)
+const commentSort = ref<'latest' | 'oldest'>('latest')
 
 const currentUser = computed(() => getCurrentUser())
 const currentUserName = computed(
@@ -130,7 +162,9 @@ const currentUserAvatar = computed(() =>
   String(currentUser.value?.displayAvatar || currentUser.value?.avatar || ''),
 )
 const currentUserQqOpenid = computed(() => String(currentUser.value?.qqOpenid || ''))
-const totalComments = computed(() => countComments(comments.value))
+const totalComments = computed(() =>
+  Number(profile.value?.commentCount ?? countComments(comments.value)),
+)
 const commentPlaceholder = computed(() =>
   replyTarget.value ? `回复 ${replyTarget.value.userName || '社团成员'}` : '写下你的留言',
 )
@@ -144,7 +178,14 @@ async function fetchProfile() {
         ? await memberProfileApi.mine()
         : await memberProfileApi.detail(String(route.params.slug || ''))
     profile.value = data
-    comments.value = (await memberProfileApi.comments(data.slug)) || []
+    commentPage.value = 1
+    const result = await memberProfileApi.comments(data.slug, {
+      page: commentPage.value,
+      pageSize: commentPageSize,
+      sort: commentSort.value,
+    })
+    comments.value = result?.list || []
+    commentTotal.value = Number(result?.total || 0)
   } finally {
     loading.value = false
   }
@@ -165,8 +206,18 @@ async function toggleLike() {
 
 async function refreshComments() {
   if (!profile.value) return
-  comments.value = (await memberProfileApi.comments(profile.value.slug)) || []
-  profile.value.commentCount = totalComments.value
+  const result = await memberProfileApi.comments(profile.value.slug, {
+    page: commentPage.value,
+    pageSize: commentPageSize,
+    sort: commentSort.value,
+  })
+  comments.value = result?.list || []
+  commentTotal.value = Number(result?.total || 0)
+}
+
+async function changeCommentSort() {
+  commentPage.value = 1
+  await refreshComments()
 }
 
 async function submitComment() {
@@ -176,13 +227,34 @@ async function submitComment() {
   }
   commenting.value = true
   try {
-    await memberProfileApi.createComment(profile.value.slug, {
+    const target = replyTarget.value
+    const created = await memberProfileApi.createComment(profile.value.slug, {
       content: commentForm.value.content,
       parentId: commentForm.value.parentId || undefined,
     })
+    if (target) {
+      const rootId = target.rootId || target.id
+      const root = comments.value.find((item) => item.id === rootId)
+      if (root) {
+        root.replyCount = Number(root.replyCount || 0) + 1
+        root.replies = [...(root.replies || []), created]
+      }
+    } else {
+      created.replies = []
+      created.replyCount = 0
+      commentTotal.value += 1
+      if (commentPage.value === 1 && commentSort.value === 'latest') {
+        comments.value.unshift(created)
+        comments.value = comments.value.slice(0, commentPageSize)
+      } else {
+        commentPage.value = 1
+        commentSort.value = 'latest'
+        await refreshComments()
+      }
+    }
     commentForm.value = { content: '', parentId: null }
     replyTarget.value = null
-    await refreshComments()
+    profile.value.commentCount = Number(profile.value.commentCount || 0) + 1
     ElMessage.success('评论已发布')
   } finally {
     commenting.value = false
@@ -201,6 +273,63 @@ function startReply(comment: Record<string, any>) {
 function cancelReply() {
   replyTarget.value = null
   commentForm.value.parentId = null
+}
+
+async function loadReplies(root: Record<string, any>) {
+  if (!profile.value || root._loadingReplies) return
+  root._loadingReplies = true
+  try {
+    const nextPage = Number(root._replyPage || 0) + 1
+    const result = await memberProfileApi.commentReplies(profile.value.slug, root.id, {
+      page: nextPage,
+      pageSize: 20,
+    })
+    const incoming = result?.list || []
+    root.replies =
+      nextPage === 1
+        ? incoming
+        : [
+            ...(root.replies || []),
+            ...incoming.filter(
+              (item: any) => !(root.replies || []).some((current: any) => current.id === item.id),
+            ),
+          ]
+    root._replyPage = nextPage
+  } finally {
+    root._loadingReplies = false
+  }
+}
+
+async function toggleCommentLike(comment: Record<string, any>) {
+  if (!profile.value) return
+  const updated = await memberProfileApi.toggleCommentLike(profile.value.slug, comment.id)
+  Object.assign(comment, updated)
+}
+
+async function deleteComment(comment: Record<string, any>) {
+  if (!profile.value) return
+  await ElMessageBox.confirm('删除后评论不会再公开显示，确定继续吗？', '删除评论', {
+    type: 'warning',
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+  })
+  await memberProfileApi.deleteComment(profile.value.slug, comment.id)
+  const removedCount = comment.parentId ? 1 : 1 + Number(comment.replyCount || 0)
+  profile.value.commentCount = Math.max(0, Number(profile.value.commentCount || 0) - removedCount)
+  await refreshComments()
+  ElMessage.success('评论已删除')
+}
+
+async function reportComment(comment: Record<string, any>) {
+  if (!profile.value) return
+  const { value } = await ElMessageBox.prompt('请说明举报原因，管理员会进行审核。', '举报评论', {
+    inputType: 'textarea',
+    inputValidator: (text) => Boolean(String(text || '').trim()) || '请填写举报原因',
+    confirmButtonText: '提交',
+    cancelButtonText: '取消',
+  })
+  await memberProfileApi.reportComment(profile.value.slug, comment.id, String(value).trim())
+  ElMessage.success('举报已提交')
 }
 
 function countComments(list: Record<string, any>[]): number {
@@ -264,6 +393,16 @@ watch(() => route.fullPath, fetchProfile)
 }
 .profile-comments__head strong,
 .comment-composer__footer > span {
+  color: var(--oa-muted);
+  font-size: 13px;
+}
+.comment-toolbar {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
   color: var(--oa-muted);
   font-size: 13px;
 }

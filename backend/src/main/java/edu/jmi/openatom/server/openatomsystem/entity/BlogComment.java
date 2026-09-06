@@ -33,8 +33,14 @@ public class BlogComment {
   @TableField("parent_id")
   private Integer parentId;
 
+  @TableField("root_id")
+  private Integer rootId;
+
   private String content;
   private String status;
+
+  @TableField("like_count")
+  private Integer likeCount;
 
   @TableField("created_at")
   private Timestamp createdAt;

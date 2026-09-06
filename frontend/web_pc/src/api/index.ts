@@ -70,11 +70,27 @@ export const siteApi = {
   showcaseAppDetail(id: string | number): Promise<any> {
     return request.get(`/site/apps/${id}`)
   },
-  blogComments(id: string | number): Promise<any> {
-    return request.get(`/site/blog/articles/${id}/comments`)
+  blogComments(id: string | number, params?: Record<string, unknown>): Promise<any> {
+    return request.get(`/site/blog/articles/${id}/comments`, { params })
+  },
+  blogCommentReplies(
+    id: string | number,
+    rootId: string | number,
+    params?: Record<string, unknown>,
+  ): Promise<any> {
+    return request.get(`/site/blog/articles/${id}/comments/${rootId}/replies`, { params })
   },
   createBlogComment(id: string | number, data: Record<string, unknown>): Promise<any> {
     return request.post(`/site/blog/articles/${id}/comments`, data)
+  },
+  toggleBlogCommentLike(id: string | number, commentId: string | number): Promise<any> {
+    return request.post(`/site/blog/articles/${id}/comments/${commentId}/like`)
+  },
+  deleteBlogComment(id: string | number, commentId: string | number): Promise<any> {
+    return request.delete(`/site/blog/articles/${id}/comments/${commentId}`)
+  },
+  reportBlogComment(id: string | number, commentId: string | number, reason: string): Promise<any> {
+    return request.post(`/site/blog/articles/${id}/comments/${commentId}/reports`, { reason })
   },
   likeBlogArticle(id: string | number, data: Record<string, unknown> = {}): Promise<any> {
     return request.post(`/site/blog/articles/${id}/like`, data)
@@ -274,11 +290,31 @@ export const memberProfileApi = {
   toggleLike(slug: string): Promise<any> {
     return request.post(`/members/${encodeURIComponent(slug)}/like`)
   },
-  comments(slug: string): Promise<any> {
-    return request.get(`/members/${encodeURIComponent(slug)}/comments`)
+  comments(slug: string, params?: Record<string, unknown>): Promise<any> {
+    return request.get(`/members/${encodeURIComponent(slug)}/comments`, { params })
+  },
+  commentReplies(
+    slug: string,
+    rootId: string | number,
+    params?: Record<string, unknown>,
+  ): Promise<any> {
+    return request.get(`/members/${encodeURIComponent(slug)}/comments/${rootId}/replies`, {
+      params,
+    })
   },
   createComment(slug: string, data: Record<string, unknown>): Promise<any> {
     return request.post(`/members/${encodeURIComponent(slug)}/comments`, data)
+  },
+  toggleCommentLike(slug: string, commentId: string | number): Promise<any> {
+    return request.post(`/members/${encodeURIComponent(slug)}/comments/${commentId}/like`)
+  },
+  deleteComment(slug: string, commentId: string | number): Promise<any> {
+    return request.delete(`/members/${encodeURIComponent(slug)}/comments/${commentId}`)
+  },
+  reportComment(slug: string, commentId: string | number, reason: string): Promise<any> {
+    return request.post(`/members/${encodeURIComponent(slug)}/comments/${commentId}/reports`, {
+      reason,
+    })
   },
   mine(): Promise<any> {
     return request.get('/me/profile')
@@ -644,6 +680,9 @@ export const blogApi = {
   updateCommentStatus(id: string | number, status: string): Promise<any> {
     return request.patch(`/blog/admin/comments/${id}/status`, { status })
   },
+  batchUpdateCommentStatus(commentIds: Array<string | number>, status: string): Promise<any> {
+    return request.patch('/blog/admin/comments/status', { commentIds, status })
+  },
   adminInteractions(params?: Record<string, unknown>): Promise<any> {
     return request.get('/blog/admin/interactions', { params })
   },
@@ -655,6 +694,9 @@ export const memberProfileCommentApi = {
   },
   updateStatus(id: string | number, status: string): Promise<any> {
     return request.patch(`/member-profile-comments/${id}/status`, { status })
+  },
+  batchUpdateStatus(commentIds: Array<string | number>, status: string): Promise<any> {
+    return request.patch('/member-profile-comments/status', { commentIds, status })
   },
 }
 
@@ -1132,11 +1174,20 @@ export const interviewRecordingApi = {
     formData.append('durationSeconds', String(durationSeconds))
     return request.post(`/interviews/${interviewId}/recordings`, formData, { timeout: 120000 })
   },
-  updateTranscript(interviewId: string | number, recordingId: string | number, transcript: string): Promise<any> {
-    return request.patch(`/interviews/${interviewId}/recordings/${recordingId}/transcript`, { transcript })
+  updateTranscript(
+    interviewId: string | number,
+    recordingId: string | number,
+    transcript: string,
+  ): Promise<any> {
+    return request.patch(`/interviews/${interviewId}/recordings/${recordingId}/transcript`, {
+      transcript,
+    })
   },
   audio(recordingId: string | number): Promise<Blob> {
-    return request.get(`/interview-recordings/${recordingId}/audio`, { responseType: 'blob', timeout: 120000 })
+    return request.get(`/interview-recordings/${recordingId}/audio`, {
+      responseType: 'blob',
+      timeout: 120000,
+    })
   },
 }
 
@@ -1183,8 +1234,15 @@ export const interviewSessionApi = {
   callNext(roomId: string | number): Promise<any> {
     return request.post(`/interview-rooms/${roomId}/call-next`)
   },
-  forceCallNext(roomId: string | number, expectedInterviewId: number, reason: string): Promise<any> {
-    return request.post(`/interview-rooms/${roomId}/force-call-next`, { expectedInterviewId, reason })
+  forceCallNext(
+    roomId: string | number,
+    expectedInterviewId: number,
+    reason: string,
+  ): Promise<any> {
+    return request.post(`/interview-rooms/${roomId}/force-call-next`, {
+      expectedInterviewId,
+      reason,
+    })
   },
   callAgain(roomId: string | number): Promise<any> {
     return request.post(`/interview-rooms/${roomId}/call-again`)

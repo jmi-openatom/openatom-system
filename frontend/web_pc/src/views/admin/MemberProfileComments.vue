@@ -25,9 +25,21 @@
         </el-select>
         <el-button :icon="Refresh" type="primary" @click="reload">查询</el-button>
       </div>
+      <div v-if="canManage && selectedIds.length" class="toolbar__filters">
+        <span>已选 {{ selectedIds.length }} 条</span>
+        <el-button @click="batchUpdate('visible')">批量恢复</el-button>
+        <el-button type="warning" @click="batchUpdate('hidden')">批量隐藏</el-button>
+      </div>
     </ViewToolbar>
 
-    <el-table v-loading="loading" :data="rows" class="admin-table" row-key="id">
+    <el-table
+      v-loading="loading"
+      :data="rows"
+      class="admin-table"
+      row-key="id"
+      @selection-change="selectedIds = $event.map((item: any) => item.id)"
+    >
+      <el-table-column v-if="canManage" type="selection" width="48" />
       <el-table-column label="评论者" min-width="150">
         <template #default="{ row }">
           <div class="user-cell">
@@ -50,7 +62,17 @@
       <el-table-column label="评论内容" min-width="320">
         <template #default="{ row }">
           <p class="comment-content">{{ row.content }}</p>
-          <el-tag v-if="row.parentId" size="small" type="info">回复 #{{ row.parentId }}</el-tag>
+          <el-tag v-if="row.rootId" size="small" type="info">讨论 #{{ row.rootId }}</el-tag>
+          <el-tag v-if="row.replyToUserName" size="small" type="info">
+            回复 @{{ row.replyToUserName }}
+          </el-tag>
+          <el-tooltip
+            v-if="row.reportCount"
+            :content="(row.reportReasons || []).join('；')"
+            placement="top"
+          >
+            <el-tag size="small" type="danger">{{ row.reportCount }} 次举报</el-tag>
+          </el-tooltip>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100">
@@ -103,6 +125,7 @@ import { computed, onMounted, ref } from 'vue'
 
 const loading = ref(false)
 const updatingId = ref<number | null>(null)
+const selectedIds = ref<number[]>([])
 const rows = ref<any[]>([])
 const total = ref(0)
 const query = ref({ keyword: '', status: '', page: 1, pageSize: 10 })
@@ -146,6 +169,25 @@ async function toggleStatus(row: any) {
   } finally {
     updatingId.value = null
   }
+}
+
+async function batchUpdate(status: 'visible' | 'hidden') {
+  if (!selectedIds.value.length) return
+  if (status === 'hidden') {
+    await ElMessageBox.confirm(
+      `确定隐藏选中的 ${selectedIds.value.length} 条评论吗？`,
+      '批量隐藏',
+      {
+        type: 'warning',
+        confirmButtonText: '隐藏',
+        cancelButtonText: '取消',
+      },
+    )
+  }
+  await memberProfileCommentApi.batchUpdateStatus(selectedIds.value, status)
+  ElMessage.success('评论状态已批量更新')
+  selectedIds.value = []
+  await fetchList()
 }
 
 onMounted(fetchList)

@@ -288,7 +288,7 @@ public enum SystemPermission {
   BLOG_COMMENT_LIST(
       "查询博客评论", "blog-comment:list", "api", "/blog/admin/articles/{articleId}/comments", "GET"),
   BLOG_COMMENT_MANAGE(
-      "管理博客评论", "blog-comment:manage", "api", "/blog/admin/comments/{commentId}/status", "PATCH"),
+      "管理博客评论", "blog-comment:manage", "api", "/blog/admin/comments/**", "PATCH"),
   MEMBER_PROFILE_COMMENT_LIST(
       "查询成员主页评论",
       "member-profile-comment:list",
@@ -299,7 +299,7 @@ public enum SystemPermission {
       "管理成员主页评论",
       "member-profile-comment:manage",
       "api",
-      "/member-profile-comments/{commentId}/status",
+      "/member-profile-comments/**",
       "PATCH"),
   BLOG_INTERACTION_LIST(
       "查询博客互动记录", "blog-interaction:list", "api", "/blog/admin/interactions", "GET"),

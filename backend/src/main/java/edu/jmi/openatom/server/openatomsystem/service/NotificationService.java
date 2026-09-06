@@ -23,4 +23,6 @@ public interface NotificationService {
   Result<String> delete(Integer notificationId);
 
   Result<Integer> unreadCount();
+
+  void sendToUser(Integer receiverUserId, String title, String content, String type);
 }
