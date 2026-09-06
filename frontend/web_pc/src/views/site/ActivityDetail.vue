@@ -23,7 +23,11 @@
         </div>
 
         <div :class="{ 'is-fallback': !activity.coverUrl }" class="detail-hero__visual">
-          <img v-if="activity.coverUrl" :alt="activity.title || '活动封面'" :src="activity.coverUrl" />
+          <img
+            v-if="activity.coverUrl"
+            :alt="activity.title || '活动封面'"
+            :src="activity.coverUrl"
+          />
           <div v-else class="detail-hero__placeholder">
             <strong>{{ day(activity.activityAt) }}</strong>
             <span>{{ month(activity.activityAt) }}</span>
@@ -79,14 +83,33 @@
               type="warning"
             />
             <el-form label-position="top">
-              <el-form-item v-for="field in fields" :key="field.label" :label="field.label" :required="field.required">
-                <el-select v-if="field.type === 'select'" v-model="form[field.label]" placeholder="请选择">
-                  <el-option v-for="option in field.options || []" :key="option" :label="option" :value="option" />
+              <el-form-item
+                v-for="field in fields"
+                :key="field.label"
+                :label="field.label"
+                :required="field.required"
+              >
+                <el-select
+                  v-if="field.type === 'select'"
+                  v-model="form[field.label]"
+                  placeholder="请选择"
+                >
+                  <el-option
+                    v-for="option in field.options || []"
+                    :key="option"
+                    :label="option"
+                    :value="option"
+                  />
                 </el-select>
                 <el-radio-group v-else-if="field.type === 'radio'" v-model="form[field.label]">
                   <el-radio v-for="option in field.options || []" :key="option" :label="option" />
                 </el-radio-group>
-                <el-input v-else-if="field.type === 'textarea'" v-model="form[field.label]" :rows="3" type="textarea" />
+                <el-input
+                  v-else-if="field.type === 'textarea'"
+                  v-model="form[field.label]"
+                  :rows="3"
+                  type="textarea"
+                />
                 <el-input v-else v-model="form[field.label]" />
               </el-form-item>
             </el-form>
@@ -184,7 +207,10 @@ async function fetchDetail() {
 function initializeForm() {
   const currentUser = getCurrentUser()
   form.value = Object.fromEntries(
-    fields.value.map((field) => [field.label, field.label === '学院' ? resolveCollegeValue(currentUser?.college) : '']),
+    fields.value.map((field) => [
+      field.label,
+      field.label === '学院' ? resolveCollegeValue(currentUser?.college) : '',
+    ]),
   )
 }
 
@@ -402,31 +428,6 @@ onMounted(() => {
   max-width: 320px;
   margin: 0;
   line-height: 1.8;
-}
-
-.markdown-body :deep(h1),
-.markdown-body :deep(h2),
-.markdown-body :deep(h3) {
-  color: var(--oa-text);
-  font-family: var(--font-family-display);
-}
-
-.markdown-body :deep(h1:first-child),
-.markdown-body :deep(h2:first-child),
-.markdown-body :deep(h3:first-child) {
-  margin-top: 0;
-}
-
-.markdown-body :deep(p),
-.markdown-body :deep(li) {
-  color: var(--oa-muted);
-  line-height: 1.95;
-}
-
-.markdown-body :deep(code) {
-  padding: 2px 6px;
-  background: var(--oa-button-subtle-bg);
-  border-radius: 4px;
 }
 
 .signup-panel {

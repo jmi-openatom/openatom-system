@@ -186,42 +186,6 @@ function handleReply(comment: Record<string, any>) {
   line-height: 1.7;
 }
 
-.blog-comment-item__content :deep(p) {
-  margin: 0 0 10px;
-  color: var(--oa-text-soft);
-  font-size: 14.5px;
-  line-height: 1.7;
-}
-
-.blog-comment-item__content :deep(p:last-child) {
-  margin-bottom: 0;
-}
-
-.blog-comment-item__content :deep(pre) {
-  margin: 14px 0;
-  border-radius: 8px;
-  background: var(--oa-page-soft-bg);
-  border: 1px solid var(--oa-border);
-}
-
-.blog-comment-item__content :deep(code) {
-  padding: 2px 6px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 13px;
-  color: var(--oa-primary, #1d1d1f);
-  background: color-mix(in srgb, var(--oa-primary, #1d1d1f) 6%, var(--oa-page-soft-bg));
-  border-radius: 4px;
-}
-
-.blog-comment-item__content :deep(blockquote) {
-  margin: 12px 0;
-  padding: 8px 16px;
-  border-left: 3px solid var(--oa-border);
-  color: var(--oa-muted);
-  background: var(--oa-page-soft-bg);
-  border-radius: 0 8px 8px 0;
-}
-
 .blog-comment-item__replies {
   display: grid;
   gap: 4px;

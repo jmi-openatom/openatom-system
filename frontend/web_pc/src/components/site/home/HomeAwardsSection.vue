@@ -1,5 +1,8 @@
 <template>
-  <section id="achievements" class="container section achievements-section home-interactive-section">
+  <section
+    id="achievements"
+    class="container section achievements-section home-interactive-section"
+  >
     <HomeInteractiveBackdrop :radius="220" :spacing="64" :strength="20" />
     <div class="section-heading reveal-block">
       <span>成果展示</span>
@@ -18,6 +21,8 @@
         :class="{ 'is-active': index === activeIndex }"
         class="award-exhibit__item reveal-card"
         type="button"
+        :aria-pressed="index === activeIndex"
+        @click="setActive(index)"
         @focus="setActive(index)"
         @pointerenter="setActive(index)"
       >
@@ -30,13 +35,13 @@
 
       <Transition name="award-copy" mode="out-in">
         <div :key="activeKey" class="award-exhibit__spotlight">
-        <span>{{ activeAward?.year }}</span>
-        <h3>{{ activeAward?.title }}</h3>
-        <p>{{ activeAward?.competitionName }}</p>
-        <div>
-          <strong>{{ activeAward?.awardLevel }}</strong>
-          <small>{{ activeAward?.teamName }}</small>
-        </div>
+          <span>{{ activeAward?.year }}</span>
+          <h3>{{ activeAward?.title }}</h3>
+          <p>{{ activeAward?.competitionName }}</p>
+          <div>
+            <strong>{{ activeAward?.awardLevel }}</strong>
+            <small>{{ activeAward?.teamName }}</small>
+          </div>
         </div>
       </Transition>
     </div>
@@ -56,7 +61,9 @@ const props = defineProps<{
 
 const activeIndex = ref(0)
 const activeAward = computed(() => props.awards[activeIndex.value])
-const activeKey = computed(() => activeAward.value?.id || `${activeAward.value?.year}-${activeAward.value?.title}`)
+const activeKey = computed(
+  () => activeAward.value?.id || `${activeAward.value?.year}-${activeAward.value?.title}`,
+)
 const traceStyle = computed(() => ({
   '--award-progress': props.awards.length > 1 ? activeIndex.value / (props.awards.length - 1) : 0,
 }))
@@ -66,7 +73,7 @@ function setActive(index: number) {
 }
 
 function resetFocus() {
-  activeIndex.value = 0
+  if (!document.activeElement?.closest('.award-exhibit')) activeIndex.value = 0
 }
 
 watch(

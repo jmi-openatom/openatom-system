@@ -3,7 +3,7 @@
     <div class="queue-header">
       <div>
         <h2>面试现场</h2>
-        <p>工作人员手动签到，面试间完成全组评价后方可叫下一位</p>
+        <p>完成全组评价后叫下一位；现场异常时可强制叫号，稍后补交评价</p>
       </div>
       <div class="queue-header__actions">
         <el-select
@@ -74,23 +74,31 @@
           <div v-else class="room-empty">尚未叫号</div>
           <footer>
             <el-button
+              v-if="room.current && hasPermission('interview:update')"
+              type="danger"
+              plain
+              :disabled="!room.waitingCount || sessionClosed || callingRoomId !== null"
+              @click="forceCallNext(room)"
+              >强制叫号</el-button
+            >
+            <el-button
               v-if="room.current"
               type="warning"
               plain
-              :disabled="sessionClosed"
+              :disabled="sessionClosed || callingRoomId !== null"
               :loading="callingRoomId === room.roomId"
               @click="recoverRoom(room)"
               >异常恢复</el-button
             >
             <el-button
-              :disabled="!room.current || sessionClosed"
+              :disabled="!room.current || sessionClosed || callingRoomId !== null"
               :loading="callingRoomId === room.roomId"
               @click="callAgain(room)"
               >再次呼叫</el-button
             >
             <el-button
               type="primary"
-              :disabled="!room.waitingCount || sessionClosed"
+              :disabled="!room.waitingCount || sessionClosed || callingRoomId !== null"
               :loading="callingRoomId === room.roomId"
               @click="callNext(room)"
               >叫下一位</el-button
@@ -128,6 +136,7 @@
                   value="completed"
                 />
                 <el-option label="缺席/过号" value="no_show" />
+                <el-option label="待补评价" value="pending_feedback" />
               </el-select>
             </div>
           </div>
@@ -208,6 +217,9 @@
                 class="operation-hint"
                 >{{ row.queueStatus === 'called' ? '已通知' : '已处理' }}</span
               >
+              <span v-if="row.queueStatus === 'pending_feedback'" class="operation-hint">
+                请在工作台补交评价
+              </span>
             </template>
           </el-table-column>
         </el-table>
@@ -264,6 +276,9 @@
         <el-table-column prop="operatorId" label="操作人" width="90"
           ><template #default="{ row }">{{ row.operatorId || '-' }}</template></el-table-column
         >
+        <el-table-column label="原因 / 说明" min-width="220">
+          <template #default="{ row }">{{ operationDetail(row) }}</template>
+        </el-table-column>
       </el-table>
     </el-drawer>
   </ViewPage>
@@ -273,6 +288,8 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import { interviewSessionApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
+import { hasPermission } from '@/utils/permission'
+import { promptForceCallReason } from '@/utils/interviewQueue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -307,7 +324,7 @@ const filteredCandidates = computed(() =>
 const checkedInCount = computed(
   () =>
     (queue.value?.candidates || []).filter((item: any) =>
-      ['waiting', 'called', 'completed'].includes(item.queueStatus),
+      ['waiting', 'called', 'completed', 'pending_feedback'].includes(item.queueStatus),
     ).length,
 )
 const sessionClosed = computed(() => queue.value?.sessionStatus === 'completed')
@@ -323,6 +340,7 @@ const stats = computed(() => {
     },
     { key: 'waiting', label: '正在候场', value: value.waiting || 0, hint: '已签到未叫号' },
     { key: 'completed', label: '已完成', value: value.completed || 0, hint: '全组评价已提交' },
+    { key: 'pendingFeedback', label: '待补评价', value: value.pendingFeedback || 0, hint: '强制叫号后待补交' },
     { key: 'noShow', label: '缺席/过号', value: value.noShow || 0, hint: '可恢复候场' },
     {
       key: 'notCheckedIn',
@@ -412,6 +430,7 @@ async function moveRoom() {
   }
 }
 async function callNext(room: any) {
+  if (callingRoomId.value !== null) return
   callingRoomId.value = room.roomId
   try {
     const candidate = await interviewSessionApi.callNext(room.roomId)
@@ -421,7 +440,26 @@ async function callNext(room: any) {
     callingRoomId.value = null
   }
 }
+async function forceCallNext(room: any) {
+  if (!room.current || sessionClosed.value || callingRoomId.value !== null) return
+  const roomId = room.roomId
+  const expectedInterviewId = room.current.interviewId
+  callingRoomId.value = roomId
+  try {
+    const reason = await promptForceCallReason(room.current.applicantName, room.name)
+    if (!reason) return
+    const candidate = await interviewSessionApi.forceCallNext(roomId, expectedInterviewId, reason)
+    ElMessage.success(`已强制呼叫 ${candidate.applicantName}，原候选人的评价已保留`)
+    await loadQueue()
+  } catch {
+    // API 错误由请求层提示；刷新多人同时操作后的实际队列。
+    await loadQueue()
+  } finally {
+    callingRoomId.value = null
+  }
+}
 async function callAgain(room: any) {
+  if (callingRoomId.value !== null) return
   callingRoomId.value = room.roomId
   try {
     await interviewSessionApi.callAgain(room.roomId)
@@ -522,6 +560,7 @@ function statusText(status: string) {
         completed: '已完成',
         cancelled: '已撤销',
         no_show: '缺席/过号',
+        pending_feedback: '待补评价',
       } as Record<string, string>
     )[status] || status
   )
@@ -535,6 +574,7 @@ function statusType(status: string) {
         completed: 'success',
         cancelled: 'info',
         no_show: 'danger',
+        pending_feedback: 'warning',
       } as Record<string, string>
     )[status] || 'info'
   )
@@ -546,6 +586,7 @@ function actionText(action: string) {
         check_in: '签到',
         undo_check_in: '撤销签到',
         call_next: '叫下一位',
+        force_call_next: '强制叫号',
         call_again: '再次呼叫',
         mark_no_show: '标记缺席/过号',
         restore_waiting: '恢复候场',
@@ -556,6 +597,17 @@ function actionText(action: string) {
       } as Record<string, string>
     )[action] || action
   )
+}
+function operationDetail(row: any) {
+  try {
+    const detail = typeof row.detailJson === 'string' ? JSON.parse(row.detailJson) : row.detailJson
+    if (row.action === 'force_call_next') {
+      return `上一位面试 #${detail?.previousInterviewId ?? '-'}；${detail?.reason || '未填写原因'}`
+    }
+    return detail?.reason || '-'
+  } catch {
+    return '-'
+  }
 }
 onMounted(async () => {
   await loadSessions()
@@ -608,7 +660,7 @@ onBeforeUnmount(() => {
 }
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -648,6 +700,7 @@ onBeforeUnmount(() => {
 }
 .room-card footer {
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 .room-current {
   display: grid;

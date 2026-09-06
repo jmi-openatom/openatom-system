@@ -90,7 +90,7 @@
       <section class="site-system-section">
         <div v-if="detail" class="container regulation-detail-layout">
           <article ref="regulationDocumentRef" class="regulation-document site-system-surface">
-            <MarkdownContent :content="detail.contentMarkdown" />
+            <MarkdownContent :content="detail.contentMarkdown" heading-id-prefix="" />
           </article>
           <aside class="regulation-sidebar">
             <nav

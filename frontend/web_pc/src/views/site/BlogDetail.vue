@@ -55,12 +55,37 @@
 
     <section class="blog-detail__body home-interactive-section">
       <div class="container blog-detail__grid">
-        <article class="markdown-body blog-article">
-          <MarkdownContent :content="content" />
+        <div v-if="headings.length" class="blog-mobile-outline">
+          <BlogReadingOutline
+            :key="String(route.params.id)"
+            :active-id="activeHeadingId"
+            :headings="headings"
+            :progress="readingProgress"
+            collapsible
+            @select="navigateToHeading"
+          />
+        </div>
+        <article class="blog-article">
+          <div class="blog-article__reading-meta">
+            <span><BookOpen :size="16" aria-hidden="true" /> 正文</span>
+            <span><Clock3 :size="14" aria-hidden="true" /> 预计阅读 {{ readingMinutes }} 分钟</span>
+          </div>
+          <div ref="articleContent" class="blog-article__content">
+            <MarkdownContent :content="content" heading-id-prefix="blog-article" />
+          </div>
+          <div class="blog-article__end"><span aria-hidden="true"></span> 本文完</div>
         </article>
 
         <aside class="blog-aside">
-          <div class="blog-aside__block">
+          <div v-if="headings.length" class="blog-aside__outline">
+            <BlogReadingOutline
+              :active-id="activeHeadingId"
+              :headings="headings"
+              :progress="readingProgress"
+              @select="navigateToHeading"
+            />
+          </div>
+          <div class="blog-aside__block blog-aside__author">
             <span>作者</span>
             <router-link
               v-if="article.authorId && isLoggedIn"
@@ -170,8 +195,17 @@ import { siteApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { getCurrentUser, getToken } from '@/utils/auth.ts'
 import MarkdownContent from '@/components/common/MarkdownContent.vue'
+import BlogReadingOutline from '@/components/site/blog/BlogReadingOutline.vue'
 import { SITE_NAME, SITE_URL, updateSeo } from '@/utils/seo.ts'
-import { computed, onMounted, ref } from 'vue'
+import { extractMarkdownHeadings, markdownToPlainText } from '@/utils/markdown.ts'
+import { BookOpen, Clock3 } from 'lucide-vue-next'
+import {
+  usePreferredReducedMotion,
+  useResizeObserver,
+  useWindowScroll,
+  useWindowSize,
+} from '@vueuse/core'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -183,15 +217,31 @@ const article = ref<Record<string, any>>({})
 const comments = ref<any[]>([])
 const commentForm = ref({ content: '', parentId: null as number | null })
 const replyTarget = ref<Record<string, any> | null>(null)
+const articleContent = ref<HTMLElement | null>(null)
+const activeHeadingId = ref('')
+const readingProgress = ref(0)
+const preferredReducedMotion = usePreferredReducedMotion()
+const { y: scrollY } = useWindowScroll({ throttle: 60 })
+const { height: windowHeight, width: windowWidth } = useWindowSize()
+let detailRequestId = 0
 
 const isLoggedIn = computed(() => Boolean(getToken()))
 const currentUser = computed(() => getCurrentUser())
 const canEdit = computed(
   () => currentUser.value?.id && currentUser.value.id === article.value.authorId,
 )
-const content = computed(() =>
-  article.value.contentMarkdown || article.value.summary || '',
-)
+const content = computed(() => article.value.contentMarkdown || article.value.summary || '')
+const headings = computed(() => extractMarkdownHeadings(content.value, 'blog-article'))
+const readingMinutes = computed(() => {
+  const text = markdownToPlainText(content.value)
+  const chineseCharacters =
+    text.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/gu)?.length || 0
+  const otherWords =
+    text
+      .replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/gu, ' ')
+      .match(/[\p{Letter}\p{Number}]+/gu)?.length || 0
+  return Math.max(1, Math.ceil(chineseCharacters / 350 + otherWords / 220))
+})
 const totalComments = computed(() => countComments(comments.value))
 const currentUserName = computed(
   () => currentUser.value?.realName || currentUser.value?.userName || '我',
@@ -205,9 +255,19 @@ const commentPlaceholder = computed(() =>
 )
 
 async function fetchDetail() {
+  const requestId = ++detailRequestId
+  const articleId = route.params.id
   loading.value = true
+  article.value = {}
+  comments.value = []
+  commentForm.value = { content: '', parentId: null }
+  replyTarget.value = null
+  activeHeadingId.value = ''
+  readingProgress.value = 0
   try {
-    article.value = await siteApi.blogArticleDetail(route.params.id)
+    const result = await siteApi.blogArticleDetail(articleId)
+    if (requestId !== detailRequestId) return
+    article.value = result
     updateSeo(
       {
         title: `${article.value.title || '文章详情'}｜${SITE_NAME}`,
@@ -237,9 +297,15 @@ async function fetchDetail() {
       },
       route.path,
     )
-    await refreshComments()
+    const articleComments = await siteApi.blogComments(articleId)
+    if (requestId === detailRequestId) comments.value = articleComments || []
   } finally {
-    loading.value = false
+    if (requestId === detailRequestId) {
+      loading.value = false
+      await nextTick()
+      updateReadingState()
+      await scrollToHash('auto')
+    }
   }
 }
 
@@ -323,9 +389,75 @@ function coverInitial(value: string) {
     .toUpperCase()
 }
 
-onMounted(() => {
-  fetchDetail()
+function readingOffset() {
+  const headerHeight =
+    Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--oa-site-header-height'),
+    ) || 72
+  return headerHeight + 32
+}
+
+function updateReadingState() {
+  const element = articleContent.value
+  if (!element || !content.value) return
+  const rect = element.getBoundingClientRect()
+  const offset = readingOffset()
+  const readableDistance = Math.max(1, rect.height - windowHeight.value + offset)
+  readingProgress.value = Math.round(
+    Math.max(0, Math.min(1, (offset - rect.top) / readableDistance)) * 100,
+  )
+
+  let current = ''
+  for (const heading of headings.value) {
+    const headingElement = document.getElementById(heading.id)
+    if (!headingElement || !element.contains(headingElement)) continue
+    if (headingElement.getBoundingClientRect().top <= offset + 8) current = heading.id
+    else break
+  }
+  activeHeadingId.value = current
+}
+
+async function scrollToHash(behavior: ScrollBehavior) {
+  if (!route.hash || loading.value) return
+  let id: string
+  try {
+    id = decodeURIComponent(route.hash.slice(1))
+  } catch {
+    return
+  }
+  if (!headings.value.some((heading) => heading.id === id)) return
+  await nextTick()
+  requestAnimationFrame(() => {
+    const heading = document.getElementById(id)
+    if (!heading || !articleContent.value?.contains(heading)) return
+    window.scrollTo({
+      top: window.scrollY + heading.getBoundingClientRect().top - readingOffset(),
+      behavior: preferredReducedMotion.value === 'reduce' ? 'instant' : behavior,
+    })
+    heading.setAttribute('tabindex', '-1')
+    heading.focus({ preventScroll: true })
+    updateReadingState()
+  })
+}
+
+async function navigateToHeading(id: string) {
+  const hash = `#${id}`
+  if (route.hash === hash) await scrollToHash('smooth')
+  else await router.replace({ hash })
+}
+
+watch(() => route.params.id, fetchDetail, { immediate: true })
+watch(
+  () => route.hash,
+  () => scrollToHash('smooth'),
+  { flush: 'post' },
+)
+watch([scrollY, windowHeight, windowWidth], updateReadingState, { flush: 'post' })
+watch(content, async () => {
+  await nextTick()
+  updateReadingState()
 })
+useResizeObserver(articleContent, updateReadingState)
 </script>
 
 <style scoped>
@@ -372,7 +504,7 @@ onMounted(() => {
   margin-top: 18px;
 }
 
-.blog-detail h1 {
+.blog-detail__copy h1 {
   margin: 16px 0;
   color: var(--oa-text);
   font-size: clamp(34px, 4vw, 56px);
@@ -411,18 +543,20 @@ onMounted(() => {
 }
 
 .blog-detail__body {
-  padding: 36px 0 64px;
+  padding: 40px 0 72px;
+  overflow: visible;
 }
 
 .blog-detail__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 28px;
   align-items: start;
 }
 
 .blog-article,
 .blog-aside,
+.blog-mobile-outline,
 .comments-section {
   padding: 24px;
   background: var(--oa-elevated-bg);
@@ -431,13 +565,77 @@ onMounted(() => {
 }
 
 .blog-article {
+  min-width: 0;
   min-height: 420px;
-  overflow: hidden;
+  padding: clamp(24px, 4vw, 56px);
+}
+
+.blog-article__reading-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 auto 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--oa-border);
+  color: var(--oa-muted);
+  font-size: 12px;
+}
+
+.blog-article__reading-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blog-article__reading-meta > span:first-child {
+  color: var(--oa-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.blog-article__content {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.blog-article__end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 48px;
+  color: var(--oa-muted);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.blog-article__end > span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.blog-mobile-outline {
+  display: none;
 }
 
 .blog-aside {
   display: grid;
-  gap: 18px;
+  position: sticky;
+  top: calc(var(--oa-site-header-height) + 24px);
+  gap: 24px;
+  min-width: 0;
+  max-height: calc(100dvh - var(--oa-site-header-height) - 48px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.blog-aside__outline {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--oa-border);
 }
 
 .blog-aside__block {
@@ -445,14 +643,15 @@ onMounted(() => {
   gap: 8px;
 }
 
-.blog-aside__block span {
+.blog-aside__block > span,
+.blog-author > span {
   color: var(--oa-muted);
   font-size: 13px;
 }
 
-.blog-aside__block strong {
+.blog-author strong {
   color: var(--oa-text);
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .blog-author {
@@ -632,26 +831,6 @@ onMounted(() => {
   padding: 0;
 }
 
-.markdown-body :deep(h1),
-.markdown-body :deep(h2),
-.markdown-body :deep(h3) {
-  color: var(--oa-text);
-  line-height: 1.35;
-}
-
-.markdown-body :deep(p),
-.markdown-body :deep(li) {
-  color: var(--oa-muted);
-  font-size: 16px;
-  line-height: 1.9;
-}
-
-.markdown-body :deep(code) {
-  padding: 2px 6px;
-  background: var(--oa-page-soft-bg);
-  border-radius: 4px;
-}
-
 @media (max-width: 900px) {
   .blog-detail__hero-inner,
   .blog-detail__grid {
@@ -661,9 +840,48 @@ onMounted(() => {
   .blog-detail__hero-inner {
     padding-top: 78px;
   }
+
+  .blog-detail__grid {
+    gap: 18px;
+  }
+
+  .blog-mobile-outline {
+    display: block;
+    padding: 20px 24px;
+  }
+
+  .blog-aside {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+    overflow: visible;
+  }
+
+  .blog-aside__outline {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {
+  .blog-detail__body {
+    padding-top: 20px;
+  }
+
+  .blog-article,
+  .blog-mobile-outline {
+    padding: 22px 18px;
+  }
+
+  .blog-article__reading-meta {
+    margin-bottom: 26px;
+    padding-bottom: 16px;
+  }
+
+  .blog-aside {
+    grid-template-columns: 1fr;
+    padding: 22px;
+  }
+
   .comments-section__head,
   .comment-composer,
   .comment-login-tip,

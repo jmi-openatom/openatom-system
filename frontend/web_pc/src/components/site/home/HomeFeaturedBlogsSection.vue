@@ -1,7 +1,8 @@
 <template>
   <section
-    v-if="articles.length"
+    v-if="loading || error || articles.length"
     id="featured-blogs"
+    :aria-busy="loading"
     class="featured-blog-section home-interactive-section"
   >
     <HomeInteractiveBackdrop :radius="220" :spacing="66" :strength="18" />
@@ -10,16 +11,40 @@
       <div class="section-heading reveal-block">
         <span>精选阅读</span>
         <h2>推荐文章</h2>
-        <p>从社团成员的项目实践、开源笔记和技术复盘里，挑出值得先读的内容。</p>
+        <p>精选项目实践、开源笔记与技术复盘，让每一次探索都有所沉淀。</p>
       </div>
 
-      <div class="featured-blog-grid">
+      <div v-if="loading" class="featured-blog-grid" role="status">
+        <span class="sr-only">正在加载推荐文章</span>
+        <div
+          v-for="index in 3"
+          :key="index"
+          :class="{ 'is-primary': index === 1 }"
+          class="featured-blog-card featured-blog-card--skeleton"
+          aria-hidden="true"
+        >
+          <el-skeleton :rows="4" />
+        </div>
+      </div>
+
+      <div v-else-if="error" class="featured-blog-section__error" role="status">
+        <p>推荐文章暂时加载失败，请稍后重试。</p>
+        <button class="featured-blog-section__more" type="button" @click="$emit('retry')">
+          重新加载推荐文章
+        </button>
+      </div>
+
+      <div v-else class="featured-blog-grid">
         <article
           v-for="(article, index) in articles"
           :key="article.id || article.title"
           :class="{ 'is-primary': index === 0 }"
           class="featured-blog-card reveal-card"
+          :tabindex="article.id ? 0 : undefined"
+          :role="article.id ? 'link' : undefined"
+          :aria-label="article.id ? '阅读：' + article.title : undefined"
           @click="openArticle(article)"
+          @keydown.enter="openArticle(article)"
         >
           <div class="featured-blog-card__media" :class="{ 'is-empty': !article.coverUrl }">
             <img
@@ -67,8 +92,17 @@ import { useRouter } from 'vue-router'
 import { monthDayParts } from '@/utils/format'
 import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
 
-defineProps<{
-  articles: any[]
+withDefaults(
+  defineProps<{
+    articles: any[]
+    loading?: boolean
+    error?: boolean
+  }>(),
+  { loading: false, error: false },
+)
+
+defineEmits<{
+  retry: []
 }>()
 
 const router = useRouter()
@@ -105,7 +139,7 @@ function formatBlogDate(value: string) {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 34px;
+  gap: 40px;
   padding: 96px 24px;
 }
 
@@ -139,13 +173,37 @@ function formatBlogDate(value: string) {
 
 .featured-blog-card:hover {
   border-color: rgba(29, 29, 31, 0.24);
-  box-shadow: 0 28px 70px rgba(29, 29, 31, 0.14);
-  transform: translateY(-4px);
+  box-shadow: 0 22px 52px rgba(29, 29, 31, 0.12);
+  transform: translateY(-2px);
 }
 
 .featured-blog-card.is-primary {
   grid-row: span 2;
   min-height: 560px;
+}
+
+.featured-blog-card--skeleton {
+  align-content: end;
+  padding: 28px;
+  pointer-events: none;
+}
+
+.featured-blog-section__error {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 20px;
+  min-height: 260px;
+  padding: 28px;
+  border: 1px solid var(--oa-border);
+  border-radius: 28px;
+  background: var(--oa-elevated-bg);
+  color: var(--oa-muted);
+  text-align: center;
+}
+
+.featured-blog-section__error p {
+  margin: 0;
 }
 
 .featured-blog-card__media {
@@ -226,7 +284,7 @@ function formatBlogDate(value: string) {
   margin: 0;
   color: #ffffff;
   font-size: clamp(24px, 2.8vw, 44px);
-  line-height: 1.12;
+  line-height: 1.3;
   text-shadow: 0 2px 20px rgba(0, 0, 0, 0.55);
 }
 
@@ -283,6 +341,29 @@ function formatBlogDate(value: string) {
   background: #1d1d1f;
   color: #ffffff;
   transform: translateY(-2px);
+}
+
+.featured-blog-section__more:focus-visible {
+  outline: 3px solid var(--oa-focus-ring);
+  outline-offset: 3px;
+}
+
+.featured-blog-card:focus-visible {
+  outline: 2px solid var(--oa-text);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured-blog-card,
+  .featured-blog-card__media img,
+  .featured-blog-section__more {
+    transition: none;
+  }
+  .featured-blog-card:hover,
+  .featured-blog-card:hover .featured-blog-card__media img,
+  .featured-blog-section__more:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 900px) {

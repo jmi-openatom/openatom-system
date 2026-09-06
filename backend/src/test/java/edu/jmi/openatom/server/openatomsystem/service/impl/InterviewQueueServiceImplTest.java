@@ -15,8 +15,27 @@ import edu.jmi.openatom.server.openatomsystem.entity.InterviewRoomInterviewer;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import cn.dev33.satoken.stp.StpLogic;
+import cn.dev33.satoken.stp.StpUtil;
 
 class InterviewQueueServiceImplTest {
+  private StpLogic originalLogic;
+
+  @BeforeEach
+  void setUpAuthentication() {
+    originalLogic = StpUtil.getStpLogic();
+    StpLogic logic = mock(StpLogic.class);
+    when(logic.getLoginType()).thenReturn("login");
+    StpUtil.setStpLogic(logic);
+  }
+
+  @AfterEach
+  void restoreAuthentication() {
+    StpUtil.setStpLogic(originalLogic);
+  }
+
   @Test
   void callNextIsBlockedUntilCurrentInterviewIsCompleted() {
     InterviewRoomMapper roomMapper = mock(InterviewRoomMapper.class);

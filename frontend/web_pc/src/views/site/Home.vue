@@ -1,14 +1,22 @@
 <template>
-  <ViewPage class="home-page" :loading="loading">
+  <ViewPage class="home-page">
     <HomeHero :cool-down-time="heroMorphCoolDownTime" :morph-time="heroMorphTime" :texts="texts" />
-    <HomeOverviewPage :metrics="metrics" :tech-stack="techStack" @scroll-to="scrollTo" />
+    <div class="home-story">
+      <HomeOverviewPage :metrics="metrics" :tech-stack="techStack" :loading="loading" />
+    </div>
     <template v-if="renderDeferredSections">
       <HomeFocusSection :club="club" :focus-areas="focusAreas" :loading="loading" />
       <HomeActivitiesSection :activities="activities" :loading="loading" />
-      <HomeFeaturedBlogsSection :articles="featuredBlogs" />
+      <HomeFeaturedBlogsSection
+        :articles="featuredBlogs"
+        :loading="featuredBlogsLoading"
+        :error="featuredBlogsError"
+        @retry="loadFeaturedBlogs"
+      />
       <HomePeopleSection :people="people" :loading="loading" />
       <HomeAwardsSection :awards="awards" :loading="loading" />
       <HomePartnerClubsSection />
+      <div class="home-story"><HomeEnding /></div>
     </template>
   </ViewPage>
 </template>
@@ -22,8 +30,11 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
+  watch,
 } from 'vue'
 import { siteApi } from '@/api'
+import HomeEnding from '@/components/site/home/HomeEnding.vue'
+import '@/styles/home-story.css'
 import HomeHero from '@/components/site/home/HomeHero.vue'
 import HomeOverviewPage from '@/components/site/home/HomeOverviewPage.vue'
 
@@ -46,7 +57,7 @@ const HomePartnerClubsSection = defineAsyncComponent(
   () => import('@/components/site/home/HomePartnerClubsSection.vue'),
 )
 
-const loading = ref(false)
+const loading = ref(true)
 
 const renderDeferredSections = ref(false)
 
@@ -61,6 +72,8 @@ const focusAreas = ref<any[]>([])
 const activities = ref<any[]>([])
 
 const featuredBlogs = ref<any[]>([])
+const featuredBlogsLoading = ref(false)
+const featuredBlogsError = ref(false)
 
 const people = ref<any[]>([])
 
@@ -79,33 +92,47 @@ const heroMorphCoolDownTime = 2.4
 let isUnmounted = false
 let cancelHomeAnimationIdle: (() => void) | undefined
 let cancelDeferredSectionsIdle: (() => void) | undefined
+let refreshHomeAnimations: (() => void) | undefined
 
 async function loadClubHome() {
   loading.value = true
   try {
-    const [data, blogData] = await Promise.all([
-      siteApi.clubHome(),
-      siteApi.blogArticles({ featured: true, page: 1, pageSize: 3 }).catch(() => null),
-    ])
+    const data = await siteApi.clubHome()
+    if (isUnmounted) return
     club.value = data.club || {}
     metrics.value = data.metrics || []
     techStack.value = data.techStack || []
     focusAreas.value = data.focusAreas || []
     activities.value = data.activities || []
-    featuredBlogs.value = blogData?.list || []
     people.value = data.people || []
     awards.value = data.awards || []
   } catch (error) {
+    if (isUnmounted) return
     club.value = {}
     metrics.value = []
     techStack.value = []
     focusAreas.value = []
     activities.value = []
-    featuredBlogs.value = []
     people.value = []
     awards.value = []
   } finally {
-    loading.value = false
+    if (!isUnmounted) loading.value = false
+  }
+}
+
+async function loadFeaturedBlogs() {
+  if (isUnmounted || featuredBlogsLoading.value) return
+  featuredBlogsLoading.value = true
+  featuredBlogsError.value = false
+  try {
+    const data = await siteApi.blogArticles({ featured: true, page: 1, pageSize: 3 })
+    if (isUnmounted) return
+    featuredBlogs.value = data?.list || []
+  } catch {
+    if (isUnmounted) return
+    featuredBlogsError.value = true
+  } finally {
+    if (!isUnmounted) featuredBlogsLoading.value = false
   }
 }
 
@@ -273,70 +300,6 @@ async function createHomeAnimations() {
       .to('.home-hero__morph', { y: -34, scale: 0.985, ease: 'none' }, 0)
       .to('.hero__subtitle', { y: -18, autoAlpha: 0.74, ease: 'none' }, 0)
 
-    const overviewTimeline = gsap.timeline({
-      defaults: {
-        ease: 'power3.out',
-      },
-      scrollTrigger: {
-        trigger: '.home-overview-page',
-        start: 'top 72%',
-        once: true,
-      },
-    })
-
-    overviewTimeline.from(
-      '.command-panel',
-      {
-        y: 48,
-        autoAlpha: 0,
-        scale: 0.985,
-        duration: 0.9,
-      },
-      0.08,
-    )
-
-    if (document.querySelector('.metric-console__rail')) {
-      overviewTimeline
-        .from(
-          '.metric-console__rail',
-          {
-            scaleX: 0,
-            transformOrigin: 'center center',
-            duration: 0.72,
-          },
-          0.34,
-        )
-        .from(
-          '.metric-console__core',
-          {
-            y: 24,
-            autoAlpha: 0,
-            duration: 0.68,
-          },
-          0.3,
-        )
-        .from(
-          '.metric-node',
-          {
-            y: 40,
-            autoAlpha: 0,
-            scale: 0.92,
-            transformOrigin: '50% 100%',
-            duration: 0.72,
-            ease: 'back.out(1.35)',
-            stagger: {
-              each: 0.07,
-              from: 'center',
-            },
-          },
-          0.52,
-        )
-    }
-
-    gsap.utils
-      .toArray<HTMLElement>('.metric-console__core strong, .metric-node strong')
-      .forEach((element) => animateMetricValue(element, gsap))
-
     if (document.querySelector('.reveal-block')) {
       gsap.set('.reveal-block', {
         y: 58,
@@ -393,14 +356,23 @@ async function createHomeAnimations() {
 
     ScrollTrigger.refresh()
   }, instance?.proxy?.$el)
+  refreshHomeAnimations = () => ScrollTrigger.refresh()
 }
 
+watch([featuredBlogsLoading, featuredBlogsError], () => refreshHomeAnimations?.(), {
+  flush: 'post',
+})
+
 onMounted(async () => {
-  await loadClubHome()
-  await nextTick()
+  void loadFeaturedBlogs()
   cancelDeferredSectionsIdle = runWhenIdle(() => {
+    if (isUnmounted) return
     renderDeferredSections.value = true
   })
+  await loadClubHome()
+  if (isUnmounted) return
+  await nextTick()
+  if (isUnmounted) return
   if (!shouldUseReducedHomeMotion()) {
     cancelHomeAnimationIdle = runWhenIdle(() => {
       void createHomeAnimations()
@@ -412,6 +384,7 @@ onBeforeUnmount(() => {
   isUnmounted = true
   cancelHomeAnimationIdle?.()
   cancelDeferredSectionsIdle?.()
+  refreshHomeAnimations = undefined
   animationContext.value?.revert()
 })
 </script>
@@ -1212,14 +1185,16 @@ onBeforeUnmount(() => {
   font-family: var(--font-family-display);
   font-size: 40px;
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.25;
   letter-spacing: 0;
 }
 
 .home-page .section-heading p {
+  max-width: 620px;
+  margin-inline: auto;
   color: var(--oa-muted);
   font-size: 17px;
-  line-height: 1.47;
+  line-height: 1.75;
 }
 
 .brief-grid,
@@ -1442,7 +1417,7 @@ onBeforeUnmount(() => {
   color: #ffffff;
   font-family: var(--font-family-display);
   font-size: clamp(28px, 3vw, 40px);
-  line-height: 1.08;
+  line-height: 1.25;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.52);
 }
 
@@ -1501,10 +1476,13 @@ onBeforeUnmount(() => {
 }
 
 .activity-stage__progress button {
-  width: 28px;
-  height: 2px;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  border-block: 21px solid transparent;
   padding: 0;
   background: rgba(29, 29, 31, 0.18);
+  background-clip: padding-box;
   cursor: pointer;
   transition:
     width 0.24s ease,
@@ -1843,12 +1821,13 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.hero__subtitle {
+.home-page .hero .hero__subtitle {
   max-width: 660px;
   margin: 0 auto;
   color: #66666b;
-  font-size: 18px;
-  line-height: 1.7;
+  font-size: clamp(16px, 1.5vw, 20px);
+  line-height: 1.8;
+  text-wrap: balance;
   letter-spacing: 0;
   will-change: transform, opacity;
 }
@@ -2038,6 +2017,19 @@ onBeforeUnmount(() => {
 
   .metric-node {
     min-height: 148px;
+  }
+}
+.home-page .activity-stage__card:focus-visible,
+.home-page .activity-stage__controls button:focus-visible,
+.home-page .award-exhibit__item:focus-visible {
+  outline: 2px solid var(--oa-text);
+  outline-offset: 5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page .activity-stage__controls button {
+    transition: none;
+    transform: none;
   }
 }
 </style>

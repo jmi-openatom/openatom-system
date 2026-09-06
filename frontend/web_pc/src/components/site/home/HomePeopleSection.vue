@@ -9,7 +9,7 @@
     <div class="section-heading reveal-block">
       <span>成员信息</span>
       <h2>我们的团队</h2>
-      <p>来自不同专业背景的成员汇聚于此，共同推动社团发展。</p>
+      <p>来自不同专业，因热爱相聚，在协作中共同成长。</p>
     </div>
 
     <el-empty v-if="!people.length && !loading" description="暂无主要人员数据" />
@@ -20,7 +20,7 @@
         <div class="people-stat-item">
           <div class="people-stat-dot people-stat-dot--blue" />
           <span class="people-stat-value">{{ mappedPeople.length }}</span>
-          <span class="people-stat-label">成员总数</span>
+          <span class="people-stat-label">展示成员</span>
         </div>
         <div class="people-stat-divider" />
         <div class="people-stat-item">
@@ -106,7 +106,7 @@ const loopedPeople = computed(() =>
 )
 
 const marqueeStyle = computed(() => ({
-  '--people-cycle-width': `${mappedPeople.value.length * 232}px`,
+  '--people-count': mappedPeople.value.length,
 }))
 
 function formatMemberIndex(index: number) {
@@ -247,7 +247,7 @@ onBeforeUnmount(() => {
   }
 
   to {
-    transform: translateX(calc(var(--people-cycle-width) * -1));
+    transform: translateX(calc(var(--people-count) * var(--people-card-width, 232px) * -1));
   }
 }
 
@@ -302,7 +302,7 @@ onBeforeUnmount(() => {
   font-family: var(--font-family-display);
   font-size: 24px;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.25;
 }
 
 .people-person__meta span {
@@ -345,7 +345,8 @@ onBeforeUnmount(() => {
 .people-wall__fade {
   pointer-events: none;
   position: absolute;
-  inset-y: 0;
+  top: 0;
+  bottom: 0;
   z-index: 2;
   width: min(18vw, 180px);
 }
@@ -402,6 +403,9 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 640px) {
+  .people-wall {
+    --people-card-width: 220px;
+  }
   .people-stats {
     width: 100%;
     justify-content: space-between;
@@ -434,8 +438,17 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .people-wall {
+    overflow-x: auto;
+  }
   .people-wall__marquee {
     animation: none;
+  }
+  .people-person[aria-hidden='true'] {
+    display: none;
+  }
+  .people-wall__fade {
+    display: none;
   }
 }
 </style>

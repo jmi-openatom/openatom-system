@@ -12,6 +12,7 @@ public interface InterviewQueueService {
   Result<String> checkIn(Integer interviewId);
   Result<String> undoCheckIn(Integer interviewId);
   Result<ResponseInterviewQueueVO.Candidate> callNext(Integer roomId);
+  Result<ResponseInterviewQueueVO.Candidate> forceCallNext(Integer roomId, Integer expectedInterviewId, String reason);
   Result<ResponseInterviewQueueVO.Candidate> callAgain(Integer roomId);
   Result<String> markNoShow(Integer interviewId);
   Result<String> restoreWaiting(Integer interviewId);

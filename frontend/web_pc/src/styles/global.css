@@ -1152,23 +1152,30 @@ a:hover {
   overflow-wrap: anywhere;
 }
 
-.markdown-body a {
+/* Keep the viewport as the scroll container for long-document sticky outlines. */
+body:has(.blog-detail),
+body:has(.regulation-detail-layout) {
+  overflow-x: clip;
+}
+
+/* Legacy HTML previews; MarkdownContent owns its typography. */
+.markdown-body:not(:has(.markdown-content)) a {
   color: var(--oa-primary, var(--el-color-primary));
   text-decoration: none;
 }
 
-.markdown-body a:hover {
+.markdown-body:not(:has(.markdown-content)) a:hover {
   text-decoration: underline;
 }
 
-.markdown-body blockquote {
+.markdown-body:not(:has(.markdown-content)) blockquote {
   margin: 18px 0;
   padding: 4px 0 4px 16px;
   color: var(--oa-muted);
   border-left: 3px solid var(--oa-border);
 }
 
-.markdown-body pre {
+.markdown-body:not(:has(.markdown-content)) pre {
   overflow-x: auto;
   margin: 18px 0;
   padding: 16px;
@@ -1177,14 +1184,14 @@ a:hover {
   border-radius: 8px;
 }
 
-.markdown-body pre code {
+.markdown-body:not(:has(.markdown-content)) pre code {
   padding: 0;
   color: var(--oa-text);
   background: transparent;
   border-radius: 0;
 }
 
-.markdown-body img {
+.markdown-body:not(:has(.markdown-content)) img {
   max-width: 100%;
   height: auto;
   margin: 14px 0;
@@ -1192,7 +1199,7 @@ a:hover {
   border-radius: 8px;
 }
 
-.markdown-body table {
+.markdown-body:not(:has(.markdown-content)) table {
   display: block;
   width: 100%;
   overflow-x: auto;
@@ -1200,18 +1207,18 @@ a:hover {
   margin: 18px 0;
 }
 
-.markdown-body th,
-.markdown-body td {
+.markdown-body:not(:has(.markdown-content)) th,
+.markdown-body:not(:has(.markdown-content)) td {
   padding: 10px 12px;
   border: 1px solid var(--oa-border);
 }
 
-.markdown-body th {
+.markdown-body:not(:has(.markdown-content)) th {
   color: var(--oa-text);
   background: var(--oa-page-bg);
 }
 
-.markdown-body hr {
+.markdown-body:not(:has(.markdown-content)) hr {
   margin: 24px 0;
   border: 0;
   border-top: 1px solid var(--oa-border);
@@ -2188,7 +2195,6 @@ html.dark .preview-count {
 }
 
 html.dark .section-subtitle,
-html.dark .markdown-content,
 html.dark .el-empty__description,
 html.dark .el-form-item__error,
 html.dark .el-table .cell,

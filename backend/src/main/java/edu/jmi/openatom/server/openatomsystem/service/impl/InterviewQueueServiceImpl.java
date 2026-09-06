@@ -61,9 +61,10 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
     }).toList();
     ResponseInterviewQueueVO.Stats stats = ResponseInterviewQueueVO.Stats.builder()
         .total(candidates.size())
-        .checkedIn((int) candidates.stream().filter(c -> List.of("waiting", "called", "completed").contains(c.getQueueStatus())).count())
+        .checkedIn((int) candidates.stream().filter(c -> List.of("waiting", "called", "pending_feedback", "completed").contains(c.getQueueStatus())).count())
         .waiting((int) candidates.stream().filter(c -> "waiting".equals(c.getQueueStatus())).count())
         .called((int) candidates.stream().filter(c -> "called".equals(c.getQueueStatus())).count())
+        .pendingFeedback((int) candidates.stream().filter(c -> "pending_feedback".equals(c.getQueueStatus())).count())
         .completed((int) candidates.stream().filter(c -> "completed".equals(c.getQueueStatus())).count())
         .noShow((int) candidates.stream().filter(c -> "no_show".equals(c.getQueueStatus())).count())
         .notCheckedIn((int) candidates.stream().filter(c -> List.of("not_checked_in", "cancelled").contains(c.getQueueStatus())).count())
@@ -136,16 +137,47 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Result<ResponseInterviewQueueVO.Candidate> callNext(Integer roomId) {
+    return advanceNext(roomId, null, null);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseInterviewQueueVO.Candidate> forceCallNext(Integer roomId,
+      Integer expectedInterviewId, String reason) {
+    String normalizedReason = reason == null ? "" : reason.strip();
+    if (expectedInterviewId == null || expectedInterviewId <= 0) {
+      return Result.error(400, "请提供当前叫号候选人");
+    }
+    if (normalizedReason.isBlank() || normalizedReason.length() > 500) {
+      return Result.error(400, "请填写不超过500字的强制叫号原因");
+    }
+    return advanceNext(roomId, expectedInterviewId, normalizedReason);
+  }
+
+  private Result<ResponseInterviewQueueVO.Candidate> advanceNext(Integer roomId,
+      Integer expectedInterviewId, String reason) {
+    boolean forced = expectedInterviewId != null;
     InterviewRoom room = roomId == null ? null : roomMapper.selectByIdForUpdate(roomId);
     if (room == null) return Result.error(404, "面试间不存在");
     if (!isPublished(room.getSessionId())) return Result.error(422, "面试场次未发布或已经结束");
     List<InterviewQueueState> active = queueMapper.selectActiveByRoomId(roomId);
+    if (forced && (active.size() != 1
+        || !Objects.equals(active.getFirst().getInterviewId(), expectedInterviewId))) {
+      return Result.error(409, "当前叫号候选人已变化，请刷新后重试");
+    }
+    Map<Integer, Interview> currentInterviews = new HashMap<>();
     for (InterviewQueueState current : active) {
       Interview currentInterview = interviewMapper.selectById(current.getInterviewId());
-      if (currentInterview != null && !"completed".equals(currentInterview.getStatus())) {
+      if (forced && (currentInterview == null
+          || !Objects.equals(currentInterview.getSessionId(), room.getSessionId())
+          || !Objects.equals(currentInterview.getRoomId(), roomId)
+          || "draft".equals(currentInterview.getStatus()))) {
+        return Result.error(409, "当前叫号候选人的安排已变化，请刷新后重试");
+      }
+      if (!forced && currentInterview != null && !"completed".equals(currentInterview.getStatus())) {
         return Result.error(422, "上一位候选人的所有面试官尚未提交评价，暂不能叫下一位");
       }
-      current.setStatus("completed"); queueMapper.updateById(current);
+      currentInterviews.put(current.getInterviewId(), currentInterview);
     }
     List<Interview> roomInterviews = interviewMapper.selectBySessionId(room.getSessionId()).stream()
         .filter(i -> Objects.equals(i.getRoomId(), roomId)).toList();
@@ -155,6 +187,31 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
         .filter(s -> Objects.equals(s.getRoomId(), roomId))
         .filter(s -> interviewMap.containsKey(s.getInterviewId()))
         .toList();
+    InterviewQueueState next = roomQueueStates.stream()
+        .filter(s -> Objects.equals(s.getRoomId(), roomId) && "waiting".equals(s.getStatus()))
+        .filter(s -> !List.of("draft", "completed").contains(interviewMap.get(s.getInterviewId()).getStatus()))
+        .min(Comparator.comparing((InterviewQueueState s) -> interviewMap.get(s.getInterviewId()).getQueueNumber(),
+            Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(InterviewQueueState::getCheckedInAt, Comparator.nullsLast(Comparator.naturalOrder())))
+        .orElse(null);
+    if (next == null) return Result.error(422, "当前面试间没有已签到的候选人");
+    // Validate the successor before any updates: a failed advance must preserve the current call.
+    Map<String, Object> operationDetail = new LinkedHashMap<>();
+    operationDetail.put("callCount", 1);
+    if (forced) {
+      InterviewQueueState previous = active.getFirst();
+      operationDetail.put("reason", reason);
+      operationDetail.put("previousInterviewId", previous.getInterviewId());
+      operationDetail.put("previousQueueStatus", previous.getStatus());
+      operationDetail.put("previousInterviewStatus", currentInterviews.get(previous.getInterviewId()).getStatus());
+    }
+    for (InterviewQueueState current : active) {
+      Interview currentInterview = currentInterviews.get(current.getInterviewId());
+      current.setStatus(currentInterview == null || "completed".equals(currentInterview.getStatus())
+          ? "completed" : "pending_feedback");
+      queueMapper.updateById(current);
+      if (forced) operationDetail.put("previousResultQueueStatus", current.getStatus());
+    }
     for (InterviewQueueState state : roomQueueStates) {
       Interview queuedInterview = interviewMap.get(state.getInterviewId());
       if ("waiting".equals(state.getStatus()) && "completed".equals(queuedInterview.getStatus())) {
@@ -162,17 +219,10 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
         queueMapper.updateById(state);
       }
     }
-    InterviewQueueState next = roomQueueStates.stream()
-        .filter(s -> Objects.equals(s.getRoomId(), roomId) && "waiting".equals(s.getStatus()))
-        .filter(s -> !"completed".equals(interviewMap.get(s.getInterviewId()).getStatus()))
-        .min(Comparator.comparing((InterviewQueueState s) -> interviewMap.get(s.getInterviewId()).getQueueNumber(),
-            Comparator.nullsLast(Comparator.naturalOrder()))
-            .thenComparing(InterviewQueueState::getCheckedInAt, Comparator.nullsLast(Comparator.naturalOrder())))
-        .orElse(null);
-    if (next == null) return Result.error(422, "当前面试间没有已签到的候选人");
     next.setStatus("called"); next.setCalledAt(new Timestamp(System.currentTimeMillis()));
     next.setCallCount(1); queueMapper.updateById(next);
-    log(next.getSessionId(), next.getInterviewId(), roomId, "call_next", Map.of("callCount", 1));
+    log(next.getSessionId(), next.getInterviewId(), roomId,
+        forced ? "force_call_next" : "call_next", operationDetail);
     return Result.success(candidate(interviewMap.get(next.getInterviewId()), next, room.getName()));
   }
 
@@ -197,7 +247,7 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
     Interview interview = findPublishedInterview(interviewId);
     if (interview == null) return Result.error(404, "找不到可处理的面试安排");
     InterviewQueueState state = queueMapper.selectByInterviewId(interviewId);
-    if (state != null && List.of("called", "completed").contains(state.getStatus())) {
+    if (state != null && List.of("called", "pending_feedback", "completed").contains(state.getStatus())) {
       return Result.error(422, "候选人已叫号或已完成，不能标记缺席");
     }
     if (state == null) {
@@ -237,7 +287,7 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
       return Result.error(422, "目标面试间不属于当前场次");
     }
     InterviewQueueState state = queueMapper.selectByInterviewId(interviewId);
-    if (state != null && List.of("called", "completed").contains(state.getStatus())) {
+    if (state != null && List.of("called", "pending_feedback", "completed").contains(state.getStatus())) {
       return Result.error(422, "候选人已叫号或已完成，不能临时换房");
     }
     Integer previousRoomId = interview.getRoomId();

@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestForceCallNextDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestInterviewSelfCheckInDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMoveInterviewRoomDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewQueueOperation;
@@ -51,6 +52,13 @@ public class InterviewQueueController {
   @SaCheckPermission("interview:update")
   public Result<ResponseInterviewQueueVO.Candidate> callNext(@PathVariable Integer roomId) {
     return service.callNext(roomId);
+  }
+
+  @PostMapping("/interview-rooms/{roomId}/force-call-next")
+  @SaCheckPermission("interview:update")
+  public Result<ResponseInterviewQueueVO.Candidate> forceCallNext(@PathVariable Integer roomId,
+      @Valid @RequestBody RequestForceCallNextDTO request) {
+    return service.forceCallNext(roomId, request.getExpectedInterviewId(), request.getReason());
   }
 
   @PostMapping("/interview-rooms/{roomId}/call-again")

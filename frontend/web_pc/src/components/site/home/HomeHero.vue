@@ -4,13 +4,15 @@
     <div aria-hidden="true" class="hero__glass"></div>
     <div class="container hero__inner">
       <div class="hero__content">
+        <h1 class="sr-only">开放原子开源社团 · JMI-OPENATOM</h1>
         <MorphingText
+          aria-hidden="true"
           class="home-hero__morph title"
           :cool-down-time="coolDownTime"
           :morph-time="morphTime"
           :texts="texts"
         />
-        <p class="hero__subtitle">开放协作、工程实践、真实项目，在校园里把开源做成日常。</p>
+        <p class="hero__subtitle">在真实项目中协作，在工程实践中成长。让开源，成为校园日常。</p>
       </div>
     </div>
   </section>

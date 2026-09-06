@@ -86,6 +86,15 @@
             </div>
           </div>
 
+          <el-alert
+            v-if="current.queueStatus === 'pending_feedback'"
+            class="pending-feedback-notice"
+            title="本场已强制叫下一位，评价尚未完成"
+            description="已有评价已保留，可在这里补交；全组提交后将自动完成本场面试。"
+            type="warning"
+            show-icon
+            :closable="false"
+          />
           <div class="team-progress">
             <div>
               <span>面试官提交进度</span>
@@ -215,7 +224,7 @@
         class="candidate-nav-button"
         size="large"
         :icon="ArrowLeft"
-        :disabled="!previousCandidate || switching"
+        :disabled="!previousCandidate || switching || callingNext || forcingNext"
         @click="goPrevious"
       >
         <span>上一位</span>
@@ -225,7 +234,7 @@
       <div v-if="current" class="footer-center">
         <span>{{ queueText(current) }} · {{ current.applicantName }}</span>
         <template v-if="canCallNext">
-          <el-button type="primary" size="large" :loading="callingNext" @click="callNextFromWorkbench">
+          <el-button type="primary" size="large" :loading="callingNext" :disabled="forcingNext" @click="callNextFromWorkbench">
             叫下一位
           </el-button>
         </template>
@@ -236,15 +245,24 @@
           <el-tag type="warning" effect="plain" size="large">
             等待 {{ Math.max(0, current.requiredCount - current.submittedCount) }} 位面试官
           </el-tag>
-          <el-button type="warning" plain size="large" :loading="submitting" @click="withdraw">撤回修改</el-button>
+          <el-button type="warning" plain size="large" :loading="submitting" :disabled="forcingNext" @click="withdraw">撤回修改</el-button>
         </template>
-        <el-button v-else type="primary" size="large" :loading="submitting" @click="submit">提交评价</el-button>
+        <el-button v-else type="primary" size="large" :loading="submitting" :disabled="forcingNext" @click="submit">提交评价</el-button>
+        <el-button
+          v-if="canForceCallNext"
+          type="danger"
+          plain
+          size="large"
+          :loading="forcingNext"
+          :disabled="callingNext || switching || submitting || saving || recordingUpload"
+          @click="forceCallNextFromWorkbench"
+        >强制叫号</el-button>
       </div>
 
       <el-button
         class="candidate-nav-button candidate-nav-button--next"
         size="large"
-        :disabled="!nextCandidate || switching"
+        :disabled="!nextCandidate || switching || callingNext || forcingNext"
         @click="goNext"
       >
         <span>下一位</span>
@@ -274,6 +292,7 @@
             { label: '待评价', value: 'pending' },
             { label: '草稿', value: 'draft' },
             { label: '已提交', value: 'submitted' },
+            { label: '待补评价', value: 'pending_feedback' },
           ]"
         />
       </div>
@@ -308,6 +327,8 @@
 <script setup lang="ts">
 import { interviewApi, interviewRecordingApi, interviewerWorkbenchApi, interviewSessionApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
+import { hasPermission } from '@/utils/permission'
+import { promptForceCallReason } from '@/utils/interviewQueue'
 import { ArrowLeft, ArrowRight, Close, List, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { ElMessageBox } from 'element-plus/es/components/message-box/index'
@@ -339,6 +360,7 @@ const saving = ref(false)
 const submitting = ref(false)
 const switching = ref(false)
 const callingNext = ref(false)
+const forcingNext = ref(false)
 const candidateListVisible = ref(false)
 const candidateSearch = ref('')
 const candidateStatus = ref('all')
@@ -410,6 +432,10 @@ const allInterviewersSubmitted = computed(
 const canCallNext = computed(
   () => allInterviewersSubmitted.value && current.value?.queueStatus === 'called',
 )
+const canForceCallNext = computed(
+  () => current.value?.roomId && current.value.queueStatus === 'called'
+    && !allInterviewersSubmitted.value && hasPermission('interview:update'),
+)
 const canRecordCurrent = computed(
   () => !!current.value && current.value.queueStatus === 'called' && !allInterviewersSubmitted.value,
 )
@@ -420,7 +446,10 @@ const speechRecognitionSupported = computed(() => {
 const filteredCandidates = computed(() => {
   const keyword = candidateSearch.value.trim().toLowerCase()
   return items.value.filter((item) => {
-    const matchesStatus = candidateStatus.value === 'all' || feedbackStatus(item) === candidateStatus.value
+    const matchesStatus = candidateStatus.value === 'all'
+      || (candidateStatus.value === 'pending_feedback'
+        ? item.queueStatus === 'pending_feedback'
+        : feedbackStatus(item) === candidateStatus.value)
     const haystack = [item.applicantName, item.studentId, item.roomName, queueText(item)]
       .filter(Boolean)
       .join(' ')
@@ -494,8 +523,8 @@ async function fetchList(keepSelection = true, rehydrate = false) {
     loading.value = false
   }
 }
-async function selectCandidate(id: number) {
-  if (id === selectedId.value || switching.value) return
+async function selectCandidate(id: number, afterCall = false) {
+  if (id === selectedId.value || switching.value || (!afterCall && (callingNext.value || forcingNext.value))) return
   switching.value = true
   if (recording.value) await stopRecording()
   if (saveTimer) clearTimeout(saveTimer)
@@ -722,13 +751,15 @@ function payload() {
   }
 }
 async function saveDraft() {
-  if (!current.value || isSubmitted.value) return
+  if (!current.value || isSubmitted.value) return true
   saving.value = true
   try {
     await interviewApi.saveFeedbackDraft(current.value.interviewId, payload())
     draftState.value = '草稿已自动保存'
+    return true
   } catch {
     draftState.value = '自动保存失败'
+    return false
   } finally {
     saving.value = false
   }
@@ -759,17 +790,48 @@ async function withdraw() {
   }
 }
 async function callNextFromWorkbench() {
-  if (!current.value?.roomId || !canCallNext.value) return
+  if (!current.value?.roomId || !canCallNext.value || callingNext.value || forcingNext.value) return
   callingNext.value = true
   try {
     const candidate = await interviewSessionApi.callNext(current.value.roomId)
     ElMessage.success(`已叫号：${candidate?.applicantName || '下一位候选人'}`)
     await fetchList(true, false)
     if (candidate?.interviewId && items.value.some((item) => item.interviewId === candidate.interviewId)) {
-      await selectCandidate(candidate.interviewId)
+      await selectCandidate(candidate.interviewId, true)
     }
   } finally {
     callingNext.value = false
+  }
+}
+async function forceCallNextFromWorkbench() {
+  if (!canForceCallNext.value || forcingNext.value || callingNext.value
+    || switching.value || submitting.value || saving.value || recordingUpload.value) return
+  const target = current.value
+  forcingNext.value = true
+  try {
+    const reason = await promptForceCallReason(target.applicantName, target.roomName || '当前面试间')
+    if (!reason) return
+    if (current.value?.interviewId !== target.interviewId) {
+      ElMessage.warning('当前候选人已变更，请重新确认叫号')
+      return
+    }
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = undefined
+    if (!isSubmitted.value && ['有未保存修改', '自动保存失败'].includes(draftState.value)) {
+      if (!(await saveDraft())) return
+    }
+    const candidate = await interviewSessionApi.forceCallNext(target.roomId, target.interviewId, reason)
+    if (recording.value) await stopRecording()
+    ElMessage.success(`已强制叫号：${candidate.applicantName}；原候选人的评价可稍后补交`)
+    await fetchList(true, false)
+    if (candidate.interviewId && items.value.some((item) => item.interviewId === candidate.interviewId)) {
+      await selectCandidate(candidate.interviewId, true)
+    }
+  } catch {
+    // API 错误已提示；同步其他面试官操作后的实际状态，保留本地评价内容。
+    await fetchList(true, false)
+  } finally {
+    forcingNext.value = false
   }
 }
 function queueText(item: any) {
@@ -778,6 +840,7 @@ function queueText(item: any) {
     : `面试 ${item.interviewId}`
 }
 function feedbackText(item: any) {
+  if (item.queueStatus === 'pending_feedback' && item.ownFeedback?.status !== 'submitted') return '待补评价'
   return item.ownFeedback?.status === 'submitted'
     ? '已提交'
     : item.ownFeedback?.status === 'draft'
@@ -1186,6 +1249,7 @@ onBeforeUnmount(() => {
 
 .footer-center {
   justify-content: center;
+  flex-wrap: wrap;
   gap: 14px;
   min-width: 0;
 }
@@ -1211,6 +1275,10 @@ onBeforeUnmount(() => {
   gap: 12px;
   padding-bottom: 16px;
   background: var(--el-bg-color);
+}
+
+.pending-feedback-notice {
+  margin-bottom: 16px;
 }
 
 .candidate-drawer__toolbar :deep(.el-segmented) {

@@ -23,6 +23,7 @@ public class ResponseInterviewQueueVO {
     private Integer checkedIn;
     private Integer waiting;
     private Integer called;
+    private Integer pendingFeedback;
     private Integer completed;
     private Integer noShow;
     private Integer notCheckedIn;

@@ -5,6 +5,7 @@
       <div class="section-heading reveal-block">
         <span>近期活动</span>
         <h2>最新活动</h2>
+        <p>在分享中相遇，在实践中把想法变成行动。</p>
       </div>
 
       <div
@@ -14,6 +15,8 @@
         @pointerenter="pauseAutoPlay"
         @pointerleave="resumeAutoPlay"
         @pointermove="handlePointerMove"
+        @focusin="pauseAutoPlay"
+        @focusout="resumeAutoPlay"
       >
         <article
           v-for="(activity, index) in activities"
@@ -21,7 +24,11 @@
           :class="stageClass(index)"
           :style="stageStyle(index)"
           class="activity-stage__card"
+          :tabindex="index === activeIndex ? 0 : -1"
+          role="link"
+          :aria-label="'查看活动：' + activity.title"
           @click="openActivity(index)"
+          @keydown.enter="openActivity(index)"
         >
           <div class="activity-stage__media">
             <img :alt="activity.title" :src="activity.coverUrl" decoding="async" loading="lazy" />
@@ -50,6 +57,7 @@
               :key="`dot-${activity.id || activity.title}`"
               :class="{ 'is-active': index === activeIndex }"
               :aria-label="`切换到第 ${index + 1} 个活动`"
+              :aria-pressed="index === activeIndex"
               type="button"
               @click="setActive(index)"
             ></button>
@@ -85,6 +93,7 @@ const activeIndex = ref(0)
 
 let autoPlayTimer: number | undefined
 let animationContext: gsap.Context | undefined
+let switchTimeline: gsap.core.Timeline | undefined
 let tiltXTo: gsap.QuickToFunc | undefined
 let tiltYTo: gsap.QuickToFunc | undefined
 let switching = false
@@ -149,7 +158,7 @@ function setupStageMotion() {
   tiltYTo = undefined
 
   const stage = stageRef.value
-  if (!stage || prefersReducedMotion()) return
+  if (!stage || prefersReducedMotion() || window.matchMedia('(pointer: coarse)').matches) return
 
   gsap.set(stage, {
     '--stage-tilt-x': '0deg',
@@ -170,7 +179,8 @@ function animateSwitch(index: number) {
   const stage = stageRef.value
   const nextIndex = normalizeIndex(index)
 
-  if (!stage || switching || nextIndex === activeIndex.value) {
+  if (switching || nextIndex === activeIndex.value) return
+  if (!stage || prefersReducedMotion()) {
     activeIndex.value = nextIndex
     return
   }
@@ -200,6 +210,7 @@ function animateSwitch(index: number) {
       switching = false
     },
   })
+  switchTimeline = timeline
 
   if (currentCard) {
     timeline
@@ -341,7 +352,8 @@ function formatIndex(index: number) {
 function startAutoPlay() {
   window.clearInterval(autoPlayTimer)
   if (!stageVisible || document.hidden || total.value <= 1 || prefersReducedMotion()) return
-  autoPlayTimer = window.setInterval(next, 4800)
+  if (stageRef.value?.matches(':hover') || stageRef.value?.contains(document.activeElement)) return
+  autoPlayTimer = window.setInterval(next, 6400)
 }
 
 function pauseAutoPlay() {
@@ -387,8 +399,8 @@ function handlePointerMove(event: PointerEvent) {
   const rect = stage.getBoundingClientRect()
   const xRatio = (event.clientX - rect.left) / rect.width - 0.5
   const yRatio = (event.clientY - rect.top) / rect.height - 0.5
-  tiltXTo(yRatio * -6.5)
-  tiltYTo(xRatio * 8.5)
+  tiltXTo(yRatio * -3)
+  tiltYTo(xRatio * 4)
 }
 
 function resetTilt() {
@@ -476,6 +488,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
   visibilityObserver?.disconnect()
   window.clearInterval(autoPlayTimer)
+  switchTimeline?.kill()
   animationContext?.revert()
   tiltXTo?.tween.kill()
   tiltYTo?.tween.kill()

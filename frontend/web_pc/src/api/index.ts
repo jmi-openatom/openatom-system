@@ -1183,6 +1183,9 @@ export const interviewSessionApi = {
   callNext(roomId: string | number): Promise<any> {
     return request.post(`/interview-rooms/${roomId}/call-next`)
   },
+  forceCallNext(roomId: string | number, expectedInterviewId: number, reason: string): Promise<any> {
+    return request.post(`/interview-rooms/${roomId}/force-call-next`, { expectedInterviewId, reason })
+  },
   callAgain(roomId: string | number): Promise<any> {
     return request.post(`/interview-rooms/${roomId}/call-again`)
   },

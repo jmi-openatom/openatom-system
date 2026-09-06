@@ -20,6 +20,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.InterviewEvaluationTemplate
 import edu.jmi.openatom.server.openatomsystem.mapper.InterviewInterviewerMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.InterviewMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.InterviewQueueStateMapper;
+import edu.jmi.openatom.server.openatomsystem.mapper.InterviewRoomMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.MembershipApplicationMapper;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewService;
 import edu.jmi.openatom.server.openatomsystem.service.MailBroadcastPlanner;
@@ -29,6 +30,7 @@ import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 /**
  * 面试管理实现类
@@ -44,6 +46,7 @@ public class InterviewServiceImpl implements InterviewService {
   private final InterviewFeedbackRevisionMapper feedbackRevisionMapper;
   private final InterviewEvaluationTemplateMapper templateMapper;
   private final InterviewQueueStateMapper queueStateMapper;
+  private final InterviewRoomMapper roomMapper;
   private final MembershipApplicationMapper applicationMapper;
   private final NotificationService notificationService;
   private final MailBroadcastPlanner mailBroadcastPlanner;
@@ -121,26 +124,26 @@ public class InterviewServiceImpl implements InterviewService {
   public Result<String> confirm(Integer interviewId) { return changeStatus(interviewId, "confirmed", "面试确认成功"); }
 
   @Override
-  @Transactional(rollbackFor = Exception.class)
+  @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
   public Result<String> feedback(Integer interviewId, RequestInterviewFeedbackDTO request) {
     return saveFeedback(interviewId, request, "submitted", false);
   }
 
   @Override
-  @Transactional(rollbackFor = Exception.class)
+  @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
   public Result<String> saveFeedbackDraft(Integer interviewId, RequestInterviewFeedbackDTO request) {
     return saveFeedback(interviewId, request, "draft", false);
   }
 
   @Override
-  @Transactional(rollbackFor = Exception.class)
+  @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
   public Result<String> submitFeedback(Integer interviewId, RequestInterviewFeedbackDTO request) {
     return saveFeedback(interviewId, request, "submitted", true);
   }
 
   private Result<String> saveFeedback(Integer interviewId, RequestInterviewFeedbackDTO request,
       String status, boolean validateTemplate) {
-    Interview interview = findInterview(interviewId);
+    Interview interview = findInterviewForFeedback(interviewId);
     if (interview == null) return Result.error(404, "面试不存在");
     int userId = StpUtil.getLoginIdAsInt();
     if (!isAssigned(interviewId, userId)) return Result.error(403, "您不是本场面试官");
@@ -172,9 +175,9 @@ public class InterviewServiceImpl implements InterviewService {
   }
 
   @Override
-  @Transactional(rollbackFor = Exception.class)
+  @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
   public Result<String> withdrawFeedback(Integer interviewId) {
-    Interview interview = findInterview(interviewId);
+    Interview interview = findInterviewForFeedback(interviewId);
     if (interview == null) return Result.error(404, "面试不存在");
     int userId = StpUtil.getLoginIdAsInt();
     if (!isAssigned(interviewId, userId)) return Result.error(403, "您不是本场面试官");
@@ -301,6 +304,20 @@ public class InterviewServiceImpl implements InterviewService {
     interview.setStatus("completed"); interviewMapper.updateById(interview);
     MembershipApplication app = applicationMapper.selectById(interview.getApplicationId());
     if (app != null) { app.setStatus("interviewed"); applicationMapper.updateById(app); }
+    var queueState = queueStateMapper.selectByInterviewId(interview.getId());
+    if (queueState != null && "pending_feedback".equals(queueState.getStatus())) {
+      queueState.setStatus("completed");
+      queueStateMapper.updateById(queueState);
+    }
+  }
+
+  private Interview findInterviewForFeedback(Integer interviewId) {
+    Interview interview = findInterview(interviewId);
+    if (interview == null || interview.getRoomId() == null) return interview;
+    // Use the same room lock as calling; re-read after it so concurrent completion and
+    // forced advancement cannot leave an already completed interview pending feedback.
+    if (roomMapper.selectByIdForUpdate(interview.getRoomId()) == null) return null;
+    return findInterview(interviewId);
   }
 
   private Interview findInterview(Integer interviewId) { return interviewId == null ? null : interviewMapper.selectById(interviewId); }

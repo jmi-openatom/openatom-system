@@ -694,7 +694,11 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior() {
+  scrollBehavior(to, from) {
+    // The article reader positions its own headings below the fixed site header.
+    if (to.name === 'site-blog-detail' && to.path === from.path && to.hash !== from.hash) {
+      return false
+    }
     return { top: 0 }
   },
 })

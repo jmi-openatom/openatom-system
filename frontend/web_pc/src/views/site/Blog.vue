@@ -35,7 +35,6 @@
               placeholder="搜索文章、标签、作者"
               size="large"
               @clear="reload"
-              @keyup.enter="reload"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
@@ -156,18 +155,19 @@
             </router-link>
           </div>
 
-          <el-empty v-if="!loading && !rows.length" description="暂无已发布文章" />
+          <el-empty v-if="!loading && !loadError && !rows.length" description="暂无已发布文章" />
 
-          <el-pagination
-            v-if="total > query.pageSize"
-            :current-page="query.page"
-            :page-size="query.pageSize"
-            :total="total"
-            background
-            class="blog-pagination"
-            layout="prev, pager, next"
-            @current-change="handlePageChange"
-          />
+          <div class="blog-load-more" aria-live="polite" :aria-busy="loading || loadingMore">
+            <template v-if="loadError">
+              <p>文章加载失败，请重试</p>
+              <el-button @click="retryLoad">重新加载</el-button>
+            </template>
+            <p v-else-if="loading || loadingMore">正在加载文章…</p>
+            <div v-else-if="hasMore" ref="loadMoreTrigger">
+              <el-button @click="loadMore">加载更多</el-button>
+            </div>
+            <p v-else-if="rows.length">已加载全部 {{ rows.length }} 篇文章</p>
+          </div>
         </main>
       </div>
     </section>
@@ -175,7 +175,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import { siteApi } from '@/api'
@@ -197,6 +197,10 @@ interface BlogArticle {
 }
 
 const loading = ref(false)
+const loadingMore = ref(false)
+const loadError = ref(false)
+const hasMore = ref(false)
+const loadMoreTrigger = ref<HTMLElement | null>(null)
 const rows = ref<BlogArticle[]>([])
 const total = ref(0)
 const categories = ref<string[]>([])
@@ -207,6 +211,10 @@ const query = ref({
   page: 1,
   pageSize: 10,
 })
+// Keep subsequent pages tied to the submitted filters, even while inputs are edited.
+let activeFilters = { keyword: '', category: '', tag: '' }
+let requestVersion = 0
+let loadMoreObserver: IntersectionObserver | undefined
 
 const isLoggedIn = computed(() => Boolean(getToken()))
 const hasActiveFilters = computed(() => {
@@ -216,28 +224,70 @@ const featuredArticle = computed(() => rows.value[0])
 const listRows = computed(() => rows.value.slice(1))
 
 async function fetchCategories() {
-  categories.value = (await siteApi.blogCategories()) || []
+  try {
+    categories.value = (await siteApi.blogCategories()) || []
+  } catch {
+    categories.value = []
+  }
 }
 
-async function fetchList() {
-  loading.value = true
+async function fetchList(page: number) {
+  const version = ++requestVersion
+  const append = page > 1
+  loading.value = !append
+  loadingMore.value = append
+  loadError.value = false
   try {
     const data = await siteApi.blogArticles({
-      ...query.value,
-      keyword: query.value.keyword || undefined,
-      category: query.value.category || undefined,
-      tag: query.value.tag || undefined,
+      page,
+      pageSize: query.value.pageSize,
+      keyword: activeFilters.keyword || undefined,
+      category: activeFilters.category || undefined,
+      tag: activeFilters.tag || undefined,
     })
-    rows.value = data?.list || []
+    if (version !== requestVersion) return
+    const incoming: BlogArticle[] = data?.list || []
+    const seen = new Set(append ? rows.value.map((article) => article.id) : [])
+    const newRows = incoming.filter((article) => {
+      if (seen.has(article.id)) return false
+      seen.add(article.id)
+      return true
+    })
+    rows.value = append ? [...rows.value, ...newRows] : newRows
     total.value = Number(data?.total || 0)
+    query.value.page = page
+    hasMore.value = incoming.length > 0 && page * query.value.pageSize < total.value
+  } catch {
+    if (version === requestVersion) loadError.value = true
   } finally {
-    loading.value = false
+    if (version === requestVersion) {
+      loading.value = false
+      loadingMore.value = false
+    }
   }
 }
 
 function reload() {
+  activeFilters = {
+    keyword: query.value.keyword,
+    category: query.value.category,
+    tag: query.value.tag,
+  }
   query.value.page = 1
-  fetchList()
+  rows.value = []
+  total.value = 0
+  hasMore.value = false
+  void fetchList(1)
+}
+
+function loadMore() {
+  if (loading.value || loadingMore.value || loadError.value || !hasMore.value) return
+  void fetchList(query.value.page + 1)
+}
+
+function retryLoad() {
+  if (loading.value || loadingMore.value) return
+  void fetchList(rows.value.length ? query.value.page + 1 : 1)
 }
 
 function selectCategory(category: string) {
@@ -252,20 +302,36 @@ function resetFilters() {
   reload()
 }
 
-function handlePageChange(page: number) {
-  query.value.page = page
-  fetchList()
-}
-
 function coverInitial(title: string) {
   return String(title || 'B')
     .slice(0, 1)
     .toUpperCase()
 }
 
+watch(
+  loadMoreTrigger,
+  (element) => {
+    loadMoreObserver?.disconnect()
+    if (!element || !('IntersectionObserver' in window)) return
+    loadMoreObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) loadMore()
+      },
+      { rootMargin: '0px 0px 240px 0px' },
+    )
+    loadMoreObserver.observe(element)
+  },
+  { flush: 'post' },
+)
+
 onMounted(() => {
-  fetchCategories()
-  fetchList()
+  void fetchCategories()
+  reload()
+})
+
+onBeforeUnmount(() => {
+  requestVersion++
+  loadMoreObserver?.disconnect()
 })
 </script>
 
@@ -604,11 +670,20 @@ onMounted(() => {
   margin-top: 12px;
 }
 
-.blog-pagination {
+.blog-load-more {
   display: flex;
+  min-height: 88px;
+  align-items: center;
   justify-content: center;
+  gap: 12px;
   padding: 24px;
+  color: var(--oa-muted);
+  font-size: 13px;
   border-top: 1px solid var(--oa-border);
+}
+
+.blog-load-more p {
+  margin: 0;
 }
 
 .blog-featured:focus-visible,
