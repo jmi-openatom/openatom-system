@@ -805,9 +805,11 @@ public class BlogServiceImpl implements BlogService {
 
   private List<ResponseBlogCommentVO> toCommentResponseList(List<BlogComment> comments) {
     if (comments == null || comments.isEmpty()) return List.of();
-    Map<Integer, BlogComment> parentMap = blogCommentMapper.selectBatchIds(comments.stream()
-            .map(BlogComment::getParentId).filter(Objects::nonNull).distinct().toList())
-        .stream().collect(Collectors.toMap(BlogComment::getId, Function.identity()));
+    List<Integer> parentIds = comments.stream().map(BlogComment::getParentId)
+        .filter(Objects::nonNull).distinct().toList();
+    Map<Integer, BlogComment> parentMap = parentIds.isEmpty() ? Map.of()
+        : blogCommentMapper.selectBatchIds(parentIds).stream()
+            .collect(Collectors.toMap(BlogComment::getId, Function.identity()));
     Set<Integer> userIds = comments.stream().map(BlogComment::getUserId)
         .filter(Objects::nonNull).collect(Collectors.toSet());
     parentMap.values().stream().map(BlogComment::getUserId).filter(Objects::nonNull)

@@ -1004,10 +1004,11 @@ public class MemberProfileServiceImpl implements MemberProfileService {
     if (comments == null || comments.isEmpty()) return List.of();
     Map<Integer, User> commentUsers = new HashMap<>(users(comments.stream()
         .map(MemberProfileComment::getUserId).filter(Objects::nonNull).distinct().toList()));
-    Map<Long, MemberProfileComment> parentMap = memberProfileCommentMapper.selectBatchIds(
-            comments.stream().map(MemberProfileComment::getParentId).filter(Objects::nonNull)
-                .distinct().toList())
-        .stream().collect(Collectors.toMap(MemberProfileComment::getId, Function.identity()));
+    List<Long> parentIds = comments.stream().map(MemberProfileComment::getParentId)
+        .filter(Objects::nonNull).distinct().toList();
+    Map<Long, MemberProfileComment> parentMap = parentIds.isEmpty() ? Map.of()
+        : memberProfileCommentMapper.selectBatchIds(parentIds).stream()
+            .collect(Collectors.toMap(MemberProfileComment::getId, Function.identity()));
     List<Integer> parentUserIds = parentMap.values().stream().map(MemberProfileComment::getUserId)
         .filter(Objects::nonNull).distinct().toList();
     commentUsers.putAll(users(parentUserIds));
