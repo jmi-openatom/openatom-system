@@ -156,7 +156,7 @@ SELECT @campaign_id,
            'contact', u.`phone`,
            'field_7', CONCAT('希望通过社团项目提升实践能力，并参与开源协作。测试候选人 ', RIGHT(u.`user_name`, 3)),
            'field_8', ELT(MOD(CAST(RIGHT(u.`user_name`, 3) AS UNSIGNED) - 1, 5) + 1,
-                          '项目部','宣传组','活动部','外联部','社区部')
+                          '项目部','宣传部','活动部','外联部','社区部')
        ),
        DATE_SUB(CURRENT_TIMESTAMP, INTERVAL MOD(CAST(RIGHT(u.`user_name`, 3) AS UNSIGNED), 20) DAY)
 FROM `tb_user` u

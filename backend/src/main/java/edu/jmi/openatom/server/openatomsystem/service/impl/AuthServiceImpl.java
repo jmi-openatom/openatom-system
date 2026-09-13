@@ -617,7 +617,7 @@ public class AuthServiceImpl implements AuthService {
 			ClubMembership membership = clubMembershipMapper.selectActiveMembership(userId, club.getId());
 			if (membership != null && membership.getDepartmentId() != null) {
 				ClubDepartment department = clubDepartmentMapper.selectById(membership.getDepartmentId());
-				if (department != null) departmentName = department.getName();
+				if (department != null) departmentName = normalizeDepartmentName(department.getName());
 			}
 		}
 		String realName = isBlank(user.getRealName()) ? user.getUserName() : user.getRealName();
@@ -692,6 +692,10 @@ public class AuthServiceImpl implements AuthService {
 		sb.append("-");
 		if (studentId != null && !studentId.isBlank()) sb.append(studentId);
 		return sb.toString();
+	}
+
+	private String normalizeDepartmentName(String departmentName) {
+		return "宣传组".equals(departmentName) ? "宣传部" : departmentName;
 	}
 
 	private String getGroupJoinTokenKey(String token) {

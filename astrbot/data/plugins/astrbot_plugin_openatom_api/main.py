@@ -505,7 +505,7 @@ class OpenAtomApiPlugin(Star):
         if self._has_any(text, ("招新", "报名", "加入", "纳新", "申请入社", "入社")):
             return await self._answer_recruitment()
 
-        if self._has_any(text, ("部门", "项目部", "宣传组", "活动部", "外联部", "组织架构", "分组", "组别", "岗位")):
+        if self._has_any(text, ("部门", "项目部", "宣传部", "宣传", "活动部", "外联部", "组织架构", "分组", "组别", "岗位")):
             return await self._answer_departments()
         if self._has_any(text, ("校历", "放假", "假期", "调休", "上课", "教学周")):
             return await self._answer_school_calendar()

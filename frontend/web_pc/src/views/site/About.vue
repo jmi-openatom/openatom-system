@@ -424,7 +424,7 @@ const fallbackPaths = [
     icon: markRaw(Code2),
   },
   {
-    title: '宣传组',
+    title: '宣传部',
     hint: 'DESIGN & CONTENT',
     opening: '如果你擅长发现价值，也愿意把它讲给更多人听。',
     description: '把复杂技术讲清楚，让好作品被更多人看见。',
