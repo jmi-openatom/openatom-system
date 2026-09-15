@@ -12,13 +12,13 @@ spring:
   application:
     name: openatom-quest
   datasource:
-    url: ${QUEST_DB_URL:jdbc:mysql://127.0.0.1:33316/quest?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
-    username: ${QUEST_DB_USERNAME:quest}
-    password: ${QUEST_DB_PASSWORD:quest_dev_password}
+    url: ${QUEST_DB_URL:jdbc:mysql://localhost:3306/quest?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${QUEST_DB_USERNAME:root}
+    password: ${QUEST_DB_PASSWORD:ab321818}
   data:
     redis:
-      host: ${QUEST_REDIS_HOST:127.0.0.1}
-      port: ${QUEST_REDIS_PORT:36379}
+      host: ${QUEST_REDIS_HOST:localhost}
+      port: ${QUEST_REDIS_PORT:6379}
       password: ${QUEST_REDIS_PASSWORD:}
   session:
     store-type: redis
