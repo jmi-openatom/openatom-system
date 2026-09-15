@@ -1,498 +1,293 @@
 <template>
   <section id="activities" class="activity-band home-interactive-section">
-    <HomeInteractiveBackdrop :radius="230" :spacing="68" :strength="22" />
+    <HomeInteractiveBackdrop :radius="230" :spacing="68" :strength="18" />
     <div class="activity-shell section">
       <div class="section-heading reveal-block">
         <span>近期活动</span>
-        <h2>最新活动</h2>
-        <p>在分享中相遇，在实践中把想法变成行动。</p>
+        <h2>一起，把想法变成行动。</h2>
+        <p>聚焦正在发生的活动，也留下每一次共同创造的轨迹。</p>
       </div>
 
-      <div
-        v-if="activities.length"
-        ref="stageRef"
-        class="activity-stage"
-        @pointerenter="pauseAutoPlay"
-        @pointerleave="resumeAutoPlay"
-        @pointermove="handlePointerMove"
-        @focusin="pauseAutoPlay"
-        @focusout="resumeAutoPlay"
-      >
-        <article
-          v-for="(activity, index) in activities"
-          :key="activity.id || activity.title"
-          :class="stageClass(index)"
-          :style="stageStyle(index)"
-          class="activity-stage__card"
-          :tabindex="index === activeIndex ? 0 : -1"
-          role="link"
-          :aria-label="'查看活动：' + activity.title"
-          @click="openActivity(index)"
-          @keydown.enter="openActivity(index)"
+      <div v-if="activities.length" ref="showcaseRef" class="activity-showcase">
+        <router-link
+          class="activity-feature"
+          :to="`/activities/${featuredActivity.id}`"
+          :aria-label="`查看活动：${featuredActivity.title}`"
         >
-          <div class="activity-stage__media">
-            <img :alt="activity.title" :src="activity.coverUrl" decoding="async" loading="lazy" />
+          <div
+            class="activity-feature__media"
+            :class="{ 'is-fallback': !featuredActivity.coverUrl }"
+          >
+            <img
+              v-if="featuredActivity.coverUrl"
+              :src="featuredActivity.coverUrl"
+              :alt="featuredActivity.title"
+              decoding="async"
+              loading="lazy"
+            />
+            <span v-else>{{ featuredActivity.date || 'OPENATOM' }}</span>
           </div>
-
-          <div class="activity-stage__wipe"></div>
-          <div class="activity-stage__veil"></div>
-
-          <div class="activity-stage__content">
-            <div class="activity-stage__meta">
-              <time>{{ activity.date }}</time>
-              <span>{{ formatIndex(index) }}</span>
+          <div class="activity-feature__content">
+            <div class="activity-feature__meta">
+              <time>{{ featuredActivity.date }}</time
+              ><span>本期聚焦</span>
             </div>
-            <h3>{{ activity.title }}</h3>
-            <p>{{ activity.description }}</p>
+            <h3>{{ featuredActivity.title }}</h3>
+            <p>{{ featuredActivity.description || '查看活动详情与最新进展。' }}</p>
+            <strong>查看活动 <span aria-hidden="true">↗</span></strong>
           </div>
-        </article>
+        </router-link>
 
-        <div class="activity-stage__controls">
-          <button aria-label="上一个活动" type="button" @click="previous">
-            <span>←</span>
-          </button>
-          <div class="activity-stage__progress">
-            <button
-              v-for="(activity, index) in activities"
-              :key="`dot-${activity.id || activity.title}`"
-              :class="{ 'is-active': index === activeIndex }"
-              :aria-label="`切换到第 ${index + 1} 个活动`"
-              :aria-pressed="index === activeIndex"
-              type="button"
-              @click="setActive(index)"
-            ></button>
-          </div>
-          <button aria-label="下一个活动" type="button" @click="next">
-            <span>→</span>
-          </button>
+        <div v-if="moreActivities.length" class="activity-timeline" aria-label="更多近期活动">
+          <router-link
+            v-for="(activity, index) in moreActivities"
+            :key="activity.id || activity.title"
+            class="activity-timeline__item"
+            :to="`/activities/${activity.id}`"
+          >
+            <span class="activity-timeline__index">{{ formatIndex(index + 2) }}</span>
+            <div>
+              <time>{{ activity.date }}</time>
+              <h3>{{ activity.title }}</h3>
+              <p>{{ activity.description || '查看活动详情' }}</p>
+            </div>
+            <span class="activity-timeline__arrow" aria-hidden="true">→</span>
+          </router-link>
+          <router-link class="activity-timeline__all" to="/activities"
+            >查看全部活动 <span aria-hidden="true">→</span></router-link
+          >
         </div>
       </div>
-
       <el-empty v-if="!activities.length && !loading" description="暂无活动数据" />
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
 
-gsap.registerPlugin(ScrollTrigger)
-
-const props = defineProps<{
-  activities: any[]
-  loading: boolean
-}>()
-
-const router = useRouter()
-const stageRef = ref<HTMLElement>()
-const activeIndex = ref(0)
-
-let autoPlayTimer: number | undefined
-let animationContext: gsap.Context | undefined
-let switchTimeline: gsap.core.Timeline | undefined
-let tiltXTo: gsap.QuickToFunc | undefined
-let tiltYTo: gsap.QuickToFunc | undefined
-let switching = false
-let stageVisible = false
-let visibilityObserver: IntersectionObserver | undefined
-
-const total = computed(() => props.activities.length)
-
-function normalizeIndex(index: number) {
-  if (!total.value) return 0
-  return (index + total.value) % total.value
-}
-
-function relativeOffset(index: number) {
-  if (!total.value) return 0
-
-  const rawOffset = index - activeIndex.value
-  const wrappedOffset =
-    ((rawOffset + Math.floor(total.value / 2) + total.value) % total.value) -
-    Math.floor(total.value / 2)
-
-  return total.value === 2 && index !== activeIndex.value ? 1 : wrappedOffset
-}
-
-function stageClass(index: number) {
-  const offset = relativeOffset(index)
-  return {
-    'is-active': offset === 0,
-    'is-near': Math.abs(offset) === 1,
-    'is-far': Math.abs(offset) > 1,
-    'is-left': offset < 0,
-    'is-right': offset > 0,
-  }
-}
-
-function stageStyle(index: number) {
-  const offset = relativeOffset(index)
-  const absoluteOffset = Math.abs(offset)
-  const x = offset * 38
-  const rotate = offset * -8
-  const scale = absoluteOffset === 0 ? 1 : Math.max(0.76, 0.9 - absoluteOffset * 0.06)
-  const opacity = absoluteOffset > 2 ? 0 : 1
-  const zIndex = 10 - absoluteOffset
-
-  return {
-    '--card-x': `${x}%`,
-    '--card-rotate': `${rotate}deg`,
-    '--card-scale': scale,
-    '--card-opacity': opacity,
-    '--card-z': zIndex,
-  }
-}
-
-function prefersReducedMotion() {
-  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
-}
-
-function setupStageMotion() {
-  tiltXTo?.tween.kill()
-  tiltYTo?.tween.kill()
-  tiltXTo = undefined
-  tiltYTo = undefined
-
-  const stage = stageRef.value
-  if (!stage || prefersReducedMotion() || window.matchMedia('(pointer: coarse)').matches) return
-
-  gsap.set(stage, {
-    '--stage-tilt-x': '0deg',
-    '--stage-tilt-y': '0deg',
-  })
-
-  tiltXTo = gsap.quickTo(stage, '--stage-tilt-x', {
-    duration: 0.56,
-    ease: 'power3.out',
-  })
-  tiltYTo = gsap.quickTo(stage, '--stage-tilt-y', {
-    duration: 0.56,
-    ease: 'power3.out',
-  })
-}
-
-function animateSwitch(index: number) {
-  const stage = stageRef.value
-  const nextIndex = normalizeIndex(index)
-
-  if (switching || nextIndex === activeIndex.value) return
-  if (!stage || prefersReducedMotion()) {
-    activeIndex.value = nextIndex
-    return
-  }
-
-  switching = true
-
-  const direction = relativeOffset(nextIndex) < 0 ? -1 : 1
-  const currentCard = stage.querySelector<HTMLElement>('.activity-stage__card.is-active')
-  const nextCard = stage.querySelectorAll<HTMLElement>('.activity-stage__card')[nextIndex]
-
-  const timeline = gsap.timeline({
-    defaults: {
-      ease: 'power3.inOut',
-      overwrite: 'auto',
-    },
-    onComplete: () => {
-      gsap.set(stage.querySelectorAll('.activity-stage__card'), { clearProps: 'transform' })
-      gsap.set(stage.querySelectorAll('.activity-stage__wipe'), { clearProps: 'transform' })
-      gsap.set(
-        stage.querySelectorAll(
-          '.activity-stage__media img, .activity-stage__content, .activity-stage__content > *',
-        ),
-        {
-          clearProps: 'transform,opacity,visibility',
-        },
-      )
-      switching = false
-    },
-  })
-  switchTimeline = timeline
-
-  if (currentCard) {
-    timeline
-      .to(
-        currentCard.querySelector('.activity-stage__content'),
-        {
-          y: -22,
-          autoAlpha: 0,
-          duration: 0.3,
-        },
-        0,
-      )
-      .to(
-        currentCard.querySelector('.activity-stage__wipe'),
-        {
-          scaleX: 1,
-          transformOrigin: 'left center',
-          duration: 0.36,
-        },
-        0,
-      )
-      .to(
-        currentCard,
-        {
-          x: -24 * direction,
-          rotateY: -16 * direction,
-          scale: 0.97,
-          duration: 0.44,
-        },
-        0,
-      )
-      .to(
-        currentCard.querySelector('.activity-stage__media img'),
-        {
-          scale: 1.08,
-          duration: 0.44,
-        },
-        0,
-      )
-  }
-
-  timeline.add(() => {
-    activeIndex.value = nextIndex
-  }, 0.2)
-
-  if (nextCard) {
-    const nextContent = nextCard.querySelector<HTMLElement>('.activity-stage__content')
-    const nextMeta = nextCard.querySelector<HTMLElement>('.activity-stage__meta')
-    const nextTitle = nextCard.querySelector<HTMLElement>('h3')
-    const nextCopy = nextCard.querySelector<HTMLElement>('p')
-    const nextImage = nextCard.querySelector<HTMLElement>('.activity-stage__media img')
-    const nextPieces = [nextMeta, nextTitle, nextCopy].filter(Boolean) as HTMLElement[]
-
-    timeline
-      .set(
-        nextCard,
-        {
-          x: 26 * direction,
-          rotateY: 12 * direction,
-          scale: 0.98,
-        },
-        0.2,
-      )
-      .set(nextContent, { y: 0, autoAlpha: 1 }, 0.2)
-      .set(nextPieces, { y: 26, autoAlpha: 0 }, 0.2)
-      .set(nextImage, { scale: 1.08 }, 0.2)
-      .fromTo(
-        nextCard.querySelector('.activity-stage__wipe'),
-        {
-          scaleX: 1,
-          transformOrigin: 'right center',
-        },
-        {
-          scaleX: 0,
-          duration: 0.46,
-        },
-        0.22,
-      )
-      .to(
-        nextCard,
-        {
-          x: 0,
-          rotateY: 0,
-          scale: 1,
-          duration: 0.64,
-          ease: 'expo.out',
-        },
-        0.24,
-      )
-      .to(
-        nextImage,
-        {
-          scale: 1.025,
-          duration: 0.78,
-          ease: 'power3.out',
-        },
-        0.24,
-      )
-      .to(
-        nextPieces,
-        {
-          y: 0,
-          autoAlpha: 1,
-          duration: 0.46,
-          ease: 'power3.out',
-          stagger: 0.065,
-        },
-        0.38,
-      )
-  }
-}
-
-function setActive(index: number) {
-  animateSwitch(index)
-}
-
-function next() {
-  setActive(activeIndex.value + 1)
-}
-
-function previous() {
-  setActive(activeIndex.value - 1)
-}
-
-function openActivity(index: number) {
-  if (index !== activeIndex.value) {
-    setActive(index)
-    return
-  }
-
-  const activity = props.activities[index]
-  if (activity?.id) router.push(`/activities/${activity.id}`)
-}
+const props = defineProps<{ activities: any[]; loading: boolean }>()
+const showcaseRef = ref<HTMLElement>()
+const featuredActivity = computed(() => props.activities[0] || {})
+const moreActivities = computed(() => props.activities.slice(1, 5))
+let observer: IntersectionObserver | undefined
 
 function formatIndex(index: number) {
-  return `${String(index + 1).padStart(2, '0')} / ${String(total.value).padStart(2, '0')}`
+  return String(index).padStart(2, '0')
 }
-
-function startAutoPlay() {
-  window.clearInterval(autoPlayTimer)
-  if (!stageVisible || document.hidden || total.value <= 1 || prefersReducedMotion()) return
-  if (stageRef.value?.matches(':hover') || stageRef.value?.contains(document.activeElement)) return
-  autoPlayTimer = window.setInterval(next, 6400)
-}
-
-function pauseAutoPlay() {
-  window.clearInterval(autoPlayTimer)
-}
-
-function resumeAutoPlay() {
-  resetTilt()
-  startAutoPlay()
-}
-
-function setupVisibilityObserver() {
-  visibilityObserver?.disconnect()
-  const stage = stageRef.value
-  if (!stage) return
-
-  if (!('IntersectionObserver' in window)) {
-    stageVisible = true
-    startAutoPlay()
+function observeShowcase() {
+  observer?.disconnect()
+  const showcase = showcaseRef.value
+  if (!showcase || !('IntersectionObserver' in window)) {
+    showcase?.classList.add('is-visible')
     return
   }
-
-  visibilityObserver = new IntersectionObserver(
+  observer = new IntersectionObserver(
     (entries) => {
-      stageVisible = entries.some((entry) => entry.isIntersecting)
-      if (stageVisible) startAutoPlay()
-      else pauseAutoPlay()
+      if (entries.some((entry) => entry.isIntersecting)) {
+        showcase.classList.add('is-visible')
+        observer?.disconnect()
+      }
     },
-    { rootMargin: '80px 0px', threshold: 0.01 },
+    { rootMargin: '80px 0px', threshold: 0.08 },
   )
-  visibilityObserver.observe(stage)
+  observer.observe(showcase)
 }
-
-function handleVisibilityChange() {
-  if (document.hidden) pauseAutoPlay()
-  else startAutoPlay()
-}
-
-function handlePointerMove(event: PointerEvent) {
-  const stage = stageRef.value
-  if (!stage || !tiltXTo || !tiltYTo || prefersReducedMotion()) return
-
-  const rect = stage.getBoundingClientRect()
-  const xRatio = (event.clientX - rect.left) / rect.width - 0.5
-  const yRatio = (event.clientY - rect.top) / rect.height - 0.5
-  tiltXTo(yRatio * -3)
-  tiltYTo(xRatio * 4)
-}
-
-function resetTilt() {
-  tiltXTo?.(0)
-  tiltYTo?.(0)
-}
-
-function animateStage() {
-  animationContext?.revert()
-  if (!stageRef.value) return
-  if (prefersReducedMotion()) {
-    ScrollTrigger.refresh()
-    return
-  }
-
-  animationContext = gsap.context(() => {
-    const stageTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: '.activity-stage',
-        start: 'top 84%',
-        once: true,
-      },
-    })
-
-    stageTimeline
-      .from('.activity-stage__card', {
-        y: 72,
-        autoAlpha: 0,
-        scale: 0.86,
-        rotateX: -9,
-        transformOrigin: '50% 100%',
-        duration: 0.9,
-        ease: 'power4.out',
-        stagger: {
-          each: 0.08,
-          from: 'center',
-        },
-      })
-      .from(
-        '.activity-stage__controls',
-        {
-          y: 20,
-          autoAlpha: 0,
-          duration: 0.42,
-          ease: 'power3.out',
-        },
-        '-=0.36',
-      )
-      .from(
-        '.activity-stage__card.is-active .activity-stage__content > *',
-        {
-          y: 22,
-          autoAlpha: 0,
-          duration: 0.46,
-          ease: 'power3.out',
-          stagger: 0.06,
-        },
-        '-=0.42',
-      )
-  }, stageRef.value)
-
-  ScrollTrigger.refresh()
-}
-
-watch(
-  () => props.activities.length,
-  async () => {
-    if (activeIndex.value >= total.value) activeIndex.value = 0
-    await nextTick()
-    setupStageMotion()
-    animateStage()
-    setupVisibilityObserver()
-  },
-  { flush: 'post' },
-)
-
-onMounted(() => {
-  setupStageMotion()
-  animateStage()
-  setupVisibilityObserver()
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
-  visibilityObserver?.disconnect()
-  window.clearInterval(autoPlayTimer)
-  switchTimeline?.kill()
-  animationContext?.revert()
-  tiltXTo?.tween.kill()
-  tiltYTo?.tween.kill()
-  tiltXTo = undefined
-  tiltYTo = undefined
-})
+watch(() => props.activities.length, observeShowcase, { flush: 'post' })
+onMounted(observeShowcase)
+onBeforeUnmount(() => observer?.disconnect())
 </script>
+
+<style scoped>
+.activity-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.85fr);
+  gap: 24px;
+  margin-top: 48px;
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.activity-showcase.is-visible {
+  opacity: 1;
+  transform: none;
+}
+.activity-feature {
+  display: grid;
+  min-height: 560px;
+  overflow: hidden;
+  border: 1px solid var(--oa-border);
+  border-radius: 24px;
+  background: var(--oa-elevated-bg);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+.activity-feature:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.activity-feature__media {
+  min-height: 320px;
+  overflow: hidden;
+  background: linear-gradient(145deg, var(--oa-elevated-bg), var(--oa-page-soft-bg));
+}
+.activity-feature__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.activity-feature:hover .activity-feature__media img {
+  transform: scale(1.025);
+}
+.activity-feature__media.is-fallback {
+  display: grid;
+  place-items: center;
+  color: var(--oa-muted);
+  font-size: clamp(32px, 6vw, 72px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+.activity-feature__content {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 30px 32px 34px;
+}
+.activity-feature__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--oa-muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.activity-feature h3 {
+  margin: 0;
+  color: var(--oa-text);
+  font-size: clamp(28px, 3.4vw, 48px);
+  font-weight: 650;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+.activity-feature p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--oa-muted);
+  font-size: 16px;
+  line-height: 1.7;
+}
+.activity-feature strong {
+  color: var(--oa-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.activity-timeline {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border-top: 1px solid var(--oa-border);
+}
+.activity-timeline__item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 24px;
+  gap: 14px;
+  align-items: start;
+  padding: 24px 4px;
+  border-bottom: 1px solid var(--oa-border);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    padding-left 0.25s ease,
+    background-color 0.25s ease;
+}
+.activity-timeline__item:hover {
+  padding-left: 12px;
+  background: color-mix(in srgb, var(--oa-elevated-bg) 72%, transparent);
+}
+.activity-timeline__index,
+.activity-timeline time {
+  color: var(--oa-faint);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.activity-timeline h3 {
+  margin: 7px 0 6px;
+  color: var(--oa-text);
+  font-size: 18px;
+  line-height: 1.3;
+}
+.activity-timeline p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--oa-muted);
+  font-size: 13px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.activity-timeline__arrow {
+  color: var(--oa-muted);
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease;
+}
+.activity-timeline__item:hover .activity-timeline__arrow {
+  color: var(--oa-text);
+  transform: translateX(3px);
+}
+.activity-timeline__all {
+  align-self: flex-start;
+  margin-top: 24px;
+  color: var(--oa-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.activity-feature:focus-visible,
+.activity-timeline__item:focus-visible,
+.activity-timeline__all:focus-visible {
+  outline: 2px solid var(--oa-text);
+  outline-offset: 4px;
+}
+@media (max-width: 900px) {
+  .activity-showcase {
+    grid-template-columns: 1fr;
+  }
+  .activity-feature {
+    min-height: 0;
+  }
+}
+@media (max-width: 640px) {
+  .activity-showcase {
+    gap: 32px;
+    margin-top: 32px;
+  }
+  .activity-feature {
+    border-radius: 18px;
+  }
+  .activity-feature__media {
+    min-height: 230px;
+  }
+  .activity-feature__content {
+    padding: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .activity-showcase,
+  .activity-feature,
+  .activity-feature__media img,
+  .activity-timeline__item,
+  .activity-timeline__arrow {
+    transition: none;
+  }
+}
+</style>

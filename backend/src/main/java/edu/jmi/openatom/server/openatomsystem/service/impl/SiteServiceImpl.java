@@ -18,11 +18,13 @@ import edu.jmi.openatom.server.openatomsystem.service.SiteService;
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -54,7 +56,7 @@ public class SiteServiceImpl implements SiteService {
   @Override
   @RedisCached(
       cacheName = "site",
-      key = "'club-home:' + (#p0 == null || #p0.isBlank() ? 'default' : #p0)",
+      key = "'club-home:v2:' + (#p0 == null || #p0.isBlank() ? 'default' : #p0)",
       ttlSeconds = 600)
   public Result<ResponseClubHomeVO> getClubHome(String clubCode) {
     Club club = findClub(clubCode);
@@ -74,7 +76,7 @@ public class SiteServiceImpl implements SiteService {
             .metrics(buildMetrics(memberships, campaigns, activities, awards))
             .focusAreas(buildFocusAreas(departments))
             .activities(activities.stream().map(this::toActivity).toList())
-            .people(buildPeople(memberships))
+            .people(buildPeople(memberships, club, departments))
             .alumniManagers(buildAlumniManagers(formerManagers))
             .awards(awards.stream().map(this::toAward).toList())
             .techStack(departments.stream().map(ClubDepartment::getName).limit(10).toList())
@@ -417,7 +419,12 @@ public class SiteServiceImpl implements SiteService {
     long activeMembers =
         memberships.stream().filter(m -> !"left".equalsIgnoreCase(m.getStatus())).count();
     long openCampaigns =
-        campaigns.stream().filter(c -> "published".equalsIgnoreCase(c.getStatus())).count();
+        campaigns.stream()
+            .filter(
+                c ->
+                    "open".equalsIgnoreCase(c.getStatus())
+                        || "published".equalsIgnoreCase(c.getStatus()))
+            .count();
     return List.of(
         metric("在册成员", activeMembers, "来自成员关系表"),
         metric("年度活动", activities.size(), "来自社团活动表"),
@@ -466,7 +473,8 @@ public class SiteServiceImpl implements SiteService {
         .build();
   }
 
-  private List<ResponseClubHomeVO.Person> buildPeople(List<ClubMembership> memberships) {
+  private List<ResponseClubHomeVO.Person> buildPeople(
+      List<ClubMembership> memberships, Club club, List<ClubDepartment> clubDepartments) {
     List<ClubMembership> topMemberships =
         memberships.stream()
             .filter(m -> m.getUserId() != null)
@@ -482,7 +490,14 @@ public class SiteServiceImpl implements SiteService {
                     .thenComparing(
                         ClubMembership::getJoinedAt,
                         Comparator.nullsLast(Comparator.reverseOrder())))
-            .toList();
+            .collect(
+                Collectors.collectingAndThen(
+                    Collectors.toMap(
+                        ClubMembership::getUserId,
+                        Function.identity(),
+                        (first, ignored) -> first,
+                        LinkedHashMap::new),
+                    map -> List.copyOf(map.values())));
     if (topMemberships.isEmpty()) return List.of();
     Map<Integer, User> users =
         userMapper
@@ -493,14 +508,15 @@ public class SiteServiceImpl implements SiteService {
                     .toList())
             .stream()
             .collect(Collectors.toMap(User::getId, Function.identity()));
-    Map<Integer, ClubDepartment> depts =
-        selectDepartments(topMemberships).stream()
-            .collect(Collectors.toMap(ClubDepartment::getId, Function.identity()));
     Map<Integer, ClubPosition> positions =
         selectPositions(topMemberships).stream()
             .collect(Collectors.toMap(ClubPosition::getId, Function.identity()));
+    Map<Integer, ClubDepartment> depts =
+        clubDepartments.stream()
+            .collect(Collectors.toMap(ClubDepartment::getId, Function.identity()));
+    Map<Integer, HomeLeadership> leadership = buildHomeLeadership(club, clubDepartments);
     return topMemberships.stream()
-        .map(m -> toPerson(m, users, depts, positions))
+        .map(m -> toPerson(m, users, depts, positions, leadership))
         .filter(Objects::nonNull)
         .toList();
   }
@@ -532,22 +548,24 @@ public class SiteServiceImpl implements SiteService {
                     .toList())
             .stream()
             .collect(Collectors.toMap(User::getId, Function.identity()));
-    Map<Integer, ClubDepartment> depts =
-        selectDepartments(limited).stream()
-            .collect(Collectors.toMap(ClubDepartment::getId, Function.identity()));
     Map<Integer, ClubPosition> positions =
         selectPositions(limited).stream()
             .collect(Collectors.toMap(ClubPosition::getId, Function.identity()));
+    Map<Integer, ClubDepartment> depts =
+        selectDepartments(limited, positions).stream()
+            .collect(Collectors.toMap(ClubDepartment::getId, Function.identity()));
     return limited.stream()
-        .map(m -> toPerson(m, users, depts, positions))
+        .map(m -> toPerson(m, users, depts, positions, Map.of()))
         .filter(Objects::nonNull)
         .toList();
   }
 
-  private List<ClubDepartment> selectDepartments(List<ClubMembership> memberships) {
+  private List<ClubDepartment> selectDepartments(
+      List<ClubMembership> memberships, Map<Integer, ClubPosition> positions) {
     List<Integer> ids =
-        memberships.stream()
-            .map(ClubMembership::getDepartmentId)
+        Stream.concat(
+                memberships.stream().map(ClubMembership::getDepartmentId),
+                positions.values().stream().map(ClubPosition::getDepartmentId))
             .filter(Objects::nonNull)
             .distinct()
             .toList();
@@ -568,17 +586,33 @@ public class SiteServiceImpl implements SiteService {
       ClubMembership membership,
       Map<Integer, User> users,
       Map<Integer, ClubDepartment> departments,
-      Map<Integer, ClubPosition> positions) {
+      Map<Integer, ClubPosition> positions,
+      Map<Integer, HomeLeadership> leadership) {
     User user = users.get(membership.getUserId());
     if (user == null) return null;
     String name = isBlank(user.getRealName()) ? user.getUserName() : user.getRealName();
-    String department = OptionalName.of(departments.get(membership.getDepartmentId()));
-    String position = OptionalName.of(positions.get(membership.getPositionId()));
+    ClubPosition positionEntity = positions.get(membership.getPositionId());
+    HomeLeadership officialLeadership = leadership.get(membership.getUserId());
+    Integer departmentId = membership.getDepartmentId();
+    if (officialLeadership != null && officialLeadership.department() != null) {
+      departmentId = officialLeadership.department().getId();
+    }
+    if (departmentId == null && positionEntity != null) {
+      departmentId = positionEntity.getDepartmentId();
+    }
+    String department = OptionalName.of(departments.get(departmentId));
+    String position =
+        officialLeadership == null
+            ? OptionalName.of(positionEntity)
+            : officialLeadership.positionName();
     String role = isBlank(position) ? membership.getStatus() : position;
     return ResponseClubHomeVO.Person.builder()
         .userId(user.getId())
         .name(name)
         .initial(initialOf(name))
+        .departmentName(department)
+        .positionName(position)
+        .major(user.getMajor())
         .role(role)
         .focus(isBlank(department) ? user.getMajor() : department)
         .avatar(user.getAvatar())
@@ -586,6 +620,47 @@ public class SiteServiceImpl implements SiteService {
         .alumniGroup(membership.getAlumniGroup())
         .build();
   }
+
+  private Map<Integer, HomeLeadership> buildHomeLeadership(
+      Club club, List<ClubDepartment> departments) {
+    Map<Integer, HomeLeadership> result = new LinkedHashMap<>();
+    for (ClubDepartment department : departments) {
+      String departmentName = department.getName();
+      if (department.getManagerUserId() != null) {
+        result.put(
+            department.getManagerUserId(),
+            new HomeLeadership(departmentPositionName(departmentName, false), department));
+      }
+      if (department.getViceManagerUserId() != null) {
+        result.put(
+            department.getViceManagerUserId(),
+            new HomeLeadership(departmentPositionName(departmentName, true), department));
+      }
+    }
+    if (club.getLeagueSecretaryUserId() != null) {
+      result.put(club.getLeagueSecretaryUserId(), new HomeLeadership("团支书", null));
+    }
+    if (club.getVicePresidentUserId() != null) {
+      result.put(club.getVicePresidentUserId(), new HomeLeadership("副社长", null));
+    }
+    for (ClubVicePresident vicePresident : clubVicePresidentMapper.selectByClubId(club.getId())) {
+      result.put(vicePresident.getUserId(), new HomeLeadership("副社长", null));
+    }
+    if (club.getPresidentUserId() != null) {
+      result.put(club.getPresidentUserId(), new HomeLeadership("社长", null));
+    }
+    return result;
+  }
+
+  private String departmentPositionName(String departmentName, boolean vice) {
+    if (isBlank(departmentName)) return vice ? "副部长" : "部长";
+    String prefix = departmentName.endsWith("部")
+        ? departmentName.substring(0, departmentName.length() - 1)
+        : departmentName;
+    return prefix + (vice ? "副部长" : "部长");
+  }
+
+  private record HomeLeadership(String positionName, ClubDepartment department) {}
 
   private String qqAvatarUrl(String qqOpenid) {
     if (isBlank(qqOpenid) || !qqOpenid.matches("\\d{5,15}")) return null;

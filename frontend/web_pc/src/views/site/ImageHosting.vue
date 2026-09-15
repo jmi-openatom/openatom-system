@@ -12,23 +12,26 @@
             accept="image/jpeg,image/png,image/gif,image/webp"
             :auto-upload="false"
             drag
+            multiple
             :file-list="uploadFiles"
-            :limit="1"
+            :limit="10"
             :on-change="handleImageChange"
             :on-remove="handleImageRemove"
           >
             <el-icon class="el-icon--upload">
               <UploadFilled />
             </el-icon>
-            <div class="el-upload__text">拖拽图片到这里，或点击选择图片</div>
+            <div class="el-upload__text">拖拽多张图片到这里，或点击批量选择</div>
             <template #tip>
-              <div class="el-upload__tip">支持 JPG、PNG、GIF、WebP，单张最大 10MB。</div>
+              <div class="el-upload__tip">
+                一次最多 10 张，支持 JPG、PNG、GIF、WebP，单张最大 10MB。
+              </div>
             </template>
           </el-upload>
           <div class="image-hosting-uploader__actions">
             <el-button :icon="Refresh" @click="reload">刷新</el-button>
-            <el-button type="primary" :icon="Upload" :loading="uploading" @click="uploadImage">
-              上传图片
+            <el-button type="primary" :icon="Upload" :loading="uploading" @click="uploadImages">
+              上传{{ uploadFiles.length ? ` ${uploadFiles.length} 张` : '图片' }}
             </el-button>
           </div>
         </div>
@@ -51,15 +54,17 @@
           </div>
         </ViewToolbar>
 
-        <div v-if="uploadResult.url" class="upload-result">
-          <el-image :src="uploadResult.url" fit="cover" />
+        <div v-for="result in uploadResults" :key="result.id || result.url" class="upload-result">
+          <el-image :src="result.url" fit="cover" />
           <div class="upload-result__content">
             <strong>上传成功</strong>
-            <el-input :model-value="uploadResult.url" readonly />
-            <el-input :model-value="uploadResult.markdown" readonly />
+            <el-input :model-value="result.url" readonly />
+            <el-input :model-value="result.markdown" readonly />
             <div class="upload-result__actions">
-              <el-button :icon="Link" @click="copyText(uploadResult.url, '链接已复制')">复制链接</el-button>
-              <el-button :icon="DocumentCopy" @click="copyText(uploadResult.markdown, 'Markdown 已复制')">
+              <el-button :icon="Link" @click="copyText(result.url, '链接已复制')"
+                >复制链接</el-button
+              >
+              <el-button :icon="DocumentCopy" @click="copyText(result.markdown, 'Markdown 已复制')">
                 复制 Markdown
               </el-button>
             </div>
@@ -73,11 +78,20 @@
             </div>
             <div class="image-tile__body">
               <strong>{{ image.originalName || image.fileName }}</strong>
-              <span>{{ formatFileSize(image.fileSize) }} · {{ formatDateTime(image.createdAt) }}</span>
+              <span
+                >{{ formatFileSize(image.fileSize) }} · {{ formatDateTime(image.createdAt) }}</span
+              >
               <div class="image-tile__actions">
                 <el-button :icon="Link" circle @click="copyText(image.url, '链接已复制')" />
-                <el-button :icon="DocumentCopy" circle @click="copyText(image.markdown, 'Markdown 已复制')" />
-                <el-popconfirm title="删除后图片链接会失效，确定删除？" @confirm="removeImage(image)">
+                <el-button
+                  :icon="DocumentCopy"
+                  circle
+                  @click="copyText(image.markdown, 'Markdown 已复制')"
+                />
+                <el-popconfirm
+                  title="删除后图片链接会失效，确定删除？"
+                  @confirm="removeImage(image)"
+                >
                   <template #reference>
                     <el-button :icon="Delete" circle type="danger" />
                   </template>
@@ -118,7 +132,7 @@ const uploading = ref(false)
 const rows = ref<any[]>([])
 const total = ref(0)
 const uploadFiles = ref<any[]>([])
-const uploadResult = ref<Record<string, any>>({})
+const uploadResults = ref<Record<string, any>[]>([])
 const query = ref({
   keyword: '',
   page: 1,
@@ -151,27 +165,38 @@ function handlePageChange(page: number) {
 }
 
 function handleImageChange(_file: any, fileList: any[]) {
-  uploadFiles.value = fileList.slice(-1)
-  uploadResult.value = {}
+  uploadFiles.value = fileList.slice(-10)
+  uploadResults.value = []
 }
 
 function handleImageRemove(_file: any, fileList: any[]) {
   uploadFiles.value = fileList
-  uploadResult.value = {}
+  uploadResults.value = []
 }
 
-async function uploadImage() {
-  const file = uploadFiles.value[0]?.raw
-  if (!file) {
+async function uploadImages() {
+  const files = uploadFiles.value.filter((item) => item.raw)
+  if (!files.length) {
     ElMessage.warning('请先选择图片')
     return
   }
   uploading.value = true
   try {
-    uploadResult.value = await imageHostingApi.upload(file)
-    uploadFiles.value = []
-    ElMessage.success('图片上传成功')
-    reload()
+    const results = await Promise.allSettled(
+      files.map((item) => imageHostingApi.upload(item.raw as File)),
+    )
+    uploadResults.value = results
+      .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+      .map((result) => result.value)
+    const failedCount = results.length - uploadResults.value.length
+    uploadFiles.value = failedCount
+      ? files.filter((_item, index) => results[index]?.status === 'rejected')
+      : []
+    if (uploadResults.value.length) {
+      ElMessage.success(`成功上传 ${uploadResults.value.length} 张图片`)
+      reload()
+    }
+    if (failedCount) ElMessage.warning(`${failedCount} 张图片上传失败，可保留后重试`)
   } finally {
     uploading.value = false
   }

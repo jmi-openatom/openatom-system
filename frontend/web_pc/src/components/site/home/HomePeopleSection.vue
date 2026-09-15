@@ -26,7 +26,7 @@
         <div class="people-stat-item">
           <div class="people-stat-dot people-stat-dot--green" />
           <span class="people-stat-value">{{ uniqueRoles.length }}</span>
-          <span class="people-stat-label">职能方向</span>
+          <span class="people-stat-label">岗位类型</span>
         </div>
       </div>
 
@@ -52,8 +52,8 @@
 
             <div class="people-person__meta">
               <strong>{{ person.name }}</strong>
-              <span>{{ person.username || '成员' }}</span>
-              <p>{{ person.body || '共同推动社团发展' }}</p>
+              <span>岗位 · {{ person.positionName || '成员' }}</span>
+              <p>部门 · {{ person.departmentName || '未分配部门' }}</p>
             </div>
           </article>
         </div>
@@ -85,13 +85,15 @@ const mappedPeople = computed(() =>
     name: person.name,
     avatar: person.avatar || '',
     qqAvatar: person.qqAvatar || '',
-    username: person.role || '',
-    body: person.focus || '',
+    positionName: person.positionName || person.role || '',
+    departmentName: person.departmentName || '',
   })),
 )
 
 const uniqueRoles = computed(() => {
-  const roles = new Set(props.people.map((p) => p.role).filter(Boolean))
+  const roles = new Set(
+    props.people.map((person) => person.positionName || person.role).filter(Boolean),
+  )
   return [...roles]
 })
 

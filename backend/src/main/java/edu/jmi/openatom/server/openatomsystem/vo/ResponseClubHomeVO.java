@@ -81,7 +81,12 @@ public class ResponseClubHomeVO {
     private Integer userId;
     private String name;
     private String initial;
+    private String departmentName;
+    private String positionName;
+    private String major;
+    /** @deprecated Use {@link #positionName}. */
     private String role;
+    /** @deprecated Use {@link #departmentName} and {@link #major} separately. */
     private String focus;
     private String avatar;
     private String qqAvatar;

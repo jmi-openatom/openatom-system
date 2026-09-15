@@ -477,8 +477,13 @@
                 </div>
 
                 <div v-if="info?.club?.qqGroupNumber" class="ob-group-card">
-                  <div class="ob-group-card__label">社团QQ群号</div>
-                  <div class="ob-group-card__number">{{ info.club.qqGroupNumber }}</div>
+                  <div>
+                    <div class="ob-group-card__label">社团QQ群号</div>
+                    <div class="ob-group-card__number">{{ info.club.qqGroupNumber }}</div>
+                  </div>
+                  <button class="ob-group-card__copy" type="button" @click="copyGroupNumber">
+                    复制群号
+                  </button>
                 </div>
 
                 <div class="ob-token-area" :style="{ '--delay': '0.5s' }">
@@ -559,20 +564,89 @@
               这些信息用于成员管理和活动通知。带 <strong>*</strong> 的项目为必填项。
             </p>
 
-            <form class="ob-form ob-profile-form" :style="{ '--delay': '0.4s' }" @submit.prevent="saveProfile">
+            <form
+              class="ob-form ob-profile-form"
+              :style="{ '--delay': '0.4s' }"
+              @submit.prevent="saveProfile"
+            >
               <div class="ob-profile-grid">
-                <label class="ob-field"><span>姓名 <b>*</b></span><input v-model.trim="profileForm.realName" class="ob-input" autocomplete="name" maxlength="64" required /></label>
-                <label class="ob-field"><span>学号 <b>*</b></span><input v-model.trim="profileForm.studentId" class="ob-input" autocomplete="off" maxlength="32" required /></label>
-                <label class="ob-field ob-field--full"><span>学院 <b>*</b></span><select v-model="profileForm.college" class="ob-input" required><option value="" disabled>请选择学院</option><option v-for="college in COLLEGE_NAMES" :key="college" :value="college">{{ college }}</option></select></label>
-                <label class="ob-field"><span>专业 <b>*</b></span><input v-model.trim="profileForm.major" class="ob-input" maxlength="100" required /></label>
-                <label class="ob-field"><span>年级 <b>*</b></span><input v-model.trim="profileForm.grade" class="ob-input" maxlength="20" placeholder="例如：2026" required /></label>
-                <label class="ob-field ob-field--full"><span>班级 <b>*</b></span><input v-model.trim="profileForm.className" class="ob-input" maxlength="100" required /></label>
-                <label class="ob-field ob-field--full"><span>手机号 <em>选填</em></span><input v-model.trim="profileForm.phone" class="ob-input" type="tel" autocomplete="tel" maxlength="11" placeholder="用于重要通知" /></label>
+                <label class="ob-field"
+                  ><span>姓名 <b>*</b></span
+                  ><input
+                    v-model.trim="profileForm.realName"
+                    class="ob-input"
+                    autocomplete="name"
+                    maxlength="64"
+                    required
+                /></label>
+                <label class="ob-field"
+                  ><span>学号 <b>*</b></span
+                  ><input
+                    v-model.trim="profileForm.studentId"
+                    class="ob-input"
+                    autocomplete="off"
+                    maxlength="32"
+                    required
+                /></label>
+                <label class="ob-field ob-field--full"
+                  ><span>学院 <b>*</b></span
+                  ><select v-model="profileForm.college" class="ob-input" required>
+                    <option value="" disabled>请选择学院</option>
+                    <option v-for="college in COLLEGE_NAMES" :key="college" :value="college">
+                      {{ college }}
+                    </option>
+                  </select></label
+                >
+                <label class="ob-field"
+                  ><span>专业 <b>*</b></span
+                  ><input
+                    v-model.trim="profileForm.major"
+                    class="ob-input"
+                    maxlength="100"
+                    required
+                /></label>
+                <label class="ob-field"
+                  ><span>年级 <b>*</b></span
+                  ><input
+                    v-model.trim="profileForm.grade"
+                    class="ob-input"
+                    maxlength="20"
+                    placeholder="例如：2026"
+                    required
+                /></label>
+                <label class="ob-field ob-field--full"
+                  ><span>班级 <b>*</b></span
+                  ><input
+                    v-model.trim="profileForm.className"
+                    class="ob-input"
+                    maxlength="100"
+                    required
+                /></label>
+                <label class="ob-field ob-field--full"
+                  ><span>手机号 <em>选填</em></span
+                  ><input
+                    v-model.trim="profileForm.phone"
+                    class="ob-input"
+                    type="tel"
+                    autocomplete="tel"
+                    maxlength="11"
+                    placeholder="用于重要通知"
+                /></label>
               </div>
               <p v-if="profileError" class="ob-form-error" role="alert">{{ profileError }}</p>
               <div class="ob-step__actions">
-                <button type="button" class="ob-btn ob-btn--ghost ob-btn--back" :disabled="profileSubmitting" @click="prevStep"><span class="ob-btn__back-arrow">←</span> 返回上一步</button>
-                <button type="submit" class="ob-btn ob-btn--primary" :disabled="profileSubmitting">{{ profileSubmitting ? '正在保存…' : '保存并继续' }}<span v-if="!profileSubmitting" class="ob-btn__arrow">→</span></button>
+                <button
+                  type="button"
+                  class="ob-btn ob-btn--ghost ob-btn--back"
+                  :disabled="profileSubmitting"
+                  @click="prevStep"
+                >
+                  <span class="ob-btn__back-arrow">←</span> 返回上一步
+                </button>
+                <button type="submit" class="ob-btn ob-btn--primary" :disabled="profileSubmitting">
+                  {{ profileSubmitting ? '正在保存…' : '保存并继续'
+                  }}<span v-if="!profileSubmitting" class="ob-btn__arrow">→</span>
+                </button>
               </div>
             </form>
           </div>
@@ -860,7 +934,15 @@ const info = ref<ActivationInfo | null>(null)
 const groupJoinToken = ref('')
 const tokenLoading = ref(false)
 const passwordForm = ref({ oldPassword: '', newPassword: '' })
-const profileForm = ref({ realName: '', studentId: '', college: '', major: '', grade: '', className: '', phone: '' })
+const profileForm = ref({
+  realName: '',
+  studentId: '',
+  college: '',
+  major: '',
+  grade: '',
+  className: '',
+  phone: '',
+})
 const profileSubmitting = ref(false)
 const profileError = ref('')
 const loadingText = ref('正在验证身份…')
@@ -971,9 +1053,13 @@ async function fetchActivationInfo() {
     const wasJoined = info.value?.qqGroupJoined
     info.value = result as ActivationInfo
     profileForm.value = {
-      realName: info.value?.realName || '', studentId: info.value?.studentId || '',
-      college: info.value?.college || '', major: info.value?.major || '',
-      grade: info.value?.grade || '', className: info.value?.className || '', phone: info.value?.phone || '',
+      realName: info.value?.realName || '',
+      studentId: info.value?.studentId || '',
+      college: info.value?.college || '',
+      major: info.value?.major || '',
+      grade: info.value?.grade || '',
+      className: info.value?.className || '',
+      phone: info.value?.phone || '',
     }
     // Sync server-side activation status to localStorage
     setSession({
@@ -995,8 +1081,14 @@ async function fetchActivationInfo() {
 }
 
 async function saveProfile() {
-  const required = [profileForm.value.realName, profileForm.value.studentId, profileForm.value.college,
-    profileForm.value.major, profileForm.value.grade, profileForm.value.className]
+  const required = [
+    profileForm.value.realName,
+    profileForm.value.studentId,
+    profileForm.value.college,
+    profileForm.value.major,
+    profileForm.value.grade,
+    profileForm.value.className,
+  ]
   if (required.some((value) => !value.trim())) {
     profileError.value = '请补全姓名、学号、学院、专业、年级和班级后继续'
     return
@@ -1080,6 +1172,17 @@ async function copyToken() {
     ElMessage.success('验证码已复制')
   } catch {
     ElMessage.warning('复制失败，请手动复制')
+  }
+}
+
+async function copyGroupNumber() {
+  const groupNumber = info.value?.club?.qqGroupNumber
+  if (!groupNumber) return
+  try {
+    await navigator.clipboard.writeText(groupNumber)
+    ElMessage.success('QQ群号已复制')
+  } catch {
+    ElMessage.warning('复制失败，请手动复制群号')
   }
 }
 
