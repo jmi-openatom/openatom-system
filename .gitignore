@@ -58,3 +58,4 @@ mail-system/.runtime/
 xcuserdata/
 DerivedData/
 *.xcworkspace/xcuserdata/
+/tmp/

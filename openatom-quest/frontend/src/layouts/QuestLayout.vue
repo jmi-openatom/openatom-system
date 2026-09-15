@@ -3,9 +3,9 @@
     <header class="quest-header">
       <div class="quest-header__inner">
         <router-link class="quest-brand" to="/dashboard" aria-label="OpenAtom Quest 首页">
-          <span class="quest-brand__mark">OA</span>
+          <span class="quest-brand__mark"><img src="/public/logo.png" alt=""></span>
           <span>
-            <strong>OpenAtom Quest</strong>
+            <strong>JMI-OPENATOM-QUEST</strong>
             <small>成员成长与任务实践</small>
           </span>
         </router-link>

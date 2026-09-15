@@ -3,7 +3,7 @@
     <section class="container scan-shell">
       <div class="scan-panel">
         <div class="scan-heading">
-          <el-tag effect="plain" type="success">微信扫码签到</el-tag>
+          <el-tag effect="plain" type="success">扫码签到</el-tag>
           <h1>{{ result ? '签到完成' : autoSubmitting ? '正在签到' : '现场签到' }}</h1>
           <p>{{ statusText }}</p>
         </div>

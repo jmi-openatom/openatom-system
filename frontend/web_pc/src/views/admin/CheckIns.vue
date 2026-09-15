@@ -352,7 +352,7 @@
 
                     <div class="preview-content">
                         <section class="preview-qr">
-                            <p class="preview-kicker">微信扫码网页签到</p>
+                            <p class="preview-kicker">相机/微信扫码网页签到</p>
 
                             <h1>{{ previewRow.title }}</h1>
 
