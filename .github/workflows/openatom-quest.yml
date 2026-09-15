@@ -67,7 +67,11 @@ jobs:
           cache-dependency-path: openatom-quest/backend/pom.xml
       - name: Run backend unit and integration tests
         env:
+          QUEST_DB_URL: jdbc:mysql://127.0.0.1:33316/quest?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+          QUEST_DB_USERNAME: quest
           QUEST_DB_PASSWORD: quest_ci_password
+          QUEST_REDIS_HOST: 127.0.0.1
+          QUEST_REDIS_PORT: 36379
         run: mvn --batch-mode --no-transfer-progress test -Dquest.integration=true
 
   frontend-check:
