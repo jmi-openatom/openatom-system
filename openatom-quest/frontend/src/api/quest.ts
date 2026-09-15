@@ -209,6 +209,10 @@ export async function updateMemberRoles(id: number, roles: string[]) {
   await http.patch(`/admin/members/${id}/roles`, { roles })
 }
 
+export async function updateMemberProfile(id: number, payload: Record<string, unknown>) {
+  await http.patch(`/admin/members/${id}/profile`, payload)
+}
+
 export async function getAuditLogs() {
   return (await http.get<ApiResponse<Record<string, any>[]>>('/admin/audit-logs')).data.data
 }

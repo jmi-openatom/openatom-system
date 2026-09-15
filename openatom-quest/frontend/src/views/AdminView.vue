@@ -23,7 +23,7 @@
 
       <section v-else-if="section === '成员管理'" class="admin-section">
         <div class="admin-toolbar"><div><h2>成员与角色</h2><p>角色权限由 Quest 独立管理，不继承 OAuth 权限。</p></div></div>
-        <div class="data-table-wrap"><table class="data-table"><thead><tr><th>成员</th><th>方向</th><th>等级 / 积分</th><th>角色</th><th>状态</th></tr></thead><tbody><tr v-for="item in members" :key="item.id"><td><strong>{{ item.nickname || '未填写昵称' }}</strong><small>{{ item.email || `成员 #${item.id}` }}</small></td><td>{{ item.directions || '-' }}</td><td>{{ item.currentLevel }} / {{ item.totalPoints }}</td><td><el-select :model-value="roleList(item.roles)" multiple collapse-tags aria-label="成员角色" @change="(value: string[]) => saveRoles(item, value)"><el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" /></el-select></td><td><el-switch :model-value="item.status === 'ACTIVE'" active-text="启用" inactive-text="禁用" @change="(value: boolean) => changeMemberStatus(item, value)" /></td></tr></tbody></table></div>
+        <div class="data-table-wrap"><table class="data-table"><thead><tr><th>成员</th><th>方向</th><th>等级 / 积分</th><th>角色</th><th>状态</th><th>操作</th></tr></thead><tbody><tr v-for="item in members" :key="item.id"><td><strong>{{ item.nickname || '未填写昵称' }}</strong><small>{{ item.email || `成员 #${item.id}` }}</small></td><td>{{ item.directions || '-' }}</td><td>{{ item.currentLevel }} / {{ item.totalPoints }}</td><td><el-select :model-value="roleList(item.roles)" multiple collapse-tags aria-label="成员角色" @change="(value: string[]) => saveRoles(item, value)"><el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" /></el-select></td><td><el-switch :model-value="item.status === 'ACTIVE'" active-text="启用" inactive-text="禁用" @change="(value: boolean) => changeMemberStatus(item, value)" /></td><td><el-button link type="primary" @click="openMemberEditor(item)">编辑资料</el-button></td></tr></tbody></table></div>
       </section>
 
       <section v-else-if="section === '平台配置'" class="admin-section">
@@ -77,6 +77,27 @@
       <template #footer><el-button @click="assignmentDialog = false">取消</el-button><el-button type="primary" :loading="saving" @click="saveAssignment">确认分配</el-button></template>
     </el-dialog>
 
+    <el-dialog v-model="memberDialog" title="编辑成员资料" width="min(760px, calc(100vw - 32px))">
+      <el-form label-position="top">
+        <div class="form-grid">
+          <el-form-item label="昵称" required><el-input v-model="memberForm.nickname" maxlength="64" /></el-form-item>
+          <el-form-item label="邮箱"><el-input v-model="memberForm.email" /></el-form-item>
+          <el-form-item label="学校"><el-input v-model="memberForm.school" /></el-form-item>
+          <el-form-item label="学院"><el-input v-model="memberForm.college" /></el-form-item>
+          <el-form-item label="专业"><el-input v-model="memberForm.major" /></el-form-item>
+          <el-form-item label="年级"><el-input v-model="memberForm.grade" /></el-form-item>
+          <el-form-item label="头像地址"><el-input v-model="memberForm.avatarUrl" /></el-form-item>
+          <el-form-item label="代码主页"><el-input v-model="memberForm.codeProfileUrl" /></el-form-item>
+          <el-form-item label="每周投入时间"><el-input-number v-model="memberForm.weeklyHours" :min="0" :max="168" style="width:100%" /></el-form-item>
+          <el-form-item label="总积分"><el-input-number v-model="memberForm.totalPoints" :min="0" style="width:100%" /><small class="field-help">成员等级将按积分门槛自动重算</small></el-form-item>
+        </div>
+        <el-form-item label="技术方向"><el-select v-model="memberForm.directionIds" multiple filterable style="width:100%"><el-option v-for="item in directions.filter(value => value.active)" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
+        <el-form-item label="技能"><el-select v-model="memberForm.skills" multiple allow-create filterable default-first-option style="width:100%"><el-option v-for="skill in skillOptions" :key="skill" :label="skill" :value="skill" /></el-select></el-form-item>
+        <el-form-item label="个人简介"><el-input v-model="memberForm.bio" type="textarea" :rows="4" maxlength="1000" show-word-limit /></el-form-item>
+      </el-form>
+      <template #footer><el-button @click="memberDialog = false">取消</el-button><el-button type="primary" :loading="saving" @click="saveMemberProfile">保存成员资料</el-button></template>
+    </el-dialog>
+
     <el-dialog v-model="directionDialog" title="新建技术方向" width="min(520px, calc(100vw - 32px))">
       <el-form label-position="top"><el-form-item label="方向名称" required><el-input v-model="directionForm.name" /></el-form-item><el-form-item label="方向标识" required><el-input v-model="directionForm.directionKey" placeholder="cloud-native" /></el-form-item><el-form-item label="排序"><el-input-number v-model="directionForm.sortOrder" :min="0" style="width:100%" /></el-form-item></el-form>
       <template #footer><el-button @click="directionDialog = false">取消</el-button><el-button type="primary" :loading="saving" @click="saveNewDirection">保存</el-button></template>
@@ -94,10 +115,10 @@ import 'element-plus/es/components/dialog/style/css'
 import { ElCheckboxGroup, ElDialog, ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { getErrorMessage } from '@/api/http'
-import { archiveRoute, assignTask, changeTaskStatus, createAnnouncement, createDirection, createRoute, createTask, getAdminDirections, getAdminMembers, getAdminRoutes, getAdminStats, getAdminTasks, getAnnouncements, getAuditLogs, getLevelRules, getStages, publishAnnouncement, publishRoute, updateDirection, updateLevelRule, updateMemberRoles, updateMemberStatus } from '@/api/quest'
+import { archiveRoute, assignTask, changeTaskStatus, createAnnouncement, createDirection, createRoute, createTask, getAdminDirections, getAdminMembers, getAdminRoutes, getAdminStats, getAdminTasks, getAnnouncements, getAuditLogs, getLevelRules, getStages, publishAnnouncement, publishRoute, updateDirection, updateLevelRule, updateMemberProfile, updateMemberRoles, updateMemberStatus } from '@/api/quest'
 const sections = ['数据概览', '成长路线', '任务管理', '成员管理', '平台配置', '操作日志']
 const section = ref('数据概览')
-const loading = ref(true), saving = ref(false), error = ref(''), routeDialog = ref(false), taskDialog = ref(false), directionDialog = ref(false), announcementDialog = ref(false), assignmentDialog = ref(false)
+const loading = ref(true), saving = ref(false), error = ref(''), routeDialog = ref(false), taskDialog = ref(false), directionDialog = ref(false), announcementDialog = ref(false), assignmentDialog = ref(false), memberDialog = ref(false)
 const stats = ref<Record<string, any>>({}), routes = ref<Record<string, any>[]>([]), tasks = ref<Record<string, any>[]>([]), members = ref<Record<string, any>[]>([]), audits = ref<Record<string, any>[]>([]), directions = ref<Record<string, any>[]>([]), stages = ref<Record<string, any>[]>([]), levelRules = ref<Record<string, any>[]>([]), announcements = ref<Record<string, any>[]>([])
 const roleOptions = [{label:'新成员',value:'MEMBER'},{label:'导师',value:'MENTOR'},{label:'项目负责人',value:'PROJECT_OWNER'},{label:'管理员',value:'ADMIN'}]
 const statusText: Record<string,string> = { DRAFT:'草稿', PUBLISHED:'已发布', OFFLINE:'已下架', ARCHIVED:'已归档' }
@@ -107,6 +128,9 @@ const directionForm = reactive({ name:'', directionKey:'', sortOrder:90 })
 const announcementForm = reactive({ title:'', content:'', expiresAt:'' })
 const assignmentTask = ref<Record<string, any> | null>(null)
 const assignmentMemberId = ref<number>()
+const editingMemberId = ref<number>()
+const skillOptions = ['HTML / CSS','JavaScript','TypeScript','Vue','React','Node.js','Java','Spring Boot','Python','FastAPI','MySQL','Redis','Git','Linux','Docker','GitHub Actions','REST API','OpenHarmony','ArkTS','人工智能','UI/UX','Figma','技术写作']
+const memberForm = reactive({ nickname:'', avatarUrl:'', email:'', school:'', college:'', major:'', grade:'', skills:[] as string[], codeProfileUrl:'', weeklyHours:0, bio:'', directionIds:[] as number[], totalPoints:0 })
 const activeMembers = computed(() => members.value.filter(item => item.status === 'ACTIVE'))
 const taskOwnerOptions = computed(() => activeMembers.value.filter(item => roleList(item.roles).some(role => ['MENTOR','PROJECT_OWNER','ADMIN'].includes(role))))
 function roleList(value?: string) { return value ? value.split(',') : [] }
@@ -122,6 +146,8 @@ async function saveAssignment(){if(!assignmentTask.value||!assignmentMemberId.va
 async function setTaskStatus(item:Record<string,any>,status:string){await changeTaskStatus(Number(item.id),status);ElMessage.success('任务状态已更新');await load()}
 async function archiveTask(item:Record<string,any>){await ElMessageBox.confirm(`归档后不可恢复，确认归档「${item.title}」？`,'归档任务',{type:'warning'});await setTaskStatus(item,'ARCHIVED')}
 async function saveRoles(item:Record<string,any>,roles:string[]){try{await updateMemberRoles(Number(item.id),roles);item.roles=roles.join(',');ElMessage.success('角色已更新')}catch(reason){ElMessage.error(getErrorMessage(reason));await load()}}
+function openMemberEditor(item:Record<string,any>){editingMemberId.value=Number(item.id);Object.assign(memberForm,{nickname:item.nickname||'',avatarUrl:item.avatarUrl||'',email:item.email||'',school:item.school||'',college:item.college||'',major:item.major||'',grade:item.grade||'',skills:[...(item.skills||[])],codeProfileUrl:item.codeProfileUrl||'',weeklyHours:item.weeklyHours||0,bio:item.bio||'',directionIds:[...(item.directionIds||[])],totalPoints:item.totalPoints||0});memberDialog.value=true}
+async function saveMemberProfile(){if(!editingMemberId.value||!memberForm.nickname.trim())return ElMessage.warning('请填写成员昵称');saving.value=true;try{await updateMemberProfile(editingMemberId.value,{...memberForm});memberDialog.value=false;ElMessage.success('成员资料与等级已更新');await load()}catch(reason){ElMessage.error(getErrorMessage(reason,'成员资料保存失败'))}finally{saving.value=false}}
 async function changeMemberStatus(item:Record<string,any>,active:boolean){const next=active?'ACTIVE':'DISABLED';try{const {value}=await ElMessageBox.prompt(`请输入${active?'启用':'禁用'}原因`,'成员状态变更',{inputPattern:/\S+/,inputErrorMessage:'必须填写原因'});await updateMemberStatus(Number(item.id),next,value);item.status=next;ElMessage.success('成员状态已更新')}catch(reason){if(reason!=='cancel'&&reason!=='close')ElMessage.error(getErrorMessage(reason));await load()}}
 async function saveNewDirection(){if(!directionForm.name||!directionForm.directionKey)return ElMessage.warning('请填写方向名称和标识');saving.value=true;try{await createDirection(directionForm);directionDialog.value=false;Object.assign(directionForm,{name:'',directionKey:'',sortOrder:90});ElMessage.success('技术方向已创建');await load()}catch(reason){ElMessage.error(getErrorMessage(reason))}finally{saving.value=false}}
 async function saveDirection(item:Record<string,any>){try{await updateDirection(Number(item.id),{name:item.name,sortOrder:item.sortOrder,status:item.active?'ACTIVE':'ARCHIVED'});ElMessage.success('技术方向已更新');await load()}catch(reason){ElMessage.error(getErrorMessage(reason))}}

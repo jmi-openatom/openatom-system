@@ -10,6 +10,7 @@ import edu.jmi.openatom.quest.dto.CreateAnnouncementRequest;
 import edu.jmi.openatom.quest.dto.UpdateDirectionRequest;
 import edu.jmi.openatom.quest.dto.UpdateLevelRuleRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberRolesRequest;
+import edu.jmi.openatom.quest.dto.UpdateMemberProfileRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberStatusRequest;
 import edu.jmi.openatom.quest.model.CurrentMember;
 import java.time.LocalDateTime;
@@ -418,23 +419,92 @@ public class AdminWorkflowService {
 
     public List<Map<String, Object>> members(CurrentMember actor) {
         requirePermission(actor, "member:manage");
-        return jdbcTemplate.queryForList("""
-            SELECT m.id, m.nickname, m.avatar_url AS avatarUrl, m.email, m.school, m.major,
+        List<Map<String, Object>> members = jdbcTemplate.queryForList("""
+            SELECT m.id, m.nickname, m.avatar_url AS avatarUrl, m.email, m.school, m.college, m.major,
+                   m.grade, m.skills_json AS skillsJson, m.code_profile_url AS codeProfileUrl,
+                   m.weekly_hours AS weeklyHours, m.bio,
                    m.status, m.current_level AS currentLevel, m.total_points AS totalPoints,
                    m.profile_completed_at AS profileCompletedAt, m.onboarding_completed_at AS onboardingCompletedAt,
                    GROUP_CONCAT(DISTINCT r.role_key ORDER BY r.role_key SEPARATOR ',') AS roles,
                    GROUP_CONCAT(DISTINCT d.name ORDER BY d.sort_order SEPARATOR ',') AS directions,
+                   GROUP_CONCAT(DISTINCT d.id ORDER BY d.sort_order SEPARATOR ',') AS directionIdCsv,
                    m.created_at AS createdAt
             FROM quest_member m
             LEFT JOIN quest_member_role mr ON mr.member_id = m.id
             LEFT JOIN quest_role r ON r.id = mr.role_id
             LEFT JOIN quest_member_direction md ON md.member_id = m.id
             LEFT JOIN quest_technical_direction d ON d.id = md.direction_id
-            GROUP BY m.id, m.nickname, m.avatar_url, m.email, m.school, m.major, m.status,
+            GROUP BY m.id, m.nickname, m.avatar_url, m.email, m.school, m.college, m.major, m.grade,
+                     m.skills_json, m.code_profile_url, m.weekly_hours, m.bio, m.status,
                      m.current_level, m.total_points, m.profile_completed_at, m.onboarding_completed_at, m.created_at
             ORDER BY m.created_at DESC
             LIMIT 500
             """);
+        members.forEach(item -> {
+            item.put("skills", readStringList(item.remove("skillsJson")));
+            Object directionIds = item.remove("directionIdCsv");
+            item.put("directionIds", directionIds == null || String.valueOf(directionIds).isBlank()
+                ? List.of()
+                : java.util.Arrays.stream(String.valueOf(directionIds).split(",")).map(Long::valueOf).toList());
+        });
+        return members;
+    }
+
+    @Transactional
+    public void updateMemberProfile(CurrentMember actor, long memberId, UpdateMemberProfileRequest request) {
+        requirePermission(actor, "member:manage");
+        List<Map<String, Object>> memberRows = jdbcTemplate.queryForList(
+            "SELECT total_points FROM quest_member WHERE id = ? FOR UPDATE", memberId);
+        if (memberRows.isEmpty()) throw new IllegalArgumentException("成员不存在");
+        int previousPoints = ((Number) memberRows.getFirst().get("total_points")).intValue();
+        int totalPoints = request.totalPoints() == null ? previousPoints : request.totalPoints();
+        String level = jdbcTemplate.query("""
+            SELECT level_key FROM quest_level_rule
+            WHERE status = 'ACTIVE' AND minimum_points <= ?
+            ORDER BY minimum_points DESC LIMIT 1
+            """, resultSet -> resultSet.next() ? resultSet.getString(1) : "L0", totalPoints);
+
+        List<Long> directionIds = request.directionIds() == null
+            ? List.of()
+            : request.directionIds().stream().distinct().toList();
+        if (!directionIds.isEmpty()) {
+            String placeholders = String.join(",", java.util.Collections.nCopies(directionIds.size(), "?"));
+            Integer activeCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM quest_technical_direction WHERE status = 'ACTIVE' AND id IN (" + placeholders + ")",
+                Integer.class,
+                directionIds.toArray());
+            if (activeCount == null || activeCount != directionIds.size()) {
+                throw new IllegalArgumentException("包含不存在或已归档的技术方向");
+            }
+        }
+
+        jdbcTemplate.update("""
+            UPDATE quest_member
+            SET nickname = ?, avatar_url = ?, email = ?, school = ?, college = ?, major = ?, grade = ?,
+                skills_json = ?, code_profile_url = ?, weekly_hours = ?, bio = ?, total_points = ?, current_level = ?
+            WHERE id = ?
+            """,
+            request.nickname().trim(), trimToNull(request.avatarUrl()), trimToNull(request.email()),
+            trimToNull(request.school()), trimToNull(request.college()), trimToNull(request.major()),
+            trimToNull(request.grade()), json(request.skills()), trimToNull(request.codeProfileUrl()),
+            request.weeklyHours(), trimToNull(request.bio()), totalPoints, level, memberId);
+        int pointDelta = totalPoints - previousPoints;
+        if (pointDelta != 0) {
+            jdbcTemplate.update("""
+                INSERT INTO quest_point_ledger
+                    (member_id, amount, balance_after, source_type, source_id, idempotency_key, reason, adjusted_by)
+                VALUES (?, ?, ?, 'ADMIN_ADJUST', ?, ?, '管理员在成员管理中调整积分', ?)
+                """, memberId, pointDelta, totalPoints, String.valueOf(memberId),
+                "admin-adjust:" + java.util.UUID.randomUUID(), actor.id());
+        }
+        jdbcTemplate.update("DELETE FROM quest_member_direction WHERE member_id = ?", memberId);
+        for (int index = 0; index < directionIds.size(); index++) {
+            jdbcTemplate.update(
+                "INSERT INTO quest_member_direction (member_id, direction_id, is_primary) VALUES (?, ?, ?)",
+                memberId, directionIds.get(index), index == 0);
+        }
+        auditService.record(actor.id(), "MEMBER_PROFILE_UPDATE", "MEMBER", memberId,
+            Map.of("directionCount", directionIds.size(), "totalPoints", totalPoints, "level", level));
     }
 
     @Transactional
@@ -527,5 +597,20 @@ public class AdminWorkflowService {
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("数据序列化失败", exception);
         }
+    }
+
+    private List<String> readStringList(Object value) {
+        if (value == null || String.valueOf(value).isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(
+                String.valueOf(value),
+                objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("成员技能数据损坏", exception);
+        }
+    }
+
+    private String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

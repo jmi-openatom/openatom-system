@@ -10,6 +10,7 @@ import edu.jmi.openatom.quest.dto.CreateAnnouncementRequest;
 import edu.jmi.openatom.quest.dto.UpdateDirectionRequest;
 import edu.jmi.openatom.quest.dto.UpdateLevelRuleRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberRolesRequest;
+import edu.jmi.openatom.quest.dto.UpdateMemberProfileRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberStatusRequest;
 import edu.jmi.openatom.quest.model.CurrentMember;
 import edu.jmi.openatom.quest.service.AdminWorkflowService;
@@ -198,6 +199,16 @@ public class AdminController {
         @Valid @RequestBody UpdateMemberRolesRequest request
     ) {
         workflowService.updateMemberRoles(member, memberId, request);
+        return ApiResponse.ok();
+    }
+
+    @PatchMapping("/members/{memberId}/profile")
+    public ApiResponse<Void> updateMemberProfile(
+        @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member,
+        @PathVariable long memberId,
+        @Valid @RequestBody UpdateMemberProfileRequest request
+    ) {
+        workflowService.updateMemberProfile(member, memberId, request);
         return ApiResponse.ok();
     }
 
