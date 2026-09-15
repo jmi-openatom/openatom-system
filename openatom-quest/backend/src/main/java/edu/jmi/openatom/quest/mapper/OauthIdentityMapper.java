@@ -9,4 +9,7 @@ public interface OauthIdentityMapper extends BaseMapper<OauthIdentity> {
 
     @Select("SELECT * FROM quest_oauth_identity WHERE provider = #{provider} AND subject = #{subject} LIMIT 1")
     OauthIdentity findByProviderAndSubject(@Param("provider") String provider, @Param("subject") String subject);
+
+    @Select("SELECT * FROM quest_oauth_identity WHERE member_id = #{memberId} AND provider = 'openatom' LIMIT 1")
+    OauthIdentity findOpenAtomByMemberId(@Param("memberId") Long memberId);
 }

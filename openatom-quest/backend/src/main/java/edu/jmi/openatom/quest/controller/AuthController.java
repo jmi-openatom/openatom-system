@@ -1,6 +1,7 @@
 package edu.jmi.openatom.quest.controller;
 
 import edu.jmi.openatom.quest.common.ApiResponse;
+import edu.jmi.openatom.quest.config.MemberAccessInterceptor;
 import edu.jmi.openatom.quest.config.QuestProperties;
 import edu.jmi.openatom.quest.model.CurrentMember;
 import edu.jmi.openatom.quest.service.MemberIdentityService;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -97,6 +99,13 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(false, null, "账号已被禁用"));
         }
         return ResponseEntity.ok(ApiResponse.ok(member));
+    }
+
+    @GetMapping("/identity")
+    public ApiResponse<Map<String, String>> identity(
+        @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member
+    ) {
+        return ApiResponse.ok(memberIdentityService.getOwnOauthIdentity(member.id()));
     }
 
     @PostMapping("/logout")

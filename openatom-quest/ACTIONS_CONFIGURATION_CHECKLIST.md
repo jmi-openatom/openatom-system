@@ -22,6 +22,7 @@
 | `QUEST_DB_PASSWORD` | 是 | Quest 数据库用户密码，至少 16 位 |
 | `QUEST_DB_ROOT_PASSWORD` | 是 | MySQL Root 密码，至少 16 位且与上一项不同 |
 | `QUEST_OAUTH_CLIENT_SECRET` | 否 | 公共客户端不配置；机密客户端填写 OAuth Secret |
+| `QUEST_OAUTH_BOOTSTRAP_ADMIN_SUBJECTS` | 首次上线必填 | 首位管理员的 OpenAtom 稳定 `sub`；多人用英文逗号分隔 |
 
 当前工作流沿用仓库其他部署任务的 `SERVER_*` 配置。如果这些 Secrets 已存在，无需重复创建。Quest 密码建议使用 `openssl rand -hex 32` 生成；为确保自动生成 `.env` 安全，Secret 只使用字母、数字和 `._~+=/-`。
 
@@ -61,6 +62,7 @@ QUEST_DB_PASSWORD=${GitHub Secret: QUEST_DB_PASSWORD}
 QUEST_DB_ROOT_PASSWORD=${GitHub Secret: QUEST_DB_ROOT_PASSWORD}
 QUEST_OAUTH_CLIENT_ID=${GitHub Variable: QUEST_OAUTH_CLIENT_ID}
 QUEST_OAUTH_CLIENT_SECRET=${GitHub Secret: QUEST_OAUTH_CLIENT_SECRET}
+QUEST_OAUTH_BOOTSTRAP_ADMIN_SUBJECTS=${GitHub Secret: QUEST_OAUTH_BOOTSTRAP_ADMIN_SUBJECTS}
 QUEST_HTTP_PORT=${GitHub Variable: QUEST_HTTP_PORT}
 ```
 
@@ -69,6 +71,7 @@ MySQL 数据库名固定为 `quest`，数据库用户固定为 `quest`，由 Com
 说明：
 
 - OAuth 公共客户端不创建 `QUEST_OAUTH_CLIENT_SECRET`；若后台配置了 Secret，再添加该 Secret。
+- `QUEST_OAUTH_BOOTSTRAP_ADMIN_SUBJECTS` 只按 OAuth 返回的稳定 `sub` 精确匹配，绝不按邮箱提权。匹配用户下次 OAuth 登录时会获得管理员角色并写入审计日志；完成首位管理员初始化后可以删除该 Secret。
 - 数据库密码只在数据库首次初始化时生效。已有 `quest_mysql_data` 数据卷时，不要只修改 GitHub Secret；应先在 MySQL 内修改账号密码，再同步修改 Secret。
 - Action 每次部署都会覆盖服务器 `.env`，其来源始终是 GitHub Environment `SERVER`。
 
@@ -118,7 +121,10 @@ location / {
 3. 访问 `https://quest.jmi-openatom.cn/api/system/health`，应返回成功状态。
 4. 访问 `https://quest.jmi-openatom.cn`，点击“使用 OpenAtom 账号登录”。
 5. 验证授权后返回 Quest，首次用户进入资料完善页。
-6. 验证退出后原会话失效。
+6. 计划作为首位管理员的用户登录后，访问 `https://quest.jmi-openatom.cn/api/auth/identity`，复制返回的 `subject`。
+7. 将该值保存为 GitHub Environment Secret `QUEST_OAUTH_BOOTSTRAP_ADMIN_SUBJECTS`，重新运行 Action，再退出并重新登录。
+8. 确认该用户可以进入管理后台；随后可以删除 `QUEST_OAUTH_BOOTSTRAP_ADMIN_SUBJECTS`，后续角色由后台分配。
+9. 验证退出后原会话失效。
 
 ## 9. 常见失败定位
 

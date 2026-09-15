@@ -43,6 +43,7 @@ services:
       QUEST_FRONTEND_URL: https://quest.jmi-openatom.cn
       QUEST_OAUTH_CLIENT_ID: ${QUEST_OAUTH_CLIENT_ID:-openatom-quest}
       QUEST_OAUTH_CLIENT_SECRET: ${QUEST_OAUTH_CLIENT_SECRET:-}
+      QUEST_OAUTH_BOOTSTRAP_ADMIN_SUBJECTS: ${QUEST_OAUTH_BOOTSTRAP_ADMIN_SUBJECTS:-}
       QUEST_OAUTH_REDIRECT_URI: https://quest.jmi-openatom.cn/api/auth/callback
       QUEST_COOKIE_SECURE: "true"
     depends_on:

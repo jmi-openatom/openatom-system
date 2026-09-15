@@ -26,7 +26,8 @@ cd frontend && pnpm install && pnpm dev
 
 1. 按 [ACTIONS_CONFIGURATION_CHECKLIST.md](./ACTIONS_CONFIGURATION_CHECKLIST.md) 在 GitHub Environment `SERVER` 配置部署 Secrets 和 Variables。
 2. 在 OpenAtom OAuth 后台手动登记回调地址 `https://quest.jmi-openatom.cn/api/auth/callback`。
-3. 运行 GitHub Actions 的 `OpenAtom Quest CI/CD`；Action 会生成服务器 `.env`、构建并启动容器，再执行健康检查。
-4. 由服务器入口网关把 `quest.jmi-openatom.cn` 的 HTTPS 流量转发到 `127.0.0.1:${QUEST_HTTP_PORT:-18084}`。
+3. 将首位管理员的 OpenAtom 稳定 `sub` 配置为 GitHub Secret `QUEST_OAUTH_BOOTSTRAP_ADMIN_SUBJECTS`。
+4. 运行 GitHub Actions 的 `OpenAtom Quest CI/CD`；Action 会生成服务器 `.env`、构建并启动容器，再执行健康检查。
+5. 由服务器入口网关把 `quest.jmi-openatom.cn` 的 HTTPS 流量转发到 `127.0.0.1:${QUEST_HTTP_PORT:-18084}`。
 
 生产部署必须由外层网关终止 HTTPS；应用会使用 Secure、HttpOnly、SameSite=Lax 会话 Cookie。
