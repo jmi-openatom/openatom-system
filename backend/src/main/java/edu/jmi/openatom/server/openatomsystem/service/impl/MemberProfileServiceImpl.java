@@ -450,10 +450,11 @@ public class MemberProfileServiceImpl implements MemberProfileService {
         .selectPendingByComments(COMMENT_TARGET,
             comments.stream().map(MemberProfileComment::getId).toList())
         .stream().collect(Collectors.groupingBy(CommentReport::getCommentId));
-    Map<Long, MemberProfileComment> parentComments = memberProfileCommentMapper.selectBatchIds(
-            comments.stream().map(MemberProfileComment::getParentId).filter(Objects::nonNull)
-                .distinct().toList())
-        .stream().collect(Collectors.toMap(MemberProfileComment::getId, Function.identity()));
+    List<Long> parentIds = comments.stream().map(MemberProfileComment::getParentId)
+        .filter(Objects::nonNull).distinct().toList();
+    Map<Long, MemberProfileComment> parentComments = parentIds.isEmpty() ? Map.of()
+        : memberProfileCommentMapper.selectBatchIds(parentIds).stream()
+            .collect(Collectors.toMap(MemberProfileComment::getId, Function.identity()));
     Map<Integer, User> commentUsers =
         users(Stream.concat(comments.stream().map(MemberProfileComment::getUserId),
                 parentComments.values().stream().map(MemberProfileComment::getUserId))
@@ -472,7 +473,10 @@ public class MemberProfileServiceImpl implements MemberProfileService {
                   User author = commentUsers.get(comment.getUserId());
                   User profileUser = profileUsers.get(comment.getProfileUserId());
                   MemberProfile profile = profiles.get(comment.getProfileUserId());
-                  MemberProfileComment parent = parentComments.get(comment.getParentId());
+                  MemberProfileComment parent =
+                      comment.getParentId() == null
+                          ? null
+                          : parentComments.get(comment.getParentId());
                   User replyTo = parent == null ? null : commentUsers.get(parent.getUserId());
                   return ResponseAdminMemberProfileCommentVO.builder()
                       .id(comment.getId())
@@ -1019,7 +1023,8 @@ public class MemberProfileServiceImpl implements MemberProfileService {
         .map(CommentInteraction::getCommentId).collect(Collectors.toSet());
     return comments.stream().map(comment -> {
       User user = commentUsers.get(comment.getUserId());
-      MemberProfileComment parent = parentMap.get(comment.getParentId());
+      MemberProfileComment parent =
+          comment.getParentId() == null ? null : parentMap.get(comment.getParentId());
       User replyTo = parent == null ? null : commentUsers.get(parent.getUserId());
       return ResponseMemberProfileCommentVO.builder()
           .id(comment.getId()).profileUserId(comment.getProfileUserId())

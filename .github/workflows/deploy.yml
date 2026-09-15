@@ -58,7 +58,7 @@ jobs:
           cd backend
           ./mvnw -q -DskipTests compile
           ./mvnw -q -DskipTests=false \
-            -Dtest=AuthServiceImplTest,OidcServiceImplTest,OidcSigningKeyProviderTest,OAuthSessionCookieServiceTest,MailboxProvisioningClientTest,MailboxOutboxSchedulerTest,SeafileOauthClientInitializerTest \
+            -Dtest=AuthServiceImplTest,OidcServiceImplTest,OidcSigningKeyProviderTest,OAuthSessionCookieServiceTest,MailboxProvisioningClientTest,MailboxOutboxSchedulerTest,SeafileOauthClientInitializerTest,MemberProfileServiceImplCommentsTest \
             test
 
   bot-check:
