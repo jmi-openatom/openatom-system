@@ -2,8 +2,8 @@
   <main class="login-page">
     <section class="login-panel" aria-labelledby="login-title">
       <router-link class="quest-brand" to="/">
-        <span class="quest-brand__mark">OA</span>
-        <span><strong>OpenAtom Quest</strong><small>开放原子开源社团</small></span>
+        <span ><img src="/public/logo.png" style="width: 45px" alt=""></span>
+        <span><strong>JMI-OPENATOM-QUEST</strong><small>开放原子开源社团</small></span>
       </router-link>
 
       <div class="login-panel__copy">
@@ -13,7 +13,7 @@
       </div>
 
       <el-button type="primary" size="large" class="login-button" @click="startLogin">
-        使用 OpenAtom 账号登录
+        使用 JMI-OPENATOM 账号登录
       </el-button>
 
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
