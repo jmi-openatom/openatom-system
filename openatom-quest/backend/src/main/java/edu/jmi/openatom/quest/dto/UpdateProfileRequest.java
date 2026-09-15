@@ -11,10 +11,6 @@ import java.util.List;
 public record UpdateProfileRequest(
     @NotBlank @Size(max = 64) String nickname,
     @Size(max = 512) String avatarUrl,
-    @NotBlank @Size(max = 128) String school,
-    @NotBlank @Size(max = 128) String college,
-    @NotBlank @Size(max = 128) String major,
-    @NotBlank @Size(max = 32) String grade,
     @NotEmpty List<Long> directionIds,
     @Size(max = 50) List<@Size(max = 64) String> skills,
     @Size(max = 512) String codeProfileUrl,

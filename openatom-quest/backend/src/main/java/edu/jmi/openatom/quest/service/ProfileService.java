@@ -71,10 +71,6 @@ public class ProfileService {
 
         member.setNickname(request.nickname().trim());
         member.setAvatarUrl(trimToNull(request.avatarUrl()));
-        member.setSchool(request.school().trim());
-        member.setCollege(request.college().trim());
-        member.setMajor(request.major().trim());
-        member.setGrade(request.grade().trim());
         member.setSkillsJson(writeJson(request.skills() == null ? List.of() : request.skills()));
         member.setCodeProfileUrl(trimToNull(request.codeProfileUrl()));
         member.setWeeklyHours(request.weeklyHours());

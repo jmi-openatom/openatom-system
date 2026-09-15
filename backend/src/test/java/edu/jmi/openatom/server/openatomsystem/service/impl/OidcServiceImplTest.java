@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import edu.jmi.openatom.server.openatomsystem.mapper.OauthAuthorizationCodeMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.OauthClientMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
+import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.security.OidcSigningKeyProvider;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
 import java.net.URI;
@@ -75,5 +76,27 @@ class OidcServiceImplTest {
     assertEquals("RSA", keys.getFirst().get("kty"));
     assertFalse(keys.getFirst().containsKey("k"));
     assertFalse(keys.getFirst().containsKey("d"));
+  }
+
+  @Test
+  void userInfoIncludesAuthoritativeEducationProfile() {
+    User user =
+        User.builder()
+            .id(12)
+            .userName("student")
+            .realName("测试成员")
+            .college("信息工程学院")
+            .major("软件技术")
+            .grade("2026级")
+            .build();
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> userInfo =
+        ReflectionTestUtils.invokeMethod(service, "userInfo", user, List.of("formal_member"), List.of());
+
+    assertEquals("江苏海事职业技术学院", userInfo.get("school"));
+    assertEquals("信息工程学院", userInfo.get("college"));
+    assertEquals("软件技术", userInfo.get("major"));
+    assertEquals("2026级", userInfo.get("grade"));
   }
 }

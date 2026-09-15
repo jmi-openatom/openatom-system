@@ -86,7 +86,12 @@ public class OpenAtomOauthClient {
             info.path("sub").asText(),
             firstText(info, "nickname", "name", "preferred_username", "username"),
             firstText(info, "avatar"),
-            firstText(info, "email")
+            firstText(info, "email"),
+            firstText(info, "school"),
+            firstText(info, "college"),
+            firstText(info, "major"),
+            firstText(info, "grade"),
+            info.path("lab_role").asInt(0)
         );
         return new TokenResult(token.path("access_token").asText(), token.path("refresh_token").asText(), user);
     }

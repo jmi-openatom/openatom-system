@@ -35,6 +35,10 @@ public class MemberIdentityService {
                 .nickname(userInfo.displayName())
                 .avatarUrl(userInfo.avatarUrl())
                 .email(userInfo.email())
+                .school(userInfo.school())
+                .college(userInfo.college())
+                .major(userInfo.major())
+                .grade(userInfo.grade())
                 .status("ACTIVE")
                 .currentLevel("L0")
                 .totalPoints(0)
@@ -63,16 +67,22 @@ public class MemberIdentityService {
             identity.setLastLoginAt(now);
             identityMapper.updateById(identity);
             member = memberMapper.selectById(identity.getMemberId());
+            if (userInfo.school() != null) member.setSchool(userInfo.school());
+            if (userInfo.college() != null) member.setCollege(userInfo.college());
+            if (userInfo.major() != null) member.setMajor(userInfo.major());
+            if (userInfo.grade() != null) member.setGrade(userInfo.grade());
+            memberMapper.updateById(member);
         }
-        if (oauthProperties.isBootstrapAdminSubject(userInfo.subject())) {
+        boolean lmsAdmin = userInfo.labRole() != null && userInfo.labRole() >= 2;
+        if (lmsAdmin || oauthProperties.isBootstrapAdminSubject(userInfo.subject())) {
             Long adminRoleId = accessMapper.findRoleId("ADMIN");
             if (accessMapper.assignRole(member.getId(), adminRoleId) == 1) {
                 auditService.record(
                     member.getId(),
-                    "BOOTSTRAP_ADMIN_ASSIGNED",
+                    lmsAdmin ? "LMS_ADMIN_ASSIGNED" : "BOOTSTRAP_ADMIN_ASSIGNED",
                     "MEMBER",
                     member.getId(),
-                    Map.of("provider", PROVIDER)
+                    Map.of("provider", PROVIDER, "source", lmsAdmin ? "lms_admin" : "bootstrap_subject")
                 );
             }
         }
