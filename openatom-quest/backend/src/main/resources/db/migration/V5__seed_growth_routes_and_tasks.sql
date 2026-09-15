@@ -29,7 +29,7 @@ CREATE TEMPORARY TABLE quest_seed_route (
     contribution_target VARCHAR(500) NOT NULL,
     reference_url VARCHAR(512) NOT NULL,
     PRIMARY KEY (direction_key)
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO quest_seed_route VALUES
     ('openharmony', 'openharmony-growth', 'OpenHarmony 应用开发路线',
