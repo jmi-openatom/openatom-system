@@ -1,0 +1,65 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: quest
+      MYSQL_USER: quest
+      MYSQL_PASSWORD: ${QUEST_DB_PASSWORD:-quest_dev_password}
+      MYSQL_ROOT_PASSWORD: ${QUEST_DB_ROOT_PASSWORD:-quest_root_dev_password}
+      TZ: Asia/Shanghai
+    ports:
+      - "127.0.0.1:${QUEST_MYSQL_PORT:-33316}:3306"
+    volumes:
+      - quest_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uquest -p$${MYSQL_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${QUEST_REDIS_PORT:-36379}:6379"
+    volumes:
+      - quest_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      QUEST_DB_URL: jdbc:mysql://mysql:3306/quest?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      QUEST_DB_USERNAME: quest
+      QUEST_DB_PASSWORD: ${QUEST_DB_PASSWORD:-quest_dev_password}
+      QUEST_REDIS_HOST: redis
+      QUEST_REDIS_PORT: 6379
+      QUEST_FRONTEND_URL: https://quest.jmi-openatom.cn
+      QUEST_OAUTH_CLIENT_ID: ${QUEST_OAUTH_CLIENT_ID:-openatom-quest}
+      QUEST_OAUTH_CLIENT_SECRET: ${QUEST_OAUTH_CLIENT_SECRET:-}
+      QUEST_OAUTH_REDIRECT_URI: https://quest.jmi-openatom.cn/api/auth/callback
+      QUEST_COOKIE_SECURE: "true"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${QUEST_HTTP_PORT:-18084}:80"
+    depends_on:
+      - backend
+
+volumes:
+  quest_mysql_data:
+  quest_redis_data:

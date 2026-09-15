@@ -1,0 +1,14 @@
+server:
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: true
+
+quest:
+  frontend-url: https://quest.jmi-openatom.cn
+  oauth:
+    issuer: https://oauth.jmi-openatom.cn/api/v1
+    client-id: openatom-quest
+    redirect-uri: https://quest.jmi-openatom.cn/api/auth/callback
+    scopes: openid profile email

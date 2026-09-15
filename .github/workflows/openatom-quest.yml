@@ -1,0 +1,224 @@
+name: OpenAtom Quest CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - openatom-quest/**
+      - .github/workflows/openatom-quest.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - openatom-quest/**
+      - .github/workflows/openatom-quest.yml
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openatom-quest-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  backend-check:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: quest
+          MYSQL_USER: quest
+          MYSQL_PASSWORD: quest_ci_password
+          MYSQL_ROOT_PASSWORD: quest_ci_root_password
+          TZ: Asia/Shanghai
+        ports:
+          - 33316:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uquest -pquest_ci_password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 36379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+    defaults:
+      run:
+        working-directory: openatom-quest/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: openatom-quest/backend/pom.xml
+      - name: Run backend unit and integration tests
+        env:
+          QUEST_DB_PASSWORD: quest_ci_password
+        run: mvn --batch-mode --no-transfer-progress test -Dquest.integration=true
+
+  frontend-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openatom-quest/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+          run_install: false
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: openatom-quest/frontend/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Type-check and build frontend
+        run: pnpm run build
+
+  deployment-config-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker Compose model
+        working-directory: openatom-quest
+        run: docker compose --env-file .env.example config --quiet
+      - name: Build production images
+        working-directory: openatom-quest
+        run: docker compose --env-file .env.example build backend frontend
+
+  deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs:
+      - backend-check
+      - frontend-check
+      - deployment-config-check
+    runs-on: ubuntu-latest
+    environment: SERVER
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare deployment bundle
+        run: |
+          mkdir -p .deploy/openatom-quest
+          rsync -a \
+            --exclude .env \
+            --exclude node_modules \
+            --exclude dist \
+            --exclude target \
+            --exclude .DS_Store \
+            openatom-quest/ .deploy/openatom-quest/
+      - name: Prepare server directory
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            set -eu
+            mkdir -p "${{ vars.QUEST_DEPLOY_PATH || '/www/wwwroot/openatom-quest' }}"
+      - name: Upload Quest source
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: .deploy/openatom-quest
+          target: ${{ vars.QUEST_DEPLOY_PATH || '/www/wwwroot/openatom-quest' }}
+          strip_components: 2
+      - name: Deploy and verify Quest
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          QUEST_DEPLOY_PATH: ${{ vars.QUEST_DEPLOY_PATH || '/www/wwwroot/openatom-quest' }}
+          QUEST_DB_PASSWORD: ${{ secrets.QUEST_DB_PASSWORD }}
+          QUEST_DB_ROOT_PASSWORD: ${{ secrets.QUEST_DB_ROOT_PASSWORD }}
+          QUEST_OAUTH_CLIENT_ID: ${{ vars.QUEST_OAUTH_CLIENT_ID || 'openatom-quest' }}
+          QUEST_OAUTH_CLIENT_SECRET: ${{ secrets.QUEST_OAUTH_CLIENT_SECRET }}
+          QUEST_HTTP_PORT: ${{ vars.QUEST_HTTP_PORT || '18084' }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          envs: QUEST_DEPLOY_PATH,QUEST_DB_PASSWORD,QUEST_DB_ROOT_PASSWORD,QUEST_OAUTH_CLIENT_ID,QUEST_OAUTH_CLIENT_SECRET,QUEST_HTTP_PORT
+          script: |
+            set -eu
+            cd "$QUEST_DEPLOY_PATH"
+
+            printf '%s' "$QUEST_DB_PASSWORD" | grep -Eq '^[A-Za-z0-9._~+=/-]{16,}$' || {
+              echo 'QUEST_DB_PASSWORD must be at least 16 characters and contain only deployment-safe characters.'
+              exit 1
+            }
+            printf '%s' "$QUEST_DB_ROOT_PASSWORD" | grep -Eq '^[A-Za-z0-9._~+=/-]{16,}$' || {
+              echo 'QUEST_DB_ROOT_PASSWORD must be at least 16 characters and contain only deployment-safe characters.'
+              exit 1
+            }
+            printf '%s' "$QUEST_OAUTH_CLIENT_ID" | grep -Eq '^[A-Za-z0-9._~-]+$' || {
+              echo 'QUEST_OAUTH_CLIENT_ID contains unsupported characters.'
+              exit 1
+            }
+            if [ -n "$QUEST_OAUTH_CLIENT_SECRET" ]; then
+              printf '%s' "$QUEST_OAUTH_CLIENT_SECRET" | grep -Eq '^[A-Za-z0-9._~+=/-]+$' || {
+                echo 'QUEST_OAUTH_CLIENT_SECRET contains unsupported characters.'
+                exit 1
+              }
+            fi
+            case "$QUEST_HTTP_PORT" in
+              ''|*[!0-9]*) echo 'QUEST_HTTP_PORT must be a number.'; exit 1 ;;
+            esac
+            if [ "$QUEST_HTTP_PORT" -lt 1024 ] || [ "$QUEST_HTTP_PORT" -gt 65535 ]; then
+              echo 'QUEST_HTTP_PORT must be between 1024 and 65535.'
+              exit 1
+            fi
+
+            umask 077
+            {
+              printf 'QUEST_DB_PASSWORD=%s\n' "$QUEST_DB_PASSWORD"
+              printf 'QUEST_DB_ROOT_PASSWORD=%s\n' "$QUEST_DB_ROOT_PASSWORD"
+              printf 'QUEST_OAUTH_CLIENT_ID=%s\n' "$QUEST_OAUTH_CLIENT_ID"
+              printf 'QUEST_OAUTH_CLIENT_SECRET=%s\n' "$QUEST_OAUTH_CLIENT_SECRET"
+              printf 'QUEST_HTTP_PORT=%s\n' "$QUEST_HTTP_PORT"
+            } > .env.tmp
+            mv .env.tmp .env
+
+            if command -v docker-compose >/dev/null 2>&1; then
+              COMPOSE_CMD='docker-compose'
+            else
+              COMPOSE_CMD='docker compose'
+            fi
+
+            $COMPOSE_CMD --env-file .env config --quiet
+            $COMPOSE_CMD --env-file .env up -d --build --remove-orphans
+
+            attempt=1
+            while [ "$attempt" -le 30 ]; do
+              if curl --fail --silent --show-error "http://127.0.0.1:${QUEST_HTTP_PORT}/api/system/health" >/dev/null; then
+                echo 'OpenAtom Quest deployment health check passed.'
+                exit 0
+              fi
+              sleep 4
+              attempt=$((attempt + 1))
+            done
+
+            $COMPOSE_CMD --env-file .env ps
+            $COMPOSE_CMD --env-file .env logs --tail=200 backend frontend
+            echo 'OpenAtom Quest deployment failed health check.'
+            exit 1

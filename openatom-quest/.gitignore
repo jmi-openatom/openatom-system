@@ -1,0 +1,9 @@
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+dist/
+target/
+.env
+.env.local
+uploads/
