@@ -21,7 +21,7 @@
       <p class="login-panel__legal">
         登录即表示你同意用户协议、隐私政策和社团成员行为准则。平台不提供独立注册或密码登录。
       </p>
-      <a class="text-link" href="mailto:contact@jmi-openatom.cn">登录遇到问题？联系管理员</a>
+<!--      <a class="text-link" href="mailto:contact@jmi-openatom.cn">登录遇到问题？联系管理员</a>-->
     </section>
 
     <aside class="login-story" aria-label="平台能力介绍">
