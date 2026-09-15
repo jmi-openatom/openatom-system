@@ -1,292 +1,360 @@
 <template>
-  <section id="activities" class="activity-band home-interactive-section">
+  <section
+    id="activities"
+    class="event-gallery home-interactive-section"
+    aria-labelledby="events-title"
+  >
     <HomeInteractiveBackdrop :radius="230" :spacing="68" :strength="18" />
-    <div class="activity-shell section">
-      <div class="section-heading reveal-block">
-        <span>近期活动</span>
-        <h2>一起，把想法变成行动。</h2>
-        <p>聚焦正在发生的活动，也留下每一次共同创造的轨迹。</p>
+    <header class="event-gallery__heading">
+      <div>
+        <span class="event-gallery__eyebrow">近期活动</span>
+        <h2 id="events-title">相聚，让热爱发生。</h2>
       </div>
+      <router-link class="event-gallery__all" to="/activities"
+        >全部活动 <span aria-hidden="true">↗</span></router-link
+      >
+    </header>
 
-      <div v-if="activities.length" ref="showcaseRef" class="activity-showcase">
-        <router-link
-          class="activity-feature"
-          :to="`/activities/${featuredActivity.id}`"
-          :aria-label="`查看活动：${featuredActivity.title}`"
-        >
-          <div
-            class="activity-feature__media"
-            :class="{ 'is-fallback': !featuredActivity.coverUrl }"
-          >
-            <img
-              v-if="featuredActivity.coverUrl"
-              :src="featuredActivity.coverUrl"
-              :alt="featuredActivity.title"
-              decoding="async"
-              loading="lazy"
-            />
-            <span v-else>{{ featuredActivity.date || 'OPENATOM' }}</span>
+    <div
+      v-if="activities.length"
+      id="event-gallery-track"
+      ref="track"
+      class="event-gallery__track"
+      tabindex="0"
+      role="region"
+      aria-label="活动画廊，可左右滑动"
+      @scroll.passive="updateNavigation"
+      @keydown.left.prevent="move(-1)"
+      @keydown.right.prevent="move(1)"
+    >
+      <router-link
+        v-for="(activity, index) in activities"
+        :key="activity.id"
+        class="event-gallery__card"
+        :to="`/activities/${activity.id}`"
+        :aria-label="`查看活动：${activity.title}`"
+      >
+        <div class="event-gallery__image">
+          <img
+            v-if="activity.coverUrl && !failedImages.has(activity.coverUrl)"
+            :src="activity.coverUrl"
+            :alt="activity.title"
+            loading="lazy"
+            decoding="async"
+            @error="failedImages.add(activity.coverUrl)"
+          />
+          <div v-else class="event-gallery__fallback" aria-hidden="true">
+            <span>OPEN<br />ATOM.</span><small>连接 · 分享 · 创造</small>
           </div>
-          <div class="activity-feature__content">
-            <div class="activity-feature__meta">
-              <time>{{ featuredActivity.date }}</time
-              ><span>本期聚焦</span>
-            </div>
-            <h3>{{ featuredActivity.title }}</h3>
-            <p>{{ featuredActivity.description || '查看活动详情与最新进展。' }}</p>
-            <strong>查看活动 <span aria-hidden="true">↗</span></strong>
-          </div>
-        </router-link>
-
-        <div v-if="moreActivities.length" class="activity-timeline" aria-label="更多近期活动">
-          <router-link
-            v-for="(activity, index) in moreActivities"
-            :key="activity.id || activity.title"
-            class="activity-timeline__item"
-            :to="`/activities/${activity.id}`"
-          >
-            <span class="activity-timeline__index">{{ formatIndex(index + 2) }}</span>
-            <div>
-              <time>{{ activity.date }}</time>
-              <h3>{{ activity.title }}</h3>
-              <p>{{ activity.description || '查看活动详情' }}</p>
-            </div>
-            <span class="activity-timeline__arrow" aria-hidden="true">→</span>
-          </router-link>
-          <router-link class="activity-timeline__all" to="/activities"
-            >查看全部活动 <span aria-hidden="true">→</span></router-link
-          >
+          <span class="event-gallery__number" aria-hidden="true">{{
+            String(index + 1).padStart(2, '0')
+          }}</span>
         </div>
-      </div>
-      <el-empty v-if="!activities.length && !loading" description="暂无活动数据" />
+        <div class="event-gallery__caption">
+          <time v-if="activity.date">{{ activity.date }}</time>
+          <div class="event-gallery__title">
+            <h3>{{ activity.title }}</h3>
+            <span aria-hidden="true">↗</span>
+          </div>
+        </div>
+      </router-link>
     </div>
+    <div v-else class="event-gallery__empty" :aria-busy="loading">
+      {{ loading ? '活动加载中…' : '新的相聚，正在酝酿。' }}
+    </div>
+
+    <footer v-if="activities.length" class="event-gallery__footer">
+      <span>在分享中相遇，在实践中同行。</span>
+      <div v-if="canPrevious || canNext" class="event-gallery__controls">
+        <button
+          type="button"
+          aria-label="上一组活动"
+          aria-controls="event-gallery-track"
+          :disabled="!canPrevious"
+          @click="move(-1)"
+        >
+          ←
+        </button>
+        <button
+          type="button"
+          aria-label="下一组活动"
+          aria-controls="event-gallery-track"
+          :disabled="!canNext"
+          @click="move(1)"
+        >
+          →
+        </button>
+      </div>
+    </footer>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import HomeInteractiveBackdrop from './HomeInteractiveBackdrop.vue'
 
-const props = defineProps<{ activities: any[]; loading: boolean }>()
-const showcaseRef = ref<HTMLElement>()
-const featuredActivity = computed(() => props.activities[0] || {})
-const moreActivities = computed(() => props.activities.slice(1, 5))
-let observer: IntersectionObserver | undefined
+defineProps<{
+  activities: { id: number | string; title: string; date?: string; coverUrl?: string }[]
+  loading: boolean
+}>()
+const track = ref<HTMLElement>()
+const failedImages = ref(new Set<string>())
+const canPrevious = ref(false)
+const canNext = ref(false)
+let resizeObserver: ResizeObserver | undefined
 
-function formatIndex(index: number) {
-  return String(index).padStart(2, '0')
+function updateNavigation() {
+  const el = track.value
+  canPrevious.value = !!el && el.scrollLeft > 2
+  canNext.value = !!el && el.scrollWidth - el.clientWidth - el.scrollLeft > 2
 }
-function observeShowcase() {
-  observer?.disconnect()
-  const showcase = showcaseRef.value
-  if (!showcase || !('IntersectionObserver' in window)) {
-    showcase?.classList.add('is-visible')
-    return
-  }
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        showcase.classList.add('is-visible')
-        observer?.disconnect()
-      }
-    },
-    { rootMargin: '80px 0px', threshold: 0.08 },
-  )
-  observer.observe(showcase)
+function move(direction: number) {
+  const el = track.value
+  if (!el) return
+  const card = el.firstElementChild as HTMLElement | null
+  const step =
+    (card?.offsetWidth || el.clientWidth) + parseFloat(getComputedStyle(el).columnGap || '0')
+  el.scrollBy({
+    left: direction * step,
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+  })
 }
-watch(() => props.activities.length, observeShowcase, { flush: 'post' })
-onMounted(observeShowcase)
-onBeforeUnmount(() => observer?.disconnect())
+watch(
+  track,
+  (el) => {
+    resizeObserver?.disconnect()
+    if (el) {
+      resizeObserver = new ResizeObserver(updateNavigation)
+      resizeObserver.observe(el)
+      for (const child of el.children) resizeObserver.observe(child)
+    }
+    updateNavigation()
+  },
+  { flush: 'post' },
+)
+onBeforeUnmount(() => resizeObserver?.disconnect())
 </script>
 
 <style scoped>
-.activity-showcase {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.85fr);
-  gap: 24px;
-  margin-top: 48px;
-  opacity: 0;
-  transform: translateY(28px);
-  transition:
-    opacity 0.7s ease,
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.activity-showcase.is-visible {
-  opacity: 1;
-  transform: none;
-}
-.activity-feature {
-  display: grid;
-  min-height: 560px;
+.event-gallery {
+  --gallery-gutter: max(24px, calc((100% - 1200px) / 2));
+  position: relative;
+  padding: 100px 0 80px;
+  background: var(--oa-page-soft-bg);
+  color: var(--oa-text);
   overflow: hidden;
-  border: 1px solid var(--oa-border);
-  border-radius: 24px;
-  background: var(--oa-elevated-bg);
+}
+.event-gallery__heading,
+.event-gallery__footer {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 var(--gallery-gutter);
+}
+.event-gallery__eyebrow {
+  display: block;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--oa-muted);
+}
+.event-gallery__heading h2 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 52px);
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+.event-gallery__all {
+  flex-shrink: 0;
+  padding-bottom: 5px;
+  color: var(--oa-text);
+  text-decoration: none;
+  font-size: 14px;
+}
+.event-gallery__all span {
+  margin-left: 10px;
+}
+.event-gallery__track {
+  position: relative;
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gallery-gutter);
+  padding: 44px var(--gallery-gutter) 24px;
+  scrollbar-width: none;
+}
+.event-gallery__track::-webkit-scrollbar {
+  display: none;
+}
+.event-gallery__card {
+  flex: 0 0 clamp(300px, 39vw, 520px);
+  min-width: 0;
+  scroll-snap-align: start;
   color: inherit;
   text-decoration: none;
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
 }
-.activity-feature:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-.activity-feature__media {
-  min-height: 320px;
+.event-gallery__image {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  border-radius: 20px;
   overflow: hidden;
-  background: linear-gradient(145deg, var(--oa-elevated-bg), var(--oa-page-soft-bg));
+  background: var(--oa-elevated-bg);
 }
-.activity-feature__media img {
+.event-gallery__image img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.5s ease;
 }
-.activity-feature:hover .activity-feature__media img {
-  transform: scale(1.025);
+.event-gallery__card:hover img {
+  transform: scale(1.035);
 }
-.activity-feature__media.is-fallback {
+.event-gallery__number {
+  position: absolute;
+  top: 18px;
+  left: 18px;
   display: grid;
   place-items: center;
-  color: var(--oa-muted);
-  font-size: clamp(32px, 6vw, 72px);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-}
-.activity-feature__content {
-  display: grid;
-  align-content: start;
-  gap: 16px;
-  padding: 30px 32px 34px;
-}
-.activity-feature__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--oa-muted);
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ffffff50;
+  border-radius: 50%;
+  background: #00000050;
+  color: #fff;
   font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  backdrop-filter: blur(12px);
 }
-.activity-feature h3 {
-  margin: 0;
-  color: var(--oa-text);
-  font-size: clamp(28px, 3.4vw, 48px);
-  font-weight: 650;
-  line-height: 1.08;
-  letter-spacing: -0.025em;
+.event-gallery__caption {
+  padding: 22px 4px 0;
 }
-.activity-feature p {
-  max-width: 680px;
-  margin: 0;
+.event-gallery__caption time {
+  font-size: 13px;
   color: var(--oa-muted);
-  font-size: 16px;
-  line-height: 1.7;
+  font-variant-numeric: tabular-nums;
 }
-.activity-feature strong {
-  color: var(--oa-text);
-  font-size: 14px;
-  font-weight: 600;
-}
-.activity-timeline {
+.event-gallery__title {
   display: flex;
-  min-width: 0;
+  align-items: flex-start;
+  gap: 24px;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.event-gallery__title h3 {
+  margin: 0;
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.event-gallery__title > span {
+  flex-shrink: 0;
+  font-size: 24px;
+  color: var(--oa-muted);
+}
+.event-gallery__fallback {
+  display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--oa-border);
+  justify-content: center;
+  gap: 24px;
+  height: 100%;
+  padding: 40px;
+  box-sizing: border-box;
+  color: var(--oa-text);
+  background: var(--oa-elevated-bg);
 }
-.activity-timeline__item {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 24px;
-  gap: 14px;
-  align-items: start;
-  padding: 24px 4px;
-  border-bottom: 1px solid var(--oa-border);
-  color: inherit;
-  text-decoration: none;
-  transition:
-    padding-left 0.25s ease,
-    background-color 0.25s ease;
+.event-gallery__fallback > span {
+  font-size: clamp(48px, 6vw, 84px);
+  font-weight: 750;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
 }
-.activity-timeline__item:hover {
-  padding-left: 12px;
-  background: color-mix(in srgb, var(--oa-elevated-bg) 72%, transparent);
-}
-.activity-timeline__index,
-.activity-timeline time {
-  color: var(--oa-faint);
-  font-size: 11px;
+.event-gallery__fallback small {
+  color: var(--oa-muted);
   letter-spacing: 0.12em;
 }
-.activity-timeline h3 {
-  margin: 7px 0 6px;
-  color: var(--oa-text);
-  font-size: 18px;
-  line-height: 1.3;
+.event-gallery__footer {
+  align-items: center;
+  min-height: 44px;
+  margin-top: 12px;
 }
-.activity-timeline p {
-  display: -webkit-box;
-  margin: 0;
-  overflow: hidden;
+.event-gallery__footer > span {
   color: var(--oa-muted);
   font-size: 13px;
-  line-height: 1.55;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
-.activity-timeline__arrow {
-  color: var(--oa-muted);
-  transition:
-    transform 0.2s ease,
-    color 0.2s ease;
+.event-gallery__controls {
+  display: flex;
+  gap: 10px;
 }
-.activity-timeline__item:hover .activity-timeline__arrow {
+.event-gallery__controls button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--oa-border);
+  border-radius: 50%;
+  background: var(--oa-elevated-bg);
   color: var(--oa-text);
-  transform: translateX(3px);
+  font: inherit;
+  font-size: 22px;
+  cursor: pointer;
 }
-.activity-timeline__all {
-  align-self: flex-start;
-  margin-top: 24px;
-  color: var(--oa-text);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
+.event-gallery__controls button:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
-.activity-feature:focus-visible,
-.activity-timeline__item:focus-visible,
-.activity-timeline__all:focus-visible {
+.event-gallery__all:hover {
+  text-decoration: underline;
+}
+.event-gallery :is(a, button, [tabindex]):focus-visible {
   outline: 2px solid var(--oa-text);
   outline-offset: 4px;
 }
-@media (max-width: 900px) {
-  .activity-showcase {
-    grid-template-columns: 1fr;
-  }
-  .activity-feature {
-    min-height: 0;
-  }
+.event-gallery__track:focus-visible {
+  outline-offset: -4px;
+}
+.event-gallery__empty {
+  position: relative;
+  margin: 44px var(--gallery-gutter) 0;
+  padding: 64px 24px;
+  border: 1px solid var(--oa-border);
+  border-radius: 20px;
+  text-align: center;
+  color: var(--oa-muted);
 }
 @media (max-width: 640px) {
-  .activity-showcase {
-    gap: 32px;
-    margin-top: 32px;
+  .event-gallery {
+    --gallery-gutter: 20px;
+    padding: 64px 0 48px;
   }
-  .activity-feature {
-    border-radius: 18px;
+  .event-gallery__heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
   }
-  .activity-feature__media {
-    min-height: 230px;
+  .event-gallery__track {
+    gap: 16px;
+    padding-top: 28px;
   }
-  .activity-feature__content {
-    padding: 24px;
+  .event-gallery__card {
+    flex-basis: 82%;
+  }
+  .event-gallery__image {
+    aspect-ratio: 5 / 4;
+    border-radius: 16px;
+  }
+  .event-gallery__caption {
+    padding-top: 18px;
+  }
+  .event-gallery__footer > span {
+    max-width: 180px;
+    line-height: 1.6;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .activity-showcase,
-  .activity-feature,
-  .activity-feature__media img,
-  .activity-timeline__item,
-  .activity-timeline__arrow {
+  .event-gallery__image img {
     transition: none;
   }
 }
