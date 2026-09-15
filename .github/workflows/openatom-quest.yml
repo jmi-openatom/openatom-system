@@ -104,9 +104,22 @@ jobs:
       - name: Validate Docker Compose model
         working-directory: openatom-quest
         run: docker compose --env-file .env.example config --quiet
-      - name: Build production images
-        working-directory: openatom-quest
-        run: docker compose --env-file .env.example build backend frontend
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build backend production image
+        uses: docker/build-push-action@v6
+        with:
+          context: openatom-quest/backend
+          push: false
+          cache-from: type=gha,scope=openatom-quest-backend
+          cache-to: type=gha,mode=max,scope=openatom-quest-backend
+      - name: Build frontend production image
+        uses: docker/build-push-action@v6
+        with:
+          context: openatom-quest/frontend
+          push: false
+          cache-from: type=gha,scope=openatom-quest-frontend
+          cache-to: type=gha,mode=max,scope=openatom-quest-frontend
 
   deploy:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
