@@ -31,6 +31,7 @@ services:
       retries: 20
 
   backend:
+    image: openatom-quest-backend:latest
     build:
       context: ./backend
     restart: unless-stopped
@@ -53,6 +54,7 @@ services:
         condition: service_healthy
 
   frontend:
+    image: openatom-quest-frontend:latest
     build:
       context: ./frontend
     restart: unless-stopped

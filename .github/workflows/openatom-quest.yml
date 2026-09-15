@@ -110,16 +110,31 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: openatom-quest/backend
+          tags: openatom-quest-backend:latest
           push: false
+          outputs: type=docker,dest=${{ runner.temp }}/openatom-quest-backend.tar
           cache-from: type=gha,scope=openatom-quest-backend
           cache-to: type=gha,mode=max,scope=openatom-quest-backend
       - name: Build frontend production image
         uses: docker/build-push-action@v6
         with:
           context: openatom-quest/frontend
+          tags: openatom-quest-frontend:latest
           push: false
+          outputs: type=docker,dest=${{ runner.temp }}/openatom-quest-frontend.tar
           cache-from: type=gha,scope=openatom-quest-frontend
           cache-to: type=gha,mode=max,scope=openatom-quest-frontend
+      - name: Upload production images
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: openatom-quest-production-images
+          path: |
+            ${{ runner.temp }}/openatom-quest-backend.tar
+            ${{ runner.temp }}/openatom-quest-frontend.tar
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
 
   deploy:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -141,6 +156,11 @@ jobs:
             --exclude target \
             --exclude .DS_Store \
             openatom-quest/ .deploy/openatom-quest/
+      - name: Download production images
+        uses: actions/download-artifact@v4
+        with:
+          name: openatom-quest-production-images
+          path: .deploy/openatom-quest/deploy-images
       - name: Prepare server directory
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -231,7 +251,10 @@ jobs:
             fi
 
             $COMPOSE_CMD --env-file .env config --quiet
-            $COMPOSE_CMD --env-file .env up -d --build --remove-orphans
+            docker load --input deploy-images/openatom-quest-backend.tar
+            docker load --input deploy-images/openatom-quest-frontend.tar
+            rm -f deploy-images/openatom-quest-backend.tar deploy-images/openatom-quest-frontend.tar
+            $COMPOSE_CMD --env-file .env up -d --no-build --remove-orphans
 
             attempt=1
             while [ "$attempt" -le 30 ]; do
