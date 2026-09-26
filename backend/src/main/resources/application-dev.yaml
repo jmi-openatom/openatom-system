@@ -103,6 +103,8 @@ app:
     storage-dir: ${APP_IMAGE_HOSTING_STORAGE_DIR:./uploads/images}
   leave-attachment:
     storage-dir: ${APP_LEAVE_ATTACHMENT_STORAGE_DIR:./uploads/leave-attachments}
+  expense-attachment:
+    storage-dir: ${APP_EXPENSE_ATTACHMENT_STORAGE_DIR:./uploads/expense-attachments}
   document-template:
     storage-dir: ${APP_DOCUMENT_TEMPLATE_STORAGE_DIR:./uploads/document-templates}
   generated-document:

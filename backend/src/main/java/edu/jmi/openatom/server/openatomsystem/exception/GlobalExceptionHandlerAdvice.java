@@ -4,6 +4,7 @@ import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.NotPermissionException;
 import cn.dev33.satoken.exception.NotRoleException;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.service.impl.ClubExpenseException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
@@ -25,6 +26,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandlerAdvice {
+
+  @ExceptionHandler(ClubExpenseException.class)
+  public ResponseEntity<Result<Void>> handleClubExpenseException(ClubExpenseException e) {
+    return ResponseEntity.status(e.getCode()).body(Result.error(e.getCode(), e.getMessage()));
+  }
 
   @ExceptionHandler(NotLoginException.class)
   public ResponseEntity<Result<Void>> handleNotLoginException(NotLoginException e) {

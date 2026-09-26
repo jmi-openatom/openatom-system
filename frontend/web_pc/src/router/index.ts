@@ -80,6 +80,7 @@ const adminFallbackRoutes = [
   '/admin/leaves',
   '/admin/school-calendar',
   '/admin/activities',
+  '/admin/expenses',
   '/admin/ai-activities',
   '/admin/blogs',
   '/admin/member-profile-comments',
@@ -537,6 +538,12 @@ const routes = [
         name: 'admin-activities',
         meta: { permissions: ['activity:list'] },
         component: resilientView(() => import('../views/admin/Activities.vue')),
+      },
+      {
+        path: 'expenses',
+        name: 'admin-expenses',
+        meta: { permissions: ['expense:list'] },
+        component: resilientView(() => import('../views/admin/Expenses.vue')),
       },
       {
         path: 'ai-activities',

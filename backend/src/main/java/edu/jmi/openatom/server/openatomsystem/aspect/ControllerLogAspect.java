@@ -40,7 +40,8 @@ public class ControllerLogAspect {
   private final ObjectMapper objectMapper;
   private final ClientIpResolver clientIpResolver;
 
-  @Around("within(edu.jmi.openatom.server.openatomsystem.controller..*)")
+  // 财务接口包含金额、备注和票据元数据，只保留 OperationLogInterceptor 的路径级审计。
+  @Around("within(edu.jmi.openatom.server.openatomsystem.controller..*) && !within(edu.jmi.openatom.server.openatomsystem.controller.ClubExpenseController)")
   public Object logControllerCall(ProceedingJoinPoint joinPoint) throws Throwable {
     long startTime = System.currentTimeMillis();
     MethodSignature signature = (MethodSignature) joinPoint.getSignature();

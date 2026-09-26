@@ -43,6 +43,7 @@ x-backend-env: &backend-env
   APP_AVATAR_STORAGE_DIR: "/app/uploads/avatars"
   APP_IMAGE_HOSTING_STORAGE_DIR: "/app/uploads/images"
   APP_LEAVE_ATTACHMENT_STORAGE_DIR: "/app/uploads/leave-attachments"
+  APP_EXPENSE_ATTACHMENT_STORAGE_DIR: "/app/uploads/expense-attachments"
   APP_DOCUMENT_TEMPLATE_STORAGE_DIR: "/app/uploads/document-templates"
   APP_GENERATED_DOCUMENT_STORAGE_DIR: "/app/uploads/generated-documents"
   APP_SHARED_FILES_STORAGE_DIR: "/app/uploads/shared-files"

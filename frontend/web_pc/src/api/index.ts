@@ -1401,6 +1401,50 @@ export const regulationApi = {
   },
 }
 
+export const expenseApi = {
+  clubs(): Promise<any> {
+    return request.get('/club-expenses/clubs')
+  },
+  activities(clubId: number): Promise<any> {
+    return request.get('/club-expenses/activities', { params: { clubId } })
+  },
+  list(params: Record<string, unknown>): Promise<any> {
+    return request.get('/club-expenses', { params })
+  },
+  summary(params: Record<string, unknown>): Promise<any> {
+    return request.get('/club-expenses/summary', { params })
+  },
+  detail(id: number): Promise<any> {
+    return request.get(`/club-expenses/${id}`)
+  },
+  history(id: number): Promise<any> {
+    return request.get(`/club-expenses/${id}/history`)
+  },
+  create(data: Record<string, unknown>): Promise<any> {
+    return request.post('/club-expenses', data)
+  },
+  update(id: number, data: Record<string, unknown>): Promise<any> {
+    return request.patch(`/club-expenses/${id}`, data)
+  },
+  void(id: number, reason: string, version: number): Promise<any> {
+    return request.post(`/club-expenses/${id}/void`, { reason, version })
+  },
+  upload(id: number, file: File): Promise<any> {
+    const form = new FormData()
+    form.append('file', file)
+    return request.post(`/club-expenses/${id}/attachments`, form)
+  },
+  removeAttachment(id: number, attachmentId: number): Promise<any> {
+    return request.delete(`/club-expenses/${id}/attachments/${attachmentId}`)
+  },
+  downloadAttachment(id: number, attachmentId: number): Promise<Blob> {
+    return request.get(`/club-expenses/${id}/attachments/${attachmentId}`, { responseType: 'blob' })
+  },
+  export(params: Record<string, unknown>): Promise<Blob> {
+    return request.get('/club-expenses/export', { params, responseType: 'blob' })
+  },
+}
+
 export const botManagementApi = {
   overview(): Promise<any> {
     return request.get('/bot-management/overview')

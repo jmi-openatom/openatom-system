@@ -265,6 +265,7 @@ const menus = ref<AdminMenuItem[]>([
     permissions: ['group:list'],
   },
   { path: '/admin/activities', label: '活动管理', icon: Calendar, permissions: ['activity:list'] },
+  { path: '/admin/expenses', label: '经费支出', icon: Coin, permissions: ['expense:list'] },
   {
     path: '/admin/ai-activities',
     label: 'AI活动自动化',
@@ -499,6 +500,7 @@ const menuGroups: AdminMenuGroupDefinition[] = [
     icon: Calendar,
     paths: [
       '/admin/activities',
+      '/admin/expenses',
       '/admin/ai-activities',
       '/admin/check-ins',
       '/admin/site-forms',
