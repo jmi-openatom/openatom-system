@@ -6,6 +6,7 @@ import edu.jmi.openatom.quest.dto.ReviewSubmissionRequest;
 import edu.jmi.openatom.quest.dto.CreateAppealRequest;
 import edu.jmi.openatom.quest.dto.ResolveAppealRequest;
 import edu.jmi.openatom.quest.dto.SubmitTaskRequest;
+import edu.jmi.openatom.quest.dto.SubmitSiteExplorationRequest;
 import edu.jmi.openatom.quest.model.CurrentMember;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ public class TaskWorkflowService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final AuditService auditService;
+    private final SiteExplorationService siteExplorationService;
 
     public List<Map<String, Object>> catalog(CurrentMember member, Long directionId, Long stageId) {
         StringBuilder sql = new StringBuilder("""
@@ -171,6 +173,9 @@ public class TaskWorkflowService {
     public Map<String, Object> submit(CurrentMember member, long assignmentId, SubmitTaskRequest request) {
         requirePermission(member, "task:submit");
         Map<String, Object> assignment = ownedAssignmentForUpdate(member.id(), assignmentId);
+        if (SiteExplorationService.TASK_KEY.equals(assignment.get("task_key"))) {
+            throw new IllegalArgumentException("请使用主站探索表单提交个人标记");
+        }
         String status = (String) assignment.get("status");
         if (!("IN_PROGRESS".equals(status) || "REVISION_REQUIRED".equals(status))) {
             throw new IllegalStateException("当前任务状态不能提交");
@@ -216,6 +221,54 @@ public class TaskWorkflowService {
         jdbcTemplate.update("UPDATE quest_task_assignment SET status = 'PENDING_REVIEW' WHERE id = ?", assignmentId);
         auditService.record(member.id(), "TASK_SUBMIT", "TASK_SUBMISSION", submissionId, Map.of("assignmentId", assignmentId, "version", version));
         return Map.of("submissionId", submissionId, "version", version, "status", "SUBMITTED");
+    }
+
+    @Transactional
+    public Map<String, Object> submitSiteExploration(CurrentMember member, long assignmentId, SubmitSiteExplorationRequest request) {
+        requirePermission(member, "task:submit");
+        Map<String, Object> assignment = ownedAssignmentForUpdate(member.id(), assignmentId);
+        if (!SiteExplorationService.TASK_KEY.equals(assignment.get("task_key"))) {
+            throw new IllegalArgumentException("该任务不是主站探索任务");
+        }
+        if (!List.of("IN_PROGRESS", "REVISION_REQUIRED").contains(assignment.get("status"))) {
+            throw new IllegalStateException("当前任务状态不能提交");
+        }
+        siteExplorationService.verify(member.id(), request);
+
+        Integer currentVersion = jdbcTemplate.queryForObject(
+            "SELECT COALESCE(MAX(version_no), 0) FROM quest_task_submission WHERE assignment_id = ?",
+            Integer.class, assignmentId);
+        int version = (currentVersion == null ? 0 : currentVersion) + 1;
+        String completionNote = "关于我们：" + request.aboutFlag().trim()
+            + "\n规章制度：" + request.regulationsFlag().trim()
+            + "\n社团活动：" + request.activitiesFlag().trim()
+            + "\n我的参与计划：" + request.reflection().trim();
+        LocalDateTime now = LocalDateTime.now();
+        jdbcTemplate.update("""
+            INSERT INTO quest_task_submission (assignment_id, version_no, completion_note, status, submitted_at)
+            VALUES (?, ?, ?, 'PASSED', ?)
+            """, assignmentId, version, completionNote, now);
+        Long submissionId = jdbcTemplate.queryForObject(
+            "SELECT id FROM quest_task_submission WHERE assignment_id = ? AND version_no = ?",
+            Long.class, assignmentId, version);
+        Long systemReviewerId = jdbcTemplate.queryForObject(
+            "SELECT id FROM quest_member WHERE email = 'quest-content@system.local' ORDER BY id LIMIT 1",
+            Long.class);
+        String reviewComment = "三枚个人探索标记已自动校验通过。欢迎开始你的成长路线！";
+        jdbcTemplate.update("""
+            INSERT INTO quest_review_record (submission_id, reviewer_member_id, result, comment, reviewed_at)
+            VALUES (?, ?, 'PASSED', ?, ?)
+            """, submissionId, systemReviewerId, reviewComment, now);
+        jdbcTemplate.update(
+            "UPDATE quest_task_assignment SET status = 'PASSED', completed_at = ? WHERE id = ?",
+            now, assignmentId);
+        grantTaskPoints(member.id(), ((Number) assignment.get("points")).intValue(), assignmentId,
+            systemReviewerId, (String) assignment.get("title"));
+        createNotification(member.id(), "TASK_REVIEWED", "主站探索已通过", reviewComment,
+            "/assignments/" + assignmentId, "TASK_SUBMISSION", submissionId);
+        auditService.record(systemReviewerId, "SUBMISSION_AUTO_REVIEW", "TASK_SUBMISSION", submissionId,
+            Map.of("result", "PASSED", "assignmentId", assignmentId));
+        return Map.of("submissionId", submissionId, "version", version, "status", "PASSED");
     }
 
     public List<Map<String, Object>> submissionHistory(CurrentMember member, long assignmentId) {
@@ -482,7 +535,7 @@ public class TaskWorkflowService {
 
     private Map<String, Object> ownedAssignmentForUpdate(long memberId, long assignmentId) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
-            SELECT a.*, t.submission_limit FROM quest_task_assignment a
+            SELECT a.*, t.submission_limit, t.task_key, t.title, t.points FROM quest_task_assignment a
             JOIN quest_task t ON t.id = a.task_id
             WHERE a.id = ? AND a.member_id = ? FOR UPDATE
             """, assignmentId, memberId);

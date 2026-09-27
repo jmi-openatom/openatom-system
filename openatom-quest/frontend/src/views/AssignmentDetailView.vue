@@ -11,7 +11,21 @@
       <section class="detail-layout">
         <main class="detail-content">
           <article v-if="assignment.latestFeedback" class="feedback-banner"><strong>导师最新反馈</strong><p>{{ assignment.latestFeedback }}</p></article>
-          <article v-if="canSubmit" class="content-card submission-form">
+          <article v-if="canSubmit && isSiteExploration" class="content-card submission-form">
+            <div class="section-heading"><div><p class="eyebrow">SITE EXPLORATION</p><h2>提交个人探索标记</h2></div><span>提交后立即自动核验</span></div>
+            <p>保持 Quest 登录状态，打开下面三个主站页面。在各页面找到属于你的标记，再填写到对应输入框。</p>
+            <el-form label-position="top" @submit.prevent>
+              <el-form-item v-for="page in siteExplorationPages" :key="page.key" :label="page.label" required>
+                <el-input v-model="exploration[`${page.key}Flag`]" :placeholder="`填写「${page.label}」页面的 OA{...} 标记`" />
+                <a :href="page.url" target="_blank" rel="noopener noreferrer">打开{{ page.label }} ↗</a>
+              </el-form-item>
+              <el-form-item label="我想怎样参与社团" required>
+                <el-input v-model="exploration.reflection" type="textarea" :rows="3" maxlength="1000" show-word-limit placeholder="用至少 8 个字写下你感兴趣的方向或活动，以及准备做的第一步" />
+              </el-form-item>
+              <div class="inline-actions"><el-button type="primary" size="large" :loading="submitting" @click="submit">提交并自动核验</el-button><el-button @click="abandon">放弃任务</el-button></div>
+            </el-form>
+          </article>
+          <article v-else-if="canSubmit" class="content-card submission-form">
             <div class="section-heading"><div><p class="eyebrow">NEW SUBMISSION</p><h2>{{ assignment.latestVersion ? '重新提交新版本' : '提交成果' }}</h2></div><span>自动保存草稿 · 将创建 v{{ (assignment.latestVersion || 0) + 1 }}</span></div>
             <el-form label-position="top" @submit.prevent>
               <el-form-item label="完成情况说明" required><el-input v-model="form.completionNote" type="textarea" :rows="5" placeholder="说明你完成了什么，以及如何验证结果" /></el-form-item>
@@ -48,7 +62,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getErrorMessage } from '@/api/http'
-import { abandonAssignment, createReviewAppeal, getAssignments, getSubmissionHistory, getTask, submitAssignment, type Assignment, type TaskDetail } from '@/api/quest'
+import { abandonAssignment, createReviewAppeal, getAssignments, getSubmissionHistory, getTask, submitAssignment, submitSiteExploration, type Assignment, type TaskDetail } from '@/api/quest'
+import { siteExplorationPages } from '@/constants/siteExploration'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -60,7 +75,9 @@ const loading = ref(true)
 const submitting = ref(false)
 const error = ref('')
 const form = reactive({ completionNote: '', repositoryUrl: '', pullRequestUrl: '', demoUrl: '', videoUrl: '', problemsAndLearning: '', aiUsed: false, aiUsageDetail: '' })
+const exploration = reactive({ aboutFlag: '', regulationsFlag: '', activitiesFlag: '', reflection: '' })
 const draftKey = computed(() => `quest-submission-draft:${auth.member?.id || 'current'}:${route.params.id}`)
+const isSiteExploration = computed(() => task.value?.taskKey === 'site-exploration-l0')
 const statusText: Record<string, string> = { IN_PROGRESS: '进行中', PENDING_REVIEW: '待审核', REVISION_REQUIRED: '需修改', PASSED: '已通过', OVERDUE: '已逾期', ABANDONED: '已结束' }
 const reviewText: Record<string, string> = { SUBMITTED: '等待审核', REVIEWING: '审核中', REVISION_REQUIRED: '需修改', PASSED: '审核通过', FAILED: '未通过', SUPERSEDED: '已被新版本替代' }
 const appealText: Record<string, string> = { PENDING: '待复核', UPHELD: '维持原结论', OVERTURNED: '原结论已撤销' }
@@ -70,7 +87,10 @@ const stateDescription = computed(() => assignment.value?.status === 'PENDING_RE
 
 watch(() => form.aiUsed, (used) => { if (!used) form.aiUsageDetail = '' })
 watch(form, (value) => {
-  if (canSubmit.value) localStorage.setItem(draftKey.value, JSON.stringify(value))
+  if (canSubmit.value && !isSiteExploration.value) localStorage.setItem(draftKey.value, JSON.stringify(value))
+}, { deep: true })
+watch(exploration, (value) => {
+  if (canSubmit.value && isSiteExploration.value) localStorage.setItem(draftKey.value, JSON.stringify(value))
 }, { deep: true })
 
 function formatDate(value?: string) { return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '无固定截止' }
@@ -86,7 +106,7 @@ async function load() {
       const draft = localStorage.getItem(draftKey.value)
       if (draft) {
         try {
-          Object.assign(form, JSON.parse(draft))
+          Object.assign(isSiteExploration.value ? exploration : form, JSON.parse(draft))
           ElMessage.info('已恢复未提交的成果草稿')
         } catch {
           localStorage.removeItem(draftKey.value)
@@ -98,13 +118,21 @@ async function load() {
 }
 
 async function submit() {
-  if (!assignment.value || !form.completionNote.trim()) return ElMessage.warning('请填写完成情况说明')
-  if (form.aiUsed && !form.aiUsageDetail.trim()) return ElMessage.warning('请说明 AI 参与的具体内容')
+  if (!assignment.value) return
+  if (isSiteExploration.value) {
+    if (!exploration.aboutFlag.trim() || !exploration.regulationsFlag.trim() || !exploration.activitiesFlag.trim()) return ElMessage.warning('请填写三个页面的个人标记')
+    if (exploration.reflection.trim().length < 8) return ElMessage.warning('请用至少 8 个字写下你的参与计划')
+  } else {
+    if (!form.completionNote.trim()) return ElMessage.warning('请填写完成情况说明')
+    if (form.aiUsed && !form.aiUsageDetail.trim()) return ElMessage.warning('请说明 AI 参与的具体内容')
+  }
   submitting.value = true
   try {
-    const result = await submitAssignment(assignment.value.id, form)
+    const result = isSiteExploration.value
+      ? await submitSiteExploration(assignment.value.id, { ...exploration })
+      : await submitAssignment(assignment.value.id, form)
     localStorage.removeItem(draftKey.value)
-    ElMessage.success(`v${result.version} 已提交审核`)
+    ElMessage.success(isSiteExploration.value ? '三个标记校验通过，任务已完成' : `v${result.version} 已提交审核`)
     loading.value = true
     await load()
   } catch (reason) { ElMessage.error(getErrorMessage(reason, '提交失败')) }

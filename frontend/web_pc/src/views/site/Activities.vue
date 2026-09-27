@@ -125,10 +125,17 @@
         <el-empty v-else-if="!loading" description="暂无已发布活动" />
       </div>
     </section>
+
+    <section class="activities-exploration-section">
+      <div class="container">
+        <SiteExplorationFlag :index="3" page-key="activities" />
+      </div>
+    </section>
   </ViewPage>
 </template>
 
 <script setup lang="ts">
+import SiteExplorationFlag from '@/components/site/SiteExplorationFlag.vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import { siteApi } from '@/api/index.ts'
 import { formatDateTime, monthDayParts } from '@/utils/format.ts'
@@ -182,6 +189,10 @@ onMounted(() => {
 .activities-page {
   min-height: calc(100vh - var(--oa-site-header-height));
   background: var(--oa-page-soft-bg);
+}
+
+.activities-exploration-section {
+  padding: 0 0 clamp(56px, 8vw, 96px);
 }
 
 .activities-hero {

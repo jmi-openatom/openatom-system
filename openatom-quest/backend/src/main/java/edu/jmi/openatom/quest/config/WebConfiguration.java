@@ -9,6 +9,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @RequiredArgsConstructor
 public class WebConfiguration implements WebMvcConfigurer {
     private final MemberAccessInterceptor memberAccessInterceptor;
+    private final QuestProperties questProperties;
+
+    @Override
+    public void addCorsMappings(org.springframework.web.servlet.config.annotation.CorsRegistry registry) {
+        registry.addMapping("/api/site-exploration/flags/**")
+            .allowedOrigins(questProperties.siteUrl())
+            .allowedMethods("GET")
+            .allowCredentials(true)
+            .maxAge(1800);
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

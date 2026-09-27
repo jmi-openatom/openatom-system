@@ -84,6 +84,13 @@
               <Message />
             </el-icon>
           </el-button>
+          <a
+            :href="questUrl"
+            aria-label="打开 Quest 成长任务"
+            class="site-header__quest"
+            rel="noopener noreferrer"
+            target="_blank"
+          >Quest</a>
           <el-button
             v-if="isLoggedIn"
             :icon="Grid"
@@ -154,6 +161,12 @@
           <p class="mobile-nav__label">加入与了解</p>
           <div class="mobile-nav__links">
             <router-link to="/apply" @click="mobileNavVisible = false"> 加入我们 </router-link>
+            <a
+              :href="questUrl"
+              rel="noopener noreferrer"
+              target="_blank"
+              @click="mobileNavVisible = false"
+            >Quest 成长任务 ↗</a>
             <router-link to="/regulations" @click="mobileNavVisible = false">规章制度</router-link>
             <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
             <router-link to="/alumni-managers" @click="mobileNavVisible = false">
@@ -271,6 +284,8 @@ const unreadTimer = ref<number>()
 const sessionToken = ref(getToken())
 
 const version = ref(__APP_VERSION__)
+
+const questUrl = String(import.meta.env.VITE_QUEST_SITE_URL || 'https://quest.jmi-openatom.cn').replace(/\/$/, '')
 
 const route = useRoute()
 
@@ -703,6 +718,29 @@ onBeforeUnmount(() => {
   color: var(--oa-button-hover-text);
 }
 
+.site-header__quest {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 13px;
+  border: 1px solid var(--oa-button-border);
+  border-radius: var(--el-border-radius-base);
+  background: var(--oa-button-bg);
+  color: var(--oa-button-text);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-header__quest:hover,
+.site-header__quest:focus-visible {
+  border-color: var(--oa-button-hover-border);
+  color: var(--oa-button-hover-text);
+  outline-offset: 3px;
+}
+
 .site-header__account-dropdown {
   display: inline-flex;
 }
@@ -834,6 +872,24 @@ onBeforeUnmount(() => {
 }
 
 /* 响应式 */
+@media (min-width: 901px) and (max-width: 1240px) {
+  .site-nav {
+    display: none;
+  }
+
+  .brand {
+    flex: 1 1 auto;
+  }
+
+  .mobile-menu-btn {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+}
+
 @media (max-width: 900px) {
   .site-shell {
     --oa-site-header-height: 72px;
@@ -874,6 +930,10 @@ onBeforeUnmount(() => {
   }
 
   .site-nav {
+    display: none;
+  }
+
+  .site-header__quest {
     display: none;
   }
 

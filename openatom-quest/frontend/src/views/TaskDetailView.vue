@@ -22,6 +22,17 @@
 
       <section class="detail-layout">
         <main class="detail-content">
+          <article v-if="task.taskKey === 'site-exploration-l0'" class="content-card rich-section">
+            <p class="eyebrow">SITE EXPLORATION</p>
+            <h2>从这里开始寻找</h2>
+            <p>请保持 Quest 登录状态，打开下面三个主站页面。页面中的标记会按你的账号显示。</p>
+            <ul>
+              <li v-for="page in siteExplorationPages" :key="page.key">
+                <a :href="page.url" target="_blank" rel="noopener noreferrer">{{ page.label }} ↗</a>
+                · {{ page.clue }}
+              </li>
+            </ul>
+          </article>
           <article class="content-card rich-section"><p class="eyebrow">OBJECTIVES</p><h2>学习目标</h2><ul><li v-for="item in parseList(task.learningObjectives)" :key="item">{{ item }}</li></ul></article>
           <article class="content-card rich-section"><p class="eyebrow">STEPS</p><h2>操作步骤</h2><div class="pre-wrap">{{ task.instructions }}</div></article>
           <article class="content-card rich-section"><p class="eyebrow">SUBMISSION</p><h2>提交要求</h2><div class="pre-wrap">{{ task.submissionRequirements }}</div></article>
@@ -52,6 +63,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getErrorMessage } from '@/api/http'
 import { claimTask, getTask, type TaskDetail } from '@/api/quest'
+import { siteExplorationPages } from '@/constants/siteExploration'
 
 const route = useRoute()
 const router = useRouter()

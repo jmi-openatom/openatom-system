@@ -60,6 +60,13 @@ export interface SubmissionPayload {
   aiUsageDetail?: string
 }
 
+export interface SiteExplorationSubmission {
+  aboutFlag: string
+  regulationsFlag: string
+  activitiesFlag: string
+  reflection: string
+}
+
 export interface DashboardData {
   level: string
   points: number
@@ -96,6 +103,10 @@ export async function abandonAssignment(id: number) {
 
 export async function submitAssignment(id: number, payload: SubmissionPayload) {
   return (await http.post<ApiResponse<{ submissionId: number; version: number }>>(`/assignments/${id}/submissions`, payload)).data.data
+}
+
+export async function submitSiteExploration(id: number, payload: SiteExplorationSubmission) {
+  return (await http.post<ApiResponse<{ submissionId: number; version: number; status: string }>>(`/assignments/${id}/site-exploration`, payload)).data.data
 }
 
 export async function getSubmissionHistory(id: number) {

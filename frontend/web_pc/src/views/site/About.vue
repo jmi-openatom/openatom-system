@@ -221,6 +221,7 @@
               <strong>{{ item.output }}</strong>
             </li>
           </ol>
+          <SiteExplorationFlag :index="1" page-key="about" />
         </div>
       </section>
 
@@ -326,6 +327,7 @@
 </template>
 
 <script setup lang="ts">
+import SiteExplorationFlag from '@/components/site/SiteExplorationFlag.vue'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {

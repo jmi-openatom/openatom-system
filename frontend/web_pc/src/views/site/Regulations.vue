@@ -69,6 +69,7 @@
             </article>
           </div>
           <el-empty v-else-if="!loading" class="site-system-empty" description="暂无已发布制度" />
+          <SiteExplorationFlag :index="2" page-key="regulations" />
         </div>
       </section>
     </template>
@@ -152,6 +153,7 @@
 </template>
 
 <script setup lang="ts">
+import SiteExplorationFlag from '@/components/site/SiteExplorationFlag.vue'
 import MarkdownContent from '@/components/common/MarkdownContent.vue'
 import ViewPage from '@/components/common/ViewPage.vue'
 import SitePageHero from '@/components/site/shell/SitePageHero.vue'

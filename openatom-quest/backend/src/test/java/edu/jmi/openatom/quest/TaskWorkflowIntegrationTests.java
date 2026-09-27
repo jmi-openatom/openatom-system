@@ -10,11 +10,13 @@ import edu.jmi.openatom.quest.dto.CreateAppealRequest;
 import edu.jmi.openatom.quest.dto.ReviewSubmissionRequest;
 import edu.jmi.openatom.quest.dto.ResolveAppealRequest;
 import edu.jmi.openatom.quest.dto.SubmitTaskRequest;
+import edu.jmi.openatom.quest.dto.SubmitSiteExplorationRequest;
 import edu.jmi.openatom.quest.model.CurrentMember;
 import edu.jmi.openatom.quest.service.AdminWorkflowService;
 import edu.jmi.openatom.quest.service.AssignmentLifecycleService;
 import edu.jmi.openatom.quest.service.GrowthService;
 import edu.jmi.openatom.quest.service.TaskWorkflowService;
+import edu.jmi.openatom.quest.service.SiteExplorationService;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -31,8 +33,60 @@ class TaskWorkflowIntegrationTests {
     @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired private AdminWorkflowService adminWorkflowService;
     @Autowired private TaskWorkflowService taskWorkflowService;
+    @Autowired private SiteExplorationService siteExplorationService;
     @Autowired private GrowthService growthService;
     @Autowired private AssignmentLifecycleService assignmentLifecycleService;
+
+    @Test
+    void personalSiteFlagsAutoReviewAndUnlockRouteL0() {
+        long firstId = member("探索用户一");
+        long secondId = member("探索用户二");
+        grantRole(firstId, "MEMBER");
+        grantRole(secondId, "MEMBER");
+        CurrentMember first = current(firstId, List.of("MEMBER"), List.of("task:claim", "task:submit"));
+        CurrentMember second = current(secondId, List.of("MEMBER"), List.of("task:claim", "task:submit"));
+        long explorationTaskId = jdbcTemplate.queryForObject(
+            "SELECT id FROM quest_task WHERE task_key = 'site-exploration-l0'", Long.class);
+        long routeTaskId = jdbcTemplate.queryForObject(
+            "SELECT id FROM quest_task WHERE task_key = 'frontend-growth-l0'", Long.class);
+
+        String about = siteExplorationService.flagFor(firstId, "about");
+        String regulations = siteExplorationService.flagFor(firstId, "regulations");
+        String activities = siteExplorationService.flagFor(firstId, "activities");
+        assertThat(siteExplorationService.flagFor(firstId, "about")).isEqualTo(about);
+        assertThat(siteExplorationService.flagFor(secondId, "about")).isNotEqualTo(about);
+        assertThatThrownBy(() -> taskWorkflowService.claim(first, routeTaskId))
+            .hasMessageContaining("前置任务");
+
+        long assignmentId = number(taskWorkflowService.claim(first, explorationTaskId).get("assignmentId"));
+        assertThatThrownBy(() -> taskWorkflowService.submit(first, assignmentId,
+            new SubmitTaskRequest("跳过校验", null, null, null, null, null, false, null)))
+            .hasMessageContaining("主站探索表单");
+        assertThatThrownBy(() -> taskWorkflowService.submitSiteExploration(first, assignmentId,
+            new SubmitSiteExplorationRequest(siteExplorationService.flagFor(secondId, "about"), regulations,
+                activities, "我想参加前端项目实践")))
+            .hasMessageContaining("关于我们");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM quest_task_submission WHERE assignment_id = ?", Integer.class, assignmentId))
+            .isZero();
+
+        Map<String, Object> result = taskWorkflowService.submitSiteExploration(first, assignmentId,
+            new SubmitSiteExplorationRequest(about, regulations, activities, "我想参加前端项目实践"));
+        assertThat(result.get("status")).isEqualTo("PASSED");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT status FROM quest_task_assignment WHERE id = ?", String.class, assignmentId)).isEqualTo("PASSED");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT result FROM quest_review_record WHERE submission_id = ?", String.class, result.get("submissionId")))
+            .isEqualTo("PASSED");
+        assertThat(jdbcTemplate.queryForObject(
+            "SELECT total_points FROM quest_member WHERE id = ?", Integer.class, firstId)).isEqualTo(20);
+        assertThatThrownBy(() -> taskWorkflowService.submitSiteExploration(first, assignmentId,
+            new SubmitSiteExplorationRequest(about, regulations, activities, "我想参加前端项目实践")))
+            .hasMessageContaining("不能提交");
+        assertThat(taskWorkflowService.claim(first, routeTaskId)).containsEntry("status", "IN_PROGRESS");
+        assertThatThrownBy(() -> taskWorkflowService.claim(second, routeTaskId))
+            .hasMessageContaining("前置任务");
+    }
 
     @Test
     void completeWorkflowKeepsVersionsAndAwardsPointsOnlyOnce() {
