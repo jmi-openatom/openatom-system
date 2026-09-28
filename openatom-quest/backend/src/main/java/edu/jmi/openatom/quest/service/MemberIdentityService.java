@@ -67,6 +67,7 @@ public class MemberIdentityService {
             identity.setLastLoginAt(now);
             identityMapper.updateById(identity);
             member = memberMapper.selectById(identity.getMemberId());
+            member.setAvatarUrl(userInfo.avatarUrl());
             if (userInfo.school() != null) member.setSchool(userInfo.school());
             if (userInfo.college() != null) member.setCollege(userInfo.college());
             if (userInfo.major() != null) member.setMajor(userInfo.major());

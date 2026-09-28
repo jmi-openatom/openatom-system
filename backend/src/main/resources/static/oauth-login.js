@@ -51,6 +51,6 @@ form.addEventListener('submit', async (event) => {
   } catch (error) {
     message.textContent = error instanceof Error ? error.message : '登录失败，请稍后重试。'
     submit.disabled = false
-    submit.textContent = '登录并授权'
+    submit.textContent = '登录并继续'
   }
 })

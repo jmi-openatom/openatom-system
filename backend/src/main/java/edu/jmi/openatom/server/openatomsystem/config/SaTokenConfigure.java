@@ -114,6 +114,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 				"/oauth/login",
 				"/oauth/session/login",
 				"/oauth/authorize",
+				"/oauth/consent/requests/**",
 				"/oauth/token",
 				"/oauth/introspect",
 				"/oauth/userinfo",

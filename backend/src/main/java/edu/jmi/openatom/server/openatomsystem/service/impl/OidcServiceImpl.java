@@ -3,6 +3,8 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.stp.StpUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTClaimsSet;
 import edu.jmi.openatom.server.openatomsystem.entity.OauthAuthorizationCode;
 import edu.jmi.openatom.server.openatomsystem.entity.OauthClient;
@@ -13,6 +15,7 @@ import edu.jmi.openatom.server.openatomsystem.mapper.OauthClientMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
 import edu.jmi.openatom.server.openatomsystem.security.OidcSigningKeyProvider;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import edu.jmi.openatom.server.openatomsystem.security.OidcUserSession;
 import edu.jmi.openatom.server.openatomsystem.service.OidcService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseTokenIntrospectionVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +24,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
@@ -33,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -44,12 +49,16 @@ public class OidcServiceImpl implements OidcService {
   private static final long OIDC_TOKEN_TTL_SECONDS = 60 * 60L;
   private static final long REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60L;
   private static final String REFRESH_KEY_PREFIX = "openatom:oidc:refresh:";
+  private static final String CONSENT_KEY_PREFIX = "openatom:oidc:consent:";
 
   private final OauthClientMapper oauthClientMapper;
   private final OauthAuthorizationCodeMapper authorizationCodeMapper;
   private final UserMapper userMapper;
   private final PasswordService passwordService;
   private final OidcSigningKeyProvider signingKeyProvider;
+  private final OidcUserSession oidcUserSession;
+  private final StringRedisTemplate redisTemplate;
+  private final ObjectMapper objectMapper;
 
   @Value("${app.oidc.issuer:}")
   private String configuredIssuer;
@@ -110,34 +119,135 @@ public class OidcServiceImpl implements OidcService {
         || (!isBlank(codeChallenge) && !"S256".equalsIgnoreCase(codeChallengeMethod))) {
       return redirectError(redirectUri, "invalid_request", state);
     }
-    if (!StpUtil.isLogin()) {
+    if (!oidcUserSession.isLogin()) {
       String redirect = authorizeUrl(request);
       return ResponseEntity.status(HttpStatus.FOUND)
           .location(URI.create(loginUrl(redirect, request)))
           .build();
     }
-    User authorizingUser = userMapper.selectById(StpUtil.getLoginIdAsInt());
+    User authorizingUser = userMapper.selectById(oidcUserSession.userId());
     if (!isActiveUser(authorizingUser)) {
-      StpUtil.logout();
+      oidcUserSession.logout();
       return redirectError(redirectUri, "access_denied", state);
     }
     String grantedScope = normalizeScope(scope, client.getScopes());
-    String code = secureToken();
-    authorizationCodeMapper.insert(
-        OauthAuthorizationCode.builder()
-            .code(code)
-            .clientId(clientId)
-            .userId(authorizingUser.getId())
-            .redirectUri(redirectUri)
-            .scope(grantedScope)
-            .state(state)
-            .nonce(nonce)
-            .codeChallenge(codeChallenge)
-            .codeChallengeMethod(codeChallengeMethod)
-            .expiresAt(Timestamp.from(Instant.now().plusSeconds(AUTH_CODE_TTL_SECONDS)))
-            .build());
-    return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendParams(redirectUri, code, state))).build();
+    String requestId = secureToken();
+    PendingAuthorization pending = new PendingAuthorization(
+        authorizingUser.getId(), clientId, redirectUri, grantedScope, state, nonce,
+        codeChallenge, codeChallengeMethod);
+    try {
+      redisTemplate.opsForValue().set(
+          CONSENT_KEY_PREFIX + requestId,
+          objectMapper.writeValueAsString(pending),
+          Duration.ofSeconds(AUTH_CODE_TTL_SECONDS));
+    } catch (JsonProcessingException exception) {
+      throw new IllegalStateException("Could not create OAuth consent request", exception);
+    }
+    return ResponseEntity.status(HttpStatus.FOUND)
+        .header("Cache-Control", "no-store")
+        .header("Referrer-Policy", "no-referrer")
+        .location(URI.create(mainSiteUrl() + "/oauth/consent?request_id=" + encode(requestId)))
+        .build();
   }
+
+  @Override
+  public ResponseEntity<Map<String, Object>> consentRequest(String requestId, HttpServletRequest request) {
+    if (!hasExplicitLoginToken(request)) return consentError("login_required", HttpStatus.UNAUTHORIZED);
+    PendingAuthorization pending = readPending(requestId);
+    if (pending == null) return consentError("invalid_request", HttpStatus.BAD_REQUEST);
+    if (oidcUserSession.userId() != pending.userId()) return consentError("access_denied", HttpStatus.FORBIDDEN);
+    OauthClient client = oauthClientMapper.selectByClientId(pending.clientId());
+    if (!validPendingClient(client, pending)) return consentError("invalid_request", HttpStatus.BAD_REQUEST);
+    User user = userMapper.selectById(pending.userId());
+    if (!isActiveUser(user)) return consentError("login_required", HttpStatus.UNAUTHORIZED);
+    return ResponseEntity.ok()
+        .header("Cache-Control", "no-store")
+        .body(ordered(
+            "client_name", client.getClientName(),
+            "client_id", client.getClientId(),
+            "redirect_uri", pending.redirectUri(),
+            "scope", pending.scope(),
+            "account_name", user.getRealName() == null || user.getRealName().isBlank()
+                ? user.getUserName() : user.getRealName(),
+            "username", user.getUserName()));
+  }
+
+  @Override
+  public ResponseEntity<Map<String, Object>> decideConsent(
+      String requestId, boolean approved, HttpServletRequest request) {
+    if (!hasExplicitLoginToken(request)) return consentError("login_required", HttpStatus.UNAUTHORIZED);
+    PendingAuthorization pending = readPending(requestId);
+    if (pending == null) return consentError("invalid_request", HttpStatus.BAD_REQUEST);
+    if (oidcUserSession.userId() != pending.userId()) return consentError("access_denied", HttpStatus.FORBIDDEN);
+    OauthClient client = oauthClientMapper.selectByClientId(pending.clientId());
+    if (!validPendingClient(client, pending)) return consentError("invalid_request", HttpStatus.BAD_REQUEST);
+    User user = userMapper.selectById(pending.userId());
+    if (!isActiveUser(user)) return consentError("login_required", HttpStatus.UNAUTHORIZED);
+
+    String consumed = redisTemplate.opsForValue().getAndDelete(CONSENT_KEY_PREFIX + requestId);
+    if (consumed == null) return consentError("invalid_request", HttpStatus.BAD_REQUEST);
+    PendingAuthorization consumedPending = deserializePending(consumed);
+    if (consumedPending == null || !consumedPending.equals(pending)) {
+      return consentError("invalid_request", HttpStatus.BAD_REQUEST);
+    }
+    String redirect;
+    if (approved) {
+      String code = secureToken();
+      authorizationCodeMapper.insert(
+          OauthAuthorizationCode.builder()
+              .code(code)
+              .clientId(pending.clientId())
+              .userId(pending.userId())
+              .redirectUri(pending.redirectUri())
+              .scope(pending.scope())
+              .state(pending.state())
+              .nonce(pending.nonce())
+              .codeChallenge(pending.codeChallenge())
+              .codeChallengeMethod(pending.codeChallengeMethod())
+              .expiresAt(Timestamp.from(Instant.now().plusSeconds(AUTH_CODE_TTL_SECONDS)))
+              .build());
+      redirect = appendParams(pending.redirectUri(), code, pending.state());
+    } else {
+      redirect = errorUrl(pending.redirectUri(), "access_denied", pending.state());
+    }
+    return ResponseEntity.ok().header("Cache-Control", "no-store")
+        .body(Map.of("redirect_url", redirect));
+  }
+
+  private boolean hasExplicitLoginToken(HttpServletRequest request) {
+    String supplied = request.getHeader("jmiopenatom");
+    return !isBlank(supplied) && supplied.equals(oidcUserSession.tokenValue()) && oidcUserSession.isLogin();
+  }
+
+  private boolean validPendingClient(OauthClient client, PendingAuthorization pending) {
+    return client != null && Boolean.TRUE.equals(client.getEnabled())
+        && isAllowedRedirect(client, pending.redirectUri())
+        && contains(client.getGrantTypes(), "authorization_code")
+        && split(client.getScopes(), " ").containsAll(split(pending.scope(), " "));
+  }
+
+  private PendingAuthorization readPending(String requestId) {
+    if (requestId == null || !requestId.matches("[a-f0-9]{64}")) return null;
+    return deserializePending(redisTemplate.opsForValue().get(CONSENT_KEY_PREFIX + requestId));
+  }
+
+  private PendingAuthorization deserializePending(String value) {
+    if (isBlank(value)) return null;
+    try {
+      return objectMapper.readValue(value, PendingAuthorization.class);
+    } catch (JsonProcessingException exception) {
+      return null;
+    }
+  }
+
+  private ResponseEntity<Map<String, Object>> consentError(String error, HttpStatus status) {
+    return ResponseEntity.status(status).header("Cache-Control", "no-store")
+        .body(Map.of("error", error));
+  }
+
+  public record PendingAuthorization(
+      int userId, String clientId, String redirectUri, String scope, String state,
+      String nonce, String codeChallenge, String codeChallengeMethod) {}
 
   @Override
   public ResponseEntity<Map<String, Object>> token(
@@ -273,13 +383,22 @@ public class OidcServiceImpl implements OidcService {
         "college", user.getCollege(),
         "major", user.getMajor(),
         "grade", user.getGrade(),
-        "avatar", user.getAvatar(),
+        "avatar", avatarForUserInfo(user),
         "is_lab_member", labMember,
         "lab_role", roles.contains("super_admin") || roles.contains("club_admin") ? 2 : 0,
         "onboarding_completed_at", user.getOnboardingCompletedAt(),
         "activated_at", user.getActivatedAt(),
         "roles", roles,
         "permissions", permissions);
+  }
+
+  private String avatarForUserInfo(User user) {
+    if (user.getAvatar() != null && !user.getAvatar().isBlank()) return user.getAvatar();
+    String qqOpenid = user.getQqOpenid();
+    if (qqOpenid != null && qqOpenid.matches("\\d{5,15}")) {
+      return "https://q1.qlogo.cn/g?b=qq&nk=" + qqOpenid + "&s=640";
+    }
+    return null;
   }
 
   private ResponseTokenIntrospectionVO introspectToken(String token) {
@@ -389,9 +508,14 @@ public class OidcServiceImpl implements OidcService {
   }
 
   private ResponseEntity<Void> redirectError(String redirectUri, String error, String state) {
+    return ResponseEntity.status(HttpStatus.FOUND)
+        .location(URI.create(errorUrl(redirectUri, error, state))).build();
+  }
+
+  private String errorUrl(String redirectUri, String error, String state) {
     String target = redirectUri + (redirectUri.contains("?") ? "&" : "?") + "error=" + encode(error);
     if (state != null && !state.isBlank()) target += "&state=" + encode(state);
-    return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(target)).build();
+    return target;
   }
 
   private String appendParams(String redirectUri, String code, String state) {

@@ -9,6 +9,7 @@ import edu.jmi.openatom.quest.dto.CreateDirectionRequest;
 import edu.jmi.openatom.quest.dto.CreateAnnouncementRequest;
 import edu.jmi.openatom.quest.dto.UpdateDirectionRequest;
 import edu.jmi.openatom.quest.dto.UpdateLevelRuleRequest;
+import edu.jmi.openatom.quest.dto.UpdateLeaderboardVisibilityRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberRolesRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberProfileRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberStatusRequest;
@@ -180,6 +181,16 @@ public class AdminController {
         @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member
     ) {
         return ApiResponse.ok(workflowService.members(member));
+    }
+
+    @PatchMapping("/members/{memberId}/leaderboard-visibility")
+    public ApiResponse<Void> updateLeaderboardVisibility(
+        @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member,
+        @PathVariable long memberId,
+        @Valid @RequestBody UpdateLeaderboardVisibilityRequest request
+    ) {
+        workflowService.updateLeaderboardVisibility(member, memberId, request.visible());
+        return ApiResponse.ok();
     }
 
     @PatchMapping("/members/{memberId}/status")

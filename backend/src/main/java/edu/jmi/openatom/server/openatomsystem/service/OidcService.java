@@ -20,6 +20,11 @@ public interface OidcService {
       String codeChallengeMethod,
       HttpServletRequest request);
 
+  ResponseEntity<Map<String, Object>> consentRequest(String requestId, HttpServletRequest request);
+
+  ResponseEntity<Map<String, Object>> decideConsent(
+      String requestId, boolean approved, HttpServletRequest request);
+
   ResponseEntity<Map<String, Object>> token(
       String grantType,
       String code,

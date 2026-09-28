@@ -3,7 +3,7 @@
     <header class="page-heading">
       <p class="eyebrow">MEMBER PROFILE</p>
       <h1>先认识一下你</h1>
-      <p>基础学籍资料由 LMS 自动同步，其他信息用于推荐成长路线和安排合适的导师。</p>
+      <p>头像与基础学籍资料由 LMS 自动同步，其他信息用于推荐成长路线和安排合适的导师。</p>
     </header>
 
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="setup-form">
@@ -19,9 +19,15 @@
           <el-form-item label="姓名或社团昵称" prop="nickname"
             ><el-input v-model="form.nickname" maxlength="64" show-word-limit
           /></el-form-item>
-          <el-form-item label="头像地址"
-            ><el-input v-model="form.avatarUrl" placeholder="https://..."
-          /></el-form-item>
+          <el-form-item label="头像">
+            <div class="synced-avatar">
+              <span class="synced-avatar__image">
+                <img v-if="form.avatarUrl && !avatarPreviewFailed" :src="form.avatarUrl" alt="" @error="avatarPreviewFailed = true" />
+                <span v-else>{{ form.nickname.trim().slice(0, 1) || '新' }}</span>
+              </span>
+              <span><strong>LMS 头像</strong><small>登录 Quest 时自动同步</small></span>
+            </div>
+          </el-form-item>
           <el-form-item v-for="item in educationFields" :key="item.key" :label="item.label">
             <div class="synced-field">
               <span>{{ form[item.key] || "LMS 暂无数据" }}</span>
@@ -112,6 +118,7 @@ const router = useRouter();
 const auth = useAuthStore();
 const formRef = ref<FormInstance>();
 const saving = ref(false);
+const avatarPreviewFailed = ref(false);
 const directions = ref<Direction[]>([]);
 const educationFields: Array<{ key: EducationField; label: string }> = [
   { key: "school", label: "学校" },
@@ -184,6 +191,7 @@ onMounted(async () => {
   if (draft) {
     try {
       Object.assign(form, JSON.parse(draft), pickEducation(profileResponse.data.data));
+      form.avatarUrl = String(profileResponse.data.data.avatarUrl || "");
       ElMessage.info("已恢复未提交的资料草稿");
     } catch {
       localStorage.removeItem(draftKey);
@@ -194,6 +202,7 @@ onMounted(async () => {
 watch(form, () => localStorage.setItem(draftKey, JSON.stringify(editableProfile())), {
   deep: true,
 });
+watch(() => form.avatarUrl, () => { avatarPreviewFailed.value = false; });
 
 function computedDraftKey() {
   return `quest-profile-draft:${auth.member?.id || "current"}`;
@@ -232,6 +241,12 @@ async function submit() {
 </script>
 
 <style scoped>
+.synced-avatar { width: 100%; min-height: 64px; padding: 8px 12px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--color-border-light); border-radius: var(--radius-md); background: var(--color-bg-subtle); }
+.synced-avatar__image { width: 44px; height: 44px; flex: 0 0 auto; overflow: hidden; display: grid; place-items: center; border-radius: 50%; color: var(--color-primary-foreground); background: var(--color-primary); font-weight: 600; }
+.synced-avatar__image img { width: 100%; height: 100%; object-fit: cover; }
+.synced-avatar strong, .synced-avatar small { display: block; }
+.synced-avatar strong { color: var(--color-text-regular); font-size: 13px; }
+.synced-avatar small { margin-top: 3px; color: var(--color-text-tertiary); font-size: 11px; }
 .synced-field {
   width: 100%;
   min-height: 44px;

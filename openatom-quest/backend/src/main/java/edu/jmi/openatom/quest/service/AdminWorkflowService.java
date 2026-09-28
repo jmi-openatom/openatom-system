@@ -424,6 +424,7 @@ public class AdminWorkflowService {
                    m.grade, m.skills_json AS skillsJson, m.code_profile_url AS codeProfileUrl,
                    m.weekly_hours AS weeklyHours, m.bio,
                    m.status, m.current_level AS currentLevel, m.total_points AS totalPoints,
+                   m.leaderboard_visible AS leaderboardVisible,
                    m.profile_completed_at AS profileCompletedAt, m.onboarding_completed_at AS onboardingCompletedAt,
                    GROUP_CONCAT(DISTINCT r.role_key ORDER BY r.role_key SEPARATOR ',') AS roles,
                    GROUP_CONCAT(DISTINCT d.name ORDER BY d.sort_order SEPARATOR ',') AS directions,
@@ -436,9 +437,9 @@ public class AdminWorkflowService {
             LEFT JOIN quest_technical_direction d ON d.id = md.direction_id
             GROUP BY m.id, m.nickname, m.avatar_url, m.email, m.school, m.college, m.major, m.grade,
                      m.skills_json, m.code_profile_url, m.weekly_hours, m.bio, m.status,
-                     m.current_level, m.total_points, m.profile_completed_at, m.onboarding_completed_at, m.created_at
+                     m.current_level, m.total_points, m.leaderboard_visible,
+                     m.profile_completed_at, m.onboarding_completed_at, m.created_at
             ORDER BY m.created_at DESC
-            LIMIT 500
             """);
         members.forEach(item -> {
             item.put("skills", readStringList(item.remove("skillsJson")));
@@ -448,6 +449,16 @@ public class AdminWorkflowService {
                 : java.util.Arrays.stream(String.valueOf(directionIds).split(",")).map(Long::valueOf).toList());
         });
         return members;
+    }
+
+    @Transactional
+    public void updateLeaderboardVisibility(CurrentMember actor, long memberId, boolean visible) {
+        requirePermission(actor, "member:manage");
+        int updated = jdbcTemplate.update(
+            "UPDATE quest_member SET leaderboard_visible = ? WHERE id = ?", visible, memberId);
+        if (updated == 0) throw new IllegalArgumentException("成员不存在");
+        auditService.record(actor.id(), "MEMBER_LEADERBOARD_VISIBILITY_UPDATE", "MEMBER", memberId,
+            Map.of("visible", visible));
     }
 
     @Transactional

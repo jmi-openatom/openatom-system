@@ -10,7 +10,7 @@
 
       <section class="metric-grid" aria-label="成长概览">
         <article><span>当前等级</span><strong>{{ dashboard.level }}</strong><small>持续贡献，逐级成长</small></article>
-        <article><span>成长积分</span><strong>{{ dashboard.points }}</strong><small>只记录学习成果与贡献</small></article>
+        <article><span>成长积分</span><strong>{{ dashboard.points }}</strong><router-link class="metric-link" to="/points">查看成员排行榜 →</router-link></article>
         <article><span>待修改任务</span><strong>{{ Number(dashboard.assignments.revisionRequired || 0) }}</strong><small>优先根据导师反馈修改</small></article>
         <article><span>进行中任务</span><strong>{{ Number(dashboard.assignments.inProgress || 0) }}</strong><small>{{ Number(dashboard.assignments.pendingReview || 0) }} 项等待审核</small></article>
       </section>

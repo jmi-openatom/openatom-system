@@ -2,11 +2,15 @@ package edu.jmi.openatom.server.openatomsystem.controller;
 
 import edu.jmi.openatom.server.openatomsystem.service.OidcService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,6 +45,22 @@ public class OidcController {
     return oidcService.authorize(
         responseType, clientId, redirectUri, scope, state, nonce, codeChallenge, codeChallengeMethod, request);
   }
+
+  @GetMapping("/oauth/consent/requests/{requestId}")
+  public ResponseEntity<Map<String, Object>> consentRequest(
+      @PathVariable String requestId, HttpServletRequest request) {
+    return oidcService.consentRequest(requestId, request);
+  }
+
+  @PostMapping("/oauth/consent/requests/{requestId}/decision")
+  public ResponseEntity<Map<String, Object>> decideConsent(
+      @PathVariable String requestId,
+      @Valid @RequestBody ConsentDecision decision,
+      HttpServletRequest request) {
+    return oidcService.decideConsent(requestId, decision.approved(), request);
+  }
+
+  public record ConsentDecision(@NotNull Boolean approved) {}
 
   @PostMapping("/oauth/token")
   public ResponseEntity<Map<String, Object>> token(

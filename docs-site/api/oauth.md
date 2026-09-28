@@ -28,10 +28,14 @@ GET https://oauth.jmi-openatom.cn/api/v1/.well-known/openid-configuration
 | 用途 | 方法 | 地址 |
 | --- | --- | --- |
 | 发起授权 | GET | `/oauth/authorize` |
+| 查看待确认授权 | GET | `/oauth/consent/requests/{requestId}` |
+| 同意或拒绝授权 | POST | `/oauth/consent/requests/{requestId}/decision` |
 | 换取或刷新令牌 | POST | `/oauth/token` |
 | 获取用户信息 | GET | `/oauth/userinfo` |
 | 检查令牌 | POST | `/oauth/introspect` |
 | 获取签名密钥描述 | GET | `/oauth/jwks` |
+
+授权确认相关的两个 `/oauth/consent/requests/...` 接口仅供主站确认页使用，需要当前主站登录令牌；接入应用只需调用标准授权端点并处理回调。
 
 下文使用：
 
@@ -148,6 +152,8 @@ https://oauth.jmi-openatom.cn/api/v1/oauth/authorize
 ```
 
 实际使用时应拼成一行，并对参数进行 URL 编码。
+
+认证中心校验客户端和回调地址后，未登录用户先前往主站登录。已登录用户进入与主站登录页同一视觉风格的授权确认页，查看应用名称、当前账号及将提供的资料。用户点击“同意并继续”后才会签发授权码；点击“拒绝授权”则回调 `error=access_denied`，并保留原 `state`。待确认请求 5 分钟后失效，只能提交一次。
 
 授权成功后，认证中心重定向到：
 
@@ -309,7 +315,7 @@ curl -X POST "$OIDC_ISSUER/oauth/introspect" \
 openid profile
 ```
 
-注意：当前实现的 UserInfo 返回字段尚未按 Scope 逐字段裁剪。客户端仍应只使用业务实际需要的数据。
+注意：当前实现的令牌响应 `user` 和 UserInfo 返回字段尚未按 Scope 逐字段裁剪，授权确认页会据实告知可提供的账号资料。客户端仍应只使用业务实际需要的数据。
 
 ## 9. 推荐接入架构（Web 应用）
 
@@ -317,6 +323,7 @@ openid profile
 
 ```text
 浏览器 -> 业务后端 /auth/login -> OpenAtom /oauth/authorize
+浏览器 -> 主站授权确认页 -> 用户同意或拒绝
 浏览器 <- 302 回调 /auth/callback?code=...&state=...
 业务后端 -> OpenAtom /oauth/token -> 校验 ID Token -> 建立本地会话
 浏览器 -> 业务后端 /api/me（仅携带本地 HttpOnly Cookie）

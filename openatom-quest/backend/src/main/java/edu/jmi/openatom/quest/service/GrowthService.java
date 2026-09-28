@@ -1,6 +1,7 @@
 package edu.jmi.openatom.quest.service;
 
 import edu.jmi.openatom.quest.model.CurrentMember;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,27 @@ public class GrowthService {
             WHERE member_route.member_id = ? ORDER BY member_route.updated_at DESC
             """, member.id()));
         return result;
+    }
+
+    public Map<String, Object> leaderboard() {
+        List<Map<String, Object>> members = jdbcTemplate.queryForList("""
+            SELECT id, nickname, avatar_url AS avatarUrl, current_level AS levelKey,
+                   total_points AS points
+            FROM quest_member
+            WHERE status = 'ACTIVE' AND leaderboard_visible = TRUE
+            ORDER BY total_points DESC, id ASC
+            """);
+        int position = 0;
+        int rank = 0;
+        int previousPoints = Integer.MIN_VALUE;
+        for (Map<String, Object> member : members) {
+            position++;
+            int points = ((Number) member.get("points")).intValue();
+            if (points != previousPoints) rank = position;
+            member.put("rank", rank);
+            previousPoints = points;
+        }
+        return Map.of("members", members, "updatedAt", Instant.now().toString());
     }
 
     public List<Map<String, Object>> recommendedRoutes(CurrentMember member) {

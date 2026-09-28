@@ -120,7 +120,7 @@ function isPrivateRoute(route: RouteLocationNormalizedLoaded) {
   return (
     route.path.startsWith('/admin') ||
     route.matched.some((record) => Boolean(record.meta?.requiresSiteLogin)) ||
-    ['login', 'auth-callback', 'site-activation', 'not-found'].includes(String(route.name || ''))
+    ['login', 'oauth-consent', 'auth-callback', 'site-activation', 'not-found'].includes(String(route.name || ''))
   )
 }
 

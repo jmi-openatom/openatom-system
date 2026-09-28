@@ -3,7 +3,7 @@
     <header class="quest-header">
       <div class="quest-header__inner">
         <router-link class="quest-brand" to="/dashboard" aria-label="OpenAtom Quest 首页">
-          <span class=""><img style="width: 45px;margin-top: 5px;" src="/public/logo.png" alt=""></span>
+          <span class=""><img style="width: 45px;margin-top: 5px;" src="/logo.png" alt=""></span>
           <span>
             <strong>JMI-OPENATOM-QUEST</strong>
             <small>成员成长与任务实践</small>
@@ -26,7 +26,10 @@
             <Sunny v-else />
           </button>
           <el-dropdown @command="handleAccountCommand">
-            <span class="avatar">{{ avatarText }}</span>
+            <span class="avatar" :aria-label="`${auth.member?.nickname || '成员'}的头像`">
+              <img v-if="auth.member?.avatarUrl && !avatarFailed" :src="auth.member.avatarUrl" alt="" @error="avatarFailed = true" />
+              <span v-else>{{ avatarText }}</span>
+            </span>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="assignments">我的任务</el-dropdown-item>
@@ -46,6 +49,19 @@
     <main class="quest-main">
       <router-view />
     </main>
+    <footer class="quest-footer">
+      <div class="quest-footer__inner">
+        <div class="quest-footer__brand">
+          <img src="/logo.png" alt="" />
+          <div><strong>开放原子开源社团</strong><span>JMI - OPENATOM</span></div>
+        </div>
+        <div class="quest-footer__info">
+          <p>技术分享 · 项目实践 · 竞赛训练 · 开源协作</p>
+          <p class="quest-footer__copyright">© 2025-2027 JMI-OPENATOM &amp; <a href="https://www.ariven.cn/" target="_blank" rel="noopener noreferrer">Ariven(软件技术252301 何治皓).</a> All rights reserved.</p>
+          <span class="quest-footer__version">{{ version }}</span>
+        </div>
+      </div>
+    </footer>
     <nav class="quest-mobile-nav" aria-label="移动端主导航">
       <router-link to="/dashboard"><House /><span>工作台</span></router-link>
       <router-link to="/routes"><Guide /><span>路线</span></router-link>
@@ -57,14 +73,17 @@
 
 <script setup lang="ts">
 import { Bell, Guide, House, List, Moon, Sunny } from '@element-plus/icons-vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const dark = ref(false)
 const auth = useAuthStore()
 const router = useRouter()
+const version = __APP_VERSION__
 const avatarText = computed(() => auth.member?.nickname?.trim().slice(0, 1) || '新')
+const avatarFailed = ref(false)
+watch(() => auth.member?.avatarUrl, () => { avatarFailed.value = false })
 const canReview = computed(() => auth.member?.permissions.includes('submission:review'))
 const canManageTasks = computed(() => auth.member?.permissions.includes('task:manage'))
 const isAdmin = computed(() => auth.member?.permissions.includes('stats:global'))

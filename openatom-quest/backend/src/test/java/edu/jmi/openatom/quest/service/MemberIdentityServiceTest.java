@@ -49,7 +49,7 @@ class MemberIdentityServiceTest {
             .subject("42")
             .firstLoginAt(LocalDateTime.now())
             .build();
-        Member member = Member.builder().id(7L).nickname("成员").status("ACTIVE").build();
+        Member member = Member.builder().id(7L).nickname("成员").avatarUrl("https://old.example.test/avatar.png").status("ACTIVE").build();
         when(identityMapper.findByProviderAndSubject("openatom", "42")).thenReturn(identity);
         when(memberMapper.selectById(7L)).thenReturn(member);
         when(accessMapper.findRoleId("ADMIN")).thenReturn(4L);
@@ -58,13 +58,15 @@ class MemberIdentityServiceTest {
         when(accessMapper.findPermissionKeys(7L)).thenReturn(List.of("task:read", "stats:global"));
 
         CurrentMember current = service.findOrCreate(new OauthUserInfo(
-            "42", "成员", null, "member@example.test", "江苏海事职业技术学院",
+            "42", "成员", "https://lms.example.test/avatar.png", "member@example.test", "江苏海事职业技术学院",
             "信息工程学院", "软件技术", "2026级", 2
         ));
 
         ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
         verify(memberMapper).updateById(memberCaptor.capture());
         assertThat(memberCaptor.getValue().getCollege()).isEqualTo("信息工程学院");
+        assertThat(memberCaptor.getValue().getAvatarUrl()).isEqualTo("https://lms.example.test/avatar.png");
+        assertThat(current.avatarUrl()).isEqualTo("https://lms.example.test/avatar.png");
         assertThat(memberCaptor.getValue().getMajor()).isEqualTo("软件技术");
         assertThat(memberCaptor.getValue().getGrade()).isEqualTo("2026级");
         verify(accessMapper).assignRole(7L, 4L);

@@ -13,7 +13,7 @@ import axios from 'axios'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ViewPage from '@/components/common/ViewPage.vue'
-import { setSession } from '@/utils/auth.ts'
+import { getToken, setSession } from '@/utils/auth.ts'
 import {
   consumeOidcCallbackState,
   getOidcAuthority,
@@ -53,9 +53,10 @@ onMounted(async () => {
     )
     const result = response.data
     await verifyOidcIdToken(result.id_token, nonce)
+    // The main site already authenticated through /auth/login before the OAuth
+    // redirect. Its API expects that Sa-Token session, not the OIDC access token.
+    if (!getToken()) throw new Error('主站登录状态已过期')
     setSession({
-      accessToken: result.access_token,
-      refreshToken: result.refresh_token,
       user: result.user,
       roles: result.user?.roles || [],
       permissions: result.user?.permissions || [],

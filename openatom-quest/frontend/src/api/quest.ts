@@ -77,6 +77,20 @@ export interface DashboardData {
   announcements: Array<{ id: number; title: string; content: string; publishedAt: string }>
 }
 
+export interface LeaderboardMember {
+  id: number
+  nickname: string | null
+  avatarUrl: string | null
+  levelKey: string
+  points: number
+  rank: number
+}
+
+export interface LeaderboardData {
+  members: LeaderboardMember[]
+  updatedAt: string
+}
+
 export async function getDashboard() {
   return (await http.get<ApiResponse<DashboardData>>('/dashboard')).data.data
 }
@@ -119,6 +133,10 @@ export async function getRoutes() {
 
 export async function getMemberGrowth() {
   return (await http.get<ApiResponse<Record<string, any>>>('/growth/me')).data.data
+}
+
+export async function getLeaderboard() {
+  return (await http.get<ApiResponse<LeaderboardData>>('/growth/leaderboard')).data.data
 }
 
 export async function getRoute(id: number) {
@@ -214,6 +232,10 @@ export async function getAdminMembers() {
 
 export async function updateMemberStatus(id: number, status: string, reason: string) {
   await http.patch(`/admin/members/${id}/status`, { status, reason })
+}
+
+export async function updateLeaderboardVisibility(id: number, visible: boolean) {
+  await http.patch(`/admin/members/${id}/leaderboard-visibility`, { visible })
 }
 
 export async function updateMemberRoles(id: number, roles: string[]) {

@@ -117,6 +117,7 @@ function requiresSiteLogin(to: RouteLocationNormalized): boolean {
 const ACTIVATION_BYPASS_PATHS = new Set([
   '/activation',
   '/login',
+  '/oauth/consent',
   '/admin/login',
   '/password-reset',
   '/auth/callback',
@@ -369,6 +370,11 @@ const routes = [
     path: '/login',
     name: 'login',
     component: resilientView(() => import('../views/admin/Login.vue')),
+  },
+  {
+    path: '/oauth/consent',
+    name: 'oauth-consent',
+    component: resilientView(() => import('../views/OAuthConsent.vue')),
   },
   {
     path: '/password-reset',

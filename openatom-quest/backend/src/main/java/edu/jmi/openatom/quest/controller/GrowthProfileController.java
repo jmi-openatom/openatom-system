@@ -6,6 +6,8 @@ import edu.jmi.openatom.quest.model.CurrentMember;
 import edu.jmi.openatom.quest.service.GrowthService;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,5 +24,11 @@ public class GrowthProfileController {
         @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member
     ) {
         return ApiResponse.ok(growthService.memberGrowth(member));
+    }
+
+    @GetMapping("/leaderboard")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> leaderboard() {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+            .body(ApiResponse.ok(growthService.leaderboard()));
     }
 }

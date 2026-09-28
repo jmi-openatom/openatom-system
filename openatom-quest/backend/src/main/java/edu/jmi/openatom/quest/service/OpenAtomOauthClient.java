@@ -85,7 +85,7 @@ public class OpenAtomOauthClient {
         OauthUserInfo user = new OauthUserInfo(
             info.path("sub").asText(),
             firstText(info, "nickname", "name", "preferred_username", "username"),
-            firstText(info, "avatar"),
+            firstText(info, "avatar", "picture"),
             firstText(info, "email"),
             firstText(info, "school"),
             firstText(info, "college"),
@@ -117,7 +117,9 @@ public class OpenAtomOauthClient {
 
     private String firstText(JsonNode node, String... fields) {
         for (String field : fields) {
-            String value = node.path(field).asText();
+            JsonNode fieldValue = node.path(field);
+            if (!fieldValue.isTextual()) continue;
+            String value = fieldValue.asText().trim();
             if (!value.isBlank()) {
                 return value;
             }

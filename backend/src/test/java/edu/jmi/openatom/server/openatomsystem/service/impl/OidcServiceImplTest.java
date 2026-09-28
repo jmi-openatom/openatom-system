@@ -5,17 +5,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.mapper.OauthAuthorizationCodeMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.OauthClientMapper;
 import edu.jmi.openatom.server.openatomsystem.mapper.UserMapper;
-import edu.jmi.openatom.server.openatomsystem.entity.User;
 import edu.jmi.openatom.server.openatomsystem.security.OidcSigningKeyProvider;
 import edu.jmi.openatom.server.openatomsystem.security.PasswordService;
+import edu.jmi.openatom.server.openatomsystem.security.OidcUserSession;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -33,7 +36,10 @@ class OidcServiceImplTest {
             mock(OauthAuthorizationCodeMapper.class),
             mock(UserMapper.class),
             new PasswordService(),
-            keys);
+            keys,
+            mock(OidcUserSession.class),
+            mock(StringRedisTemplate.class),
+            new ObjectMapper());
     ReflectionTestUtils.setField(service, "configuredIssuer", ISSUER);
     ReflectionTestUtils.setField(service, "resourceAudience", "stalwart");
   }
@@ -88,6 +94,7 @@ class OidcServiceImplTest {
             .college("信息工程学院")
             .major("软件技术")
             .grade("2026级")
+            .qqOpenid("123456789")
             .build();
 
     @SuppressWarnings("unchecked")
@@ -98,5 +105,6 @@ class OidcServiceImplTest {
     assertEquals("信息工程学院", userInfo.get("college"));
     assertEquals("软件技术", userInfo.get("major"));
     assertEquals("2026级", userInfo.get("grade"));
+    assertEquals("https://q1.qlogo.cn/g?b=qq&nk=123456789&s=640", userInfo.get("avatar"));
   }
 }
