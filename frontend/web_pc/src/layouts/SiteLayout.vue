@@ -11,7 +11,7 @@
         <router-link aria-label="开放原子开源社团首页" class="brand" to="/">
           <img alt="开放原子开源社团徽标" class="site-footer__logo" src="/logo.png" />
           <span>
-            <strong >开放原子开源社团</strong>
+            <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
           </span>
         </router-link>
@@ -19,13 +19,9 @@
           <router-link exact-active-class="router-link-active" to="/">首页</router-link>
           <router-link to="/activities">活动</router-link>
           <router-link to="/blog">博客</router-link>
-          <router-link to="/members">成员</router-link>
-          <router-link to="/partners">伙伴</router-link>
-          <router-link to="/apps">应用</router-link>
           <router-link to="/leaves">请假</router-link>
           <router-link to="/points">积分中心</router-link>
-          <router-link to="/apply">加入我们</router-link>
-          <router-link to="/about">关于我们</router-link>
+          <router-link class="nav-next-link" to="/apply">加入我们</router-link>
           <el-dropdown
             popper-class="site-header-dropdown"
             trigger="click"
@@ -42,7 +38,11 @@
             </button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="/regulations">规章制度</el-dropdown-item>
+                <el-dropdown-item command="/members">成员</el-dropdown-item>
+                <el-dropdown-item command="/partners">伙伴</el-dropdown-item>
+                <el-dropdown-item command="/apps">应用</el-dropdown-item>
+                <el-dropdown-item divided command="/about">关于我们</el-dropdown-item>
+                <el-dropdown-item divided command="/regulations">规章制度</el-dropdown-item>
                 <el-dropdown-item command="/calendar">校历</el-dropdown-item>
                 <el-dropdown-item command="/alumni-managers">往届管理人员</el-dropdown-item>
                 <el-dropdown-item command="/images">图床</el-dropdown-item>
@@ -50,14 +50,6 @@
             </template>
           </el-dropdown>
         </nav>
-        <el-button
-          :icon="Menu"
-          aria-label="打开导航"
-          circle
-          class="mobile-menu-btn"
-          title="打开导航"
-          @click="mobileNavVisible = true"
-        />
         <div class="site-header__actions">
           <ThemeToggle />
           <el-button
@@ -90,16 +82,10 @@
             class="site-header__quest"
             rel="noopener noreferrer"
             target="_blank"
-          >Quest</a>
-          <el-button
-            v-if="isLoggedIn"
-            :icon="Grid"
-            class="site-header__action--workspace"
-            plain
-            @click="$router.push('/workspace')"
+            title="Quest 成长任务"
           >
-            工作台
-          </el-button>
+            <el-icon aria-hidden="true"><Flag /></el-icon>
+          </a>
           <el-dropdown
             v-if="isLoggedIn"
             class="site-header__account-dropdown"
@@ -132,6 +118,14 @@
             >登录
           </el-button>
         </div>
+        <el-button
+          :icon="Menu"
+          aria-label="打开导航"
+          circle
+          class="mobile-menu-btn"
+          title="打开导航"
+          @click="mobileNavVisible = true"
+        />
       </div>
     </header>
 
@@ -148,17 +142,14 @@
           <div class="mobile-nav__links">
             <router-link to="/" @click="mobileNavVisible = false">首页</router-link>
             <router-link to="/activities" @click="mobileNavVisible = false">活动</router-link>
-            <router-link to="/members" @click="mobileNavVisible = false">成员</router-link>
-            <router-link to="/partners" @click="mobileNavVisible = false">伙伴</router-link>
-            <router-link to="/apps" @click="mobileNavVisible = false">应用</router-link>
             <router-link to="/blog" @click="mobileNavVisible = false">博客</router-link>
             <router-link to="/leaves" @click="mobileNavVisible = false">请假</router-link>
-            <router-link to="/about" @click="mobileNavVisible = false">关于我们</router-link>
+            <router-link to="/points" @click="mobileNavVisible = false">积分中心</router-link>
           </div>
         </section>
 
         <section class="mobile-nav__group">
-          <p class="mobile-nav__label">加入与了解</p>
+          <p class="mobile-nav__label">探索社团</p>
           <div class="mobile-nav__links">
             <router-link to="/apply" @click="mobileNavVisible = false"> 加入我们 </router-link>
             <a
@@ -166,7 +157,12 @@
               rel="noopener noreferrer"
               target="_blank"
               @click="mobileNavVisible = false"
-            >Quest 成长任务 ↗</a>
+              >Quest 成长任务 ↗</a
+            >
+            <router-link to="/members" @click="mobileNavVisible = false">成员</router-link>
+            <router-link to="/partners" @click="mobileNavVisible = false">伙伴</router-link>
+            <router-link to="/apps" @click="mobileNavVisible = false">应用</router-link>
+            <router-link to="/about" @click="mobileNavVisible = false">关于我们</router-link>
             <router-link to="/regulations" @click="mobileNavVisible = false">规章制度</router-link>
             <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
             <router-link to="/alumni-managers" @click="mobileNavVisible = false">
@@ -176,7 +172,7 @@
         </section>
 
         <section class="mobile-nav__group">
-          <p class="mobile-nav__label">个人工作台</p>
+          <p class="mobile-nav__label">我的</p>
           <div class="mobile-nav__links">
             <template v-if="isLoggedIn">
               <router-link
@@ -190,9 +186,7 @@
               <router-link to="/notifications" @click="mobileNavVisible = false"
                 >通知中心</router-link
               >
-              <router-link to="/points" @click="mobileNavVisible = false">积分中心</router-link>
               <router-link to="/votes" @click="mobileNavVisible = false">投票</router-link>
-              <router-link to="/members" @click="mobileNavVisible = false">成员名录</router-link>
               <router-link to="/blog/my" @click="mobileNavVisible = false">我的博客</router-link>
               <router-link to="/images" @click="mobileNavVisible = false">图床</router-link>
               <router-link to="/profile" @click="mobileNavVisible = false">我的主页</router-link>
@@ -249,7 +243,7 @@
 import {
   ArrowDown as ArrowDownIcon,
   Bell as BellIcon,
-  Grid as GridIcon,
+  Flag as FlagIcon,
   Menu as MenuIcon,
   Message as MessageIcon,
   UserFilled as UserFilledIcon,
@@ -269,9 +263,9 @@ const UserFilled = markRaw(UserFilledIcon)
 
 const Bell = markRaw(BellIcon)
 
-const Message = markRaw(MessageIcon)
+const Flag = markRaw(FlagIcon)
 
-const Grid = markRaw(GridIcon)
+const Message = markRaw(MessageIcon)
 
 const Menu = markRaw(MenuIcon)
 
@@ -285,7 +279,9 @@ const sessionToken = ref(getToken())
 
 const version = ref(__APP_VERSION__)
 
-const questUrl = String(import.meta.env.VITE_QUEST_SITE_URL || 'https://quest.jmi-openatom.cn').replace(/\/$/, '')
+const questUrl = String(
+  import.meta.env.VITE_QUEST_SITE_URL || 'https://quest.jmi-openatom.cn',
+).replace(/\/$/, '')
 
 const route = useRoute()
 
@@ -319,6 +315,10 @@ const showAdminEntry = computed(() => {
 })
 
 const moreRoutePrefixes = [
+  '/members',
+  '/partners',
+  '/apps',
+  '/about',
   '/regulations',
   '/calendar',
   '/alumni-managers',
@@ -671,7 +671,12 @@ onBeforeUnmount(() => {
   color: var(--oa-text);
   background: var(--oa-nav-hover-bg);
   opacity: 1;
-  outline: none;
+}
+
+.site-nav__more:focus-visible,
+.site-nav a:focus-visible {
+  outline: 2px solid var(--oa-text);
+  outline-offset: 2px;
 }
 
 .site-nav__more.is-active {
@@ -720,18 +725,17 @@ onBeforeUnmount(() => {
 
 .site-header__quest {
   display: inline-flex;
+  width: 40px;
+  height: 40px;
   min-height: 40px;
   align-items: center;
   justify-content: center;
-  padding: 8px 13px;
   border: 1px solid var(--oa-button-border);
   border-radius: var(--el-border-radius-base);
   background: var(--oa-button-bg);
   color: var(--oa-button-text);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 18px;
   text-decoration: none;
-  white-space: nowrap;
 }
 
 .site-header__quest:hover,
@@ -872,7 +876,7 @@ onBeforeUnmount(() => {
 }
 
 /* 响应式 */
-@media (min-width: 901px) and (max-width: 1240px) {
+@media (min-width: 901px) and (max-width: 1100px) {
   .site-nav {
     display: none;
   }
@@ -989,7 +993,6 @@ onBeforeUnmount(() => {
   }
 
   .site-header__action--notification,
-  .site-header__action--workspace,
   .site-header__action--account,
   .site-header__account-dropdown {
     display: none !important;
