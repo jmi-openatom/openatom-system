@@ -19,9 +19,10 @@
           <router-link exact-active-class="router-link-active" to="/">首页</router-link>
           <router-link to="/activities">活动</router-link>
           <router-link to="/blog">博客</router-link>
+          <router-link to="/members">成员</router-link>
           <router-link to="/leaves">请假</router-link>
           <router-link to="/points">积分中心</router-link>
-          <router-link class="nav-next-link" to="/apply">加入我们</router-link>
+          <router-link to="/apply">加入我们</router-link>
           <el-dropdown
             popper-class="site-header-dropdown"
             trigger="click"
@@ -38,7 +39,6 @@
             </button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="/members">成员</el-dropdown-item>
                 <el-dropdown-item command="/partners">伙伴</el-dropdown-item>
                 <el-dropdown-item command="/apps">应用</el-dropdown-item>
                 <el-dropdown-item divided command="/about">关于我们</el-dropdown-item>
@@ -84,7 +84,7 @@
             target="_blank"
             title="Quest 成长任务"
           >
-            <el-icon aria-hidden="true"><Flag /></el-icon>
+            <el-icon aria-hidden="true"><Compass /></el-icon>
           </a>
           <el-dropdown
             v-if="isLoggedIn"
@@ -243,7 +243,7 @@
 import {
   ArrowDown as ArrowDownIcon,
   Bell as BellIcon,
-  Flag as FlagIcon,
+  Compass as CompassIcon,
   Menu as MenuIcon,
   Message as MessageIcon,
   UserFilled as UserFilledIcon,
@@ -263,7 +263,7 @@ const UserFilled = markRaw(UserFilledIcon)
 
 const Bell = markRaw(BellIcon)
 
-const Flag = markRaw(FlagIcon)
+const Compass = markRaw(CompassIcon)
 
 const Message = markRaw(MessageIcon)
 
@@ -315,7 +315,6 @@ const showAdminEntry = computed(() => {
 })
 
 const moreRoutePrefixes = [
-  '/members',
   '/partners',
   '/apps',
   '/about',
@@ -690,17 +689,6 @@ onBeforeUnmount(() => {
   font-size: 11px;
 }
 
-.site-nav .nav-next-link {
-  color: var(--oa-text);
-  font-weight: 600;
-  opacity: 1;
-}
-
-.site-nav .nav-next-link:hover {
-  background: var(--oa-nav-hover-bg);
-  color: var(--oa-text);
-}
-
 .site-header__actions {
   display: flex;
   flex: 0 0 auto;
@@ -716,6 +704,10 @@ onBeforeUnmount(() => {
   color: var(--oa-button-text);
   font-size: 13px;
   line-height: 1;
+}
+
+.site-header__actions :deep(.el-button + .el-button) {
+  margin-left: 0;
 }
 
 .site-header__actions :deep(.el-button:hover) {
@@ -982,10 +974,6 @@ onBeforeUnmount(() => {
     min-height: 44px;
     aspect-ratio: 1;
     padding: 0;
-  }
-
-  .site-header__actions :deep(.el-button + .el-button) {
-    margin-left: 0;
   }
 
   .brand small {
