@@ -7,6 +7,7 @@ import edu.jmi.openatom.quest.dto.CreateRouteRequest;
 import edu.jmi.openatom.quest.dto.CreateTaskRequest;
 import edu.jmi.openatom.quest.dto.CreateDirectionRequest;
 import edu.jmi.openatom.quest.dto.CreateAnnouncementRequest;
+import edu.jmi.openatom.quest.dto.RestartAssignmentRequest;
 import edu.jmi.openatom.quest.dto.UpdateDirectionRequest;
 import edu.jmi.openatom.quest.dto.UpdateLevelRuleRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberRolesRequest;
@@ -14,6 +15,8 @@ import edu.jmi.openatom.quest.dto.UpdateMemberProfileRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberStatusRequest;
 import edu.jmi.openatom.quest.model.CurrentMember;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -415,6 +418,104 @@ public class AdminWorkflowService {
                 GROUP BY d.id, d.name ORDER BY d.sort_order
                 """)
         );
+    }
+
+    public List<Map<String, Object>> memberProgress(CurrentMember actor) {
+        requirePermission(actor, "stats:global");
+        return jdbcTemplate.queryForList("""
+            SELECT m.id AS memberId, m.nickname, m.email, m.current_level AS currentLevel,
+                   COUNT(a.id) AS total,
+                   SUM(CASE WHEN a.status = 'PASSED' THEN 1 ELSE 0 END) AS passed,
+                   SUM(CASE WHEN a.status = 'PENDING_REVIEW' THEN 1 ELSE 0 END) AS pendingReview,
+                   SUM(CASE WHEN a.status IN ('IN_PROGRESS', 'REVISION_REQUIRED')
+                       AND (a.due_at IS NULL OR a.due_at >= NOW(3)) THEN 1 ELSE 0 END) AS inProgress,
+                   SUM(CASE WHEN a.status = 'OVERDUE' OR
+                       (a.status IN ('IN_PROGRESS', 'REVISION_REQUIRED') AND a.due_at < NOW(3)) THEN 1 ELSE 0 END) AS overdue,
+                   SUM(CASE WHEN a.status = 'ABANDONED' THEN 1 ELSE 0 END) AS abandoned
+            FROM quest_member m
+            LEFT JOIN quest_task_assignment a ON a.member_id = m.id
+            WHERE m.email IS NULL OR m.email <> 'quest-content@system.local'
+            GROUP BY m.id, m.nickname, m.email, m.current_level
+            ORDER BY overdue DESC, total DESC, m.id
+            """);
+    }
+
+    public Map<String, Object> assignments(CurrentMember actor, Long memberId, Long taskId, String status, int page, int size) {
+        requirePermission(actor, "stats:global");
+        if (page < 1 || size < 1 || size > 100 || page - 1 > Integer.MAX_VALUE / size) {
+            throw new IllegalArgumentException("分页参数无效");
+        }
+        if (!List.of("ALL", "IN_PROGRESS", "PENDING_REVIEW", "REVISION_REQUIRED", "PASSED", "OVERDUE", "ABANDONED").contains(status)) {
+            throw new IllegalArgumentException("无效的任务状态");
+        }
+        String effectiveStatus = "CASE WHEN a.status IN ('IN_PROGRESS', 'REVISION_REQUIRED') AND a.due_at < NOW(3) THEN 'OVERDUE' ELSE a.status END";
+        StringBuilder where = new StringBuilder(" WHERE 1 = 1");
+        List<Object> params = new ArrayList<>();
+        if (memberId != null) { where.append(" AND a.member_id = ?"); params.add(memberId); }
+        if (taskId != null) { where.append(" AND a.task_id = ?"); params.add(taskId); }
+        if (!"ALL".equals(status)) { where.append(" AND ").append(effectiveStatus).append(" = ?"); params.add(status); }
+        String from = " FROM quest_task_assignment a JOIN quest_task t ON t.id = a.task_id JOIN quest_member m ON m.id = a.member_id";
+        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*)" + from + where, Long.class, params.toArray());
+        List<Object> rowParams = new ArrayList<>(params);
+        rowParams.add(size);
+        rowParams.add((page - 1) * size);
+        List<Map<String, Object>> items = jdbcTemplate.queryForList("""
+            SELECT a.id, a.task_id AS taskId, t.title AS taskTitle, t.task_key AS taskKey,
+                   a.member_id AS memberId, m.nickname AS memberName, m.email AS memberEmail,
+                   a.status AS storedStatus,
+            """ + effectiveStatus + """
+                   AS status, a.source, a.claimed_at AS claimedAt, a.due_at AS dueAt,
+                   a.updated_at AS updatedAt,
+                   (SELECT COUNT(*) FROM quest_task_submission s WHERE s.assignment_id = a.id) AS submissionCount
+            """ + from + where + """
+            ORDER BY CASE WHEN a.status = 'OVERDUE' OR
+                (a.status IN ('IN_PROGRESS', 'REVISION_REQUIRED') AND a.due_at < NOW(3)) THEN 0
+                WHEN a.status = 'REVISION_REQUIRED' THEN 1
+                WHEN a.status = 'PENDING_REVIEW' THEN 2 ELSE 3 END,
+                a.updated_at DESC LIMIT ? OFFSET ?
+            """, rowParams.toArray());
+        return Map.of("items", items, "total", total == null ? 0 : total, "page", page, "size", size);
+    }
+
+    @Transactional
+    public void restartAssignment(CurrentMember actor, long assignmentId, RestartAssignmentRequest request) {
+        requirePermission(actor, "stats:global");
+        LocalDateTime now = LocalDateTime.now();
+        if (!request.dueAt().isAfter(now)) throw new IllegalArgumentException("新的截止时间必须晚于当前时间");
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
+            SELECT a.status, a.due_at AS dueAt, a.member_id AS memberId, t.title
+            FROM quest_task_assignment a JOIN quest_task t ON t.id = a.task_id
+            WHERE a.id = ? FOR UPDATE
+            """, assignmentId);
+        if (rows.isEmpty()) throw new IllegalArgumentException("任务记录不存在");
+        Map<String, Object> assignment = rows.getFirst();
+        Object dueValue = assignment.get("dueAt");
+        LocalDateTime oldDueAt = dueValue instanceof java.sql.Timestamp timestamp
+            ? timestamp.toLocalDateTime() : (LocalDateTime) dueValue;
+        String oldStatus = String.valueOf(assignment.get("status"));
+        boolean overdue = "OVERDUE".equals(oldStatus)
+            || (List.of("IN_PROGRESS", "REVISION_REQUIRED").contains(oldStatus)
+                && oldDueAt != null && oldDueAt.isBefore(now));
+        if (!overdue) throw new IllegalStateException("只有逾期任务可以重启");
+        jdbcTemplate.update("""
+            UPDATE quest_task_assignment SET status = 'IN_PROGRESS', due_at = ?,
+                completed_at = NULL, abandoned_at = NULL WHERE id = ?
+            """, request.dueAt(), assignmentId);
+        jdbcTemplate.update("""
+            INSERT INTO quest_notification
+                (member_id, notification_type, title, content, action_url, business_type, business_id)
+            VALUES (?, 'TASK_RESTARTED', '逾期任务已重启', ?, ?, 'TASK_ASSIGNMENT', ?)
+            """, assignment.get("memberId"),
+            "任务「" + assignment.get("title") + "」已由管理员重启，新的截止时间为 "
+                + request.dueAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "。",
+            "/assignments/" + assignmentId, String.valueOf(assignmentId));
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("memberId", assignment.get("memberId"));
+        detail.put("oldStatus", oldStatus);
+        detail.put("oldDueAt", oldDueAt == null ? null : oldDueAt.toString());
+        detail.put("newDueAt", request.dueAt().toString());
+        detail.put("reason", request.reason().trim());
+        auditService.record(actor.id(), "TASK_ASSIGNMENT_RESTART", "TASK_ASSIGNMENT", assignmentId, detail);
     }
 
     public List<Map<String, Object>> members(CurrentMember actor) {

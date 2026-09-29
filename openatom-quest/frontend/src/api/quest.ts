@@ -187,6 +187,56 @@ export async function getAdminStats() {
   return (await http.get<ApiResponse<Record<string, unknown>>>('/admin/stats')).data.data
 }
 
+export interface MemberTaskProgress {
+  memberId: number
+  nickname: string | null
+  email: string | null
+  currentLevel: string
+  total: number
+  passed: number
+  pendingReview: number
+  inProgress: number
+  overdue: number
+  abandoned: number
+}
+
+export interface AdminAssignment {
+  id: number
+  taskId: number
+  taskTitle: string
+  taskKey: string
+  memberId: number
+  memberName: string | null
+  memberEmail: string | null
+  storedStatus: string
+  status: string
+  source: string
+  claimedAt: string
+  dueAt: string | null
+  updatedAt: string
+  submissionCount: number
+}
+
+export async function getAdminMemberProgress() {
+  return (await http.get<ApiResponse<MemberTaskProgress[]>>('/admin/member-progress')).data.data
+}
+
+export async function getAdminAssignments(params: {
+  memberId?: number
+  taskId?: number
+  status?: string
+  page?: number
+  size?: number
+}) {
+  return (await http.get<ApiResponse<{ items: AdminAssignment[]; total: number; page: number; size: number }>>(
+    '/admin/assignments', { params },
+  )).data.data
+}
+
+export async function restartAdminAssignment(id: number, dueAt: string, reason: string) {
+  await http.post(`/admin/assignments/${id}/restart`, { dueAt, reason })
+}
+
 export async function createTask(payload: Record<string, unknown>) {
   return (await http.post<ApiResponse<Record<string, unknown>>>('/admin/tasks', payload)).data.data
 }

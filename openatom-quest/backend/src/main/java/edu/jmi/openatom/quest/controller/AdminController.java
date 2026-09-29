@@ -7,6 +7,7 @@ import edu.jmi.openatom.quest.dto.CreateRouteRequest;
 import edu.jmi.openatom.quest.dto.CreateTaskRequest;
 import edu.jmi.openatom.quest.dto.CreateDirectionRequest;
 import edu.jmi.openatom.quest.dto.CreateAnnouncementRequest;
+import edu.jmi.openatom.quest.dto.RestartAssignmentRequest;
 import edu.jmi.openatom.quest.dto.UpdateDirectionRequest;
 import edu.jmi.openatom.quest.dto.UpdateLevelRuleRequest;
 import edu.jmi.openatom.quest.dto.UpdateLeaderboardVisibilityRequest;
@@ -174,6 +175,35 @@ public class AdminController {
         @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member
     ) {
         return ApiResponse.ok(workflowService.stats(member));
+    }
+
+    @GetMapping("/member-progress")
+    public ApiResponse<List<Map<String, Object>>> memberProgress(
+        @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member
+    ) {
+        return ApiResponse.ok(workflowService.memberProgress(member));
+    }
+
+    @GetMapping("/assignments")
+    public ApiResponse<Map<String, Object>> assignments(
+        @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member,
+        @RequestParam(required = false) Long memberId,
+        @RequestParam(required = false) Long taskId,
+        @RequestParam(defaultValue = "ALL") String status,
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "20") int size
+    ) {
+        return ApiResponse.ok(workflowService.assignments(member, memberId, taskId, status, page, size));
+    }
+
+    @PostMapping("/assignments/{assignmentId}/restart")
+    public ApiResponse<Void> restartAssignment(
+        @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member,
+        @PathVariable long assignmentId,
+        @Valid @RequestBody RestartAssignmentRequest request
+    ) {
+        workflowService.restartAssignment(member, assignmentId, request);
+        return ApiResponse.ok();
     }
 
     @GetMapping("/members")

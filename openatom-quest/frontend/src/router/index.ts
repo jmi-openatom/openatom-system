@@ -7,6 +7,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
+    { path: '/onboarding', name: 'onboarding', component: () => import('@/views/OnboardingView.vue') },
+    { path: '/admin', name: 'admin', component: () => import('@/views/AdminView.vue'), meta: { permission: 'stats:global' } },
     {
       path: '/',
       component: QuestLayout,
@@ -14,7 +16,6 @@ const router = createRouter({
         { path: '', redirect: '/dashboard' },
         { path: 'dashboard', name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
         { path: 'profile/setup', name: 'profile-setup', component: () => import('@/views/ProfileSetupView.vue') },
-        { path: 'onboarding', name: 'onboarding', component: () => import('@/views/OnboardingView.vue') },
         { path: 'routes', name: 'routes', component: () => import('@/views/GrowthRoutesView.vue') },
         { path: 'routes/:id', name: 'route-detail', component: () => import('@/views/GrowthRouteDetailView.vue') },
         { path: 'tasks', name: 'tasks', component: () => import('@/views/TaskCenterView.vue') },
@@ -25,7 +26,6 @@ const router = createRouter({
         { path: 'points', name: 'points', component: () => import('@/views/PointsView.vue') },
         { path: 'reviews', name: 'reviews', component: () => import('@/views/ReviewQueueView.vue'), meta: { permission: 'submission:review' } },
         { path: 'task-management', name: 'task-management', component: () => import('@/views/TaskManagementView.vue'), meta: { permission: 'task:manage' } },
-        { path: 'admin', name: 'admin', component: () => import('@/views/AdminView.vue'), meta: { permission: 'stats:global' } },
       ],
     },
   ],
