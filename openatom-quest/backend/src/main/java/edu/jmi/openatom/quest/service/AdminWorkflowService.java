@@ -467,7 +467,7 @@ public class AdminWorkflowService {
                    AS status, a.source, a.claimed_at AS claimedAt, a.due_at AS dueAt,
                    a.updated_at AS updatedAt,
                    (SELECT COUNT(*) FROM quest_task_submission s WHERE s.assignment_id = a.id) AS submissionCount
-            """ + from + where + """
+            """ + from + where + "\n" + """
             ORDER BY CASE WHEN a.status = 'OVERDUE' OR
                 (a.status IN ('IN_PROGRESS', 'REVISION_REQUIRED') AND a.due_at < NOW(3)) THEN 0
                 WHEN a.status = 'REVISION_REQUIRED' THEN 1

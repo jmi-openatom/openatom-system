@@ -38,6 +38,30 @@ class TaskWorkflowIntegrationTests {
     @Autowired private AssignmentLifecycleService assignmentLifecycleService;
 
     @Test
+    void adminAssignmentListLoadsAllStatusesOnMySql() {
+        long adminId = member("任务列表管理员");
+        long memberId = member("任务列表成员");
+        grantRole(adminId, "ADMIN");
+        grantRole(memberId, "MEMBER");
+        CurrentMember admin = current(adminId, List.of("ADMIN"), List.of("stats:global"));
+        CurrentMember member = current(memberId, List.of("MEMBER"), List.of("task:claim"));
+        long taskId = jdbcTemplate.queryForObject(
+            "SELECT id FROM quest_task WHERE task_key = 'site-exploration-l0'", Long.class);
+        taskWorkflowService.claim(member, taskId);
+
+        Map<String, Object> all = adminWorkflowService.assignments(admin, memberId, null, "ALL", 1, 20);
+        assertThat(((Number) all.get("total")).intValue()).isEqualTo(1);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> items = (List<Map<String, Object>>) all.get("items");
+        assertThat(items).singleElement().satisfies(item -> {
+            assertThat(((Number) item.get("memberId")).longValue()).isEqualTo(memberId);
+            assertThat(item.get("status")).isEqualTo("IN_PROGRESS");
+        });
+        assertThat(((Number) adminWorkflowService.assignments(admin, memberId, null, "PASSED", 1, 20)
+            .get("total")).intValue()).isZero();
+    }
+
+    @Test
     void personalSiteFlagsAutoReviewAndUnlockRouteL0() {
         long firstId = member("探索用户一");
         long secondId = member("探索用户二");
