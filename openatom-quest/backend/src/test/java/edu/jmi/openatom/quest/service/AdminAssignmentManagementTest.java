@@ -91,6 +91,24 @@ class AdminAssignmentManagementTest {
     }
 
     @Test
+    void allStatusIncludesOtherStatusesWithinTheSelectedMember() {
+        jdbc.update("""
+            INSERT INTO quest_task_assignment
+                (id, task_id, member_id, status, source, claimed_at, updated_at)
+            VALUES (101, 10, 1, 'PASSED', 'CLAIMED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                   (102, 10, 2, 'PASSED', 'CLAIMED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """);
+
+        Map<String, Object> allForMember = service.assignments(admin, 1L, null, "ALL", 1, 20);
+        assertThat(((Number) allForMember.get("total")).intValue()).isEqualTo(2);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> items = (List<Map<String, Object>>) allForMember.get("items");
+        assertThat(items).extracting(item -> item.get("status")).containsExactlyInAnyOrder("OVERDUE", "PASSED");
+        assertThat(((Number) service.assignments(admin, 1L, null, "OVERDUE", 1, 20).get("total")).intValue()).isEqualTo(1);
+        assertThat(((Number) service.assignments(admin, null, null, "ALL", 1, 20).get("total")).intValue()).isEqualTo(3);
+    }
+
+    @Test
     void restartRejectsNonOverdueAssignmentsAndMembersWithoutPermission() {
         CurrentMember member = new CurrentMember(1L, "成员甲", null, "ACTIVE", "L0", 0,
             true, true, List.of("MEMBER"), List.of());

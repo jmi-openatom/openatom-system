@@ -40,7 +40,7 @@
         <div class="admin-progress-cards"><article v-for="item in filteredProgress" :key="item.memberId" class="content-card"><div class="admin-progress-card__heading"><span><strong>{{ item.nickname || `成员 #${item.memberId}` }}</strong><small>{{ item.email || item.currentLevel }}</small></span><el-button link type="primary" @click="openMemberAssignments(item)">查看任务</el-button></div><div class="admin-progress-card__bar"><strong>{{ item.passed }} / {{ item.total }} 已完成</strong><span class="admin-progress-track"><span :style="{ width: `${item.total ? item.passed / item.total * 100 : 0}%` }"></span></span></div><div class="admin-progress-card__metrics"><span>进行中 {{ item.inProgress }}</span><span>待审核 {{ item.pendingReview }}</span><span :class="{ 'admin-text-warning': item.overdue }">逾期 {{ item.overdue }}</span></div></article><p v-if="!filteredProgress.length" class="admin-empty">没有匹配的成员</p></div>
 
         <div class="admin-toolbar"><div><h2>任务领取记录</h2><p>按成员、任务和状态筛选，逾期任务可由管理员设置新期限后手动重启。</p></div><el-button :loading="assignmentsLoading" @click="loadAssignments">刷新记录</el-button></div>
-        <div class="admin-filters"><el-select v-model="assignmentFilters.memberId" clearable filterable placeholder="全部成员" aria-label="按成员筛选" @change="resetAssignmentPage"><el-option v-for="item in members" :key="item.id" :label="item.nickname || `成员 #${item.id}`" :value="item.id" /></el-select><el-select v-model="assignmentFilters.taskId" clearable filterable placeholder="全部任务" aria-label="按任务筛选" @change="resetAssignmentPage"><el-option v-for="item in tasks" :key="item.id" :label="item.title" :value="item.id" /></el-select><el-select v-model="assignmentFilters.status" aria-label="按状态筛选" @change="resetAssignmentPage"><el-option v-for="item in assignmentStatuses" :key="item.value" :label="item.label" :value="item.value" /></el-select></div>
+        <div class="admin-filters"><el-select v-model="assignmentFilters.memberId" clearable filterable placeholder="全部成员" aria-label="按成员筛选" @change="resetAssignmentPage"><el-option v-for="item in members" :key="item.id" :label="item.nickname || `成员 #${item.id}`" :value="item.id" /></el-select><el-select v-model="assignmentFilters.taskId" clearable filterable placeholder="全部任务" aria-label="按任务筛选" @change="resetAssignmentPage"><el-option v-for="item in tasks" :key="item.id" :label="item.title" :value="item.id" /></el-select><el-select v-model="assignmentFilters.status" aria-label="按状态筛选" @change="resetAssignmentPage"><el-option v-for="item in assignmentStatuses" :key="item.value" :label="item.label" :value="item.value" /></el-select><el-button @click="clearAssignmentFilters">重置筛选</el-button><span class="admin-filters__count">共 {{ assignmentTotal }} 条记录</span></div>
         <el-skeleton v-if="assignmentsLoading" :rows="5" animated />
         <el-result v-else-if="assignmentsError" icon="error" title="任务记录加载失败" :sub-title="assignmentsError"><template #extra><el-button @click="loadAssignments">重试</el-button></template></el-result>
         <div v-else class="data-table-wrap"><table class="data-table"><thead><tr><th>成员</th><th>任务</th><th>状态</th><th>领取时间</th><th>截止时间</th><th>提交次数</th><th>操作</th></tr></thead><tbody><tr v-for="item in assignments" :key="item.id"><td><strong>{{ item.memberName || `成员 #${item.memberId}` }}</strong><small>{{ item.memberEmail || '-' }}</small></td><td><strong>{{ item.taskTitle }}</strong><small>{{ item.taskKey }}</small></td><td><span class="status-chip" :data-status="item.status">{{ assignmentStatusText[item.status] || item.status }}</span></td><td>{{ formatDate(item.claimedAt) }}</td><td>{{ item.dueAt ? formatDate(item.dueAt) : '无固定截止' }}</td><td>{{ item.submissionCount }}</td><td><el-button v-if="item.status === 'OVERDUE'" link type="primary" @click="openRestart(item)">重启任务</el-button><span v-else>—</span></td></tr><tr v-if="!assignments.length"><td colspan="7" class="admin-empty">暂无任务记录</td></tr></tbody></table></div>
@@ -165,6 +165,7 @@ const assignments = ref<AdminAssignment[]>([])
 const assignmentTotal = ref(0)
 const assignmentsLoading = ref(false)
 const assignmentsError = ref('')
+let assignmentRequestId = 0
 const restartDialog = ref(false)
 const restartTarget = ref<AdminAssignment | null>(null)
 const restarting = ref(false)
@@ -197,24 +198,28 @@ function formatDate(value:string) { return new Date(value).toLocaleString('zh-CN
 async function load() { loading.value=true; error.value=''; try { const [s,r,t,m,a,d,g,l,n,p]=await Promise.all([getAdminStats(),getAdminRoutes(),getAdminTasks(),getAdminMembers(),getAuditLogs(),getAdminDirections(),getStages(),getLevelRules(),getAnnouncements(),getAdminMemberProgress()]); stats.value=s; routes.value=r; tasks.value=t; members.value=m; audits.value=a; directions.value=d.map(item=>({...item,active:item.status==='ACTIVE'})); stages.value=g; levelRules.value=l.map(item=>({...item,active:item.status==='ACTIVE'}));announcements.value=n;progress.value=p } catch(reason){ error.value=getErrorMessage(reason) } finally{loading.value=false} }
 
 async function loadAssignments() {
+  const requestId = ++assignmentRequestId
+  const filters = { ...assignmentFilters }
   assignmentsLoading.value = true
   assignmentsError.value = ''
   try {
-    const result = await getAdminAssignments({ ...assignmentFilters })
+    const result = await getAdminAssignments(filters)
+    if (requestId !== assignmentRequestId) return
     assignments.value = result.items
     assignmentTotal.value = result.total
   } catch (reason) {
-    assignmentsError.value = getErrorMessage(reason, '无法加载任务记录')
+    if (requestId === assignmentRequestId) assignmentsError.value = getErrorMessage(reason, '无法加载任务记录')
   } finally {
-    assignmentsLoading.value = false
+    if (requestId === assignmentRequestId) assignmentsLoading.value = false
   }
 }
 
 function resetAssignmentPage() { assignmentFilters.page = 1; void loadAssignments() }
+function clearAssignmentFilters() { assignmentFilters.memberId = undefined; assignmentFilters.taskId = undefined; assignmentFilters.status = 'ALL'; resetAssignmentPage() }
 function refreshAll() { void Promise.all([load(), loadAssignments()]) }
 function changeAssignmentPage(offset: number) { assignmentFilters.page += offset; void loadAssignments() }
-function openMemberAssignments(item: MemberTaskProgress) { assignmentFilters.memberId = item.memberId; assignmentFilters.status = 'ALL'; section.value = '成员进度'; resetAssignmentPage() }
-function showOverdue() { assignmentFilters.memberId = undefined; assignmentFilters.status = 'OVERDUE'; section.value = '成员进度'; resetAssignmentPage() }
+function openMemberAssignments(item: MemberTaskProgress) { assignmentFilters.memberId = item.memberId; assignmentFilters.taskId = undefined; assignmentFilters.status = 'ALL'; section.value = '成员进度'; resetAssignmentPage() }
+function showOverdue() { assignmentFilters.memberId = undefined; assignmentFilters.taskId = undefined; assignmentFilters.status = 'OVERDUE'; section.value = '成员进度'; resetAssignmentPage() }
 function localDateTime(value: Date) { const pad = (n: number) => String(n).padStart(2, '0'); return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}` }
 function openRestart(item: AdminAssignment) { restartTarget.value = item; restartForm.dueAt = localDateTime(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); restartForm.reason = ''; restartDialog.value = true }
 async function confirmRestart() {
@@ -274,7 +279,7 @@ onMounted(() => {
   background: var(--color-bg-page);
 }
 
-.admin-dashboard :deep(.el-button--primary) {
+.admin-dashboard :deep(.el-button--primary:not(.is-link)) {
   --el-button-text-color: var(--color-primary-foreground);
   --el-button-hover-text-color: var(--color-primary-foreground);
   --el-button-active-text-color: var(--color-primary-foreground);
@@ -541,11 +546,18 @@ onMounted(() => {
 .admin-filters {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
 }
 
 .admin-filters :deep(.el-select) {
   width: min(240px, 100%);
+}
+
+.admin-filters__count {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 
 .admin-pagination {
