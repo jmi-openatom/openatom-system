@@ -41,6 +41,7 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="/partners">伙伴</el-dropdown-item>
                 <el-dropdown-item command="/apps">应用</el-dropdown-item>
+                <el-dropdown-item command="/campus-map">校园地图</el-dropdown-item>
                 <el-dropdown-item divided command="/about">关于我们</el-dropdown-item>
                 <el-dropdown-item divided command="/regulations">规章制度</el-dropdown-item>
                 <el-dropdown-item command="/calendar">校历</el-dropdown-item>
@@ -163,6 +164,7 @@
             <router-link to="/partners" @click="mobileNavVisible = false">伙伴</router-link>
             <router-link to="/apps" @click="mobileNavVisible = false">应用</router-link>
             <router-link to="/about" @click="mobileNavVisible = false">关于我们</router-link>
+            <router-link to="/campus-map" @click="mobileNavVisible = false">校园地图</router-link>
             <router-link to="/regulations" @click="mobileNavVisible = false">规章制度</router-link>
             <router-link to="/calendar" @click="mobileNavVisible = false">校历</router-link>
             <router-link to="/alumni-managers" @click="mobileNavVisible = false">
@@ -315,6 +317,7 @@ const showAdminEntry = computed(() => {
 })
 
 const moreRoutePrefixes = [
+  '/campus-map',
   '/partners',
   '/apps',
   '/about',

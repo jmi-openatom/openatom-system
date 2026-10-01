@@ -136,6 +136,11 @@ function firstAccessibleAdminPath(): string {
 
 const routes = [
   {
+    path: '/campus-map',
+    name: 'site-campus-map',
+    component: resilientView(() => import('../views/site/CampusMap.vue')),
+  },
+  {
     path: '/',
     component: resilientView(() => import('@/layouts/SiteLayout.vue')),
     children: [

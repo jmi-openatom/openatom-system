@@ -15,6 +15,9 @@
         <p class="hero__subtitle">在真实项目中协作，在工程实践中成长。让开源，成为校园日常。</p>
       </div>
     </div>
+    <router-link class="hero__campus-link" to="/campus-map"
+      >探索校园 <span aria-hidden="true">↗</span></router-link
+    >
   </section>
 </template>
 
@@ -36,6 +39,33 @@ withDefaults(defineProps<HeroProps>(), {
 </script>
 
 <style>
+.hero__campus-link {
+  position: absolute;
+  z-index: 5;
+  bottom: 32px;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--oa-border, #e4e5e0);
+  border-radius: 24px;
+  background: var(--oa-surface, #fff);
+  color: var(--oa-text, #243630);
+  font-size: 13px;
+  text-decoration: none;
+}
+.hero__campus-link:focus-visible {
+  outline: 2px solid #679ba7;
+  outline-offset: 3px;
+}
+@media (max-width: 699px) {
+  .hero__campus-link {
+    bottom: 24px;
+    right: 20px;
+  }
+}
 /* 海报感主标题：Orbitron 超粗 + 宽字距 + 纯色 + 投影 */
 .home-hero__morph.title {
   font-family: var(--font-family-display);

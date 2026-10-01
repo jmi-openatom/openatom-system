@@ -21,6 +21,10 @@ type SeoConfig = {
 
 const ROUTE_SEO: Record<string, SeoConfig> = {
   'site-home': { title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION },
+  'site-campus-map': {
+    title: `校园地图｜${SITE_NAME}`,
+    description: '漫游江苏海事职业技术学院三维校园，查看校园建筑、湖泊与山顶灯塔。',
+  },
   about: {
     title: `关于我们｜${SITE_NAME}`,
     description: `了解${SCHOOL_NAME} JMI-OPENATOM 开放原子开源社团、共建方向、成长路径与校园开源实践。`,
@@ -120,7 +124,9 @@ function isPrivateRoute(route: RouteLocationNormalizedLoaded) {
   return (
     route.path.startsWith('/admin') ||
     route.matched.some((record) => Boolean(record.meta?.requiresSiteLogin)) ||
-    ['login', 'oauth-consent', 'auth-callback', 'site-activation', 'not-found'].includes(String(route.name || ''))
+    ['login', 'oauth-consent', 'auth-callback', 'site-activation', 'not-found'].includes(
+      String(route.name || ''),
+    )
   )
 }
 
