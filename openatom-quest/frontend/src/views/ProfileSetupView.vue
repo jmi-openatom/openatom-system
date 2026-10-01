@@ -95,7 +95,7 @@
 
       <div class="form-actions">
         <el-button type="primary" size="large" :loading="saving" @click="submit"
-          >保存并开始新人引导</el-button
+          >保存资料</el-button
         >
       </div>
     </el-form>
@@ -233,7 +233,7 @@ async function submit() {
     localStorage.removeItem(draftKey);
     await auth.resolve(true);
     ElMessage.success("资料已保存");
-    await router.push("/onboarding");
+    await router.push("/dashboard");
   } finally {
     saving.value = false;
   }

@@ -21,6 +21,7 @@ public class OnboardingService {
     private final OnboardingProgressMapper progressMapper;
     private final MemberMapper memberMapper;
     private final ObjectMapper objectMapper;
+    private final ProfileService profileService;
 
     @Transactional
     public OnboardingProgress completeStep(Long memberId, UpdateOnboardingRequest request) {
@@ -33,6 +34,12 @@ public class OnboardingService {
         if (request.step() > firstIncomplete) {
             throw new IllegalArgumentException("请按顺序完成新人引导");
         }
+        profileService.updateOnboardingProfile(memberId, request.step(), request.profile());
+        if (request.step() == 5 && !Set.of("beginner", "basic", "experienced").contains(
+            request.assessment() == null ? "" : request.assessment())) {
+            throw new IllegalArgumentException("请选择当前的基础能力");
+        }
+        if (request.step() == 7 || completed.size() == 7) profileService.requireOnboardingProfileComplete(memberId);
         completed.add(request.step());
         progress.setCompletedStepsJson(writeJson(completed));
         progress.setCurrentStep(firstIncomplete(completed));

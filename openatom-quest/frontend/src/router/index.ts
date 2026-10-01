@@ -41,13 +41,12 @@ router.beforeEach(async (to) => {
   const member = await auth.resolve()
   if (to.meta.public) {
     if (to.name === 'login' && member) {
-      return member.profileCompleted ? (member.onboardingCompleted ? '/dashboard' : '/onboarding') : '/profile/setup'
+      return member.profileCompleted && member.onboardingCompleted ? '/dashboard' : '/onboarding'
     }
     return true
   }
   if (!member) return { name: 'login', query: { returnTo: to.fullPath } }
-  if (!member.profileCompleted && to.name !== 'profile-setup') return { name: 'profile-setup' }
-  if (member.profileCompleted && !member.onboardingCompleted && to.name !== 'onboarding') return { name: 'onboarding' }
+  if ((!member.profileCompleted || !member.onboardingCompleted) && to.name !== 'onboarding') return { name: 'onboarding' }
   if (to.meta.permission && !member.permissions.includes(String(to.meta.permission))) return { name: 'dashboard' }
   return true
 })

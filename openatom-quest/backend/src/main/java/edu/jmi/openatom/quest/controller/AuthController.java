@@ -76,7 +76,7 @@ public class AuthController {
             session.setAttribute(ACCESS_TOKEN, token.accessToken());
             session.setAttribute(REFRESH_TOKEN, token.refreshToken());
             auditService.record(member.id(), "OAUTH_LOGIN_SUCCESS", "MEMBER", member.id(), Map.of("provider", "openatom"));
-            String next = member.profileCompleted() ? (member.onboardingCompleted() ? "/dashboard" : "/onboarding") : "/profile/setup";
+            String next = member.profileCompleted() && member.onboardingCompleted() ? "/dashboard" : "/onboarding";
             return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(frontendUrl() + next))
                 .build();

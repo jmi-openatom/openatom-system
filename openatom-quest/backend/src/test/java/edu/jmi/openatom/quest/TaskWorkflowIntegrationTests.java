@@ -11,12 +11,16 @@ import edu.jmi.openatom.quest.dto.ReviewSubmissionRequest;
 import edu.jmi.openatom.quest.dto.ResolveAppealRequest;
 import edu.jmi.openatom.quest.dto.SubmitTaskRequest;
 import edu.jmi.openatom.quest.dto.SubmitSiteExplorationRequest;
+import edu.jmi.openatom.quest.dto.OnboardingProfileRequest;
+import edu.jmi.openatom.quest.dto.UpdateOnboardingRequest;
 import edu.jmi.openatom.quest.model.CurrentMember;
 import edu.jmi.openatom.quest.service.AdminWorkflowService;
 import edu.jmi.openatom.quest.service.AssignmentLifecycleService;
 import edu.jmi.openatom.quest.service.GrowthService;
 import edu.jmi.openatom.quest.service.TaskWorkflowService;
 import edu.jmi.openatom.quest.service.SiteExplorationService;
+import edu.jmi.openatom.quest.service.OnboardingService;
+import edu.jmi.openatom.quest.service.ProfileService;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -36,6 +40,34 @@ class TaskWorkflowIntegrationTests {
     @Autowired private SiteExplorationService siteExplorationService;
     @Autowired private GrowthService growthService;
     @Autowired private AssignmentLifecycleService assignmentLifecycleService;
+    @Autowired private OnboardingService onboardingService;
+    @Autowired private ProfileService profileService;
+
+    @Test
+    void newMemberSavesProfileAndJoinsRouteDuringOnboarding() {
+        long memberId = member("全屏引导新人");
+        grantRole(memberId, "MEMBER");
+        jdbcTemplate.update("UPDATE quest_member SET conduct_agreed_at = NULL, profile_completed_at = NULL, onboarding_completed_at = NULL WHERE id = ?", memberId);
+        jdbcTemplate.update("INSERT INTO quest_onboarding_progress (member_id, current_step, completed_steps_json) VALUES (?, 1, '[]')", memberId);
+        long directionId = jdbcTemplate.queryForObject("SELECT id FROM quest_technical_direction WHERE direction_key = 'frontend'", Long.class);
+        OnboardingProfileRequest profile = new OnboardingProfileRequest("引导内填写的昵称", true, List.of(directionId), List.of("Git", "Vue"), "https://github.com/example", 8, "学习开源协作");
+
+        for (int step = 1; step <= 5; step++) {
+            onboardingService.completeStep(memberId, new UpdateOnboardingRequest(step, "做过 Vue 练习", "basic", profile));
+        }
+        assertThat(profileService.getProfile(memberId)).containsEntry("nickname", "引导内填写的昵称")
+            .containsEntry("directionIds", List.of(directionId)).containsEntry("skills", List.of("Git", "Vue"));
+        assertThat(onboardingService.get(memberId).getCurrentStep()).isEqualTo(6);
+        CurrentMember learner = current(memberId, List.of("MEMBER"), List.of("task:claim"));
+        List<Map<String, Object>> routes = growthService.recommendedRoutes(learner);
+        assertThat(routes).isNotEmpty();
+        growthService.enroll(learner, number(routes.getFirst().get("id")));
+        onboardingService.completeStep(memberId, new UpdateOnboardingRequest(6, "做过 Vue 练习", "basic", profile));
+        long taskId = jdbcTemplate.queryForObject("SELECT id FROM quest_task WHERE task_key = 'site-exploration-l0'", Long.class);
+        assertThat(taskWorkflowService.claim(learner, taskId)).containsEntry("status", "IN_PROGRESS");
+        onboardingService.completeStep(memberId, new UpdateOnboardingRequest(7, "做过 Vue 练习", "basic", profile));
+        assertThat(jdbcTemplate.queryForObject("SELECT onboarding_completed_at IS NOT NULL AND profile_completed_at IS NOT NULL FROM quest_member WHERE id = ?", Boolean.class, memberId)).isTrue();
+    }
 
     @Test
     void adminAssignmentListLoadsAllStatusesOnMySql() {
