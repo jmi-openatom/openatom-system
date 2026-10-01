@@ -2,10 +2,14 @@
   <component
     :is="props.background ? 'div' : 'section'"
     :aria-hidden="props.background ? 'true' : undefined"
-    :class="['map-section', { 'map-section--hero': props.background }]"
+    :class="[
+      'map-section',
+      { 'map-section--hero': props.background, 'map-section--space-pan': spacePanActive },
+    ]"
   >
     <div
       ref="mapContainer"
+      data-lenis-prevent
       :class="[
         'map-canvas',
         { 'is-loaded': mapLoaded, 'map-canvas--background': props.background },
@@ -17,32 +21,49 @@
       aria-hidden="true"
       :class="['map-fallback', { 'is-hidden': mapLoaded && !mapError }]"
     ></div>
+    <p v-if="mapError && !props.background" class="map-status" role="status">{{ mapError }}</p>
   </component>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useTheme, type ResolvedTheme } from '@/composables/useTheme'
+import { CAMPUS_BOUNDARY, CAMPUS_BOUNDS, CAMPUS_BUILDING_FILTER, campusPalette } from './campusMap'
+import campusLandscape from './campusLandscape.json'
+import campusBuildings from './campusBuildings.json'
+import { CAMPUS_DETAILS } from './campusDetails'
+import type { MapMouseEvent } from 'mapbox-gl'
+import { CAMPUS_BUILDINGS, CAMPUS_LABELS, LIGHTHOUSE_ID } from './campusLabels'
+import type { campusLandmarkLayer } from './campusLandmark'
 
 type MapboxCameraOptions = Record<string, unknown>
 type MapboxModule = any
 type MapboxMap = any
 type MapboxMarker = any
+type StyleLayer = { id: string; type: string; layout?: Record<string, unknown> }
 
 const props = withDefaults(
   defineProps<{
     background?: boolean
     static?: boolean
+    interactive?: boolean
+    showLabels?: boolean
   }>(),
   {
     background: false,
     static: false,
+    interactive: false,
+    showLabels: false,
   },
 )
 
 const mapContainer = ref<HTMLElement>()
 const mapError = ref('')
 const mapLoaded = ref(false)
+const spacePanActive = ref(false)
+const emit = defineEmits<{ selectBuilding: [id: string | number] }>()
+let makeLandmark: typeof campusLandmarkLayer | undefined
+let selectedBuilding: string | number | null = null
 const { resolvedTheme } = useTheme()
 
 const mapboxToken =
@@ -73,10 +94,10 @@ let mapInitStarted = false
 let isMapVisible = true
 let mapPausedForScroll = false
 
-const CAMPUS_CENTER: [number, number] = [118.903, 31.92]
+const CAMPUS_CENTER: [number, number] = [118.9028, 31.9201]
 const EARTH_CENTER: [number, number] = [-40, 26]
 const CAMPUS_GLOBE_CENTER: [number, number] = [CAMPUS_CENTER[0], 26]
-const CAMPUS_HOLD_MS = 22000
+const CAMPUS_HOLD_MS = 45000
 const FLY_TO_EARTH_MS = 3600
 const ROTATE_TO_CAMPUS_MS = 3400
 const FLY_TO_CAMPUS_MS = 4400
@@ -91,10 +112,34 @@ const earthCamera = {
 
 const campusCamera = {
   center: CAMPUS_CENTER,
-  zoom: 16.25,
-  pitch: 58,
-  bearing: -18,
+  zoom: 16.05,
+  pitch: 52,
+  bearing: -20,
 } satisfies MapboxCameraOptions
+
+function getCampusCamera() {
+  if (!map || !mapContainer.value) return campusCamera
+  const { clientWidth: width, clientHeight: height } = mapContainer.value
+  const overview = map.cameraForBounds(CAMPUS_BOUNDS, {
+    pitch: 52,
+    bearing: -20,
+    maxZoom: 16.1,
+    padding: {
+      top: height * (props.background ? 0.16 : 0.08),
+      bottom: height * 0.08,
+      left: width * 0.06,
+      right: width * 0.06,
+    },
+  })
+  if (props.interactive)
+    return {
+      ...overview,
+      pitch: 48,
+      bearing: -20,
+      zoom: Math.min(16.3, (overview?.zoom ?? 15) + 0.6),
+    }
+  return { ...overview, ...campusCamera, zoom: Math.min(16.35, (overview?.zoom ?? 15.65) + 0.65) }
+}
 
 function mapFog(theme: ResolvedTheme) {
   if (theme === 'dark') {
@@ -173,49 +218,186 @@ function addTerrain() {
     tileSize: 512,
     maxzoom: 14,
   })
-  map.setTerrain({ source: 'oa-terrain', exaggeration: 1.35 })
+  map.setTerrain({ source: 'oa-terrain', exaggeration: 1 })
 }
 
 function applyFog() {
   map?.setFog(mapFog(resolvedTheme.value))
 }
 
+function addCampusLandscape() {
+  if (!map || map.getSource('oa-campus')) return
+
+  const colors = campusPalette(resolvedTheme.value)
+  const beforeRoad = map
+    .getStyle()
+    .layers?.find((layer: StyleLayer) => layer.type === 'line' && layer.id.includes('road'))?.id
+
+  map.addSource('oa-campus', {
+    type: 'geojson',
+    attribution:
+      '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+    data: { type: 'Feature', properties: {}, geometry: CAMPUS_BOUNDARY },
+  })
+  map.addSource('oa-campus-landscape', { type: 'geojson', data: campusLandscape })
+  map.addLayer(
+    {
+      id: 'oa-campus-ground',
+      type: 'fill',
+      source: 'oa-campus',
+      minzoom: 13,
+      paint: {
+        'fill-color': colors.ground,
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 15, 0.88],
+      },
+    },
+    beforeRoad,
+  )
+  // Tracks/courts sit underneath football fields so the running oval retains
+  // its terracotta edge when OSM maps the overlapping playing surfaces.
+  for (const kind of ['park', 'track', 'court', 'pitch', 'water'] as const) {
+    map.addLayer(
+      {
+        id: `oa-campus-${kind}`,
+        type: 'fill',
+        source: 'oa-campus-landscape',
+        minzoom: 14,
+        filter: ['==', ['get', 'kind'], kind],
+        paint: {
+          'fill-color': colors[kind === 'court' ? 'track' : kind],
+          'fill-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.2, 0.95],
+        },
+      },
+      beforeRoad,
+    )
+  }
+  map.addLayer(
+    {
+      id: 'oa-campus-paths',
+      type: 'line',
+      source: 'oa-campus-landscape',
+      minzoom: 14,
+      filter: ['==', ['get', 'kind'], 'road'],
+      paint: {
+        'line-color': colors.road,
+        'line-opacity': 0.85,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.7, 17, 4],
+      },
+    },
+    beforeRoad,
+  )
+  map.addLayer(
+    {
+      id: 'oa-campus-shore',
+      type: 'line',
+      source: 'oa-campus-landscape',
+      minzoom: 14,
+      filter: ['==', ['get', 'kind'], 'water'],
+      paint: {
+        'line-color': colors.road,
+        'line-opacity': 0.75,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.5, 17, 2],
+      },
+    },
+    beforeRoad,
+  )
+  map.addLayer(
+    {
+      id: 'oa-campus-boundary',
+      type: 'line',
+      source: 'oa-campus',
+      minzoom: 13,
+      paint: {
+        'line-color': colors.boundary,
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 15, 0.4],
+        'line-width': ['interpolate', ['linear'], ['zoom'], 13, 0.5, 17, 2],
+      },
+    },
+    beforeRoad,
+  )
+}
+
 function add3dBuildings() {
-  if (!map || map.getLayer('oa-3d-buildings') || !map.getSource('composite')) return
+  if (!map || map.getLayer('oa-campus-buildings')) return
 
   const colors = buildingColors(resolvedTheme.value)
   const labelLayerId = map
     .getStyle()
-    .layers?.find((layer) => layer.type === 'symbol' && layer.layout?.['text-field'])?.id
+    .layers?.find(
+      (layer: StyleLayer) => layer.type === 'symbol' && layer.layout?.['text-field'],
+    )?.id
 
+  if (map.getSource('composite'))
+    map.addLayer(
+      {
+        id: 'oa-3d-buildings',
+        source: 'composite',
+        'source-layer': 'building',
+        type: 'fill-extrusion',
+        minzoom: 14,
+        filter: ['!', CAMPUS_BUILDING_FILTER],
+        paint: {
+          'fill-extrusion-color': [
+            'interpolate',
+            ['linear'],
+            ['max', ['coalesce', ['get', 'height'], 0], 24],
+            0,
+            colors.low,
+            30,
+            colors.middle,
+            90,
+            colors.high,
+          ],
+          'fill-extrusion-height': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            14,
+            0,
+            15.2,
+            ['max', ['coalesce', ['get', 'height'], 0], 24],
+          ],
+          'fill-extrusion-base': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            14,
+            0,
+            15.2,
+            ['coalesce', ['get', 'min_height'], 0],
+          ],
+          'fill-extrusion-opacity': colors.opacity,
+          'fill-extrusion-vertical-gradient': !props.background,
+        },
+      },
+      labelLayerId,
+    )
+
+  const campusColors = campusPalette(resolvedTheme.value)
+  // Local campus geometry remains available even when a basemap is missing
+  // these buildings. Campus footprints are excluded from the surrounding layer.
+  map.addSource('oa-campus-buildings', { type: 'geojson', data: campusBuildings })
+  const buildingHeight = ['coalesce', ['get', 'height'], 18]
+  const campusHeight = ['interpolate', ['linear'], ['zoom'], 14, 0, 15.2, buildingHeight]
   map.addLayer(
     {
-      id: 'oa-3d-buildings',
-      source: 'composite',
-      'source-layer': 'building',
+      id: 'oa-campus-buildings',
+      source: 'oa-campus-buildings',
       type: 'fill-extrusion',
       minzoom: 14,
       paint: {
         'fill-extrusion-color': [
           'interpolate',
           ['linear'],
-          ['max', ['coalesce', ['get', 'height'], 0], 24],
+          buildingHeight,
           0,
-          colors.low,
+          campusColors.low,
           30,
-          colors.middle,
+          campusColors.middle,
           90,
-          colors.high,
+          campusColors.high,
         ],
-        'fill-extrusion-height': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          14,
-          0,
-          15.2,
-          ['max', ['coalesce', ['get', 'height'], 0], 24],
-        ],
+        'fill-extrusion-height': campusHeight,
         'fill-extrusion-base': [
           'interpolate',
           ['linear'],
@@ -225,12 +407,170 @@ function add3dBuildings() {
           15.2,
           ['coalesce', ['get', 'min_height'], 0],
         ],
-        'fill-extrusion-opacity': colors.opacity,
-        'fill-extrusion-vertical-gradient': !props.background,
+        'fill-extrusion-opacity': 1,
+        'fill-extrusion-vertical-gradient': true,
+        'fill-extrusion-ambient-occlusion-intensity': 0.25,
+        'fill-extrusion-ambient-occlusion-radius': 3,
       },
     },
     labelLayerId,
   )
+  map.addLayer(
+    {
+      id: 'oa-campus-roofs',
+      source: 'oa-campus-buildings',
+      type: 'fill-extrusion',
+      minzoom: 14,
+      paint: {
+        'fill-extrusion-color': [
+          'case',
+          ['boolean', ['feature-state', 'selected'], false],
+          '#d5b579',
+          ['==', ['get', 'name'], '体育馆'],
+          '#a0b9bc',
+          ['==', ['get', 'name'], '办公楼'],
+          '#c3c3af',
+          campusColors.roof,
+        ],
+        'fill-extrusion-height': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          14,
+          0,
+          15.2,
+          ['+', buildingHeight, 0.6],
+        ],
+        'fill-extrusion-base': campusHeight,
+        'fill-extrusion-opacity': 1,
+        'fill-extrusion-vertical-gradient': false,
+      },
+    },
+    labelLayerId,
+  )
+}
+
+function addCampusLabels() {
+  if (!map || map.getSource('oa-campus-labels')) return
+  const dark = resolvedTheme.value === 'dark'
+  map.addSource('oa-campus-labels', { type: 'geojson', data: CAMPUS_LABELS })
+  map.addLayer({
+    id: 'oa-campus-labels',
+    type: 'symbol',
+    source: 'oa-campus-labels',
+    minzoom: 14,
+    layout: {
+      visibility: props.showLabels ? 'visible' : 'none',
+      'text-field': ['get', 'name'],
+      'text-font': ['Arial Unicode MS Regular'],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 16, 12, 18, 14],
+      'text-max-width': 8,
+      'text-padding': 3,
+      'text-anchor': 'bottom',
+      'symbol-z-elevate': true,
+    },
+    paint: {
+      'text-color': dark ? '#f1eee0' : '#283f44',
+      'text-halo-color': dark ? '#22342f' : '#fffdf3',
+      'text-halo-width': 1.8,
+      'symbol-z-offset': ['coalesce', ['get', 'height'], 1],
+      'text-occlusion-opacity': 0.65,
+    },
+  })
+}
+
+function focusBuilding(id: string | number) {
+  const building = CAMPUS_BUILDINGS.find((item) => String(item.id) === String(id))
+  if (!map || !building) return
+  if (selectedBuilding !== null && selectedBuilding !== LIGHTHOUSE_ID)
+    map.setFeatureState(
+      { source: 'oa-campus-buildings', id: selectedBuilding },
+      { selected: false },
+    )
+  selectedBuilding = building.id
+  if (building.id === LIGHTHOUSE_ID) focusLighthouse()
+  else {
+    map.setFeatureState({ source: 'oa-campus-buildings', id: building.id }, { selected: true })
+    map.flyTo({ center: building.center, zoom: 17.5, pitch: 56, duration: 1000, essential: false })
+  }
+  emit('selectBuilding', building.id)
+}
+
+function resetView() {
+  if (!map) return
+  if (selectedBuilding !== null && selectedBuilding !== LIGHTHOUSE_ID)
+    map.setFeatureState(
+      { source: 'oa-campus-buildings', id: selectedBuilding },
+      { selected: false },
+    )
+  selectedBuilding = null
+  map.flyTo({ ...getCampusCamera(), duration: 900, essential: false })
+}
+
+function rotateView(degrees: number) {
+  map?.easeTo({ bearing: map.getBearing() + degrees, duration: 350, essential: false })
+}
+
+function focusLighthouse() {
+  map?.flyTo({
+    center: [118.89995, 31.92185],
+    zoom: 18,
+    pitch: 60,
+    bearing: -30,
+    duration: 1000,
+    essential: false,
+  })
+}
+
+defineExpose({ focusBuilding, resetView, rotateView })
+
+function addCampusDetails() {
+  if (!map || map.getSource('oa-campus-facades')) return
+  const colors = campusPalette(resolvedTheme.value)
+  for (const [name, data] of Object.entries(CAMPUS_DETAILS)) {
+    const id = `oa-campus-${name}`
+    map.addSource(id, { type: 'geojson', data })
+    if (name === 'sports') {
+      map.addLayer({
+        id,
+        source: id,
+        type: 'line',
+        minzoom: 14.8,
+        paint: { 'line-color': '#fffdf1', 'line-opacity': 0.75, 'line-width': 0.65 },
+      })
+      continue
+    }
+    map.addLayer({
+      id,
+      source: id,
+      type: 'fill-extrusion',
+      minzoom: name === 'facades' ? 15 : 14.5,
+      paint: {
+        'fill-extrusion-color':
+          name === 'facades'
+            ? colors.windows
+            : name === 'parapets'
+              ? colors.low
+              : name === 'trunks'
+                ? colors.trunk
+                : ['case', ['==', ['get', 'variant'], 1], colors.treeLight, colors.tree],
+        'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.2, ['get', 'base']],
+        'fill-extrusion-height': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          14,
+          0,
+          15.2,
+          ['get', 'height'],
+        ],
+        'fill-extrusion-opacity': 1,
+        'fill-extrusion-vertical-gradient': name !== 'facades',
+        'fill-extrusion-emissive-strength':
+          name === 'facades' && resolvedTheme.value === 'dark' ? 0.25 : 0,
+      },
+    })
+  }
 }
 
 function tuneStyle(theme: ResolvedTheme) {
@@ -239,7 +579,8 @@ function tuneStyle(theme: ResolvedTheme) {
   const layers = map.getStyle().layers || []
   const palette = stylePalette(theme)
 
-  layers.forEach((layer) => {
+  layers.forEach((layer: StyleLayer) => {
+    if (layer.id.startsWith('oa-campus-')) return
     const layerId = layer.id.toLowerCase()
 
     try {
@@ -285,7 +626,12 @@ function tuneStyle(theme: ResolvedTheme) {
         if (layerId.includes('building')) {
           const colors = buildingColors(theme)
           map?.setPaintProperty(layer.id, 'fill-color', colors.low)
-          map?.setPaintProperty(layer.id, 'fill-opacity', theme === 'dark' ? 0.58 : 0.48)
+          map?.setPaintProperty(layer.id, 'fill-opacity', [
+            'case',
+            CAMPUS_BUILDING_FILTER,
+            0,
+            theme === 'dark' ? 0.58 : 0.48,
+          ])
           return
         }
 
@@ -314,7 +660,35 @@ function restoreStyleOverlays() {
   if (!map) return
   tuneStyle(resolvedTheme.value)
   applyFog()
+  map.setLights([
+    {
+      id: 'oa-ambient',
+      type: 'ambient',
+      properties: {
+        color: resolvedTheme.value === 'dark' ? '#c0d6e1' : '#fffaf0',
+        intensity: 0.62,
+      },
+    },
+    {
+      id: 'oa-sun',
+      type: 'directional',
+      properties: {
+        direction: [210, 38],
+        color: '#fff5e4',
+        intensity: 0.48,
+        'cast-shadows': true,
+        'shadow-intensity': 0.22,
+      },
+    },
+  ])
+  addCampusLandscape()
   add3dBuildings()
+  addCampusDetails()
+  if (makeLandmark && !map.getLayer('oa-campus-landmark'))
+    map.addLayer(makeLandmark(resolvedTheme.value))
+  addCampusLabels()
+  if (selectedBuilding !== null && selectedBuilding !== LIGHTHOUSE_ID)
+    map.setFeatureState({ source: 'oa-campus-buildings', id: selectedBuilding }, { selected: true })
 }
 
 function cancelMapEnhancements() {
@@ -329,10 +703,6 @@ function cancelMapEnhancements() {
 
 function scheduleMapEnhancements() {
   cancelMapEnhancements()
-
-  // The hero keeps the globe and 3D buildings, but skips raster terrain. Terrain
-  // adds another tile source and a costly mesh without changing the background much.
-  if (props.background) return
 
   const enhance = () => {
     enhancementIdleHandle = undefined
@@ -357,6 +727,7 @@ function cancelIdleInit() {
 }
 
 function releaseMap() {
+  releaseSpacePan()
   cancelIdleInit()
   cancelMapEnhancements()
   clearMapTimers()
@@ -392,7 +763,7 @@ function switchMapStyle() {
   mapError.value = ''
   mapLoaded.value = false
   cancelMapEnhancements()
-  map.setStyle(mapboxStyle.value)
+  map.setStyle(mapboxStyle.value, { diff: false })
   map.once('style.load', () => {
     restoreStyleOverlays()
     map?.once('idle', () => {
@@ -423,6 +794,8 @@ function shouldAnimateMap() {
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   return (
     !props.static &&
+    !props.interactive &&
+    !window.matchMedia('(max-width: 699px)').matches &&
     isMapVisible &&
     !document.hidden &&
     !reducedMotion &&
@@ -490,7 +863,7 @@ function zoomToCampus() {
 
   map.stop()
   map.flyTo({
-    ...campusCamera,
+    ...getCampusCamera(),
     duration: FLY_TO_CAMPUS_MS,
     curve: 1.28,
     speed: 0.82,
@@ -506,12 +879,13 @@ function resetCameraAndResume() {
   if (!map || !mapLoaded.value || !shouldAnimateMap()) return
   clearMapTimers()
   map.stop()
-  map.jumpTo(campusCamera)
+  map.jumpTo(getCampusCamera())
   scheduleEarthReturn()
 }
 
 function handleDocumentVisibilityChange() {
   if (document.hidden) {
+    releaseSpacePan()
     if (scrollResumeTimer) window.clearTimeout(scrollResumeTimer)
     scrollResumeTimer = undefined
     mapPausedForScroll = false
@@ -522,7 +896,43 @@ function handleDocumentVisibilityChange() {
   resetCameraAndResume()
 }
 
+function handleSpaceDown(event: KeyboardEvent) {
+  if (!props.interactive || !map || !isMapVisible || event.code !== 'Space') return
+  const target = event.target
+  // Preserve spaces in search and normal keyboard activation of controls.
+  if (
+    target instanceof Element &&
+    target.closest('input, textarea, select, button, a, [contenteditable="true"], [role="button"]')
+  )
+    return
+  event.preventDefault()
+  if (spacePanActive.value) return
+  spacePanActive.value = true
+  map.dragPan.enable()
+  map.getCanvas().style.cursor = 'grab'
+}
+
+function releaseSpacePan() {
+  if (!spacePanActive.value) return
+  spacePanActive.value = false
+  map?.dragPan.disable()
+  if (map) map.getCanvas().style.cursor = ''
+}
+
+function handleSpaceUp(event: KeyboardEvent) {
+  if (event.code === 'Space') releaseSpacePan()
+}
+
+function handleTouchStart() {
+  if (props.interactive) map?.dragPan.enable()
+}
+
+function handleTouchEnd(event: TouchEvent) {
+  if (!event.touches.length && !spacePanActive.value) map?.dragPan.disable()
+}
+
 function handleWindowScroll() {
+  if (props.interactive) return
   if (!map || !isMapVisible) return
 
   if (!mapPausedForScroll) {
@@ -541,14 +951,7 @@ function handleWindowScroll() {
 
 function shouldSkipInteractiveMap() {
   const connection = (navigator as any).connection
-  const saveData = Boolean(connection?.saveData)
-  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false
-  const smallViewport = window.matchMedia?.('(max-width: 699px)').matches ?? false
-  const lowMemory =
-    typeof (navigator as any).deviceMemory === 'number' && (navigator as any).deviceMemory <= 4
-  const lowCpu =
-    typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4
-  return saveData || lowMemory || lowCpu || (props.background && coarsePointer && smallViewport)
+  return Boolean(connection?.saveData)
 }
 
 function runWhenIdle(callback: () => void) {
@@ -572,11 +975,13 @@ async function initMap() {
 
   let mapboxgl: MapboxModule
   try {
-    const [mapboxModule] = await Promise.all([
+    const [mapboxModule, , landmarkModule] = await Promise.all([
       import('mapbox-gl'),
       import('mapbox-gl/dist/mapbox-gl.css'),
+      import('./campusLandmark'),
     ])
     mapboxgl = mapboxModule.default
+    makeLandmark = landmarkModule.campusLandmarkLayer
   } catch (error) {
     mapError.value = '地图资源加载失败。'
     return
@@ -600,28 +1005,64 @@ async function initMap() {
     zoom: campusCamera.zoom,
     pitch: campusCamera.pitch,
     bearing: campusCamera.bearing,
-    projection: 'globe',
+    projection: props.interactive ? 'mercator' : 'globe',
     antialias: !props.background,
-    attributionControl: false,
+    attributionControl: { compact: true },
     crossSourceCollisions: false,
     fadeDuration: props.background ? 0 : 300,
-    interactive: false,
+    interactive: props.interactive,
+    // Mouse panning is enabled temporarily by the Space key. Touch remains direct.
+    dragPan: false,
+    dragRotate: props.interactive,
+    scrollZoom: props.interactive,
+    touchZoomRotate: props.interactive,
+    touchPitch: props.interactive,
+    clickTolerance: 5,
+    minZoom: props.interactive ? 13.5 : 0,
+    maxZoom: 19,
+    maxPitch: 70,
     maxTileCacheSize: props.background ? 48 : undefined,
     refreshExpiredTiles: !props.background,
     renderWorldCopies: false,
     respectPrefersReducedMotion: true,
   })
 
+  if (props.interactive) {
+    map.getCanvas().setAttribute('aria-label', '校园地图：按住空格拖动平移，滚轮缩放，右键拖动旋转')
+    map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'bottom-right')
+    map.on('click', (event: MapMouseEvent) => {
+      if (spacePanActive.value) return
+      if (!map?.getLayer('oa-campus-roofs')) return
+      const feature = map.queryRenderedFeatures(event.point, {
+        layers: ['oa-campus-labels', 'oa-campus-roofs', 'oa-campus-buildings'],
+      })[0]
+      if (feature?.id !== undefined) focusBuilding(feature.id)
+    })
+    map.on('mousemove', (event: MapMouseEvent) => {
+      if (spacePanActive.value) {
+        map.getCanvas().style.cursor = map.isMoving() ? 'grabbing' : 'grab'
+        return
+      }
+      if (!map?.getLayer('oa-campus-roofs')) return
+      map.getCanvas().style.cursor = map.queryRenderedFeatures(event.point, {
+        layers: ['oa-campus-roofs'],
+      }).length
+        ? 'pointer'
+        : ''
+    })
+  }
+
   map.on('load', () => {
     mapLoaded.value = true
     mapError.value = ''
     restoreStyleOverlays()
-    addCampusMarker(mapboxgl)
+    map?.jumpTo(getCampusCamera())
+    if (!props.interactive) addCampusMarker(mapboxgl)
     scheduleMapEnhancements()
     if (shouldAnimateMap()) scheduleEarthReturn()
   })
 
-  map.on('error', (event) => {
+  map.on('error', (event: { error?: Error }) => {
     if (!mapLoaded.value) {
       mapError.value = event.error?.message || '请检查 Mapbox Token、样式地址或网络连接。'
     }
@@ -632,6 +1073,17 @@ onMounted(() => {
   if (!mapboxToken || !mapContainer.value || shouldSkipInteractiveMap()) return
   document.addEventListener('visibilitychange', handleDocumentVisibilityChange)
   window.addEventListener('scroll', handleWindowScroll, { passive: true })
+  if (props.interactive) {
+    window.addEventListener('keydown', handleSpaceDown)
+    window.addEventListener('keyup', handleSpaceUp)
+    window.addEventListener('blur', releaseSpacePan)
+    mapContainer.value.addEventListener('touchstart', handleTouchStart, {
+      passive: true,
+      capture: true,
+    })
+    mapContainer.value.addEventListener('touchend', handleTouchEnd, { passive: true })
+    mapContainer.value.addEventListener('touchcancel', handleTouchEnd, { passive: true })
+  }
 
   if (!('IntersectionObserver' in window)) {
     runWhenIdle(() => void initMap())
@@ -672,9 +1124,23 @@ watch(mapboxStyle, () => {
   switchMapStyle()
 })
 
+watch(
+  () => props.showLabels,
+  (show) => {
+    if (map?.getLayer('oa-campus-labels'))
+      map.setLayoutProperty('oa-campus-labels', 'visibility', show ? 'visible' : 'none')
+  },
+)
+
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleDocumentVisibilityChange)
   window.removeEventListener('scroll', handleWindowScroll)
+  window.removeEventListener('keydown', handleSpaceDown)
+  window.removeEventListener('keyup', handleSpaceUp)
+  window.removeEventListener('blur', releaseSpacePan)
+  mapContainer.value?.removeEventListener('touchstart', handleTouchStart, true)
+  mapContainer.value?.removeEventListener('touchend', handleTouchEnd)
+  mapContainer.value?.removeEventListener('touchcancel', handleTouchEnd)
   visibilityObserver?.disconnect()
   if (releaseMapTimer) window.clearTimeout(releaseMapTimer)
   releaseMap()
@@ -683,6 +1149,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .map-section {
+  --map-campus-accent: #328cb8;
+  --map-campus-marker-bg: rgba(237, 248, 255, 0.9);
   position: relative;
   width: 100%;
   height: 100vh;
@@ -690,6 +1158,11 @@ onBeforeUnmount(() => {
   min-height: 720px;
   overflow: hidden;
   background: var(--oa-map-bg);
+}
+
+:global(html.dark) .map-section {
+  --map-campus-accent: #85c9e5;
+  --map-campus-marker-bg: rgba(28, 48, 59, 0.9);
 }
 
 .map-canvas {
@@ -780,6 +1253,18 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
+.map-status {
+  position: absolute;
+  z-index: 5;
+  bottom: 24px;
+  left: 24px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--color-bg-page, #fff);
+  color: var(--color-text-primary, #1d1d1f);
+  font-size: 13px;
+}
+
 :deep(.map-campus-marker) {
   width: 24px;
   height: 24px;
@@ -797,15 +1282,15 @@ onBeforeUnmount(() => {
   width: 24px;
   height: 24px;
   content: '';
-  border: 1px solid rgba(29, 29, 31, 0.24);
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--map-campus-accent);
+  background: var(--map-campus-marker-bg);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
 }
 
 :deep(.map-campus-marker span) {
   width: 10px;
   height: 10px;
-  background: #1d1d1f;
+  background: var(--map-campus-accent);
 }
 
 :deep(.mapboxgl-ctrl-group) {

@@ -6,7 +6,8 @@
 
 :root {
   color-scheme: light;
-  --oa-font-family: 'Space Grotesk', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  --oa-font-family:
+    'Space Grotesk', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
   --oa-font-size-display: 32px;
   --oa-font-size-page-title: 24px;
   --oa-font-size-section-title: 18px;
@@ -1695,7 +1696,7 @@ html.dark .map-atmosphere {
 }
 
 html.dark .map-canvas {
-  filter: grayscale(1) brightness(0.9) contrast(1.12) !important;
+  filter: none;
 }
 
 html.dark .map-grain {
@@ -1703,15 +1704,6 @@ html.dark .map-grain {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.2) 0.7px, transparent 0.7px),
     radial-gradient(rgba(255, 255, 255, 0.12) 0.7px, transparent 0.7px) !important;
-}
-
-html.dark .map-campus-marker::before {
-  border-color: rgba(245, 245, 247, 0.22) !important;
-  background: rgba(9, 9, 11, 0.8) !important;
-}
-
-html.dark .map-campus-marker span {
-  background: var(--oa-page-soft-bg) !important;
 }
 
 html.dark .user-avatar {
