@@ -5,9 +5,16 @@ export const LIGHTHOUSE_ID = 'campus-lighthouse'
 export const CAMPUS_BUILDINGS = [
   ...buildings.features.map((feature) => {
     const ring = feature.geometry.coordinates[0]!.slice(0, -1)
-    const center = ring
+    const footprintCenter = ring
       .reduce((sum, p) => [sum[0]! + p[0]!, sum[1]! + p[1]!], [0, 0])
       .map((n) => n / ring.length) as [number, number]
+    const declaredCenter =
+      'label_center' in feature.properties ? feature.properties.label_center : undefined
+    const center = (
+      Array.isArray(declaredCenter) && declaredCenter.length === 2
+        ? declaredCenter
+        : footprintCenter
+    ) as [number, number]
     return {
       id: feature.id,
       name: feature.properties.name,

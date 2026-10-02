@@ -47,46 +47,6 @@ function line(coordinates: Position[], properties: Feature['properties'] = {}): 
   return { type: 'Feature', properties, geometry: { type: 'LineString', coordinates } }
 }
 
-// Architectural details are an illustration of the reference photos, rather
-// than surveyed window positions. Generate once from the local footprints.
-const facades: Feature[] = []
-const parapets: Feature[] = []
-for (const building of buildings.features) {
-  const height = building.properties.height
-  for (const [ringIndex, ring] of building.geometry.coordinates.entries()) {
-    const area = ring
-      .slice(1)
-      .reduce((sum, p, i) => sum + ring[i]![0]! * p[1]! - p[0]! * ring[i]![1]!, 0)
-    const orientation = (area > 0 ? 1 : -1) * (ringIndex === 0 ? 1 : -1)
-    for (let i = 1; i < ring.length; i++) {
-      const a = ring[i - 1]!,
-        b = ring[i]!
-      const length = metres(a, b)
-      if (length < 1) continue
-      const ux = ((b[0]! - a[0]!) * lngMetres) / length
-      const uy = ((b[1]! - a[1]!) * latMetres) / length
-      const nx = uy * orientation,
-        ny = -ux * orientation
-      const strip = (start: number, end: number, offset: number, depth: number) => {
-        const p = move(a, ux * start + nx * offset, uy * start + ny * offset)
-        const q = move(a, ux * end + nx * offset, uy * end + ny * offset)
-        return [p, q, move(q, nx * depth, ny * depth), move(p, nx * depth, ny * depth), p]
-      }
-      parapets.push(
-        polygon(strip(0, length, -0.65, 0.65), { base: height + 0.6, height: height + 1.25 }),
-      )
-      if (length < 8) continue
-      for (let start = 2; start + 3.6 < length - 1.5; start += 6.2) {
-        for (let base = 2.1; base + 1.65 < height - 1; base += 3.5) {
-          facades.push(
-            polygon(strip(start, start + 3.6, 0.03, 0.12), { base, height: base + 1.65 }),
-          )
-        }
-      }
-    }
-  }
-}
-
 const occupied = [
   ...buildings.features,
   ...landscape.features.filter((f) => !['road', 'park'].includes(f.properties.kind)),
@@ -160,6 +120,22 @@ const sports: Feature[] = []
 const fields: Position[] = []
 for (const feature of landscape.features) {
   const kind = feature.properties.kind
+  if (feature.properties.name === '游泳馆主池') {
+    const ring = (feature.geometry.coordinates as Position[][])[0]!
+    const west = Math.min(...ring.map((p) => p[0]!)),
+      east = Math.max(...ring.map((p) => p[0]!))
+    const north = Math.max(...ring.map((p) => p[1]!)),
+      south = Math.min(...ring.map((p) => p[1]!))
+    for (let lane = 1; lane < 8; lane++) {
+      const lng = west + ((east - west) * lane) / 8
+      sports.push(
+        line([
+          [lng, south],
+          [lng, north],
+        ]),
+      )
+    }
+  }
   if (!['track', 'pitch', 'court'].includes(kind)) continue
   const ring = (feature.geometry.coordinates as Position[][])[0]!
   const center = [
@@ -202,8 +178,6 @@ for (const feature of landscape.features) {
 }
 
 export const CAMPUS_DETAILS = {
-  facades: collection(facades),
-  parapets: collection(parapets),
   trunks: collection(treeBases),
   crowns: collection(treeCrowns),
   tops: collection(treeTops),

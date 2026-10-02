@@ -9,7 +9,8 @@
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview --host 0.0.0.0",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "check:campus-models": "node scripts/check-campus-models.cjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",

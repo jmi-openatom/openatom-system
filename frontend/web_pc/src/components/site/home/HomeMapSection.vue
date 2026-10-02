@@ -31,6 +31,12 @@ import { useTheme, type ResolvedTheme } from '@/composables/useTheme'
 import { CAMPUS_BOUNDARY, CAMPUS_BOUNDS, CAMPUS_BUILDING_FILTER, campusPalette } from './campusMap'
 import campusLandscape from './campusLandscape.json'
 import campusBuildings from './campusBuildings.json'
+import {
+  ARCHITECTURE_MIN_ZOOM,
+  SUN_DIRECTION,
+  TERRAIN_EXAGGERATION,
+  campusLighting,
+} from './campusVisuals'
 import { CAMPUS_DETAILS } from './campusDetails'
 import type { MapMouseEvent } from 'mapbox-gl'
 import { CAMPUS_BUILDINGS, CAMPUS_LABELS, LIGHTHOUSE_ID } from './campusLabels'
@@ -63,6 +69,7 @@ const mapLoaded = ref(false)
 const spacePanActive = ref(false)
 const emit = defineEmits<{ selectBuilding: [id: string | number] }>()
 let makeLandmark: typeof campusLandmarkLayer | undefined
+let landmark: ReturnType<typeof campusLandmarkLayer> | undefined
 let selectedBuilding: string | number | null = null
 const { resolvedTheme } = useTheme()
 
@@ -144,19 +151,21 @@ function getCampusCamera() {
 function mapFog(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
-      color: '#18181b',
-      'high-color': '#303035',
+      range: [1.5, 9],
+      color: '#192a38',
+      'high-color': '#344b65',
       'horizon-blend': 0.18,
-      'space-color': '#0c0c0e',
+      'space-color': '#0d1723',
       'star-intensity': 0.18,
     }
   }
 
   return {
-    color: '#f7f7f8',
-    'high-color': '#e5e5e7',
+    range: [1.5, 9],
+    color: '#e3ebed',
+    'high-color': '#a9c4d6',
     'horizon-blend': 0.2,
-    'space-color': '#f2f2f4',
+    'space-color': '#d4e1e8',
     'star-intensity': 0,
   }
 }
@@ -164,17 +173,17 @@ function mapFog(theme: ResolvedTheme) {
 function buildingColors(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
-      low: '#252529',
-      middle: '#38383d',
-      high: '#55555b',
+      low: '#27353c',
+      middle: '#3b4b52',
+      high: '#52646c',
       opacity: 0.9,
     }
   }
 
   return {
-    low: '#f0f0f2',
-    middle: '#e1e1e4',
-    high: '#c9c9ce',
+    low: '#dddeda',
+    middle: '#cdd2d0',
+    high: '#bcc6c8',
     opacity: 0.78,
   }
 }
@@ -183,10 +192,10 @@ function stylePalette(theme: ResolvedTheme) {
   if (theme === 'dark') {
     return {
       ink: '#f7f7f8',
-      background: '#101012',
-      water: '#1a1a1d',
-      park: '#202024',
-      land: '#161618',
+      background: '#15222b',
+      water: '#233d4c',
+      park: '#2a3938',
+      land: '#202e34',
       road: '#d7d7da',
       minorRoad: '#8e8e93',
       boundary: '#77777d',
@@ -197,10 +206,10 @@ function stylePalette(theme: ResolvedTheme) {
 
   return {
     ink: '#1d1d1f',
-    background: '#f4f4f5',
-    water: '#e3e3e6',
-    park: '#ececef',
-    land: '#f0f0f2',
+    background: '#e9eae4',
+    water: '#b3cdd2',
+    park: '#d3dccb',
+    land: '#dddeda',
     road: '#6e6e73',
     minorRoad: '#a1a1a6',
     boundary: '#8e8e93',
@@ -218,7 +227,31 @@ function addTerrain() {
     tileSize: 512,
     maxzoom: 14,
   })
-  map.setTerrain({ source: 'oa-terrain', exaggeration: 1 })
+  map.setTerrain({ source: 'oa-terrain', exaggeration: TERRAIN_EXAGGERATION })
+  // A separately capped source avoids terrain's reduced hillshade resolution.
+  map.addSource('oa-shading', {
+    type: 'raster-dem',
+    url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+    tileSize: 512,
+    maxzoom: 12,
+  })
+  map.addLayer(
+    {
+      id: 'oa-campus-hillshade',
+      type: 'hillshade',
+      source: 'oa-shading',
+      minzoom: 7,
+      paint: {
+        'hillshade-illumination-anchor': 'map',
+        'hillshade-illumination-direction': SUN_DIRECTION[0],
+        'hillshade-exaggeration': resolvedTheme.value === 'dark' ? 0.18 : 0.28,
+        'hillshade-shadow-color': resolvedTheme.value === 'dark' ? '#182b37' : '#677d77',
+        'hillshade-highlight-color': resolvedTheme.value === 'dark' ? '#728c91' : '#f5f1db',
+        'hillshade-accent-color': resolvedTheme.value === 'dark' ? '#3c555b' : '#8eaa99',
+      },
+    },
+    'oa-campus-track',
+  )
 }
 
 function applyFog() {
@@ -255,7 +288,7 @@ function addCampusLandscape() {
   )
   // Tracks/courts sit underneath football fields so the running oval retains
   // its terracotta edge when OSM maps the overlapping playing surfaces.
-  for (const kind of ['park', 'track', 'court', 'pitch', 'water'] as const) {
+  for (const kind of ['park', 'track', 'court', 'pitch', 'pool-deck', 'water'] as const) {
     map.addLayer(
       {
         id: `oa-campus-${kind}`,
@@ -264,7 +297,7 @@ function addCampusLandscape() {
         minzoom: 14,
         filter: ['==', ['get', 'kind'], kind],
         paint: {
-          'fill-color': colors[kind === 'court' ? 'track' : kind],
+          'fill-color': colors[kind === 'court' ? 'track' : kind === 'pool-deck' ? 'road' : kind],
           'fill-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.2, 0.95],
         },
       },
@@ -273,15 +306,57 @@ function addCampusLandscape() {
   }
   map.addLayer(
     {
+      id: 'oa-campus-path-edges',
+      type: 'line',
+      source: 'oa-campus-landscape',
+      minzoom: 14,
+      filter: ['==', ['get', 'kind'], 'road'],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: {
+        'line-color': colors.roadEdge,
+        'line-opacity': 0.5,
+        'line-width': [
+          '*',
+          ['interpolate', ['exponential', 2], ['zoom'], 14, 1, 17, 5.6, 19, 21],
+          ['/', ['coalesce', ['get', 'width_m'], 4], 4],
+        ],
+      },
+    },
+    beforeRoad,
+  )
+  map.addLayer(
+    {
+      id: 'oa-campus-water-bank',
+      type: 'line',
+      source: 'oa-campus-landscape',
+      minzoom: 14,
+      filter: ['all', ['==', ['get', 'kind'], 'water'], ['==', ['get', 'name'], '半霞湖']],
+      layout: { 'line-join': 'round' },
+      paint: {
+        'line-color': colors.shore,
+        'line-opacity': 0.65,
+        'line-blur': 1.1,
+        'line-width': ['interpolate', ['exponential', 2], ['zoom'], 14, 0.5, 17, 5, 19, 16],
+      },
+    },
+    beforeRoad,
+  )
+  map.addLayer(
+    {
       id: 'oa-campus-paths',
       type: 'line',
       source: 'oa-campus-landscape',
       minzoom: 14,
       filter: ['==', ['get', 'kind'], 'road'],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: {
         'line-color': colors.road,
         'line-opacity': 0.85,
-        'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.7, 17, 4],
+        'line-width': [
+          '*',
+          ['interpolate', ['exponential', 2], ['zoom'], 14, 0.6, 17, 3.8, 19, 16],
+          ['/', ['coalesce', ['get', 'width_m'], 4], 4],
+        ],
       },
     },
     beforeRoad,
@@ -294,8 +369,8 @@ function addCampusLandscape() {
       minzoom: 14,
       filter: ['==', ['get', 'kind'], 'water'],
       paint: {
-        'line-color': colors.road,
-        'line-opacity': 0.75,
+        'line-color': colors.shore,
+        'line-opacity': 0.7,
         'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.5, 17, 2],
       },
     },
@@ -340,7 +415,7 @@ function add3dBuildings() {
           'fill-extrusion-color': [
             'interpolate',
             ['linear'],
-            ['max', ['coalesce', ['get', 'height'], 0], 24],
+            ['max', ['coalesce', ['get', 'height'], 8], ['coalesce', ['get', 'min_height'], 0]],
             0,
             colors.low,
             30,
@@ -355,7 +430,7 @@ function add3dBuildings() {
             14,
             0,
             15.2,
-            ['max', ['coalesce', ['get', 'height'], 0], 24],
+            ['max', ['coalesce', ['get', 'height'], 8], ['coalesce', ['get', 'min_height'], 0]],
           ],
           'fill-extrusion-base': [
             'interpolate',
@@ -367,7 +442,10 @@ function add3dBuildings() {
             ['coalesce', ['get', 'min_height'], 0],
           ],
           'fill-extrusion-opacity': colors.opacity,
-          'fill-extrusion-vertical-gradient': !props.background,
+          'fill-extrusion-vertical-gradient': true,
+          'fill-extrusion-ambient-occlusion-intensity': 0.22,
+          'fill-extrusion-ambient-occlusion-ground-radius': 4,
+          'fill-extrusion-ambient-occlusion-wall-radius': 2,
         },
       },
       labelLayerId,
@@ -407,10 +485,12 @@ function add3dBuildings() {
           15.2,
           ['coalesce', ['get', 'min_height'], 0],
         ],
-        'fill-extrusion-opacity': 1,
+        'fill-extrusion-opacity': ['step', ['zoom'], 1, ARCHITECTURE_MIN_ZOOM, 0],
+        'fill-extrusion-cast-shadows': false,
         'fill-extrusion-vertical-gradient': true,
         'fill-extrusion-ambient-occlusion-intensity': 0.25,
-        'fill-extrusion-ambient-occlusion-radius': 3,
+        'fill-extrusion-ambient-occlusion-ground-radius': 4,
+        'fill-extrusion-ambient-occlusion-wall-radius': 2,
       },
     },
     labelLayerId,
@@ -426,6 +506,8 @@ function add3dBuildings() {
           'case',
           ['boolean', ['feature-state', 'selected'], false],
           '#d5b579',
+          ['any', ['in', '澄园', ['get', 'name']], ['in', '海川', ['get', 'name']]],
+          resolvedTheme.value === 'dark' ? '#47545c' : '#656059',
           ['==', ['get', 'name'], '体育馆'],
           '#a0b9bc',
           ['==', ['get', 'name'], '办公楼'],
@@ -442,7 +524,8 @@ function add3dBuildings() {
           ['+', buildingHeight, 0.6],
         ],
         'fill-extrusion-base': campusHeight,
-        'fill-extrusion-opacity': 1,
+        'fill-extrusion-opacity': ['step', ['zoom'], 1, ARCHITECTURE_MIN_ZOOM, 0],
+        'fill-extrusion-cast-shadows': false,
         'fill-extrusion-vertical-gradient': false,
       },
     },
@@ -488,6 +571,7 @@ function focusBuilding(id: string | number) {
       { selected: false },
     )
   selectedBuilding = building.id
+  landmark?.setSelected(building.id)
   if (building.id === LIGHTHOUSE_ID) focusLighthouse()
   else {
     map.setFeatureState({ source: 'oa-campus-buildings', id: building.id }, { selected: true })
@@ -504,6 +588,7 @@ function resetView() {
       { selected: false },
     )
   selectedBuilding = null
+  landmark?.setSelected(null)
   map.flyTo({ ...getCampusCamera(), duration: 900, essential: false })
 }
 
@@ -525,7 +610,7 @@ function focusLighthouse() {
 defineExpose({ focusBuilding, resetView, rotateView })
 
 function addCampusDetails() {
-  if (!map || map.getSource('oa-campus-facades')) return
+  if (!map || map.getSource('oa-campus-trunks')) return
   const colors = campusPalette(resolvedTheme.value)
   for (const [name, data] of Object.entries(CAMPUS_DETAILS)) {
     const id = `oa-campus-${name}`
@@ -544,16 +629,13 @@ function addCampusDetails() {
       id,
       source: id,
       type: 'fill-extrusion',
-      minzoom: name === 'facades' ? 15 : 14.5,
+      minzoom: name === 'trunks' ? 16 : 14.8,
+      layout: { 'fill-extrusion-edge-radius': name === 'trunks' ? 0 : 0.9 },
       paint: {
         'fill-extrusion-color':
-          name === 'facades'
-            ? colors.windows
-            : name === 'parapets'
-              ? colors.low
-              : name === 'trunks'
-                ? colors.trunk
-                : ['case', ['==', ['get', 'variant'], 1], colors.treeLight, colors.tree],
+          name === 'trunks'
+            ? colors.trunk
+            : ['case', ['==', ['get', 'variant'], 1], colors.treeLight, colors.tree],
         'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 14, 0, 15.2, ['get', 'base']],
         'fill-extrusion-height': [
           'interpolate',
@@ -565,9 +647,8 @@ function addCampusDetails() {
           ['get', 'height'],
         ],
         'fill-extrusion-opacity': 1,
-        'fill-extrusion-vertical-gradient': name !== 'facades',
-        'fill-extrusion-emissive-strength':
-          name === 'facades' && resolvedTheme.value === 'dark' ? 0.25 : 0,
+        'fill-extrusion-vertical-gradient': true,
+        'fill-extrusion-cast-shadows': name === 'crowns',
       },
     })
   }
@@ -603,11 +684,15 @@ function tuneStyle(theme: ResolvedTheme) {
             layerId.includes('secondary')
 
           map?.setLayoutProperty(layer.id, 'visibility', 'visible')
-          map?.setPaintProperty(layer.id, 'line-color', isMajor ? palette.road : palette.minorRoad)
+          map?.setPaintProperty(
+            layer.id,
+            'line-color',
+            layerId.includes('case') ? palette.park : isMajor ? palette.road : palette.minorRoad,
+          )
           map?.setPaintProperty(
             layer.id,
             'line-opacity',
-            isMajor ? (theme === 'dark' ? 0.46 : 0.28) : theme === 'dark' ? 0.26 : 0.16,
+            isMajor ? (theme === 'dark' ? 0.46 : 0.4) : theme === 'dark' ? 0.3 : 0.25,
           )
           return
         }
@@ -660,32 +745,36 @@ function restoreStyleOverlays() {
   if (!map) return
   tuneStyle(resolvedTheme.value)
   applyFog()
+  const lighting = campusLighting(resolvedTheme.value)
   map.setLights([
     {
       id: 'oa-ambient',
       type: 'ambient',
       properties: {
-        color: resolvedTheme.value === 'dark' ? '#c0d6e1' : '#fffaf0',
-        intensity: 0.62,
+        color: lighting.ambient,
+        intensity: lighting.ambientIntensity,
       },
     },
     {
       id: 'oa-sun',
       type: 'directional',
       properties: {
-        direction: [210, 38],
-        color: '#fff5e4',
-        intensity: 0.48,
+        direction: SUN_DIRECTION,
+        color: lighting.directional,
+        intensity: lighting.directionalIntensity,
         'cast-shadows': true,
-        'shadow-intensity': 0.22,
+        'shadow-intensity': lighting.shadowIntensity,
       },
     },
   ])
   addCampusLandscape()
   add3dBuildings()
   addCampusDetails()
-  if (makeLandmark && !map.getLayer('oa-campus-landmark'))
-    map.addLayer(makeLandmark(resolvedTheme.value))
+  if (makeLandmark && !map.getLayer('oa-campus-landmark')) {
+    landmark = makeLandmark(resolvedTheme.value)
+    map.addLayer(landmark)
+    landmark.setSelected(selectedBuilding)
+  }
   addCampusLabels()
   if (selectedBuilding !== null && selectedBuilding !== LIGHTHOUSE_ID)
     map.setFeatureState({ source: 'oa-campus-buildings', id: selectedBuilding }, { selected: true })
@@ -737,6 +826,7 @@ function releaseMap() {
   campusMarker?.remove()
   campusMarker = null
   map?.remove()
+  landmark = undefined
   map = null
   mapLoaded.value = false
   mapInitStarted = false
@@ -1033,6 +1123,11 @@ async function initMap() {
     map.on('click', (event: MapMouseEvent) => {
       if (spacePanActive.value) return
       if (!map?.getLayer('oa-campus-roofs')) return
+      const modelId = landmark?.pick(event.point)
+      if (modelId !== undefined) {
+        focusBuilding(modelId)
+        return
+      }
       const feature = map.queryRenderedFeatures(event.point, {
         layers: ['oa-campus-labels', 'oa-campus-roofs', 'oa-campus-buildings'],
       })[0]
@@ -1044,11 +1139,13 @@ async function initMap() {
         return
       }
       if (!map?.getLayer('oa-campus-roofs')) return
-      map.getCanvas().style.cursor = map.queryRenderedFeatures(event.point, {
-        layers: ['oa-campus-roofs'],
-      }).length
-        ? 'pointer'
-        : ''
+      map.getCanvas().style.cursor =
+        landmark?.pick(event.point) !== undefined ||
+        map.queryRenderedFeatures(event.point, {
+          layers: ['oa-campus-roofs'],
+        }).length
+          ? 'pointer'
+          : ''
     })
   }
 
