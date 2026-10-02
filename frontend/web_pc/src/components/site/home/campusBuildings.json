@@ -306,10 +306,11 @@
       "type": "Feature",
       "id": 1530886392,
       "properties": {
-        "name": "澄园6号公寓",
+        "name": "澄园7号公寓",
         "height": 18,
         "data_source": "openstreetmap",
-        "height_estimated": true
+        "height_estimated": true,
+        "name_source": "user-satellite-reference"
       },
       "geometry": {
         "type": "Polygon",
@@ -339,10 +340,11 @@
       "type": "Feature",
       "id": 1530886393,
       "properties": {
-        "name": "澄园7号公寓",
+        "name": "海川楼（澄园6号公寓）",
         "height": 18,
         "data_source": "openstreetmap",
-        "height_estimated": true
+        "height_estimated": true,
+        "name_source": "user-satellite-reference"
       },
       "geometry": {
         "type": "Polygon",
@@ -405,11 +407,11 @@
       "type": "Feature",
       "id": 1530948739,
       "properties": {
-        "name": "澄园3号公寓",
+        "name": "澄园2号公寓",
         "height": 18,
         "data_source": "openstreetmap",
         "height_estimated": true,
-        "name_source": "reference-sketch"
+        "name_source": "user-satellite-reference"
       },
       "geometry": {
         "type": "Polygon",
@@ -510,11 +512,11 @@
       "type": "Feature",
       "id": 1530948742,
       "properties": {
-        "name": "澄园2号公寓",
+        "name": "澄园3号公寓",
         "height": 18,
         "data_source": "openstreetmap",
         "height_estimated": true,
-        "name_source": "reference-sketch"
+        "name_source": "user-satellite-reference"
       },
       "geometry": {
         "type": "Polygon",
@@ -651,16 +653,17 @@
       "properties": {
         "name": "海艺楼(大数据楼)",
         "height": 18,
-        "data_source": "openstreetmap",
-        "height_estimated": true
+        "data_source": "openstreetmap+user-reference",
+        "height_estimated": true,
+        "outline_source": "user-satellite-reference"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [118.9039979, 31.9208528],
-            [118.9039926, 31.9199246],
-            [118.9047565, 31.9198905],
+            [118.9039936, 31.9201012],
+            [118.9047604, 31.9200671],
             [118.9047779, 31.9208506],
             [118.9039979, 31.9208528]
           ]
@@ -673,18 +676,28 @@
       "properties": {
         "name": "沁园3号公寓",
         "height": 24,
-        "data_source": "reference-sketch",
-        "height_estimated": true
+        "data_source": "user-satellite-reference",
+        "height_estimated": true,
+        "model_profile": "qinyuan-courtyard",
+        "outline_source": "user-courtyard-map-reference",
+        "connector_height": 22.6,
+        "label_center": [118.9032696, 31.9247103],
+        "position_estimated": true,
+        "position_source": "user-reference-campus-boundary-constrained"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [118.9028531, 31.9249106],
-            [118.9035985, 31.9247761],
-            [118.9036469, 31.9249694],
-            [118.9029015, 31.9251039],
-            [118.9028531, 31.9249106]
+            [118.9030766, 31.9244171],
+            [118.9049357, 31.9244652],
+            [118.9048953, 31.9246371],
+            [118.9035568, 31.9246025],
+            [118.9035029, 31.9248317],
+            [118.9048415, 31.9248663],
+            [118.9048011, 31.9250382],
+            [118.902942, 31.9249901],
+            [118.9030766, 31.9244171]
           ]
         ]
       }
@@ -695,18 +708,28 @@
       "properties": {
         "name": "沁园2号公寓",
         "height": 24,
-        "data_source": "reference-sketch",
-        "height_estimated": true
+        "data_source": "user-satellite-reference",
+        "height_estimated": true,
+        "model_profile": "qinyuan-courtyard",
+        "outline_source": "user-courtyard-map-reference",
+        "connector_height": 22.6,
+        "label_center": [118.9042289, 31.9240386],
+        "position_estimated": true,
+        "position_source": "user-reference-campus-boundary-constrained"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [118.9031531, 31.9239606],
-            [118.9038985, 31.9238261],
-            [118.9039469, 31.9240194],
-            [118.9032015, 31.9241539],
-            [118.9031531, 31.9239606]
+            [118.9041047, 31.9237506],
+            [118.9054673, 31.9237859],
+            [118.9054274, 31.9239558],
+            [118.9044463, 31.9239303],
+            [118.9043931, 31.9241568],
+            [118.9053741, 31.9241822],
+            [118.9053342, 31.9243521],
+            [118.9039716, 31.9243168],
+            [118.9041047, 31.9237506]
           ]
         ]
       }
@@ -717,18 +740,28 @@
       "properties": {
         "name": "沁园1号公寓",
         "height": 24,
-        "data_source": "reference-sketch",
-        "height_estimated": true
+        "data_source": "user-satellite-reference",
+        "height_estimated": true,
+        "model_profile": "qinyuan-courtyard",
+        "outline_source": "user-courtyard-map-reference",
+        "connector_height": 22.6,
+        "label_center": [118.9045451, 31.923268],
+        "position_estimated": true,
+        "position_source": "user-reference-campus-boundary-constrained"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [118.9031931, 31.9231806],
-            [118.9039385, 31.9230461],
-            [118.9039869, 31.9232394],
-            [118.9032415, 31.9233739],
-            [118.9031931, 31.9231806]
+            [118.9044278, 31.922963],
+            [118.9057693, 31.9229977],
+            [118.905727, 31.9231778],
+            [118.9047611, 31.9231528],
+            [118.9047047, 31.9233929],
+            [118.9056706, 31.9234178],
+            [118.9056283, 31.9235979],
+            [118.9042868, 31.9235632],
+            [118.9044278, 31.922963]
           ]
         ]
       }
@@ -741,21 +774,24 @@
         "height": 24,
         "data_source": "reference-sketch",
         "height_estimated": true,
-        "name_source": "user-confirmed"
+        "name_source": "user-confirmed",
+        "position_estimated": true,
+        "position_source": "user-reference-campus-boundary-constrained",
+        "outline_source": "user-satellite-reference"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [118.9013068, 31.9236345],
-            [118.9021764, 31.9234776],
-            [118.9020532, 31.9229855],
-            [118.9011836, 31.9231424],
-            [118.9012188, 31.923283],
-            [118.9018814, 31.9231635],
-            [118.9019342, 31.9233744],
-            [118.9012716, 31.9234939],
-            [118.9013068, 31.9236345]
+            [118.9012209, 31.9239024],
+            [118.9022558, 31.92384],
+            [118.9024319, 31.9235426],
+            [118.9012773, 31.9235265],
+            [118.9012428, 31.9236285],
+            [118.9021316, 31.9236447],
+            [118.9020516, 31.9237592],
+            [118.9012481, 31.9237865],
+            [118.9012209, 31.9239024]
           ]
         ]
       }
@@ -768,17 +804,21 @@
         "height": 16,
         "data_source": "reference-sketch",
         "height_estimated": true,
-        "name_source": "user-confirmed"
+        "name_source": "user-confirmed",
+        "position_estimated": true,
+        "position_source": "user-reference-campus-boundary-constrained",
+        "outline_source": "user-satellite-reference"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [118.9020285, 31.923921],
-            [118.9027014, 31.9237996],
-            [118.9028115, 31.924239],
-            [118.9021386, 31.9243604],
-            [118.9020285, 31.923921]
+            [118.9022588, 31.9245057],
+            [118.9028365, 31.9245344],
+            [118.9029814, 31.924099],
+            [118.9028524, 31.9239241],
+            [118.902378, 31.923953],
+            [118.9022588, 31.9245057]
           ]
         ]
       }
@@ -962,10 +1002,11 @@
       "type": "Feature",
       "id": "reference-12",
       "properties": {
-        "name": "志慧楼",
+        "name": "竞慧楼",
         "height": 21,
         "data_source": "reference-sketch",
-        "height_estimated": true
+        "height_estimated": true,
+        "name_source": "user-satellite-reference"
       },
       "geometry": {
         "type": "Polygon",
@@ -1013,10 +1054,11 @@
       "type": "Feature",
       "id": "reference-14",
       "properties": {
-        "name": "竞慧楼",
+        "name": "竞秀楼",
         "height": 21,
         "data_source": "reference-sketch",
-        "height_estimated": true
+        "height_estimated": true,
+        "name_source": "user-satellite-reference"
       },
       "geometry": {
         "type": "Polygon",
@@ -1090,21 +1132,24 @@
         "height": 24,
         "data_source": "reference-sketch",
         "name_source": "user-confirmed",
-        "height_estimated": true
+        "height_estimated": true,
+        "position_estimated": true,
+        "position_source": "user-reference-campus-boundary-constrained",
+        "outline_source": "user-courtyard-map-reference"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [118.9002155, 31.9231161],
-            [118.9010288, 31.9233826],
-            [118.9011784, 31.9232455],
-            [118.9004922, 31.9230111],
-            [118.9005448, 31.9229189],
-            [118.9012153, 31.9229174],
-            [118.9011387, 31.9227843],
-            [118.9003292, 31.9227925],
-            [118.9002155, 31.9231161]
+            [118.9000369, 31.9233573],
+            [118.9008502, 31.9236238],
+            [118.9009998, 31.9234867],
+            [118.9003135, 31.9232523],
+            [118.9003661, 31.9231601],
+            [118.9010367, 31.9231586],
+            [118.9009601, 31.9230255],
+            [118.9001506, 31.9230337],
+            [118.9000369, 31.9233573]
           ]
         ]
       }
@@ -1153,6 +1198,57 @@
             [118.9071776, 31.9212403],
             [118.9069024, 31.9212403],
             [118.9069024, 31.9215997]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "reference-swimming-center",
+      "properties": {
+        "name": "游泳馆",
+        "height": 9,
+        "height_estimated": true,
+        "data_source": "user-satellite-reference",
+        "label_center": [118.899405, 31.91885]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [118.8991, 31.91925],
+            [118.89965, 31.91925],
+            [118.89965, 31.91912],
+            [118.89919, 31.91912],
+            [118.89919, 31.91839],
+            [118.8991, 31.91839],
+            [118.8991, 31.91925]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "reference-maker-center",
+      "properties": {
+        "name": "创客中心",
+        "height": 9,
+        "height_estimated": true,
+        "data_source": "user-satellite-reference",
+        "name_source": "user-confirmed",
+        "outline_source": "user-satellite-reference",
+        "position_estimated": true,
+        "position_source": "user-reference-campus-boundary-constrained"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [118.9020392, 31.9246716],
+            [118.9025039, 31.9246836],
+            [118.9025392, 31.9245336],
+            [118.9020744, 31.9245215],
+            [118.9020392, 31.9246716]
           ]
         ]
       }
