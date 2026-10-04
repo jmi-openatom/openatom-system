@@ -27,10 +27,9 @@ struct LoginView: View {
 
     private var logoSection: some View {
         VStack(spacing: 12) {
-            Image("ClubLogo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80, height: 80)
+            Image(systemName: "atom")
+                .font(.system(size: 56))
+                .foregroundColor(.accentColor)
                 .padding(.top, 32)
             Text("JMI-OPENATOM")
                 .font(.title.bold())
