@@ -53,7 +53,7 @@
         <section v-if="step === 1" class="ob-step ob-step--welcome">
           <div class="ob-step__inner">
             <div class="ob-logo" :class="{ 'ob-logo--in': stepInAnim }">
-              <img src="/logo.png" width="100" alt="" />
+              <img src="/logo.png?v=20261005" width="100" alt="" />
             </div>
             <p class="ob-eyebrow" :style="{ '--delay': '0.1s' }">开放原子开源社团 · JMI-OPENATOM</p>
             <h1 class="ob-title" :style="{ '--delay': '0.25s' }">欢迎加入</h1>

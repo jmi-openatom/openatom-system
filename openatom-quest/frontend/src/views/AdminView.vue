@@ -1,7 +1,7 @@
 <template>
   <div class="admin-dashboard">
     <aside class="admin-sidebar">
-      <div class="admin-sidebar__brand"><img src="/logo.png" alt="" /><span><strong>OPENATOM QUEST</strong><small>管理工作台</small></span></div>
+      <div class="admin-sidebar__brand"><img src="/logo.png?v=20261005" alt="" /><span><strong>OPENATOM QUEST</strong><small>管理工作台</small></span></div>
       <p class="admin-sidebar__label">工作区</p>
       <nav class="admin-sidebar__nav" aria-label="管理后台导航">
         <button v-for="item in sections" :key="item" type="button" :class="{ active: section === item }" :aria-current="section === item ? 'page' : undefined" @click="section = item">{{ item }}</button>

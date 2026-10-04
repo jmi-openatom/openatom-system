@@ -8,7 +8,7 @@
 
     <header class="onboarding-header">
       <div class="onboarding-brand">
-        <img src="/logo.png" alt="" />
+        <img src="/logo.png?v=20261005" alt="" />
         <span><strong>JMI-OPENATOM-QUEST</strong><small>开放原子开源社团</small></span>
       </div>
       <div class="onboarding-step-count">
@@ -27,7 +27,7 @@
       <Transition v-else name="onboarding-slide" mode="out-in">
         <div :key="activeStep" class="onboarding-scene">
           <div class="onboarding-emblem" aria-hidden="true">
-            <img v-if="activeStep === 0" src="/logo.png" alt="" />
+            <img v-if="activeStep === 0" src="/logo.png?v=20261005" alt="" />
             <span v-else>{{ String(activeStep + 1).padStart(2, '0') }}</span>
           </div>
           <p class="onboarding-eyebrow">STEP {{ String(activeStep + 1).padStart(2, '0') }} <span>·</span> {{ steps[activeStep].short }}</p>

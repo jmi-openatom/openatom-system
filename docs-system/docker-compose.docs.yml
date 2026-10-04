@@ -24,6 +24,8 @@ services:
     # 配置通过挂载的 config.json 提供（HedgeDoc 1.10 读取 /files/config.json）
     volumes:
       - ./config.json:/files/config.json:ro
+      - ./branding/icons:/hedgedoc/public/icons:ro
+      - ./branding/banner:/hedgedoc/public/banner:ro
     environment:
       HEDGEDOC_DOMAIN: ${HEDGEDOC_DOMAIN:-https://md.jmi-openatom.cn}
       HEDGEDOC_SESSION_SECRET: ${HEDGEDOC_SESSION_SECRET:?HEDGEDOC_SESSION_SECRET is required}

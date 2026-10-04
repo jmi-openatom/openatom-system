@@ -9,7 +9,7 @@
     >
       <div class="container site-header__inner">
         <router-link aria-label="开放原子开源社团首页" class="brand" to="/">
-          <img alt="开放原子开源社团徽标" class="site-footer__logo" src="/logo.png" />
+          <img alt="开放原子开源社团徽标" class="site-footer__logo" src="/logo.png?v=20261005" />
           <span>
             <strong>开放原子开源社团</strong>
             <small>江苏海事职业技术学院</small>
@@ -222,7 +222,7 @@
     <footer class="site-footer">
       <div class="container site-footer__inner">
         <div class="site-footer__brand">
-          <img alt="开放原子开源社团徽标" class="site-footer__logo" src="/logo.png" />
+          <img alt="开放原子开源社团徽标" class="site-footer__logo" src="/logo.png?v=20261005" />
           <div class="brand-text">
             <span class="name">开放原子开源社团</span>
             <span class="slogan">JMI - OPENATOM</span>

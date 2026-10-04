@@ -57,7 +57,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT || '22' }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: .deploy/docs/docker-compose.docs.yml,.deploy/docs/.env.example,.deploy/docs/README.md,.deploy/docs/generate-config.sh
+          source: .deploy/docs/docker-compose.docs.yml,.deploy/docs/.env.example,.deploy/docs/README.md,.deploy/docs/generate-config.sh,.deploy/docs/branding
           target: ${{ vars.DOCS_DEPLOY_PATH || '/www/wwwroot/openatom-docs' }}
           strip_components: 2
 

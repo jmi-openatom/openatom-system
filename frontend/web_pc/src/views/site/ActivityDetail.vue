@@ -179,7 +179,7 @@ async function fetchDetail() {
           '@type': 'Event',
           name: activity.value.title,
           description: activity.value.summary,
-          image: activity.value.coverUrl || `${SITE_URL}/logo.png`,
+          image: activity.value.coverUrl || `${SITE_URL}/logo.png?v=20261005`,
           startDate: activity.value.activityAt,
           eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
           eventStatus: 'https://schema.org/EventScheduled',

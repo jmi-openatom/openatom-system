@@ -8,7 +8,7 @@ const SITE_URL = String(import.meta.env.VITE_SITE_URL || 'https://www.jmi-openat
   /\/$/,
   '',
 )
-const DEFAULT_IMAGE = `${SITE_URL}/logo.png`
+const DEFAULT_IMAGE = `${SITE_URL}/logo.png?v=20261005`
 
 type SeoConfig = {
   title?: string

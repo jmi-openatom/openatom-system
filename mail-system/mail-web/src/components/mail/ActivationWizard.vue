@@ -2,7 +2,7 @@
   <main id="mail-main" class="login-page activation-page" tabindex="-1">
     <nav aria-label="邮箱站导航" class="public-nav">
       <a class="brand" href="https://www.jmi-openatom.cn">
-        <img alt="开放原子开源社团" class="brand-logo" src="/logo.png" />
+        <img alt="开放原子开源社团" class="brand-logo" src="/logo.png?v=20261005" />
         <span><strong>开放原子开源社团</strong><small>江苏海事职业技术学院</small></span>
       </a>
       <ThemeToggle />

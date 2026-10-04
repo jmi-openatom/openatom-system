@@ -42,3 +42,12 @@ OAUTH_ATTRIBUTE_MAP = {
 # Keep the local admin login available by default for disaster recovery.
 DISABLE_ADFS_USER_PWD_LOGIN = _boolean("SEAFILE_DISABLE_PASSWORD_LOGIN", False)
 CLIENT_SSO_VIA_LOCAL_BROWSER = True
+
+# Assets are installed in the persistent Seahub custom directory by configure-oauth.sh.
+LOGO_PATH = "custom/openatom-logo-20261005.png"
+LOGO_WIDTH = 40
+LOGO_HEIGHT = 40
+FAVICON_PATH = "custom/openatom-favicon-20261005.ico"
+APPLE_TOUCH_ICON_PATH = "custom/openatom-logo-20261005.png"
+CUSTOM_LOGO_PATH = LOGO_PATH
+CUSTOM_FAVICON_PATH = FAVICON_PATH

@@ -313,7 +313,7 @@ async function fetchDetail() {
           '@type': 'BlogPosting',
           headline: article.value.title,
           description: article.value.summary,
-          image: article.value.coverUrl || `${SITE_URL}/logo.png`,
+          image: article.value.coverUrl || `${SITE_URL}/logo.png?v=20261005`,
           datePublished: article.value.publishedAt || article.value.createdAt,
           dateModified: article.value.updatedAt || article.value.publishedAt,
           author: {
@@ -323,7 +323,7 @@ async function fetchDetail() {
           publisher: {
             '@type': 'Organization',
             name: SITE_NAME,
-            logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` },
+            logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png?v=20261005` },
           },
           mainEntityOfPage: `${SITE_URL}${route.path}`,
           inLanguage: 'zh-CN',

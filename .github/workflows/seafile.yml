@@ -114,7 +114,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           port: ${{ secrets.SERVER_PORT || '22' }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: .deploy/seafile/docker-compose.yml,.deploy/seafile/.env.production.example,.deploy/seafile/config,.deploy/seafile/deploy,.deploy/seafile/README.md
+          source: .deploy/seafile/docker-compose.yml,.deploy/seafile/.env.production.example,.deploy/seafile/config,.deploy/seafile/deploy,.deploy/seafile/branding,.deploy/seafile/README.md
           target: ${{ vars.SEAFILE_DEPLOY_PATH || '/www/wwwroot/openatom-seafile' }}
           strip_components: 2
       - name: Deploy Seafile and OAuth

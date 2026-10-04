@@ -59,8 +59,17 @@ a {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
   font-size: 13px;
   font-weight: 600;
+}
+
+.brand img {
+  display: block;
+  object-fit: contain;
 }
 
 .nav-links {

@@ -22,7 +22,10 @@ const title = () => props.club?.name || '开放原子开源社团'
 const desc = () =>
     props.club?.description ||
     '连接校园开发者、项目实践与开源协作。'
-const logo = () => props.club?.logoUrl || '/static/logo.png'
+const logo = () =>
+    !props.club?.code || props.club.code === 'JMI-OPENATOM'
+        ? '/static/logo.png'
+        : props.club.logoUrl || '/static/logo.png'
 const recruitHint = () => {
     const s = props.club?.recruitmentStatus
     if (!s) return ''

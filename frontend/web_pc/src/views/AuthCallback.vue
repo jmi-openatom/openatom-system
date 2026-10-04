@@ -1,7 +1,7 @@
 <template>
   <ViewPage class="auth-callback-page">
     <div class="auth-callback-panel">
-      <span class="auth-callback-logo">OA</span>
+      <img class="auth-callback-logo" src="/logo.svg?v=20261005" alt="开放原子开源社团" />
       <h1>正在完成登录</h1>
       <p>{{ message }}</p>
     </div>
@@ -84,14 +84,10 @@ onMounted(async () => {
 }
 
 .auth-callback-logo {
-  display: grid;
+  display: block;
   width: 54px;
   height: 54px;
-  place-items: center;
-  border-radius: 16px;
-  color: var(--oa-active-text);
-  background: var(--oa-active-bg);
-  font-weight: 700;
+  object-fit: contain;
 }
 
 .auth-callback-panel h1 {

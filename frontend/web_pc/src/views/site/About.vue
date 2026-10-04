@@ -305,7 +305,7 @@
       </section>
 
       <section class="final-section">
-        <img src="/logo.png" alt="JMI-OPENATOM 标志" width="72" height="72" loading="lazy" />
+        <img src="/logo.png?v=20261005" alt="JMI-OPENATOM 标志" width="72" height="72" loading="lazy" />
         <p class="apple-kicker">YOUR NEXT CHAPTER</p>
         <h2>下一段开源故事，<br /><span>等你来写。</span></h2>
         <p>带上好奇心就够了。剩下的，我们在路上一起学。</p>
@@ -318,7 +318,7 @@
 
     <footer class="about-footer">
       <div>
-        <img src="/logo.png" alt="" width="32" height="32" loading="lazy" />
+        <img src="/logo.png?v=20261005" alt="" width="32" height="32" loading="lazy" />
         <span>JMI-OPENATOM · 开放原子开源社团</span>
       </div>
       <span>© 2025–2027 JMI-OPENATOM</span>

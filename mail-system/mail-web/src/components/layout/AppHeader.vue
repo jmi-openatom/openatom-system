@@ -1,7 +1,7 @@
 <template>
   <header class="app-header">
     <div class="app-brand">
-      <img alt="开放原子邮箱" class="brand-logo" src="/logo.png"/>
+      <img alt="开放原子邮箱" class="brand-logo" src="/logo.png?v=20261005"/>
       <div><strong>JMI-OPENATOM 邮箱系统</strong><small>{{ session.address }}</small></div>
     </div>
     <label class="search-field">

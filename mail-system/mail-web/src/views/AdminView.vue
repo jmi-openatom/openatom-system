@@ -2,7 +2,7 @@
   <div class="mail-shell admin-shell">
     <header class="admin-header">
       <div class="admin-header__left">
-        <img alt="开放原子邮箱" class="brand-logo" src="/logo.png" />
+        <img alt="开放原子邮箱" class="brand-logo" src="/logo.png?v=20261005" />
         <strong>邮箱后台管理</strong>
         <small>{{ session.address }}</small>
       </div>
@@ -397,7 +397,7 @@ let recipientTimer: number | undefined
 function wrappedHtml(html: string, subject: string): string {
   const template = broadcastTemplates.find((item) => item.key === selectedTemplateKey.value)
   if (!template) return html
-  return template.wrap(html, subject, window.location.origin + '/logo.png')
+  return template.wrap(html, subject, window.location.origin + '/logo.png?v=20261005')
 }
 
 const allSelected = computed(() => {

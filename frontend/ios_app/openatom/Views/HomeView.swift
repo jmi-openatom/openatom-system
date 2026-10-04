@@ -75,14 +75,19 @@ struct HomeView: View {
                 
                 VStack(spacing: 16) {
                     Spacer(minLength: 60)
-                    if let logo = club.logoUrl, !logo.isEmpty {
+                    if club.code == nil || club.code == "JMI-OPENATOM" {
+                        Image("ClubLogoLight")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 90, height: 90)
+                    } else if let logo = club.logoUrl, !logo.isEmpty {
                         AsyncImageView(url: logo, size: 90)
                             .clipShape(RoundedRectangle(cornerRadius: 24))
                             .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
                     } else {
-                        Image(systemName: "atom")
-                            .font(.system(size: 44))
-                            .foregroundColor(.white)
+                        Image("ClubLogoLight")
+                            .resizable()
+                            .scaledToFit()
                             .frame(width: 90, height: 90)
                             .background(Color.white.opacity(0.2))
                             .clipShape(RoundedRectangle(cornerRadius: 24))

@@ -28,7 +28,10 @@
       </button>
     </div>
     <header v-if="showChrome" class="global-nav">
-      <RouterLink class="brand" to="/">OpenAtom Lab</RouterLink>
+      <RouterLink class="brand" to="/">
+        <img src="/logo-light.svg?v=20261005" alt="开放原子开源社团" width="28" height="28" />
+        <span>OpenAtom Lab</span>
+      </RouterLink>
       <nav class="nav-links">
         <RouterLink to="/problem"><Code2 :size="16" />每日一练</RouterLink>
         <RouterLink to="/checkin"><CalendarCheck :size="16" />签到</RouterLink>

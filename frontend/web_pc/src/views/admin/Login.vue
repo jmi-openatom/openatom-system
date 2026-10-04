@@ -6,7 +6,7 @@
       <div class="login-aside__content">
         <div class="login-aside__brand">
           <div class="login-aside__logo">
-            <img src="/logo.png" alt="OpenAtom" />
+            <img src="/logo-light.svg?v=20261005" alt="OpenAtom" />
           </div>
           <span class="login-aside__badge">JMI · OPENATOM</span>
         </div>

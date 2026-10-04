@@ -50,7 +50,8 @@ export default defineUserConfig({
   }),
 
   theme: defaultTheme({
-    logo: 'https://www.jmi-openatom.cn/logo.png',
+    logo: '/logo.svg?v=20261005',
+    logoDark: '/logo-light.svg?v=20261005',
     navbar: [
       { text: '首页', link: '/' },
       { text: '快速开始', link: '/guide/getting-started' },
@@ -194,7 +195,8 @@ export default defineUserConfig({
   }),
 
   head: [
-    ['link', { rel: 'icon', href: 'https://www.jmi-openatom.cn/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg?v=20261005' }],
+    ['link', { rel: 'apple-touch-icon', href: '/app-icon.png?v=20261005' }],
     ['meta', { name: 'theme-color', content: '#2b5aed' }],
     ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
     ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }],

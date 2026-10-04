@@ -1,6 +1,7 @@
 <template>
   <main class="login-page">
     <section class="login-panel">
+      <img class="login-logo" src="/logo.svg?v=20261005" alt="开放原子开源社团" width="64" height="64" />
       <h1>OpenAtom Lab</h1>
       <p>实验室训练、签到与信誉分系统</p>
       <div class="toolbar" style="margin-top: 22px">
@@ -50,3 +51,11 @@ async function loginDev() {
   }
 }
 </script>
+
+<style scoped>
+.login-logo {
+  display: block;
+  margin-bottom: 20px;
+  object-fit: contain;
+}
+</style>

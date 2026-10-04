@@ -46,6 +46,11 @@ test -f "$settings_file" || {
 
 install -m 0640 "$source_file" "$fragment_file"
 
+custom_dir="$seafile_volume/seafile/seahub-data/custom"
+install -d -m 0755 "$custom_dir"
+install -m 0644 "$script_dir/../branding/logo.png" "$custom_dir/openatom-logo-20261005.png"
+install -m 0644 "$script_dir/../branding/favicon.ico" "$custom_dir/openatom-favicon-20261005.ico"
+
 begin_marker="# BEGIN OPENATOM OAUTH (managed)"
 end_marker="# END OPENATOM OAUTH (managed)"
 temp_file=$(mktemp "${TMPDIR:-/tmp}/openatom-seafile-settings.XXXXXX")

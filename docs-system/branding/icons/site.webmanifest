@@ -1,0 +1,19 @@
+{
+  "name": "开放原子文档协作",
+  "short_name": "OpenAtom Docs",
+  "icons": [
+    {
+      "src": "/icons/android-chrome-192x192.png?v=20261005",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/android-chrome-512x512.png?v=20261005",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0085FC",
+  "background_color": "#FFFFFF",
+  "display": "standalone"
+}

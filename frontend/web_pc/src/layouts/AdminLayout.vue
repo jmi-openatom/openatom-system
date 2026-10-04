@@ -14,7 +14,7 @@
         @click="toggleSidebar"
       />
       <div class="admin-brand">
-        <!--        <span class="admin-brand__mark">OA</span>-->
+        <img class="admin-brand__logo" src="/logo.svg?v=20261005" alt="开放原子开源社团" />
         <div class="admin-brand__copy">
           <strong>JMI-OPENATOM</strong>
           <small>管理员后台</small>
@@ -788,17 +788,11 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-.admin-brand__mark {
-  display: grid;
+.admin-brand__logo {
+  display: block;
   width: 38px;
   height: 38px;
-  place-items: center;
-  color: var(--oa-active-text);
-  background: var(--oa-active-bg);
-  border: 1px solid var(--oa-active-bg);
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 14px;
+  object-fit: contain;
   flex: 0 0 auto;
 }
 

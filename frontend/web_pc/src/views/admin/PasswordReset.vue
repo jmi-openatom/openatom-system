@@ -6,7 +6,7 @@
       <div class="reset-aside__content">
         <div class="reset-aside__brand">
           <div class="reset-aside__logo">
-            <img src="/logo.png" alt="OpenAtom" />
+            <img src="/logo-light.svg?v=20261005" alt="OpenAtom" />
           </div>
           <span class="reset-aside__badge">JMI · OPENATOM</span>
         </div>
@@ -46,7 +46,7 @@
 
         <div class="reset-form-brand">
           <div class="reset-form-brand__logo">
-            <img src="/logo.png" alt="OpenAtom" />
+            <img src="/logo.png?v=20261005" alt="OpenAtom" />
           </div>
           <div class="reset-form-brand__copy">
             <strong>JMI-OPENATOM</strong>

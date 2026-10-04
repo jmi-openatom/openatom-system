@@ -2,7 +2,7 @@
   <main class="login-page">
     <section class="login-panel" aria-labelledby="login-title">
       <router-link class="quest-brand" to="/">
-        <span ><img src="/public/logo.png" style="width: 45px" alt=""></span>
+        <span ><img src="/logo.png?v=20261005" style="width: 45px" alt="开放原子开源社团"></span>
         <span><strong>JMI-OPENATOM-QUEST</strong><small>开放原子开源社团</small></span>
       </router-link>
 

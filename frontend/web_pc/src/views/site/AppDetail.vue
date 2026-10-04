@@ -177,7 +177,7 @@ async function fetchDetail() {
             '@type': 'SoftwareApplication',
             name: app.value.name,
             description: app.value.summary,
-            image: app.value.coverUrl || `${SITE_URL}/logo.png`,
+            image: app.value.coverUrl || `${SITE_URL}/logo.png?v=20261005`,
             applicationCategory: 'DeveloperApplication',
             softwareVersion: app.value.version,
             license: app.value.licenseName,
