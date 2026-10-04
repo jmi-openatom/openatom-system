@@ -183,12 +183,15 @@ API 域名失败，表示 `api.jmi-openatom.cn` 的宝塔站点或 DNS 配置有
 
 项目使用 GitHub Actions 实现自动化部署。每当代码推送到 `main` 分支时，会自动触发服务器同步。
 
+主站后端、前端和 `docs-site` 镜像在 Actions 中按服务器 CPU 架构构建，以提交 SHA 标记并通过 SSH 上传。服务器校验 SHA256 和提交版本后执行 `docker load`，再以 `--no-build --pull never` 启动 Compose；缺失的 Redis、AstrBot、NapCat 镜像也由 Actions 打包上传。服务器无需访问 Docker Hub，导入失败时不会替换现有容器。
+
 ### 配置步骤
 
 1. 在 GitHub Repo 中配置以下 Secrets:
     - `SERVER_HOST`: 服务器 IP
     - `SERVER_USER`: SSH 用户名
-    - `SERVER_SSH_KEY`: SSH 私钥
+    - `SERVER_PASSWORD`: SSH 密码
+    - `SERVER_PORT`: SSH 端口（默认 `22`）
 2. 修改 `.github/workflows/deploy.yml` 中的项目路径。
 
 ## 📂 项目结构

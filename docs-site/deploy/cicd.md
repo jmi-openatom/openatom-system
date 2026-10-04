@@ -103,56 +103,18 @@ deploy:
 
 ### 部署流程
 
-1. **Checkout 代码**
-
-2. **SSH 连接服务器**，执行部署脚本：
-   ```bash
-   cd /www/wwwroot/openatom-system
-   git fetch --all
-   git reset --hard origin/main
+1. **检查服务器架构和镜像缓存**：SSH 查询 `linux/amd64` 或 `linux/arm64`，记录缺失的 Redis、AstrBot、NapCat 镜像。
+2. **在 Actions 构建生产镜像**：后端两个副本共用同一镜像，主站前端和 `docs-site` 分别构建。所有镜像以本次提交 SHA 标记，前端同时注入版本号和生产 API/OIDC 地址。
+3. **打包上传**：Actions 下载缺失的运行镜像，将 Docker 镜像压缩并生成 SHA256 清单，通过 SCP 上传到本次运行独立的 `.deploy-images/` 目录。
+4. **校验并导入**：服务器同步本次提交，生成 `.env`，校验镜像清单和提交 SHA，再执行 `docker load`。校验、导入或镜像检查失败时会中止，现有容器继续运行。
+5. **启动容器**：服务器使用已导入的镜像，不需要访问 Docker Hub：
+   ```sh
+   OPENATOM_IMAGE_TAG=<本次完整提交 SHA> \
+     docker compose up -d --no-build --pull never --remove-orphans
    ```
+6. **验证服务**：分别等待 `8921`、`8922` 的 OIDC discovery 返回 HTTP 200，验证 Seafile OAuth 授权入口、Nginx 配置和各服务运行状态，通过后清理悬空镜像。
 
-3. **停止旧容器**：
-   ```bash
-   $COMPOSE_CMD down --remove-orphans
-   ```
-
-4. **计算版本号**：
-   ```bash
-   BUILD_NUMBER="${{ github.run_number }}"
-   SHORT_SHA=$(git rev-parse --short HEAD)
-   PKG_VER=$(grep -oP '"version"\s*:\s*"\K[^"]+' frontend/web_pc/package.json)
-   APP_VER="v$PKG_VER.$BUILD_NUMBER-$SHORT_SHA"
-   ```
-
-5. **构建并启动**：
-   ```bash
-   $COMPOSE_CMD pull astrbot napcat || true
-   VITE_APP_VERSION=$APP_VER \
-     VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1 \
-     $COMPOSE_CMD up -d --build
-   ```
-
-6. **等待后端就绪**（最长 180 秒）：
-   ```bash
-   for attempt in $(seq 1 36); do
-     if $COMPOSE_CMD exec -T backend bash -c 'exec 3<>/dev/tcp/127.0.0.1/8921'; then
-       BACKEND_READY=true
-       break
-     fi
-     sleep 5
-   done
-   ```
-
-7. **验证所有服务运行**：
-   ```bash
-   for service in redis backend frontend astrbot napcat; do
-     if ! $COMPOSE_CMD ps "$service" | grep -iq "Up"; then
-       echo "Critical Error: Service $service is not running!"
-       exit 1
-     fi
-   done
-   ```
+`docs.jmi-openatom.cn` 对应主工作流中的 `docs-site` 容器，Logo 和文档内容随主站部署一起更新；`docs-system.yml` 部署的是独立的在线文档中心。
 
 ## GitHub Secrets 配置
 

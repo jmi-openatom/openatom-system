@@ -76,9 +76,13 @@ docker compose version >/dev/null
 
 restart_stalwart() {
   requested_recovery_admin=$1
+  set -- up -d --force-recreate
+  if [ "${OPENATOM_MAIL_PREBUILT:-0}" = 1 ]; then
+    set -- "$@" --no-build --pull never
+  fi
   STALWART_RECOVERY_MODE=0 STALWART_RECOVERY_ADMIN="$requested_recovery_admin" \
     docker compose --env-file "$env_file" -f "$compose_file" \
-    up -d --force-recreate stalwart
+    "$@" stalwart
 }
 
 wait_for_stalwart() {

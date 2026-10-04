@@ -1,5 +1,7 @@
 .git
 .github
+.deploy
+.deploy-images
 .idea
 .vscode
 **/.DS_Store

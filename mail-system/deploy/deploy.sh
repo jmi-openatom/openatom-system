@@ -126,6 +126,28 @@ fi
 
 docker compose --env-file "$env_file" -f "$compose_file" config --quiet
 
+# CI uploads the release images first. Check every dependency before changing
+# infrastructure or containers, and forbid implicit registry pulls in this mode.
+if [ "${OPENATOM_MAIL_PREBUILT:-0}" = 1 ]; then
+  test -n "${OPENATOM_MAIL_IMAGE_TAG:-}" || {
+    echo 'OPENATOM_MAIL_IMAGE_TAG is required for a prebuilt deployment' >&2
+    exit 65
+  }
+  for image in $(docker compose --env-file "$env_file" -f "$compose_file" config --images | sort -u); do
+    docker image inspect "$image" >/dev/null
+  done
+fi
+
+compose_up() {
+  if [ "${OPENATOM_MAIL_PREBUILT:-0}" = 1 ]; then
+    docker compose --env-file "$env_file" -f "$compose_file" \
+      up -d --no-build --pull never --remove-orphans "$@"
+  else
+    docker compose --env-file "$env_file" -f "$compose_file" \
+      up -d --remove-orphans "$@"
+  fi
+}
+
 bootstrap_stalwart() {
   recovery_admin=$(value_for STALWART_RECOVERY_ADMIN)
   if [ -z "$recovery_admin" ]; then
@@ -133,8 +155,7 @@ bootstrap_stalwart() {
     set_value STALWART_RECOVERY_ADMIN "$recovery_admin"
   fi
   set_value STALWART_RECOVERY_MODE 1
-  STALWART_RECOVERY_MODE=1 docker compose --env-file "$env_file" -f "$compose_file" \
-    up -d --remove-orphans mail-db mail-redis stalwart
+  STALWART_RECOVERY_MODE=1 compose_up mail-db mail-redis stalwart
   setup_port=$(value_for STALWART_SETUP_PORT)
   setup_port=${setup_port:-18081}
   attempt=1
@@ -150,8 +171,7 @@ bootstrap_stalwart() {
   "$script_dir/stalwart/apply-plan.sh" "$env_file" --domain-only
   "$script_dir/stalwart/bootstrap-automation.sh" "$env_file"
   "$script_dir/stalwart/apply-plan.sh" "$env_file"
-  docker compose --env-file "$env_file" -f "$compose_file" \
-    up -d --remove-orphans stalwart
+  compose_up stalwart
 }
 
 config_token=$(value_for STALWART_CONFIG_TOKEN)
@@ -193,8 +213,7 @@ test -r "$tls_host_dir/privkey.pem" || {
   exit 65
 }
 
-docker compose --env-file "$env_file" -f "$compose_file" \
-  up -d --remove-orphans mail-db mail-redis stalwart
+compose_up mail-db mail-redis stalwart
 
 setup_port=$(value_for STALWART_SETUP_PORT)
 setup_port=${setup_port:-18081}
@@ -211,8 +230,11 @@ done
 "$script_dir/stalwart/apply-plan.sh" "$env_file"
 "$script_dir/stalwart/sync-tls-certificate.sh" "$env_file"
 
-docker compose --env-file "$env_file" -f "$compose_file" \
-  up -d --build --remove-orphans
+if [ "${OPENATOM_MAIL_PREBUILT:-0}" = 1 ]; then
+  compose_up
+else
+  compose_up --build
+fi
 
 api_port=$(value_for MAIL_API_INTERNAL_PORT)
 web_port=$(value_for MAIL_WEB_INTERNAL_PORT)

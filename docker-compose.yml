@@ -87,6 +87,7 @@ services:
     logging: *default-logging
 
   backend:
+    image: openatom-system-backend:${OPENATOM_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -115,6 +116,7 @@ services:
   # 服务器入口 Nginx 需配置 upstream 轮询 8921/8922（见 backend/deploy/nginx/api-upstream.conf）。
   # 若服务器内存不足 4G，可将 BACKEND_REPLICAS=1 时跳过本服务。
   backend-2:
+    image: openatom-system-backend:${OPENATOM_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -141,6 +143,7 @@ services:
     logging: *default-logging
 
   frontend:
+    image: openatom-system-frontend:${OPENATOM_IMAGE_TAG:-latest}
     build:
       context: ./frontend/web_pc
       dockerfile: Dockerfile
@@ -203,6 +206,7 @@ services:
     logging: *default-logging
 
   docs:
+    image: openatom-system-docs:${OPENATOM_IMAGE_TAG:-latest}
     build:
       context: ./docs-site
       dockerfile: Dockerfile

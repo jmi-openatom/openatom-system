@@ -89,6 +89,7 @@ services:
     logging: *default-logging
 
   mail-api:
+    image: openatom-mail-mail-api:${OPENATOM_MAIL_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: mail-system/mail-api/Dockerfile
@@ -144,6 +145,7 @@ services:
     logging: *default-logging
 
   mail-web:
+    image: openatom-mail-mail-web:${OPENATOM_MAIL_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: mail-system/mail-web/Dockerfile

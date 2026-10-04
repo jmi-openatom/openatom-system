@@ -58,6 +58,8 @@ docker compose --env-file /secure/path/openatom-mail.env \
 - Prometheus 规则、Alertmanager 路由与四个监控容器配置校验。
 - `mail-api`、`mail-web` 两个 Docker 镜像的真实 Buildx 构建。
 
+Actions 按服务器架构构建 `mail-api` 和 `mail-web`，并将带提交 SHA 的镜像及服务器缺失的 Compose 运行镜像压缩上传。服务器校验后导入，以 `OPENATOM_MAIL_PREBUILT=1` 和 `OPENATOM_MAIL_IMAGE_TAG=<提交 SHA>` 执行部署，所有 Compose 启动均使用 `--no-build --pull never`。直接在服务器运行上述脚本时仍保留本地构建方式。
+
 相关代码推送到 `main` 后会自动进入受保护的 `MAIL_SERVER` Environment，并以 `auto` 模式部署；也可手动选择 `auto`、`bootstrap`、`tls` 或 `full`。部署通过 SSH 用户名和密码认证，并强制核验服务器主机指纹。需要配置以下 GitHub Secrets：
 
 - `MAIL_SERVER_HOST`、`MAIL_SERVER_USER`、`MAIL_SERVER_PASSWORD`、`MAIL_SERVER_FINGERPRINT`；`MAIL_SERVER_PORT` 可省略

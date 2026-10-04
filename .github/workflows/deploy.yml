@@ -89,6 +89,136 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Inspect deployment server and cached dependencies
+        id: server-images
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          timeout: 30s
+          command_timeout: 2m
+          capture_stdout: true
+          script: |
+            set -eu
+            cd /www/wwwroot/openatom-system
+            case "$(docker info --format '{{.Architecture}}')" in
+              x86_64|amd64) echo 'OPENATOM_PLATFORM=linux/amd64' ;;
+              aarch64|arm64) echo 'OPENATOM_PLATFORM=linux/arm64' ;;
+              *) echo 'Unsupported server architecture' >&2; exit 1 ;;
+            esac
+            for image in redis:7-alpine soulter/astrbot:latest mlikiowa/napcat-docker:latest; do
+              if ! docker image inspect "$image" >/dev/null 2>&1; then
+                echo "OPENATOM_MISSING_IMAGE=$image"
+              fi
+            done
+            docker ps --format '{{.Names}}: {{.Status}}' | grep '^openatom-' || true
+            mkdir -p .deploy-images/${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Prepare release metadata
+        id: release
+        env:
+          SERVER_INVENTORY: ${{ steps.server-images.outputs.stdout }}
+          DEPLOY_COMMIT: ${{ github.sha }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          platform=$(printf '%s\n' "$SERVER_INVENTORY" | awk -F= '$1 == "OPENATOM_PLATFORM" {print $2}' | tail -n 1)
+          case "$platform" in
+            linux/amd64|linux/arm64) ;;
+            *) echo 'Server did not report a supported platform' >&2; exit 1 ;;
+          esac
+          missing_images=$(printf '%s\n' "$SERVER_INVENTORY" | awk -F= '$1 == "OPENATOM_MISSING_IMAGE" {print $2}' | xargs)
+          for image in $missing_images; do
+            case "$image" in
+              redis:7-alpine|soulter/astrbot:latest|mlikiowa/napcat-docker:latest) ;;
+              *) echo 'Unexpected dependency image' >&2; exit 1 ;;
+            esac
+          done
+          package_version=$(node -p "require('./frontend/web_pc/package.json').version")
+          short_sha=$(git rev-parse --short=7 "$DEPLOY_COMMIT")
+          {
+            echo "platform=$platform"
+            echo "missing_images=$missing_images"
+            echo "app_version=v$package_version.$BUILD_NUMBER-$short_sha"
+          } >> "$GITHUB_OUTPUT"
+          mkdir -p .deploy/openatom-images
+
+      - name: Set up QEMU for ARM server
+        if: steps.release.outputs.platform == 'linux/arm64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend production image on CI
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ steps.release.outputs.platform }}
+          tags: openatom-system-backend:${{ github.sha }}
+          outputs: type=docker,dest=.deploy/openatom-images/backend.tar
+          cache-from: type=gha,scope=openatom-main-backend
+          cache-to: type=gha,mode=max,scope=openatom-main-backend
+
+      - name: Build frontend production image on CI
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend/web_pc
+          platforms: ${{ steps.release.outputs.platform }}
+          tags: openatom-system-frontend:${{ github.sha }}
+          outputs: type=docker,dest=.deploy/openatom-images/frontend.tar
+          cache-from: type=gha,scope=openatom-main-frontend
+          cache-to: type=gha,mode=max,scope=openatom-main-frontend
+          build-args: |
+            VITE_APP_VERSION=${{ steps.release.outputs.app_version }}
+            VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1
+            VITE_OIDC_AUTHORITY=${{ secrets.VITE_OIDC_AUTHORITY || 'https://oauth.jmi-openatom.cn/api/v1' }}
+            VITE_OIDC_CLIENT_ID=${{ secrets.VITE_OIDC_CLIENT_ID || 'openatom-web' }}
+            VITE_GOOGLE_CLIENT_ID=${{ vars.VITE_GOOGLE_CLIENT_ID || '456373207373-4md7t52dkhbo7p48e8omhjoct2squ06c.apps.googleusercontent.com' }}
+
+      - name: Build docs production image on CI
+        uses: docker/build-push-action@v6
+        with:
+          context: docs-site
+          platforms: ${{ steps.release.outputs.platform }}
+          tags: openatom-system-docs:${{ github.sha }}
+          outputs: type=docker,dest=.deploy/openatom-images/docs.tar
+          cache-from: type=gha,scope=openatom-main-docs
+          cache-to: type=gha,mode=max,scope=openatom-main-docs
+
+      - name: Package images and any missing runtime dependencies
+        env:
+          MISSING_IMAGES: ${{ steps.release.outputs.missing_images }}
+          IMAGE_PLATFORM: ${{ steps.release.outputs.platform }}
+          DEPLOY_COMMIT: ${{ github.sha }}
+        run: |
+          for image in $MISSING_IMAGES; do
+            docker pull --platform "$IMAGE_PLATFORM" "$image"
+          done
+          if [ -n "$MISSING_IMAGES" ]; then
+            # Values come from the allowlist validated above; expand one argument per image.
+            # shellcheck disable=SC2086
+            docker save $MISSING_IMAGES | gzip -1 > .deploy/openatom-images/dependencies.tar.gz
+          fi
+          cd .deploy/openatom-images
+          gzip -1 backend.tar frontend.tar docs.tar
+          printf '%s\n' "$DEPLOY_COMMIT" > release-commit
+          sha256sum -- *.tar.gz release-commit > checksums.sha256
+
+      - name: Upload production images to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          timeout: 30s
+          command_timeout: 20m
+          source: .deploy/openatom-images
+          target: /www/wwwroot/openatom-system/.deploy-images/${{ github.run_id }}-${{ github.run_attempt }}
+          strip_components: 2
+
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -102,15 +232,23 @@ jobs:
             set -eu
             cd /www/wwwroot/openatom-system || { echo "Directory not found"; exit 1; }
 
-            git fetch --all
-            git reset --hard origin/main
+            git fetch origin main
+            git reset --hard ${{ github.sha }}
             
             # 兼容性处理
-            if command -v docker-compose >/dev/null 2>&1; then
+            if docker compose version >/dev/null 2>&1; then
+              COMPOSE_CMD="docker compose"
+            elif command -v docker-compose >/dev/null 2>&1; then
               COMPOSE_CMD="docker-compose"
             else
-              COMPOSE_CMD="docker compose"
+              echo 'Docker Compose is required' >&2
+              exit 1
             fi
+            $COMPOSE_CMD up --help | grep -q -- '--pull' || {
+              echo 'Docker Compose with --pull support is required for offline deployment' >&2
+              exit 1
+            }
+            export OPENATOM_IMAGE_TAG=${{ github.sha }}
 
             # --- 关键修改：先创建 .env 文件，再执行 docker-compose 命令 ---
             echo "Step 1: Creating .env file from GitHub Secrets..."
@@ -221,18 +359,21 @@ jobs:
             
             # 计算版本号
             BUILD_NUMBER="${{ github.run_number }}"
-            SHORT_SHA=$(git rev-parse --short HEAD)
+            SHORT_SHA=$(git rev-parse --short=7 HEAD)
             PKG_VER=$(grep -oP '"version"\s*:\s*"\K[^"]+' frontend/web_pc/package.json || echo "1.0.0")
             APP_VER="v$PKG_VER.$BUILD_NUMBER-$SHORT_SHA"
 
-            # Compose 会先完成镜像构建，再就地替换变化的容器。不要提前 down，
-            # 否则整个构建期间 OAuth/API 都会返回 Nginx upstream unavailable。
-            echo "Step 2: Building and rolling out version: $APP_VER"
-            $COMPOSE_CMD pull astrbot napcat || true
-            
-            VITE_APP_VERSION=$APP_VER \
-              VITE_API_BASE_URL=https://api.jmi-openatom.cn/api/v1 \
-              $COMPOSE_CMD up -d --build --remove-orphans
+            # 镜像在 CI 构建并通过 SSH 上传；生产服务器无需连接 Docker Hub。
+            # 校验和导入失败时，现有容器继续运行。
+            echo "Step 2: Loading and rolling out version: $APP_VER"
+            sh deploy/load-production-images.sh \
+              ".deploy-images/${{ github.run_id }}-${{ github.run_attempt }}" \
+              "$OPENATOM_IMAGE_TAG" openatom-system backend frontend docs
+            $COMPOSE_CMD config --quiet
+            for image in $($COMPOSE_CMD config --images | sort -u); do
+              docker image inspect "$image" >/dev/null
+            done
+            $COMPOSE_CMD up -d --no-build --pull never --remove-orphans
 
             # 等待 Spring 完整启动，并验证 OAuth/OIDC 公开端点可用（两个副本都要就绪）。
             # 仅检查 TCP 端口会在应用仍初始化时过早放行。
@@ -387,7 +528,7 @@ jobs:
 
             $COMPOSE_CMD ps
 
-            for service in redis backend backend-2 frontend astrbot napcat; do
+            for service in redis backend backend-2 frontend docs astrbot napcat; do
               if ! $COMPOSE_CMD ps "$service" | grep -iq "Up"; then
                 echo "Critical Error: Service $service is not running!"
                 $COMPOSE_CMD logs --tail=100 "$service"

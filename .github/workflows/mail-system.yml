@@ -37,6 +37,7 @@ on:
       - frontend/web_pc/src/views/AuthCallback.vue
       - mail-system/**
       - docker-compose.yml
+      - deploy/load-production-images.sh
       - .github/workflows/mail-system.yml
   pull_request:
     branches:
@@ -61,6 +62,7 @@ on:
       - frontend/web_pc/src/views/AuthCallback.vue
       - mail-system/**
       - docker-compose.yml
+      - deploy/load-production-images.sh
       - .github/workflows/mail-system.yml
 
 permissions:
@@ -68,7 +70,7 @@ permissions:
 
 concurrency:
   group: openatom-mail-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -145,6 +147,7 @@ jobs:
           docker compose -f mail-system/docker-compose.mail.yml config --quiet
       - name: Validate operator scripts
         run: |
+          shellcheck deploy/load-production-images.sh
           shellcheck mail-system/deploy/deploy.sh
           shellcheck mail-system/deploy/provision-tls.sh
           shellcheck mail-system/deploy/backup/backup.sh
@@ -305,6 +308,120 @@ jobs:
             test -n "$MAIL_OAUTH_CLIENT_SECRET"
             test -n "$MAIL_RESEND_API_KEY"
           fi
+      - uses: actions/checkout@v4
+
+      - name: Inspect deployment server and cached dependencies
+        id: server-images
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.MAIL_SERVER_HOST }}
+          username: ${{ secrets.MAIL_SERVER_USER }}
+          port: ${{ secrets.MAIL_SERVER_PORT || '22' }}
+          password: ${{ secrets.MAIL_SERVER_PASSWORD }}
+          timeout: 30s
+          command_timeout: 2m
+          capture_stdout: true
+          script: |
+            set -eu
+            cd "${{ vars.MAIL_DEPLOY_PATH || '/www/wwwroot/openatom-system' }}"
+            case "$(docker info --format '{{.Architecture}}')" in
+              x86_64|amd64) echo 'OPENATOM_PLATFORM=linux/amd64' ;;
+              aarch64|arm64) echo 'OPENATOM_PLATFORM=linux/arm64' ;;
+              *) echo 'Unsupported server architecture' >&2; exit 1 ;;
+            esac
+            for image in mysql:8.4 redis:7.4-alpine clamav/clamav:1.5 stalwartlabs/stalwart:v0.16 prom/prometheus:v3.13.0 prom/alertmanager:v0.32.1 prom/blackbox-exporter:v0.28.0 prom/node-exporter:v1.11.1; do
+              if ! docker image inspect "$image" >/dev/null 2>&1; then
+                echo "OPENATOM_MISSING_IMAGE=$image"
+              fi
+            done
+            docker ps --format '{{.Names}}: {{.Status}}' | grep '^openatom-mail-' || true
+            mkdir -p .deploy-images/mail-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Prepare release metadata
+        id: release
+        env:
+          SERVER_INVENTORY: ${{ steps.server-images.outputs.stdout }}
+          DEPLOY_COMMIT: ${{ github.sha }}
+        run: |
+          platform=$(printf '%s\n' "$SERVER_INVENTORY" | awk -F= '$1 == "OPENATOM_PLATFORM" {print $2}' | tail -n 1)
+          case "$platform" in
+            linux/amd64|linux/arm64) ;;
+            *) echo 'Server did not report a supported platform' >&2; exit 1 ;;
+          esac
+          missing_images=$(printf '%s\n' "$SERVER_INVENTORY" | awk -F= '$1 == "OPENATOM_MISSING_IMAGE" {print $2}' | xargs)
+          for image in $missing_images; do
+            case "$image" in
+              mysql:8.4|redis:7.4-alpine|clamav/clamav:1.5|stalwartlabs/stalwart:v0.16|prom/prometheus:v3.13.0|prom/alertmanager:v0.32.1|prom/blackbox-exporter:v0.28.0|prom/node-exporter:v1.11.1) ;;
+              *) echo 'Unexpected dependency image' >&2; exit 1 ;;
+            esac
+          done
+          {
+            echo "platform=$platform"
+            echo "missing_images=$missing_images"
+          } >> "$GITHUB_OUTPUT"
+          mkdir -p .deploy/mail-images
+
+      - name: Set up QEMU for ARM server
+        if: steps.release.outputs.platform == 'linux/arm64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build mail-api production image on CI
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: mail-system/mail-api/Dockerfile
+          platforms: ${{ steps.release.outputs.platform }}
+          tags: openatom-mail-mail-api:${{ github.sha }}
+          outputs: type=docker,dest=.deploy/mail-images/mail-api.tar
+          cache-from: type=gha,scope=mail-api
+          cache-to: type=gha,mode=max,scope=mail-api
+
+      - name: Build mail-web production image on CI
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: mail-system/mail-web/Dockerfile
+          platforms: ${{ steps.release.outputs.platform }}
+          tags: openatom-mail-mail-web:${{ github.sha }}
+          outputs: type=docker,dest=.deploy/mail-images/mail-web.tar
+          cache-from: type=gha,scope=mail-web
+          cache-to: type=gha,mode=max,scope=mail-web
+
+      - name: Package images and any missing runtime dependencies
+        env:
+          MISSING_IMAGES: ${{ steps.release.outputs.missing_images }}
+          IMAGE_PLATFORM: ${{ steps.release.outputs.platform }}
+          DEPLOY_COMMIT: ${{ github.sha }}
+        run: |
+          for image in $MISSING_IMAGES; do
+            docker pull --platform "$IMAGE_PLATFORM" "$image"
+          done
+          if [ -n "$MISSING_IMAGES" ]; then
+            # Values come from the allowlist validated above; expand one argument per image.
+            # shellcheck disable=SC2086
+            docker save $MISSING_IMAGES | gzip -1 > .deploy/mail-images/dependencies.tar.gz
+          fi
+          cd .deploy/mail-images
+          gzip -1 mail-api.tar mail-web.tar
+          printf '%s\n' "$DEPLOY_COMMIT" > release-commit
+          sha256sum -- *.tar.gz release-commit > checksums.sha256
+
+      - name: Upload production images to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.MAIL_SERVER_HOST }}
+          username: ${{ secrets.MAIL_SERVER_USER }}
+          port: ${{ secrets.MAIL_SERVER_PORT || '22' }}
+          password: ${{ secrets.MAIL_SERVER_PASSWORD }}
+          timeout: 30s
+          command_timeout: 20m
+          source: .deploy/mail-images
+          target: ${{ vars.MAIL_DEPLOY_PATH || '/www/wwwroot/openatom-system' }}/.deploy-images/mail-${{ github.run_id }}-${{ github.run_attempt }}
+          strip_components: 2
+
       - name: Deploy mail stack over SSH
         uses: appleboy/ssh-action@v1.2.2
         env:
@@ -330,7 +447,16 @@ jobs:
             deploy_path='${{ vars.MAIL_DEPLOY_PATH || '/www/wwwroot/openatom-system' }}'
             cd "$deploy_path"
             git fetch origin main
-            git merge --ff-only origin/main
+            git merge --ff-only ${{ github.sha }}
+            test "$(git rev-parse HEAD)" = '${{ github.sha }}' || {
+              echo 'Server checkout has advanced beyond this release; deploy the newer commit instead' >&2
+              exit 1
+            }
+            export OPENATOM_MAIL_IMAGE_TAG=${{ github.sha }}
+            export OPENATOM_MAIL_PREBUILT=1
+            sh deploy/load-production-images.sh \
+              ".deploy-images/mail-${{ github.run_id }}-${{ github.run_attempt }}" \
+              "$OPENATOM_MAIL_IMAGE_TAG" openatom-mail mail-api mail-web
             umask 077
             env_file="$deploy_path/mail-system/.env.production"
             touch "$env_file"
