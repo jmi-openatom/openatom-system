@@ -4,7 +4,7 @@
       <div class="page-heading">
         <p class="eyebrow">TASK CENTER</p>
         <h1>任务中心</h1>
-        <p>从当前阶段出发，选择一项目标清晰、可验证的任务。</p>
+        <p>这里展示你已选择的技术方向和通用任务，从当前阶段开始实践。</p>
       </div>
       <router-link class="secondary-link" to="/assignments">我的任务</router-link>
     </header>
@@ -33,7 +33,7 @@
     </section>
     <div v-else class="content-card empty-panel">
       <strong>当前筛选下暂无任务</strong>
-      <p>管理员发布任务后会显示在这里。</p>
+      <p>所选技术方向有任务发布后会显示在这里，你也可以在个人资料中调整方向。</p>
     </div>
   </div>
 </template>

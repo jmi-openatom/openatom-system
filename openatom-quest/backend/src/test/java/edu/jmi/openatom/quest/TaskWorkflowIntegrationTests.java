@@ -343,7 +343,12 @@ class TaskWorkflowIntegrationTests {
             INSERT INTO quest_member (nickname, status, current_level, total_points, profile_completed_at, onboarding_completed_at)
             VALUES (?, 'ACTIVE', 'L0', 0, NOW(3), NOW(3))
             """, nickname);
-        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        long memberId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        jdbcTemplate.update("""
+            INSERT INTO quest_member_direction (member_id, direction_id, is_primary)
+            SELECT ?, id, TRUE FROM quest_technical_direction WHERE direction_key = 'frontend'
+            """, memberId);
+        return memberId;
     }
 
     private void grantRole(long memberId, String roleKey) {

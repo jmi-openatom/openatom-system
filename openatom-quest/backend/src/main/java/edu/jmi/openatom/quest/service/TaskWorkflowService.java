@@ -22,6 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class TaskWorkflowService {
+    private static final String MEMBER_DIRECTION_VISIBILITY = """
+        (t.direction_id IS NULL OR EXISTS (
+            SELECT 1 FROM quest_member_direction md
+            WHERE md.member_id = ? AND md.direction_id = t.direction_id
+        ))
+        """;
+
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final AuditService auditService;
@@ -46,7 +53,8 @@ public class TaskWorkflowService {
             LEFT JOIN quest_task_assignment a ON a.task_id = t.id AND a.member_id = ?
             WHERE t.status = 'PUBLISHED'
             """);
-        List<Object> args = new java.util.ArrayList<>(List.of(member.id(), member.id()));
+        sql.append(" AND ").append(MEMBER_DIRECTION_VISIBILITY);
+        List<Object> args = new java.util.ArrayList<>(List.of(member.id(), member.id(), member.id()));
         if (directionId != null) {
             sql.append(" AND t.direction_id = ?");
             args.add(directionId);
@@ -60,6 +68,7 @@ public class TaskWorkflowService {
     }
 
     public Map<String, Object> detail(CurrentMember member, long taskId) {
+        // 保留已领取或被分配任务的详情，方便成员在调整方向后继续处理自己的记录。
         List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
             SELECT t.id, t.task_key AS taskKey, t.title, t.summary, t.task_type AS taskType,
                    t.difficulty, t.learning_objectives_json AS learningObjectives,
@@ -78,9 +87,10 @@ public class TaskWorkflowService {
             JOIN quest_member owner ON owner.id = t.owner_member_id
             LEFT JOIN quest_task_assignment a ON a.task_id = t.id AND a.member_id = ?
             WHERE t.id = ? AND (t.status = 'PUBLISHED' OR a.id IS NOT NULL)
-            """, member.id(), taskId);
+            """ + " AND (a.id IS NOT NULL OR " + MEMBER_DIRECTION_VISIBILITY + ")",
+            member.id(), taskId, member.id());
         if (rows.isEmpty()) {
-            throw new IllegalArgumentException("任务不存在或尚未发布");
+            throw new IllegalArgumentException("任务不存在、尚未发布或不属于你选择的方向");
         }
         Map<String, Object> result = new LinkedHashMap<>(rows.getFirst());
         result.put("prerequisites", jdbcTemplate.queryForList("""
@@ -98,9 +108,10 @@ public class TaskWorkflowService {
     public Map<String, Object> claim(CurrentMember member, long taskId) {
         requirePermission(member, "task:claim");
         List<Map<String, Object>> tasks = jdbcTemplate.queryForList(
-            "SELECT * FROM quest_task WHERE id = ? AND status = 'PUBLISHED' FOR UPDATE", taskId);
+            "SELECT t.* FROM quest_task t WHERE t.id = ? AND t.status = 'PUBLISHED' AND "
+                + MEMBER_DIRECTION_VISIBILITY + " FOR UPDATE", taskId, member.id());
         if (tasks.isEmpty()) {
-            throw new IllegalArgumentException("任务不存在或尚未发布");
+            throw new IllegalArgumentException("任务不存在、尚未发布或不属于你选择的方向");
         }
         Map<String, Object> task = tasks.getFirst();
         Integer unmet = jdbcTemplate.queryForObject("""
