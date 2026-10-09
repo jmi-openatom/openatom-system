@@ -270,6 +270,8 @@ public enum SystemPermission {
   DOCUMENT_UPDATE("更新文书", "document:update", "api", "/office-documents/{documentId}", "PATCH"),
   DOCUMENT_EXPORT("导出文书", "document:export", "api", "/office-documents/{documentId}/export", "GET"),
   IMAGE_UPLOAD("上传图床图片", "image:upload", "api", "/image-hosting/images", "POST"),
+  CAMPUS_BUILDING_LIST("查看校园楼宇投稿", "campus-building:list", "api", "/campus-buildings/admin/submissions", "GET"),
+  CAMPUS_BUILDING_REVIEW("审核校园楼宇投稿", "campus-building:review", "api", "/campus-buildings/admin/submissions/{id}/review", "POST"),
   IMAGE_LIST("管理图床图片", "image:list", "api", "/image-hosting/admin/images", "GET"),
   IMAGE_DELETE("删除图床图片", "image:delete", "api", "/image-hosting/admin/images/{imageId}", "DELETE"),
   SHOWCASE_APP_LIST("查询应用展示", "showcase-app:list", "api", "/showcase-apps", "GET"),

@@ -10,7 +10,7 @@
         id="top"
         class="about-hero"
         aria-roledescription="carousel"
-        aria-label="开放原子开源社团活动影集"
+        aria-label="江苏海事职业技术学院校园影集"
         @keydown.left.prevent="showPreviousHeroImage"
         @keydown.right.prevent="showNextHeroImage"
       >
@@ -96,13 +96,15 @@
         <div class="about-shell route-story">
           <div class="route-story__intro">
             <p class="apple-kicker">FIND YOUR PLACE</p>
-            <h2>五条路线。<br /><span>总有一条适合你。</span></h2>
-            <p>不必先成为某一种人。继续向下，看看哪一段故事更像你。</p>
+            <h2>从兴趣出发。<br /><span>找到你的位置。</span></h2>
+            <p>写代码、做设计、策划活动或连接伙伴。选一个感兴趣的方向，从一次参与开始。</p>
 
-            <ol class="route-story__rail" aria-label="五条成长路线">
+            <ol class="route-story__rail" aria-label="社团参与方向">
               <li v-for="(path, index) in paths" :key="path.title" class="route-story__rail-item">
                 <span>0{{ index + 1 }}</span>
-                <strong>{{ path.title }}</strong>
+                <button type="button" @click="scrollToRoute(index)">
+                  {{ path.title }}<ArrowUpRight :size="13" aria-hidden="true" />
+                </button>
               </li>
             </ol>
           </div>
@@ -128,6 +130,17 @@
         </div>
       </section>
 
+      <section id="film" class="about-film" aria-labelledby="film-title">
+        <div class="about-shell">
+          <div class="section-heading section-reveal">
+            <p class="apple-kicker">THIS IS JMI-OPENATOM</p>
+            <h2 id="film-title">一起创造。<br /><span>这就是我们。</span></h2>
+            <p>从技术分享，到项目协作。<br />用一段影像，走进我们的开源故事。</p>
+          </div>
+          <div class="about-film__stage"><AboutBrandFilm /></div>
+        </div>
+      </section>
+
       <section id="projects" class="projects-section">
         <img
           class="projects-section__image"
@@ -141,7 +154,7 @@
           <div class="section-heading section-heading--dark section-reveal">
             <p class="apple-kicker">REAL WORK. REAL IMPACT.</p>
             <h2>不止是练习。<br /><span>每次提交，都有回声。</span></h2>
-            <p>从 issue 到上线，每一步都有真实使用者、协作伙伴和可以被验证的结果。</p>
+            <p>从 Issue 到上线，把校园里的真实需求，做成可以使用、持续改进的作品。</p>
           </div>
 
           <div class="projects-grid">
@@ -156,6 +169,9 @@
               <p>{{ project.description }}</p>
               <strong>{{ project.impact }}</strong>
               <small>{{ project.category }}</small>
+              <router-link v-if="project.id" class="project-card__link" :to="`/apps/${project.id}`"
+                >了解项目 <ArrowUpRight :size="16" aria-hidden="true"
+              /></router-link>
             </article>
           </div>
         </div>
@@ -204,9 +220,11 @@
       <section id="journey" class="about-section journey-section">
         <div class="about-shell">
           <div class="section-heading section-reveal">
-            <p class="apple-kicker">YOUR FIRST 30 DAYS</p>
-            <h2>加入，不是进群。<br /><span>是完成一次出发。</span></h2>
-            <p>第一个月被拆成四个清晰阶段。每一站都有人同行，也都有看得见的成果。</p>
+            <p class="apple-kicker">YOUR FIRST STEPS</p>
+            <h2>从第一次尝试，<br /><span>到自己的作品。</span></h2>
+            <p>
+              认识伙伴，跑通工具，参与项目，再把经验分享出去。你可以按自己的基础与课业节奏，一步步开始。
+            </p>
           </div>
 
           <ol class="journey-list">
@@ -253,11 +271,10 @@
         <div class="about-shell community-section__content section-reveal">
           <p class="apple-kicker">GROW TOGETHER</p>
           <h2>一个人走得快。<br /><span>一群人，走得更远。</span></h2>
-          <blockquote>
-            “第一次提 PR
-            时，学长没有替我完成，而是陪我把问题拆开。那一晚，我第一次觉得自己真的在参与开源。”
-          </blockquote>
-          <p class="community-section__byline">往届成员 · 项目部</p>
+          <p class="community-section__statement">
+            开源，不只是公开代码。<br />也是分享经验、认真讨论，<br />让一个人的想法被更多人继续创造。
+          </p>
+          <p class="community-section__byline">分享 · 协作 · 共同成长</p>
         </div>
       </section>
 
@@ -292,7 +309,12 @@
             <h2>出发前，<br /><span>你可能还想知道。</span></h2>
           </div>
           <div class="faq-list">
-            <details v-for="(item, index) in faqs" :key="item.question" class="reveal-card">
+            <details
+              v-for="(item, index) in faqs"
+              :key="item.question"
+              class="reveal-card"
+              @toggle="refreshMotion"
+            >
               <summary>
                 <span>0{{ index + 1 }}</span>
                 <strong>{{ item.question }}</strong>
@@ -321,7 +343,7 @@
         <img src="/logo.png?v=20261005" alt="" width="32" height="32" loading="lazy" />
         <span>JMI-OPENATOM · 开放原子开源社团</span>
       </div>
-      <span>© 2025–2027 JMI-OPENATOM</span>
+      <span>© 2025–{{ currentYear }} JMI-OPENATOM</span>
     </footer>
   </div>
 </template>
@@ -329,6 +351,7 @@
 <script setup lang="ts">
 import SiteExplorationFlag from '@/components/site/SiteExplorationFlag.vue'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import AboutBrandFilm from '@/components/site/AboutBrandFilm.vue'
 import { useRouter } from 'vue-router'
 import {
   ArrowLeft,
@@ -348,7 +371,6 @@ import {
   Megaphone,
   Palette,
   Plus,
-  Sparkles,
   Trophy,
   Users,
 } from 'lucide-vue-next'
@@ -366,6 +388,19 @@ const awards = ref<any[]>([])
 let motionMatchMedia: gsap.MatchMedia | undefined
 let scrollResetFrame: number | undefined
 let heroAutoplayTimer: number | undefined
+let disposed = false
+let navigateRoute: ((index: number) => void) | undefined
+const currentYear = new Date().getFullYear()
+function scrollToRoute(index: number) {
+  navigateRoute?.(index)
+}
+function refreshMotion() {
+  if (disposed) return
+  if (scrollResetFrame !== undefined) cancelAnimationFrame(scrollResetFrame)
+  scrollResetFrame = requestAnimationFrame(() => {
+    if (!disposed) ScrollTrigger.refresh()
+  })
+}
 
 const heroImages = [
   // '/about/bg.png',
@@ -380,7 +415,7 @@ const heroImages = [
   '/about/bg10.jpg',
 ].map((src, index) => ({
   src,
-  alt: `开放原子开源社团活动影集，第 ${index + 1} 张`,
+  alt: `江苏海事职业技术学院校园影集，第 ${index + 1} 张`,
 }))
 const currentHeroIndex = ref(0)
 
@@ -465,6 +500,7 @@ const fallbackPaths = [
 
 const fallbackProjects = [
   {
+    id: 1,
     title: 'openatom-system',
     category: 'PLATFORM · OPEN SOURCE',
     description: '支撑社团成员、活动与内容协作的校园开源平台。',
@@ -472,42 +508,36 @@ const fallbackProjects = [
     icon: markRaw(Boxes),
   },
   {
+    id: 9,
     title: '校园网站发布工具',
     category: 'TOOLS · DEVOPS',
     description: '让校园项目从提交代码到上线发布更顺畅。',
     impact: '缩短从想法到真实可用的距离',
     icon: markRaw(GitBranch),
   },
-  {
-    title: 'AI 实验计划',
-    category: 'RESEARCH · AI',
-    description: '把前沿技术变成可以理解、复用和验证的实验。',
-    impact: '把学习过程沉淀为可复用成果',
-    icon: markRaw(Sparkles),
-  },
 ]
 
 const journey = [
   {
-    day: 'DAY 01',
+    day: '01 / START',
     title: '认识社区',
     description: '见到伙伴、了解项目，也说说你想尝试什么。',
-    output: '找到你的第一张桌子',
+    output: '找到感兴趣的方向',
   },
   {
-    day: 'WEEK 01',
+    day: '02 / TRY',
     title: '完成热身',
-    description: '在带教伙伴帮助下，跑通工具与协作流程。',
+    description: '配置开发环境，跑通一个项目，熟悉工具与协作流程。',
     output: '完成第一次 commit',
   },
   {
-    day: 'WEEK 02',
+    day: '03 / BUILD',
     title: '进入现场',
     description: '认领一个真实但边界清晰的任务，开始共建。',
     output: '提交第一个成果',
   },
   {
-    day: 'DAY 30',
+    day: '04 / SHARE',
     title: '讲述成果',
     description: '复盘过程，把经验留给下一位出发的人。',
     output: '成为可靠的同行者',
@@ -527,7 +557,7 @@ const gains = [
   },
   {
     title: '一起走的人',
-    description: '跨年级、跨方向的伙伴，以及愿意带你的前辈。',
+    description: '跨年级、跨方向交流，在项目讨论中互相学习。',
     icon: markRaw(Users),
   },
   {
@@ -540,7 +570,7 @@ const gains = [
 const process = [
   { title: '在线报名', description: '告诉我们你是谁、为什么想来' },
   { title: '开放交流', description: '聊兴趣和期待，不做知识背诵' },
-  { title: '方向匹配', description: '认识部门与未来的带教伙伴' },
+  { title: '方向匹配', description: '了解各方向正在做的事情' },
   { title: '正式出发', description: '加入社区，领取第一份路线图' },
 ]
 
@@ -548,7 +578,7 @@ const faqs = [
   {
     question: '我没有基础，也可以加入吗？',
     answer:
-      '可以。我们更看重好奇心、可靠程度和持续投入。每个方向都有适合新人的第一份任务，也会安排带教伙伴。',
+      '可以。我们更看重好奇心、可靠程度和持续投入。可以从一次分享、一个原型或一个边界清晰的小任务开始。',
   },
   {
     question: '每周大概要投入多少时间？',
@@ -563,26 +593,31 @@ const faqs = [
   {
     question: '加入后会有人带吗？',
     answer:
-      '会。新人阶段有清晰的热身任务、带教伙伴和阶段复盘，目标是让你真正拥有独立做成事情的能力。',
+      '遇到问题，可以在社区和项目讨论中提问。说明你尝试过什么、卡在哪里，和伙伴一起找到下一步。',
   },
 ]
 
-const paths = computed(() =>
-  fallbackPaths.map((item, index) => ({
-    ...item,
-    title: focusAreas.value[index]?.title || item.title,
-    description: focusAreas.value[index]?.description || item.description,
-  })),
-)
+const paths = computed(() => {
+  return fallbackPaths.map((department) => {
+    const area = focusAreas.value.find((item) => item.title === department.title)
+    return {
+      ...department,
+      description: area?.description || department.description,
+    }
+  })
+})
 
-const featuredProjects = computed(() =>
-  fallbackProjects.map((fallback, index) => ({
-    ...fallback,
-    title: showcaseApps.value[index]?.name || showcaseApps.value[index]?.title || fallback.title,
-    description: showcaseApps.value[index]?.description || fallback.description,
-    category: showcaseApps.value[index]?.category || fallback.category,
-  })),
-)
+const featuredProjects = computed(() => {
+  if (!showcaseApps.value.length) return fallbackProjects
+  return showcaseApps.value.slice(0, 3).map((project, index) => ({
+    id: project.id,
+    title: project.name || project.title,
+    description: project.summary || project.description || '从真实需求出发，在协作中持续完善。',
+    category: project.category || (project.openSource ? 'OPEN SOURCE' : 'COMMUNITY PROJECT'),
+    impact: project.appStatus || '在实践中持续完善',
+    icon: fallbackProjects[index % fallbackProjects.length]!.icon,
+  }))
+})
 
 function scrollTo(id: string) {
   const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -598,13 +633,15 @@ function resetPageScroll() {
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
 }
 
-function setupMotion() {
-  if (!pageRoot.value) return
+function setupMotion(animateHero = true) {
+  if (!pageRoot.value || disposed) return
+  motionMatchMedia?.revert()
+  navigateRoute = undefined
 
   motionMatchMedia = gsap.matchMedia()
   motionMatchMedia.add(
     {
-      desktop: '(min-width: 1068px)',
+      desktop: '(min-width: 1068px) and (min-height: 700px)',
       mobile: '(max-width: 1067px)',
       reduceMotion: '(prefers-reduced-motion: reduce)',
     },
@@ -622,11 +659,13 @@ function setupMotion() {
         return
       }
 
-      const intro = gsap.timeline({ defaults: { ease: 'power3.out' } })
-      intro
-        .from('.about-hero h1', { y: 72, autoAlpha: 0, duration: 0.92 }, 0.16)
-        .from('.about-hero__lead', { y: 32, autoAlpha: 0, duration: 0.72 }, 0.48)
-        .from('.about-hero__scroll', { y: -10, autoAlpha: 0, duration: 0.5 }, 0.84)
+      if (animateHero) {
+        const intro = gsap.timeline({ defaults: { ease: 'power3.out' } })
+        intro
+          .from('.about-hero h1', { y: 72, autoAlpha: 0, duration: 0.92 }, 0.16)
+          .from('.about-hero__lead', { y: 32, autoAlpha: 0, duration: 0.72 }, 0.48)
+          .from('.about-hero__scroll', { y: -10, autoAlpha: 0, duration: 0.5 }, 0.84)
+      }
 
       gsap.fromTo(
         '.about-hero__image',
@@ -657,16 +696,34 @@ function setupMotion() {
         },
       })
 
+      gsap.fromTo(
+        '.about-film__stage',
+        { scale: desktop ? 0.92 : 0.96, y: desktop ? 32 : 12 },
+        {
+          scale: 1,
+          y: 0,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.about-film',
+            start: 'top 82%',
+            end: 'top 12%',
+            scrub: 0.7,
+          },
+        },
+      )
+
       const routeScenes = gsap.utils.toArray<HTMLElement>('.route-scene')
       const routeRailItems = gsap.utils.toArray<HTMLElement>('.route-story__rail-item')
       const routeProgress = pageRoot.value?.querySelector<HTMLElement>(
         '.route-story__progress span',
       )
 
-      if (routeScenes.length) {
+      const routesSection = pageRoot.value!.querySelector<HTMLElement>('.routes-section')!
+      if (routeScenes.length && desktop) {
+        routesSection.classList.add('is-pinned')
         gsap.set(routeScenes, { autoAlpha: 0, y: 70 })
         gsap.set(routeScenes[0], { autoAlpha: 1, y: 0 })
-        gsap.set(routeRailItems, { opacity: 0.28 })
+        gsap.set(routeRailItems, { opacity: 0.55 })
         gsap.set(routeRailItems[0], { opacity: 1 })
 
         const chapterLength = 1.5
@@ -675,19 +732,24 @@ function setupMotion() {
           scrollTrigger: {
             trigger: '.routes-section',
             start: 'top top',
-            end: () => `+=${window.innerHeight * routeScenes.length}`,
+            end: () =>
+              `+=${Math.max(520, window.innerHeight * 0.75) * Math.max(1, routeScenes.length - 1)}`,
             pin: true,
             scrub: 0.75,
-            snap: {
-              snapTo: 'labelsDirectional',
-              duration: { min: 0.18, max: 0.45 },
-              delay: 0.06,
-              ease: 'power2.inOut',
-            },
             anticipatePin: 1,
             invalidateOnRefresh: true,
           },
         })
+
+        navigateRoute = (index) => {
+          const trigger = routeTimeline.scrollTrigger
+          if (!trigger) return
+          const progress = Math.min(1, (index * chapterLength + 0.85) / routeTimeline.duration())
+          window.scrollTo({
+            top: trigger.start + progress * (trigger.end - trigger.start),
+            behavior: 'smooth',
+          })
+        }
 
         if (routeProgress) {
           routeTimeline.fromTo(
@@ -715,7 +777,7 @@ function setupMotion() {
           const result = scene.querySelector('.route-scene__result')
 
           routeTimeline.addLabel(label, at)
-          routeTimeline.to(routeRailItems, { opacity: 0.28, duration: 0.18 }, label)
+          routeTimeline.to(routeRailItems, { opacity: 0.55, duration: 0.18 }, label)
           routeTimeline.to(routeRailItems[index], { opacity: 1, duration: 0.28 }, label)
           routeTimeline.fromTo(
             scene,
@@ -765,7 +827,7 @@ function setupMotion() {
       }
 
       const animatedSections = gsap.utils.toArray<HTMLElement>(
-        '.about-section:not(.routes-section), .projects-section, .community-section',
+        '.about-section:not(.routes-section), .about-film, .projects-section, .community-section',
       )
 
       animatedSections.forEach((section) => {
@@ -774,7 +836,7 @@ function setupMotion() {
         )
         const kicker = heading?.querySelector('.apple-kicker')
         const title = heading?.querySelector('h2')
-        const copy = heading?.querySelector('p:last-child, blockquote')
+        const copy = heading?.querySelector('p:last-child, .community-section__statement')
         const cards = section.querySelectorAll<HTMLElement>('.reveal-card')
         const sectionTimeline = gsap.timeline({
           scrollTrigger: {
@@ -791,8 +853,8 @@ function setupMotion() {
           sectionTimeline.from(
             title,
             {
-              y: desktop ? 68 : 38,
-              scale: 0.96,
+              y: desktop ? 36 : 18,
+              scale: 0.985,
               autoAlpha: 0,
               duration: 0.82,
               ease: 'power3.out',
@@ -804,7 +866,7 @@ function setupMotion() {
         if (copy) {
           sectionTimeline.from(
             copy,
-            { y: 28, autoAlpha: 0, duration: 0.62, ease: 'power2.out' },
+            { y: 14, autoAlpha: 0, duration: 0.62, ease: 'power2.out' },
             '<0.22',
           )
         }
@@ -813,8 +875,8 @@ function setupMotion() {
             cards,
             {
               x: (index) => (desktop ? (index % 2 === 0 ? -32 : 32) : 0),
-              y: desktop ? 52 : 30,
-              rotationY: desktop ? 5 : 0,
+              y: desktop ? 24 : 12,
+              rotationY: desktop ? 2 : 0,
               scale: 0.975,
               autoAlpha: 0,
               stagger: 0.09,
@@ -891,6 +953,10 @@ function setupMotion() {
           '<0.2',
         )
         .from('.final-section .apple-button', { y: 20, autoAlpha: 0, duration: 0.5 }, '<0.16')
+      return () => {
+        routesSection.classList.remove('is-pinned')
+        navigateRoute = undefined
+      }
     },
     pageRoot.value,
   )
@@ -903,29 +969,32 @@ onMounted(async () => {
   document.documentElement.classList.add('about-page-active')
   document.addEventListener('visibilitychange', handleHeroVisibilityChange)
   startHeroAutoplay()
-
-  const [homeResult, appsResult] = await Promise.allSettled([
+  await nextTick()
+  if (disposed) return
+  setupMotion()
+  void document.fonts.ready.then(refreshMotion)
+  void Promise.allSettled([
     siteApi.clubHome(),
     siteApi.showcaseApps({ page: 1, pageSize: 3 }),
-  ])
-  if (homeResult.status === 'fulfilled') {
-    focusAreas.value = homeResult.value?.focusAreas || []
-    awards.value = homeResult.value?.awards || []
-  }
-  if (appsResult.status === 'fulfilled') {
-    showcaseApps.value = appsResult.value?.list || appsResult.value || []
-  }
-
-  await nextTick()
-  resetPageScroll()
-  setupMotion()
-  scrollResetFrame = window.requestAnimationFrame(() => {
-    resetPageScroll()
-    ScrollTrigger.refresh()
+  ]).then(async ([homeResult, appsResult]) => {
+    if (disposed) return
+    if (homeResult.status === 'fulfilled') {
+      focusAreas.value = homeResult.value?.focusAreas || []
+      awards.value = homeResult.value?.awards || []
+    }
+    if (appsResult.status === 'fulfilled') {
+      showcaseApps.value = appsResult.value?.list || appsResult.value || []
+    }
+    if (homeResult.status === 'fulfilled' || appsResult.status === 'fulfilled') {
+      await nextTick()
+      if (!disposed) setupMotion(false)
+    }
+    refreshMotion()
   })
 })
 
 onBeforeUnmount(() => {
+  disposed = true
   if (scrollResetFrame !== undefined) window.cancelAnimationFrame(scrollResetFrame)
   stopHeroAutoplay()
   document.removeEventListener('visibilitychange', handleHeroVisibilityChange)
@@ -950,7 +1019,7 @@ onBeforeUnmount(() => {
   --apple-ink: var(--color-text-primary);
   --apple-muted: var(--color-text-secondary);
   --apple-faint: var(--color-text-tertiary);
-  --apple-blue: var(--color-text-primary);
+  --apple-blue: var(--color-primary);
   --apple-blue-hover: var(--color-primary-hover);
   --apple-line: var(--color-border);
   --apple-inverse-bg: var(--color-text-primary);
@@ -972,7 +1041,9 @@ onBeforeUnmount(() => {
   overflow: clip;
   background: var(--apple-bg);
   color: var(--apple-ink);
-  font-family: 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
 }
 
 .about-page *,
@@ -1668,7 +1739,7 @@ onBeforeUnmount(() => {
 }
 
 .section-heading--dark > p:last-child,
-.community-section blockquote {
+.community-section__statement {
   color: var(--apple-on-dark-secondary);
 }
 
@@ -1943,7 +2014,7 @@ onBeforeUnmount(() => {
   color: rgba(255, 255, 255, 0.58);
 }
 
-.community-section blockquote {
+.community-section__statement {
   max-width: 600px;
   margin: 42px 0 0;
   padding-left: 22px;
@@ -2469,7 +2540,7 @@ onBeforeUnmount(() => {
     min-height: 250px;
   }
 
-  .community-section blockquote {
+  .community-section__statement {
     font-size: 16px;
   }
 
@@ -2527,6 +2598,237 @@ onBeforeUnmount(() => {
     opacity: 1 !important;
     visibility: visible !important;
     will-change: auto;
+  }
+}
+
+/* The film shares the original page's typography, spacing and theme tokens. */
+.about-film {
+  padding: 112px 0;
+  background: var(--apple-bg-soft);
+  scroll-margin-top: 32px;
+}
+.about-film .section-heading {
+  margin-bottom: 44px;
+}
+.about-film__stage {
+  transform-origin: center;
+}
+@media (max-width: 733px) {
+  .about-film {
+    padding: 76px 0;
+  }
+  .about-film .section-heading {
+    margin-bottom: 32px;
+  }
+  .about-film .section-heading h2 {
+    font-size: clamp(28px, 7vw, 40px);
+    line-height: 1.25;
+  }
+}
+
+/* Refinement of the existing page; the campus hero keeps its original composition. */
+.about-page {
+  --apple-radius: 20px;
+  --about-section-space: clamp(72px, 7.5vw, 112px);
+}
+.about-page h2,
+.about-page h3 {
+  font-family: inherit;
+  text-wrap: balance;
+}
+.section-heading h2,
+.route-story__intro h2,
+.community-section h2,
+.final-section h2 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+}
+.section-heading > p:last-child,
+.story-card p,
+.route-scene__description,
+.project-card p,
+.gain-card p,
+.journey-item p,
+.faq-list details p {
+  line-height: 1.8;
+}
+.about-section:not(.routes-section) {
+  min-height: auto;
+  padding-block: var(--about-section-space);
+}
+.section-heading {
+  margin-bottom: 44px;
+}
+.story-card {
+  min-height: 340px;
+}
+.story-card--statement h3 {
+  font-weight: 600;
+  line-height: 1.3;
+}
+.route-scene h3 {
+  font-weight: 600;
+  line-height: 1.15;
+}
+.route-story__intro h2 {
+  font-size: clamp(40px, 4.3vw, 62px);
+}
+.route-story__rail-item button {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+}
+.route-story__rail-item button svg {
+  opacity: 0.45;
+}
+.route-story__rail-item button:hover {
+  color: var(--apple-blue);
+}
+.projects-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+.project-card h3 {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.project-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 20px;
+  color: var(--apple-on-dark-primary);
+  font-size: 14px;
+  text-decoration: none;
+}
+.project-card__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.about-page a:focus-visible,
+.about-page button:focus-visible,
+.about-page summary:focus-visible {
+  outline: 2px solid var(--apple-blue);
+  outline-offset: 5px;
+  border-radius: 6px;
+}
+.about-hero button:focus-visible {
+  outline-color: #fff;
+}
+.about-film {
+  padding-block: var(--about-section-space);
+}
+.about-film .section-heading {
+  max-width: none;
+}
+.about-film .section-heading h2 {
+  font-size: clamp(34px, 4.8vw, 66px);
+}
+.community-section__statement {
+  margin: 32px 0 0;
+  font-size: clamp(20px, 2.2vw, 30px);
+  line-height: 1.8;
+  color: var(--apple-on-dark-secondary);
+}
+.routes-section:not(.is-pinned) {
+  min-height: auto;
+}
+.routes-section:not(.is-pinned) .route-story {
+  min-height: auto;
+  grid-template-columns: 1fr;
+  padding-block: var(--about-section-space);
+  gap: 40px;
+}
+.routes-section:not(.is-pinned) .route-story__rail,
+.routes-section:not(.is-pinned) .route-story__progress {
+  display: none;
+}
+.routes-section:not(.is-pinned) .route-story__stage {
+  min-height: 0;
+  display: grid;
+  gap: 32px;
+  border-left: 0;
+}
+.routes-section:not(.is-pinned) .route-scene {
+  position: relative;
+  inset: auto;
+  padding: 32px 0;
+  border-top: 1px solid var(--apple-line);
+  opacity: 1;
+  visibility: visible;
+  will-change: auto;
+}
+.routes-section:not(.is-pinned) .route-scene__number {
+  top: 20px;
+  right: 0;
+  font-size: 140px;
+}
+.routes-section:not(.is-pinned) .route-scene h3 {
+  font-size: clamp(34px, 5vw, 54px);
+}
+@media (min-width: 1068px) {
+  .about-film .section-heading {
+    display: grid;
+    grid-template-columns: 1fr 0.65fr;
+    column-gap: 72px;
+  }
+  .about-film .apple-kicker {
+    grid-column: 1 / -1;
+  }
+  .about-film .section-heading > p:last-child {
+    align-self: end;
+    margin: 0 0 5px;
+    font-size: 17px;
+  }
+}
+@media (max-width: 733px) {
+  .section-heading h2,
+  .route-story__intro h2 {
+    font-size: clamp(32px, 8.5vw, 42px);
+  }
+  .section-heading > p:last-child {
+    font-size: 16px;
+    margin-top: 20px;
+  }
+  .story-card {
+    min-height: 280px;
+    padding: 28px;
+  }
+  .story-card--statement h3 {
+    font-size: 28px;
+  }
+  .routes-section:not(.is-pinned) .route-story {
+    gap: 24px;
+  }
+  .routes-section:not(.is-pinned) .route-scene__number {
+    font-size: 120px;
+  }
+  .routes-section:not(.is-pinned) .route-scene__opening {
+    max-width: 280px;
+    margin-top: 12px;
+    font-size: 17px;
+  }
+  .routes-section:not(.is-pinned) .route-scene__description {
+    font-size: 16px;
+  }
+  .about-film .section-heading h2 {
+    font-size: 36px;
+  }
+  .about-film .section-heading {
+    margin-bottom: 32px;
+  }
+  .community-section__statement {
+    font-size: 20px;
   }
 }
 </style>

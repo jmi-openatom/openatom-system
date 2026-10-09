@@ -42,6 +42,7 @@ x-backend-env: &backend-env
   APP_AUTH_IP_MAX_PER_MINUTE: ${APP_AUTH_IP_MAX_PER_MINUTE:-30}
   APP_AVATAR_STORAGE_DIR: "/app/uploads/avatars"
   APP_IMAGE_HOSTING_STORAGE_DIR: "/app/uploads/images"
+  APP_CAMPUS_BUILDING_STORAGE_DIR: "/app/uploads/campus-buildings"
   APP_LEAVE_ATTACHMENT_STORAGE_DIR: "/app/uploads/leave-attachments"
   APP_EXPENSE_ATTACHMENT_STORAGE_DIR: "/app/uploads/expense-attachments"
   APP_DOCUMENT_TEMPLATE_STORAGE_DIR: "/app/uploads/document-templates"

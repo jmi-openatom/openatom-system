@@ -67,10 +67,11 @@ const mapContainer = ref<HTMLElement>()
 const mapError = ref('')
 const mapLoaded = ref(false)
 const spacePanActive = ref(false)
-const emit = defineEmits<{ selectBuilding: [id: string | number] }>()
+const emit = defineEmits<{ selectBuilding: [id: string | number | null] }>()
 let makeLandmark: typeof campusLandmarkLayer | undefined
 let landmark: ReturnType<typeof campusLandmarkLayer> | undefined
 let selectedBuilding: string | number | null = null
+let pendingFocus: string | number | null = null
 const { resolvedTheme } = useTheme()
 
 const mapboxToken =
@@ -564,7 +565,12 @@ function addCampusLabels() {
 
 function focusBuilding(id: string | number) {
   const building = CAMPUS_BUILDINGS.find((item) => String(item.id) === String(id))
-  if (!map || !building) return
+  if (!building) return
+  if (!map?.getSource('oa-campus-buildings')) {
+    pendingFocus = building.id
+    return
+  }
+  pendingFocus = null
   if (selectedBuilding !== null && selectedBuilding !== LIGHTHOUSE_ID)
     map.setFeatureState(
       { source: 'oa-campus-buildings', id: selectedBuilding },
@@ -575,21 +581,41 @@ function focusBuilding(id: string | number) {
   if (building.id === LIGHTHOUSE_ID) focusLighthouse()
   else {
     map.setFeatureState({ source: 'oa-campus-buildings', id: building.id }, { selected: true })
-    map.flyTo({ center: building.center, zoom: 17.5, pitch: 56, duration: 1000, essential: false })
+    map.flyTo({
+      center: building.center,
+      zoom: 17.5,
+      pitch: 56,
+      duration: 1000,
+      essential: false,
+      offset: focusOffset(),
+    })
   }
   emit('selectBuilding', building.id)
 }
 
-function resetView() {
-  if (!map) return
-  if (selectedBuilding !== null && selectedBuilding !== LIGHTHOUSE_ID)
+function clearSelection() {
+  pendingFocus = null
+  if (
+    map?.getSource('oa-campus-buildings') &&
+    selectedBuilding !== null &&
+    selectedBuilding !== LIGHTHOUSE_ID
+  )
     map.setFeatureState(
       { source: 'oa-campus-buildings', id: selectedBuilding },
       { selected: false },
     )
   selectedBuilding = null
   landmark?.setSelected(null)
-  map.flyTo({ ...getCampusCamera(), duration: 900, essential: false })
+}
+
+function resetView() {
+  clearSelection()
+  map?.flyTo({ ...getCampusCamera(), duration: 900, essential: false })
+}
+
+function focusOffset(): [number, number] {
+  const container = mapContainer.value
+  return container && container.clientWidth < 900 ? [0, -container.clientHeight * 0.18] : [0, 0]
 }
 
 function rotateView(degrees: number) {
@@ -604,10 +630,11 @@ function focusLighthouse() {
     bearing: -30,
     duration: 1000,
     essential: false,
+    offset: focusOffset(),
   })
 }
 
-defineExpose({ focusBuilding, resetView, rotateView })
+defineExpose({ focusBuilding, resetView, rotateView, clearSelection })
 
 function addCampusDetails() {
   if (!map || map.getSource('oa-campus-trunks')) return
@@ -1132,6 +1159,10 @@ async function initMap() {
         layers: ['oa-campus-labels', 'oa-campus-roofs', 'oa-campus-buildings'],
       })[0]
       if (feature?.id !== undefined) focusBuilding(feature.id)
+      else {
+        clearSelection()
+        emit('selectBuilding', null)
+      }
     })
     map.on('mousemove', (event: MapMouseEvent) => {
       if (spacePanActive.value) {
@@ -1154,6 +1185,7 @@ async function initMap() {
     mapError.value = ''
     restoreStyleOverlays()
     map?.jumpTo(getCampusCamera())
+    if (pendingFocus !== null) focusBuilding(pendingFocus)
     if (!props.interactive) addCampusMarker(mapboxgl)
     scheduleMapEnhancements()
     if (shouldAnimateMap()) scheduleEarthReturn()

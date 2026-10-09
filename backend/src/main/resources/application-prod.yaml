@@ -122,6 +122,8 @@ app:
     storage-dir: ${APP_AVATAR_STORAGE_DIR:./uploads/avatars}
   image-hosting:
     storage-dir: ${APP_IMAGE_HOSTING_STORAGE_DIR:./uploads/images}
+  campus-building:
+    storage-dir: ${APP_CAMPUS_BUILDING_STORAGE_DIR:./uploads/campus-buildings}
   leave-attachment:
     storage-dir: ${APP_LEAVE_ATTACHMENT_STORAGE_DIR:./uploads/leave-attachments}
   expense-attachment:

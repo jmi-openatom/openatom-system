@@ -6,6 +6,8 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,12 +51,22 @@ public class SchemaCompatibilityInitializer implements ApplicationRunner {
     ensureClubExpenseTables();
     ensureBlogTables();
     ensureImageHostingTable();
+    ensureCampusBuildingTables();
     ensureMemberProfileTables();
     ensureShowcaseAppTable();
     ensureDataOpenApplicationTable();
     ensureOauthTables();
     ensureBotManagementTables();
     ensureOperationLogColumns();
+  }
+
+  private void ensureCampusBuildingTables() {
+    if (tableExists("campus_building_submission") && tableExists("campus_building_photo")
+        && tableExists("campus_building_photo_removal")) return;
+    // Local development disables Flyway. Reuse its idempotent migration instead
+    // of maintaining a second copy of this schema in the compatibility bootstrap.
+    new ResourceDatabasePopulator(new ClassPathResource("db/migration/V62__add_campus_building_submissions.sql"))
+        .execute(jdbcTemplate.getDataSource());
   }
 
   private void ensureClubExpenseTables() {

@@ -1,5 +1,8 @@
 <template>
-  <main class="campus-page" aria-label="江苏海事职业技术学院三维校园地图">
+  <main
+    :class="['campus-page', { 'campus-page--detail': selectedBuilding }]"
+    aria-label="江苏海事职业技术学院三维校园地图"
+  >
     <HomeMapSection
       ref="campusMap"
       class="campus-page__map"
@@ -57,6 +60,14 @@
         <button @click="reset"><Scan :size="16" aria-hidden="true" />全景</button>
       </div>
     </aside>
+    <Transition name="building-card">
+      <CampusBuildingCard
+        v-if="selectedBuilding"
+        :key="selectedBuilding.id"
+        :building="selectedBuilding"
+        @close="closeBuilding"
+      />
+    </Transition>
     <div class="campus-orbit" role="group" aria-label="旋转地图">
       <button aria-label="向左旋转地图" @click="campusMap?.rotateView(-30)">
         <RotateCcw :size="18" aria-hidden="true" />
@@ -69,13 +80,14 @@
       <p class="campus-caption__gesture">
         按住空格 + 拖动平移 · 滚轮缩放 · 右键旋转<span>触屏可双指缩放、旋转</span>
       </p>
-      <p>部分建筑及小山按参考图示意</p>
+      <p>点击楼宇查看介绍与实拍图 · 部分建筑及小山按参考图示意</p>
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   ArrowUpRight,
   ArrowLeft,
@@ -89,10 +101,12 @@ import {
   Tags,
 } from 'lucide-vue-next'
 import HomeMapSection from '@/components/site/home/HomeMapSection.vue'
+import CampusBuildingCard from '@/components/site/home/CampusBuildingCard.vue'
 import { CAMPUS_BUILDINGS } from '@/components/site/home/campusLabels'
 import { useTheme } from '@/composables/useTheme'
 
 const campusMap = ref<InstanceType<typeof HomeMapSection>>()
+const route = useRoute()
 const showLabels = ref(true)
 const selectedId = ref('')
 const query = ref('')
@@ -103,14 +117,16 @@ const searchResults = computed(() =>
 const selectedBuilding = computed(() =>
   CAMPUS_BUILDINGS.find((building) => String(building.id) === selectedId.value),
 )
-function onSelectBuilding(id: string | number) {
-  selectedId.value = String(id)
+function onSelectBuilding(id: string | number | null) {
+  selectedId.value = id === null ? '' : String(id)
 }
 function chooseBuilding(id: string | number) {
   if (id === '') {
     reset()
     return
   }
+  if (!CAMPUS_BUILDINGS.some((building) => String(building.id) === String(id))) return
+  selectedId.value = String(id)
   campusMap.value?.focusBuilding(id)
   query.value = ''
 }
@@ -119,6 +135,14 @@ function reset() {
   query.value = ''
   campusMap.value?.resetView()
 }
+function closeBuilding() {
+  selectedId.value = ''
+  campusMap.value?.clearSelection()
+}
+onMounted(() => {
+  const id = route.query.building
+  if (typeof id === 'string') chooseBuilding(id)
+})
 </script>
 
 <style scoped>
@@ -133,6 +157,23 @@ function reset() {
 .campus-page__map {
   height: 100%;
   min-height: 0;
+}
+.building-card-enter-active,
+.building-card-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+.building-card-enter-from,
+.building-card-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .building-card-enter-active,
+  .building-card-leave-active {
+    transition: none;
+  }
 }
 .campus-panel,
 .campus-orbit {
@@ -376,6 +417,11 @@ select:focus-visible {
   .campus-caption__gesture span {
     display: block;
     font-size: 11px;
+  }
+}
+@media (max-width: 899px) {
+  .campus-page--detail .campus-caption {
+    display: none;
   }
 }
 </style>

@@ -74,6 +74,7 @@ const adminFallbackRoutes = [
   '/admin/points',
   '/admin/office-documents',
   '/admin/images',
+  '/admin/campus-buildings',
   '/admin/showcase-apps',
   '/admin/partner-clubs',
   '/admin/data-open',
@@ -567,6 +568,12 @@ const routes = [
         name: 'admin-blogs',
         meta: { permissions: ['blog:list'] },
         component: resilientView(() => import('../views/admin/Blogs.vue')),
+      },
+      {
+        path: 'campus-buildings',
+        name: 'admin-campus-buildings',
+        meta: { permissions: ['campus-building:list'] },
+        component: resilientView(() => import('../views/admin/CampusBuildings.vue')),
       },
       {
         path: 'member-profile-comments',
