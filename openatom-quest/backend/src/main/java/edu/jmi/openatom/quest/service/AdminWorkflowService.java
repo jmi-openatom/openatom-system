@@ -212,18 +212,7 @@ public class AdminWorkflowService {
         if (!actor.roles().contains("ADMIN") && ownerId != actor.id()) {
             throw new IllegalArgumentException("只能为自己创建负责的任务");
         }
-        Integer qualifiedOwner = jdbcTemplate.queryForObject("""
-            SELECT COUNT(DISTINCT member.id)
-            FROM quest_member member
-            JOIN quest_member_role member_role ON member_role.member_id = member.id
-            JOIN quest_role_permission role_permission ON role_permission.role_id = member_role.role_id
-            JOIN quest_permission permission ON permission.id = role_permission.permission_id
-            WHERE member.id = ? AND member.status = 'ACTIVE'
-              AND permission.permission_key = 'submission:review'
-            """, Integer.class, ownerId);
-        if (qualifiedOwner == null || qualifiedOwner == 0) {
-            throw new IllegalArgumentException("任务负责人必须是启用中的导师、项目负责人或管理员");
-        }
+        requireQualifiedTaskOwner(ownerId);
         try {
             jdbcTemplate.update("""
                 INSERT INTO quest_task (
@@ -324,6 +313,47 @@ public class AdminWorkflowService {
     }
 
     @Transactional
+    public void updateTaskOwner(CurrentMember actor, long taskId, long ownerId) {
+        requirePermission(actor, "task:manage");
+        if (!actor.roles().contains("ADMIN")) {
+            throw new IllegalArgumentException("只有管理员可以分配任务负责人");
+        }
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
+            SELECT owner_member_id, status, title FROM quest_task WHERE id = ? FOR UPDATE
+            """, taskId);
+        if (rows.isEmpty()) throw new IllegalArgumentException("任务不存在");
+        Map<String, Object> task = rows.getFirst();
+        if ("ARCHIVED".equals(task.get("status"))) {
+            throw new IllegalArgumentException("归档任务不能更换负责人");
+        }
+        requireQualifiedTaskOwner(ownerId);
+        long previousOwnerId = ((Number) task.get("owner_member_id")).longValue();
+        if (previousOwnerId == ownerId) return;
+
+        jdbcTemplate.update("UPDATE quest_task SET owner_member_id = ? WHERE id = ?", ownerId, taskId);
+        jdbcTemplate.update("""
+            INSERT INTO quest_notification (member_id, notification_type, title, content, action_url, business_type, business_id)
+            VALUES (?, 'TASK_OWNER_ASSIGNED', '你已被指定为任务负责人', ?, '/reviews', 'TASK', ?)
+            """, ownerId, "你已被指定为任务「" + task.get("title") + "」的负责人，请在审核队列中处理相关提交。", String.valueOf(taskId));
+        auditService.record(actor.id(), "TASK_OWNER_CHANGE", "TASK", taskId,
+            Map.of("previousOwnerMemberId", previousOwnerId, "ownerMemberId", ownerId));
+    }
+
+    @Transactional
+    public List<Map<String, Object>> assignmentOptions(CurrentMember actor, long taskId) {
+        requirePermission(actor, "task:manage");
+        requireTaskOwner(actor, taskId);
+        return jdbcTemplate.queryForList("""
+            SELECT m.id, m.nickname
+            FROM quest_member m
+            WHERE m.status = 'ACTIVE' AND NOT EXISTS (
+                SELECT 1 FROM quest_task_assignment a WHERE a.task_id = ? AND a.member_id = m.id
+            )
+            ORDER BY m.nickname, m.id
+            """, taskId);
+    }
+
+    @Transactional
     public Map<String, Object> assignTask(CurrentMember actor, long taskId, AssignTaskRequest request) {
         requirePermission(actor, "task:manage");
         requireTaskOwner(actor, taskId);
@@ -368,7 +398,7 @@ public class AdminWorkflowService {
         );
         jdbcTemplate.update("""
             INSERT INTO quest_notification (member_id, notification_type, title, content, action_url, business_type, business_id)
-            SELECT ?, 'TASK_ASSIGNED', '收到新任务', CONCAT('管理员为你分配了任务「', title, '」。'),
+            SELECT ?, 'TASK_ASSIGNED', '收到新任务', CONCAT('已为你分配任务「', title, '」。'),
                    CONCAT('/tasks/', id), 'TASK', CAST(id AS CHAR)
             FROM quest_task WHERE id = ?
             """, request.memberId(), taskId);
@@ -694,11 +724,26 @@ public class AdminWorkflowService {
         }
     }
 
+    private void requireQualifiedTaskOwner(long ownerId) {
+        Integer qualifiedOwner = jdbcTemplate.queryForObject("""
+            SELECT COUNT(DISTINCT member.id)
+            FROM quest_member member
+            JOIN quest_member_role member_role ON member_role.member_id = member.id
+            JOIN quest_role_permission role_permission ON role_permission.role_id = member_role.role_id
+            JOIN quest_permission permission ON permission.id = role_permission.permission_id
+            WHERE member.id = ? AND member.status = 'ACTIVE'
+              AND permission.permission_key = 'submission:review'
+            """, Integer.class, ownerId);
+        if (qualifiedOwner == null || qualifiedOwner == 0) {
+            throw new IllegalArgumentException("任务负责人必须是启用中的导师、项目负责人或管理员");
+        }
+    }
+
     private void requireTaskOwner(CurrentMember actor, long taskId) {
         List<Long> owners = jdbcTemplate.queryForList(
             "SELECT owner_member_id FROM quest_task WHERE id = ? FOR UPDATE", Long.class, taskId);
         if (owners.isEmpty()) throw new IllegalArgumentException("任务不存在");
-        if (!actor.roles().contains("ADMIN") && owners.getFirst() != actor.id()) {
+        if (!actor.roles().contains("ADMIN") && !owners.getFirst().equals(actor.id())) {
             throw new IllegalArgumentException("只能管理自己负责的任务");
         }
     }

@@ -14,6 +14,7 @@ import edu.jmi.openatom.quest.dto.UpdateLeaderboardVisibilityRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberRolesRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberProfileRequest;
 import edu.jmi.openatom.quest.dto.UpdateMemberStatusRequest;
+import edu.jmi.openatom.quest.dto.UpdateTaskOwnerRequest;
 import edu.jmi.openatom.quest.model.CurrentMember;
 import edu.jmi.openatom.quest.service.AdminWorkflowService;
 import jakarta.validation.Valid;
@@ -159,6 +160,24 @@ public class AdminController {
     ) {
         workflowService.changeTaskStatus(member, taskId, status);
         return ApiResponse.ok();
+    }
+
+    @PatchMapping("/tasks/{taskId}/owner")
+    public ApiResponse<Void> updateTaskOwner(
+        @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member,
+        @PathVariable long taskId,
+        @Valid @RequestBody UpdateTaskOwnerRequest request
+    ) {
+        workflowService.updateTaskOwner(member, taskId, request.ownerMemberId());
+        return ApiResponse.ok();
+    }
+
+    @GetMapping("/tasks/{taskId}/assignment-options")
+    public ApiResponse<List<Map<String, Object>>> assignmentOptions(
+        @RequestAttribute(MemberAccessInterceptor.CURRENT_MEMBER) CurrentMember member,
+        @PathVariable long taskId
+    ) {
+        return ApiResponse.ok(workflowService.assignmentOptions(member, taskId));
     }
 
     @PostMapping("/tasks/{taskId}/assignments")

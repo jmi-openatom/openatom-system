@@ -30,8 +30,25 @@
       </section>
 
       <section v-else-if="section === '任务管理'" class="admin-section">
-        <div class="admin-toolbar"><div><h2>任务管理</h2><p>已产生提交的任务只允许归档，历史记录不会删除。</p></div><el-button type="primary" @click="taskDialog = true">新建任务</el-button></div>
-        <div class="data-table-wrap"><table class="data-table"><thead><tr><th>任务</th><th>阶段</th><th>负责人</th><th>领取 / 通过</th><th>状态</th><th>操作</th></tr></thead><tbody><tr v-for="item in tasks" :key="item.id"><td><strong>{{ item.title }}</strong><small>{{ item.taskKey }}</small></td><td>{{ item.stageKey || '-' }}</td><td>{{ item.ownerName }}</td><td>{{ item.assignmentCount || 0 }} / {{ item.passedCount || 0 }}</td><td><span class="status-chip" :data-status="item.status">{{ statusText[item.status] || item.status }}</span></td><td><el-button v-if="item.status === 'DRAFT' || item.status === 'OFFLINE'" link type="primary" @click="setTaskStatus(item, 'PUBLISHED')">{{ item.status === 'OFFLINE' ? '重新发布' : '发布' }}</el-button><el-button v-if="item.status === 'PUBLISHED'" link type="primary" @click="openAssignment(item)">分配</el-button><el-button v-if="item.status === 'PUBLISHED'" link @click="setTaskStatus(item, 'OFFLINE')">下架</el-button><el-button v-if="item.status !== 'ARCHIVED'" link type="danger" @click="archiveTask(item)">归档</el-button></td></tr></tbody></table></div>
+        <div class="admin-toolbar"><div><h2>任务管理</h2><p>可指定或更换任务负责人；归档后保留历史记录。</p></div><el-button type="primary" @click="taskDialog = true">新建任务</el-button></div>
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead><tr><th>任务</th><th>阶段</th><th>负责人</th><th>领取 / 通过</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody><tr v-for="item in tasks" :key="item.id">
+              <td><strong>{{ item.title }}</strong><small>{{ item.taskKey }}</small></td>
+              <td>{{ item.stageKey || '-' }}</td><td>{{ item.ownerName }}</td>
+              <td>{{ item.assignmentCount || 0 }} / {{ item.passedCount || 0 }}</td>
+              <td><span class="status-chip" :data-status="item.status">{{ statusText[item.status] || item.status }}</span></td>
+              <td>
+                <el-button v-if="item.status !== 'ARCHIVED'" link type="primary" @click="openTaskOwner(item)">分配负责人</el-button>
+                <el-button v-if="item.status === 'DRAFT' || item.status === 'OFFLINE'" link type="primary" @click="setTaskStatus(item, 'PUBLISHED')">{{ item.status === 'OFFLINE' ? '重新发布' : '发布' }}</el-button>
+                <el-button v-if="item.status === 'PUBLISHED'" link type="primary" @click="openAssignment(item)">分配任务</el-button>
+                <el-button v-if="item.status === 'PUBLISHED'" link @click="setTaskStatus(item, 'OFFLINE')">下架</el-button>
+                <el-button v-if="item.status !== 'ARCHIVED'" link type="danger" @click="archiveTask(item)">归档</el-button>
+              </td>
+            </tr></tbody>
+          </table>
+        </div>
       </section>
 
       <section v-else-if="section === '成员进度'" class="admin-section">
@@ -91,6 +108,23 @@
       <template #footer><el-button @click="taskDialog = false">取消</el-button><el-button type="primary" :loading="saving" @click="saveTask">保存草稿</el-button></template>
     </el-dialog>
 
+    <el-dialog v-model="ownerDialog" title="分配负责人" width="min(520px, calc(100vw - 32px))" :close-on-click-modal="!ownerSaving" :close-on-press-escape="!ownerSaving" :show-close="!ownerSaving">
+      <p v-if="ownerTask" class="dialog-intro">为任务“{{ ownerTask.title }}”指定负责人。当前负责人：{{ ownerTask.ownerName || '未指定' }}。</p>
+      <el-form v-if="taskOwnerOptions.length" label-position="top">
+        <el-form-item label="任务负责人" required :error="ownerError">
+          <el-select v-model="ownerMemberId" filterable :disabled="ownerSaving" placeholder="搜索昵称或成员编号" aria-label="选择任务负责人" style="width:100%" @change="ownerError = ''">
+            <el-option v-for="item in taskOwnerOptions" :key="item.id" :label="`${item.nickname || '未填写昵称'} · #${item.id}`" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <p class="dialog-intro">可选择启用中的导师、项目负责人或管理员。保存后，由新负责人处理该任务的审核。</p>
+      </el-form>
+      <p v-else class="dialog-intro" role="status">暂无可选负责人，请先在成员管理中启用成员并设置导师、项目负责人或管理员角色。</p>
+      <template #footer>
+        <el-button :disabled="ownerSaving" @click="ownerDialog = false">取消</el-button>
+        <el-button type="primary" :loading="ownerSaving" :disabled="!ownerMemberId || ownerMemberId === Number(ownerTask?.ownerMemberId)" @click="saveTaskOwner">保存负责人</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="assignmentDialog" title="直接分配任务" width="min(520px, calc(100vw - 32px))">
       <p v-if="assignmentTask" class="dialog-intro">将任务“{{ assignmentTask.title }}”直接分配给指定成员。</p>
       <el-form label-position="top">
@@ -148,7 +182,7 @@ import { ElCheckboxGroup, ElDialog, ElMessage, ElMessageBox } from 'element-plus
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getErrorMessage } from '@/api/http'
-import { archiveRoute, assignTask, changeTaskStatus, createAnnouncement, createDirection, createRoute, createTask, getAdminAssignments, getAdminDirections, getAdminMemberProgress, getAdminMembers, getAdminRoutes, getAdminStats, getAdminTasks, getAnnouncements, getAuditLogs, getLevelRules, getStages, publishAnnouncement, publishRoute, restartAdminAssignment, updateDirection, updateLeaderboardVisibility, updateLevelRule, updateMemberProfile, updateMemberRoles, updateMemberStatus, type AdminAssignment, type MemberTaskProgress } from '@/api/quest'
+import { archiveRoute, assignTask, changeTaskStatus, createAnnouncement, createDirection, createRoute, createTask, getAdminAssignments, getAdminDirections, getAdminMemberProgress, getAdminMembers, getAdminRoutes, getAdminStats, getAdminTasks, getAnnouncements, getAuditLogs, getLevelRules, getStages, publishAnnouncement, publishRoute, restartAdminAssignment, updateDirection, updateLeaderboardVisibility, updateLevelRule, updateMemberProfile, updateMemberRoles, updateMemberStatus, updateTaskOwner, type AdminAssignment, type MemberTaskProgress } from '@/api/quest'
 const sections = ['数据概览', '任务管理', '成员进度', '成长路线', '成员管理', '平台配置', '操作日志']
 const route = useRoute()
 const router = useRouter()
@@ -187,6 +221,11 @@ const directionForm = reactive({ name:'', directionKey:'', sortOrder:90 })
 const announcementForm = reactive({ title:'', content:'', expiresAt:'' })
 const assignmentTask = ref<Record<string, any> | null>(null)
 const assignmentMemberId = ref<number>()
+const ownerDialog = ref(false)
+const ownerTask = ref<Record<string, any> | null>(null)
+const ownerMemberId = ref<number>()
+const ownerSaving = ref(false)
+const ownerError = ref('')
 const editingMemberId = ref<number>()
 const skillOptions = ['HTML / CSS','JavaScript','TypeScript','Vue','React','Node.js','Java','Spring Boot','Python','FastAPI','MySQL','Redis','Git','Linux','Docker','GitHub Actions','REST API','OpenHarmony','ArkTS','人工智能','UI/UX','Figma','技术写作']
 const memberForm = reactive({ nickname:'', avatarUrl:'', email:'', school:'', college:'', major:'', grade:'', skills:[] as string[], codeProfileUrl:'', weeklyHours:0, bio:'', directionIds:[] as number[], totalPoints:0 })
@@ -242,6 +281,29 @@ async function saveRoute(){ if(!routeForm.name||!routeForm.routeKey||!routeForm.
 async function publish(item:Record<string,any>){await publishRoute(Number(item.id));ElMessage.success('路线已发布');await load()}
 async function archiveRouteItem(item:Record<string,any>){await ElMessageBox.confirm(`归档后不可恢复，历史记录会保留。确认归档「${item.name}」？`,'归档路线',{type:'warning'});await archiveRoute(Number(item.id));ElMessage.success('路线已归档');await load()}
 async function saveTask(){ if(!taskForm.title||!taskForm.taskKey||!taskForm.summary||!taskForm.learningObjectivesText||!taskForm.instructions||!taskForm.submissionRequirements||!taskForm.acceptanceCriteria)return ElMessage.warning('请填写任务必填项');if(taskForm.deadlineType==='FIXED'&&!taskForm.fixedDeadline)return ElMessage.warning('请填写固定截止时间'); saving.value=true; try{const selectedRoute=routes.value.find(r=>r.id===taskForm.routeId);await createTask({...taskForm,directionId:selectedRoute?.directionId||null,learningObjectives:lines(taskForm.learningObjectivesText),fixedDeadline:taskForm.deadlineType==='FIXED'?taskForm.fixedDeadline:null,durationHours:taskForm.deadlineType==='AFTER_CLAIM'?taskForm.durationHours:null,resources:lines(taskForm.resourcesText),ownerMemberId:taskForm.ownerMemberId||null,faq:lines(taskForm.faqText),capacity:taskForm.capacity||null,requiredInStage:true});taskDialog.value=false;ElMessage.success('任务草稿已创建');await load()}catch(reason){ElMessage.error(getErrorMessage(reason))}finally{saving.value=false} }
+function openTaskOwner(item: Record<string, any>) {
+  ownerTask.value = item
+  ownerMemberId.value = taskOwnerOptions.value.some(member => Number(member.id) === Number(item.ownerMemberId))
+    ? Number(item.ownerMemberId) : undefined
+  ownerError.value = ''
+  ownerDialog.value = true
+}
+async function saveTaskOwner() {
+  if (ownerSaving.value || !ownerTask.value || !ownerMemberId.value) return
+  ownerSaving.value = true
+  ownerError.value = ''
+  try {
+    await updateTaskOwner(Number(ownerTask.value.id), ownerMemberId.value)
+    ownerDialog.value = false
+    ElMessage.success('任务负责人已更新')
+    await load()
+  } catch (reason) {
+    ownerError.value = getErrorMessage(reason, '负责人分配失败，请重试')
+    ElMessage.error(ownerError.value)
+  } finally {
+    ownerSaving.value = false
+  }
+}
 function openAssignment(item:Record<string,any>){assignmentTask.value=item;assignmentMemberId.value=undefined;assignmentDialog.value=true}
 async function saveAssignment(){if(!assignmentTask.value||!assignmentMemberId.value)return ElMessage.warning('请选择要分配的成员');saving.value=true;try{await assignTask(Number(assignmentTask.value.id),assignmentMemberId.value);assignmentDialog.value=false;ElMessage.success('任务已分配，成员将收到站内通知');await load()}catch(reason){ElMessage.error(getErrorMessage(reason,'任务分配失败'))}finally{saving.value=false}}
 async function setTaskStatus(item:Record<string,any>,status:string){await changeTaskStatus(Number(item.id),status);ElMessage.success('任务状态已更新');await load()}

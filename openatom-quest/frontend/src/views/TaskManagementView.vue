@@ -4,7 +4,7 @@
       <div class="page-heading">
         <p class="eyebrow">TASK OPERATIONS</p>
         <h1>任务管理</h1>
-        <p>创建并维护由你负责的任务。审核队列只会展示这些任务产生的成员提交。</p>
+        <p>创建、维护并分配由你负责的任务。审核队列只会展示这些任务产生的成员提交。</p>
       </div>
       <el-button type="primary" size="large" @click="taskDialog = true">新建任务</el-button>
     </header>
@@ -32,6 +32,7 @@
               <td><span class="status-chip" :data-status="item.status">{{ statusText[item.status] || item.status }}</span></td>
               <td class="task-actions">
                 <el-button v-if="item.status === 'DRAFT' || item.status === 'OFFLINE'" link type="primary" :loading="workingTaskId === item.id" @click="setStatus(item, 'PUBLISHED')">{{ item.status === 'OFFLINE' ? '重新发布' : '发布' }}</el-button>
+                <el-button v-if="item.status === 'PUBLISHED'" link type="primary" @click="openAssignment(item)">分配</el-button>
                 <el-button v-if="item.status === 'PUBLISHED'" link :loading="workingTaskId === item.id" @click="setStatus(item, 'OFFLINE')">下架</el-button>
                 <el-button v-if="item.status !== 'ARCHIVED'" link type="danger" :loading="workingTaskId === item.id" @click="archiveTask(item)">归档</el-button>
               </td>
@@ -45,6 +46,28 @@
         <el-button type="primary" @click="taskDialog = true">创建第一个任务</el-button>
       </section>
     </template>
+
+    <el-dialog v-model="assignmentDialog" title="分配任务" width="min(520px, calc(100vw - 32px))" :close-on-click-modal="!assigning" :close-on-press-escape="!assigning" :show-close="!assigning">
+      <p v-if="assignmentTask" class="dialog-intro">将任务“{{ assignmentTask.title }}”分配给成员，成员将收到站内通知。</p>
+      <el-skeleton v-if="assignmentOptionsLoading" :rows="2" animated />
+      <div v-else-if="assignmentOptionsError" role="alert">
+        <p>{{ assignmentOptionsError }}</p>
+        <el-button @click="loadAssignmentOptions">重新加载成员</el-button>
+      </div>
+      <el-form v-else-if="assignmentMembers.length" label-position="top">
+        <el-form-item label="选择成员" required>
+          <el-select v-model="assignmentMemberId" filterable :disabled="assigning" placeholder="搜索昵称或成员编号" aria-label="选择要分配任务的成员" style="width:100%">
+            <el-option v-for="item in assignmentMembers" :key="item.id" :label="`${item.nickname || '成员'} · #${item.id}`" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <p class="dialog-intro">仅显示启用中且尚未领取或被分配此任务的成员。</p>
+      </el-form>
+      <p v-else class="dialog-intro" role="status">暂无可分配的成员。成员需处于启用状态，且尚未拥有此任务。</p>
+      <template #footer>
+        <el-button :disabled="assigning" @click="assignmentDialog = false">取消</el-button>
+        <el-button type="primary" :loading="assigning" :disabled="assignmentOptionsLoading || !!assignmentOptionsError || !assignmentMemberId" @click="saveAssignment">确认分配</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="taskDialog" title="新建任务" width="min(760px, calc(100vw - 32px))" destroy-on-close="false">
       <p class="dialog-intro">任务负责人将自动设置为当前账号。表单内容会在本机自动保存为草稿。</p>
@@ -86,7 +109,7 @@ import 'element-plus/es/components/dialog/style/css'
 import { ElDialog, ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { getErrorMessage } from '@/api/http'
-import { changeTaskStatus, createTask, getAdminTasks, getTaskManagementOptions } from '@/api/quest'
+import { assignTask, changeTaskStatus, createTask, getAdminTasks, getTaskAssignmentOptions, getTaskManagementOptions, type TaskAssignmentMember } from '@/api/quest'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -95,6 +118,14 @@ const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
 const taskDialog = ref(false)
+const assignmentDialog = ref(false)
+const assignmentTask = ref<Record<string, any> | null>(null)
+const assignmentMemberId = ref<number>()
+const assignmentMembers = ref<TaskAssignmentMember[]>([])
+const assignmentOptionsLoading = ref(false)
+const assignmentOptionsError = ref('')
+const assigning = ref(false)
+let assignmentOptionsRequestId = 0
 const workingTaskId = ref<number>()
 const tasks = ref<Record<string, any>[]>([])
 const routes = ref<Record<string, any>[]>([])
@@ -163,6 +194,45 @@ async function load() {
     error.value = getErrorMessage(reason, '无法加载任务管理数据')
   } finally {
     loading.value = false
+  }
+}
+
+function openAssignment(item: Record<string, any>) {
+  assignmentTask.value = item
+  assignmentMemberId.value = undefined
+  assignmentDialog.value = true
+  void loadAssignmentOptions()
+}
+
+async function loadAssignmentOptions() {
+  if (!assignmentTask.value) return
+  const requestId = ++assignmentOptionsRequestId
+  assignmentOptionsLoading.value = true
+  assignmentOptionsError.value = ''
+  assignmentMembers.value = []
+  try {
+    const members = await getTaskAssignmentOptions(Number(assignmentTask.value.id))
+    if (requestId === assignmentOptionsRequestId) assignmentMembers.value = members
+  } catch (reason) {
+    if (requestId === assignmentOptionsRequestId) assignmentOptionsError.value = getErrorMessage(reason, '无法加载可分配成员，请重试')
+  } finally {
+    if (requestId === assignmentOptionsRequestId) assignmentOptionsLoading.value = false
+  }
+}
+
+async function saveAssignment() {
+  if (assigning.value || assignmentOptionsLoading.value || assignmentOptionsError.value) return
+  if (!assignmentTask.value || !assignmentMemberId.value) return ElMessage.warning('请选择要分配的成员')
+  assigning.value = true
+  try {
+    await assignTask(Number(assignmentTask.value.id), assignmentMemberId.value)
+    assignmentDialog.value = false
+    ElMessage.success('任务已分配，成员将收到站内通知')
+    await load()
+  } catch (reason) {
+    ElMessage.error(getErrorMessage(reason, '任务分配失败'))
+  } finally {
+    assigning.value = false
   }
 }
 

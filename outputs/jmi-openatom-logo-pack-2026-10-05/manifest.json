@@ -1,0 +1,1332 @@
+{
+  "brand": {
+    "zh": "开放原子开源社团",
+    "en": "JMI-OPENATOM"
+  },
+  "date": "2026-10-05",
+  "colors": {
+    "blue": "#0085FC",
+    "text_navy": "#10365B",
+    "background_navy": "#0D1B2A"
+  },
+  "source": {
+    "file": "source/original-reference.png",
+    "sha256": "cee0e3d33a8afc279d166d8d403648d870717d7da8a198ea15b20f5ad4ae88e6"
+  },
+  "method": "Deterministic silhouette tracing and outlined typography; no generative redraw.",
+  "fonts": {
+    "chinese": "PingFang SC Semibold (outlined from wght 600)",
+    "english": "Avenir Next Demi Bold (outlined)"
+  },
+  "assets": [
+    {
+      "file": "01-square-symbol/svg/jmi-openatom-01-square-symbol-blue-transparent.svg",
+      "format": "svg",
+      "label": "正方形纯图标 / 蓝色透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          96,
+          114,
+          928,
+          917.3652007648184
+        ]
+      ],
+      "sha256": "3e4185a12cb088c2cccc6bebc9d768b8ca80ac04268033b7648de64192e54920",
+      "bytes": 16037
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-blue-transparent-512x512.png",
+      "format": "png",
+      "label": "正方形纯图标 / 蓝色透明底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": true,
+      "sha256": "dd4c732033bb40b6d56ae91048358676724abefad5a23b1c4dce3df8e1a44916",
+      "bytes": 27052
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-blue-transparent-1024x1024.png",
+      "format": "png",
+      "label": "正方形纯图标 / 蓝色透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "sha256": "04881ccc970763f0160e9172405cd6ca1434a0d0d3a8a17cf6f75a74d48335ec",
+      "bytes": 61713
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-blue-transparent-2048x2048.png",
+      "format": "png",
+      "label": "正方形纯图标 / 蓝色透明底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": true,
+      "sha256": "13d71bfcba2e4010380728d3c898e0b1cae3cb986476dbca4c25423ea77d7c46",
+      "bytes": 144518
+    },
+    {
+      "file": "01-square-symbol/svg/jmi-openatom-01-square-symbol-blue-white.svg",
+      "format": "svg",
+      "label": "正方形纯图标 / 蓝色白底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": false,
+      "bounds": [
+        [
+          96,
+          114,
+          928,
+          917.3652007648184
+        ]
+      ],
+      "sha256": "85f680f7a25bcfa199b7080052f9b8352afbbda5df1cdd3b24c0fa66e1bb6f5f",
+      "bytes": 16083
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-blue-white-512x512.png",
+      "format": "png",
+      "label": "正方形纯图标 / 蓝色白底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": false,
+      "sha256": "d29626fe3fc16772a91fb74f783a1b934e30afbf7e9010ec9f564c68e2adf2a9",
+      "bytes": 28535
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-blue-white-1024x1024.png",
+      "format": "png",
+      "label": "正方形纯图标 / 蓝色白底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": false,
+      "sha256": "857f69b9497181c44a8b897b26bc4c7454462a6f02f3f619c8ca4b88ef0cbaee",
+      "bytes": 64752
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-blue-white-2048x2048.png",
+      "format": "png",
+      "label": "正方形纯图标 / 蓝色白底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": false,
+      "sha256": "650a981c2c597960c09622983e2ea6f11a50443bbbf1d4af49bd2a70411cb3c8",
+      "bytes": 148976
+    },
+    {
+      "file": "01-square-symbol/svg/jmi-openatom-01-square-symbol-white-transparent.svg",
+      "format": "svg",
+      "label": "正方形纯图标 / 全白透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          96,
+          114,
+          928,
+          917.3652007648184
+        ]
+      ],
+      "sha256": "68fb369e66c6f06b10252a0ee2fa8ed6688d09123b6970f9405001d8c3e1ffb5",
+      "bytes": 16037
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-white-transparent-512x512.png",
+      "format": "png",
+      "label": "正方形纯图标 / 全白透明底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": true,
+      "sha256": "5a0fc18c0d37025545bc7a3480134f990cb45910af593eabcb6e7d51c681c9ee",
+      "bytes": 23706
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-white-transparent-1024x1024.png",
+      "format": "png",
+      "label": "正方形纯图标 / 全白透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "sha256": "13fe7e5873c0332d441bb1e65bee6c3e536c736861f769c05aaa0ae1e9c45623",
+      "bytes": 53122
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-white-transparent-2048x2048.png",
+      "format": "png",
+      "label": "正方形纯图标 / 全白透明底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": true,
+      "sha256": "ac16f64b76e645da98be98580916fb3331c0ebc91a8eb156dcecbd066408d3ca",
+      "bytes": 120584
+    },
+    {
+      "file": "01-square-symbol/svg/jmi-openatom-01-square-symbol-white-navy.svg",
+      "format": "svg",
+      "label": "正方形纯图标 / 全白深蓝底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": false,
+      "bounds": [
+        [
+          96,
+          114,
+          928,
+          917.3652007648184
+        ]
+      ],
+      "sha256": "a89235baf58279ded2ee20e3ba95ec893e61ba16d7b7b197d54f6980b2323c4b",
+      "bytes": 16086
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-white-navy-512x512.png",
+      "format": "png",
+      "label": "正方形纯图标 / 全白深蓝底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": false,
+      "sha256": "56e9b5a1a28fd0bdda384eba66d5851059f4d3ee62c29ec315cdf41c325f35b8",
+      "bytes": 29994
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-white-navy-1024x1024.png",
+      "format": "png",
+      "label": "正方形纯图标 / 全白深蓝底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": false,
+      "sha256": "4fd6f40d4319cedd1762371330dcb6508b3bf214a2d9bcbfc48d84b1a9dd2a59",
+      "bytes": 70331
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-white-navy-2048x2048.png",
+      "format": "png",
+      "label": "正方形纯图标 / 全白深蓝底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": false,
+      "sha256": "a0b4d0b6ec376dbd2a3253bb1c999748075bb49fa7e1d2665822b9a2917e7687",
+      "bytes": 162960
+    },
+    {
+      "file": "01-square-symbol/svg/jmi-openatom-01-square-symbol-black-transparent.svg",
+      "format": "svg",
+      "label": "正方形纯图标 / 全黑透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          96,
+          114,
+          928,
+          917.3652007648184
+        ]
+      ],
+      "sha256": "5da566534bba06024507fa4f154db85324cd3b3861e0f9425f97594cb37b5afb",
+      "bytes": 16037
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-black-transparent-512x512.png",
+      "format": "png",
+      "label": "正方形纯图标 / 全黑透明底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": true,
+      "sha256": "7df80b40438d7094672495dad05fbcb246aa135ec280c09ec32bd6613d64f9ad",
+      "bytes": 23144
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-black-transparent-1024x1024.png",
+      "format": "png",
+      "label": "正方形纯图标 / 全黑透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "sha256": "c2eb43c61b4c088d52d8ba78c738e731ae6ecdc4742774897f51cb523c079ba1",
+      "bytes": 50913
+    },
+    {
+      "file": "01-square-symbol/png/jmi-openatom-01-square-symbol-black-transparent-2048x2048.png",
+      "format": "png",
+      "label": "正方形纯图标 / 全黑透明底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": true,
+      "sha256": "c83d08141c29177faa6a51a32b8db932710245e43892070596cdb9e1194a45e9",
+      "bytes": 113723
+    },
+    {
+      "file": "02-square-bilingual/svg/jmi-openatom-02-square-bilingual-blue-transparent.svg",
+      "format": "svg",
+      "label": "正方形中英文字版 / 蓝色透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          212,
+          90,
+          812,
+          669.3499043977056
+        ],
+        [
+          147.44011347651048,
+          739.1741071642374,
+          876.5598865234896,
+          823.5782782231438
+        ],
+        [
+          251.117,
+          865.796,
+          772.883,
+          905.972
+        ]
+      ],
+      "sha256": "019c7e68b10fe0edbe105ce1f2cd21517f4db116260e51ed41c67b03cdda9a7a",
+      "bytes": 34448
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-blue-transparent-512x512.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 蓝色透明底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": true,
+      "sha256": "59a5b8bc3d8c6758f6765f492daaafa291c82baa1e283ef963723170a8f224e3",
+      "bytes": 28284
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-blue-transparent-1024x1024.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 蓝色透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "sha256": "5d342d853c97bc354e1da252f5fad7977535d8d0da46b6453eb6968b665be4dd",
+      "bytes": 62705
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-blue-transparent-2048x2048.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 蓝色透明底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": true,
+      "sha256": "89c21322d6bbf326b9db493734db33bce318b1d051f2940286cebf8029963f13",
+      "bytes": 143652
+    },
+    {
+      "file": "02-square-bilingual/svg/jmi-openatom-02-square-bilingual-blue-white.svg",
+      "format": "svg",
+      "label": "正方形中英文字版 / 蓝色白底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": false,
+      "bounds": [
+        [
+          212,
+          90,
+          812,
+          669.3499043977056
+        ],
+        [
+          147.44011347651048,
+          739.1741071642374,
+          876.5598865234896,
+          823.5782782231438
+        ],
+        [
+          251.117,
+          865.796,
+          772.883,
+          905.972
+        ]
+      ],
+      "sha256": "5ee8742de3e09c4ee8301539c20a5057345de191147e141bbb3ed5a279505e14",
+      "bytes": 34494
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-blue-white-512x512.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 蓝色白底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": false,
+      "sha256": "33e407776d8cd272653388ea7110b0d77514987cddfad5350c6936da5f28357f",
+      "bytes": 29756
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-blue-white-1024x1024.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 蓝色白底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": false,
+      "sha256": "63882366c5013fd8904a65506f00acd02cb539517624f8da26367a4e032a8d72",
+      "bytes": 66067
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-blue-white-2048x2048.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 蓝色白底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": false,
+      "sha256": "7f4ef3f75b96db9c2a1493b3c5be563badc2b4d4e3aed7a194e87e092a12218c",
+      "bytes": 151004
+    },
+    {
+      "file": "02-square-bilingual/svg/jmi-openatom-02-square-bilingual-white-transparent.svg",
+      "format": "svg",
+      "label": "正方形中英文字版 / 全白透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          212,
+          90,
+          812,
+          669.3499043977056
+        ],
+        [
+          147.44011347651048,
+          739.1741071642374,
+          876.5598865234896,
+          823.5782782231438
+        ],
+        [
+          251.117,
+          865.796,
+          772.883,
+          905.972
+        ]
+      ],
+      "sha256": "76dc8d33ebf368fccb73a07701d2a7c0e90aa27c2cc0922bea2ba33d066abdef",
+      "bytes": 34448
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-white-transparent-512x512.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 全白透明底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": true,
+      "sha256": "6642f80c7ef3da8ed7f5fb902c7947b3e6149556fce82f93a63d81e1f67b78e8",
+      "bytes": 24203
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-white-transparent-1024x1024.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 全白透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "sha256": "ce74b51bf50a731621c27ab53c7922f97008c4127a2d41cbf55eaf0514ae3029",
+      "bytes": 53368
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-white-transparent-2048x2048.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 全白透明底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": true,
+      "sha256": "d0f82f3ee780100a8a221a56f6aba378720027403160d6cdfef6aa305bebc4ac",
+      "bytes": 120908
+    },
+    {
+      "file": "02-square-bilingual/svg/jmi-openatom-02-square-bilingual-white-navy.svg",
+      "format": "svg",
+      "label": "正方形中英文字版 / 全白深蓝底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": false,
+      "bounds": [
+        [
+          212,
+          90,
+          812,
+          669.3499043977056
+        ],
+        [
+          147.44011347651048,
+          739.1741071642374,
+          876.5598865234896,
+          823.5782782231438
+        ],
+        [
+          251.117,
+          865.796,
+          772.883,
+          905.972
+        ]
+      ],
+      "sha256": "9913549808af5aded6bb5da42382ee4d905523cb5b7a28666319a5d62b59153a",
+      "bytes": 34497
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-white-navy-512x512.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 全白深蓝底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": false,
+      "sha256": "22cdff3741dbcf50f9edf8088d34113bd8996a759b07bd7145e5acd4c375271d",
+      "bytes": 30991
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-white-navy-1024x1024.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 全白深蓝底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": false,
+      "sha256": "7c7b0bbb9607fad1f622521d43dbe8dd9656c4bf07e263e7502d569d9bd19133",
+      "bytes": 70083
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-white-navy-2048x2048.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 全白深蓝底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": false,
+      "sha256": "f2b22a2a4d9bab6c270d29b51df90cd464ea1b174c97320c64061aa3f4faa734",
+      "bytes": 160964
+    },
+    {
+      "file": "02-square-bilingual/svg/jmi-openatom-02-square-bilingual-black-transparent.svg",
+      "format": "svg",
+      "label": "正方形中英文字版 / 全黑透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          212,
+          90,
+          812,
+          669.3499043977056
+        ],
+        [
+          147.44011347651048,
+          739.1741071642374,
+          876.5598865234896,
+          823.5782782231438
+        ],
+        [
+          251.117,
+          865.796,
+          772.883,
+          905.972
+        ]
+      ],
+      "sha256": "730430193a52b8bbdec55021af76af871e09574d0c6847222733c9e5dfe038d3",
+      "bytes": 34448
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-black-transparent-512x512.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 全黑透明底",
+      "size": [
+        512,
+        512
+      ],
+      "transparent": true,
+      "sha256": "26df5f74f6ecda1b473624afe2d1f59b91c7d9a1005b95ff513371e874bbc935",
+      "bytes": 23762
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-black-transparent-1024x1024.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 全黑透明底",
+      "size": [
+        1024,
+        1024
+      ],
+      "transparent": true,
+      "sha256": "0e7ea9b34624d4decf234a285b9647532b6bd813b913885f40074ce73216afdd",
+      "bytes": 51772
+    },
+    {
+      "file": "02-square-bilingual/png/jmi-openatom-02-square-bilingual-black-transparent-2048x2048.png",
+      "format": "png",
+      "label": "正方形中英文字版 / 全黑透明底",
+      "size": [
+        2048,
+        2048
+      ],
+      "transparent": true,
+      "sha256": "d33417d42a571dc56bc3a315fa793b915a99562bdd1fa8256fa7b3bfe67fdb01",
+      "bytes": 116059
+    },
+    {
+      "file": "03-horizontal-bilingual/svg/jmi-openatom-03-horizontal-bilingual-blue-transparent.svg",
+      "format": "svg",
+      "label": "横向长方形中英文字版 / 蓝色透明底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          160,
+          96,
+          790,
+          704.3173996175908
+        ],
+        [
+          948.0,
+          293.2901786070623,
+          2184.1996217449655,
+          433.9637970385731
+        ],
+        [
+          953.0,
+          489.372,
+          1673.662,
+          547.404
+        ]
+      ],
+      "sha256": "f2735a93d883d99aaa9fc1714c258863e5f2b4f2e7434f1d7254a0cef1fc3ec0",
+      "bytes": 34945
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-blue-transparent-1200x400.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 蓝色透明底",
+      "size": [
+        1200,
+        400
+      ],
+      "transparent": true,
+      "sha256": "2ef960a7cca47e2ebf52e0a50572d7dcc4a55265959ef3b83a49d94490abee48",
+      "bytes": 37138
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-blue-transparent-2400x800.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 蓝色透明底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": true,
+      "sha256": "968beb03f028641e1de646c3b92a22d49012451c5759a529c37055c8210f9f37",
+      "bytes": 82226
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-blue-transparent-4800x1600.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 蓝色透明底",
+      "size": [
+        4800,
+        1600
+      ],
+      "transparent": true,
+      "sha256": "2fb1a9958652e44c87c7ce1352923df829169c3f14214a268408f7930ea7e50d",
+      "bytes": 192832
+    },
+    {
+      "file": "03-horizontal-bilingual/svg/jmi-openatom-03-horizontal-bilingual-blue-white.svg",
+      "format": "svg",
+      "label": "横向长方形中英文字版 / 蓝色白底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": false,
+      "bounds": [
+        [
+          160,
+          96,
+          790,
+          704.3173996175908
+        ],
+        [
+          948.0,
+          293.2901786070623,
+          2184.1996217449655,
+          433.9637970385731
+        ],
+        [
+          953.0,
+          489.372,
+          1673.662,
+          547.404
+        ]
+      ],
+      "sha256": "f65e828d5fcfbd872a309081aee91ebac6a726d55e351370431dd5f0ec75e300",
+      "bytes": 34990
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-blue-white-1200x400.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 蓝色白底",
+      "size": [
+        1200,
+        400
+      ],
+      "transparent": false,
+      "sha256": "919ec0a59250d1505a179f3e9e6de604f999c53a40f81659d381284e8cfd2c31",
+      "bytes": 39361
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-blue-white-2400x800.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 蓝色白底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": false,
+      "sha256": "c02cf2ef7c3db5473239af4ec501444dd84905986c946eb6dafd7bd07016e055",
+      "bytes": 87165
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-blue-white-4800x1600.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 蓝色白底",
+      "size": [
+        4800,
+        1600
+      ],
+      "transparent": false,
+      "sha256": "9c29b37f6fee4b8375517a055d2b8ed561043bc2828dd605d82bd78ce2f16408",
+      "bytes": 200809
+    },
+    {
+      "file": "03-horizontal-bilingual/svg/jmi-openatom-03-horizontal-bilingual-white-transparent.svg",
+      "format": "svg",
+      "label": "横向长方形中英文字版 / 全白透明底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          160,
+          96,
+          790,
+          704.3173996175908
+        ],
+        [
+          948.0,
+          293.2901786070623,
+          2184.1996217449655,
+          433.9637970385731
+        ],
+        [
+          953.0,
+          489.372,
+          1673.662,
+          547.404
+        ]
+      ],
+      "sha256": "85c6d0f4adac58a88f5ed4a2afb0341ec85097e54c58ffdde7cbcfac1ae99a6c",
+      "bytes": 34945
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-white-transparent-1200x400.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 全白透明底",
+      "size": [
+        1200,
+        400
+      ],
+      "transparent": true,
+      "sha256": "9c32bb1acef53cbc071cfa2124cce293d0b48b8dde2b15891a80d27adff622d3",
+      "bytes": 30866
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-white-transparent-2400x800.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 全白透明底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": true,
+      "sha256": "a035f02cbb08673526fbb2f289bc180c598b6cd042598a951364c80cadc3f8e0",
+      "bytes": 68410
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-white-transparent-4800x1600.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 全白透明底",
+      "size": [
+        4800,
+        1600
+      ],
+      "transparent": true,
+      "sha256": "7c5fe9861f714ea0d823496ec8f510bd04a34a7b94ceb93b0c80040cc73ebbf8",
+      "bytes": 161077
+    },
+    {
+      "file": "03-horizontal-bilingual/svg/jmi-openatom-03-horizontal-bilingual-white-navy.svg",
+      "format": "svg",
+      "label": "横向长方形中英文字版 / 全白深蓝底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": false,
+      "bounds": [
+        [
+          160,
+          96,
+          790,
+          704.3173996175908
+        ],
+        [
+          948.0,
+          293.2901786070623,
+          2184.1996217449655,
+          433.9637970385731
+        ],
+        [
+          953.0,
+          489.372,
+          1673.662,
+          547.404
+        ]
+      ],
+      "sha256": "73b0cec5e90a010fd23c472d3ec03ea9acc55f70a17bbfe898e84901e0e071af",
+      "bytes": 34993
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-white-navy-1200x400.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 全白深蓝底",
+      "size": [
+        1200,
+        400
+      ],
+      "transparent": false,
+      "sha256": "dc000ed48cb9544892f3de180faecfc5db29ea9739f6f0cf74258e262033b503",
+      "bytes": 39979
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-white-navy-2400x800.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 全白深蓝底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": false,
+      "sha256": "a65c3618b91eb8676aeedd30d3eeb108d111eafec8ca138d88e66378d340e6b2",
+      "bytes": 90138
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-white-navy-4800x1600.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 全白深蓝底",
+      "size": [
+        4800,
+        1600
+      ],
+      "transparent": false,
+      "sha256": "f65c29fe17c9dc1c337fc49f8cba3fd93757ea8e6ba419a69509e4634dcd0d15",
+      "bytes": 212657
+    },
+    {
+      "file": "03-horizontal-bilingual/svg/jmi-openatom-03-horizontal-bilingual-black-transparent.svg",
+      "format": "svg",
+      "label": "横向长方形中英文字版 / 全黑透明底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          160,
+          96,
+          790,
+          704.3173996175908
+        ],
+        [
+          948.0,
+          293.2901786070623,
+          2184.1996217449655,
+          433.9637970385731
+        ],
+        [
+          953.0,
+          489.372,
+          1673.662,
+          547.404
+        ]
+      ],
+      "sha256": "ff648fd2f1e731a9a43689af588145be2a19e16c7df311e737d36692f2aa9099",
+      "bytes": 34945
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-black-transparent-1200x400.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 全黑透明底",
+      "size": [
+        1200,
+        400
+      ],
+      "transparent": true,
+      "sha256": "5840a02025e687f7b7e48a12e6eb77241e0d4c4cefa9e6921c2cfd8443bd74c5",
+      "bytes": 30250
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-black-transparent-2400x800.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 全黑透明底",
+      "size": [
+        2400,
+        800
+      ],
+      "transparent": true,
+      "sha256": "7b703a00d4469913405b5febf958c9a91e828abab8bedf27f5748f8a1a3b5e75",
+      "bytes": 66437
+    },
+    {
+      "file": "03-horizontal-bilingual/png/jmi-openatom-03-horizontal-bilingual-black-transparent-4800x1600.png",
+      "format": "png",
+      "label": "横向长方形中英文字版 / 全黑透明底",
+      "size": [
+        4800,
+        1600
+      ],
+      "transparent": true,
+      "sha256": "38e3ac86f130a700cb52561c55f8c7b075c4ca51a23234ac73885841382aa941",
+      "bytes": 153639
+    },
+    {
+      "file": "04-vertical-bilingual/svg/jmi-openatom-04-vertical-bilingual-blue-transparent.svg",
+      "format": "svg",
+      "label": "竖向长方形中英文字版 / 蓝色透明底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          175,
+          215,
+          1025,
+          1035.7456978967496
+        ],
+        [
+          137.95814247606305,
+          1141.0519345506536,
+          1062.0418575239369,
+          1247.026060435725
+        ],
+        [
+          267.81399999999996,
+          1324.632,
+          932.1859999999999,
+          1375.224
+        ]
+      ],
+      "sha256": "846af690de2155bcc0a8783693fba1ff227e10d5bce01322be9c835774ed2a9e",
+      "bytes": 34553
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-blue-transparent-600x800.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 蓝色透明底",
+      "size": [
+        600,
+        800
+      ],
+      "transparent": true,
+      "sha256": "15b7b3ddb2eccb7078a529f8d36bef82d49d5ccc99b7e94c6d071bb098d1f365",
+      "bytes": 39422
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-blue-transparent-1200x1600.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 蓝色透明底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": true,
+      "sha256": "fc66c065c51e9fa44e570ff62b594f43113d40b570e8292634b46eec334975b2",
+      "bytes": 88865
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-blue-transparent-2400x3200.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 蓝色透明底",
+      "size": [
+        2400,
+        3200
+      ],
+      "transparent": true,
+      "sha256": "30959cf28f12981cc400872e36e244365bea2d7506382e0f3a54c084c4d3f740",
+      "bytes": 208801
+    },
+    {
+      "file": "04-vertical-bilingual/svg/jmi-openatom-04-vertical-bilingual-blue-white.svg",
+      "format": "svg",
+      "label": "竖向长方形中英文字版 / 蓝色白底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": false,
+      "bounds": [
+        [
+          175,
+          215,
+          1025,
+          1035.7456978967496
+        ],
+        [
+          137.95814247606305,
+          1141.0519345506536,
+          1062.0418575239369,
+          1247.026060435725
+        ],
+        [
+          267.81399999999996,
+          1324.632,
+          932.1859999999999,
+          1375.224
+        ]
+      ],
+      "sha256": "dab5352789b84c9003d687e98335209630c78ba713d00832b926928b0ec7b460",
+      "bytes": 34599
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-blue-white-600x800.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 蓝色白底",
+      "size": [
+        600,
+        800
+      ],
+      "transparent": false,
+      "sha256": "30792fed9479c977a78d45adda4eaeb7dbab304aa449e740b8b37c9b7f8d84bc",
+      "bytes": 41665
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-blue-white-1200x1600.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 蓝色白底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": false,
+      "sha256": "27b89d1119112744043d39638f40c65b1b8cec9df8be7eee02328576769e0e40",
+      "bytes": 93690
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-blue-white-2400x3200.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 蓝色白底",
+      "size": [
+        2400,
+        3200
+      ],
+      "transparent": false,
+      "sha256": "a48b58312207a3228333e6456f8ce6d5d87a579dc61a01d09743a0f313f4ac39",
+      "bytes": 217760
+    },
+    {
+      "file": "04-vertical-bilingual/svg/jmi-openatom-04-vertical-bilingual-white-transparent.svg",
+      "format": "svg",
+      "label": "竖向长方形中英文字版 / 全白透明底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          175,
+          215,
+          1025,
+          1035.7456978967496
+        ],
+        [
+          137.95814247606305,
+          1141.0519345506536,
+          1062.0418575239369,
+          1247.026060435725
+        ],
+        [
+          267.81399999999996,
+          1324.632,
+          932.1859999999999,
+          1375.224
+        ]
+      ],
+      "sha256": "7999edd524a3d0ede3ed3609882a6d65da4043753bb5ad84f0aaffe1b2f90360",
+      "bytes": 34553
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-white-transparent-600x800.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 全白透明底",
+      "size": [
+        600,
+        800
+      ],
+      "transparent": true,
+      "sha256": "904a3e2c559f6d07a0c03d0a78251332e9fc03708e875a75577c8e78fd5b4dd4",
+      "bytes": 34051
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-white-transparent-1200x1600.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 全白透明底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": true,
+      "sha256": "a2f8fd3cf7e2e1b090e74c8d9643704377e5ac7179990ff068fcff07d5764f60",
+      "bytes": 75961
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-white-transparent-2400x3200.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 全白透明底",
+      "size": [
+        2400,
+        3200
+      ],
+      "transparent": true,
+      "sha256": "6db632b82f602c4e46ab70eaa702a26862c1faf28bafb0f4882ec1937efa12df",
+      "bytes": 175458
+    },
+    {
+      "file": "04-vertical-bilingual/svg/jmi-openatom-04-vertical-bilingual-white-navy.svg",
+      "format": "svg",
+      "label": "竖向长方形中英文字版 / 全白深蓝底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": false,
+      "bounds": [
+        [
+          175,
+          215,
+          1025,
+          1035.7456978967496
+        ],
+        [
+          137.95814247606305,
+          1141.0519345506536,
+          1062.0418575239369,
+          1247.026060435725
+        ],
+        [
+          267.81399999999996,
+          1324.632,
+          932.1859999999999,
+          1375.224
+        ]
+      ],
+      "sha256": "7ba29abbab34dbb00c12d3583bfd63c558d5906f22ec15cf180e3890401dc8e6",
+      "bytes": 34602
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-white-navy-600x800.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 全白深蓝底",
+      "size": [
+        600,
+        800
+      ],
+      "transparent": false,
+      "sha256": "e00609a20b5a439a693ceb98ce7ff7875ed467e7d4017f60096a9e8ce46f4df4",
+      "bytes": 43869
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-white-navy-1200x1600.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 全白深蓝底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": false,
+      "sha256": "e419d3bf9b85a82ec95b9933bde4264a50c36fd5819e2f2fb43516df119eb6cc",
+      "bytes": 100036
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-white-navy-2400x3200.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 全白深蓝底",
+      "size": [
+        2400,
+        3200
+      ],
+      "transparent": false,
+      "sha256": "b9d583256bd2d2b9b3b929e662dab633eb605916f898d7dec1425e10fa17225f",
+      "bytes": 233669
+    },
+    {
+      "file": "04-vertical-bilingual/svg/jmi-openatom-04-vertical-bilingual-black-transparent.svg",
+      "format": "svg",
+      "label": "竖向长方形中英文字版 / 全黑透明底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": true,
+      "bounds": [
+        [
+          175,
+          215,
+          1025,
+          1035.7456978967496
+        ],
+        [
+          137.95814247606305,
+          1141.0519345506536,
+          1062.0418575239369,
+          1247.026060435725
+        ],
+        [
+          267.81399999999996,
+          1324.632,
+          932.1859999999999,
+          1375.224
+        ]
+      ],
+      "sha256": "672766d458dc0aa7f66f7060a74236ffabab3d765af72952dc951dfb80d1ff3b",
+      "bytes": 34553
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-black-transparent-600x800.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 全黑透明底",
+      "size": [
+        600,
+        800
+      ],
+      "transparent": true,
+      "sha256": "116ab9b6a29434bef464080d70d0cf8961f7fc2707570e67809e001edbb96200",
+      "bytes": 33306
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-black-transparent-1200x1600.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 全黑透明底",
+      "size": [
+        1200,
+        1600
+      ],
+      "transparent": true,
+      "sha256": "2144607cebafdecfb1107ff5da300c0839df6559d025821a2e45d28929744bc9",
+      "bytes": 73062
+    },
+    {
+      "file": "04-vertical-bilingual/png/jmi-openatom-04-vertical-bilingual-black-transparent-2400x3200.png",
+      "format": "png",
+      "label": "竖向长方形中英文字版 / 全黑透明底",
+      "size": [
+        2400,
+        3200
+      ],
+      "transparent": true,
+      "sha256": "2c88b648fd862981ebf0a5d3f4b9c4476ddd68e73353556ffd576e26e5e6ba87",
+      "bytes": 167288
+    }
+  ],
+  "verification": {
+    "final_svg_files": 20,
+    "png_files": 60,
+    "dimensions": "passed",
+    "png_transparency": "passed",
+    "svg_self_contained_vector_paths": "passed",
+    "uploaded_silhouette_trace_iou": 0.991088,
+    "text": "开放原子开源社团 / JMI-OPENATOM"
+  }
+}

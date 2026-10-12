@@ -5,6 +5,18 @@
       <span>返回官网</span>
     </router-link>
 
+    <button
+      class="about-auto-scroll"
+      type="button"
+      :aria-pressed="autoScrollEnabled"
+      :aria-label="autoScrollEnabled ? '暂停自动滚动' : '开启自动滚动'"
+      @click="toggleAutoScroll"
+    >
+      <Pause v-if="autoScrollEnabled" :size="16" aria-hidden="true" />
+      <Play v-else :size="16" aria-hidden="true" />
+      <span>{{ autoScrollEnabled ? '暂停滚动' : '自动滚动' }}</span>
+    </button>
+
     <main>
       <section
         id="top"
@@ -327,7 +339,13 @@
       </section>
 
       <section class="final-section">
-        <img src="/logo.png?v=20261005" alt="JMI-OPENATOM 标志" width="72" height="72" loading="lazy" />
+        <img
+          src="/logo.png?v=20261005"
+          alt="JMI-OPENATOM 标志"
+          width="72"
+          height="72"
+          loading="lazy"
+        />
         <p class="apple-kicker">YOUR NEXT CHAPTER</p>
         <h2>下一段开源故事，<br /><span>等你来写。</span></h2>
         <p>带上好奇心就够了。剩下的，我们在路上一起学。</p>
@@ -370,6 +388,8 @@ import {
   Lightbulb,
   Megaphone,
   Palette,
+  Pause,
+  Play,
   Plus,
   Trophy,
   Users,
@@ -390,6 +410,108 @@ let scrollResetFrame: number | undefined
 let heroAutoplayTimer: number | undefined
 let disposed = false
 let navigateRoute: ((index: number) => void) | undefined
+const autoScrollEnabled = ref(false)
+const autoScrollSpeed = 72 // Pixels per second, independent of the display's refresh rate.
+let autoScrollFrame: number | undefined
+let autoScrollTimer: number | undefined
+let autoScrollLastTime: number | undefined
+let autoScrollPosition = 0
+let autoScrollMotionQuery: MediaQueryList | undefined
+
+function cancelAutoScroll() {
+  if (autoScrollFrame !== undefined) window.cancelAnimationFrame(autoScrollFrame)
+  if (autoScrollTimer !== undefined) window.clearTimeout(autoScrollTimer)
+  autoScrollFrame = undefined
+  autoScrollTimer = undefined
+  autoScrollLastTime = undefined
+}
+
+function pauseAutoScroll() {
+  autoScrollEnabled.value = false
+  cancelAutoScroll()
+}
+
+function advanceAutoScroll(time: number) {
+  autoScrollFrame = undefined
+  if (disposed || !autoScrollEnabled.value || document.hidden) return
+  const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+  if (window.scrollY >= maxScroll - 1) {
+    pauseAutoScroll()
+    return
+  }
+  if (autoScrollLastTime !== undefined) {
+    const elapsed = Math.min(time - autoScrollLastTime, 64)
+    autoScrollPosition = Math.min(
+      maxScroll,
+      autoScrollPosition + (autoScrollSpeed * elapsed) / 1000,
+    )
+    window.scrollTo({ top: autoScrollPosition, behavior: 'instant' })
+  }
+  autoScrollLastTime = time
+  autoScrollFrame = window.requestAnimationFrame(advanceAutoScroll)
+}
+
+function startAutoScroll(delay = 0) {
+  cancelAutoScroll()
+  autoScrollEnabled.value = true
+  if (disposed || document.hidden) return
+  autoScrollTimer = window.setTimeout(() => {
+    autoScrollTimer = undefined
+    autoScrollPosition = window.scrollY
+    autoScrollFrame = window.requestAnimationFrame(advanceAutoScroll)
+  }, delay)
+}
+
+function toggleAutoScroll() {
+  if (autoScrollEnabled.value) {
+    pauseAutoScroll()
+    return
+  }
+  const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+  if (window.scrollY >= maxScroll - 1) resetPageScroll()
+  startAutoScroll()
+}
+
+function handleAutoScrollInteraction(event: Event) {
+  // Let the toggle handle its own pointer/keyboard activation.
+  if (
+    event.target instanceof Element &&
+    event.target.closest('.about-auto-scroll') &&
+    (event.type === 'pointerdown' ||
+      event.type === 'touchstart' ||
+      (event instanceof KeyboardEvent && ['Enter', ' '].includes(event.key)))
+  )
+    return
+  if (
+    event instanceof KeyboardEvent &&
+    ![
+      'ArrowUp',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+      'PageUp',
+      'PageDown',
+      'Home',
+      'End',
+      ' ',
+      'Tab',
+      'Enter',
+      'Escape',
+    ].includes(event.key)
+  )
+    return
+  pauseAutoScroll()
+}
+
+function handleAutoScrollVisibilityChange() {
+  if (document.hidden) cancelAutoScroll()
+  else if (autoScrollEnabled.value) startAutoScroll(1000)
+}
+
+function handleAutoScrollMotionChange() {
+  if (autoScrollMotionQuery?.matches) pauseAutoScroll()
+}
+
 const currentYear = new Date().getFullYear()
 function scrollToRoute(index: number) {
   navigateRoute?.(index)
@@ -630,7 +752,7 @@ function goToApply() {
 
 function resetPageScroll() {
   ScrollTrigger.clearScrollMemory('manual')
-  window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
 }
 
 function setupMotion(animateHero = true) {
@@ -968,10 +1090,18 @@ onMounted(async () => {
   resetPageScroll()
   document.documentElement.classList.add('about-page-active')
   document.addEventListener('visibilitychange', handleHeroVisibilityChange)
+  document.addEventListener('visibilitychange', handleAutoScrollVisibilityChange)
+  window.addEventListener('wheel', handleAutoScrollInteraction, { passive: true })
+  window.addEventListener('touchstart', handleAutoScrollInteraction, { passive: true })
+  window.addEventListener('pointerdown', handleAutoScrollInteraction, { passive: true })
+  window.addEventListener('keydown', handleAutoScrollInteraction)
+  autoScrollMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  autoScrollMotionQuery.addEventListener('change', handleAutoScrollMotionChange)
   startHeroAutoplay()
   await nextTick()
   if (disposed) return
   setupMotion()
+  if (!autoScrollMotionQuery.matches) startAutoScroll(3500)
   void document.fonts.ready.then(refreshMotion)
   void Promise.allSettled([
     siteApi.clubHome(),
@@ -997,6 +1127,13 @@ onBeforeUnmount(() => {
   disposed = true
   if (scrollResetFrame !== undefined) window.cancelAnimationFrame(scrollResetFrame)
   stopHeroAutoplay()
+  pauseAutoScroll()
+  document.removeEventListener('visibilitychange', handleAutoScrollVisibilityChange)
+  window.removeEventListener('wheel', handleAutoScrollInteraction)
+  window.removeEventListener('touchstart', handleAutoScrollInteraction)
+  window.removeEventListener('pointerdown', handleAutoScrollInteraction)
+  window.removeEventListener('keydown', handleAutoScrollInteraction)
+  autoScrollMotionQuery?.removeEventListener('change', handleAutoScrollMotionChange)
   document.removeEventListener('visibilitychange', handleHeroVisibilityChange)
   motionMatchMedia?.revert()
   document.documentElement.classList.remove('about-page-active')
@@ -1088,6 +1225,34 @@ onBeforeUnmount(() => {
     transform 180ms ease,
     background-color 180ms ease,
     border-color 180ms ease;
+}
+
+.about-auto-scroll {
+  position: fixed;
+  z-index: 10;
+  right: calc(env(safe-area-inset-right, 0px) + 20px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(5, 5, 6, 0.78);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+}
+
+.about-auto-scroll:hover {
+  background: rgba(5, 5, 6, 0.9);
+}
+
+.about-auto-scroll:focus-visible {
+  outline: 3px solid var(--apple-blue);
+  outline-offset: 4px;
 }
 
 .about-home-link svg {

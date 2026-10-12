@@ -245,6 +245,19 @@ export async function changeTaskStatus(id: number, status: string) {
   await http.patch(`/admin/tasks/${id}/status`, undefined, { params: { status } })
 }
 
+export interface TaskAssignmentMember {
+  id: number
+  nickname: string | null
+}
+
+export async function updateTaskOwner(id: number, ownerMemberId: number) {
+  await http.patch(`/admin/tasks/${id}/owner`, { ownerMemberId })
+}
+
+export async function getTaskAssignmentOptions(id: number) {
+  return (await http.get<ApiResponse<TaskAssignmentMember[]>>(`/admin/tasks/${id}/assignment-options`)).data.data
+}
+
 export async function assignTask(id: number, memberId: number) {
   return (await http.post<ApiResponse<{ assignmentId: number; status: string; dueAt?: string }>>(
     `/admin/tasks/${id}/assignments`,
