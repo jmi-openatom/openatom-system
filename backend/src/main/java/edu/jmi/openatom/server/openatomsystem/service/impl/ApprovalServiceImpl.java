@@ -50,6 +50,8 @@ public class ApprovalServiceImpl implements ApprovalService {
         .comment(request.getComment()).build());
     application.setStatus(resolveNextStatus(application.getStatus(), request));
     applicationMapper.updateById(application);
+    // 匿名申请尚未绑定账号，审核照常完成，但没有可接收通知的用户。
+    if (application.getUserId() == null) return Result.success("审批处理成功");
     String title = "申请进度更新";
     String content = String.format("您的入会申请有了新的动态：当前状态为【%s】。", application.getStatus());
     if (request.getComment() != null && !request.getComment().isBlank()) content += "\n审核意见：" + request.getComment();

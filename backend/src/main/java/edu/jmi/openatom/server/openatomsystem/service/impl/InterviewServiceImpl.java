@@ -82,6 +82,8 @@ public class InterviewServiceImpl implements InterviewService {
     bindInterviewers(interview.getId(), request.getInterviewerIds());
     application.setStatus("interview_scheduled");
     applicationMapper.updateById(application);
+    // 匿名申请尚未绑定账号，面试照常安排，但没有可接收通知的用户。
+    if (application.getUserId() == null) return Result.success("面试创建成功");
     notificationService.create(RequestCreateNotificationDTO.builder().title("面试安排通知")
         .content(String.format("您好，您的入会申请已安排面试。\n时间：%s 至 %s\n地点：%s\n形式：%s\n请准时参加！",
             request.getScheduledStartAt(), request.getScheduledEndAt(), request.getLocation(),
