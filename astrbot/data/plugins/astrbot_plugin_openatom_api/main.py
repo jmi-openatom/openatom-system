@@ -27,7 +27,8 @@ BIND_WRITE_PATHS = {
 SENSITIVE_KEYS = {"password", "accessToken", "refreshToken", "token", "authorization", "jmiopenatom"}
 MAX_TEXT_CHARS = 90
 MAX_DETAIL_CHARS = 220
-PLUGIN_VERSION = "1.7.1"
+PLUGIN_VERSION = "1.8.1"
+DEFAULT_WELCOME_TEXT = "欢迎 {nickname} 加入 {group_name}！"
 MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024
 
 
@@ -58,6 +59,15 @@ class OpenAtomApiPlugin(Star):
         self.callback_token = str(self.config.get("callback_token", "") or "").strip()
         self.auto_approve_friend_requests = bool(self.config.get("auto_approve_friend_requests", True))
         self.auto_approve_group_join = bool(self.config.get("auto_approve_group_join", True))
+        self.welcome_enabled = bool(self.config.get("welcome_enabled", False))
+        welcome_text = self.config.get("welcome_text", DEFAULT_WELCOME_TEXT)
+        self.welcome_text = str(welcome_text if welcome_text is not None else DEFAULT_WELCOME_TEXT)
+        self.welcome_at_new_member = bool(self.config.get("welcome_at_new_member", True))
+        self.welcome_delay_seconds = max(0, min(60, int(self.config.get("welcome_delay_seconds", 1) or 0)))
+        self.welcome_group_overrides = self._load_welcome_group_overrides(
+            self.config.get("welcome_group_overrides", [])
+        )
+        self._welcome_notices: dict[tuple[str, str, str, str], float] = {}
         self.leave_sessions: dict[str, dict[str, Any]] = {}
         self.callback_runner: web.AppRunner | None = None
         self.callback_site: web.TCPSite | None = None
@@ -105,6 +115,11 @@ class OpenAtomApiPlugin(Star):
                     "社团成员在官网激活页生成入群验证码后，将验证码填写在入群申请理由中",
                     "机器人会自动校验并通过，同时绑定当前QQ，并将群名片设为“部门-姓名-学号”",
                     "",
+                    "【自定义入群欢迎】",
+                    "在 AstrBot 插件配置中开启入群欢迎，可自定义文案、@新成员和发送延迟",
+                    "“按群自定义入群欢迎”可为指定群号单独设置，未配置的群使用默认设置",
+                    "文案支持 {nickname}、{qq}、{group_name}、{group_id}、{card_name}",
+                    "",
                     f"插件版本：{PLUGIN_VERSION}",
                     "普通查询只允许 GET；查人走独立 public 接口；QQ 绑定命令只会消费网页登录生成的一次性绑定码。",
                 ]
@@ -124,6 +139,8 @@ class OpenAtomApiPlugin(Star):
             f"max_reply_chars: {self.max_reply_chars}\n"
             f"auto_approve_friend_requests: {self.auto_approve_friend_requests}\n"
             f"auto_approve_group_join: {self.auto_approve_group_join}\n"
+            f"welcome_enabled: {self.welcome_enabled}\n"
+            f"welcome_group_overrides: {len(self.welcome_group_overrides)} groups\n"
             f"callback: http://{self.callback_host}:{self.callback_port}/openatom/leave-review"
         )
 
@@ -310,6 +327,123 @@ class OpenAtomApiPlugin(Star):
                 await bot.call_action("send_group_msg", group_id=int(group_id), message=f"欢迎 {real_name} 加入社团！已为你设置群名片：{card_name}")
             except Exception:
                 pass
+
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
+    async def welcome_new_group_member(self, event: AstrMessageEvent):
+        """根据实际入群通知发送独立的自定义欢迎消息。"""
+        raw = self._onebot_raw_event(event)
+        if (
+            self._raw_event_value(raw, "post_type") != "notice"
+            or self._raw_event_value(raw, "notice_type") != "group_increase"
+        ):
+            return
+        group_id = str(self._raw_event_value(raw, "group_id") or "").strip()
+        user_id = str(self._raw_event_value(raw, "user_id") or "").strip()
+        self_id = str(self._raw_event_value(raw, "self_id") or "").strip()
+        if not group_id.isdecimal() or not user_id.isdecimal() or user_id == self_id:
+            return
+        settings = self._welcome_settings(group_id)
+        template = settings["text"]
+        if not settings["enabled"] or not template.strip():
+            return
+        bot = getattr(event, "bot", None)
+        if bot is None:
+            logger.warning(f"OpenAtom welcome skipped: missing aiocqhttp bot, groupId={group_id}")
+            return
+
+        # OneBot 重复推送同一入群通知时只发送一次；不同入群时间仍可再次欢迎。
+        now = asyncio.get_running_loop().time()
+        self._welcome_notices = {
+            key: expiry for key, expiry in self._welcome_notices.items() if expiry > now
+        }
+        key = (self_id, group_id, user_id, str(self._raw_event_value(raw, "time") or ""))
+        if key in self._welcome_notices:
+            return
+        self._welcome_notices[key] = now + 300
+        sent = False
+        try:
+            if settings["delay_seconds"]:
+                await asyncio.sleep(settings["delay_seconds"])
+            values = {
+                "nickname": user_id,
+                "qq": user_id,
+                "group_name": group_id,
+                "group_id": group_id,
+                "card_name": "",
+            }
+            if re.search(r"\{(?:nickname|card_name)\}", template):
+                member = await self._welcome_lookup(
+                    bot, "get_group_member_info", group_id=int(group_id), user_id=int(user_id), no_cache=True
+                )
+                values["card_name"] = str(member.get("card") or "").strip()
+                values["nickname"] = str(member.get("nickname") or values["card_name"] or user_id).strip() or user_id
+            if "{group_name}" in template:
+                group = await self._welcome_lookup(bot, "get_group_info", group_id=int(group_id))
+                values["group_name"] = str(group.get("group_name") or group_id).strip() or group_id
+            # 单次替换：昵称中的花括号不会被再次解析；未知变量保持原样。
+            text = re.sub(r"\{(nickname|qq|group_name|group_id|card_name)\}", lambda match: values[match[1]], template)
+            message = []
+            if settings["at_new_member"]:
+                message.append({"type": "at", "data": {"qq": user_id}})
+                text = " " + text
+            message.append({"type": "text", "data": {"text": text}})
+            await bot.call_action("send_group_msg", group_id=int(group_id), message=message)
+            sent = True
+            logger.info(f"OpenAtom welcome sent: groupId={group_id}, userId={user_id}")
+        except Exception as exc:
+            logger.warning(f"OpenAtom welcome failed: groupId={group_id}, userId={user_id}, error={exc}")
+        finally:
+            if not sent:
+                self._welcome_notices.pop(key, None)
+
+    def _load_welcome_group_overrides(self, entries: Any) -> dict[str, dict[str, Any]]:
+        overrides: dict[str, dict[str, Any]] = {}
+        if not isinstance(entries, list):
+            logger.warning("OpenAtom welcome_group_overrides must be a list; using default settings")
+            return overrides
+        for entry in entries:
+            if not isinstance(entry, dict):
+                logger.warning("OpenAtom welcome group override skipped: expected an object")
+                continue
+            group_id = str(entry.get("group_id") or "").strip()
+            if not re.fullmatch(r"[0-9]+", group_id) or int(group_id) <= 0:
+                logger.warning("OpenAtom welcome group override skipped: invalid group ID")
+                continue
+            group_id = str(int(group_id))
+            if group_id in overrides:
+                logger.warning(f"OpenAtom welcome duplicate group override ignored: groupId={group_id}")
+                continue
+            settings: dict[str, Any] = {}
+            for field in ("enabled", "at_new_member"):
+                if isinstance(entry.get(field), bool):
+                    settings[field] = entry[field]
+            if isinstance(entry.get("text"), str):
+                settings["text"] = entry["text"]
+            if "delay_seconds" in entry:
+                try:
+                    settings["delay_seconds"] = max(0, min(60, int(entry["delay_seconds"])))
+                except (ValueError, TypeError, OverflowError):
+                    logger.warning(f"OpenAtom welcome invalid delay ignored: groupId={group_id}")
+            overrides[group_id] = settings
+        return overrides
+
+    def _welcome_settings(self, group_id: str) -> dict[str, Any]:
+        settings = {
+            "enabled": self.welcome_enabled,
+            "text": self.welcome_text,
+            "at_new_member": self.welcome_at_new_member,
+            "delay_seconds": self.welcome_delay_seconds,
+        }
+        settings.update(self.welcome_group_overrides.get(str(int(group_id)), {}))
+        return settings
+
+    async def _welcome_lookup(self, bot: Any, action: str, **params: Any) -> dict[str, Any]:
+        try:
+            result = await bot.call_action(action, **params)
+            return result if isinstance(result, dict) else {}
+        except Exception as exc:
+            logger.warning(f"OpenAtom welcome info lookup failed: action={action}, error={exc}")
+            return {}
 
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_leave_conversation(self, event: AstrMessageEvent):

@@ -34,6 +34,71 @@
     "default": true,
     "hint": "开启后，机器人会从入群申请理由中提取验证码，向后端校验后自动通过，并将群名片设为“部门-姓名-学号”。"
   },
+  "welcome_enabled": {
+    "description": "未单独配置群的欢迎开关",
+    "type": "bool",
+    "default": false,
+    "hint": "未按群单独配置时使用此开关。可保持关闭并只在“按群自定义入群欢迎”中开启指定群。独立于自动审批；自动审批原有的群名片提示仍会发送。"
+  },
+  "welcome_text": {
+    "description": "默认入群欢迎文案",
+    "type": "text",
+    "default": "欢迎 {nickname} 加入 {group_name}！",
+    "hint": "支持多行和变量：{nickname} QQ 昵称、{qq} QQ 号、{group_name} 群名称、{group_id} 群号、{card_name} 群名片（可能为空）。留空则不发送，未知变量按原文显示。"
+  },
+  "welcome_at_new_member": {
+    "description": "欢迎时 @ 新成员",
+    "type": "bool",
+    "default": true
+  },
+  "welcome_delay_seconds": {
+    "description": "自定义欢迎发送延迟（秒）",
+    "type": "int",
+    "default": 1,
+    "hint": "范围 0～60 秒，默认 1 秒。"
+  },
+  "welcome_group_overrides": {
+    "description": "按群自定义入群欢迎",
+    "type": "template_list",
+    "default": [],
+    "hint": "点击添加，为不同群号分别设置欢迎开关、文案、@新成员和延迟。指定群的设置优先于默认设置；同一群号填写多条时使用第一条。保存后重载插件生效。",
+    "templates": {
+      "group_welcome": {
+        "name": "群欢迎设置",
+        "display_item": "group_id",
+        "items": {
+          "group_id": {
+            "description": "QQ 群号",
+            "type": "string",
+            "default": "",
+            "hint": "填写数字群号，每个群号只添加一次。"
+          },
+          "enabled": {
+            "description": "本群启用自定义欢迎",
+            "type": "bool",
+            "default": true
+          },
+          "text": {
+            "description": "本群欢迎文案",
+            "type": "text",
+            "default": "欢迎 {nickname} 加入 {group_name}！",
+            "hint": "支持多行和 {nickname}、{qq}、{group_name}、{group_id}、{card_name}。留空则本群不发送自定义欢迎。"
+          },
+          "at_new_member": {
+            "description": "本群欢迎时 @ 新成员",
+            "type": "bool",
+            "default": true
+          },
+          "delay_seconds": {
+            "description": "本群欢迎发送延迟（秒）",
+            "type": "int",
+            "default": 1,
+            "hint": "范围 0～60 秒。"
+          }
+        }
+      }
+    }
+  },
   "callback_host": {
     "description": "后端审批回调监听地址",
     "type": "string",
