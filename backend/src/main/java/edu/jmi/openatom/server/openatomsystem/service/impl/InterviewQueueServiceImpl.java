@@ -3,10 +3,13 @@ package edu.jmi.openatom.server.openatomsystem.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateInterviewRoomDTO;
+import edu.jmi.openatom.server.openatomsystem.enums.UserStatus;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewQueueService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewQueueVO;
+import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewScheduleVO;
 import java.sql.Timestamp;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -57,7 +60,13 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
       int waiting = (int) roomStates.stream().filter(s -> "waiting".equals(s.getStatus())
           && interviewMap.containsKey(s.getInterviewId())).count();
       return ResponseInterviewQueueVO.Room.builder().roomId(room.getId()).name(room.getName())
-          .location(room.getLocation()).waitingCount(waiting).current(current).build();
+          .location(room.getLocation()).waitingCount(waiting).current(current)
+          .interviewers(roomInterviewerMapper.selectByRoomId(room.getId()).stream().map(link -> {
+            User user = userMapper.selectById(link.getInterviewerId());
+            String name = user == null ? "面试官#" + link.getInterviewerId()
+                : firstNonBlank(user.getRealName(), user.getUserName());
+            return ResponseInterviewScheduleVO.Interviewer.builder().userId(link.getInterviewerId()).name(name).build();
+          }).toList()).build();
     }).toList();
     ResponseInterviewQueueVO.Stats stats = ResponseInterviewQueueVO.Stats.builder()
         .total(candidates.size())
@@ -302,6 +311,103 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
     log(interview.getSessionId(), interviewId, targetRoomId, "move_room",
         Map.of("fromRoomId", previousRoomId, "toRoomId", targetRoomId));
     return Result.success("已调整面试间并同步目标房间面试官组");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> updateRoomLocation(Integer roomId, String location) {
+    if (location == null || location.isBlank()) return Result.error(400, "请输入面试地点");
+    String normalizedLocation = location.strip();
+    if (normalizedLocation.length() > 255) return Result.error(400, "面试地点不能超过255个字符");
+    InterviewRoom room = roomId == null ? null : roomMapper.selectByIdForUpdate(roomId);
+    if (room == null) return Result.error(404, "面试间不存在");
+    if (sessionMapper.selectById(room.getSessionId()) == null) return Result.error(404, "面试场次不存在");
+    if (Objects.equals(room.getLocation(), normalizedLocation)) return Result.success("面试地点未变更");
+    String previousLocation = Objects.toString(room.getLocation(), "");
+    room.setLocation(normalizedLocation);
+    roomMapper.updateById(room);
+    interviewMapper.updateLocationByRoomId(room.getSessionId(), roomId, normalizedLocation);
+    log(room.getSessionId(), null, roomId, "update_room_location",
+        Map.of("fromLocation", previousLocation, "toLocation", normalizedLocation));
+    return Result.success("面试地点已更新并同步面试安排");
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<String> updateRoom(Integer roomId, RequestUpdateInterviewRoomDTO request) {
+    if (request.getName() == null || request.getName().isBlank()) return Result.error(400, "请输入面试间名称");
+    if (request.getLocation() == null || request.getLocation().isBlank()) return Result.error(400, "请输入面试地点");
+    String name = request.getName().strip(), location = request.getLocation().strip();
+    if (name.length() > 80 || location.length() > 255) return Result.error(400, "面试间名称或地点过长");
+    List<Integer> ids = request.getInterviewerIds();
+    if (ids == null || ids.isEmpty() || ids.stream().anyMatch(Objects::isNull) || new HashSet<>(ids).size() != ids.size()) {
+      return Result.error(400, "请至少选择一位面试官，且不能重复");
+    }
+    InterviewRoom room = roomId == null ? null : roomMapper.selectByIdForUpdate(roomId);
+    if (room == null) return Result.error(404, "面试间不存在");
+    // Serialize edits within a session so two rooms cannot acquire the same interviewer.
+    InterviewSession session = sessionMapper.selectByIdForUpdate(room.getSessionId());
+    if (session == null) return Result.error(404, "面试场次不存在");
+    List<Integer> previousIds = roomInterviewerMapper.selectByRoomId(roomId).stream()
+        .map(InterviewRoomInterviewer::getInterviewerId).toList();
+    boolean groupChanged = !new HashSet<>(previousIds).equals(new HashSet<>(ids));
+    List<Interview> unfinished = interviewMapper.selectBySessionId(room.getSessionId()).stream()
+        .filter(i -> Objects.equals(roomId, i.getRoomId()) && !"completed".equals(i.getStatus())).toList();
+    if (groupChanged) {
+      List<User> users = userMapper.selectBatchIds(ids);
+      if (users.size() != ids.size() || users.stream().anyMatch(u -> u.getUserStatus() != UserStatus.ACTIVE)) {
+        return Result.error(400, "面试官不存在或已停用");
+      }
+      List<Integer> otherRooms = roomMapper.selectBySessionId(room.getSessionId()).stream()
+          .map(InterviewRoom::getId).filter(id -> !id.equals(roomId)).toList();
+      if (roomInterviewerMapper.selectByRoomIds(otherRooms).stream()
+          .anyMatch(link -> ids.contains(link.getInterviewerId()))) {
+        return Result.error(409, "所选面试官已分配到本场次的其他面试间");
+      }
+      for (Integer id : ids) {
+        if (previousIds.contains(id)) continue;
+        for (Interview interview : unfinished) {
+          if (interviewerMapper.countOverlappingOutsideRoom(id, roomId,
+              interview.getScheduledStartAt(), interview.getScheduledEndAt()) > 0) {
+            return Result.error(409, "所选面试官与其他面试时间冲突");
+          }
+        }
+      }
+    }
+    Map<String, Object> before = Map.of("name", room.getName(),
+        "location", Objects.toString(room.getLocation(), ""), "interviewerIds", previousIds);
+    room.setName(name); room.setLocation(location); roomMapper.updateById(room);
+    interviewMapper.updateLocationByRoomId(room.getSessionId(), roomId, location);
+    if (groupChanged) {
+      roomInterviewerMapper.deleteByRoomId(roomId);
+      ids.forEach(id -> roomInterviewerMapper.insert(InterviewRoomInterviewer.builder()
+          .roomId(roomId).interviewerId(id).build()));
+      for (Interview interview : unfinished) rebindRoomInterviewers(interview, ids);
+    }
+    log(room.getSessionId(), null, roomId, "update_room", Map.of("before", before,
+        "after", Map.of("name", name, "location", location, "interviewerIds", ids)));
+    return Result.success("面试间信息已更新");
+  }
+
+  private void rebindRoomInterviewers(Interview interview, List<Integer> ids) {
+    Map<Integer, InterviewFeedback> latest = new LinkedHashMap<>();
+    feedbackMapper.selectByInterviewId(interview.getId()).forEach(f -> latest.putIfAbsent(f.getInterviewerId(), f));
+    // Retain submitted reviewers so changing the group never discards an existing evaluation.
+    Set<Integer> assigned = new LinkedHashSet<>(ids);
+    latest.values().stream().filter(f -> "submitted".equals(f.getStatus()))
+        .map(InterviewFeedback::getInterviewerId).forEach(assigned::add);
+    interviewerMapper.deleteByInterviewId(interview.getId());
+    assigned.forEach(id -> interviewerMapper.insert(InterviewInterviewer.builder()
+        .interviewId(interview.getId()).interviewerId(id).build()));
+    if (assigned.stream().allMatch(id -> latest.containsKey(id) && "submitted".equals(latest.get(id).getStatus()))) {
+      interview.setStatus("completed"); interviewMapper.updateById(interview);
+      MembershipApplication app = applicationMapper.selectById(interview.getApplicationId());
+      if (app != null) { app.setStatus("interviewed"); applicationMapper.updateById(app); }
+      InterviewQueueState state = queueMapper.selectByInterviewId(interview.getId());
+      if (state != null && "pending_feedback".equals(state.getStatus())) {
+        state.setStatus("completed"); queueMapper.updateById(state);
+      }
+    }
   }
 
   @Override

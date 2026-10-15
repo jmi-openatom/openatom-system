@@ -5,6 +5,8 @@ import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestForceCallNextDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestInterviewSelfCheckInDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestMoveInterviewRoomDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateInterviewRoomLocationDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateInterviewRoomDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewQueueOperation;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewQueueService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewQueueVO;
@@ -84,6 +86,20 @@ public class InterviewQueueController {
   public Result<String> moveRoom(@PathVariable Integer interviewId,
       @Valid @RequestBody RequestMoveInterviewRoomDTO request) {
     return service.moveRoom(interviewId, request.getTargetRoomId());
+  }
+
+  @PatchMapping("/interview-rooms/{roomId}")
+  @SaCheckPermission("interview:update")
+  public Result<String> updateRoom(@PathVariable Integer roomId,
+      @Valid @RequestBody RequestUpdateInterviewRoomDTO request) {
+    return service.updateRoom(roomId, request);
+  }
+
+  @PatchMapping("/interview-rooms/{roomId}/location")
+  @SaCheckPermission("interview:update")
+  public Result<String> updateRoomLocation(@PathVariable Integer roomId,
+      @Valid @RequestBody RequestUpdateInterviewRoomLocationDTO request) {
+    return service.updateRoomLocation(roomId, request.getLocation());
   }
 
   @PostMapping("/interview-rooms/{roomId}/recover")

@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Update;
 
 /**
  * 面试数据访问层
@@ -13,6 +15,10 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface InterviewMapper extends BaseMapper<Interview> {
+
+  @Update("UPDATE interview SET location = #{location} WHERE session_id = #{sessionId} AND room_id = #{roomId}")
+  int updateLocationByRoomId(@Param("sessionId") Integer sessionId,
+      @Param("roomId") Integer roomId, @Param("location") String location);
 
   /** 按申请ID列表查面试（ordered by round asc, id desc） */
   default List<Interview> selectByApplicationIds(List<Integer> applicationIds) {

@@ -11,6 +11,7 @@ public interface InterviewSessionService {
   Result<ResponseInterviewScheduleVO> autoSchedule(RequestAutoScheduleInterviewDTO request);
   Result<List<InterviewSession>> list(Integer campaignId);
   Result<ResponseInterviewScheduleVO> detail(Integer sessionId);
+  Result<byte[]> exportSchedule(Integer sessionId);
   Result<String> publish(Integer sessionId);
   Result<List<ResponseInterviewerOptionVO>> interviewerOptions(String keyword);
 }

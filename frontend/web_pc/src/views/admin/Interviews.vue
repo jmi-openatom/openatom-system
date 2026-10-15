@@ -20,13 +20,24 @@
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === 'published' ? 'success' : 'info'">
-              {{ row.status === 'published' ? '已发布' : '草稿' }}
+              {{
+                { published: '已发布', completed: '已结束', draft: '草稿' }[row.status as string] ||
+                row.status
+              }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="viewSession(row)">查看排期</el-button>
+            <el-button
+              link
+              type="primary"
+              :loading="exportingSessionId === row.id"
+              :disabled="exportingSessionId !== null"
+              @click="exportSchedule(row)"
+              >导出面试时间</el-button
+            >
             <el-button
               v-if="row.status === 'draft'"
               link
@@ -152,6 +163,7 @@
           <el-card v-for="room in sessionDetail.rooms" :key="room.roomId" shadow="never">
             <strong>{{ room.name }}</strong>
             <p>{{ room.location || '地点待定' }} · {{ room.assignedCount }} 人</p>
+            <InterviewRoomEditor :room="room" @saved="refreshSessionDetail" />
             <div>
               <el-tag v-for="person in room.interviewers" :key="person.userId" size="small">
                 {{ person.name }}
@@ -171,6 +183,14 @@
         </el-table>
       </template>
       <template #footer>
+        <el-button
+          v-if="sessionDetail"
+          type="primary"
+          :loading="exportingSessionId === sessionDetail.sessionId"
+          :disabled="exportingSessionId !== null"
+          @click="exportSchedule({ id: sessionDetail.sessionId, name: sessionDetail.sessionName })"
+          >导出面试时间</el-button
+        >
         <el-button @click="sessionDetailVisible = false">关闭</el-button>
       </template>
     </el-dialog>
@@ -428,6 +448,8 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import InterviewRoomEditor from '@/components/admin/InterviewRoomEditor.vue'
+import { downloadInterviewSchedule } from '@/utils/interviewScheduleExport'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
 import { Search } from '@element-plus/icons-vue'
@@ -444,6 +466,7 @@ const sessions = ref<any[]>([])
 const sessionDetailVisible = ref(false)
 
 const sessionDetail = ref<any>(null)
+const exportingSessionId = ref<number | null>(null)
 
 const rows = ref<any[]>([])
 
@@ -571,6 +594,24 @@ async function publishSession(row: any) {
   await interviewSessionApi.publish(row.id)
   ElMessage.success('面试场次已发布')
   await Promise.all([fetchSessions(), fetchList()])
+}
+
+async function refreshSessionDetail() {
+  if (sessionDetail.value?.sessionId) {
+    sessionDetail.value = await interviewSessionApi.detail(sessionDetail.value.sessionId)
+  }
+  await fetchList()
+}
+
+async function exportSchedule(row: { id: number; name: string }) {
+  if (exportingSessionId.value !== null) return
+  exportingSessionId.value = row.id
+  try {
+    await downloadInterviewSchedule(row.id, row.name)
+    ElMessage.success('面试时间安排已导出')
+  } finally {
+    exportingSessionId.value = null
+  }
 }
 
 function openBatchConfirm() {

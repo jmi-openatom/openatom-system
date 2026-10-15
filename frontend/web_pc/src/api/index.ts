@@ -1259,6 +1259,18 @@ export const interviewSessionApi = {
   moveRoom(interviewId: string | number, targetRoomId: string | number): Promise<any> {
     return request.post(`/interviews/${interviewId}/move-room`, { targetRoomId })
   },
+  updateRoomLocation(roomId: string | number, location: string): Promise<any> {
+    return request.patch(`/interview-rooms/${roomId}/location`, { location })
+  },
+  updateRoom(
+    roomId: string | number,
+    data: { name: string; location: string; interviewerIds: number[] },
+  ): Promise<any> {
+    return request.patch(`/interview-rooms/${roomId}`, data)
+  },
+  exportSchedule(sessionId: string | number): Promise<Blob> {
+    return request.get(`/interview-sessions/${sessionId}/schedule.csv`, { responseType: 'blob' })
+  },
   recoverRoom(roomId: string | number): Promise<any> {
     return request.post(`/interview-rooms/${roomId}/recover`)
   },

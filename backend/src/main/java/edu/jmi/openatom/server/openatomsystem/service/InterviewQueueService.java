@@ -3,6 +3,7 @@ package edu.jmi.openatom.server.openatomsystem.service;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewQueueVO;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewQueueOperation;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateInterviewRoomDTO;
 import java.util.List;
 
 public interface InterviewQueueService {
@@ -17,6 +18,8 @@ public interface InterviewQueueService {
   Result<String> markNoShow(Integer interviewId);
   Result<String> restoreWaiting(Integer interviewId);
   Result<String> moveRoom(Integer interviewId, Integer targetRoomId);
+  Result<String> updateRoomLocation(Integer roomId, String location);
+  Result<String> updateRoom(Integer roomId, RequestUpdateInterviewRoomDTO request);
   Result<String> recoverRoom(Integer roomId);
   Result<String> completeSession(Integer sessionId);
   Result<String> reopenSession(Integer sessionId);

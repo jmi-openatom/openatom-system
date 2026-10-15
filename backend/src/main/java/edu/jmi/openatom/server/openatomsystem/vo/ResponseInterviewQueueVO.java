@@ -35,6 +35,7 @@ public class ResponseInterviewQueueVO {
     private Integer roomId;
     private String name;
     private String location;
+    private List<ResponseInterviewScheduleVO.Interviewer> interviewers;
     private Integer waitingCount;
     private Candidate current;
   }

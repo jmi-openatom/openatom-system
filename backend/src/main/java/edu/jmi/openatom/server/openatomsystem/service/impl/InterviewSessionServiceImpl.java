@@ -28,6 +28,10 @@ import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewerOptionVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewScheduleVO;
 import java.sql.Timestamp;
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -267,6 +271,38 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
       }
     }
     return Result.success("面试场次已发布");
+  }
+
+  @Override
+  public Result<byte[]> exportSchedule(Integer sessionId) {
+    Result<ResponseInterviewScheduleVO> result = detail(sessionId);
+    if (result.getCode() != Result.SUCCESS_CODE) return Result.error(result.getCode(), result.getMessage());
+    ResponseInterviewScheduleVO schedule = result.getData();
+    Map<Integer, ResponseInterviewScheduleVO.Room> rooms = new HashMap<>();
+    schedule.getRooms().forEach(room -> rooms.put(room.getRoomId(), room));
+    List<InterviewInterviewer> links = new ArrayList<>();
+    schedule.getAssignments().forEach(row -> links.addAll(interviewInterviewerMapper.selectByInterviewId(row.getInterviewId())));
+    Map<Integer, User> users = loadUsers(links.stream().map(InterviewInterviewer::getInterviewerId).collect(Collectors.toSet()));
+    DateTimeFormatter time = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(Times.BUSINESS_ZONE);
+    StringBuilder csv = new StringBuilder("\uFEFF场次,编号,候选人,面试间,地点,开始时间（北京时间）,结束时间（北京时间）,面试官\r\n");
+    for (ResponseInterviewScheduleVO.Assignment row : schedule.getAssignments()) {
+      ResponseInterviewScheduleVO.Room room = rooms.get(row.getRoomId());
+      String interviewers = links.stream().filter(link -> row.getInterviewId().equals(link.getInterviewId()))
+          .map(link -> userName(users.get(link.getInterviewerId()))).collect(Collectors.joining("、"));
+      String[] values = {schedule.getSessionName(), row.getQueueNumber() == null ? "" : row.getQueueNumber().toString(),
+          row.getApplicantName(), row.getRoomName(), room == null ? "" : room.getLocation(),
+          row.getScheduledStartAt() == null ? "" : time.format(row.getScheduledStartAt().toInstant()),
+          row.getScheduledEndAt() == null ? "" : time.format(row.getScheduledEndAt().toInstant()), interviewers};
+      csv.append(java.util.Arrays.stream(values).map(this::scheduleCsvCell).collect(Collectors.joining(","))).append("\r\n");
+    }
+    return Result.success(csv.toString().getBytes(StandardCharsets.UTF_8));
+  }
+
+  private String scheduleCsvCell(String value) {
+    String text = Objects.toString(value, "");
+    // Quoting preserves commas/newlines; a text prefix prevents spreadsheet formula execution.
+    if (text.stripLeading().matches("(?s)^[=+@-].*")) text = "'" + text;
+    return "\"" + text.replace("\"", "\"\"") + "\"";
   }
 
   @Override

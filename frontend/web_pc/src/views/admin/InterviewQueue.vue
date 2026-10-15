@@ -22,6 +22,9 @@
         </el-select>
         <el-button :disabled="!sessionId" @click="openCheckIn">打开签到页</el-button>
         <el-button :disabled="!sessionId" @click="openScreen">打开叫号大屏</el-button>
+        <el-button :disabled="!sessionId" :loading="exportingSchedule" @click="exportSchedule"
+          >导出面试时间</el-button
+        >
         <el-button :disabled="!sessionId" :loading="exporting" @click="exportSummary"
           >导出评价汇总</el-button
         >
@@ -47,7 +50,7 @@
       </section>
       <el-alert
         v-if="sessionClosed"
-        title="该场次已结束，现场操作已锁定；如需纠错，请先重新开启场次。"
+        title="该场次已结束，签到、叫号和换房已锁定；面试间名称、地点和面试官仍可修改。"
         type="warning"
         show-icon
         :closable="false"
@@ -58,7 +61,10 @@
             <div>
               <span>面试间</span>
               <h3>{{ room.name }}</h3>
-              <p>{{ room.location || '地点待定' }}</p>
+              <div class="room-location">
+                <p>{{ room.location || '地点待定' }}</p>
+                <InterviewRoomEditor :room="room" @saved="loadQueue()" />
+              </div>
             </div>
             <el-tag effect="plain">候场 {{ room.waitingCount }} 人</el-tag>
           </header>
@@ -286,6 +292,8 @@
 
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
+import InterviewRoomEditor from '@/components/admin/InterviewRoomEditor.vue'
+import { downloadInterviewSchedule } from '@/utils/interviewScheduleExport'
 import { interviewSessionApi } from '@/api'
 import { formatDateTime } from '@/utils/format.ts'
 import { hasPermission } from '@/utils/permission'
@@ -305,6 +313,7 @@ const exporting = ref(false),
   moving = ref(false)
 const movingCandidate = ref<any>(null),
   targetRoomId = ref<number | null>(null)
+const exportingSchedule = ref(false)
 const operationsVisible = ref(false),
   operationsLoading = ref(false),
   operations = ref<any[]>([])
@@ -340,7 +349,12 @@ const stats = computed(() => {
     },
     { key: 'waiting', label: '正在候场', value: value.waiting || 0, hint: '已签到未叫号' },
     { key: 'completed', label: '已完成', value: value.completed || 0, hint: '全组评价已提交' },
-    { key: 'pendingFeedback', label: '待补评价', value: value.pendingFeedback || 0, hint: '强制叫号后待补交' },
+    {
+      key: 'pendingFeedback',
+      label: '待补评价',
+      value: value.pendingFeedback || 0,
+      hint: '强制叫号后待补交',
+    },
     { key: 'noShow', label: '缺席/过号', value: value.noShow || 0, hint: '可恢复候场' },
     {
       key: 'notCheckedIn',
@@ -514,6 +528,16 @@ async function loadSessionsKeepingCurrent() {
   )
   sessionId.value = current
 }
+async function exportSchedule() {
+  if (!sessionId.value || exportingSchedule.value) return
+  exportingSchedule.value = true
+  try {
+    await downloadInterviewSchedule(sessionId.value, queue.value?.sessionName)
+    ElMessage.success('面试时间安排已导出')
+  } finally {
+    exportingSchedule.value = false
+  }
+}
 async function exportSummary() {
   if (!sessionId.value) return
   exporting.value = true
@@ -591,6 +615,8 @@ function actionText(action: string) {
         mark_no_show: '标记缺席/过号',
         restore_waiting: '恢复候场',
         move_room: '临时换房',
+        update_room_location: '修改面试地点',
+        update_room: '修改面试间',
         recover_room: '异常恢复',
         complete_session: '结束场次',
         reopen_session: '重新开启场次',
@@ -603,6 +629,12 @@ function operationDetail(row: any) {
     const detail = typeof row.detailJson === 'string' ? JSON.parse(row.detailJson) : row.detailJson
     if (row.action === 'force_call_next') {
       return `上一位面试 #${detail?.previousInterviewId ?? '-'}；${detail?.reason || '未填写原因'}`
+    }
+    if (row.action === 'update_room') {
+      return `${detail?.before?.name || '-'} · ${detail?.before?.location || '地点待定'} → ${detail?.after?.name || '-'} · ${detail?.after?.location || '地点待定'}；面试官 ${detail?.before?.interviewerIds?.join('、') || '-'} → ${detail?.after?.interviewerIds?.join('、') || '-'}`
+    }
+    if (row.action === 'update_room_location') {
+      return `${detail?.fromLocation || '地点待定'} → ${detail?.toLocation || '地点待定'}`
     }
     return detail?.reason || '-'
   } catch {
@@ -697,6 +729,15 @@ onBeforeUnmount(() => {
 .room-current span {
   font-size: 12px;
   color: var(--oa-muted);
+}
+.room-location {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.room-location p {
+  overflow-wrap: anywhere;
 }
 .room-card footer {
   justify-content: flex-end;

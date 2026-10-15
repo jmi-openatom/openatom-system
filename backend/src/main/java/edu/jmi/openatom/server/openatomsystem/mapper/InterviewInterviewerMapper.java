@@ -17,6 +17,17 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface InterviewInterviewerMapper extends BaseMapper<InterviewInterviewer> {
 
+  @Select("""
+      SELECT COUNT(*) FROM interview_interviewer ii
+      JOIN interview i ON i.id = ii.interview_id
+      WHERE ii.interviewer_id = #{interviewerId} AND i.status <> 'completed'
+        AND (i.room_id IS NULL OR i.room_id <> #{roomId})
+        AND i.scheduled_start_at < #{endAt} AND i.scheduled_end_at > #{startAt}
+      """)
+  long countOverlappingOutsideRoom(@Param("interviewerId") Integer interviewerId,
+      @Param("roomId") Integer roomId, @Param("startAt") Timestamp startAt,
+      @Param("endAt") Timestamp endAt);
+
   @Select(
       """
       SELECT COUNT(*)
