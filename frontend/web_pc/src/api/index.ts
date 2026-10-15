@@ -1204,6 +1204,9 @@ export const interviewEvaluationTemplateApi = {
 }
 
 export const interviewSessionApi = {
+  addCandidates(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/interview-sessions/${id}/candidates`, data)
+  },
   autoSchedule(data: Record<string, unknown>): Promise<any> {
     return request.post('/interview-sessions/auto-schedule', data)
   },

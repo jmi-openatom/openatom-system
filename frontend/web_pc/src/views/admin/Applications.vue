@@ -21,7 +21,13 @@
           <el-option label="已拒绝" value="rejected" />
           <el-option label="已撤回" value="cancelled" />
         </el-select>
-        <el-select v-model="query.campaignId" clearable filterable placeholder="招新批次" style="width: 190px">
+        <el-select
+          v-model="query.campaignId"
+          clearable
+          filterable
+          placeholder="招新批次"
+          style="width: 190px"
+        >
           <el-option
             v-for="campaign in campaignOptions"
             :key="campaign.id"
@@ -286,12 +292,8 @@
             value-format="YYYY-MM-DDTHH:mm:ss"
           />
         </el-form-item>
-        <el-form-item label="场次结束时间">
-          <el-date-picker
-            v-model="batchInterviewForm.scheduledEndAt"
-            type="datetime"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-          />
+        <el-form-item label="结束时间">
+          <span class="form-helper">按人数、每场时长和间隔自动计算，不限制排期人数。</span>
         </el-form-item>
         <el-form-item label="每场时长">
           <el-input-number v-model="batchInterviewForm.durationMinutes" :min="5" :step="5" />
@@ -313,7 +315,7 @@
             <el-radio-button value="first_choice_department">按第一志愿部门</el-radio-button>
           </el-radio-group>
           <p class="form-helper">
-            按第一志愿部门时，将优先分配到负责该部门的面试间；未配置或容量不足时自动均衡分配。
+            按第一志愿部门时，将优先分配到负责该部门的面试间；未配置对应面试间时自动均衡分配。
           </p>
         </el-form-item>
         <el-form-item label="免面试部门">
@@ -403,7 +405,8 @@
         <span v-if="schedulePreview">
           <template v-if="previewNeedsRefresh">面试间已调整，请重新生成预览</template>
           <template v-else>
-            已安排 {{ schedulePreview.totalCandidates }} 人至
+            预计结束：{{ formatDateTime(schedulePreview.scheduledEndAt) }} · 已安排
+            {{ schedulePreview.totalCandidates }} 人至
             {{ schedulePreview.rooms?.length || 0 }} 个面试间
             <template v-if="schedulePreview.skippedCandidates?.length">
               ，{{ schedulePreview.skippedCandidates.length }} 人免面试
@@ -563,8 +566,15 @@
 
       <template #footer>
         <el-button @click="batchFinalVisible = false">取消</el-button>
-        <el-button type="primary" :loading="batchFinalSubmitting" @click="submitBatchFinalDecision"
-          >{{ batchFinalSubmitting ? `处理中 ${batchFinalProgress}/${batchFinalTargets.length}` : '提交' }}</el-button
+        <el-button
+          type="primary"
+          :loading="batchFinalSubmitting"
+          @click="submitBatchFinalDecision"
+          >{{
+            batchFinalSubmitting
+              ? `处理中 ${batchFinalProgress}/${batchFinalTargets.length}`
+              : '提交'
+          }}</el-button
         >
       </template>
     </el-dialog>
@@ -647,7 +657,6 @@ const batchInterviewTargets = ref<any[]>([])
 const batchInterviewForm = ref({
   name: '',
   scheduledStartAt: '',
-  scheduledEndAt: '',
   durationMinutes: 30,
   gapMinutes: 10,
   mode: 'offline',
@@ -937,7 +946,6 @@ async function openBatchInterview() {
   batchInterviewForm.value = {
     name: '',
     scheduledStartAt: '',
-    scheduledEndAt: '',
     durationMinutes: 30,
     gapMinutes: 10,
     mode: 'offline',
@@ -1001,7 +1009,6 @@ function buildAutoSchedulePayload(previewOnly: boolean) {
     name: batchInterviewForm.value.name,
     round: 1,
     scheduledStartAt: batchInterviewForm.value.scheduledStartAt,
-    scheduledEndAt: batchInterviewForm.value.scheduledEndAt,
     durationMinutes: batchInterviewForm.value.durationMinutes,
     gapMinutes: batchInterviewForm.value.gapMinutes,
     mode: batchInterviewForm.value.mode,
@@ -1010,9 +1017,9 @@ function buildAutoSchedulePayload(previewOnly: boolean) {
     applicationIds: batchInterviewTargets.value.map((item) => item.id),
     rooms: batchInterviewForm.value.rooms.map(
       ({ name, location, interviewerIds, preferredDepartmentIds }) => ({
-      name,
-      location,
-      interviewerIds,
+        name,
+        location,
+        interviewerIds,
         preferredDepartmentIds,
       }),
     ),
@@ -1028,7 +1035,6 @@ function buildAutoSchedulePayload(previewOnly: boolean) {
 function validateAutoScheduleForm() {
   if (!batchInterviewForm.value.name.trim()) return '请输入场次名称'
   if (!batchInterviewForm.value.scheduledStartAt) return '请选择首场开始时间'
-  if (!batchInterviewForm.value.scheduledEndAt) return '请选择场次结束时间'
   if (batchInterviewForm.value.rooms.some((room) => !room.name.trim())) return '请填写面试间名称'
   if (batchInterviewForm.value.rooms.some((room) => !room.interviewerIds.length)) {
     return '每个面试间至少需要一位面试官'
@@ -1219,7 +1225,9 @@ async function submitBatchFinalDecision() {
       }
     }
     if (failed.length) {
-      ElMessage.warning(`批量终审完成：成功 ${succeeded} 条，失败 ${failed.length} 条。${failed[0]}`)
+      ElMessage.warning(
+        `批量终审完成：成功 ${succeeded} 条，失败 ${failed.length} 条。${failed[0]}`,
+      )
     } else {
       ElMessage.success(
         skippedCount

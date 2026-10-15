@@ -9,7 +9,10 @@ import lombok.Data;
 @Builder
 public class ResponseInterviewScheduleVO {
   private Integer sessionId;
+  private Integer campaignId;
   private String sessionName;
+  private Timestamp scheduledStartAt;
+  private Timestamp scheduledEndAt;
   private String status;
   private Integer totalCandidates;
   private List<Room> rooms;

@@ -15,7 +15,8 @@ public class RequestAutoScheduleInterviewDTO {
   @NotBlank(message = "场次名称不能为空") private String name;
   @NotNull(message = "轮次不能为空") @Min(value = 1, message = "轮次至少为1") private Integer round;
   @NotBlank(message = "开始时间不能为空") private String scheduledStartAt;
-  @NotBlank(message = "结束时间不能为空") private String scheduledEndAt;
+  /** 兼容旧客户端；结束时间由实际排期自动计算。 */
+  private String scheduledEndAt;
   @NotNull(message = "单场时长不能为空") @Min(value = 5, message = "单场时长至少5分钟") private Integer durationMinutes;
   @NotNull(message = "间隔不能为空") @Min(value = 0, message = "间隔不能为负数") private Integer gapMinutes;
   private String mode;

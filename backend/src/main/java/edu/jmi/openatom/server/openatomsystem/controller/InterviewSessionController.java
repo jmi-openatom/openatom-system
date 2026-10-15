@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestAutoScheduleInterviewDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestAddInterviewCandidatesDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewSession;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewSessionService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewerOptionVO;
@@ -42,6 +43,13 @@ public class InterviewSessionController {
   public Result<List<InterviewSession>> list(
       @RequestParam(required = false) Integer campaignId) {
     return service.list(campaignId);
+  }
+
+  @PostMapping("/interview-sessions/{sessionId}/candidates")
+  @SaCheckPermission("interview:create")
+  public Result<ResponseInterviewScheduleVO> addCandidates(@PathVariable Integer sessionId,
+      @Valid @RequestBody RequestAddInterviewCandidatesDTO request) {
+    return service.addCandidates(sessionId, request);
   }
 
   @GetMapping("/interview-sessions/{sessionId}")

@@ -48,6 +48,9 @@ class InterviewSessionServiceImplTest {
     assertEquals(List.of(3, 2), result.getData().getRooms().stream()
         .map(room -> room.getAssignedCount()).toList());
     assertEquals(5, result.getData().getAssignments().size());
+    // The obsolete one-minute window no longer limits scheduling capacity.
+    assertEquals(edu.jmi.openatom.server.openatomsystem.common.Times.parseTimestamp("2026-09-10T15:50:00"),
+        result.getData().getScheduledEndAt());
   }
 
   @Test
@@ -73,6 +76,7 @@ class InterviewSessionServiceImplTest {
         mock(InterviewRoomInterviewerMapper.class), interviewMapper,
         mock(InterviewInterviewerMapper.class), applicationMapper, userMapper, null, null);
     RequestAutoScheduleInterviewDTO request = request();
+    request.setScheduledEndAt(null);
     request.setApplicationIds(List.of(1, 2, 3));
     request.setAssignmentStrategy("first_choice_department");
     request.setSkipInterviewDepartmentIds(List.of(20));
@@ -94,7 +98,7 @@ class InterviewSessionServiceImplTest {
     first.setName("第一轮面试");
     first.setRound(1);
     first.setScheduledStartAt("2026-09-10T14:00:00");
-    first.setScheduledEndAt("2026-09-10T17:00:00");
+    first.setScheduledEndAt("2026-09-10T14:01:00");
     first.setDurationMinutes(30);
     first.setGapMinutes(10);
     first.setMode("offline");

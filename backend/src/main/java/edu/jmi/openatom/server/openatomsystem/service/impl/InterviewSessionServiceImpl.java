@@ -6,6 +6,7 @@ import edu.jmi.openatom.server.openatomsystem.common.Jsons;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.common.Times;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestAutoScheduleInterviewDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestAddInterviewCandidatesDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestCreateNotificationDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.Interview;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewInterviewer;
@@ -62,8 +63,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
   @Transactional(rollbackFor = Exception.class)
   public Result<ResponseInterviewScheduleVO> autoSchedule(RequestAutoScheduleInterviewDTO request) {
     Timestamp start = Times.parseTimestamp(request.getScheduledStartAt());
-    Timestamp end = Times.parseTimestamp(request.getScheduledEndAt());
-    if (!end.after(start)) return Result.error(400, "结束时间必须晚于开始时间");
+    Timestamp end = Timestamp.from(start.toInstant().plus(Duration.ofMinutes(request.getDurationMinutes())));
 
     List<Integer> applicationIds = request.getApplicationIds().stream().distinct().toList();
     if (applicationIds.size() != request.getApplicationIds().size()) {
@@ -113,24 +113,12 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     }
 
     int slotMinutes = request.getDurationMinutes() + request.getGapMinutes();
-    long totalMinutes = Duration.between(start.toInstant(), end.toInstant()).toMinutes();
-    int capacityPerRoom = (int) ((totalMinutes + request.getGapMinutes()) / slotMinutes);
-    if (capacityPerRoom <= 0) return Result.error(400, "面试时间段不足以安排一场面试");
-    if ((long) capacityPerRoom * request.getRooms().size() < interviewApplications.size()) {
-      return Result.error(400, "面试间容量不足，请增加面试间或延长时间段");
-    }
-
     Map<Integer, User> interviewerUsers = validateAndLoadInterviewers(request.getRooms());
     if (interviewerUsers == null) return Result.error(400, "面试官不存在、已停用或被分配到多个面试间");
-    for (Integer interviewerId : interviewerUsers.keySet()) {
-      if (interviewInterviewerMapper.countOverlapping(interviewerId, start, end) > 0) {
-        return Result.error(409, "面试官 " + userName(interviewerUsers.get(interviewerId)) + " 与已有面试时间冲突");
-      }
-    }
 
     List<RoomState> roomStates = new ArrayList<>();
     for (int index = 0; index < request.getRooms().size(); index++) {
-      roomStates.add(new RoomState(index, request.getRooms().get(index), capacityPerRoom, start.toInstant()));
+      roomStates.add(new RoomState(index, request.getRooms().get(index), start.toInstant()));
     }
 
     List<ResponseInterviewScheduleVO.Assignment> assignments = new ArrayList<>();
@@ -145,25 +133,25 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
           return Result.error(400, "申请 " + applicationId + " 的面试间选择无效");
         }
         target = roomStates.get(preferredRoomIndex);
-        if (target.assigned >= target.capacity) {
-          return Result.error(400, target.request.getName() + " 容量不足，请调整其他候选人");
-        }
       } else {
         List<RoomState> departmentRooms = "first_choice_department".equals(request.getAssignmentStrategy())
             && application.getFirstChoiceDepartmentId() != null
             ? roomStates.stream().filter(room -> room.matchesDepartment(application.getFirstChoiceDepartmentId())).toList()
             : List.of();
-        List<RoomState> availableDepartmentRooms = departmentRooms.stream()
-            .filter(room -> room.assigned < room.capacity).toList();
-        target = (availableDepartmentRooms.isEmpty() ? roomStates : availableDepartmentRooms).stream()
-            .filter(room -> room.assigned < room.capacity)
-            .min(Comparator.comparingDouble(RoomState::load)
+        target = (departmentRooms.isEmpty() ? roomStates : departmentRooms).stream()
+            .min(Comparator.comparingInt((RoomState room) -> room.assigned)
                 .thenComparing(room -> room.nextStart)
                 .thenComparingInt(room -> room.index))
             .orElseThrow();
       }
       Instant slotStart = target.nextStart;
       Instant slotEnd = slotStart.plus(Duration.ofMinutes(request.getDurationMinutes()));
+      for (Integer interviewerId : target.request.getInterviewerIds()) {
+        if (interviewInterviewerMapper.countOverlapping(interviewerId,
+            Timestamp.from(slotStart), Timestamp.from(slotEnd)) > 0) {
+          return Result.error(409, "面试官 " + userName(interviewerUsers.get(interviewerId)) + " 与已有面试时间冲突");
+        }
+      }
       if (hasCandidateConflict(applicationId, slotStart, slotEnd)) {
         return Result.error(409, "申请 " + applicationId + " 与已有面试时间冲突");
       }
@@ -178,6 +166,8 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
           .scheduledEndAt(Timestamp.from(slotEnd)).build());
     }
 
+    end = assignments.stream().map(ResponseInterviewScheduleVO.Assignment::getScheduledEndAt)
+        .max(Timestamp::compareTo).orElse(end);
     InterviewSession session = null;
     if (!Boolean.TRUE.equals(request.getPreviewOnly())) {
       session = InterviewSession.builder().campaignId(request.getCampaignId()).name(request.getName().trim())
@@ -193,8 +183,127 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
       });
     }
 
-    return Result.success(buildResponse(session, request.getName(), roomStates, assignments, interviewerUsers,
-        skippedCandidates));
+    ResponseInterviewScheduleVO response = buildResponse(session, request.getName(), roomStates, assignments,
+        interviewerUsers, skippedCandidates);
+    response.setCampaignId(request.getCampaignId());
+    response.setScheduledStartAt(start);
+    response.setScheduledEndAt(end);
+    return Result.success(response);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public Result<ResponseInterviewScheduleVO> addCandidates(Integer sessionId,
+      RequestAddInterviewCandidatesDTO request) {
+    // Serialize additions and publishing so queue numbers and publication state stay consistent.
+    InterviewSession session = sessionMapper.selectByIdForUpdate(sessionId);
+    if (session == null) return Result.error(404, "面试场次不存在");
+    if (!List.of("draft", "published").contains(session.getStatus())) {
+      return Result.error(422, "只有草稿或已发布场次可以添加候选人");
+    }
+    List<Integer> ids = request.getApplicationIds();
+    if (ids == null || ids.isEmpty() || ids.stream().anyMatch(Objects::isNull)
+        || new HashSet<>(ids).size() != ids.size()) {
+      return Result.error(400, "请选择候选人，且不能重复");
+    }
+    Map<Integer, MembershipApplication> applications = new HashMap<>();
+    applicationMapper.selectBatchIds(ids).forEach(app -> applications.put(app.getId(), app));
+    List<Interview> existing = interviewMapper.selectBySessionId(sessionId);
+    Set<Integer> scheduledIds = existing.stream().map(Interview::getApplicationId).collect(Collectors.toSet());
+    List<Interview> candidateInterviews = interviewMapper.selectByApplicationIds(ids);
+    for (Integer id : ids) {
+      MembershipApplication app = applications.get(id);
+      if (app == null) return Result.error(404, "申请 " + id + " 不存在");
+      if (!Objects.equals(session.getCampaignId(), app.getCampaignId())) {
+        return Result.error(400, "所选申请必须属于当前场次的招新批次");
+      }
+      if (scheduledIds.contains(id) || candidateInterviews.stream().anyMatch(item ->
+          id.equals(item.getApplicationId()) && Objects.equals(session.getRound(), item.getRound()))) {
+        return Result.error(409, "申请 " + id + " 已安排本轮面试，请勿重复添加");
+      }
+      if (!"pre_screen_passed".equals(app.getStatus())) {
+        return Result.error(422, "申请 " + id + " 当前状态不允许安排面试");
+      }
+    }
+    List<InterviewRoom> rooms = roomMapper.selectBySessionId(sessionId);
+    if (rooms.isEmpty()) return Result.error(422, "场次尚未配置面试间");
+    if (request.getRoomId() != null && rooms.stream().noneMatch(room -> request.getRoomId().equals(room.getId()))) {
+      return Result.error(400, "所选面试间不属于当前场次");
+    }
+    Map<Integer, List<Integer>> roomPeople = new HashMap<>();
+    roomInterviewerMapper.selectByRoomIds(rooms.stream().map(InterviewRoom::getId).toList())
+        .forEach(link -> roomPeople.computeIfAbsent(link.getRoomId(), ignored -> new ArrayList<>())
+            .add(link.getInterviewerId()));
+    Map<Integer, User> users = loadUsers(roomPeople.values().stream().flatMap(List::stream).collect(Collectors.toSet()));
+    Map<Integer, Instant> nextStarts = new HashMap<>();
+    for (InterviewRoom room : rooms) {
+      Instant next = existing.stream().filter(item -> room.getId().equals(item.getRoomId()))
+          .map(item -> item.getScheduledEndAt().toInstant().plus(Duration.ofMinutes(session.getGapMinutes())))
+          .max(Instant::compareTo).orElse(session.getScheduledStartAt().toInstant());
+      nextStarts.put(room.getId(), next);
+    }
+    int number = existing.stream().map(Interview::getQueueNumber).filter(Objects::nonNull)
+        .max(Integer::compareTo).orElse(0);
+    Map<Integer, User> applicants = loadApplicants(new ArrayList<>(applications.values()));
+    List<ResponseInterviewScheduleVO.Assignment> assignments = new ArrayList<>();
+    for (Integer id : ids) {
+      InterviewRoom room = rooms.stream()
+          .filter(item -> request.getRoomId() == null || request.getRoomId().equals(item.getId()))
+          .min(Comparator.comparing(item -> nextStarts.get(item.getId()))).orElseThrow();
+      List<Integer> interviewerIds = roomPeople.getOrDefault(room.getId(), List.of());
+      if (interviewerIds.isEmpty() || interviewerIds.stream().anyMatch(person ->
+          !users.containsKey(person) || users.get(person).getUserStatus() != UserStatus.ACTIVE)) {
+        return Result.error(422, room.getName() + " 的面试官配置无效，请先编辑面试间");
+      }
+      Instant start = nextStarts.get(room.getId());
+      Instant end = start.plus(Duration.ofMinutes(session.getDurationMinutes()));
+      if (hasCandidateConflict(id, start, end)) return Result.error(409, "申请 " + id + " 与已有面试时间冲突");
+      for (Integer person : interviewerIds) {
+        if (interviewInterviewerMapper.countOverlapping(person, Timestamp.from(start), Timestamp.from(end)) > 0) {
+          return Result.error(409, "面试官 " + userName(users.get(person)) + " 与已有面试时间冲突，请选择其他面试间");
+        }
+      }
+      // Also guard against invalid legacy room groups sharing an interviewer within this batch.
+      if (assignments.stream().anyMatch(item -> item.getScheduledStartAt().toInstant().isBefore(end)
+          && item.getScheduledEndAt().toInstant().isAfter(start)
+          && roomPeople.getOrDefault(item.getRoomId(), List.of()).stream().anyMatch(interviewerIds::contains))) {
+        return Result.error(409, "面试间的面试官重复且时间冲突，请先编辑面试间");
+      }
+      MembershipApplication app = applications.get(id);
+      assignments.add(ResponseInterviewScheduleVO.Assignment.builder().applicationId(id)
+          .applicantName(applicantName(app, applicantFor(app, applicants))).roomId(room.getId())
+          .roomName(room.getName()).queueNumber(++number).scheduledStartAt(Timestamp.from(start))
+          .scheduledEndAt(Timestamp.from(end)).build());
+      nextStarts.put(room.getId(), end.plus(Duration.ofMinutes(session.getGapMinutes())));
+    }
+    Timestamp end = assignments.stream().map(ResponseInterviewScheduleVO.Assignment::getScheduledEndAt)
+        .max(Timestamp::compareTo).orElse(session.getScheduledEndAt());
+    if (end.after(session.getScheduledEndAt())) session.setScheduledEndAt(end);
+    if (Boolean.FALSE.equals(request.getPreviewOnly())) {
+      // Validate the whole batch before writing, so business errors never leave a partial addition.
+      for (ResponseInterviewScheduleVO.Assignment assignment : assignments) {
+        InterviewRoom room = rooms.stream().filter(item -> item.getId().equals(assignment.getRoomId())).findFirst().orElseThrow();
+        Interview interview = Interview.builder().sessionId(sessionId).roomId(room.getId())
+            .applicationId(assignment.getApplicationId()).queueNumber(assignment.getQueueNumber())
+            .round(session.getRound()).scheduledStartAt(assignment.getScheduledStartAt())
+            .scheduledEndAt(assignment.getScheduledEndAt()).location(room.getLocation()).mode(session.getMode())
+            .status("published".equals(session.getStatus()) ? "pending" : "draft").build();
+        interviewMapper.insert(interview);
+        assignment.setInterviewId(interview.getId());
+        for (Integer person : roomPeople.get(room.getId())) {
+          interviewInterviewerMapper.insert(InterviewInterviewer.builder().interviewId(interview.getId())
+              .interviewerId(person).build());
+        }
+        if ("published".equals(session.getStatus())) {
+          notifyScheduledCandidate(interview, applications.get(assignment.getApplicationId()));
+        }
+      }
+      sessionMapper.updateById(session);
+    }
+    return Result.success(ResponseInterviewScheduleVO.builder().sessionId(sessionId)
+        .campaignId(session.getCampaignId()).sessionName(session.getName()).status(session.getStatus())
+        .scheduledStartAt(session.getScheduledStartAt()).scheduledEndAt(session.getScheduledEndAt())
+        .totalCandidates(assignments.size()).assignments(assignments).build());
   }
 
   @Override
@@ -239,14 +348,15 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
           .roomName(room == null ? item.getLocation() : room.getName()).queueNumber(item.getQueueNumber())
           .scheduledStartAt(item.getScheduledStartAt()).scheduledEndAt(item.getScheduledEndAt()).build();
     }).toList();
-    return Result.success(ResponseInterviewScheduleVO.builder().sessionId(sessionId).sessionName(session.getName())
+    return Result.success(ResponseInterviewScheduleVO.builder().sessionId(sessionId).campaignId(session.getCampaignId())
+        .scheduledStartAt(session.getScheduledStartAt()).scheduledEndAt(session.getScheduledEndAt()).sessionName(session.getName())
         .status(session.getStatus()).totalCandidates(interviews.size()).rooms(roomRows).assignments(assignmentRows).build());
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Result<String> publish(Integer sessionId) {
-    InterviewSession session = sessionMapper.selectById(sessionId);
+    InterviewSession session = sessionMapper.selectByIdForUpdate(sessionId);
     if (session == null) return Result.error(404, "面试场次不存在");
     if (!"draft".equals(session.getStatus())) return Result.error(422, "只有草稿场次可以发布");
     List<Interview> interviews = interviewMapper.selectBySessionId(sessionId);
@@ -256,21 +366,24 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
     for (Interview interview : interviews) {
       interview.setStatus("pending");
       interviewMapper.updateById(interview);
-      MembershipApplication application = applicationMapper.selectById(interview.getApplicationId());
-      if (application != null) {
-        application.setStatus("interview_scheduled");
-        applicationMapper.updateById(application);
-        if (application.getUserId() != null) {
-          String content = String.format("您好，您的入会申请已安排面试。\n时间：%s 至 %s\n地点：%s\n请准时参加！",
-              interview.getScheduledStartAt(), interview.getScheduledEndAt(), interview.getLocation());
-          notificationService.create(RequestCreateNotificationDTO.builder().title("面试安排通知")
-              .content(content).type("activity").receiverUserIds(List.of(application.getUserId())).build());
-          mailBroadcastPlanner.enqueueUserMail("broadcast_interview_" + interview.getId(),
-              application.getUserId(), "interview", "面试安排通知", content);
-        }
-      }
+      notifyScheduledCandidate(interview, applicationMapper.selectById(interview.getApplicationId()));
     }
     return Result.success("面试场次已发布");
+  }
+
+  private void notifyScheduledCandidate(Interview interview, MembershipApplication application) {
+    if (application != null) {
+      application.setStatus("interview_scheduled");
+      applicationMapper.updateById(application);
+      if (application.getUserId() != null) {
+        String content = String.format("您好，您的入会申请已安排面试。\n时间：%s 至 %s\n地点：%s\n请准时参加！",
+            interview.getScheduledStartAt(), interview.getScheduledEndAt(), interview.getLocation());
+        notificationService.create(RequestCreateNotificationDTO.builder().title("面试安排通知")
+            .content(content).type("activity").receiverUserIds(List.of(application.getUserId())).build());
+        mailBroadcastPlanner.enqueueUserMail("broadcast_interview_" + interview.getId(),
+            application.getUserId(), "interview", "面试安排通知", content);
+      }
+    }
   }
 
   @Override
@@ -381,7 +494,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
       Map<Integer, User> users, List<ResponseInterviewScheduleVO.SkippedCandidate> skippedCandidates) {
     List<ResponseInterviewScheduleVO.Room> rooms = states.stream().map(state ->
         ResponseInterviewScheduleVO.Room.builder().roomId(state.roomId).name(state.request.getName())
-            .location(state.request.getLocation()).capacity(state.capacity).assignedCount(state.assigned)
+            .location(state.request.getLocation()).assignedCount(state.assigned)
             .interviewers(state.request.getInterviewerIds().stream().map(id ->
                 ResponseInterviewScheduleVO.Interviewer.builder().userId(id).name(userName(users.get(id))).build()).toList())
             .build()).toList();
@@ -422,20 +535,14 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
   private static final class RoomState {
     private final int index;
     private final RequestAutoScheduleInterviewDTO.Room request;
-    private final int capacity;
     private int assigned;
     private Instant nextStart;
     private Integer roomId;
 
-    private RoomState(int index, RequestAutoScheduleInterviewDTO.Room request, int capacity, Instant nextStart) {
+    private RoomState(int index, RequestAutoScheduleInterviewDTO.Room request, Instant nextStart) {
       this.index = index;
       this.request = request;
-      this.capacity = capacity;
       this.nextStart = nextStart;
-    }
-
-    private double load() {
-      return capacity == 0 ? 1 : (double) assigned / capacity;
     }
 
     private boolean matchesDepartment(Integer departmentId) {

@@ -4,7 +4,7 @@
       <div class="session-section__header">
         <div>
           <h2>面试场次</h2>
-          <p>查看自动排期草稿并发布面试安排</p>
+          <p>查看排期、添加候选人并发布面试安排</p>
         </div>
         <el-button :loading="sessionsLoading" @click="fetchSessions">刷新</el-button>
       </div>
@@ -27,9 +27,16 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="操作" width="360" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="viewSession(row)">查看排期</el-button>
+            <el-button
+              v-if="['draft', 'published'].includes(row.status)"
+              link
+              type="primary"
+              @click="openAddCandidates(row.id)"
+              >添加候选人</el-button
+            >
             <el-button
               link
               type="primary"
@@ -184,6 +191,12 @@
       </template>
       <template #footer>
         <el-button
+          v-if="sessionDetail && ['draft', 'published'].includes(sessionDetail.status)"
+          type="primary"
+          @click="openAddCandidates(sessionDetail.sessionId)"
+          >添加候选人</el-button
+        >
+        <el-button
           v-if="sessionDetail"
           type="primary"
           :loading="exportingSessionId === sessionDetail.sessionId"
@@ -194,6 +207,12 @@
         <el-button @click="sessionDetailVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <InterviewCandidateAdder
+      v-model="addCandidatesVisible"
+      :session="addCandidatesSession"
+      @saved="candidatesAdded"
+    />
 
     <!-- 批量反馈对话框 -->
     <el-dialog v-model="batchFeedbackVisible" title="批量反馈" width="640px">
@@ -449,6 +468,7 @@
 <script setup lang="ts">
 import ViewPage from '@/components/common/ViewPage.vue'
 import InterviewRoomEditor from '@/components/admin/InterviewRoomEditor.vue'
+import InterviewCandidateAdder from '@/components/admin/InterviewCandidateAdder.vue'
 import { downloadInterviewSchedule } from '@/utils/interviewScheduleExport'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
@@ -467,6 +487,17 @@ const sessionDetailVisible = ref(false)
 
 const sessionDetail = ref<any>(null)
 const exportingSessionId = ref<number | null>(null)
+const addCandidatesVisible = ref(false)
+const addCandidatesSession = ref<any>(null)
+
+async function openAddCandidates(sessionId: number) {
+  addCandidatesSession.value = await interviewSessionApi.detail(sessionId)
+  addCandidatesVisible.value = true
+}
+
+async function candidatesAdded() {
+  await Promise.all([fetchSessions(), refreshSessionDetail()])
+}
 
 const rows = ref<any[]>([])
 

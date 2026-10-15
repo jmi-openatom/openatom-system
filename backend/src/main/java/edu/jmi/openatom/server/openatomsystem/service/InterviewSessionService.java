@@ -2,6 +2,7 @@ package edu.jmi.openatom.server.openatomsystem.service;
 
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestAutoScheduleInterviewDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestAddInterviewCandidatesDTO;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewSession;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewerOptionVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewScheduleVO;
@@ -9,6 +10,7 @@ import java.util.List;
 
 public interface InterviewSessionService {
   Result<ResponseInterviewScheduleVO> autoSchedule(RequestAutoScheduleInterviewDTO request);
+  Result<ResponseInterviewScheduleVO> addCandidates(Integer sessionId, RequestAddInterviewCandidatesDTO request);
   Result<List<InterviewSession>> list(Integer campaignId);
   Result<ResponseInterviewScheduleVO> detail(Integer sessionId);
   Result<byte[]> exportSchedule(Integer sessionId);
