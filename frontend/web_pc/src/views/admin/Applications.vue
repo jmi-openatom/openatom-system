@@ -7,7 +7,7 @@
           clearable
           placeholder="搜索申请人/社团"
           style="width: 220px"
-          @keyup.enter="fetchList"
+          @keyup.enter="applyQuery"
         />
         <el-select v-model="query.status" clearable placeholder="申请状态" style="width: 150px">
           <el-option label="草稿" value="draft" />
@@ -33,6 +33,23 @@
             :key="campaign.id"
             :label="campaign.name"
             :value="campaign.id"
+          />
+        </el-select>
+        <el-select
+          v-model="query.departmentId"
+          clearable
+          filterable
+          aria-label="意向部门"
+          placeholder="意向部门"
+          :loading="filterOptionsLoading"
+          style="width: 190px"
+          @change="applyQuery"
+        >
+          <el-option
+            v-for="department in departmentOptions"
+            :key="department.id"
+            :label="department.label"
+            :value="department.id"
           />
         </el-select>
         <el-button type="primary" :icon="Search" @click="applyQuery">查询</el-button>
@@ -609,9 +626,20 @@ const selection = ref<any[]>([])
 
 const applicationTableRef = ref<any>(null)
 
-const query = ref({ keyword: '', status: '', campaignId: '', page: 1, pageSize: 10 })
+const query = ref({
+  keyword: '',
+  status: '',
+  campaignId: '',
+  departmentId: undefined as number | undefined,
+  page: 1,
+  pageSize: 10,
+})
 
 const campaignOptions = ref<any[]>([])
+
+const departmentOptions = ref<any[]>([])
+
+const filterOptionsLoading = ref(false)
 
 const selectAllSchedulableLoading = ref(false)
 
@@ -836,6 +864,7 @@ async function selectAllSchedulable() {
     do {
       const result = await applicationApi.list({
         campaignId: query.value.campaignId || undefined,
+        departmentId: query.value.departmentId || undefined,
         keyword: query.value.keyword || undefined,
         status: 'pre_screen_passed',
         page,
@@ -866,16 +895,37 @@ async function selectAllSchedulable() {
   }
 }
 
-async function loadCampaignOptions() {
+async function loadFilterOptions() {
+  filterOptionsLoading.value = true
   try {
     const clubs = normalizeOptionList(await clubApi.list({ page: 1, pageSize: 100 }))
-    const campaignLists = await Promise.all(
-      clubs.map((club) => clubApi.campaigns(club.id).then(normalizeOptionList)),
-    )
-    campaignOptions.value = campaignLists.flat()
+    const [campaignResults, departmentResults] = await Promise.all([
+      Promise.allSettled(clubs.map((club) => clubApi.campaigns(club.id))),
+      Promise.allSettled(clubs.map((club) => clubApi.departments(club.id))),
+    ])
+    campaignOptions.value = campaignResults.flatMap((result) => {
+      if (result.status === 'fulfilled') return normalizeOptionList(result.value)
+      console.error('Failed to load recruitment campaigns', result.reason)
+      return []
+    })
+    departmentOptions.value = departmentResults.flatMap((result, index) => {
+      if (result.status === 'fulfilled') {
+        return normalizeOptionList(result.value).map((department) => ({
+          ...department,
+          label: clubs.length > 1 ? `${clubs[index].name} / ${department.name}` : department.name,
+        }))
+      }
+      console.error('Failed to load application departments', result.reason)
+      ElMessage.warning('部分部门加载失败，请刷新页面重试')
+      return []
+    })
   } catch (error) {
-    console.error('Failed to load recruitment campaigns', error)
+    console.error('Failed to load application filter options', error)
     campaignOptions.value = []
+    departmentOptions.value = []
+    ElMessage.warning('筛选选项加载失败，请刷新页面重试')
+  } finally {
+    filterOptionsLoading.value = false
   }
 }
 
@@ -1249,6 +1299,7 @@ async function exportExcel() {
       campaignId: query.value.campaignId || undefined,
       clubId: query.value.clubId || undefined,
       status: query.value.status || undefined,
+      departmentId: query.value.departmentId || undefined,
       keyword: query.value.keyword || undefined,
     })
     const url = window.URL.createObjectURL(blob)
@@ -1269,7 +1320,7 @@ async function exportExcel() {
 
 onMounted(() => {
   fetchList()
-  loadCampaignOptions()
+  loadFilterOptions()
 })
 </script>
 
