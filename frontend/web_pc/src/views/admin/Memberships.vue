@@ -19,6 +19,9 @@
         <el-button type="primary" :icon="Search" @click="fetchList">查询</el-button>
       </div>
       <div class="toolbar__actions">
+        <el-button type="info" :loading="exporting" :disabled="!currentClubId" @click="exportExcel"
+          >导出 Excel</el-button
+        >
         <el-button type="success" :disabled="!selection.length" @click="batchChangeStatus('active')"
           >批量转正式</el-button
         >
@@ -180,6 +183,8 @@ import { computed, onMounted, ref } from 'vue'
 
 const loading = ref(false)
 
+const exporting = ref(false)
+
 const rows = ref<any[]>([])
 
 const selection = ref<any[]>([])
@@ -227,6 +232,34 @@ async function fetchList() {
     rows.value = result?.list || result || []
   } finally {
     loading.value = false
+  }
+}
+
+async function exportExcel() {
+  if (!currentClubId.value) return
+  exporting.value = true
+  try {
+    const blob = await membershipApi.export({
+      clubId: currentClubId.value,
+      status: query.value.status || undefined,
+      keyword: query.value.keyword || undefined,
+    })
+    const url = window.URL.createObjectURL(blob)
+    try {
+      const link = document.createElement('a')
+      link.href = url
+      link.download = '社团人员名单.xlsx'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      ElMessage.success('Excel 已开始下载')
+    } finally {
+      window.URL.revokeObjectURL(url)
+    }
+  } catch (error) {
+    console.error('社团人员名单导出失败', error)
+  } finally {
+    exporting.value = false
   }
 }
 

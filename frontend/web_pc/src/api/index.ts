@@ -1303,6 +1303,9 @@ export const membershipApi = {
   list(params?: Record<string, unknown>): Promise<any> {
     return request.get('/memberships', { params })
   },
+  export(params?: Record<string, unknown>): Promise<Blob> {
+    return request.get<Blob, Blob>('/memberships/export', { params, responseType: 'blob' })
+  },
   create(data: Record<string, unknown>): Promise<any> {
     return request.post('/memberships', data)
   },

@@ -16,6 +16,9 @@ import edu.jmi.openatom.server.openatomsystem.service.MailBroadcastPlanner;
 import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
 import edu.jmi.openatom.server.openatomsystem.service.NotificationService;
 import edu.jmi.openatom.server.openatomsystem.service.UnifiedGroupProjectionService;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,6 +26,10 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -119,6 +126,77 @@ public class MembershipServiceImpl implements MembershipService {
       if (userIds.isEmpty()) return Result.success(List.of());
     }
     return Result.success(toResponseList(membershipMapper.selectByConditions(clubId, departmentId, positionId, status, userIds)));
+  }
+
+  @Override
+  public byte[] exportExcel(
+      Integer clubId, Integer departmentId, Integer positionId, String status, String keyword) {
+    List<ResponseMembershipVO> members = list(clubId, departmentId, positionId, status, keyword).getData();
+    Map<Integer, User> users = selectMap(
+        members.stream().map(ResponseMembershipVO::getUserId).filter(Objects::nonNull).toList(),
+        userMapper::selectBatchIds, User::getId);
+    String[] headers = {"序号", "姓名", "用户名", "学号", "学院", "专业", "年级", "班级",
+        "手机号", "邮箱", "社团", "部门", "岗位", "成员状态", "入会时间", "离会时间"};
+    int[] widths = {8, 16, 22, 22, 26, 26, 12, 22, 18, 32, 28, 18, 18, 14, 24, 24};
+    var dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(Times.BUSINESS_ZONE);
+    try (var workbook = new XSSFWorkbook(); var output = new ByteArrayOutputStream()) {
+      var sheet = workbook.createSheet("社团人员名单");
+      var headerStyle = workbook.createCellStyle();
+      var font = workbook.createFont();
+      font.setBold(true);
+      font.setColor(IndexedColors.WHITE.getIndex());
+      headerStyle.setFont(font);
+      headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+      headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+      var header = sheet.createRow(0);
+      header.setHeightInPoints(24);
+      for (int col = 0; col < headers.length; col++) {
+        var cell = header.createCell(col);
+        cell.setCellValue(headers[col]);
+        cell.setCellStyle(headerStyle);
+        sheet.setColumnWidth(col, widths[col] * 256);
+      }
+      for (int index = 0; index < members.size(); index++) {
+        var member = members.get(index);
+        User user = member.getUserId() == null ? null : users.get(member.getUserId());
+        String name = firstNonBlank(member.getRealName(), member.getUserName());
+        String[] values = {
+            name == null ? "用户 " + member.getUserId() : name,
+            member.getUserName(), user == null ? null : user.getStudentId(),
+            user == null ? null : user.getCollege(), user == null ? null : user.getMajor(),
+            user == null ? null : user.getGrade(), user == null ? null : user.getClassName(),
+            user == null ? null : user.getPhone(), user == null ? null : user.getEmail(),
+            member.getClubName(), member.getDepartmentName(), member.getPositionName(),
+            membershipStatusLabel(member.getStatus()),
+            member.getJoinedAt() == null ? null : dateFormat.format(member.getJoinedAt().toInstant()),
+            member.getLeftAt() == null ? null : dateFormat.format(member.getLeftAt().toInstant())
+        };
+        var row = sheet.createRow(index + 1);
+        row.createCell(0).setCellValue(index + 1);
+        for (int col = 0; col < values.length; col++) {
+          // Text cells preserve leading zeroes in student IDs and phone numbers.
+          row.createCell(col + 1).setCellValue(values[col] == null ? "" : values[col]);
+        }
+      }
+      sheet.createFreezePane(0, 1);
+      sheet.setAutoFilter(new CellRangeAddress(0, members.size(), 0, headers.length - 1));
+      workbook.write(output);
+      return output.toByteArray();
+    } catch (IOException error) {
+      throw new IllegalStateException("社团人员名单导出失败", error);
+    }
+  }
+
+  private String membershipStatusLabel(String status) {
+    if (status == null) return "";
+    return switch (status) {
+      case "active" -> "在会";
+      case "probation" -> "试用";
+      case "suspended" -> "暂停";
+      case "left" -> "退出";
+      case "graduated" -> "毕业";
+      default -> status;
+    };
   }
 
   @Override

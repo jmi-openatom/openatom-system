@@ -23,6 +23,9 @@ public interface MembershipService {
   Result<List<ResponseMembershipVO>> list(
       Integer clubId, Integer departmentId, Integer positionId, String status, String keyword);
 
+  byte[] exportExcel(
+      Integer clubId, Integer departmentId, Integer positionId, String status, String keyword);
+
   Result<String> create(RequestCreateMembershipDTO request);
 
   Result<ClubMembership> detail(Integer membershipId);

@@ -13,8 +13,13 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseMembershipVO;
 import edu.jmi.openatom.server.openatomsystem.entity.ClubMembership;
 import edu.jmi.openatom.server.openatomsystem.service.MembershipService;
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -67,6 +72,24 @@ public class MembershipController {
       @RequestParam(required = false) String status,
       @RequestParam(required = false) String keyword) {
     return membershipService.list(clubId, departmentId, positionId, status, keyword);
+  }
+
+  /** 按成员列表的筛选条件导出完整社团人员名单。 */
+  @GetMapping("/memberships/export")
+  @SaCheckPermission("membership:list")
+  public ResponseEntity<byte[]> export(
+      @RequestParam(required = false) Integer clubId,
+      @RequestParam(required = false) Integer departmentId,
+      @RequestParam(required = false) Integer positionId,
+      @RequestParam(required = false) String status,
+      @RequestParam(required = false) String keyword) {
+    byte[] bytes = membershipService.exportExcel(clubId, departmentId, positionId, status, keyword);
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+            .filename("社团人员名单.xlsx", StandardCharsets.UTF_8).build().toString())
+        .contentType(MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+        .body(bytes);
   }
 
   /**
