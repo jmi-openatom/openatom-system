@@ -39,7 +39,7 @@ public class ApplicationController {
    * @param campaignId 招新活动ID
    * @param clubId 社团ID
    * @param status 申请状态
-   * @param departmentId 部门ID
+   * @param departmentId 第一志愿部门ID
    * @param keyword 关键词
    * @param page 页码
    * @param pageSize 每页大小
@@ -127,7 +127,7 @@ public class ApplicationController {
    * @param campaignId 招新活动ID
    * @param clubId 社团ID
    * @param status 申请状态
-   * @param departmentId 部门ID
+   * @param departmentId 第一志愿部门ID
    * @param keyword 关键词
    * @return Excel文件响应
    */

@@ -80,13 +80,7 @@ public interface MembershipApplicationMapper extends BaseMapper<MembershipApplic
         .eq(campaignId != null, MembershipApplication::getCampaignId, campaignId)
         .eq(clubId != null, MembershipApplication::getClubId, clubId)
         .eq(status != null && !status.isBlank(), MembershipApplication::getStatus, status)
-        .and(
-            departmentId != null,
-            query ->
-                query
-                    .eq(MembershipApplication::getFirstChoiceDepartmentId, departmentId)
-                    .or()
-                    .eq(MembershipApplication::getSecondChoiceDepartmentId, departmentId))
+        .eq(departmentId != null, MembershipApplication::getFirstChoiceDepartmentId, departmentId)
         .and(
             keyword != null && !keyword.isBlank(),
             query -> {
@@ -106,13 +100,7 @@ public interface MembershipApplicationMapper extends BaseMapper<MembershipApplic
         .eq(campaignId != null, MembershipApplication::getCampaignId, campaignId)
         .eq(clubId != null, MembershipApplication::getClubId, clubId)
         .eq(status != null && !status.isBlank(), MembershipApplication::getStatus, status)
-        .and(
-            departmentId != null,
-            query ->
-                query
-                    .eq(MembershipApplication::getFirstChoiceDepartmentId, departmentId)
-                    .or()
-                    .eq(MembershipApplication::getSecondChoiceDepartmentId, departmentId))
+        .eq(departmentId != null, MembershipApplication::getFirstChoiceDepartmentId, departmentId)
         .and(
             keyword != null && !keyword.isBlank(),
             query -> {

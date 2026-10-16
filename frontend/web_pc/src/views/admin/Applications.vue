@@ -39,8 +39,8 @@
           v-model="query.departmentId"
           clearable
           filterable
-          aria-label="意向部门"
-          placeholder="意向部门"
+          aria-label="第一志愿部门"
+          placeholder="第一志愿部门"
           :loading="filterOptionsLoading"
           style="width: 190px"
           @change="applyQuery"
