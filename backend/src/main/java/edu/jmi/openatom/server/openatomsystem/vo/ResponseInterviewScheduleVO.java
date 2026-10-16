@@ -13,6 +13,9 @@ public class ResponseInterviewScheduleVO {
   private String sessionName;
   private Timestamp scheduledStartAt;
   private Timestamp scheduledEndAt;
+  private Integer durationMinutes;
+  private Integer gapMinutes;
+  private String scheduleRevision;
   private String status;
   private Integer totalCandidates;
   private List<Room> rooms;

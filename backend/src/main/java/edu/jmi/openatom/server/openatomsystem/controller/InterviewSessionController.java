@@ -5,6 +5,9 @@ import cn.dev33.satoken.annotation.SaMode;
 import edu.jmi.openatom.server.openatomsystem.common.Result;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestAutoScheduleInterviewDTO;
 import edu.jmi.openatom.server.openatomsystem.dto.RequestAddInterviewCandidatesDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestRescheduleInterviewSessionDTO;
+import edu.jmi.openatom.server.openatomsystem.dto.RequestUpdateInterviewRoomDTO;
+import edu.jmi.openatom.server.openatomsystem.service.InterviewScheduleManagementService;
 import edu.jmi.openatom.server.openatomsystem.entity.InterviewSession;
 import edu.jmi.openatom.server.openatomsystem.service.InterviewSessionService;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseInterviewerOptionVO;
@@ -30,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InterviewSessionController {
   private final InterviewSessionService service;
+  private final InterviewScheduleManagementService scheduleManagement;
 
   @PostMapping("/interview-sessions/auto-schedule")
   @SaCheckPermission("interview:create")
@@ -56,6 +60,20 @@ public class InterviewSessionController {
   @SaCheckPermission("interview:detail")
   public Result<ResponseInterviewScheduleVO> detail(@PathVariable Integer sessionId) {
     return service.detail(sessionId);
+  }
+
+  @PostMapping("/interview-sessions/{sessionId}/rooms")
+  @SaCheckPermission("interview:update")
+  public Result<Integer> addRoom(@PathVariable Integer sessionId,
+      @Valid @RequestBody RequestUpdateInterviewRoomDTO request) {
+    return scheduleManagement.addRoom(sessionId, request);
+  }
+
+  @PostMapping("/interview-sessions/{sessionId}/reschedule")
+  @SaCheckPermission("interview:update")
+  public Result<ResponseInterviewScheduleVO> reschedule(@PathVariable Integer sessionId,
+      @Valid @RequestBody RequestRescheduleInterviewSessionDTO request) {
+    return scheduleManagement.reschedule(sessionId, request);
   }
 
   @PostMapping("/interview-sessions/{sessionId}/publish")

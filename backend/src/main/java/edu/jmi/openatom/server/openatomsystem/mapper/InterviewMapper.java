@@ -7,6 +7,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 面试数据访问层
@@ -15,6 +16,9 @@ import org.apache.ibatis.annotations.Update;
  */
 @Mapper
 public interface InterviewMapper extends BaseMapper<Interview> {
+
+  @Select("SELECT * FROM interview WHERE session_id = #{sessionId} ORDER BY id FOR UPDATE")
+  List<Interview> selectBySessionIdForUpdate(Integer sessionId);
 
   @Update("UPDATE interview SET location = #{location} WHERE session_id = #{sessionId} AND room_id = #{roomId}")
   int updateLocationByRoomId(@Param("sessionId") Integer sessionId,

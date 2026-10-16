@@ -1204,6 +1204,12 @@ export const interviewEvaluationTemplateApi = {
 }
 
 export const interviewSessionApi = {
+  addRoom(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/interview-sessions/${id}/rooms`, data)
+  },
+  reschedule(id: string | number, data: Record<string, unknown>): Promise<any> {
+    return request.post(`/interview-sessions/${id}/reschedule`, data)
+  },
   addCandidates(id: string | number, data: Record<string, unknown>): Promise<any> {
     return request.post(`/interview-sessions/${id}/candidates`, data)
   },

@@ -21,6 +21,17 @@ public interface InterviewInterviewerMapper extends BaseMapper<InterviewIntervie
       SELECT COUNT(*) FROM interview_interviewer ii
       JOIN interview i ON i.id = ii.interview_id
       WHERE ii.interviewer_id = #{interviewerId} AND i.status <> 'completed'
+        AND (i.session_id IS NULL OR i.session_id <> #{sessionId})
+        AND i.scheduled_start_at < #{endAt} AND i.scheduled_end_at > #{startAt}
+      """)
+  long countOverlappingOutsideSession(@Param("interviewerId") Integer interviewerId,
+      @Param("sessionId") Integer sessionId, @Param("startAt") Timestamp startAt,
+      @Param("endAt") Timestamp endAt);
+
+  @Select("""
+      SELECT COUNT(*) FROM interview_interviewer ii
+      JOIN interview i ON i.id = ii.interview_id
+      WHERE ii.interviewer_id = #{interviewerId} AND i.status <> 'completed'
         AND (i.room_id IS NULL OR i.room_id <> #{roomId})
         AND i.scheduled_start_at < #{endAt} AND i.scheduled_end_at > #{startAt}
       """)

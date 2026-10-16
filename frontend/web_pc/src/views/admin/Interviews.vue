@@ -27,7 +27,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="360" fixed="right">
+        <el-table-column label="操作" width="470" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="viewSession(row)">查看排期</el-button>
             <el-button
@@ -36,6 +36,15 @@
               type="primary"
               @click="openAddCandidates(row.id)"
               >添加候选人</el-button
+            >
+            <el-button
+              v-if="
+                hasPermission('interview:update') && ['draft', 'published'].includes(row.status)
+              "
+              link
+              type="primary"
+              @click="openReschedule(row.id)"
+              >重新生成排期</el-button
             >
             <el-button
               link
@@ -166,6 +175,21 @@
 
     <el-dialog v-model="sessionDetailVisible" title="面试排期" width="860px">
       <template v-if="sessionDetail">
+        <div
+          v-if="['draft', 'published'].includes(sessionDetail.status)"
+          class="session-section__header"
+        >
+          <span>添加面试室后，可将全部面试人员重新均衡分配。</span>
+          <InterviewRoomEditor
+            :session-id="sessionDetail.sessionId"
+            :used-interviewer-ids="
+              sessionDetail.rooms.flatMap((room: any) =>
+                room.interviewers.map((person: any) => person.userId),
+              )
+            "
+            @saved="refreshSessionDetail"
+          />
+        </div>
         <div class="session-room-summary">
           <el-card v-for="room in sessionDetail.rooms" :key="room.roomId" shadow="never">
             <strong>{{ room.name }}</strong>
@@ -191,6 +215,15 @@
       </template>
       <template #footer>
         <el-button
+          v-if="
+            hasPermission('interview:update') &&
+            sessionDetail &&
+            ['draft', 'published'].includes(sessionDetail.status)
+          "
+          @click="openReschedule(sessionDetail.sessionId)"
+          >重新生成排期</el-button
+        >
+        <el-button
           v-if="sessionDetail && ['draft', 'published'].includes(sessionDetail.status)"
           type="primary"
           @click="openAddCandidates(sessionDetail.sessionId)"
@@ -211,6 +244,12 @@
     <InterviewCandidateAdder
       v-model="addCandidatesVisible"
       :session="addCandidatesSession"
+      @saved="candidatesAdded"
+    />
+
+    <InterviewSessionRescheduler
+      v-model="rescheduleVisible"
+      :session="rescheduleSession"
       @saved="candidatesAdded"
     />
 
@@ -469,6 +508,8 @@
 import ViewPage from '@/components/common/ViewPage.vue'
 import InterviewRoomEditor from '@/components/admin/InterviewRoomEditor.vue'
 import InterviewCandidateAdder from '@/components/admin/InterviewCandidateAdder.vue'
+import InterviewSessionRescheduler from '@/components/admin/InterviewSessionRescheduler.vue'
+import { hasPermission } from '@/utils/permission'
 import { downloadInterviewSchedule } from '@/utils/interviewScheduleExport'
 import ViewToolbar from '@/components/common/ViewToolbar.vue'
 import { ElMessage } from 'element-plus/es/components/message/index'
@@ -489,6 +530,13 @@ const sessionDetail = ref<any>(null)
 const exportingSessionId = ref<number | null>(null)
 const addCandidatesVisible = ref(false)
 const addCandidatesSession = ref<any>(null)
+const rescheduleVisible = ref(false)
+const rescheduleSession = ref<any>(null)
+
+async function openReschedule(sessionId: number) {
+  rescheduleSession.value = await interviewSessionApi.detail(sessionId)
+  rescheduleVisible.value = true
+}
 
 async function openAddCandidates(sessionId: number) {
   addCandidatesSession.value = await interviewSessionApi.detail(sessionId)

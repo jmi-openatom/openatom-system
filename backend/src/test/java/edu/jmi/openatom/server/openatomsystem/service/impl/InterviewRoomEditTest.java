@@ -40,6 +40,7 @@ class InterviewRoomEditTest {
     StpUtil.setStpLogic(logic);
     when(rooms.selectByIdForUpdate(7)).thenReturn(InterviewRoom.builder()
         .id(7).sessionId(3).name("旧名称").location("旧地点").build());
+    when(rooms.selectById(7)).thenAnswer(ignored -> rooms.selectByIdForUpdate(7));
     when(roomPeople.selectByRoomId(7)).thenReturn(List.of(
         InterviewRoomInterviewer.builder().roomId(7).interviewerId(101).build()));
   }

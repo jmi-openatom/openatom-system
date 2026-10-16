@@ -1,15 +1,16 @@
 <template>
   <el-button
-    v-if="hasPermission('interview:update')"
+    v-if="hasPermission('interview:update') && (room || sessionId)"
     link
     type="primary"
-    :aria-label="`修改${room.name}的名称、地点和面试官`"
+    :disabled="disabled"
+    :aria-label="room ? `修改${room.name}的名称、地点和面试官` : '添加面试室'"
     @click="open"
-    >修改面试间</el-button
+    >{{ room ? '修改面试间' : '添加面试室' }}</el-button
   >
   <el-dialog
     v-model="visible"
-    title="修改面试间"
+    :title="room ? '修改面试间' : '添加面试室'"
     width="min(540px, 92vw)"
     append-to-body
     :close-on-click-modal="false"
@@ -46,16 +47,22 @@
             :key="person.userId"
             :label="person.name"
             :value="person.userId"
+            :disabled="!room && usedInterviewerIds?.includes(person.userId)"
           />
         </el-select>
       </el-form-item>
-      <p class="edit-hint">
+      <p v-if="room" class="edit-hint">
         名称、地点和面试官可随时修改。面试官调整会同步未完成的面试；已提交评价和已完成面试的原面试官记录会保留。
+      </p>
+      <p v-else class="edit-hint">
+        新增面试室后，可重新生成本场次全部人员的排期。每位面试官只能分配到一个面试室。
       </p>
     </el-form>
     <template #footer>
       <el-button :disabled="saving" @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="save">保存修改</el-button>
+      <el-button type="primary" :loading="saving" @click="save">{{
+        room ? '保存修改' : '添加面试室'
+      }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -69,7 +76,10 @@ import { hasPermission } from '@/utils/permission'
 
 type Person = { userId: number; name: string }
 const props = defineProps<{
-  room: { roomId: number; name: string; location?: string; interviewers?: Person[] }
+  sessionId?: number
+  disabled?: boolean
+  usedInterviewerIds?: number[]
+  room?: { roomId: number; name: string; location?: string; interviewers?: Person[] }
 }>()
 const emit = defineEmits<{ saved: [] }>()
 const visible = ref(false),
@@ -109,11 +119,11 @@ async function loadOptions(keyword = '') {
 }
 async function open() {
   form.value = {
-    name: props.room.name,
-    location: props.room.location || '',
-    interviewerIds: (props.room.interviewers || []).map((person) => person.userId),
+    name: props.room?.name || '',
+    location: props.room?.location || '',
+    interviewerIds: (props.room?.interviewers || []).map((person) => person.userId),
   }
-  options.value = [...(props.room.interviewers || [])]
+  options.value = [...(props.room?.interviewers || [])]
   visible.value = true
   await nextTick()
   formRef.value?.clearValidate()
@@ -123,12 +133,15 @@ async function save() {
   if (saving.value || !(await formRef.value?.validate().catch(() => false))) return
   saving.value = true
   try {
-    await interviewSessionApi.updateRoom(props.room.roomId, {
+    const data = {
       ...form.value,
       name: form.value.name.trim(),
       location: form.value.location.trim(),
-    })
-    ElMessage.success('面试间信息已更新')
+    }
+    if (props.room) await interviewSessionApi.updateRoom(props.room.roomId, data)
+    else if (props.sessionId) await interviewSessionApi.addRoom(props.sessionId, data)
+    else return
+    ElMessage.success(props.room ? '面试间信息已更新' : '面试室已添加，可重新生成全员排期')
     visible.value = false
     emit('saved')
   } finally {

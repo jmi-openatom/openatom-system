@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 @Service
 @RequiredArgsConstructor
@@ -333,7 +334,7 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
   }
 
   @Override
-  @Transactional(rollbackFor = Exception.class)
+  @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
   public Result<String> updateRoom(Integer roomId, RequestUpdateInterviewRoomDTO request) {
     if (request.getName() == null || request.getName().isBlank()) return Result.error(400, "请输入面试间名称");
     if (request.getLocation() == null || request.getLocation().isBlank()) return Result.error(400, "请输入面试地点");
@@ -343,11 +344,13 @@ public class InterviewQueueServiceImpl implements InterviewQueueService {
     if (ids == null || ids.isEmpty() || ids.stream().anyMatch(Objects::isNull) || new HashSet<>(ids).size() != ids.size()) {
       return Result.error(400, "请至少选择一位面试官，且不能重复");
     }
-    InterviewRoom room = roomId == null ? null : roomMapper.selectByIdForUpdate(roomId);
+    InterviewRoom room = roomId == null ? null : roomMapper.selectById(roomId);
     if (room == null) return Result.error(404, "面试间不存在");
-    // Serialize edits within a session so two rooms cannot acquire the same interviewer.
+    // Use the same session -> room lock order as whole-session rescheduling.
     InterviewSession session = sessionMapper.selectByIdForUpdate(room.getSessionId());
     if (session == null) return Result.error(404, "面试场次不存在");
+    room = roomMapper.selectByIdForUpdate(roomId);
+    if (room == null) return Result.error(404, "面试间不存在");
     List<Integer> previousIds = roomInterviewerMapper.selectByRoomId(roomId).stream()
         .map(InterviewRoomInterviewer::getInterviewerId).toList();
     boolean groupChanged = !new HashSet<>(previousIds).equals(new HashSet<>(ids));

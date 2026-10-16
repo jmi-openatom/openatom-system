@@ -349,6 +349,7 @@ public class InterviewSessionServiceImpl implements InterviewSessionService {
           .scheduledStartAt(item.getScheduledStartAt()).scheduledEndAt(item.getScheduledEndAt()).build();
     }).toList();
     return Result.success(ResponseInterviewScheduleVO.builder().sessionId(sessionId).campaignId(session.getCampaignId())
+        .durationMinutes(session.getDurationMinutes()).gapMinutes(session.getGapMinutes())
         .scheduledStartAt(session.getScheduledStartAt()).scheduledEndAt(session.getScheduledEndAt()).sessionName(session.getName())
         .status(session.getStatus()).totalCandidates(interviews.size()).rooms(roomRows).assignments(assignmentRows).build());
   }
