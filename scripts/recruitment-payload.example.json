@@ -1,0 +1,12 @@
+{
+  "campaignId": 999,
+  "clubId": 1,
+  "firstChoiceDepartmentId": null,
+  "secondChoiceDepartmentId": null,
+  "profile": {
+    "applicantName": "压测用户-{index}",
+    "studentId": "LOADTEST-{run_id}-{index}",
+    "contact": "压测虚拟联系方式-{index}",
+    "college": "信息工程学院"
+  }
+}

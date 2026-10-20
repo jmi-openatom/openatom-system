@@ -2,14 +2,16 @@ name: OpenAtom Member Guide CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'member-guide/**'
       - '.github/workflows/member-guide.yml'
+
   pull_request:
     paths:
       - 'member-guide/**'
       - '.github/workflows/member-guide.yml'
+
   workflow_dispatch:
 
 env:
@@ -19,66 +21,173 @@ permissions:
   contents: read
 
 jobs:
+
+  # ==========================================
+  # Build Job
+  # ==========================================
   build:
+    name: Build and Package
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # 拉取仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 安装 Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - uses: actions/setup-python@v5
+
+      # 安装 Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      # 构建项目
       - name: Build and check every illustrated step
         working-directory: member-guide
         run: npm run build
+
+      # 执行部署测试
       - name: Test release verification and atomic publication
-        run: python3 -m unittest discover -s member-guide/deploy/tests -v
+        run: |
+          python3 -m unittest discover \
+            -s member-guide/deploy/tests \
+            -v
+
+      # 打包发布文件
       - name: Package standalone release
         env:
           GUIDE_COMMIT: ${{ github.sha }}
           GUIDE_RUN_NUMBER: ${{ github.run_number }}
-        run: node member-guide/scripts/package-release.mjs .guide-release
-      - uses: actions/upload-artifact@v4
+        run: |
+          node member-guide/scripts/package-release.mjs .guide-release
+
+      # 检查构建产物
+      - name: Verify release package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Checking release directory..."
+
+          if [ ! -d ".guide-release" ]; then
+            echo "::error::Release directory does not exist"
+            exit 1
+          fi
+
+          echo "Listing release files:"
+          ls -la .guide-release/
+
+          echo "Checking required files..."
+
+          test -d .guide-release/public || {
+            echo "::error::Missing public directory"
+            exit 1
+          }
+
+          test -f .guide-release/manifest.json || {
+            echo "::error::Missing manifest.json"
+            exit 1
+          }
+
+          test -f .guide-release/publish.py || {
+            echo "::error::Missing publish.py"
+            exit 1
+          }
+
+          # 验证静态网站目录不为空
+          if [ -z "$(find .guide-release/public -type f -print -quit)" ]; then
+            echo "::error::Public directory is empty"
+            exit 1
+          fi
+
+          echo "Release package verification passed!"
+
+      # 上传构建产物
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
         with:
           name: member-guide-release
           path: .guide-release/
           retention-days: 7
           if-no-files-found: error
 
+          # 修复隐藏目录被忽略的问题
+          include-hidden-files: true
+
+  # ==========================================
+  # Deploy Job
+  # ==========================================
   deploy:
+    name: Deploy to Production
     needs: build
+
     if: >-
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name == 'push' ||
+       github.event_name == 'workflow_dispatch') &&
       github.ref == 'refs/heads/main'
+
     runs-on: ubuntu-latest
+
     environment:
       name: SERVER
       url: https://${{ vars.MEMBER_GUIDE_DOMAIN || 'guide.jmi-openatom.cn' }}
+
     concurrency:
       group: openatom-member-guide-production
       cancel-in-progress: false
+
     env:
       GUIDE_DEPLOY_PATH: ${{ vars.MEMBER_GUIDE_DEPLOY_PATH || '/www/wwwroot/openatom-member-guide' }}
       GUIDE_DOMAIN: ${{ vars.MEMBER_GUIDE_DOMAIN || 'guide.jmi-openatom.cn' }}
       GUIDE_HEALTHCHECK_URL: ${{ vars.MEMBER_GUIDE_HEALTHCHECK_URL }}
       GUIDE_RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
       GUIDE_COMMIT: ${{ github.sha }}
+
     steps:
-      - uses: actions/download-artifact@v4
+      # 下载 Build Job 中上传的构建产物
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
         with:
           name: member-guide-release
           path: .guide-release
+
+      # 检查下载结果
+      - name: Verify downloaded artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -d .guide-release/public
+          test -f .guide-release/manifest.json
+          test -f .guide-release/publish.py
+
+          echo "Downloaded artifact verified."
+
+      # 验证服务器部署配置
       - name: Validate destination settings
         shell: bash
         run: |
           set -euo pipefail
+
           [[ "$GUIDE_DEPLOY_PATH" =~ ^/[a-zA-Z0-9_/-]+$ ]]
-          [[ "$GUIDE_DEPLOY_PATH" != / && "$GUIDE_DEPLOY_PATH" != /www && "$GUIDE_DEPLOY_PATH" != /www/wwwroot ]]
+
+          [[ "$GUIDE_DEPLOY_PATH" != / &&
+             "$GUIDE_DEPLOY_PATH" != /www &&
+             "$GUIDE_DEPLOY_PATH" != /www/wwwroot ]]
+
           [[ "$GUIDE_DOMAIN" =~ ^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$ ]]
+
           if [[ -n "$GUIDE_HEALTHCHECK_URL" ]]; then
-            [[ "$GUIDE_HEALTHCHECK_URL" == "https://$GUIDE_DOMAIN" || "$GUIDE_HEALTHCHECK_URL" == "https://$GUIDE_DOMAIN/"* ]]
+            [[ "$GUIDE_HEALTHCHECK_URL" == "https://$GUIDE_DOMAIN" ||
+               "$GUIDE_HEALTHCHECK_URL" == "https://$GUIDE_DOMAIN/"* ]]
           fi
+
+      # 在服务器上创建独立发布目录
       - name: Prepare isolated incoming directory
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -87,11 +196,17 @@ jobs:
           port: ${{ secrets.SERVER_PORT || '22' }}
           password: ${{ secrets.SERVER_PASSWORD }}
           fingerprint: ${{ secrets.SERVER_FINGERPRINT }}
+
           envs: GUIDE_DEPLOY_PATH,GUIDE_RELEASE_ID
+
           script: |
             set -eu
+
             command -v python3 >/dev/null
+
             mkdir -p "$GUIDE_DEPLOY_PATH/incoming/$GUIDE_RELEASE_ID"
+
+      # 上传静态网站和部署程序
       - name: Upload verified build and publisher
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -100,9 +215,14 @@ jobs:
           port: ${{ secrets.SERVER_PORT || '22' }}
           password: ${{ secrets.SERVER_PASSWORD }}
           fingerprint: ${{ secrets.SERVER_FINGERPRINT }}
+
           source: .guide-release/public,.guide-release/manifest.json,.guide-release/publish.py
+
           target: ${{ env.GUIDE_DEPLOY_PATH }}/incoming/${{ env.GUIDE_RELEASE_ID }}
+
           strip_components: 1
+
+      # 校验文件并执行原子发布
       - name: Verify files and atomically activate release
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -111,28 +231,58 @@ jobs:
           port: ${{ secrets.SERVER_PORT || '22' }}
           password: ${{ secrets.SERVER_PASSWORD }}
           fingerprint: ${{ secrets.SERVER_FINGERPRINT }}
+
           envs: GUIDE_DEPLOY_PATH,GUIDE_RELEASE_ID,GUIDE_COMMIT,GUIDE_DOMAIN
+
           script: |
             set -eu
+
             python3 "$GUIDE_DEPLOY_PATH/incoming/$GUIDE_RELEASE_ID/publish.py" \
-              "$GUIDE_DEPLOY_PATH" "$GUIDE_RELEASE_ID" "$GUIDE_COMMIT" "$GUIDE_DOMAIN"
+              "$GUIDE_DEPLOY_PATH" \
+              "$GUIDE_RELEASE_ID" \
+              "$GUIDE_COMMIT" \
+              "$GUIDE_DOMAIN"
+
+      # 检查线上网站
       - name: Check public website when configured
         shell: bash
         run: |
           set -euo pipefail
+
           if [[ -n "$GUIDE_HEALTHCHECK_URL" ]]; then
-            curl --fail --silent --show-error --retry 5 --retry-delay 3 "$GUIDE_HEALTHCHECK_URL" --output /dev/null
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --retry 5 \
+              --retry-delay 3 \
+              "$GUIDE_HEALTHCHECK_URL" \
+              --output /dev/null
+
+            echo "Website health check passed."
+          else
+            echo "Health check URL not configured, skipping."
           fi
+
+      # 输出部署结果
       - name: Report publication and first-time domain setup
         shell: bash
         run: |
           {
             echo '### Member guide release published'
+
             echo "Commit: \`$GUIDE_COMMIT\`"
+
             echo "Static site root: \`$GUIDE_DEPLOY_PATH/current\`"
+
             echo "Intended website: https://$GUIDE_DOMAIN"
+
             if [[ -z "$GUIDE_HEALTHCHECK_URL" ]]; then
-              echo 'Public HTTP verification is not configured. For first-time setup, point DNS to the server and set the Nginx/BT site root to the directory above; enable HTTPS in the site configuration.'
+              echo 'Public HTTP verification is not configured.'
+
+              echo 'For first-time setup, point DNS to the server and set the Nginx/BT site root to the directory above; enable HTTPS in the site configuration.'
+
               echo 'After the domain works, set MEMBER_GUIDE_HEALTHCHECK_URL to enable the public HTTP check.'
             fi
+
           } >> "$GITHUB_STEP_SUMMARY"

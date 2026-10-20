@@ -59,3 +59,8 @@ xcuserdata/
 DerivedData/
 *.xcworkspace/xcuserdata/
 /tmp/
+
+# Recruitment load-test reports
+/output/loadtest/
+/scripts/output/loadtest/
+__pycache__/
