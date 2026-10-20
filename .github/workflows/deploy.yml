@@ -5,9 +5,15 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - 'member-guide/**'
+      - '.github/workflows/member-guide.yml'
   pull_request:
     branches:
       - '**'
+    paths-ignore:
+      - 'member-guide/**'
+      - '.github/workflows/member-guide.yml'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

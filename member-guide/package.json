@@ -1,0 +1,15 @@
+{
+  "name": "openatom-member-guide",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "开放原子开源社团成员使用指南 · 独立静态文档站",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "start": "node scripts/serve.mjs --dist",
+    "check": "node scripts/check.mjs",
+    "figures": "node scripts/figures.mjs",
+    "build": "node scripts/figures.mjs && node scripts/check.mjs && node scripts/build.mjs"
+  },
+  "engines": { "node": ">=18" }
+}

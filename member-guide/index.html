@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <meta name="description" content="开放原子开源社团成员使用指南。从账号激活、社团邮箱，到 Quest 成长路线、主站探索与任务提交，跟着图文一步步开始。" />
+    <title>成员指南 · 开放原子开源社团</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/logo.svg" />
+    <link rel="stylesheet" href="./assets/tokens.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      try {
+        const theme = localStorage.getItem('oa-guide-theme');
+        document.documentElement.dataset.theme = theme === 'dark' || (!theme && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到正文</a>
+    <header class="site-header">
+      <a class="brand" href="#/" aria-label="成员指南首页">
+        <img src="./assets/logo.svg" alt="" width="38" height="38" />
+        <span><strong>开放原子开源社团</strong><small>JMI-OPENATOM <span class="brand-divider">/</span> 成员指南</small></span>
+      </a>
+      <nav class="header-nav" aria-label="网站导航">
+        <a class="header-current" href="#/">使用文档</a>
+        <a href="https://www.jmi-openatom.cn" target="_blank" rel="noopener noreferrer">社团主站 <span aria-hidden="true">↗</span></a>
+        <a href="https://quest.jmi-openatom.cn" target="_blank" rel="noopener noreferrer">Quest <span aria-hidden="true">↗</span></a>
+      </nav>
+      <div class="header-actions">
+        <button class="search-trigger" id="search-trigger" aria-label="搜索文档，快捷键 Control 或 Command 加 K"><span data-icon="search"></span><span>搜索文档</span><kbd>⌘ K</kbd></button>
+        <button class="icon-button" id="theme-toggle" aria-label="切换深色模式"><span data-icon="sun"></span></button>
+        <button class="icon-button menu-toggle" id="menu-toggle" aria-label="打开文档目录" aria-expanded="false" aria-controls="sidebar"><span data-icon="menu"></span></button>
+      </div>
+    </header>
+    <button class="sidebar-overlay" id="sidebar-overlay" aria-label="关闭文档目录" tabindex="-1" hidden></button>
+    <aside class="sidebar" id="sidebar" aria-label="文档目录"></aside>
+    <div class="page-shell">
+      <main id="main-content" tabindex="-1"></main>
+      <footer class="site-footer"><span>开放协作，持续成长。</span><span>© 2026 JMI-OPENATOM <span class="footer-divider">·</span> 成员使用指南</span><a href="#/faq">需要帮助？ <span aria-hidden="true">↗</span></a></footer>
+    </div>
+    <dialog id="search-dialog" class="search-dialog" aria-labelledby="search-title">
+      <div class="search-top"><span data-icon="search"></span><label class="sr-only" id="search-title" for="search-input">搜索使用文档</label><input id="search-input" type="search" placeholder="搜索账号、邮箱、任务…" autocomplete="off" /><button class="icon-button" id="search-close" aria-label="关闭搜索"><span data-icon="close"></span></button></div>
+      <div id="search-results" class="search-results" aria-live="polite"></div>
+      <div class="search-bottom"><span>搜索标题和正文</span><span><kbd>Tab</kbd> 选择 <kbd>Enter</kbd> 打开 <kbd>Esc</kbd> 关闭</span></div>
+    </dialog>
+    <dialog id="figure-dialog" class="figure-dialog" aria-labelledby="figure-caption">
+      <div class="figure-toolbar"><button id="figure-size" type="button" aria-pressed="false">原尺寸查看</button><a id="figure-new-tab" target="_blank" rel="noopener noreferrer">新标签页看图 ↗</a><button class="icon-button" id="figure-close" aria-label="关闭大图"><span data-icon="close"></span></button></div>
+      <div class="figure-image-viewport" tabindex="0" aria-label="操作图片；原尺寸模式下可以横向滚动"><img id="figure-image" alt="" /></div><p id="figure-caption"></p>
+    </dialog>
+    <div class="toast" id="toast" role="status" hidden></div>
+    <noscript><p class="noscript">请启用 JavaScript 阅读交互文档。也可联系社团管理员获取操作帮助。</p></noscript>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
