@@ -18,7 +18,7 @@ env_file="$test_dir/mail.env"
 {
   printf 'STALWART_RECOVERY_ADMIN=admin:test-recovery-password\n'
   printf 'STALWART_RECOVERY_MODE=1\n'
-  printf 'MAIL_DOMAIN=jmi-openatom.cn\n'
+  printf 'MAIL_DOMAIN=mailer.jmi-openatom.cn\n'
   printf 'MAIL_HOSTNAME=mx1.jmi-openatom.cn\n'
   printf 'MAIL_OAUTH_ISSUER=https://oauth.jmi-openatom.cn/api/v1\n'
   printf 'MAIL_OAUTH_AUDIENCE=stalwart\n'

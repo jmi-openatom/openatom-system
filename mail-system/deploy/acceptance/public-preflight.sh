@@ -1,7 +1,7 @@
 #!/bin/sh
 set -u
 
-mail_domain=${MAIL_DOMAIN:-jmi-openatom.cn}
+mail_domain=${MAIL_DOMAIN:-mailer.jmi-openatom.cn}
 mail_hostname=${MAIL_HOSTNAME:-mx1.jmi-openatom.cn}
 mail_web_host=${MAIL_WEB_HOST:-mail.jmi-openatom.cn}
 oauth_issuer=${MAIL_OAUTH_ISSUER:-https://oauth.jmi-openatom.cn/api/v1}

@@ -42,7 +42,7 @@ management:
         enabled: true
 
 mail:
-  domain: ${MAIL_DOMAIN:jmi-openatom.cn}
+  domain: ${MAIL_DOMAIN:mailer.jmi-openatom.cn}
   address-salt: ${MAIL_ADDRESS_SALT:}
   default-quota-bytes: ${MAIL_DEFAULT_QUOTA_BYTES:2147483648}
   internal-service-token: ${MAIL_INTERNAL_SERVICE_TOKEN:}

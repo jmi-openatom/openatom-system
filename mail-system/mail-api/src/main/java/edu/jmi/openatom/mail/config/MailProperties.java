@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "mail")
 public class MailProperties {
-  private String domain = "jmi-openatom.cn";
+  private String domain = "mailer.jmi-openatom.cn";
   private String addressSalt;
   private long defaultQuotaBytes = 2_147_483_648L;
   private String internalServiceToken;

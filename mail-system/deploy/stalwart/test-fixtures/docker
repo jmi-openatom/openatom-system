@@ -31,7 +31,7 @@ test -n "$auth_file"
 auth_kind=unknown
 if grep -q '^STALWART_USER=admin$' "$auth_file"; then
   auth_kind=recovery
-elif grep -q '^STALWART_USER=openatom-automation@jmi-openatom.cn$' "$auth_file"; then
+elif grep -q '^STALWART_USER=openatom-automation@mailer.jmi-openatom.cn$' "$auth_file"; then
   auth_kind=automation
 elif grep -q '^STALWART_TOKEN=API_config-test-secret$' "$auth_file"; then
   auth_kind=config

@@ -14,6 +14,11 @@ on:
           - bootstrap
           - tls
           - full
+      reset_mail_data:
+        description: Delete all mail accounts, messages, attachments and sessions before rebuilding (main only)
+        required: true
+        default: false
+        type: boolean
   push:
     branches:
       - '**'
@@ -149,6 +154,7 @@ jobs:
         run: |
           shellcheck deploy/load-production-images.sh
           shellcheck mail-system/deploy/deploy.sh
+          shellcheck mail-system/deploy/reset-data.sh
           shellcheck mail-system/deploy/provision-tls.sh
           shellcheck mail-system/deploy/certbot.sh
           shellcheck mail-system/deploy/backup/backup.sh
@@ -167,7 +173,9 @@ jobs:
       - name: Test Stalwart credential bootstrap flow
         run: mail-system/deploy/stalwart/test-bootstrap-automation.sh
       - name: Test Certbot fallback and renewal flow
-        run: python3 mail-system/deploy/test-certbot.py
+        run: |
+          python3 mail-system/deploy/test-certbot.py
+          python3 mail-system/deploy/test-reset-data.py
       - name: Validate rendered Stalwart plan
         run: |
           plan_file="$(mktemp)"
@@ -196,7 +204,7 @@ jobs:
           ci_env="$(mktemp)"
           {
             printf 'STALWART_RECOVERY_ADMIN=%s\n' "$STALWART_RECOVERY_ADMIN"
-            printf 'MAIL_DOMAIN=jmi-openatom.cn\n'
+            printf 'MAIL_DOMAIN=mailer.jmi-openatom.cn\n'
             printf 'MAIL_HOSTNAME=mx1.jmi-openatom.cn\n'
             printf 'MAIL_OAUTH_ISSUER=https://oauth.jmi-openatom.cn/api/v1\n'
             printf 'MAIL_OAUTH_AUDIENCE=stalwart\n'
@@ -271,7 +279,7 @@ jobs:
   deploy:
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && inputs.deployment_mode != 'none')
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deployment_mode != 'none')
     needs:
       - identity-and-outbox-tests
       - mail-api-tests
@@ -432,6 +440,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.2
         env:
           DEPLOYMENT_MODE: ${{ github.event_name == 'push' && 'auto' || inputs.deployment_mode }}
+          RESET_MAIL_DATA: ${{ github.event_name == 'workflow_dispatch' && inputs.reset_mail_data && 'true' || 'false' }}
           MAIL_ACME_EMAIL: ${{ vars.MAIL_ACME_EMAIL }}
           MAIL_DB_PASSWORD: ${{ secrets.MAIL_DB_PASSWORD }}
           MAIL_DB_ROOT_PASSWORD: ${{ secrets.MAIL_DB_ROOT_PASSWORD }}
@@ -447,7 +456,7 @@ jobs:
           password: ${{ secrets.MAIL_SERVER_PASSWORD }}
           timeout: 30s
           command_timeout: 20m
-          envs: DEPLOYMENT_MODE,MAIL_ACME_EMAIL,MAIL_DB_PASSWORD,MAIL_DB_ROOT_PASSWORD,MAIL_REDIS_PASSWORD,MAIL_ADDRESS_SALT,MAIL_INTERNAL_SERVICE_TOKEN,MAIL_OAUTH_CLIENT_SECRET,MAIL_RESEND_API_KEY,MAIN_SITE_INTERNAL_USERS_URL
+          envs: RESET_MAIL_DATA,DEPLOYMENT_MODE,MAIL_ACME_EMAIL,MAIL_DB_PASSWORD,MAIL_DB_ROOT_PASSWORD,MAIL_REDIS_PASSWORD,MAIL_ADDRESS_SALT,MAIL_INTERNAL_SERVICE_TOKEN,MAIL_OAUTH_CLIENT_SECRET,MAIL_RESEND_API_KEY,MAIN_SITE_INTERNAL_USERS_URL
           script: |
             set -eu
             deploy_path='${{ vars.MAIL_DEPLOY_PATH || '/www/wwwroot/openatom-system' }}'
@@ -494,6 +503,22 @@ jobs:
             if [ -n "$MAIL_ACME_EMAIL" ]; then
               upsert_env MAIL_ACME_EMAIL "$MAIL_ACME_EMAIL"
             fi
+            if [ "$RESET_MAIL_DATA" = true ]; then
+              case "$DEPLOYMENT_MODE" in auto|full) ;; *) echo 'Reset requires auto or full deployment' >&2; exit 64 ;; esac
+              mail-system/deploy/reset-data.sh "$env_file" --confirm-delete-mail-data
+              # Fresh Stalwart credentials must be regenerated after a reset.
+              DEPLOYMENT_MODE=auto
+            else
+              existing_domain=$(sed -n 's/^MAIL_DOMAIN=//p' "$env_file" | tail -n 1)
+              if [ -z "$existing_domain" ] && grep -q '^STALWART_DOMAIN_ID=.' "$env_file"; then
+                existing_domain=jmi-openatom.cn
+              fi
+              if [ -n "$existing_domain" ] && [ "$existing_domain" != mailer.jmi-openatom.cn ]; then
+                echo 'Existing mail domain differs. Run with reset_mail_data=true to rebuild on mailer.jmi-openatom.cn.' >&2
+                exit 65
+              fi
+            fi
+            upsert_env MAIL_DOMAIN mailer.jmi-openatom.cn
             upsert_env MAIN_SITE_INTERNAL_USERS_URL "${MAIN_SITE_INTERNAL_USERS_URL:-https://api.jmi-openatom.cn/api/v1/internal/mail/users}"
             upsert_env MAIL_BROADCAST_FROM "${MAIL_BROADCAST_FROM:-official@mailer.jmi-openatom.cn}"
             mail-system/deploy/deploy.sh "$env_file" "$DEPLOYMENT_MODE"

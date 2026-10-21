@@ -188,7 +188,7 @@ public class AdminController {
     }
   }
 
-  /** Main-site users that have an external (non @jmi-openatom.cn) email, for broadcast recipients. */
+  /** Main-site users that have an external (non-club) email, for broadcast recipients. */
   @GetMapping("/external-recipients")
   public MainSiteUsersClient.RecipientPage externalRecipients(
       @RequestParam(defaultValue = "1") int page,
@@ -249,7 +249,7 @@ public class AdminController {
     return broadcastLogRepository.page(page, pageSize);
   }
 
-  /** Active mail-system accounts (with a primary @jmi-openatom.cn address) as broadcast recipients. */
+  /** Active mail-system accounts (with a primary @mailer.jmi-openatom.cn address) as broadcast recipients. */
   @GetMapping("/internal-recipients")
   public MainSiteUsersClient.RecipientPage internalRecipients(
       @RequestParam(defaultValue = "1") int page,

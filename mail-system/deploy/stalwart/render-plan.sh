@@ -36,7 +36,7 @@ oauth_audience=$(value_for MAIL_OAUTH_AUDIENCE)
 mail_hostname=$(value_for MAIL_HOSTNAME)
 max_message_bytes=$(value_for MAIL_MAX_MESSAGE_BYTES)
 
-mail_domain=${mail_domain:-jmi-openatom.cn}
+mail_domain=${mail_domain:-mailer.jmi-openatom.cn}
 oauth_issuer=${oauth_issuer:-https://oauth.jmi-openatom.cn/api/v1}
 oauth_audience=${oauth_audience:-stalwart}
 mail_hostname=${mail_hostname:-mx1.jmi-openatom.cn}

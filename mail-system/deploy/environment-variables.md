@@ -32,7 +32,7 @@ openssl rand -base64 48
 
 | 字段 | 默认值 | 说明 |
 | --- | --- | --- |
-| `MAIL_DOMAIN` | `jmi-openatom.cn` | 自动分配邮箱的域名 |
+| `MAIL_DOMAIN` | `mailer.jmi-openatom.cn` | 自动分配邮箱的域名 |
 | `MAIL_HOSTNAME` | `mx1.jmi-openatom.cn` | SMTP HELO、PTR 和证书使用的邮件主机名 |
 | `MAIL_ACME_EMAIL` | 无 | Let’s Encrypt 到期与安全通知邮箱；GitHub Environment Variable，`tls` 阶段必填 |
 | `STALWART_PUBLIC_URL` | `https://mail.jmi-openatom.cn` | JMAP/OAuth 发现文档对外地址 |

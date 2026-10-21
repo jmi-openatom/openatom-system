@@ -67,8 +67,8 @@ export async function bootstrapMail(mailboxAddress: string | null): Promise<Mail
 
 /**
  * The Resend relay only accepts senders on the verified domain
- * mailer.jmi-openatom.cn, while the mailbox lives on jmi-openatom.cn.
- * Find (or create) an Identity whose address uses the relay domain so
+ * mailer.jmi-openatom.cn, which is also the mailbox domain.
+ * Reuse the mailbox Identity (or create it if missing) so
  * EmailSubmission can send as it.
  */
 export async function ensureRelayIdentity(

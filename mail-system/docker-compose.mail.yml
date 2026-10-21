@@ -103,7 +103,7 @@ services:
       MAIL_REDIS_PASSWORD: ${MAIL_REDIS_PASSWORD:?MAIL_REDIS_PASSWORD is required}
       MAIL_CLAMAV_HOST: clamav
       MAIL_CLAMAV_PORT: 3310
-      MAIL_DOMAIN: ${MAIL_DOMAIN:-jmi-openatom.cn}
+      MAIL_DOMAIN: ${MAIL_DOMAIN:-mailer.jmi-openatom.cn}
       MAIL_DEFAULT_QUOTA_BYTES: ${MAIL_DEFAULT_QUOTA_BYTES:-2147483648}
       # Bootstrap starts only infrastructure. deploy.sh refuses these sentinels in full mode.
       MAIL_ADDRESS_SALT: ${MAIL_ADDRESS_SALT:-bootstrap-not-configured}

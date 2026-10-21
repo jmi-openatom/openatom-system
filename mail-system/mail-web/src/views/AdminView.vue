@@ -121,7 +121,7 @@
           <div v-else class="empty-state">
             <MailOpen :size="30" /><h2>没有匹配的收件人</h2>
             <p v-if="recipientSource === 'internal'">还没有已激活的站内邮箱账号。</p>
-            <p v-else>主站中还没有登记非 @jmi-openatom.cn 的邮箱。</p>
+            <p v-else>主站中还没有登记外部邮箱。</p>
           </div>
         </div>
         <div class="broadcast-form">

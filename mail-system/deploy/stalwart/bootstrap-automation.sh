@@ -117,7 +117,7 @@ test -n "$recovery_user"
 test -n "$recovery_password"
 
 mail_domain=$(value_for MAIL_DOMAIN)
-mail_domain=${mail_domain:-jmi-openatom.cn}
+mail_domain=${mail_domain:-mailer.jmi-openatom.cn}
 automation_name=$(value_for STALWART_AUTOMATION_ACCOUNT)
 automation_name=${automation_name:-openatom-automation}
 case "$mail_domain" in *[!A-Za-z0-9.-]*|.*|*..*|*.) echo "invalid MAIL_DOMAIN" >&2; exit 65 ;; esac

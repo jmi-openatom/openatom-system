@@ -2,7 +2,7 @@
 
 这是独立部署的自建邮件网站实现。它由 Vue 3 邮件前端、Spring Boot OAuth BFF/邮箱控制面、Stalwart、MySQL、Redis、ClamAV 与自托管监控栈组成；主站只通过事务 Outbox 推送用户快照，因此邮件服务故障不会阻塞注册。
 
-外发投递通过 [Resend](https://resend.com) Email API 完成：mail-api 收到 `EmailSubmission/set` 后，草稿仍保存在 Stalwart，正文读回后经 `POST https://api.resend.com/emails` 发送（发件地址使用 Resend 已验证的 `mailer.jmi-openatom.cn` 域），随后销毁草稿并伪造 JMAP 提交响应；收件、存储与读取仍由 Stalwart 提供。因此需要 `MAIL_RESEND_API_KEY`（`re_...`），监控告警则经 Resend SMTP 中继（`smtp.resend.com:465`，用户名 `resend`、密码即 API Key）投递。
+外发投递通过 [Resend](https://resend.com) Email API 完成：mail-api 收到 `EmailSubmission/set` 后，草稿仍保存在 Stalwart，正文读回后经 `POST https://api.resend.com/emails` 发送（邮箱主地址与发件地址统一使用 Resend 已验证的 `mailer.jmi-openatom.cn` 域），随后销毁草稿并伪造 JMAP 提交响应；收件、存储与读取仍由 Stalwart 提供。因此需要 `MAIL_RESEND_API_KEY`（`re_...`），监控告警则经 Resend SMTP 中继（`smtp.resend.com:465`，用户名 `resend`、密码即 API Key）投递。
 
 ## 目录
 
@@ -87,3 +87,22 @@ SSH 用户仍须能够运行 Docker、Nginx 并写入证书目录；标准 Nginx
 - 用桌面端、移动端和深色主题进行 UI 走查，验证键盘焦点、44 px 点击区、减少动效、空/错/加载状态与主站一致。
 
 完整设计和逐项验收清单见 [`../docs/standalone-self-hosted-mail-system-design.md`](../docs/standalone-self-hosted-mail-system-design.md)。
+
+
+## 清空邮箱数据并切换域名
+
+邮箱主地址、收信域及 Resend 发件 Identity 统一使用 `mailer.jmi-openatom.cn`。
+`MAIL_DOMAIN` 在 Compose、Spring 和 Stalwart 中使用同一默认值；生产部署也会显式写入该值。
+
+已有旧域名部署需要一次人工重置：在 Actions → **OpenAtom Mail CI/CD** 中，选择 `main`，
+设置 `deployment_mode=auto`、`reset_mail_data=true`。该操作删除邮件 Compose 项目自己的
+`mail_db_data`、`mail_redis_data`、`stalwart_etc`、`stalwart_data` 四个卷，包含邮箱账号、
+邮件、附件、别名、群发记录和邮箱登录会话。主站数据库、OAuth 用户、代码、TLS 证书及监控卷保留。
+随后自动重新生成 Stalwart 管理凭据和域 ID；成员用原主站账号重新登录并激活邮箱即可。
+普通推送和默认手动部署不会清空数据；后续部署保持 `reset_mail_data=false`。
+
+重置脚本仅接受显式确认参数，并在停止服务前验证镜像及四个卷的 Compose 归属；
+不执行 `docker system prune` 或 `docker compose down -v`。
+
+DNS 需要 `mailer.jmi-openatom.cn MX 10 mx1.jmi-openatom.cn.`，同时保留 Resend
+现有的验证、DKIM、SPF 和 Return-Path 记录。网站域名仍为 `mail.jmi-openatom.cn`。

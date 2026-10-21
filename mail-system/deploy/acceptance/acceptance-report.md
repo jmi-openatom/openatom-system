@@ -15,7 +15,7 @@
 ```sh
 cd /absolute/path/openatom-system
 EXPECTED_PUBLIC_IP=203.0.113.10 \
-  MAIL_DOMAIN=jmi-openatom.cn \
+  MAIL_DOMAIN=mailer.jmi-openatom.cn \
   MAIL_HOSTNAME=mx1.jmi-openatom.cn \
   MAIL_WEB_HOST=mail.jmi-openatom.cn \
   MAIL_OAUTH_ISSUER=https://oauth.jmi-openatom.cn/api/v1 \

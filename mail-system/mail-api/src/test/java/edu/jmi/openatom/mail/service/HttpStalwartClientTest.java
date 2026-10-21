@@ -41,7 +41,7 @@ class HttpStalwartClientTest {
 
       String accountId =
           client.ensureAccount(
-              "oauth-sub-42", "张三", List.of("zhangsan@jmi-openatom.cn"), 1_048_576);
+              "oauth-sub-42", "张三", List.of("zhangsan@mailer.jmi-openatom.cn"), 1_048_576);
 
       assertThat(accountId).isEqualTo("account-1");
       assertThat(requests).hasSize(2);

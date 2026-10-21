@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
       "spring.datasource.username=sa",
       "spring.datasource.password=",
       "spring.session.store-type=none",
-      "mail.domain=jmi-openatom.cn",
+      "mail.domain=mailer.jmi-openatom.cn",
       "mail.address-salt=test-address-salt-with-32-characters",
       "mail.internal-service-token=test-internal-token-with-32-characters",
       "mail.stalwart.api-url=http://127.0.0.1:1/api",
@@ -64,9 +64,9 @@ class MailboxProvisioningServiceIntegrationTest {
     assertThat(stalwart.ensuredSubjects).isEmpty();
 
     ProvisionResponse activated = service.activateWithPinyin("42", "张三");
-    assertThat(activated.address()).isEqualTo("zhangsan@jmi-openatom.cn");
+    assertThat(activated.address()).isEqualTo("zhangsan@mailer.jmi-openatom.cn");
     assertThat(stalwart.ensuredSubjects).containsExactly("42");
-    assertThat(stalwart.lastAliases).containsExactly("zhangsan@jmi-openatom.cn");
+    assertThat(stalwart.lastAliases).containsExactly("zhangsan@mailer.jmi-openatom.cn");
   }
 
   @Test
@@ -76,8 +76,8 @@ class MailboxProvisioningServiceIntegrationTest {
 
     ProvisionResponse first = service.activateWithPinyin("100", "张三");
     ProvisionResponse second = service.activateWithPinyin("101", "张三");
-    assertThat(first.address()).isEqualTo("zhangsan@jmi-openatom.cn");
-    assertThat(second.address()).matches("zhangsan\\.[a-z2-7]{4}@jmi-openatom\\.cn");
+    assertThat(first.address()).isEqualTo("zhangsan@mailer.jmi-openatom.cn");
+    assertThat(second.address()).matches("zhangsan\\.[a-z2-7]{4}@mailer\\.jmi-openatom\\.cn");
     assertThat(second.address()).doesNotContain("101");
   }
 
@@ -89,7 +89,7 @@ class MailboxProvisioningServiceIntegrationTest {
     assertThat(waiting.provisionStatus()).isEqualTo("WAITING_PROFILE");
     assertThat(waiting.address()).isNull();
     ProvisionResponse active = service.activateWithPinyin("200", "李雷");
-    assertThat(active.address()).isEqualTo("lilei@jmi-openatom.cn");
+    assertThat(active.address()).isEqualTo("lilei@mailer.jmi-openatom.cn");
   }
 
   @Test
@@ -110,9 +110,9 @@ class MailboxProvisioningServiceIntegrationTest {
     service.activateWithPinyin("400", "曾乐");
     ProvisionResponse corrected = service.correctPrimaryAddress("400", "zengyue");
 
-    assertThat(corrected.address()).isEqualTo("zengyue@jmi-openatom.cn");
+    assertThat(corrected.address()).isEqualTo("zengyue@mailer.jmi-openatom.cn");
     assertThat(stalwart.lastAliases)
-        .containsExactly("cengle@jmi-openatom.cn", "zengyue@jmi-openatom.cn");
+        .containsExactly("cengle@mailer.jmi-openatom.cn", "zengyue@mailer.jmi-openatom.cn");
   }
 
   private ProvisionRequest request(
