@@ -68,7 +68,9 @@ Actions 按服务器架构构建 `mail-api` 和 `mail-web`，并将带提交 SHA
 
 `STALWART_CONFIG_TOKEN`、`STALWART_API_TOKEN`、`STALWART_DOMAIN_ID` 和一次性恢复密码全部在服务器上自动生成或查询，并保存在 `0600` 的 `.env.production`；不要为它们创建 GitHub Secret。
 
-GitHub Environment Variable `MAIL_ACME_EMAIL` 用于 Let’s Encrypt 通知。`tls` 阶段要求 SSH 用户能够直接运行 `certbot`、`nginx` 并写入 `/etc/nginx` 与 `/etc/letsencrypt`；使用普通部署用户时，应仅授予这些精确命令和目录所需的受限 sudo 权限。
+GitHub Environment Variable `MAIL_ACME_EMAIL` 用于 Let’s Encrypt 通知。`tls` 阶段优先使用宿主机 `certbot`；未安装时自动使用固定版本 `certbot/certbot:v5.8.0`，镜像由 CI 下载并随发布包导入，无需服务器安装 Certbot。Docker 分支要求 root 部署权限和已运行的 cron/crond，并写入 `/etc/cron.d/openatom-mail-certbot`，每天 03:23、15:23（服务器时区）检查续期；日志位于 `/var/log/letsencrypt/openatom-mail-renew.log`。签发、续期后会同步 Stalwart 证书并校验、重载 Nginx，同步失败会保留标记供下次重试。
+
+SSH 用户仍须能够运行 Docker、Nginx 并写入证书目录；标准 Nginx 环境还需写入 `/etc/nginx`。宝塔环境自动识别 `/www/server/nginx/sbin/nginx`，保留面板管理的站点配置，并使用 `/www/wwwroot/java_node_ssl` 验证域名。三个域名的 HTTP 80 端口必须能从公网访问对应的 ACME challenge 文件。宿主机 Certbot 分支继续使用其已有续期调度器和部署 Hook。
 
 主站部署还需要 `APP_OIDC_PRIVATE_KEY_BASE64`、`APP_OIDC_PUBLIC_KEY_BASE64`，以及与邮件站相同的 `MAIL_INTERNAL_SERVICE_TOKEN`。可通过 `MAIL_DEPLOY_PATH` Repository Variable 修改服务器部署目录。
 

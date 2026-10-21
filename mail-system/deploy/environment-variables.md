@@ -143,7 +143,7 @@ STALWART_RECOVERY_MODE=0
 ssh-keyscan -p 22 mail-server.example.com | ssh-keygen -lf -
 ```
 
-向 `main` 推送相关代码后，`OpenAtom Mail CI/CD` 会在全部测试通过后自动执行 `deployment_mode=auto`：通过“用户名 + 密码”SSH 拉取 `main`，首次运行自动创建域、两枚最小权限 Key 和 Domain ID；没有证书时自动用 Certbot Webroot 为 `mail`、`mta-sts`、`mx1` 签发同一张证书；随后应用完整声明式配置、构建并健康检查。服务器环境文件中的自动生成字段会跨部署保留，Actions 日志不会打印 Key。SSH 用户必须有权运行 Docker、Nginx、Certbot，并写入 `/etc/nginx`、`/etc/letsencrypt`。首次运行前 DNS A 记录必须已生效，否则 ACME 会失败；修正 DNS 后重新运行失败的工作流即可。
+向 `main` 推送相关代码后，`OpenAtom Mail CI/CD` 会在全部测试通过后自动执行 `deployment_mode=auto`：通过“用户名 + 密码”SSH 拉取 `main`，首次运行自动创建域、两枚最小权限 Key 和 Domain ID；没有证书时自动用 Certbot Webroot 为 `mail`、`mta-sts`、`mx1` 签发同一张证书；随后应用完整声明式配置、构建并健康检查。服务器环境文件中的自动生成字段会跨部署保留，Actions 日志不会打印 Key。SSH 用户必须有权运行 Docker、Nginx，并写入相应 Nginx 配置与证书目录。宿主机缺少 Certbot 时，CI 会下载并上传 `certbot/certbot:v5.8.0`，部署脚本使用 Docker 签发证书并在 `/etc/cron.d/openatom-mail-certbot` 注册每日两次续期任务（Docker 分支要求 root 权限及已运行的 cron/crond）。续期后在宿主机同步 Stalwart 证书并重载 Nginx；宝塔环境自动识别其 Nginx 路径，站点配置仍由面板管理。首次运行前 DNS A 记录必须已生效，否则 ACME 会失败；修正 DNS 后重新运行失败的工作流即可。
 
 自动引导是可重跑的：当三项服务器状态完整且恢复模式已关闭时会保持原 Key 不变；若第一次运行在清理恢复凭据前中断，则下次运行会借助仍在服务器本地的恢复凭据重新生成并验证 Key，最后撤销临时密码。CI 也会连续运行两次引导并比较环境文件摘要，防止正常重部署意外轮换 Token。
 

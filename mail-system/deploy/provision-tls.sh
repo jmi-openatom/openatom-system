@@ -11,7 +11,12 @@ case "$env_file" in /*) ;; *) echo "environment file path must be absolute" >&2;
 case "$env_file" in *[!A-Za-z0-9_./-]*) echo "environment path contains unsupported characters" >&2; exit 64 ;; esac
 test -f "$env_file"
 
-for command_name in certbot install nginx; do
+# BT's nginx binary is not always included in non-interactive SSH PATH.
+if ! command -v nginx >/dev/null 2>&1 && [ -x /www/server/nginx/sbin/nginx ]; then
+  PATH="$PATH:/www/server/nginx/sbin"
+  export PATH
+fi
+for command_name in install nginx; do
   command -v "$command_name" >/dev/null 2>&1 || {
     echo "$command_name is required" >&2
     exit 69
@@ -58,17 +63,7 @@ if [ "$skip_nginx" = false ]; then
   nginx -s reload
 fi
 
-deploy_hook="$script_dir/stalwart/certbot-deploy-hook.sh $env_file"
-certbot certonly --webroot --webroot-path "$acme_webroot" \
-  --cert-name openatom-mail \
-  --domain mail.jmi-openatom.cn \
-  --domain mta-sts.jmi-openatom.cn \
-  --domain mx1.jmi-openatom.cn \
-  --email "$acme_email" --agree-tos --non-interactive --keep-until-expiring \
-  --deploy-hook "$deploy_hook"
-
-"$script_dir/stalwart/certbot-deploy-hook.sh" "$env_file" \
-  /etc/letsencrypt/live/openatom-mail
+"$script_dir/certbot.sh" "$env_file" "$acme_webroot" certonly
 
 if [ "$skip_nginx" = true ]; then
   echo "BT panel detected: nginx sites stay under panel management; certificates are installed"

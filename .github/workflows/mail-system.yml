@@ -150,6 +150,7 @@ jobs:
           shellcheck deploy/load-production-images.sh
           shellcheck mail-system/deploy/deploy.sh
           shellcheck mail-system/deploy/provision-tls.sh
+          shellcheck mail-system/deploy/certbot.sh
           shellcheck mail-system/deploy/backup/backup.sh
           shellcheck mail-system/deploy/backup/restore.sh
           shellcheck mail-system/deploy/acceptance/open-relay-check.sh
@@ -165,6 +166,8 @@ jobs:
           shellcheck mail-system/deploy/stalwart/certbot-deploy-hook.sh
       - name: Test Stalwart credential bootstrap flow
         run: mail-system/deploy/stalwart/test-bootstrap-automation.sh
+      - name: Test Certbot fallback and renewal flow
+        run: python3 mail-system/deploy/test-certbot.py
       - name: Validate rendered Stalwart plan
         run: |
           plan_file="$(mktemp)"
@@ -334,6 +337,9 @@ jobs:
                 echo "OPENATOM_MISSING_IMAGE=$image"
               fi
             done
+            if ! command -v certbot >/dev/null 2>&1 && ! docker image inspect certbot/certbot:v5.8.0 >/dev/null 2>&1; then
+              echo 'OPENATOM_MISSING_IMAGE=certbot/certbot:v5.8.0'
+            fi
             docker ps --format '{{.Names}}: {{.Status}}' | grep '^openatom-mail-' || true
             mkdir -p .deploy-images/mail-${{ github.run_id }}-${{ github.run_attempt }}
 
@@ -351,7 +357,7 @@ jobs:
           missing_images=$(printf '%s\n' "$SERVER_INVENTORY" | awk -F= '$1 == "OPENATOM_MISSING_IMAGE" {print $2}' | xargs)
           for image in $missing_images; do
             case "$image" in
-              mysql:8.4|redis:7.4-alpine|clamav/clamav:1.5|stalwartlabs/stalwart:v0.16|prom/prometheus:v3.13.0|prom/alertmanager:v0.32.1|prom/blackbox-exporter:v0.28.0|prom/node-exporter:v1.11.1) ;;
+              mysql:8.4|redis:7.4-alpine|clamav/clamav:1.5|stalwartlabs/stalwart:v0.16|prom/prometheus:v3.13.0|prom/alertmanager:v0.32.1|prom/blackbox-exporter:v0.28.0|prom/node-exporter:v1.11.1|certbot/certbot:v5.8.0) ;;
               *) echo 'Unexpected dependency image' >&2; exit 1 ;;
             esac
           done
