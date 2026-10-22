@@ -10,6 +10,8 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseLeaveApplicationVO;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,8 +32,9 @@ public class LeaveApplicationController {
   }
 
   @GetMapping("/site/leave-applications")
-  public Result<List<ResponseLeaveApplicationVO>> mine() {
-    return leaveApplicationService.mine();
+  public ResponseEntity<Result<List<ResponseLeaveApplicationVO>>> mine() {
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+        .body(leaveApplicationService.mine());
   }
 
   @GetMapping("/leave-applications/{leaveApplicationId}")
@@ -41,8 +44,10 @@ public class LeaveApplicationController {
   }
 
   @GetMapping("/site/leave-applications/{leaveApplicationId}")
-  public Result<ResponseLeaveApplicationVO> siteDetail(@PathVariable Integer leaveApplicationId) {
-    return leaveApplicationService.detail(leaveApplicationId);
+  public ResponseEntity<Result<ResponseLeaveApplicationVO>> siteDetail(
+      @PathVariable Integer leaveApplicationId) {
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+        .body(leaveApplicationService.detail(leaveApplicationId));
   }
 
   @PostMapping("/site/leave-applications")

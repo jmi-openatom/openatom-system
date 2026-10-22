@@ -1,5 +1,22 @@
 import request from './request'
 import { getToken } from '@/utils/auth.ts'
+
+/**
+ * 个人数据接口的请求配置。
+ *
+ * 这些接口按当前登录用户返回内容，历史上曾被网关的共享缓存在不同用户间复用，
+ * 导致一个人看到另一个人的资料。这里显式要求各层缓存不保存、不复用响应：
+ * 请求头声明 no-store，并带上随时间变化的 _t 参数，让任何以 URL 为键的缓存失效。
+ *
+ * 每次调用都生成新的 _t，因此必须是函数而不是常量。
+ */
+function noStore(extraParams?: Record<string, unknown>) {
+  return {
+    headers: { 'Cache-Control': 'no-store', Pragma: 'no-cache' },
+    params: { ...extraParams, _t: Date.now() },
+  }
+}
+
 export const siteApi = {
   clubHome(params?: Record<string, unknown>): Promise<any> {
     return request.get('/site/club-home', { params })
@@ -26,10 +43,10 @@ export const siteApi = {
     return request.get(`/site/recruitment/${id}`)
   },
   progress(): Promise<any> {
-    return request.get('/site/progress')
+    return request.get('/site/progress', noStore())
   },
   activation(): Promise<any> {
-    return request.get('/site/activation')
+    return request.get('/site/activation', noStore())
   },
   registerEnabled(): Promise<any> {
     return request.get('/site/register-enabled')
@@ -44,7 +61,8 @@ export const siteApi = {
     return request.get('/site/votes', { params })
   },
   voteDetail(id: string | number): Promise<any> {
-    return request.get(`/site/votes/${id}`)
+    // 响应里的 voted / 结果可见性随登录用户变化
+    return request.get(`/site/votes/${id}`, noStore())
   },
   regulations(params?: Record<string, unknown>): Promise<any> {
     return request.get('/site/regulations', { params })
@@ -56,10 +74,12 @@ export const siteApi = {
     return request.post(`/site/votes/${id}/records`, data)
   },
   blogArticles(params?: Record<string, unknown>): Promise<any> {
-    return request.get('/site/blog/articles', { params })
+    // 响应里的 liked / favorited 随登录用户变化
+    return request.get('/site/blog/articles', noStore(params))
   },
   blogArticleDetail(id: string | number): Promise<any> {
-    return request.get(`/site/blog/articles/${id}`)
+    // 响应里的 liked / favorited 随登录用户变化
+    return request.get(`/site/blog/articles/${id}`, noStore())
   },
   blogCategories(): Promise<any> {
     return request.get('/site/blog/categories')
@@ -977,7 +997,7 @@ export const pointApi = {
     return request.get('/site/points/leaderboard', { params })
   },
   mySummary(): Promise<any> {
-    return request.get('/site/points/me')
+    return request.get('/site/points/me', noStore())
   },
   siteItems(): Promise<any> {
     return request.get('/site/points/items')
@@ -986,7 +1006,7 @@ export const pointApi = {
     return request.post(`/site/points/items/${itemId}/redeem`, data)
   },
   myRedemptions(): Promise<any> {
-    return request.get('/site/points/redemptions')
+    return request.get('/site/points/redemptions', noStore())
   },
   adminAccounts(params?: Record<string, unknown>): Promise<any> {
     return request.get('/points/admin/accounts', { params })
@@ -1028,13 +1048,13 @@ export const leaveApplicationApi = {
     return request.get('/leave-applications', { params })
   },
   mine(): Promise<any> {
-    return request.get('/site/leave-applications')
+    return request.get('/site/leave-applications', noStore())
   },
   detail(id: string | number): Promise<any> {
     return request.get(`/leave-applications/${id}`)
   },
   siteDetail(id: string | number): Promise<any> {
-    return request.get(`/site/leave-applications/${id}`)
+    return request.get(`/site/leave-applications/${id}`, noStore())
   },
   create(data: Record<string, unknown>): Promise<any> {
     return request.post('/site/leave-applications', data)

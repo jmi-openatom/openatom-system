@@ -12,6 +12,7 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteFormDetailVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteFormsVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteProgressVO;
 import edu.jmi.openatom.server.openatomsystem.entity.*;
+import edu.jmi.openatom.server.openatomsystem.exception.NotLoggedInException;
 import edu.jmi.openatom.server.openatomsystem.mapper.*;
 import edu.jmi.openatom.server.openatomsystem.service.RegistrationSettingService;
 import edu.jmi.openatom.server.openatomsystem.service.SiteService;
@@ -130,7 +131,7 @@ public class SiteServiceImpl implements SiteService {
   @Override
   public Result<ResponseSiteProgressVO> getMyProgress() {
     if (!StpUtil.isLogin()) {
-      return Result.error(401, "请先登录后查看入会进度");
+      throw new NotLoggedInException("请先登录后查看入会进度");
     }
     Integer userId = StpUtil.getLoginIdAsInt();
     List<MembershipApplication> applications = applicationMapper.selectByUserIdOrdered(userId);
@@ -191,7 +192,7 @@ public class SiteServiceImpl implements SiteService {
   @Override
   public Result<ResponseActivationVO> getMyActivationInfo() {
     if (!StpUtil.isLogin()) {
-      return Result.error(401, "请先登录后查看激活信息");
+      throw new NotLoggedInException("请先登录后查看激活信息");
     }
     Integer userId = StpUtil.getLoginIdAsInt();
     User user = userMapper.selectById(userId);

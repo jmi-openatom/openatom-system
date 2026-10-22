@@ -12,6 +12,8 @@ import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteFormDetailVO;
 import edu.jmi.openatom.server.openatomsystem.vo.ResponseSiteProgressVO;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -108,20 +110,24 @@ public class SiteController {
    * @return 用户进度信息
    */
   @GetMapping("/site/progress")
-  public Result<ResponseSiteProgressVO> getMyProgress() {
-    return siteService.getMyProgress();
+  public ResponseEntity<Result<ResponseSiteProgressVO>> getMyProgress() {
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+        .body(siteService.getMyProgress());
   }
 
   /**
    * 获取当前用户的账号激活页数据
    *
-   * <p>返回用户成员身份、所属部门、部门部长、社长副社长及社团介绍，供激活页展示
+   * <p>返回用户成员身份、所属部门、部门部长、社长副社长及社团介绍，供激活页展示。
+   * 响应包含姓名、学号、手机号等个人资料，必须声明 no-store，禁止任何共享缓存
+   * （含 Nginx proxy_cache、CDN、浏览器磁盘缓存）保存。
    *
    * @return 激活页数据
    */
   @GetMapping("/site/activation")
-  public Result<ResponseActivationVO> getMyActivationInfo() {
-    return siteService.getMyActivationInfo();
+  public ResponseEntity<Result<ResponseActivationVO>> getMyActivationInfo() {
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+        .body(siteService.getMyActivationInfo());
   }
 
   /**

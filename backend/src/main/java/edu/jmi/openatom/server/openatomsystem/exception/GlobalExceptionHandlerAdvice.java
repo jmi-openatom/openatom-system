@@ -9,6 +9,8 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -34,7 +36,24 @@ public class GlobalExceptionHandlerAdvice {
 
   @ExceptionHandler(NotLoginException.class)
   public ResponseEntity<Result<Void>> handleNotLoginException(NotLoginException e) {
-    return ResponseEntity.status(401).body(Result.error(401, "未登录或会话已过期"));
+    return unauthorized("未登录或会话已过期");
+  }
+
+  @ExceptionHandler(NotLoggedInException.class)
+  public ResponseEntity<Result<Void>> handleNotLoggedInException(NotLoggedInException e) {
+    return unauthorized(e.getMessage());
+  }
+
+  /**
+   * 未登录响应必须带真实 401 状态码与 no-store。
+   *
+   * <p>若用 HTTP 200 返回错误码，Nginx 的 {@code proxy_cache_valid 200} 会把
+   * “请先登录”当成成功结果缓存，其他访客在缓存有效期内永远只能看到这份错误体。
+   */
+  private static ResponseEntity<Result<Void>> unauthorized(String message) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .cacheControl(CacheControl.noStore())
+        .body(Result.error(401, message));
   }
 
   @ExceptionHandler(NotRoleException.class)

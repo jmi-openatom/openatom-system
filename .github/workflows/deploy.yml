@@ -466,10 +466,26 @@ jobs:
               fi
 
                 # 3) 公开接口缓存 location（extension include 目录，幂等）
-                if [ ! -f "$NGINX_CACHE_CONF" ] || ! grep -q "openatom_api" "$NGINX_CACHE_CONF"; then
+                # 配置代次标记：结构变更（如取消 /site/ 前缀缓存）必须提升版本号，
+                # 否则服务器上残留的旧 cache.conf 会一直生效。
+                NGINX_CACHE_VERSION="openatom-cache-config:v2"
+                if [ ! -f "$NGINX_CACHE_CONF" ] || ! grep -q "$NGINX_CACHE_VERSION" "$NGINX_CACHE_CONF"; then
                 cat > "$NGINX_CACHE_CONF" <<'NGINXEOF'
-            # 自动生成：公开只读接口 30 秒缓存，扛瞬时高峰；captcha 缓存 5 秒
-            location ^~ /api/v1/site/ {
+            # 自动生成：openatom-cache-config:v2
+            #
+            # 只对“与登录用户无关”的公开只读接口做共享缓存。
+            # 历史事故：v1 对整个 /api/v1/site/ 前缀做 30s 共享缓存，缓存键不含任何
+            # 用户身份，导致 /site/activation、/site/progress 等按登录用户返回的响应
+            # 被复用给其他访客（A 的资料显示在 B 的激活页上）。v2 起：
+            #   1. 个人接口一律不进共享缓存（见末尾 /site/ 兜底 location）；
+            #   2. 白名单 location 在带登录态时 bypass 且不写缓存；
+            #   3. 不再 ignore Cache-Control / Vary，尊重后端声明的 no-store。
+            #
+            # 新增可缓存的公开接口时，必须确认其响应与登录用户无关。
+
+            # --- 公开只读接口：30 秒共享缓存（精确白名单）---
+
+            location = /api/v1/site/club-home {
             proxy_pass http://openatom_api;
             proxy_http_version 1.1;
             proxy_set_header Connection "";
@@ -480,9 +496,120 @@ jobs:
             proxy_cache api_jmi-openatom_cn_cache;
             proxy_cache_valid 200 30s;
             proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
-            proxy_ignore_headers Set-Cookie Vary;
+            proxy_cache_bypass $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
+            proxy_no_cache $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
             add_header X-Proxy-Cache $upstream_cache_status;
             }
+
+            location ^~ /api/v1/site/activities {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache api_jmi-openatom_cn_cache;
+            proxy_cache_valid 200 30s;
+            proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+            proxy_cache_bypass $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
+            proxy_no_cache $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
+            add_header X-Proxy-Cache $upstream_cache_status;
+            }
+
+            location ^~ /api/v1/site/clubs {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache api_jmi-openatom_cn_cache;
+            proxy_cache_valid 200 30s;
+            proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+            proxy_cache_bypass $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
+            proxy_no_cache $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
+            add_header X-Proxy-Cache $upstream_cache_status;
+            }
+
+            location ^~ /api/v1/site/recruitment {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache api_jmi-openatom_cn_cache;
+            proxy_cache_valid 200 30s;
+            proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+            proxy_cache_bypass $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
+            proxy_no_cache $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
+            add_header X-Proxy-Cache $upstream_cache_status;
+            }
+
+            location ^~ /api/v1/site/forms/ {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache api_jmi-openatom_cn_cache;
+            proxy_cache_valid 200 30s;
+            proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+            proxy_cache_bypass $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
+            proxy_no_cache $http_jmiopenatom $http_authorization $cookie_jmiopenatom;
+            add_header X-Proxy-Cache $upstream_cache_status;
+            }
+
+            location = /api/v1/site/register-enabled {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache api_jmi-openatom_cn_cache;
+            proxy_cache_valid 200 30s;
+            proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+            add_header X-Proxy-Cache $upstream_cache_status;
+            }
+
+            location = /api/v1/site/activation-enabled {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache api_jmi-openatom_cn_cache;
+            proxy_cache_valid 200 30s;
+            proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+            add_header X-Proxy-Cache $upstream_cache_status;
+            }
+
+            # --- 其余 /site/ 接口：可能按登录用户返回，禁止共享缓存 ---
+
+            location ^~ /api/v1/site/ {
+            proxy_pass http://openatom_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache off;
+            proxy_no_cache 1;
+            proxy_cache_bypass 1;
+            add_header Cache-Control "no-store";
+            }
+
+            # --- /public/ 含申请人联系方式等按人查询的接口，一律不缓存 ---
 
             location ^~ /api/v1/public/ {
             proxy_pass http://openatom_api;
@@ -492,26 +619,29 @@ jobs:
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_cache api_jmi-openatom_cn_cache;
-            proxy_cache_valid 200 30s;
-            proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
-            proxy_ignore_headers Set-Cookie Vary;
-            add_header X-Proxy-Cache $upstream_cache_status;
+            proxy_cache off;
+            proxy_no_cache 1;
+            proxy_cache_bypass 1;
+            add_header Cache-Control "no-store";
             }
 
-            location = /api/v1/auth/captcha {
-            proxy_pass http://openatom_api;
-            proxy_http_version 1.1;
-            proxy_set_header Connection "";
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_cache api_jmi-openatom_cn_cache;
-            proxy_cache_valid 200 5s;
-            add_header X-Proxy-Cache $upstream_cache_status;
-            }
+            # 注意：/api/v1/auth/captcha 不再缓存。
+            # 验证码是“一次性”的（校验通过即从 Redis 删除），共享缓存会让 5 秒内的
+            # 第二个用户拿到同一个 captchaId，从而永远校验失败。CPU 保护交给
+            # AuthIpRateLimitInterceptor 限流，而不是拿正确性换性能。
             NGINXEOF
-                echo "Nginx cache locations written."
+                echo "Nginx cache locations written ($NGINX_CACHE_VERSION)."
+
+                # 旧缓存条目里可能还残留个人接口的响应，清理掉再 reload。
+                case "$NGINX_CACHE_DIR" in
+                  */proxy_cache_dir)
+                    find "$NGINX_CACHE_DIR" -mindepth 1 -type f -delete 2>/dev/null || true
+                    echo "Purged legacy proxy cache entries in $NGINX_CACHE_DIR."
+                    ;;
+                  *)
+                    echo "Warning: unexpected NGINX_CACHE_DIR=$NGINX_CACHE_DIR; skip cache purge." >&2
+                    ;;
+                esac
               fi
 
               # 4) 校验并重载，失败回滚
