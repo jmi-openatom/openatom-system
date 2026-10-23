@@ -52,7 +52,8 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 		CorsConfiguration config = new CorsConfiguration();
 		config.setAllowedOriginPatterns(Arrays.asList(allowedOriginPatterns));
 		config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-		config.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization", "jmiopenatom", "X-Requested-With", "Accept", "Origin"));
+		// 前端 noStore() 会发送这两个缓存控制头，预检必须显式放行。
+		config.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization", "jmiopenatom", "X-Requested-With", "Accept", "Origin", "Cache-Control", "Pragma"));
 		config.setExposedHeaders(Arrays.asList("Content-Disposition"));
 		config.setAllowCredentials(true);
 		config.setMaxAge(3600L);
@@ -148,7 +149,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 			String origin = SaHolder.getRequest().getHeader("Origin");
 			String requestHeaders = SaHolder.getRequest().getHeader("Access-Control-Request-Headers");
 			String allowHeaders = requestHeaders == null || requestHeaders.isBlank()
-					? "Content-Type, Authorization, jmiopenatom, X-Requested-With, Accept, Origin"
+					? "Content-Type, Authorization, jmiopenatom, X-Requested-With, Accept, Origin, Cache-Control, Pragma"
 					: requestHeaders;
 			if (origin != null && !origin.isBlank()) {
 				SaHolder.getResponse().setHeader("Access-Control-Allow-Origin", origin);
